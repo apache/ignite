@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.loadtests.cache;
@@ -12,9 +20,9 @@ package org.gridgain.loadtests.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -51,10 +59,10 @@ abstract class GridCacheAbstractLoadTest {
     protected final int operationsPerTx;
 
     /** Transaction isolation level. */
-    protected final GridCacheTxIsolation isolation;
+    protected final IgniteTxIsolation isolation;
 
     /** Transaction concurrency control. */
-    protected final GridCacheTxConcurrency concurrency;
+    protected final IgniteTxConcurrency concurrency;
 
     /** Threads count. */
     protected final int threads;
@@ -103,8 +111,8 @@ abstract class GridCacheAbstractLoadTest {
 
         tx = Boolean.valueOf(props.getProperty("transactions"));
         operationsPerTx = Integer.valueOf(props.getProperty("operations.per.tx"));
-        isolation = GridCacheTxIsolation.valueOf(props.getProperty("isolation"));
-        concurrency = GridCacheTxConcurrency.valueOf(props.getProperty("concurrency"));
+        isolation = IgniteTxIsolation.valueOf(props.getProperty("isolation"));
+        concurrency = IgniteTxConcurrency.valueOf(props.getProperty("concurrency"));
         threads = Integer.valueOf(props.getProperty("threads"));
         writeRatio = Double.valueOf(props.getProperty("write.ratio"));
         testDuration = Long.valueOf(props.getProperty("duration"));
@@ -134,7 +142,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while (!done.get()) {
                         if (tx) {
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 writeClos.apply(cache);
 
                                 tx.commit();
@@ -156,7 +164,7 @@ abstract class GridCacheAbstractLoadTest {
 
                     while(!done.get()) {
                         if (tx) {
-                            try (GridCacheTx tx = cache.txStart()) {
+                            try (IgniteTx tx = cache.txStart()) {
                                 readClos.apply(cache);
 
                                 tx.commit();

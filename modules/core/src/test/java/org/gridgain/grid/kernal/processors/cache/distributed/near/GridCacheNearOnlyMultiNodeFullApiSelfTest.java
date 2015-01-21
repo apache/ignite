@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -405,48 +413,6 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
             assert !nearCache.isLocked(key);
             assert !cache.isLocked(key);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings("BusyWait")
-    @Override public void testUnlockFiltered() throws Exception {
-        if (lockingEnabled()) {
-            List<String> keys = primaryKeysForCache(fullCache(), 2);
-
-            String key1 = keys.get(0);
-            String key2 = keys.get(1);
-
-            cache().put(key1, 1);
-            cache().put(key2, 100);
-
-            assert !cache().isLocked(key1);
-            assert !cache().isLocked(key2);
-            assert !fullCache().isLocked(key1);
-            assert !fullCache().isLocked(key2);
-
-            cache().lock(key1, 0L);
-            cache().lock(key2, 0L);
-
-            assert cache().isLocked(key1);
-            assert cache().isLocked(key2);
-
-            cache().unlock(key1, gte100);
-            cache().unlock(key2, gte100);
-
-            for (int i = 0; i < 100; i++) {
-                if (fullCache().isLocked(key2))
-                    Thread.sleep(10);
-                else
-                    break;
-            }
-
-            assert cache().isLocked(key1);
-            assert fullCache().isLocked(key1);
-            assert !cache().isLocked(key2);
-            assert !fullCache().isLocked(key2);
-
-            cache().unlockAll(F.asList(key1, key2));
         }
     }
 

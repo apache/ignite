@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -13,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -56,7 +65,6 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(mode);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setDgcRemoveLocks(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
@@ -96,7 +104,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    public void _testAtomicLongLocal() throws Exception { // TODO GG-9141
+    public void testAtomicLongLocal() throws Exception {
         mode = GridCacheMode.LOCAL;
 
         try {
@@ -422,7 +430,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    GridCacheTx tx = cache.txStart();
+                    IgniteTx tx = cache.txStart();
 
                     TestValue val = new TestValue(0);
 
@@ -430,7 +438,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     cache.putx(0, val);
 
-                    tx.commitAsync().get();
+                    tx.commit();
                 }
                 finally {
                     G.stop(g.name(), cancel);
@@ -459,7 +467,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
-                    GridCacheTx tx = cache.txStart();
+                    IgniteTx tx = cache.txStart();
 
                     for (int i = 0; i < 1000; i++) {
                         TestValue val = new TestValue(i);
@@ -469,7 +477,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                         cache.putxAsync(i, val);
                     }
 
-                    tx.commitAsync().get();
+                    tx.commit();
                 }
                 finally {
                     G.stop(g.name(), cancel);

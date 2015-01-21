@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
@@ -12,10 +20,11 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
@@ -30,6 +39,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 
 /**
@@ -119,6 +129,9 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /** Pending locks. */
     private final Collection<K> pendingLocks = new GridConcurrentHashSet<>();
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -136,6 +149,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param timeout Lock acquisition timeout.
      * @param tx Transaction.
      * @param threadId Thread ID.
+     * @param accessTtl TTL for read operation.
      * @param filter Filter.
      */
     public GridDhtLockFuture(
@@ -148,10 +162,10 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         long timeout,
         GridDhtTxLocalAdapter<K, V> tx,
         long threadId,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
-        assert cctx != null;
         assert nearNodeId != null;
         assert nearLockVer != null;
         assert topVer > 0;
@@ -164,6 +178,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         this.timeout = timeout;
         this.filter = filter;
         this.tx = tx;
+        this.accessTtl = accessTtl;
 
         if (tx != null)
             tx.topologyVersion(topVer);
@@ -200,6 +215,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param invalidPart Partition to retry.
      */
     void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int invalidPart) {
@@ -301,7 +317,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     /**
      * @return Transaction isolation or {@code null} if no transaction.
      */
-    @Nullable private GridCacheTxIsolation isolation() {
+    @Nullable private IgniteTxIsolation isolation() {
         return tx == null ? null : tx.isolation();
     }
 
@@ -825,7 +841,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.groupLockKey() : null,
                         inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
-                        inTx() ? tx.taskNameHash() : 0);
+                        inTx() ? tx.taskNameHash() : 0,
+                        read ? accessTtl : -1L);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = dhtMapping.listIterator(); it.hasNext();) {
@@ -836,11 +853,13 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                             boolean invalidateRdr = e.readerId(n.id()) != null;
 
+                            IgniteTxEntry<K, V> entry = tx != null ? tx.entry(e.txKey()) : null;
+
                             req.addDhtKey(
                                 e.key(),
                                 e.getOrMarshalKeyBytes(),
                                 tx != null ? tx.writeMap().get(e.txKey()) : null,
-                                tx != null ? tx.entry(e.txKey()).drVersion() : null,
+                                entry != null ? entry.drVersion() : null,
                                 invalidateRdr,
                                 cctx);
 
@@ -862,7 +881,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         if (log.isDebugEnabled())
                             log.debug("Sending DHT lock request to DHT node [node=" + n.id() + ", req=" + req + ']');
 
-                        cctx.io().send(n, req);
+                        cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
@@ -904,7 +923,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                         inTx() ? tx.groupLockKey() : null,
                         inTx() && tx.partitionLock(),
                         inTx() ? tx.subjectId() : null,
-                        inTx() ? tx.taskNameHash() : 0);
+                        inTx() ? tx.taskNameHash() : 0,
+                        read ? accessTtl : -1L);
 
                     try {
                         for (ListIterator<GridDhtCacheEntry<K, V>> it = nearMapping.listIterator(); it.hasNext();) {
@@ -924,7 +944,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             log.debug("Sending DHT lock request to near node [node=" + n.id() +
                                 ", req=" + req + ']');
 
-                        cctx.io().send(n, req);
+                        cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                     }
                     catch (ClusterTopologyException e) {
                         fut.onResult(e);
@@ -1176,7 +1196,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
          * @param entries Entries to check.
          */
         @SuppressWarnings({"ForLoopReplaceableByForEach"})
-        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<GridCacheTxKey<K>> keys, UUID nodeId, long msgId,
+        private void evictReaders(GridCacheContext<K, V> cacheCtx, Collection<IgniteTxKey<K>> keys, UUID nodeId, long msgId,
             @Nullable List<GridDhtCacheEntry<K, V>> entries) {
             if (entries == null || keys == null || entries.isEmpty() || keys.isEmpty())
                 return;

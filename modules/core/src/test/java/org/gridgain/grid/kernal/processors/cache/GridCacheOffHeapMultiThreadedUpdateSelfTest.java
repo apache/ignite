@@ -1,21 +1,31 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Multithreaded update test with off heap enabled.
@@ -46,8 +56,8 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testTransformTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+    private void testTransformTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         cache.put(key, 0);
 
@@ -56,12 +66,14 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
+                IgniteTransactions txs = ignite(0).transactions();
+
                 for (int i = 0; i < ITERATIONS_PER_THREAD && !failed; i++) {
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
-                        cache.transform(key, new IncClosure());
+                    try (IgniteTx tx = txs.txStart(txConcurrency, REPEATABLE_READ)) {
+                        cache.invoke(key, new IncProcessor());
 
                         tx.commit();
                     }
@@ -110,7 +122,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testPutTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testPutTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
@@ -124,7 +136,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         Integer val = cache.put(key, i);
 
                         assertNotNull(val);
@@ -166,7 +178,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testPutWithFilterTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testPutWithFilterTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
@@ -180,7 +192,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         cache.putx(key, i, new TestFilter());
 
                         tx.commit();
@@ -222,7 +234,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @param txConcurrency Transaction concurrency.
      * @throws Exception If failed.
      */
-    private void testPutxIfAbsentTx(final Integer key, final GridCacheTxConcurrency txConcurrency) throws Exception {
+    private void testPutxIfAbsentTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
         final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
@@ -236,7 +248,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    try (GridCacheTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
+                    try (IgniteTx tx = cache.txStart(txConcurrency, REPEATABLE_READ)) {
                         assertFalse(cache.putxIfAbsent(key, 100));
 
                         tx.commit();

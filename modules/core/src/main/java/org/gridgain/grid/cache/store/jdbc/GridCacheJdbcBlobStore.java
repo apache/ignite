@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache.store.jdbc;
@@ -12,8 +20,7 @@ package org.gridgain.grid.cache.store.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -164,7 +171,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     private boolean initOk;
 
     /** {@inheritDoc} */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         init();
 
         Connection conn = tx.removeMeta(ATTR_CONN);
@@ -190,7 +197,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public V load(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Override public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -223,7 +230,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable GridCacheTx tx, K key, V val) throws IgniteCheckedException {
+    @Override public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -261,7 +268,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable GridCacheTx tx, K key) throws IgniteCheckedException {
+    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
         init();
 
         if (log.isDebugEnabled())
@@ -293,7 +300,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    private Connection connection(@Nullable GridCacheTx tx) throws SQLException  {
+    private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
         if (tx != null) {
             Connection conn = tx.meta(ATTR_CONN);
 
@@ -319,7 +326,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      * @param conn Allocated connection.
      * @param st Created statement,
      */
-    private void end(@Nullable GridCacheTx tx, Connection conn, Statement st) {
+    private void end(@Nullable IgniteTx tx, Connection conn, Statement st) {
         U.closeQuiet(st);
 
         if (tx == null)

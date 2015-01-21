@@ -1,16 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.hibernate.cache.*;
@@ -18,7 +25,6 @@ import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;
-import org.jdk8.backport.*;
 
 import java.util.*;
 
@@ -80,8 +86,8 @@ public class GridHibernateRegionFactory implements RegionFactory {
     /** Region name to cache name mapping. */
     private final Map<String, String> regionCaches = new HashMap<>();
 
-    /** Map needed to provide the same transaction context for different regions using the same cache. */
-    private final ConcurrentHashMap8<String, ThreadLocal> threadLocMap = new ConcurrentHashMap8<>();
+    /** Map needed to provide the same transaction context for different regions. */
+    private final ThreadLocal threadLoc = new ThreadLocal();
 
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
@@ -196,15 +202,6 @@ public class GridHibernateRegionFactory implements RegionFactory {
      * @return Thread local instance used to track updates done during one Hibernate transaction.
      */
     ThreadLocal threadLocalForCache(String cacheName) {
-        ThreadLocal threadLoc = threadLocMap.get(cacheName);
-
-        if (threadLoc == null) {
-            ThreadLocal old = threadLocMap.putIfAbsent(cacheName, threadLoc = new ThreadLocal());
-
-            if (old != null)
-                threadLoc = old;
-        }
-
         return threadLoc;
     }
 

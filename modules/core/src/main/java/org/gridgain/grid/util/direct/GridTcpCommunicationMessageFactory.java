@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.util.direct;
@@ -37,7 +45,7 @@ import java.util.*;
  */
 public class GridTcpCommunicationMessageFactory {
     /** Common message producers. */
-    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[82];
+    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[83];
 
     /**
      * Custom messages registry. Used for test purposes.
@@ -45,7 +53,7 @@ public class GridTcpCommunicationMessageFactory {
     private static final Map<Byte, GridTcpCommunicationMessageProducer> CUSTOM = new ConcurrentHashMap8<>();
 
     /** */
-    public static final int MAX_COMMON_TYPE = 81;
+    public static final int MAX_COMMON_TYPE = 82;
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {
@@ -264,6 +272,9 @@ public class GridTcpCommunicationMessageFactory {
                     case 81:
                         return new GridJobExecuteRequestV2();
 
+                    case 82:
+                        return new GridCacheTtlUpdateRequest();
+
                     default:
                         assert false : "Invalid message type.";
 
@@ -274,7 +285,7 @@ public class GridTcpCommunicationMessageFactory {
            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
            60, 61, 62, 63, 64, /* 65-72 - GGFS messages. */    73, 74, 75, 76, 77, 78, 79,
-           80, 81);
+           80, 81, 82);
     }
 
     /**

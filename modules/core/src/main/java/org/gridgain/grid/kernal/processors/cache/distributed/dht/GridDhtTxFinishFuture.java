@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
@@ -12,10 +20,10 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.future.*;
@@ -26,13 +34,14 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
+import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
  *
  */
-public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFuture<GridCacheTx>
-    implements GridCacheFuture<GridCacheTx> {
+public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteTx>
+    implements GridCacheFuture<IgniteTx> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,7 +90,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param commit Commit flag.
      */
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
-        super(cctx.kernalContext(), F.<GridCacheTx>identityReducer(tx));
+        super(cctx.kernalContext(), F.<IgniteTx>identityReducer(tx));
 
         assert cctx != null;
 
@@ -155,7 +164,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof GridCacheTxRollbackException) {
+            if (e instanceof IgniteTxRollbackException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -171,7 +180,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 try {
                     get();
                 }
-                catch (GridCacheTxHeuristicException ignore) {
+                catch (IgniteTxHeuristicException ignore) {
                     // Future should complete with GridCacheTxHeuristicException.
                 }
                 catch (IgniteCheckedException err) {
@@ -189,7 +198,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteFuture<GridCacheTx> fut : futures()) {
+            for (IgniteFuture<IgniteTx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -204,7 +213,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(GridCacheTx tx, Throwable err) {
+    @Override public boolean onDone(IgniteTx tx, Throwable err) {
         if (initialized() || err != null) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
@@ -305,6 +314,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.isolation(),
                 commit,
                 tx.isInvalidate(),
+                tx.system(),
                 tx.isSystemInvalidate(),
                 tx.syncCommit(),
                 tx.syncRollback(),
@@ -321,11 +331,25 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.subjectId(),
                 tx.taskNameHash());
 
+            if (!tx.pessimistic()) {
+                int idx = 0;
+
+                for (IgniteTxEntry<K, V> e : dhtMapping.writes())
+                    req.ttl(idx++, e.ttl());
+
+                if (nearMapping != null) {
+                    idx = 0;
+
+                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
+                        req.nearTtl(idx++, e.ttl());
+                }
+            }
+
             if (tx.onePhaseCommit())
                 req.writeVersion(tx.writeVersion());
 
             try {
-                cctx.io().send(n, req);
+                cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
 
                 if (sync)
                     res = true;
@@ -362,6 +386,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.isolation(),
                     commit,
                     tx.isInvalidate(),
+                    tx.system(),
                     tx.isSystemInvalidate(),
                     tx.syncCommit(),
                     tx.syncRollback(),
@@ -378,11 +403,18 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.subjectId(),
                     tx.taskNameHash());
 
+                if (!tx.pessimistic()) {
+                    int idx = 0;
+
+                    for (IgniteTxEntry<K, V> e : nearMapping.writes())
+                        req.nearTtl(idx++, e.ttl());
+                }
+
                 if (tx.onePhaseCommit())
                     req.writeVersion(tx.writeVersion());
 
                 try {
-                    cctx.io().send(nearMapping.node(), req);
+                    cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
 
                     if (sync)
                         res = true;
@@ -411,7 +443,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<GridCacheTx> {
+    private class MiniFuture extends GridFutureAdapter<IgniteTx> {
         /** */
         private static final long serialVersionUID = 0L;
 

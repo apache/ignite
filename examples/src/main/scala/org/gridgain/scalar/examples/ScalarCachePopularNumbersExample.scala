@@ -1,19 +1,26 @@
-/* @scala.file.header */
-
 /*
- * ________               ______                    ______   _______
- * __  ___/_____________ ____  /______ _________    __/__ \  __  __ \
- * _____ \ _  ___/_  __ `/__  / _  __ `/__  ___/    ____/ /  _  / / /
- * ____/ / / /__  / /_/ / _  /  / /_/ / _  /        _  __/___/ /_/ /
- * /____/  \___/  \__,_/  /_/   \__,_/  /_/         /____/_(_)____/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.scalar.examples
 
+import javax.cache.processor.{MutableEntry, EntryProcessor}
+
 import org.apache.ignite.dataload.IgniteDataLoadCacheUpdater
-import org.apache.ignite.IgniteCheckedException
-import org.gridgain.grid.cache.GridCache
+import org.apache.ignite.{IgniteCache, IgniteCheckedException}
 
 import java.util
 import java.util.Timer
@@ -50,6 +57,9 @@ object ScalarCachePopularNumbersExample extends App {
     private final val CNT = 100000
 
     scalar("examples/config/example-cache.xml") {
+        // Clean up caches on all nodes before run.
+        cache$(CACHE_NAME).get.globalClearAll(0)
+
         println()
         println(">>> Cache popular numbers example started.")
 
@@ -88,17 +98,7 @@ object ScalarCachePopularNumbersExample extends App {
         // Reduce parallel operations since we running the whole grid locally under heavy load.
         val ldr = dataLoader$[Int, Long](CACHE_NAME, 2048)
 
-        val f = (i: Long) => i + 1
-
-        // Set custom updater to increment value for each key.
-        ldr.updater(new IgniteDataLoadCacheUpdater[Int, Long] {
-            def update(cache: GridCache[Int, Long], entries: util.Collection[Entry[Int, Long]]) = {
-                import scala.collection.JavaConversions._
-
-                for (e <- entries)
-                    cache.transform(e.getKey, f)
-            }
-        })
+        // TODO IGNITE-44: restore invoke.
 
         (0 until CNT) foreach (_ => ldr.addData(Random.nextInt(RANGE), 1L))
 

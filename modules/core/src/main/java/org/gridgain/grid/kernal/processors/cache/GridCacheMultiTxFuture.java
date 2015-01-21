@@ -1,17 +1,26 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -32,10 +41,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Transactions to wait for. */
-    private final Set<GridCacheTxEx<K, V>> txs = new GridLeanSet<>();
+    private final Set<IgniteTxEx<K, V>> txs = new GridLeanSet<>();
 
     /** */
-    private Set<GridCacheTxEx<K, V>> remainingTxs;
+    private Set<IgniteTxEx<K, V>> remainingTxs;
 
     /** Logger. */
     private IgniteLogger log;
@@ -62,21 +71,21 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
     /**
      * @return Transactions to wait for.
      */
-    public Set<GridCacheTxEx<K, V>> txs() {
+    public Set<IgniteTxEx<K, V>> txs() {
         return txs;
     }
 
     /**
      * @return Remaining transactions.
      */
-    public Set<GridCacheTxEx<K, V>> remainingTxs() {
+    public Set<IgniteTxEx<K, V>> remainingTxs() {
         return remainingTxs;
     }
 
     /**
      * @param tx Transaction to add.
      */
-    public void addTx(GridCacheTxEx<K, V> tx) {
+    public void addTx(IgniteTxEx<K, V> tx) {
         txs.add(tx);
     }
 
@@ -92,10 +101,10 @@ public final class GridCacheMultiTxFuture<K, V> extends GridFutureAdapter<Boolea
         else {
             remainingTxs = new GridConcurrentHashSet<>(txs);
 
-            for (final GridCacheTxEx<K, V> tx : txs) {
+            for (final IgniteTxEx<K, V> tx : txs) {
                 if (!tx.done()) {
-                    tx.finishFuture().listenAsync(new CI1<IgniteFuture<GridCacheTx>>() {
-                        @Override public void apply(IgniteFuture<GridCacheTx> t) {
+                    tx.finishFuture().listenAsync(new CI1<IgniteFuture<IgniteTx>>() {
+                        @Override public void apply(IgniteFuture<IgniteTx> t) {
                             remainingTxs.remove(tx);
 
                             checkRemaining();

@@ -1,24 +1,32 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.jta;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.transaction.xa.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheTxState.*;
+import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
  * Cache XA resource implementation.
@@ -34,7 +42,7 @@ public final class GridCacheXAResource implements XAResource {
     private GridCacheContext cctx;
 
     /** Cache transaction. */
-    private GridCacheTxEx cacheTx;
+    private IgniteTxEx cacheTx;
 
     /** */
     private IgniteLogger log;
@@ -46,7 +54,7 @@ public final class GridCacheXAResource implements XAResource {
      * @param cacheTx Cache jta.
      * @param cctx Cache context.
      */
-    public GridCacheXAResource(GridCacheTxEx cacheTx, GridCacheContext cctx) {
+    public GridCacheXAResource(IgniteTxEx cacheTx, GridCacheContext cctx) {
         assert cacheTx != null;
         assert cctx != null;
 
@@ -228,7 +236,7 @@ public final class GridCacheXAResource implements XAResource {
      * @return {@code true} if jta was already committed or rolled back.
      */
     public boolean isFinished() {
-        GridCacheTxState state = cacheTx.state();
+        IgniteTxState state = cacheTx.state();
 
         return state == COMMITTED || state == ROLLED_BACK;
     }

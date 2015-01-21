@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -14,6 +22,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
@@ -53,7 +62,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /** Map of owned values to set on near node. */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedVals;
+    private Map<IgniteTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedVals;
 
     /** Marshalled owned bytes. */
     @GridToStringExclude
@@ -136,7 +145,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param val Value.
      * @param valBytes Value bytes.
      */
-    public void addOwnedValue(GridCacheTxKey<K> key, GridCacheVersion ver, V val, byte[] valBytes) {
+    public void addOwnedValue(IgniteTxKey<K> key, GridCacheVersion ver, V val, byte[] valBytes) {
         if (ownedVals == null)
             ownedVals = new HashMap<>();
 
@@ -146,8 +155,8 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /**
      * @return Owned values map.
      */
-    public Map<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedValues() {
-        return ownedVals == null ? Collections.<GridCacheTxKey<K>, GridTuple3<GridCacheVersion,V,byte[]>>emptyMap() :
+    public Map<IgniteTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> ownedValues() {
+        return ownedVals == null ? Collections.<IgniteTxKey<K>, GridTuple3<GridCacheVersion,V,byte[]>>emptyMap() :
             Collections.unmodifiableMap(ownedVals);
     }
 
@@ -155,7 +164,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
      * @param key Key.
      * @return {@code True} if response has owned value for given key.
      */
-    public boolean hasOwnedValue(GridCacheTxKey<K> key) {
+    public boolean hasOwnedValue(IgniteTxKey<K> key) {
         return ownedVals != null && ownedVals.containsKey(key);
     }
 
@@ -174,7 +183,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         if (ownedVals != null && ownedValsBytes == null) {
             ownedValsBytes = new ArrayList<>(ownedVals.size());
 
-            for (Map.Entry<GridCacheTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> entry : ownedVals.entrySet()) {
+            for (Map.Entry<IgniteTxKey<K>, GridTuple3<GridCacheVersion, V, byte[]>> entry : ownedVals.entrySet()) {
                 GridTuple3<GridCacheVersion, V, byte[]> tup = entry.getValue();
 
                 boolean rawBytes = false;
@@ -204,7 +213,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
             ownedVals = new HashMap<>();
 
             for (byte[] bytes : ownedValsBytes) {
-                GridTuple4<GridCacheTxKey<K>, GridCacheVersion, byte[], Boolean> tup = ctx.marshaller().unmarshal(bytes, ldr);
+                GridTuple4<IgniteTxKey<K>, GridCacheVersion, byte[], Boolean> tup = ctx.marshaller().unmarshal(bytes, ldr);
 
                 V val = tup.get4() ? (V)tup.get3() : ctx.marshaller().<V>unmarshal(tup.get3(), ldr);
 

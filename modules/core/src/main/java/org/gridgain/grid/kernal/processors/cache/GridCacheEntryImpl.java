@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -13,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -225,13 +234,13 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean primary() {
-        return ctx.config().getCacheMode() != PARTITIONED ||
+        return ctx.config().getCacheMode() == LOCAL ||
             ctx.affinity().primary(ctx.localNode(), key, ctx.affinity().affinityTopologyVersion());
     }
 
     /** {@inheritDoc} */
     @Override public boolean backup() {
-        return ctx.config().getCacheMode() == PARTITIONED &&
+        return ctx.config().getCacheMode() != LOCAL &&
             ctx.affinity().backups(key, ctx.affinity().affinityTopologyVersion()).contains(ctx.localNode());
     }
 
@@ -267,7 +276,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -339,7 +348,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -396,7 +405,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Nullable @Override public V get() throws IgniteCheckedException {
-        return proxy.get(key, isNearEnabled(ctx) ? null : cached, true);
+        return proxy.get(key, isNearEnabled(ctx) ? null : cached, !ctx.keepPortable());
     }
 
     /** {@inheritDoc} */
@@ -473,7 +482,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
         this.ttl = ttl;
 
         // Make sure to update only user transaction.
-        GridCacheTxLocalAdapter<K, V> tx;
+        IgniteTxLocalAdapter<K, V> tx;
 
         if (ctx.isDht())
             tx = ctx.dht().near().context().tm().localTx();
@@ -502,16 +511,6 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
         return setxAsync(val, ctx.noPeekArray());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        transformAsync(transformer).get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        return proxy.transformAsync(key, transformer, isNearEnabled(ctx) ? null : cached, ttl);
     }
 
     /** {@inheritDoc} */
@@ -690,6 +689,14 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
             this.cached = cached = entryEx(true, ctx.affinity().affinityTopologyVersion());
 
         return cached.memorySize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
     }
 
     /** {@inheritDoc} */

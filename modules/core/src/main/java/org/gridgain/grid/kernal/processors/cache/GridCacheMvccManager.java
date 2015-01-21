@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -13,11 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
@@ -61,11 +69,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
     /** Locked keys. */
     @GridToStringExclude
-    private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> locked = newMap();
+    private final ConcurrentMap<IgniteTxKey<K>, GridDistributedCacheEntry<K, V>> locked = newMap();
 
     /** Near locked keys. Need separate map because mvcc manager is shared between caches. */
     @GridToStringExclude
-    private final ConcurrentMap<GridCacheTxKey<K>, GridDistributedCacheEntry<K, V>> nearLocked = newMap();
+    private final ConcurrentMap<IgniteTxKey<K>, GridDistributedCacheEntry<K, V>> nearLocked = newMap();
 
     /** Active futures mapped by version ID. */
     @GridToStringExclude
@@ -408,9 +416,10 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         // Close window in case of node is gone before the future got added to
         // the map of futures.
-        for (ClusterNode n : fut.nodes())
+        for (ClusterNode n : fut.nodes()) {
             if (cctx.discovery().node(n.id()) == null)
                 fut.onNodeLeft(n.id());
+        }
 
         // Just in case if future was complete before it was added.
         if (fut.isDone())
@@ -1023,7 +1032,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
 
         /** */
         @GridToStringInclude
-        private final Map<GridCacheTxKey<K>, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
+        private final Map<IgniteTxKey<K>, Collection<GridCacheMvccCandidate<K>>> pendingLocks =
             new ConcurrentHashMap8<>();
 
         /**
@@ -1092,8 +1101,8 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
          *
          */
         void recheck() {
-            for (Iterator<GridCacheTxKey<K>> it = pendingLocks.keySet().iterator(); it.hasNext(); ) {
-                GridCacheTxKey<K> key = it.next();
+            for (Iterator<IgniteTxKey<K>> it = pendingLocks.keySet().iterator(); it.hasNext(); ) {
+                IgniteTxKey<K> key = it.next();
 
                 GridCacheContext<K, V> cacheCtx = cctx.cacheContext(key.cacheId());
 
@@ -1155,11 +1164,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         /** {@inheritDoc} */
         @Override public String toString() {
             if (!pendingLocks.isEmpty()) {
-                Map<GridCacheVersion, GridCacheTxEx> txs = new HashMap<>(1, 1.0f);
+                Map<GridCacheVersion, IgniteTxEx> txs = new HashMap<>(1, 1.0f);
 
                 for (Collection<GridCacheMvccCandidate<K>> cands : pendingLocks.values())
                     for (GridCacheMvccCandidate<K> c : cands)
-                        txs.put(c.version(), cctx.tm().<GridCacheTxEx>tx(c.version()));
+                        txs.put(c.version(), cctx.tm().<IgniteTxEx>tx(c.version()));
 
                 return S.toString(FinishLockFuture.class, this, "txs=" + txs + ", super=" + super.toString());
             }

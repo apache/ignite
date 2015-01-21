@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.continuous;
@@ -68,6 +76,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
     /** Pending start requests. */
     private final Map<UUID, Collection<GridContinuousMessage>> pending = new HashMap<>();
+
+    /** */
+    private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
 
     /** Stopped IDs. */
     private final Collection<UUID> stopped = new HashSet<>();
@@ -206,6 +217,21 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                 unregisterRemote(routineId);
                         }
 
+                        for (Map.Entry<IgniteUuid, SyncMessageAckFuture> e : syncMsgFuts.entrySet()) {
+                            SyncMessageAckFuture fut = e.getValue();
+
+                            if (fut.nodeId().equals(nodeId)) {
+                                SyncMessageAckFuture fut0 = syncMsgFuts.remove(e.getKey());
+
+                                if (fut0 != null) {
+                                    ClusterTopologyException err = new ClusterTopologyException(
+                                        "Node left grid while sending message to: " + nodeId);
+
+                                    fut0.onDone(err);
+                                }
+                            }
+                        }
+
                         break;
 
                     default:
@@ -252,6 +278,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     case MSG_EVT_NOTIFICATION:
                         processNotification(nodeId, msg);
+
+                        break;
+
+                    case MSG_EVT_ACK:
+                        processMessageAck(msg);
 
                         break;
 
@@ -343,8 +374,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     @SuppressWarnings("TooBroadScope")
-    public IgniteFuture<UUID> startRoutine(GridContinuousHandler hnd, int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable IgnitePredicate<ClusterNode> prjPred) {
+    public IgniteFuture<UUID> startRoutine(GridContinuousHandler hnd,
+        int bufSize,
+        long interval,
+        boolean autoUnsubscribe,
+        @Nullable IgnitePredicate<ClusterNode> prjPred) {
         assert hnd != null;
         assert bufSize > 0;
         assert interval >= 0;
@@ -432,7 +466,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             // these nodes.
             for (Map.Entry<UUID, Collection<GridContinuousMessage>> e : pending.entrySet()) {
                 if (nodeIds.add(e.getKey()))
-                    e.getValue().add(new GridContinuousMessage(MSG_START_REQ, routineId, reqData));
+                    e.getValue().add(new GridContinuousMessage(MSG_START_REQ, routineId, null, reqData));
             }
 
             // Register routine locally.
@@ -484,7 +518,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             // Send start requests.
             try {
-                GridContinuousMessage req = new GridContinuousMessage(MSG_START_REQ, routineId, reqData);
+                GridContinuousMessage req = new GridContinuousMessage(MSG_START_REQ, routineId, null, reqData);
 
                 sendWithRetries(nodes, req, null);
             }
@@ -590,13 +624,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 // Register acknowledge timeout (timeout object will be removed when
                 // future is completed).
                 fut.addTimeoutObject(new StopTimeoutObject(ackTimeout, routineId,
-                    new GridContinuousMessage(MSG_STOP_REQ, routineId, null)));
+                    new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null)));
 
                 // Send stop requests.
                 try {
                     for (ClusterNode node : nodes) {
                         try {
-                            sendWithRetries(node.id(), new GridContinuousMessage(MSG_STOP_REQ, routineId, null), null);
+                            sendWithRetries(node.id(),
+                                new GridContinuousMessage(MSG_STOP_REQ, routineId, null, null),
+                                null);
                         }
                         catch (ClusterTopologyException ignored) {
                             U.warn(log, "Failed to send stop request (node left topology): " + node.id());
@@ -624,11 +660,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param nodeId ID of the node that started routine.
      * @param routineId Routine ID.
      * @param obj Notification object.
-     * @param orderedTopic Topic for ordered notifications.
-     *      If {@code null}, non-ordered message will be sent.
+     * @param orderedTopic Topic for ordered notifications. If {@code null}, non-ordered message will be sent.
+     * @param sync If {@code true} then waits for event acknowledgment.
      * @throws IgniteCheckedException In case of error.
      */
-    public void addNotification(UUID nodeId, UUID routineId, @Nullable Object obj, @Nullable Object orderedTopic)
+    public void addNotification(UUID nodeId,
+        UUID routineId,
+        @Nullable Object obj,
+        @Nullable Object orderedTopic,
+        boolean sync)
         throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
@@ -638,29 +678,55 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         RemoteRoutineInfo info = rmtInfos.get(routineId);
 
         if (info != null) {
-            Collection<Object> toSnd = info.add(obj);
+            assert info.interval == 0 || !sync;
 
-            if (toSnd != null)
-                sendNotification(nodeId, routineId, toSnd, orderedTopic);
+            if (sync) {
+                SyncMessageAckFuture fut = new SyncMessageAckFuture(ctx, nodeId);
+
+                IgniteUuid futId = IgniteUuid.randomUuid();
+
+                syncMsgFuts.put(futId, fut);
+
+                try {
+                    sendNotification(nodeId, routineId, futId, F.asList(obj), orderedTopic);
+                }
+                catch (IgniteCheckedException e) {
+                    syncMsgFuts.remove(futId);
+
+                    throw e;
+                }
+
+                fut.get();
+            }
+            else {
+                Collection<Object> toSnd = info.add(obj);
+
+                if (toSnd != null)
+                    sendNotification(nodeId, routineId, null, toSnd, orderedTopic);
+            }
         }
     }
 
     /**
      * @param nodeId Node ID.
      * @param routineId Routine ID.
+     * @param futId Future ID.
      * @param toSnd Notification object to send.
      * @param orderedTopic Topic for ordered notifications.
      *      If {@code null}, non-ordered message will be sent.
      * @throws IgniteCheckedException In case of error.
      */
-    private void sendNotification(UUID nodeId, UUID routineId, Collection<Object> toSnd,
+    private void sendNotification(UUID nodeId,
+        UUID routineId,
+        @Nullable IgniteUuid futId,
+        Collection<Object> toSnd,
         @Nullable Object orderedTopic) throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert toSnd != null;
         assert !toSnd.isEmpty();
 
-        sendWithRetries(nodeId, new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, toSnd), orderedTopic);
+        sendWithRetries(nodeId, new GridContinuousMessage(MSG_EVT_NOTIFICATION, routineId, futId, toSnd), orderedTopic);
     }
 
     /**
@@ -722,7 +788,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         try {
-            sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, err), null);
+            sendWithRetries(nodeId, new GridContinuousMessage(MSG_START_ACK, routineId, null, err), null);
         }
         catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
@@ -783,7 +849,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         unregisterRemote(routineId);
 
         try {
-            sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null), null);
+            sendWithRetries(nodeId, new GridContinuousMessage(MSG_STOP_ACK, routineId, null, null), null);
         }
         catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
@@ -815,19 +881,45 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param nodeId Sender ID.
-     * @param ntf Notification.
+     * @param msg Message.
      */
-    private void processNotification(UUID nodeId, GridContinuousMessage ntf) {
+    private void processMessageAck(GridContinuousMessage msg) {
+        assert msg.futureId() != null;
+
+        SyncMessageAckFuture fut = syncMsgFuts.remove(msg.futureId());
+
+        if (fut != null)
+            fut.onDone();
+    }
+
+    /**
+     * @param nodeId Sender ID.
+     * @param msg Message.
+     */
+    private void processNotification(UUID nodeId, GridContinuousMessage msg) {
         assert nodeId != null;
-        assert ntf != null;
+        assert msg != null;
 
-        UUID routineId = ntf.routineId();
+        UUID routineId = msg.routineId();
 
-        LocalRoutineInfo routine = locInfos.get(routineId);
+        try {
+            LocalRoutineInfo routine = locInfos.get(routineId);
 
-        if (routine != null)
-            routine.hnd.notifyCallback(nodeId, routineId, (Collection<?>)ntf.data(), ctx);
+            if (routine != null)
+                routine.hnd.notifyCallback(nodeId, routineId, (Collection<?>)msg.data(), ctx);
+        }
+        finally {
+            if (msg.futureId() != null) {
+                try {
+                    sendWithRetries(nodeId,
+                        new GridContinuousMessage(MSG_EVT_ACK, null, msg.futureId(), null),
+                        null);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Failed to send event acknowledgment to node: " + nodeId, e);
+                }
+            }
+        }
     }
 
     /**
@@ -871,8 +963,13 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Whether listener was actually registered.
      * @throws IgniteCheckedException In case of error.
      */
-    private boolean registerHandler(final UUID nodeId, final UUID routineId, final GridContinuousHandler hnd,
-        int bufSize, final long interval, boolean autoUnsubscribe, boolean loc) throws IgniteCheckedException {
+    private boolean registerHandler(final UUID nodeId,
+        final UUID routineId,
+        final GridContinuousHandler hnd,
+        int bufSize,
+        final long interval,
+        boolean autoUnsubscribe,
+        boolean loc) throws IgniteCheckedException {
         assert nodeId != null;
         assert routineId != null;
         assert hnd != null;
@@ -915,7 +1012,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                             if (toSnd != null) {
                                 try {
-                                    sendNotification(nodeId, routineId, toSnd, hnd.orderedTopic());
+                                    sendNotification(nodeId, routineId, null, toSnd, hnd.orderedTopic());
                                 }
                                 catch (ClusterTopologyException ignored) {
                                     if (log.isDebugEnabled())
@@ -1633,6 +1730,46 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(StopFuture.class, this);
+        }
+    }
+
+    /**
+     * Synchronous message acknowledgement future.
+     */
+    private static class SyncMessageAckFuture extends GridFutureAdapter<Object> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private UUID nodeId;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public SyncMessageAckFuture() {
+            // No-op.
+        }
+
+        /**
+         * @param ctx Kernal context.
+         * @param nodeId Master node ID.
+         */
+        SyncMessageAckFuture(GridKernalContext ctx, UUID nodeId) {
+            super(ctx);
+
+            this.nodeId = nodeId;
+        }
+
+        /**
+         * @return Master node ID.
+         */
+        UUID nodeId() {
+            return nodeId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SyncMessageAckFuture.class, this);
         }
     }
 

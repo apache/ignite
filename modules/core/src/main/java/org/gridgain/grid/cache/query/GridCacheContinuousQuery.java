@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache.query;
@@ -136,13 +144,13 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
      * can get deadlocks.
      *
      * @param cb Local callback.
-     * @deprecated Deprecated in favor of {@link #localCallback(org.apache.ignite.lang.IgniteBiPredicate)} method.
+     * @deprecated Deprecated in favor of {@link #localCallback(IgniteBiPredicate)} method.
      */
     @Deprecated
     public void callback(@Nullable IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb);
 
     /**
-     * Gets local callback. See {@link #callback(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets local callback. See {@link #callback(IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      * @deprecated Deprecated in favor of {@link #localCallback()} method.
@@ -167,7 +175,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void filter(@Nullable IgniteBiPredicate<K, V> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #filter(IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      * @deprecated Deprecated in favor of {@link #remoteFilter()} method.
@@ -197,7 +205,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void localCallback(IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb);
 
     /**
-     * Gets local callback. See {@link #callback(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets local callback. See {@link #callback(IgniteBiPredicate)} for more information.
      *
      * @return Local callback.
      */
@@ -218,7 +226,7 @@ public interface GridCacheContinuousQuery<K, V> extends AutoCloseable {
     public void remoteFilter(@Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> filter);
 
     /**
-     * Gets key-value filter. See {@link #filter(org.apache.ignite.lang.IgniteBiPredicate)} for more information.
+     * Gets key-value filter. See {@link #filter(IgniteBiPredicate)} for more information.
      *
      * @return Key-value filter.
      */

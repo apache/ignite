@@ -1,20 +1,29 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
@@ -72,6 +81,9 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     @GridDirectVersion(3)
     private BitSet preloadKeys;
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -80,6 +92,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param nearXidVer Near transaction ID.
      * @param threadId Thread ID.
@@ -97,6 +110,9 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key.
      * @param partLock {@code True} if partition lock.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
+     * @param accessTtl TTL for read operation.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -109,19 +125,33 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         long topVer,
         boolean isInTx,
         boolean isRead,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int dhtCnt,
         int nearCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long accessTtl
     ) {
-        super(cacheId, nodeId, nearXidVer, threadId, futId, lockVer, isInTx, isRead, isolation, isInvalidate, timeout,
-            dhtCnt == 0 ? nearCnt : dhtCnt, txSize, grpLockKey, partLock);
+        super(cacheId,
+            nodeId,
+            nearXidVer,
+            threadId,
+            futId,
+            lockVer,
+            isInTx,
+            isRead,
+            isolation,
+            isInvalidate,
+            timeout,
+            dhtCnt == 0 ? nearCnt : dhtCnt,
+            txSize,
+            grpLockKey,
+            partLock);
 
         this.topVer = topVer;
 
@@ -134,6 +164,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         this.miniId = miniId;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.accessTtl = accessTtl;
     }
 
     /** {@inheritDoc} */
@@ -215,7 +246,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     public void addDhtKey(
         K key,
         byte[] keyBytes,
-        GridCacheTxEntry<K, V> writeEntry,
+        IgniteTxEntry<K, V> writeEntry,
         @Nullable GridCacheVersion drVer,
         boolean invalidateEntry,
         GridCacheContext<K, V> ctx
@@ -238,6 +269,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     }
 
     /**
+     * @param idx Key index.
      * @return {@code True} if need to preload key with given index.
      */
     public boolean needPreloadKey(int idx) {
@@ -279,6 +311,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      */
     public IgniteUuid miniId() {
         return miniId;
+    }
+
+    /**
+     * @return TTL for read operation.
+     */
+    public long accessTtl() {
+        return accessTtl;
     }
 
     /** {@inheritDoc}
@@ -329,6 +368,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
         _clone.preloadKeys = preloadKeys;
+        _clone.accessTtl = accessTtl;
     }
 
     /** {@inheritDoc} */
@@ -412,6 +452,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
             case 31:
                 if (!commState.putBitSet(preloadKeys))
+                    return false;
+
+                commState.idx++;
+
+            case 32:
+                if (!commState.putLong(accessTtl))
                     return false;
 
                 commState.idx++;
@@ -525,6 +571,13 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
 
                 commState.idx++;
 
+            case 32:
+                if (buf.remaining() < 8)
+                    return false;
+
+                accessTtl = commState.getLong();
+
+                commState.idx++;
         }
 
         return true;

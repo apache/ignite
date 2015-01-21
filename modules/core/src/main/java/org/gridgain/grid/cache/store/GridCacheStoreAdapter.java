@@ -1,16 +1,25 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.cache.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -18,10 +27,10 @@ import java.util.*;
 
 /**
  * Cache storage convenience adapter. It provides default implementation for bulk operations, such
- * as {@link #loadAll(GridCacheTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
- * {@link #putAll(GridCacheTx, Map)}, and {@link #removeAll(GridCacheTx, Collection)}
- * by sequentially calling corresponding {@link #load(GridCacheTx, Object)},
- * {@link #put(GridCacheTx, Object, Object)}, and {@link #remove(GridCacheTx, Object)}
+ * as {@link #loadAll(IgniteTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
+ * {@link #putAll(IgniteTx, Map)}, and {@link #removeAll(IgniteTx, Collection)}
+ * by sequentially calling corresponding {@link #load(IgniteTx, Object)},
+ * {@link #put(IgniteTx, Object, Object)}, and {@link #remove(IgniteTx, Object)}
  * operations. Use this adapter whenever such behaviour is acceptable. However in many cases
  * it maybe more preferable to take advantage of database batch update functionality, and therefore
  * default adapter implementation may not be the best option.
@@ -46,7 +55,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable GridCacheTx tx, Collection<? extends K> keys,
+    @Override public void loadAll(@Nullable IgniteTx tx, Collection<? extends K> keys,
         IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
         assert keys != null;
 
@@ -59,7 +68,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(GridCacheTx tx, Map<? extends K, ? extends V> map)
+    @Override public void putAll(IgniteTx tx, Map<? extends K, ? extends V> map)
         throws IgniteCheckedException {
         assert map != null;
 
@@ -68,7 +77,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(GridCacheTx tx, Collection<? extends K> keys)
+    @Override public void removeAll(IgniteTx tx, Collection<? extends K> keys)
         throws IgniteCheckedException {
         assert keys != null;
 
@@ -85,7 +94,7 @@ public abstract class GridCacheStoreAdapter<K, V> implements GridCacheStore<K, V
      * @param commit {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public void txEnd(GridCacheTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         // No-op.
     }
 }

@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
@@ -20,6 +28,7 @@ import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.event.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -36,10 +45,13 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Event type enum values. */
+    private static final EventType[] EVT_TYPE_VALS = EventType.values();
+
     /** Cache context. */
     @SuppressWarnings("TransientFieldNotInitialized")
     @GridToStringExclude
-    private final transient GridCacheContext ctx;
+    private final transient GridCacheContext<K, V> ctx;
 
     /** Cache entry. */
     @SuppressWarnings("TransientFieldNotInitialized")
@@ -76,6 +88,9 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     @GridToStringExclude
     private GridDeploymentInfo depInfo;
 
+    /** */
+    private EventType evtType;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -92,12 +107,20 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
      * @param newValBytes Value bytes.
      * @param oldVal Old value.
      * @param oldValBytes Old value bytes.
+     * @param evtType Event type.
      */
-    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx, GridCacheEntry<K, V> impl, K key, @Nullable V newVal,
-        @Nullable GridCacheValueBytes newValBytes, @Nullable V oldVal, @Nullable GridCacheValueBytes oldValBytes) {
+    GridCacheContinuousQueryEntry(GridCacheContext<K, V> ctx,
+        GridCacheEntry<K, V> impl,
+        K key,
+        @Nullable V newVal,
+        @Nullable GridCacheValueBytes newValBytes,
+        @Nullable V oldVal,
+        @Nullable GridCacheValueBytes oldValBytes,
+        EventType evtType) {
         assert ctx != null;
         assert impl != null;
         assert key != null;
+        assert evtType != null;
 
         this.ctx = ctx;
         this.impl = impl;
@@ -106,6 +129,42 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         this.newValBytes = newValBytes;
         this.oldVal = oldVal;
         this.oldValBytes = oldValBytes;
+        this.evtType = evtType;
+    }
+
+    /**
+     * @return Cache entry.
+     */
+    GridCacheEntry<K, V> entry() {
+        return impl;
+    }
+
+    /**
+     * @return Cache context.
+     */
+    GridCacheContext<K, V> context() {
+        return ctx;
+    }
+
+    /**
+     * @return New value bytes.
+     */
+    GridCacheValueBytes newValueBytes() {
+        return newValBytes;
+    }
+
+    /**
+     * @return {@code True} if old value is set.
+     */
+    boolean hasOldValue() {
+        return oldVal != null || (oldValBytes != null && !oldValBytes.isNull());
+    }
+
+    /**
+     * @return {@code True} if entry expired.
+     */
+    public EventType eventType() {
+        return evtType;
     }
 
     /**
@@ -395,18 +454,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        ctx.denyOnFlag(READ);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        ctx.denyOnFlag(READ);
-
-        return new GridFinishedFuture<>(ctx.kernalContext(), false);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         assert impl != null;
 
@@ -640,6 +687,14 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         boolean b = keyBytes != null;
 
@@ -672,6 +727,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             out.writeObject(newVal);
             out.writeObject(oldVal);
         }
+
+        out.writeByte((byte)evtType.ordinal());
     }
 
     /** {@inheritDoc} */
@@ -696,6 +753,8 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
             newVal = (V)in.readObject();
             oldVal = (V)in.readObject();
         }
+
+        evtType = EVT_TYPE_VALS[in.readByte()];
     }
 
     /** {@inheritDoc} */

@@ -1,25 +1,34 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -162,7 +171,7 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
                 ignite = restarts ? grids.getAndSet(idx, null) : grid(idx);
             }
 
-            GridCache <String, TestObject> cache = ignite.cache(null);
+            IgniteCache<String, TestObject> cache = ignite.jcache(null);
 
             assertNotNull(cache);
 
@@ -173,11 +182,11 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
 
             while (true) {
                 try {
-                    cache.transform("key", new Transformer());
+                    cache.invoke("key", new Processor());
 
                     break;
                 }
-                catch (GridCachePartialUpdateException ignored) {
+                catch (CachePartialUpdateException ignored) {
                     // Need to re-check if update actually succeeded.
                     TestObject updated = cache.get("key");
 
@@ -210,12 +219,16 @@ public class GridCacheIncrementTransformTest extends GridCommonAbstractTest {
     }
 
     /** */
-    private static class Transformer implements C1<TestObject, TestObject> {
+    private static class Processor implements EntryProcessor<String, TestObject, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public TestObject apply(TestObject obj) {
+        @Override public Void process(MutableEntry<String, TestObject> e, Object... args) {
+            TestObject obj = e.getValue();
+
             assert obj != null;
 
-            return new TestObject(obj.val + 1);
+            e.setValue(new TestObject(obj.val + 1));
+
+            return null;
         }
     }
 }

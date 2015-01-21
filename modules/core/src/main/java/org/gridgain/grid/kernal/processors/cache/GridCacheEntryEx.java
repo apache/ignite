@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -13,10 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -92,7 +103,7 @@ public interface GridCacheEntryEx<K, V> {
     /**
      * @return Transaction key.
      */
-    public GridCacheTxKey<K> txKey();
+    public IgniteTxKey<K> txKey();
 
     /**
      * @return Value.
@@ -269,16 +280,17 @@ public interface GridCacheEntryEx<K, V> {
      *        temporary object can used for filter evaluation or transform closure execution and
      *        should not be returned to user.
      * @param subjId Subject ID initiated this read.
+     * @param transformClo Transform closure to record event.
      * @param taskName Task name.
      * @param filter Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
-     * @param transformClo Transform closure to record event.
+     * @param expiryPlc Expiry policy.
      * @return Cached value.
      * @throws IgniteCheckedException If loading value failed.
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
-    @Nullable public V innerGet(@Nullable GridCacheTxEx<K, V> tx,
+    @Nullable public V innerGet(@Nullable IgniteTxEx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -289,7 +301,8 @@ public interface GridCacheEntryEx<K, V> {
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException;
 
     /**
@@ -327,7 +340,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult<V> innerSet(
-        @Nullable GridCacheTxEx<K, V> tx,
+        @Nullable IgniteTxEx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         @Nullable V val,
@@ -366,7 +379,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult<V> innerRemove(
-        @Nullable GridCacheTxEx<K, V> tx,
+        @Nullable IgniteTxEx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         boolean writeThrough,
@@ -388,9 +401,10 @@ public interface GridCacheEntryEx<K, V> {
      * @param op Update operation.
      * @param val Value. Type depends on operation.
      * @param valBytes Value bytes. Can be non-null only if operation is UPDATE.
+     * @param invokeArgs Optional arguments for entry processor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy.
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param primary If update is performed on primary node (the one which assigns version).
@@ -420,9 +434,10 @@ public interface GridCacheEntryEx<K, V> {
         GridCacheOperation op,
         @Nullable Object val,
         @Nullable byte[] valBytes,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         boolean primary,
@@ -444,26 +459,28 @@ public interface GridCacheEntryEx<K, V> {
      * @param ver Cache version.
      * @param op Operation.
      * @param writeObj Value. Type depends on operation.
+     * @param invokeArgs Optional arguments for EntryProcessor.
      * @param writeThrough Write through flag.
      * @param retval Return value flag.
-     * @param ttl Time to live.
+     * @param expiryPlc Expiry policy..
      * @param evt Event flag.
      * @param metrics Metrics update flag.
      * @param filter Optional filter to check.
      * @param intercept If {@code true} then calls cache interceptor.
      * @param subjId Subject ID initiated this update.
      * @param taskName Task name.
-     * @return Tuple containing success flag and old value.
+     * @return Tuple containing success flag, old value and result for invoke operation.
      * @throws IgniteCheckedException If update failed.
      * @throws GridCacheEntryRemovedException If entry is obsolete.
      */
-    public IgniteBiTuple<Boolean, V> innerUpdateLocal(
+    public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(
         GridCacheVersion ver,
         GridCacheOperation op,
         @Nullable Object writeObj,
+        @Nullable Object[] invokeArgs,
         boolean writeThrough,
         boolean retval,
-        long ttl,
+        @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
@@ -496,7 +513,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException,
+    public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException,
         GridDistributedLockCancelledException;
 
     /**
@@ -505,7 +522,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param tx Cache transaction.
      * @throws GridCacheEntryRemovedException If this entry has been removed from cache.
      */
-    public abstract void txUnlock(GridCacheTxEx<K, V> tx) throws GridCacheEntryRemovedException;
+    public abstract void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException;
 
     /**
      * @param ver Removes lock.
@@ -605,7 +622,7 @@ public interface GridCacheEntryEx<K, V> {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable GridCacheTxEx<K, V> tx)
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
 
     /**
@@ -868,6 +885,12 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     public long ttl() throws GridCacheEntryRemovedException;
+
+    /**
+     * @param ver Version.
+     * @param ttl Time to live.
+     */
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
 
     /**
      * @return Value.

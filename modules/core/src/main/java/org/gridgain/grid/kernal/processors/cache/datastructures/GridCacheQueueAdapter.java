@@ -1,18 +1,24 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -21,6 +27,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -50,7 +57,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected final GridCacheContext<?, ?> cctx;
 
     /** Cache. */
-    protected final GridCacheAdapter cache;
+    protected final IgniteCache cache;
 
     /** Queue name. */
     protected final String queueName;
@@ -91,7 +98,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         cap = hdr.capacity();
         collocated = hdr.collocated();
         queueKey = new GridCacheQueueHeaderKey(queueName);
-        cache = cctx.cache();
+        cache = cctx.kernalContext().cache().jcache(cctx.name());
 
         log = cctx.logger(getClass());
 
@@ -130,34 +137,24 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
-        try {
-            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-            checkRemoved(hdr);
+        checkRemoved(hdr);
 
-            return hdr.size();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return hdr.size();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public T peek() throws IgniteException {
-        try {
-            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-            checkRemoved(hdr);
+        checkRemoved(hdr);
 
-            if (hdr.empty())
-                return null;
+        if (hdr.empty())
+            return null;
 
-            return (T)cache.get(itemKey(hdr.head()));
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        return (T)cache.get(itemKey(hdr.head()));
     }
 
     /** {@inheritDoc} */
@@ -333,8 +330,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
         try {
-            IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.transformAndCompute(queueKey,
-                new ClearClosure(id));
+            IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id));
 
             if (t == null)
                 return;
@@ -385,9 +381,16 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    static void removeKeys(GridCacheProjection cache, IgniteUuid id, String name, boolean collocated, long startIdx,
-        long endIdx, int batchSize) throws IgniteCheckedException {
-        Collection<GridCacheQueueItemKey> keys = new ArrayList<>(batchSize > 0 ? batchSize : 10);
+    static void removeKeys(IgniteCache cache,
+        IgniteUuid id,
+        String name,
+        boolean collocated,
+        long startIdx,
+        long endIdx,
+        int batchSize)
+        throws IgniteCheckedException
+    {
+        Set<GridCacheQueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
         for (long idx = startIdx; idx < endIdx; idx++) {
             keys.add(itemKey(id, name, collocated, idx));
@@ -576,24 +579,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             if (next == null)
                 throw new NoSuchElementException();
 
-            try {
-                cur = next;
-                curIdx = idx;
+            cur = next;
+            curIdx = idx;
 
-                idx++;
+            idx++;
 
-                if (rmvIdxs != null) {
-                    while (F.contains(rmvIdxs, idx) && idx < endIdx)
-                        idx++;
-                }
-
-                next = idx < endIdx ? (T)cache.get(itemKey(idx)) : null;
-
-                return cur;
+            if (rmvIdxs != null) {
+                while (F.contains(rmvIdxs, idx) && idx < endIdx)
+                    idx++;
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
+
+            next = idx < endIdx ? (T)cache.get(itemKey(idx)) : null;
+
+            return cur;
         }
 
         /** {@inheritDoc} */
@@ -646,9 +644,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /**
      */
-    protected static class ClearClosure implements IgniteClosure<GridCacheQueueHeader,
-            IgniteBiTuple<GridCacheQueueHeader, IgniteBiTuple<Long, Long>>>,
-        Externalizable {
+    protected static class ClearProcessor implements
+        EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, IgniteBiTuple<Long, Long>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -658,30 +655,39 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * Required by {@link Externalizable}.
          */
-        public ClearClosure() {
+        public ClearProcessor() {
             // No-op.
         }
 
         /**
          * @param id Queue unique ID.
          */
-        public ClearClosure(IgniteUuid id) {
+        public ClearProcessor(IgniteUuid id) {
             this.id = id;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<GridCacheQueueHeader, IgniteBiTuple<Long, Long>> apply(GridCacheQueueHeader hdr) {
+        @Override public IgniteBiTuple<Long, Long> process(
+            MutableEntry<GridCacheQueueHeaderKey, GridCacheQueueHeader> e, Object... args) {
+            GridCacheQueueHeader hdr = e.getValue();
+
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd)
-                return new IgniteBiTuple<>(hdr, new IgniteBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX));
+                return new IgniteBiTuple<>(QUEUE_REMOVED_IDX, QUEUE_REMOVED_IDX);
             else if (hdr.empty())
-                return new IgniteBiTuple<>(hdr, null);
+                return null;
 
-            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                hdr.tail(), hdr.tail(), null);
+            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                hdr.capacity(),
+                hdr.collocated(),
+                hdr.tail(),
+                hdr.tail(),
+                null);
 
-            return new IgniteBiTuple<>(newHdr, new IgniteBiTuple<>(hdr.head(), hdr.tail()));
+            e.setValue(newHdr);
+
+            return new IgniteBiTuple<>(hdr.head(), hdr.tail());
         }
 
         /** {@inheritDoc} */
@@ -697,8 +703,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /**
      */
-    protected static class PollClosure implements
-        IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+    protected static class PollProcessor implements
+        EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -708,31 +714,40 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * Required by {@link Externalizable}.
          */
-        public PollClosure() {
+        public PollProcessor() {
             // No-op.
         }
 
         /**
          * @param id Queue unique ID.
          */
-        public PollClosure(IgniteUuid id) {
+        public PollProcessor(IgniteUuid id) {
             this.id = id;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
+        @Override public Long process(
+            MutableEntry<GridCacheQueueHeaderKey, GridCacheQueueHeader> e, Object... args) {
+            GridCacheQueueHeader hdr = e.getValue();
+
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd || hdr.empty())
-                return new IgniteBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
+                return rmvd ? QUEUE_REMOVED_IDX : null;
 
             Set<Long> rmvdIdxs = hdr.removedIndexes();
 
             if (rmvdIdxs == null) {
-                GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                    hdr.head() + 1, hdr.tail(), rmvdIdxs);
+                GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                    hdr.capacity(),
+                    hdr.collocated(),
+                    hdr.head() + 1,
+                    hdr.tail(),
+                    rmvdIdxs);
 
-                return new IgniteBiTuple<>(newHdr, hdr.head());
+                e.setValue(newHdr);
+
+                return hdr.head();
             }
 
             long next = hdr.head() + 1;
@@ -741,19 +756,31 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
             do {
                 if (!rmvdIdxs.remove(next)) {
-                    GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                        next + 1, hdr.tail(), rmvdIdxs.isEmpty() ? null : rmvdIdxs);
+                    GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                        hdr.capacity(),
+                        hdr.collocated(),
+                        next + 1,
+                        hdr.tail(),
+                        rmvdIdxs.isEmpty() ? null : rmvdIdxs);
 
-                    return new IgniteBiTuple<>(newHdr, next);
+                    e.setValue(newHdr);
+
+                    return next;
                 }
 
                 next++;
             } while (next != hdr.tail());
 
-            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                next, hdr.tail(), rmvdIdxs.isEmpty() ? null : rmvdIdxs);
+            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                hdr.capacity(),
+                hdr.collocated(),
+                next,
+                hdr.tail(),
+                rmvdIdxs.isEmpty() ? null : rmvdIdxs);
 
-            return new IgniteBiTuple<>(newHdr, null);
+            e.setValue(newHdr);
+
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -769,8 +796,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /**
      */
-    protected static class AddClosure implements
-        IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+    protected static class AddProcessor implements
+        EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -783,7 +810,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * Required by {@link Externalizable}.
          */
-        public AddClosure() {
+        public AddProcessor() {
             // No-op.
         }
 
@@ -791,22 +818,30 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          * @param id Queue unique ID.
          * @param size Number of elements to add.
          */
-        public AddClosure(IgniteUuid id, int size) {
+        public AddProcessor(IgniteUuid id, int size) {
             this.id = id;
             this.size = size;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
+        @Override public Long process(MutableEntry<GridCacheQueueHeaderKey, GridCacheQueueHeader> e, Object... args) {
+            GridCacheQueueHeader hdr = e.getValue();
+
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd || !spaceAvailable(hdr, size))
-                return new IgniteBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
+                return rmvd ? QUEUE_REMOVED_IDX : null;
 
-            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                hdr.head(), hdr.tail() + size, hdr.removedIndexes());
+            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                hdr.capacity(),
+                hdr.collocated(),
+                hdr.head(),
+                hdr.tail() + size,
+                hdr.removedIndexes());
 
-            return new IgniteBiTuple<>(newHdr, hdr.tail());
+            e.setValue(newHdr);
+
+            return hdr.tail();
         }
 
         /**
@@ -833,8 +868,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
 
     /**
      */
-    protected static class RemoveClosure implements
-        IgniteClosure<GridCacheQueueHeader, IgniteBiTuple<GridCacheQueueHeader, Long>>, Externalizable {
+    protected static class RemoveProcessor implements
+        EntryProcessor<GridCacheQueueHeaderKey, GridCacheQueueHeader, Long>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -847,7 +882,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * Required by {@link Externalizable}.
          */
-        public RemoveClosure() {
+        public RemoveProcessor() {
             // No-op.
         }
 
@@ -855,17 +890,19 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
          * @param id Queue UUID.
          * @param idx Index of item to be removed.
          */
-        public RemoveClosure(IgniteUuid id, Long idx) {
+        public RemoveProcessor(IgniteUuid id, Long idx) {
             this.id = id;
             this.idx = idx;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<GridCacheQueueHeader, Long> apply(GridCacheQueueHeader hdr) {
+        @Override public Long process(MutableEntry<GridCacheQueueHeaderKey, GridCacheQueueHeader> e, Object... args) {
+            GridCacheQueueHeader hdr = e.getValue();
+
             boolean rmvd = queueRemoved(hdr, id);
 
             if (rmvd || hdr.empty() || idx < hdr.head())
-                return new IgniteBiTuple<>(hdr, rmvd ? QUEUE_REMOVED_IDX : null);
+                return rmvd ? QUEUE_REMOVED_IDX : null;
 
             if (idx == hdr.head()) {
                 Set<Long> rmvIdxs = hdr.removedIndexes();
@@ -873,10 +910,16 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 long head = hdr.head() + 1;
 
                 if (!F.contains(rmvIdxs, head)) {
-                    GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                        head, hdr.tail(), hdr.removedIndexes());
+                    GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                        hdr.capacity(),
+                        hdr.collocated(),
+                        head,
+                        hdr.tail(),
+                        hdr.removedIndexes());
 
-                    return new IgniteBiTuple<>(newHdr, idx);
+                    e.setValue(newHdr);
+
+                    return idx;
                 }
 
                 rmvIdxs = new HashSet<>(rmvIdxs);
@@ -884,10 +927,16 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                 while (rmvIdxs.remove(head))
                     head++;
 
-                GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                    head, hdr.tail(), rmvIdxs.isEmpty() ? null : rmvIdxs);
+                GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                    hdr.capacity(),
+                    hdr.collocated(),
+                    head,
+                    hdr.tail(),
+                    rmvIdxs.isEmpty() ? null : rmvIdxs);
 
-                return new IgniteBiTuple<>(newHdr, null);
+                e.setValue(newHdr);
+
+                return null;
             }
 
             Set<Long> rmvIdxs = hdr.removedIndexes();
@@ -907,10 +956,16 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
                     idx = null;
             }
 
-            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(), hdr.capacity(), hdr.collocated(),
-                hdr.head(), hdr.tail(), rmvIdxs);
+            GridCacheQueueHeader newHdr = new GridCacheQueueHeader(hdr.id(),
+                hdr.capacity(),
+                hdr.collocated(),
+                hdr.head(),
+                hdr.tail(),
+                rmvIdxs);
 
-            return new IgniteBiTuple<>(newHdr, idx);
+            e.setValue(newHdr);
+
+            return idx;
         }
 
         /** {@inheritDoc} */

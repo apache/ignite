@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal;
@@ -654,6 +662,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 new GridKernalContextImpl(log, this, cfg, gw, utilityCachePool, ENT);
 
             nodeLoc = new ClusterNodeLocalMapImpl(ctx);
+
+            U.onGridStart();
 
             // Set context into rich adapter.
             setKernalContext(ctx);
@@ -1691,10 +1701,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             // Font name "Small Slant"
             if (log.isQuiet()) {
                 U.quiet(false,
-                    "  _____     _     _______      _         ",
-                    " / ___/____(_)___/ / ___/___ _(_)___     ",
-                    "/ (_ // __/ // _  / (_ // _ `/ // _ \\   ",
-                    "\\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/",
+                    "   __________  ________________ ",
+                    "  /  _/ ___/ |/ /  _/_  __/ __/ ",
+                    " _/ // (_ /    // /  / / / _/   ",
+                    "/___/\\___/_/|_/___/ /_/ /___/  ",
                     " ",
                     ver,
                     COPYRIGHT,
@@ -1711,10 +1721,10 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             if (log.isInfoEnabled()) {
                 log.info(NL + NL +
-                    ">>>   _____     _     _______      _         " + NL +
-                    ">>>  / ___/____(_)___/ / ___/___ _(_)___     " + NL +
-                    ">>> / (_ // __/ // _  / (_ // _ `/ // _ \\   " + NL +
-                    ">>> \\___//_/ /_/ \\_,_/\\___/ \\_,_/_//_//_/" + NL +
+                    ">>>    __________  ________________  " + NL +
+                    ">>>   /  _/ ___/ |/ /  _/_  __/ __/  " + NL +
+                    ">>>  _/ // (_ /    // /  / / / _/    " + NL +
+                    ">>> /___/\\___/_/|_/___/ /_/ /___/   " + NL +
                     ">>> " + NL +
                     ">>> " + ver + NL +
                     ">>> " + COPYRIGHT + NL
@@ -2096,6 +2106,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     }
                 }
             }
+
+            U.onGridStop();
         }
         else {
             // Proper notification.
@@ -2929,7 +2941,20 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> jcache(@Nullable String name) {
-        throw new UnsupportedOperationException();
+        guard();
+
+        try {
+            if (!dbUsageRegistered) {
+                GridLicenseUseRegistry.onUsage(DATA_GRID, getClass());
+
+                dbUsageRegistered = true;
+            }
+
+            return ctx.cache().publicJCache(name);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */

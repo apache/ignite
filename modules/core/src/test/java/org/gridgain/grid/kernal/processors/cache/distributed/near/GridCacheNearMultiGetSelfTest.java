@@ -1,18 +1,26 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.transactions.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -26,8 +34,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Test getting the same value twice within the same transaction.
@@ -210,7 +218,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      * @param put If {@code true}, then value will be pre-stored in cache.
      * @throws Exception If failed.
      */
-    private void checkDoubleGet(GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation, boolean put)
+    private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
         GridCache<Integer, String> cache = grid(0).cache(null);
 
@@ -221,7 +229,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         if (put)
             cache.put(key, val = Integer.toString(key));
 
-        GridCacheTx tx = cache.txStart(concurrency, isolation, 0, 0);
+        IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
         try {
             if (isTestDebug()) {
@@ -256,7 +264,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug())
                 info("Committed transaction: " + tx);
         }
-        catch (GridCacheTxOptimisticException e) {
+        catch (IgniteTxOptimisticException e) {
             if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                 error("Received invalid optimistic failure.", e);
 
@@ -291,7 +299,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             throw e;
         }
         finally {
-            GridCacheTx t = cache.tx();
+            IgniteTx t = cache.tx();
 
             assert t == null : "Thread should not have transaction upon completion ['t==tx'=" + (t == tx) +
                 ", t=" + t + (t != tx ? "tx=" + tx : "tx=''") + ']';

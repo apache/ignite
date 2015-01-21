@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -12,11 +20,14 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.dr.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 /**
@@ -295,8 +306,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheTxKey<K> txKey() {
-        return new GridCacheTxKey<>(key, 0);
+    @Override public IgniteTxKey<K> txKey() {
+        return new IgniteTxKey<>(key, 0);
     }
 
     /** @inheritDoc */
@@ -390,7 +401,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V innerGet(@Nullable GridCacheTxEx<K, V> tx,
+    @Override public V innerGet(@Nullable IgniteTxEx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -401,7 +412,8 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         return val;
     }
 
@@ -411,7 +423,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
+    @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
         @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
         boolean evt, boolean metrics, long topVer, IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType,
         long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws IgniteCheckedException,
@@ -420,26 +432,62 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<Boolean, V> innerUpdateLocal(GridCacheVersion ver, GridCacheOperation op,
-        @Nullable Object writeObj, boolean writeThrough, boolean retval, long ttl, boolean evt, boolean metrics,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean intercept, UUID subjId, String taskName)
+    @Override public GridTuple3<Boolean, V, EntryProcessorResult<Object>> innerUpdateLocal(GridCacheVersion ver,
+        GridCacheOperation op,
+        @Nullable Object writeObj,
+        @Nullable Object[] invokeArgs,
+        boolean writeThrough,
+        boolean retval,
+        @Nullable ExpiryPolicy expiryPlc,
+        boolean evt,
+        boolean metrics,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        boolean intercept,
+        UUID subjId,
+        String taskName)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new IgniteBiTuple<>(false, null);
+        return new GridTuple3<>(false, null, null);
     }
 
     /** {@inheritDoc} */
     @Override public GridCacheUpdateAtomicResult<K, V> innerUpdate(
-        GridCacheVersion ver, UUID evtNodeId, UUID affNodeId, GridCacheOperation op, @Nullable Object val,
-        @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl, boolean evt,
-        boolean metrics, boolean primary, boolean checkVer, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
-        GridDrType drType, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, boolean drResolve,
-        boolean intercept, UUID subjId, String taskName) throws IgniteCheckedException,
+        GridCacheVersion ver,
+        UUID evtNodeId,
+        UUID affNodeId,
+        GridCacheOperation op,
+        @Nullable Object val,
+        @Nullable byte[] valBytes,
+        @Nullable Object[] invokeArgs,
+        boolean writeThrough,
+        boolean retval,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean evt,
+        boolean metrics,
+        boolean primary,
+        boolean checkVer,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        GridDrType drType,
+        long drTtl,
+        long drExpireTime,
+        @Nullable GridCacheVersion drVer,
+        boolean drResolve,
+        boolean intercept,
+        UUID subjId,
+        String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
-        return new GridCacheUpdateAtomicResult<>(true, rawPut((V)val, 0), (V)val, 0L, 0L, null, null, true);
+        return new GridCacheUpdateAtomicResult<>(true,
+            rawPut((V)val, 0),
+            (V)val,
+            null,
+            0L,
+            0L,
+            null,
+            null,
+            true);
     }
 
     /** @inheritDoc */
-    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable GridCacheTxEx<K, V> tx, UUID evtNodeId,
+    @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable IgniteTxEx<K, V> tx, UUID evtNodeId,
         UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
         String taskName)
@@ -466,12 +514,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean tmLock(GridCacheTxEx<K, V> tx, long timeout) {
+    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) {
         assert false; return false;
     }
 
     /** @inheritDoc */
-    @Override public void txUnlock(GridCacheTxEx<K, V> tx) {
+    @Override public void txUnlock(IgniteTxEx<K, V> tx) {
         assert false;
     }
 
@@ -543,7 +591,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridCacheTxEx<K, V> tx)
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         return F.t(val);
     }
@@ -733,6 +781,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** @inheritDoc */
     @Override public long ttl() {
         return ttl;
+    }
+
+    /** @inheritDoc */
+    @Override public void updateTtl(GridCacheVersion ver, long ttl) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

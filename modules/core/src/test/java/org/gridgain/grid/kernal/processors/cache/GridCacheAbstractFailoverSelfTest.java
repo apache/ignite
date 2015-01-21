@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
@@ -14,7 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -25,8 +33,8 @@ import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Failover tests for cache.
@@ -70,7 +78,6 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setPreloadMode(SYNC);
-        cfg.setDgcFrequency(0);
 
         return cfg;
     }
@@ -200,8 +207,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    private void testTopologyChange(@Nullable GridCacheTxConcurrency concurrency,
-        @Nullable GridCacheTxIsolation isolation) throws Exception {
+    private void testTopologyChange(@Nullable IgniteTxConcurrency concurrency,
+        @Nullable IgniteTxIsolation isolation) throws Exception {
         boolean tx = concurrency != null && isolation != null;
 
         if (tx)
@@ -234,8 +241,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws Exception If failed.
      */
-    private void testConstantTopologyChange(@Nullable final GridCacheTxConcurrency concurrency,
-        @Nullable final GridCacheTxIsolation isolation) throws Exception {
+    private void testConstantTopologyChange(@Nullable final IgniteTxConcurrency concurrency,
+        @Nullable final IgniteTxIsolation isolation) throws Exception {
         final boolean tx = concurrency != null && isolation != null;
 
         if (tx)
@@ -313,7 +320,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void put(GridCacheProjection<String, Integer> cache, final int cnt,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
@@ -359,7 +366,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @throws IgniteCheckedException If failed.
      */
     private void remove(GridCacheProjection<String, Integer> cache, final int cnt,
-        GridCacheTxConcurrency concurrency, GridCacheTxIsolation isolation) throws Exception {
+        IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 

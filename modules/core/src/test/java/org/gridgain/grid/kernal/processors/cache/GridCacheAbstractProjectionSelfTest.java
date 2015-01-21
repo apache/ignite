@@ -1,16 +1,26 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -183,7 +193,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         int size = 10;
 
         if (atomicityMode() == TRANSACTIONAL) {
-            GridCacheTx tx = prj.txStart();
+            IgniteTx tx = prj.txStart();
 
             for (int i = 0; i < size; i++)
                 prj.put("key" + i, i);
@@ -588,7 +598,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     /**
      * @throws Exception if failed.
      */
-    public void _testSkipStoreFlag() throws Exception { // TODO GG-9141
+    public void testSkipStoreFlag() throws Exception {
         assertNull(cache().put("kk1", 100500));
         assertEquals(100500, map.get("kk1"));
 
@@ -616,7 +626,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
             startGrid(i);
 
         try {
-            _testSkipStoreFlag();
+            testSkipStoreFlag();
         }
         finally {
             for (int i = 1; i < nGrids; i++)
@@ -733,7 +743,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         if (atomicityMode() == ATOMIC)
             return;
 
-        GridCacheTx tx = cache().txStart();
+        IgniteTx tx = cache().txStart();
 
         GridCacheProjection<String, Integer> typePrj = cache().projection(String.class, Integer.class);
 
@@ -770,7 +780,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         tx.commit();
 
-        GridTransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
+        TransactionsConfiguration tCfg = grid(0).configuration().getTransactionsConfiguration();
 
         tx = cache().txStart(
             tCfg.getDefaultTxConcurrency(),

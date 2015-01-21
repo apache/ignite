@@ -1,23 +1,34 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
+import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
@@ -59,6 +70,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param topVer Topology version.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -70,6 +82,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param txNodes Transaction nodes mapping.
      */
     public GridDhtTxRemote(
+        GridCacheSharedContext<K, V> ctx,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -77,19 +90,19 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        boolean sys,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         GridCacheVersion nearXidVer,
         Map<UUID, Collection<UUID>> txNodes,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
+        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
@@ -118,6 +131,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param topVer Topology version.
      * @param xidVer XID version.
      * @param commitVer Commit version.
+     * @param sys System flag.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -127,6 +141,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param grpLockKey Group lock key if transaction is group-lock.
      */
     public GridDhtTxRemote(
+        GridCacheSharedContext<K, V> ctx,
         UUID nearNodeId,
         IgniteUuid rmtFutId,
         UUID nodeId,
@@ -135,17 +150,17 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
         long topVer,
         GridCacheVersion xidVer,
         GridCacheVersion commitVer,
-        GridCacheTxConcurrency concurrency,
-        GridCacheTxIsolation isolation,
+        boolean sys,
+        IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation,
         boolean invalidate,
         long timeout,
-        GridCacheSharedContext<K, V> ctx,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, concurrency, isolation, invalidate, timeout, txSize,
+        super(ctx, nodeId, rmtThreadId, xidVer, commitVer, sys, concurrency, isolation, invalidate, timeout, txSize,
             grpLockKey, subjId, taskNameHash);
 
         assert nearNodeId != null;
@@ -226,8 +241,8 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     @Override public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part) {
         super.addInvalidPartition(cacheCtx, part);
 
-        for (Iterator<GridCacheTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
-            GridCacheTxEntry<K, V> e = it.next();
+        for (Iterator<IgniteTxEntry<K, V>> it = writeMap.values().iterator(); it.hasNext();) {
+            IgniteTxEntry<K, V> e = it.next();
 
             GridCacheEntryEx<K, V> cached = e.cached();
 
@@ -245,7 +260,7 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
      * @param ldr Class loader.
      * @throws IgniteCheckedException If failed.
      */
-    public void addWrite(GridCacheTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
+    public void addWrite(IgniteTxEntry<K, V> entry, ClassLoader ldr) throws IgniteCheckedException {
         entry.unmarshal(cctx, false, ldr);
 
         GridCacheContext<K, V> cacheCtx = entry.context();
@@ -268,17 +283,25 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
     }
 
     /**
+     * @param cacheCtx Cache context.
      * @param op Write operation.
      * @param key Key to add to write set.
      * @param keyBytes Key bytes.
      * @param val Value.
      * @param valBytes Value bytes.
      * @param drVer Data center replication version.
-     * @param clos Transform closures.
+     * @param entryProcessors Entry processors.
+     * @param ttl TTL.
      */
-    public void addWrite(GridCacheContext<K, V> cacheCtx, GridCacheOperation op, GridCacheTxKey<K> key, byte[] keyBytes,
-        @Nullable V val, @Nullable byte[] valBytes, @Nullable Collection<IgniteClosure<V, V>> clos,
-        @Nullable GridCacheVersion drVer) {
+    public void addWrite(GridCacheContext<K, V> cacheCtx,
+        GridCacheOperation op,
+        IgniteTxKey<K> key,
+        byte[] keyBytes,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        @Nullable Collection<T2<EntryProcessor<K, V, ?>, Object[]>> entryProcessors,
+        @Nullable GridCacheVersion drVer,
+        long ttl) {
         checkInternal(key);
 
         if (isSystemInvalidate())
@@ -286,11 +309,18 @@ public class GridDhtTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V> 
 
         GridDhtCacheEntry<K, V> cached = cacheCtx.dht().entryExx(key.key(), topologyVersion());
 
-        GridCacheTxEntry<K, V> txEntry = new GridCacheTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached, drVer);
+        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx,
+            this,
+            op,
+            val,
+            ttl,
+            -1L,
+            cached,
+            drVer);
 
         txEntry.keyBytes(keyBytes);
         txEntry.valueBytes(valBytes);
-        txEntry.transformClosures(clos);
+        txEntry.entryProcessors(entryProcessors);
 
         writeMap.put(key, txEntry);
     }

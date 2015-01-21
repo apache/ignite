@@ -1,16 +1,26 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -18,13 +28,14 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Tests write-through.
@@ -54,16 +65,23 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Value increment closure. */
-    private static final IgniteClosure<Integer, Integer> INCR_CLOS = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer src) {
-            return src == null ? 1 : src + 1;
+    /** Value increment processor. */
+    private static final EntryProcessor<String, Integer, Void> INCR_CLOS = new EntryProcessor<String, Integer, Void>() {
+        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+            if (!e.exists())
+                e.setValue(1);
+            else
+                e.setValue(e.getValue() + 1);
+
+            return null;
         }
     };
 
-    /** Value remove closure. */
-    private static final IgniteClosure<Integer, Integer> RMV_CLOS = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer src) {
+    /** Value remove processor. */
+    private static final EntryProcessor<String, Integer, Void> RMV_CLOS = new EntryProcessor<String, Integer, Void>() {
+        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+            e.remove();
+
             return null;
         }
     };
@@ -80,6 +98,8 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -219,8 +239,8 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
      * @param op Op.
      * @throws Exception If failed.
      */
-    protected void checkTransform(GridCacheTxConcurrency concurrency, int nodeType, int op) throws Exception {
-        GridCacheProjection<String, Integer> cache = cache(0);
+    protected void checkTransform(IgniteTxConcurrency concurrency, int nodeType, int op) throws Exception {
+        IgniteCache<String, Integer> cache = jcache(0);
 
         Collection<String> keys = keysForType(nodeType);
 
@@ -232,18 +252,18 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         nearStore.reset();
 
         for (String key : keys)
-            cache.clear(key);
+            cache(0).clear(key);
 
         info(">>> Starting transform transaction");
 
-        try (GridCacheTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
+        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, READ_COMMITTED)) {
             if (op == OP_UPDATE) {
                 for (String key : keys)
-                    cache.transform(key, INCR_CLOS);
+                    cache.invoke(key, INCR_CLOS);
             }
             else {
                 for (String key : keys)
-                    cache.transform(key, RMV_CLOS);
+                    cache.invoke(key, RMV_CLOS);
             }
 
             tx.commit();

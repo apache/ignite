@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.ggfs;
@@ -14,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -25,13 +34,14 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**
@@ -398,7 +408,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert validTxState(false);
                 assert fileId != null;
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     // Lock file ID for this transaction.
@@ -481,7 +491,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 IgniteUuid fileId = info.id();
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     // Lock file ID for this transaction.
@@ -682,7 +692,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 IgniteUuid res = null;
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     res = putIfAbsentNonTx(parentId, fileName, newFileInfo);
@@ -750,7 +760,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         assert metaCache.get(parentId) != null;
 
-        id2InfoPrj.transform(parentId, new UpdateListing(fileName, new GridGgfsListingEntry(newFileInfo), false));
+        id2InfoPrj.invoke(parentId, new UpdateListing(fileName, new GridGgfsListingEntry(newFileInfo), false));
 
         return null;
     }
@@ -771,7 +781,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     moveNonTx(fileId, srcFileName, srcParentId, destFileName, destParentId);
@@ -867,10 +877,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert metaCache.get(destParentId) != null;
 
         // Remove listing entry from the source parent listing.
-        id2InfoPrj.transform(srcParentId, new UpdateListing(srcFileName, srcEntry, true));
+        id2InfoPrj.invoke(srcParentId, new UpdateListing(srcFileName, srcEntry, true));
 
         // Add listing entry into the destination parent listing.
-        id2InfoPrj.transform(destParentId, new UpdateListing(destFileName, srcEntry, false));
+        id2InfoPrj.invoke(destParentId, new UpdateListing(destFileName, srcEntry, false));
     }
 
     /**
@@ -891,7 +901,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     if (parentId != null)
@@ -986,7 +996,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
         // Update a file info of the removed file with a file path,
         // which will be used by delete worker for event notifications.
-        id2InfoPrj.transform(fileId, new UpdatePath(path));
+        id2InfoPrj.invoke(fileId, new UpdatePath(path));
 
         return GridGgfsFileInfo.builder(fileInfo).path(path).build();
     }
@@ -1005,7 +1015,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     if (parentId == null)
@@ -1085,12 +1095,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 id2InfoPrj.put(newInfo.id(), newInfo);
 
                 // Add new info to trash listing.
-                id2InfoPrj.transform(TRASH_ID, new UpdateListing(newInfo.id().toString(),
+                id2InfoPrj.invoke(TRASH_ID, new UpdateListing(newInfo.id().toString(),
                     new GridGgfsListingEntry(newInfo), false));
 
                 // Remove listing entries from root.
                 for (Map.Entry<String, GridGgfsListingEntry> entry : transferListing.entrySet())
-                    id2InfoPrj.transform(ROOT_ID, new UpdateListing(entry.getKey(), entry.getValue(), true));
+                    id2InfoPrj.invoke(ROOT_ID, new UpdateListing(entry.getKey(), entry.getValue(), true));
 
                 resId = newInfo.id();
             }
@@ -1126,7 +1136,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert listing != null;
                 assert validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     Collection<IgniteUuid> res = new HashSet<>();
@@ -1211,7 +1221,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     boolean res = false;
@@ -1227,7 +1237,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         GridGgfsListingEntry listingEntry = parentInfo.listing().get(name);
 
                         if (listingEntry != null)
-                            id2InfoPrj.transform(parentId, new UpdateListing(name, listingEntry, true));
+                            id2InfoPrj.invoke(parentId, new UpdateListing(name, listingEntry, true));
 
                         id2InfoPrj.remove(id);
 
@@ -1358,7 +1368,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 assert metaCache.get(parentId) != null;
 
-                id2InfoPrj.transform(parentId, new UpdateListing(fileName, entry, false));
+                id2InfoPrj.invoke(parentId, new UpdateListing(fileName, entry, false));
             }
 
             return newInfo;
@@ -1384,7 +1394,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridGgfsFileInfo info = updatePropertiesNonTx(parentId, fileId, fileName, props);
@@ -1423,7 +1433,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 assert validTxState(false);
 
-                id2InfoPrj.transformAsync(parentId, new UpdateListingEntry(fileId, fileName, lenDelta, 0,
+                id2InfoPrj.invokeAsync(parentId, new UpdateListingEntry(fileId, fileName, lenDelta, 0,
                     modificationTime));
             }
             finally {
@@ -1454,7 +1464,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Update file info [fileId=" + fileId + ", c=" + c + ']');
 
-                GridCacheTx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStart(PESSIMISTIC,
+                IgniteTx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStart(PESSIMISTIC,
                     REPEATABLE_READ);
 
                 try {
@@ -1517,7 +1527,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 validTxState(false);
 
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     Object prev = val != null ? metaCache.put(sampling, val) : metaCache.remove(sampling);
@@ -1658,9 +1668,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 id2InfoPrj.removex(oldId); // Remove the old one.
                                 id2InfoPrj.putx(newInfo.id(), newInfo); // Put the new one.
 
-                                id2InfoPrj.transform(parentInfo.id(),
+                                id2InfoPrj.invoke(parentInfo.id(),
                                     new UpdateListing(path.name(), parentInfo.listing().get(path.name()), true));
-                                id2InfoPrj.transform(parentInfo.id(),
+                                id2InfoPrj.invoke(parentInfo.id(),
                                     new UpdateListing(path.name(), new GridGgfsListingEntry(newInfo), false));
 
                                 IgniteFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
@@ -2149,7 +2159,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         }
 
                         // Update the deleted file info with path information for delete worker.
-                        id2InfoPrj.transform(info.id(), new UpdatePath(path));
+                        id2InfoPrj.invoke(info.id(), new UpdatePath(path));
 
                         return true; // No additional handling is required.
                     }
@@ -2351,7 +2361,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 pathIds.add(fileIds(path));
 
             // Start pessimistic.
-            GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+            IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
             try {
                 // Lock the very first existing parents and possibly the leaf as well.
@@ -2573,7 +2583,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert validTxState(false);
 
                 // Start pessimistic transaction.
-                GridCacheTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     Map<IgniteUuid, GridGgfsFileInfo> infoMap = lockIds(fileId, parentId);
@@ -2605,7 +2615,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                     id2InfoPrj.putx(fileId, updated);
 
-                    id2InfoPrj.transform(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime,
+                    id2InfoPrj.invoke(parentId, new UpdateListingEntry(fileId, fileName, 0, accessTime,
                         modificationTime));
 
                     tx.commit();
@@ -2740,7 +2750,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     /**
      * Updates file length information in parent listing.
      */
-    private static final class UpdateListingEntry implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class UpdateListingEntry implements EntryProcessor<IgniteUuid, GridGgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2774,8 +2784,11 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          * @param accessTime Last access time.
          * @param modificationTime Last modification time.
          */
-        private UpdateListingEntry(IgniteUuid fileId, String fileName, long lenDelta,
-            long accessTime, long modificationTime) {
+        private UpdateListingEntry(IgniteUuid fileId,
+            String fileName,
+            long lenDelta,
+            long accessTime,
+            long modificationTime) {
             this.fileId = fileId;
             this.fileName = fileName;
             this.lenDelta = lenDelta;
@@ -2784,13 +2797,15 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsFileInfo apply(GridGgfsFileInfo fileInfo) {
+        @Override public Void process(MutableEntry<IgniteUuid, GridGgfsFileInfo> e, Object... args) {
+            GridGgfsFileInfo fileInfo = e.getValue();
+
             Map<String, GridGgfsListingEntry> listing = fileInfo.listing();
 
             GridGgfsListingEntry entry = listing.get(fileName);
 
             if (entry == null || !entry.fileId().equals(fileId))
-                return fileInfo;
+                return null;
 
             entry = new GridGgfsListingEntry(entry, entry.length() + lenDelta,
                 accessTime == -1 ? entry.accessTime() : accessTime,
@@ -2802,7 +2817,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             // Modify listing map in-place since map is serialization-safe.
             listing.put(fileName, entry);
 
-            return new GridGgfsFileInfo(listing, fileInfo);
+            e.setValue(new GridGgfsFileInfo(listing, fileInfo));
+
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2828,7 +2845,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update directory listing closure.
      */
     @GridInternal
-    private static final class UpdateListing implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class UpdateListing implements EntryProcessor<IgniteUuid, GridGgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2867,7 +2884,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override @Nullable public GridGgfsFileInfo apply(GridGgfsFileInfo fileInfo) {
+        @Override public Void process(MutableEntry<IgniteUuid, GridGgfsFileInfo> e, Object... args) {
+            GridGgfsFileInfo fileInfo = e.getValue();
+
             assert fileInfo != null : "File info not found for the child: " + entry.fileId();
             assert fileInfo.isDirectory();
 
@@ -2896,7 +2915,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         ", oldEntry=" + oldEntry + ']');
             }
 
-            return new GridGgfsFileInfo(listing, fileInfo);
+            e.setValue(new GridGgfsFileInfo(listing, fileInfo));
+
+            return null;
         }
 
         /** {@inheritDoc} */
@@ -2923,7 +2944,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * Update path closure.
      */
     @GridInternal
-    private static final class UpdatePath implements IgniteClosure<GridGgfsFileInfo, GridGgfsFileInfo>,
+    private static final class UpdatePath implements EntryProcessor<IgniteUuid, GridGgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -2942,11 +2963,16 @@ public class GridGgfsMetaManager extends GridGgfsManager {
          * Default constructor (required by Externalizable).
          */
         public UpdatePath() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsFileInfo apply(GridGgfsFileInfo info) {
-            return GridGgfsFileInfo.builder(info).path(path).build();
+        @Override public Void process(MutableEntry<IgniteUuid, GridGgfsFileInfo> e, Object... args) {
+            GridGgfsFileInfo info = e.getValue();
+
+            e.setValue(GridGgfsFileInfo.builder(info).path(path).build());
+
+            return null;
         }
 
         /** {@inheritDoc} */

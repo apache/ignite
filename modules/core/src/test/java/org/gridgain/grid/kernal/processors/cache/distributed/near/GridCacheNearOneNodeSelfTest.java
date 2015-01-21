@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
@@ -13,18 +21,21 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheTxConcurrency.*;
-import static org.gridgain.grid.cache.GridCacheTxIsolation.*;
+import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Single node test for near cache.
@@ -135,22 +146,24 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"ConstantConditions"})
-    public void _testOptimisticTxWriteThrough() throws Exception { // TODO GG-9141
+    public void testOptimisticTxWriteThrough() throws Exception {
         GridCache<Integer, String> near = cache();
-        GridCache<Integer, String> dht = dht();
+        GridCacheAdapter<Integer, String> dht = dht();
 
-        GridCacheTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ);
+        try (IgniteTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
+            near.putx(2, "2");
+            near.put(3, "3");
 
-        near.putx(2, "2");
-        near.put(3, "3");
+            assert "2".equals(near.get(2));
+            assert "3".equals(near.get(3));
 
-        assert "2".equals(near.get(2));
-        assert "3".equals(near.get(3));
+            GridCacheEntryEx<Integer, String> entry = dht.peekEx(2);
 
-        assert dht.peek(2) == null;
-        assert dht.peek(3) != null;
+            assert entry == null || entry.rawGetOrUnmarshal(false) == null : "Invalid entry: " + entry;
+            assert dht.peek(3) != null;
 
-        tx.commit();
+            tx.commit();
+        }
 
         assert "2".equals(near.get(2));
         assert "3".equals(near.get(3));
@@ -167,47 +180,49 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSingleLockPut() throws Exception {
-        GridCache<Integer, String> near = cache();
+        IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1, 0);
+        near.lock(1).lock();
 
         try {
             near.put(1, "1");
             near.put(2, "2");
 
-            String one = near.put(1, "3");
+            String one = near.getAndPut(1, "3");
 
             assertNotNull(one);
             assertEquals("1", one);
         }
         finally {
-            near.unlock(1);
+            near.lock(1).unlock();
         }
     }
 
     /** @throws Exception If failed. */
     public void testSingleLock() throws Exception {
-        GridCache<Integer, String> near = cache();
+        IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1, 0);
+        Lock lock = near.lock(1);
+
+        lock.lock();
 
         try {
             near.put(1, "1");
 
-            assertEquals("1", near.peek(1));
+            assertEquals("1", near.localPeek(1));
             assertEquals("1", dht().peek(1));
 
             assertEquals("1", near.get(1));
-            assertEquals("1", near.remove(1));
+            assertEquals("1", near.getAndRemove(1));
 
-            assertNull(near.peek(1));
+            assertNull(near.localPeek(1));
             assertNull(dht().peek(1));
 
             assertTrue(near.isLocked(1));
             assertTrue(near.isLockedByThread(1));
         }
         finally {
-            near.unlock(1);
+            near.lock(1).unlock();
         }
 
         assertFalse(near.isLocked(1));
@@ -216,40 +231,40 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSingleLockReentry() throws Exception {
-        GridCache<Integer, String> near = cache();
+        IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1, 0);
+        near.lock(1).lock();
 
         try {
             near.put(1, "1");
 
-            assertEquals("1", near.peek(1));
+            assertEquals("1", near.localPeek(1));
             assertEquals("1", dht().peek(1));
 
             assertTrue(near.isLocked(1));
             assertTrue(near.isLockedByThread(1));
 
-            near.lock(1, 0); // Reentry.
+            near.lock(1).lock(); // Reentry.
 
             try {
                 assertEquals("1", near.get(1));
-                assertEquals("1", near.remove(1));
+                assertEquals("1", near.getAndRemove(1));
 
-                assertNull(near.peek(1));
+                assertNull(near.localPeek(1));
                 assertNull(dht().peek(1));
 
                 assertTrue(near.isLocked(1));
                 assertTrue(near.isLockedByThread(1));
             }
             finally {
-                near.unlock(1);
+                near.lock(1).unlock();
             }
 
             assertTrue(near.isLocked(1));
             assertTrue(near.isLockedByThread(1));
         }
         finally {
-            near.unlock(1);
+            near.lock(1).unlock();
         }
 
         assertFalse(near.isLocked(1));
@@ -265,7 +280,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
@@ -284,7 +299,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         assertEquals("val1", dht().peek(1));
         assertNull(near().peekNearOnly(1));
 
-        GridCacheTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
+        IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
         assertEquals("val1", cache.get(1));
 
@@ -347,7 +362,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
             if (!create)
                 return map.get(key);
 
@@ -357,13 +372,13 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(GridCacheTx tx, Integer key, @Nullable String val)
+        @Override public void put(IgniteTx tx, Integer key, @Nullable String val)
             throws IgniteCheckedException {
             map.put(key, val);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(GridCacheTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
             map.remove(key);
         }
     }

@@ -1,20 +1,30 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
+import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -69,6 +79,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     @GridDirectVersion(3)
     private boolean hasTransforms;
 
+    /** Sync commit flag. */
+    private boolean syncCommit;
+
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -77,6 +93,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @param nodeId Node ID.
      * @param threadId Thread ID.
@@ -91,8 +108,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param timeout Lock timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
+     * @param syncCommit Synchronous commit flag.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock If partition is locked.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
+     * @param accessTtl TTL for read operation.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -105,15 +126,17 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         boolean implicitTx,
         boolean implicitSingleTx,
         boolean isRead,
-        GridCacheTxIsolation isolation,
+        IgniteTxIsolation isolation,
         boolean isInvalidate,
         long timeout,
         int keyCnt,
         int txSize,
-        @Nullable GridCacheTxKey grpLockKey,
+        boolean syncCommit,
+        @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long accessTtl
     ) {
         super(
             cacheId,
@@ -137,8 +160,10 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.topVer = topVer;
         this.implicitTx = implicitTx;
         this.implicitSingleTx = implicitSingleTx;
+        this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.accessTtl = accessTtl;
 
         dhtVers = new GridCacheVersion[keyCnt];
     }
@@ -190,6 +215,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      */
     public void onePhaseCommit(boolean onePhaseCommit) {
         this.onePhaseCommit = onePhaseCommit;
+    }
+
+    /**
+     * @return Sync commit flag.
+     */
+    public boolean syncCommit() {
+        return syncCommit;
     }
 
     /**
@@ -254,7 +286,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         byte[] keyBytes,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable GridCacheTxEntry<K, V> writeEntry,
+        @Nullable IgniteTxEntry<K, V> writeEntry,
         @Nullable GridCacheVersion drVer,
         GridCacheContext<K, V> ctx
     ) throws IgniteCheckedException {
@@ -272,8 +304,19 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         return dhtVers[idx];
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
+    @Override protected boolean transferExpiryPolicy() {
+        return true;
+    }
+
+    /**
+     * @return TTL for read operation.
+     */
+    public long accessTtl() {
+        return accessTtl;
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -316,6 +359,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
         _clone.hasTransforms = hasTransforms;
+        _clone.syncCommit = syncCommit;
+        _clone.accessTtl = accessTtl;
     }
 
     /** {@inheritDoc} */
@@ -432,6 +477,18 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
             case 33:
                 if (!commState.putBoolean(hasTransforms))
+                    return false;
+
+                commState.idx++;
+
+            case 34:
+                if (!commState.putBoolean(syncCommit))
+                    return false;
+
+                commState.idx++;
+
+            case 35:
+                if (!commState.putLong(accessTtl))
                     return false;
 
                 commState.idx++;
@@ -576,6 +633,21 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
+            case 34:
+                if (buf.remaining() < 1)
+                    return false;
+
+                syncCommit = commState.getBoolean();
+
+                commState.idx++;
+
+            case 35:
+                if (buf.remaining() < 8)
+                    return false;
+
+                accessTtl = commState.getLong();
+
+                commState.idx++;
         }
 
         return true;

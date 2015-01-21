@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.testsuites;
@@ -24,10 +32,10 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Cache Full API Test Suite");
+        TestSuite suite = new TestSuite("Cache Full API Test Suite");
 
         // One node.
-        //suite.addTestSuite(GridCacheLocalFullApiSelfTest.class); GG-9141
+        suite.addTestSuite(GridCacheLocalFullApiSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedFullApiSelfTest.class);
@@ -44,7 +52,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest.class);
 
         // One node with off-heap values.
-        //suite.addTestSuite(GridCacheLocalOffHeapFullApiSelfTest.class); GG-9141
+        suite.addTestSuite(GridCacheLocalOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedOffHeapFullApiSelfTest.class);
         suite.addTestSuite(GridCachePartitionedOffHeapFullApiSelfTest.class);
@@ -96,7 +104,7 @@ public class GridCacheFullApiSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedNearDisabledOffHeapMultiNodeFullApiSelfTest.class);
 
         // Private cache API.
-        //suite.addTestSuite(GridCacheExLocalFullApiSelfTest.class); GG-9141
+        suite.addTestSuite(GridCacheExLocalFullApiSelfTest.class);
         suite.addTestSuite(GridCacheExReplicatedFullApiSelfTest.class);
         suite.addTestSuite(GridCacheExNearFullApiSelfTest.class);
         suite.addTestSuite(GridCacheExColocatedFullApiSelfTest.class);

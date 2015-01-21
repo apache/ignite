@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.grid.kernal.processors.cache.query;
@@ -13,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -23,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
 
 /**
@@ -447,18 +455,48 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @return Nodes to execute on.
      */
     private Collection<ClusterNode> nodes() {
-        Collection<ClusterNode> nodes = CU.allNodes(cctx);
+        GridCacheMode cacheMode = cctx.config().getCacheMode();
 
-        if (prj == null) {
-            if (cctx.isReplicated())
+        switch (cacheMode) {
+            case LOCAL:
+                if (prj != null)
+                    U.warn(log, "Ignoring query projection because it's executed over LOCAL cache " +
+                        "(only local node will be queried): " + this);
+
                 return Collections.singletonList(cctx.localNode());
 
-            return nodes;
-        }
+            case REPLICATED:
+                if (prj != null)
+                    return nodes(cctx, prj);
 
-        return F.view(nodes, new P1<ClusterNode>() {
-            @Override public boolean apply(ClusterNode e) {
-                return prj.node(e.id()) != null;
+                GridCacheDistributionMode mode = cctx.config().getDistributionMode();
+
+                return mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED ?
+                    Collections.singletonList(cctx.localNode()) :
+                    Collections.singletonList(F.rand(nodes(cctx, null)));
+
+            case PARTITIONED:
+                return nodes(cctx, prj);
+
+            default:
+                throw new IllegalStateException("Unknown cache distribution mode: " + cacheMode);
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param prj Projection (optional).
+     * @return Collection of data nodes in provided projection (if any).
+     */
+    private static Collection<ClusterNode> nodes(final GridCacheContext<?, ?> cctx, @Nullable final ClusterGroup prj) {
+        assert cctx != null;
+
+        return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
+            @Override public boolean apply(ClusterNode n) {
+                GridCacheDistributionMode mode = U.distributionMode(n, cctx.name());
+
+                return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) &&
+                    (prj == null || prj.node(n.id()) != null);
             }
         });
     }

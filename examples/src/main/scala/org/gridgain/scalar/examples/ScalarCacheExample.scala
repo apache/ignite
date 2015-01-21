@@ -1,12 +1,18 @@
-/* @scala.file.header */
-
 /*
- * ________               ______                    ______   _______
- * __  ___/_____________ ____  /______ _________    __/__ \  __  __ \
- * _____ \ _  ___/_  __ `/__  / _  __ `/__  ___/    ____/ /  _  / / /
- * ____/ / / /__  / /_/ / _  /  / /_/ / _  /        _  __/___/ /_/ /
- * /____/  \___/  \__,_/  /_/   \__,_/  /_/         /____/_(_)____/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.gridgain.scalar.examples
@@ -27,7 +33,13 @@ import collection.JavaConversions._
  * be started with or without cache.
  */
 object ScalarCacheExample extends App {
+    /** Name of cache specified in spring configuration. */
+    private val NAME = "partitioned"
+
     scalar("examples/config/example-cache.xml") {
+        // Clean up caches on all nodes before run.
+        cache$(NAME).get.globalClearAll(0)
+
         registerListener()
 
         basicOperations()
@@ -39,7 +51,7 @@ object ScalarCacheExample extends App {
      */
     def basicOperations() {
         // Create cache predicate-based projection (all values > 30).
-        val c = cache$("partitioned").get.viewByType(classOf[String], classOf[Int]).
+        val c = cache$(NAME).get.viewByType(classOf[String], classOf[Int]).
             viewByKv((k: String, v: Int) => v < 30)
 
         // Add few values.
@@ -87,8 +99,8 @@ object ScalarCacheExample extends App {
      */
     def twoViewsOneCache() {
         // Create two typed views on the same cache.
-        val view1 = cache$("partitioned").get.viewByType(classOf[String], classOf[Int])
-        val view2 = cache$("partitioned").get.viewByType(classOf[Int], classOf[String])
+        val view1 = cache$(NAME).get.viewByType(classOf[String], classOf[Int])
+        val view2 = cache$(NAME).get.viewByType(classOf[Int], classOf[String])
 
         view1 += ("key1" -> 1)
         view1 += ("key2" -> 2)
