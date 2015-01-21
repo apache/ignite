@@ -5105,7 +5105,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         checkIteratorRemove(cache, entries);
 
         checkIteratorEmpty(cache);
-
     }
 
     /**

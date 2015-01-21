@@ -878,12 +878,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            ctx.itHolder().checkWeakQueue();
-
             GridCacheQuery<Map.Entry<K, V>> query =  delegate.queries().createScanQuery(null);
 
             query.includeBackups(false);
-            query.enableDedup(true);
             query.keepAll(false);
 
             GridCacheQueryFuture<Map.Entry<K, V>> fut = query.execute();
