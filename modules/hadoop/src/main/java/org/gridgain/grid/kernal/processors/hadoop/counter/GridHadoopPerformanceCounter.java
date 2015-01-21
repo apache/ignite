@@ -118,9 +118,21 @@ public class GridHadoopPerformanceCounter extends GridHadoopCounterAdapter {
      * @return String contains necessary event information.
      */
     private String eventName(GridHadoopTaskInfo info, String evtType) {
+        return eventName(info.type().toString(), info.taskNumber(), evtType);
+    }
+
+    /**
+     * Generate name that consists of some event information.
+     *
+     * @param taskType Task type.
+     * @param taskNum Number of the task.
+     * @param evtType The type of the event.
+     * @return String contains necessary event information.
+     */
+    private String eventName(String taskType, int taskNum, String evtType) {
         assert nodeId != null;
 
-        return info.type() + " " + info.taskNumber() + " " + evtType + " " + nodeId;
+        return taskType + " " + taskNum + " " + evtType + " " + nodeId;
     }
 
     /**
@@ -151,8 +163,8 @@ public class GridHadoopPerformanceCounter extends GridHadoopCounterAdapter {
      */
     public void onTaskFinish(GridHadoopTaskInfo info, long ts) {
         if (info.type() == GridHadoopTaskType.REDUCE && lastShuffleMsg != null) {
-            evts.add(new T2<>("SHUFFLE " + reducerNum + " start", firstShuffleMsg));
-            evts.add(new T2<>("SHUFFLE " + reducerNum + " finish", lastShuffleMsg));
+            evts.add(new T2<>(eventName("SHUFFLE", reducerNum, "start"), firstShuffleMsg));
+            evts.add(new T2<>(eventName("SHUFFLE", reducerNum, "finish"), lastShuffleMsg));
 
             lastShuffleMsg = null;
         }
