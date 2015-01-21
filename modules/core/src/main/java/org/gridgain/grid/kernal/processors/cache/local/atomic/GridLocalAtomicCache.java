@@ -841,7 +841,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<Boolean> fut) {
                     try {
                         if (!fut.isCancelled()) {

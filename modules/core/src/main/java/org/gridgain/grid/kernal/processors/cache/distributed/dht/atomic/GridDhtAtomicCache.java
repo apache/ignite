@@ -827,7 +827,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (statsEnabled) {
             updateFut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<Object> fut) {
                     try {
                         if (!fut.isCancelled()) {

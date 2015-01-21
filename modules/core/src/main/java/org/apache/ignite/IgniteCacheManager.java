@@ -299,7 +299,8 @@ public class IgniteCacheManager implements CacheManager {
             registerCacheObject(mBeanSrv, tuple.get2(), cacheName, false);
 
             tuple.get1().cache(cacheName).configuration().setManagementEnabled(true);
-        } else {
+        }
+        else {
             unregisterCacheObject(mBeanSrv, cacheName, false);
 
             tuple.get1().cache(cacheName).configuration().setManagementEnabled(false);
@@ -354,8 +355,7 @@ public class IgniteCacheManager implements CacheManager {
                 mBeanServer.registerMBean(mxbean, registeredObjectName);
         }
         catch (Exception e) {
-            throw new CacheException("Error registering cache MXBeans for CacheManager "
-                + registeredObjectName.toString() + " . Error was " + e.getMessage(), e);
+            throw new CacheException("Failed to register MBean: " + registeredObjectName, e);
         }
     }
 
@@ -384,9 +384,9 @@ public class IgniteCacheManager implements CacheManager {
         for (ObjectName registeredObjectName : registeredObjectNames) {
             try {
                 mBeanSrv.unregisterMBean(registeredObjectName);
-            } catch (Exception e) {
-                throw new CacheException("Error unregistering object instance " + registeredObjectName
-                        + " . Error was " + e.getMessage(), e);
+            }
+            catch (Exception e) {
+                throw new CacheException("Failed to unregister MBean: " + registeredObjectName, e);
             }
         }
     }
