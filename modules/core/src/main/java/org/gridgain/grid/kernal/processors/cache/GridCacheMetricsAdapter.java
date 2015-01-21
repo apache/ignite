@@ -469,6 +469,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         out.writeInt(txRollbacks);
         out.writeLong(rmCnt);
         out.writeLong(evictCnt);
+
+        out.writeLong(putTimeNanos);
+        out.writeLong(getTimeNanos);
+        out.writeLong(removeTimeNanos);
     }
 
     /** {@inheritDoc} */
@@ -487,6 +491,10 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
         txRollbacks = in.readInt();
         rmCnt = in.readLong();
         evictCnt = in.readLong();
+
+        putTimeNanos = in.readLong();
+        getTimeNanos = in.readLong();
+        removeTimeNanos = in.readLong();
     }
 
     /** {@inheritDoc} */

@@ -2141,13 +2141,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnLocalRead();
 
         V prevValue = ctx.cloneOnFlag(syncOp(new SyncOp<V>(true) {
-            @Override
-            public V op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
+            @Override public V op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.putAllAsync(ctx, F.t(key, val), true, cached, ttl, filter).get().value();
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "put [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
             }
         }));
@@ -2656,13 +2654,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnLocalRead();
 
         Boolean stored = syncOp(new SyncOp<Boolean>(true) {
-            @Override
-            public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
+            @Override public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.putAllAsync(ctx, F.t(key, val), false, null, -1, ctx.noPeekArray()).get().success();
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "putxIfAbsent [key=" + key + ", val=" + val + ']';
             }
         });
@@ -3022,7 +3018,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<V> fut) {
                     try {
                         if (!fut.isCancelled()) {
@@ -3069,7 +3064,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<V> fut) {
                     try {
                         if (!fut.isCancelled()) {
@@ -3081,7 +3075,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     catch (IgniteCheckedException ignore) {
                         //No-op.
                     }
-
                 }
             });
 
@@ -3155,9 +3148,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                /** {@inheritDoc} */
-                @Override
-                public void apply(IgniteFuture<Object> fut) {
+                @Override public void apply(IgniteFuture<Object> fut) {
                     try {
                         if (!fut.isCancelled()) {
                             fut.get();
@@ -3203,13 +3194,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             validateCacheKey(key);
 
         boolean removed = syncOp(new SyncOp<Boolean>(true) {
-            @Override
-            public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
+            @Override public Boolean op(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), entry, false, filter).get().success();
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "removex [key=" + key + ", filter=" + Arrays.toString(filter) + ']';
             }
         });
@@ -3508,7 +3497,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<Boolean> fut) {
                     try {
                         if (!fut.isCancelled()) {

@@ -839,7 +839,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             }
         });
 
-        if (statsEnabled) {
+        if (statsEnabled)
             fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
                 /** {@inheritDoc} */
                 @Override public void apply(IgniteFuture<Boolean> fut) {
@@ -855,7 +855,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     }
                 }
             });
-        }
 
         return fut;
     }
