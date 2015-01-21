@@ -26,7 +26,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
@@ -71,6 +70,8 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             JobConf jobConf = new JobConf();
 
             jobConf.set(JOB_COUNTER_WRITER_PROPERTY, GridHadoopFSCounterWriter.class.getName());
+            jobConf.setUser("yyy");
+            jobConf.set(GridHadoopFSCounterWriter.COUNTER_WRITER_DIR_PROPERTY, "/xxx/${USER}/zzz");
 
             //To split into about 40 items for v2
             jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
@@ -180,7 +181,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
             }
         }
 
-        final IgniteFsPath statPath = new IgniteFsPath("/users/anonymous/" + jobId + "/performance");
+        final IgniteFsPath statPath = new IgniteFsPath("/xxx/yyy/zzz/" + jobId + "/performance");
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
