@@ -185,6 +185,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         return loadAsync(keys,
             false,
+            true,
             forcePrimary,
             topVer,
             subjId,
@@ -236,6 +237,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @return Loaded values.
      */
     public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
+        boolean readThrough,
         boolean reload,
         boolean forcePrimary,
         long topVer,
@@ -345,6 +347,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
             keys,
             topVer,
+            readThrough,
             reload,
             forcePrimary,
             filter,

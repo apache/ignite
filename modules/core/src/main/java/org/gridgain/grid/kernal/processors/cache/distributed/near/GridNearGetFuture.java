@@ -66,6 +66,9 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Reload flag. */
     private boolean reload;
 
+    /** Read through flag. */
+    private boolean readThrough;
+
     /** Force primary flag. */
     private boolean forcePrimary;
 
@@ -125,6 +128,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     public GridNearGetFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
+        boolean readThrough,
         boolean reload,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx<K, V> tx,
@@ -140,6 +144,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         this.cctx = cctx;
         this.keys = keys;
+        this.readThrough = readThrough;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
         this.filters = filters;
@@ -313,6 +318,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     dht().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
+                        readThrough,
                         reload,
                         topVer,
                         subjId,
@@ -372,6 +378,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     fut.futureId(),
                     ver,
                     mappedKeys,
+                    readThrough,
                     reload,
                     topVer,
                     filters,

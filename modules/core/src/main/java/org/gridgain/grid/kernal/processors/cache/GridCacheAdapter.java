@@ -1771,6 +1771,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return getAllAsync(keys,
+            true,
             entry,
             !skipTx,
             subjId,
@@ -1783,6 +1784,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
     /** {@inheritDoc} */
     public IgniteFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys,
+        boolean readThrough,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1902,7 +1904,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                     }
                 }
 
-                if (misses != null && ctx.readThrough()) {
+                if (misses != null && readThrough && ctx.readThrough()) {
                     final Map<K, GridCacheVersion> loadKeys = misses;
 
                     final Collection<K> redos = new LinkedList<>();

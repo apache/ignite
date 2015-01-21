@@ -305,6 +305,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> loadMissing(
         final GridCacheContext<K, V> cacheCtx,
+        final boolean readThrough,
         boolean async,
         final Collection<? extends K> keys,
         boolean deserializePortable,
@@ -312,7 +313,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     ) {
         if (!async) {
             try {
-                if (!cacheCtx.readThrough()) {
+                if (!readThrough || !cacheCtx.readThrough()) {
                     for (K key : keys)
                         c.apply(key, null);
 
@@ -330,7 +331,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             return cctx.kernalContext().closure().callLocalSafe(
                 new GPC<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        if (!cacheCtx.readThrough()) {
+                        if (!readThrough || !cacheCtx.readThrough()) {
                             for (K key : keys)
                                 c.apply(key, null);
 
@@ -465,7 +466,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     protected void batchStoreCommit(Iterable<IgniteTxEntry<K, V>> writeEntries) throws IgniteCheckedException {
         GridCacheStoreManager<K, V> store = store();
 
-        if (store != null && storeEnabled() && (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
+        if (store != null && store.writeThrough() && storeEnabled() &&
+            (!internal() || groupLock()) && (near() || store.writeToStoreFromDht())) {
             try {
                 if (writeEntries != null) {
                     Map<K, IgniteBiTuple<V, GridCacheVersion>> putMap = null;
@@ -1333,7 +1335,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         return new GridEmbeddedFuture<>(cctx.kernalContext(),
             loadMissing(
                 cacheCtx,
-                false, missedMap.keySet(), deserializePortable, new CI2<K, V>() {
+                true, false, missedMap.keySet(), deserializePortable, new CI2<K, V>() {
                 /** */
                 private GridCacheVersion nextVer;
 
@@ -2053,6 +2055,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                                         IgniteFuture<Boolean> fut = loadMissing(
                                             cacheCtx,
+                                            op == TRANSFORM || cacheCtx.loadPreviousValue(),
                                             true,
                                             F.asList(key),
                                             deserializePortables(cacheCtx),
@@ -2192,6 +2195,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             IgniteFuture<Boolean> fut = loadMissing(
                 cacheCtx,
+                true,
                 true,
                 missedForInvoke,
                 deserializePortables(cacheCtx),

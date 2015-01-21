@@ -477,7 +477,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], org.gridgain.grid.kernal.processors.cache.IgniteCacheExpiryPolicy)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgnitePredicate[], IgniteCacheExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -497,6 +497,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         return getAllAsync(keys,
+            true,
             null,
             /*don't check local tx. */false,
             subjId,
@@ -528,6 +529,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Get future.
      */
     IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
+        boolean readThrough,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -535,6 +537,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry
         ) {
         return getAllAsync(keys,
+            readThrough,
             null,
             /*don't check local tx. */false,
             subjId,
@@ -561,6 +564,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader,
         long msgId,
         LinkedHashMap<? extends K, Boolean> keys,
+        boolean readThrough,
         boolean reload,
         long topVer,
         @Nullable UUID subjId,
@@ -572,6 +576,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             msgId,
             reader,
             keys,
+            readThrough,
             reload,
             /*tx*/null,
             topVer,
@@ -601,6 +606,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             getDhtAsync(nodeId,
                 req.messageId(),
                 req.keys(),
+                req.readThrough(),
                 req.reload(),
                 req.topologyVersion(),
                 req.subjectId(),

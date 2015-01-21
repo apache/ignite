@@ -999,7 +999,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     if (ret)
                                         val = e.innerGet(tx,
                                             /*swap*/true,
-                                            /*read-through*/true,
+                                            /*read-through*/ctx.loadPreviousValue(),
                                             /*fail-fast.*/false,
                                             /*unmarshal*/false,
                                             /*update-metrics*/true,

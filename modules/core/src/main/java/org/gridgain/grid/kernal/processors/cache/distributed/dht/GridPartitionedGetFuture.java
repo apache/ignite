@@ -66,6 +66,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Reload flag. */
     private boolean reload;
 
+    /** Read-through flag. */
+    private boolean readThrough;
+
     /** Force primary flag. */
     private boolean forcePrimary;
 
@@ -123,6 +126,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
         long topVer,
+        boolean readThrough,
         boolean reload,
         boolean forcePrimary,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
@@ -138,6 +142,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.cctx = cctx;
         this.keys = keys;
         this.topVer = topVer;
+        this.readThrough = readThrough;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
         this.filters = filters;
@@ -313,6 +318,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     cache().getDhtAsync(n.id(),
                         -1,
                         mappedKeys,
+                        readThrough,
                         reload,
                         topVer,
                         subjId,
@@ -366,6 +372,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     fut.futureId(),
                     ver,
                     mappedKeys,
+                    readThrough,
                     reload,
                     topVer,
                     filters,

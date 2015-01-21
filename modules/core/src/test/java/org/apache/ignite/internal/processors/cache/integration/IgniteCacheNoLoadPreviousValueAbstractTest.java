@@ -22,12 +22,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.typedef.*;
 
-import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
 
@@ -35,39 +32,15 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test for configuration property {@link CacheConfiguration#isReadThrough}.
+ * Test for configuration property {@link CacheConfiguration#isLoadPreviousValue()}.
  */
-public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAbstractTest {
+public abstract class IgniteCacheNoLoadPreviousValueAbstractTest extends IgniteCacheAbstractTest {
     /** */
     private Integer lastKey = 0;
 
-    /** */
-    private boolean allowLoad;
-
     /** {@inheritDoc} */
     @Override protected CacheStore<?, ?> cacheStore() {
-        return new TestStore() {
-            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
-                if (!allowLoad)
-                    fail();
-
-                super.loadCache(clo, args);
-            }
-
-            @Override public Object load(Object key) {
-                if (!allowLoad)
-                    fail();
-
-                return super.load(key);
-            }
-
-            @Override public Map<Object, Object> loadAll(Iterable<?> keys) {
-                if (!allowLoad)
-                    fail();
-
-                return super.loadAll(keys);
-            }
-        };
+        return new TestStore();
     }
 
     /** {@inheritDoc} */
@@ -83,11 +56,11 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setReadThrough(false);
+        ccfg.setReadThrough(true);
 
         ccfg.setWriteThrough(true);
 
-        ccfg.setLoadPreviousValue(true);
+        ccfg.setLoadPreviousValue(false);
 
         return ccfg;
     }
@@ -95,7 +68,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
     /**
      * @throws Exception If failed.
      */
-    public void testNoReadThrough() throws Exception {
+    public void testNoLoadPreviousValue() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(0);
 
         for (Integer key : keys()) {
@@ -103,9 +76,15 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
             storeMap.put(key, key);
 
-            assertNull(cache.get(key));
+            assertEquals(key, cache.get(key));
 
             assertEquals(key, storeMap.get(key));
+
+            cache.remove(key);
+
+            assertNull(storeMap.get(key));
+
+            storeMap.put(key, key);
 
             assertNull(cache.getAndPut(key, -1));
 
@@ -143,30 +122,6 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
             storeMap.put(key, key);
 
-            Object ret = cache.invoke(key, new EntryProcessor<Integer, Integer, Object>() {
-                @Override public Object process(MutableEntry<Integer, Integer> e, Object... args) {
-                    Integer val = e.getValue();
-
-                    assertFalse(e.exists());
-
-                    assertNull(val);
-
-                    e.setValue(-1);
-
-                    return String.valueOf(val);
-                }
-            });
-
-            assertEquals("null", ret);
-
-            assertEquals(-1, storeMap.get(key));
-
-            cache.remove(key);
-
-            assertNull(storeMap.get(key));
-
-            storeMap.put(key, key);
-
             assertFalse(cache.replace(key, -1));
 
             assertEquals(key, storeMap.get(key));
@@ -180,15 +135,15 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
             assertEquals(key, storeMap.get(key));
         }
 
-        Set<Integer> keys = new HashSet<>();
+        Map<Integer, Integer> expData = new HashMap<>();
 
         for (int i = 1000_0000; i < 1000_0000 + 1000; i++) {
-            keys.add(i);
-
             storeMap.put(i, i);
+
+            expData.put(i, i);
         }
 
-        assertTrue(cache.getAll(keys).isEmpty());
+        assertEquals(expData, cache.getAll(expData.keySet()));
 
         if (atomicityMode() == TRANSACTIONAL) {
             for (IgniteTxConcurrency concurrency : IgniteTxConcurrency.values()) {
@@ -199,14 +154,6 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                             ", isolation=" + isolation + ']');
 
                         storeMap.put(key, key);
-
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                            assertNull(cache.get(key));
-
-                            tx.commit();
-                        }
-
-                        assertEquals(key, storeMap.get(key));
 
                         try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                             assertNull(cache.getAndPut(key, -1));
@@ -230,36 +177,8 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
 
                         assertEquals(-1, storeMap.get(key));
 
-                        cache.remove(key);
-
-                        assertNull(storeMap.get(key));
-
-                        storeMap.put(key, key);
-
                         try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                            Object ret = cache.invoke(key, new EntryProcessor<Integer, Integer, Object>() {
-                                @Override public Object process(MutableEntry<Integer, Integer> e, Object... args) {
-                                    Integer val = e.getValue();
-
-                                    assertFalse(e.exists());
-
-                                    assertNull(val);
-
-                                    e.setValue(-1);
-
-                                    return String.valueOf(val);
-                                }
-                            });
-
-                            assertEquals("null", ret);
-
-                            tx.commit();
-                        }
-
-                        assertEquals(-1, storeMap.get(key));
-
-                        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                            assertTrue(cache.getAll(keys).isEmpty());
+                            assertEquals(expData, cache.getAll(expData.keySet()));
 
                             tx.commit();
                         }
@@ -267,34 +186,6 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
                 }
             }
         }
-
-        // Check can load cache when read-through is disabled.
-
-        allowLoad = true;
-
-        Integer key = 1;
-
-        cache.remove(key);
-
-        storeMap.clear();
-
-        storeMap.put(key, 10);
-
-        cache.loadCache(null);
-
-        assertEquals(10, (int)cache.get(key));
-
-        cache.remove(key);
-
-        storeMap.put(key, 11);
-
-        CompletionListenerFuture fut = new CompletionListenerFuture();
-
-        cache.loadAll(F.asSet(key), true, fut);
-
-        fut.get();
-
-        assertEquals(11, (int)cache.get(key));
     }
 
     /**
