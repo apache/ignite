@@ -3486,7 +3486,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                     try {
                         assert lock.tryLock();
-                    } finally {
+                    }
+                    finally {
                         lock.unlock();
                     }
 
