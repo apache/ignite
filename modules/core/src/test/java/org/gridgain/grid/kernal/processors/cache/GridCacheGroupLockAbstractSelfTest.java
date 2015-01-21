@@ -92,6 +92,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         });
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setCacheSanityCheckEnabled(sanityCheckEnabled());

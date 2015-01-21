@@ -134,6 +134,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);

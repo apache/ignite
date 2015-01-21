@@ -56,10 +56,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private final CacheStoreBalancingWrapper<K, Object> singleThreadGate;
 
     /** */
-    private final ThreadLocal<SessionData> sesHolder = new ThreadLocal<>();
-
-    /** */
-    private final boolean sesEnabled;
+    private final ThreadLocal<SessionData> sesHolder;
 
     /** */
     private final boolean locStore;
@@ -69,12 +66,15 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param ctx Kernal context.
+     * @param sesHolders Session holders map to use the same session holder for different managers if they use
+     *        the same store instance.
      * @param cfgStore Store provided in configuration.
      * @param cfg Cache configuration.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
     public GridCacheStoreManager(GridKernalContext ctx,
+        IdentityHashMap<CacheStore, ThreadLocal> sesHolders,
         @Nullable CacheStore<K, Object> cfgStore,
         CacheConfiguration cfg) throws IgniteCheckedException {
         this.cfgStore = cfgStore;
@@ -83,24 +83,34 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
         singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
 
-        if (cfgStore != null && cfg.getAtomicityMode() == TRANSACTIONAL) {
+        ThreadLocal<SessionData> sesHolder0 = null;
+
+        if (cfgStore != null) {
             try {
-                Field sesField = CacheStore.class.getDeclaredField("ses");
+                if (!sesHolders.containsKey(cfgStore)) {
+                    sesHolder0 = new ThreadLocal<>();
 
-                sesField.setAccessible(true);
+                    Field sesField = CacheStore.class.getDeclaredField("ses");
 
-                sesField.set(cfgStore, new ThreadLocalSession(sesHolder));
+                    sesField.setAccessible(true);
 
-                sesEnabled = true;
+                    sesField.set(cfgStore, new ThreadLocalSession(sesHolder0));
+
+                    sesHolders.put(cfgStore, sesHolder0);
+                }
+                else
+                    sesHolder0 = sesHolders.get(cfgStore);
             }
             catch (IllegalAccessException | NoSuchFieldException e) {
                 throw new IgniteCheckedException(e);
             }
         }
-        else
-            sesEnabled = true;
+
+        sesHolder = sesHolder0;
 
         locStore = U.hasAnnotation(cfgStore, CacheLocalStore.class);
+
+        assert sesHolder != null || cfgStore == null;
     }
 
     /**
@@ -236,7 +246,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
             Object val = null;
 
-            boolean ses = initSession(tx);
+            initSession(tx);
 
             try {
                 val = singleThreadGate.load(key);
@@ -251,8 +261,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                if (ses)
-                    sesHolder.set(null);
+                sesHolder.set(null);
             }
 
             if (log.isDebugEnabled())
@@ -374,7 +383,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Loading values from store for keys: " + keys0);
 
-            boolean ses = initSession(tx);
+            initSession(tx);
 
             try {
                 CI2<K, Object> c = new CI2<K, Object>() {
@@ -419,8 +428,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 throw new IgniteCheckedException(new CacheLoaderException(e));
             }
             finally {
-                if (ses)
-                    sesHolder.set(null);
+                sesHolder.set(null);
             }
 
             if (log.isDebugEnabled())
@@ -506,7 +514,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
 
-            boolean ses = initSession(tx);
+            initSession(tx);
 
             try {
                 store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
@@ -518,8 +526,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 throw new IgniteCheckedException(e);
             }
             finally {
-                if (ses)
-                    sesHolder.set(null);
+                sesHolder.set(null);
             }
 
             if (log.isDebugEnabled())
@@ -575,7 +582,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
                     entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
 
-                boolean ses = initSession(tx);
+                initSession(tx);
 
                 try {
                     store.writeAll(entries);
@@ -596,8 +603,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     throw new IgniteCheckedException(e);
                 }
                 finally {
-                    if (ses)
-                        sesHolder.set(null);
+                    sesHolder.set(null);
                 }
 
                 if (log.isDebugEnabled())
@@ -628,7 +634,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Removing value from cache store [key=" + key + ']');
 
-            boolean ses = initSession(tx);
+            initSession(tx);
 
             try {
                 store.delete(key);
@@ -640,8 +646,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 throw new IgniteCheckedException(e);
             }
             finally {
-                if (ses)
-                    sesHolder.set(null);
+                sesHolder.set(null);
             }
 
             if (log.isDebugEnabled())
@@ -677,7 +682,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
 
-            boolean ses = initSession(tx);
+            initSession(tx);
 
             try {
                 store.deleteAll(keys0);
@@ -692,8 +697,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 throw new IgniteCheckedException(e);
             }
             finally {
-                if (ses)
-                    sesHolder.set(null);
+                sesHolder.set(null);
             }
 
             if (log.isDebugEnabled())
@@ -728,17 +732,15 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
         assert store != null;
 
-        boolean ses = initSession(tx);
+        initSession(tx);
 
         try {
             store.txEnd(commit);
         }
         finally {
-            if (ses) {
-                sesHolder.set(null);
+            sesHolder.set(null);
 
-                ((GridMetadataAware)tx).removeMeta(SES_ATTR);
-            }
+            ((GridMetadataAware)tx).removeMeta(SES_ATTR);
         }
     }
 
@@ -760,12 +762,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
     /**
      * @param tx Current transaction.
-     * @return {@code True} if thread local session was initialized.
      */
-    private boolean initSession(@Nullable IgniteTx tx) {
-        if (!sesEnabled)
-            return false;
-
+    private void initSession(@Nullable IgniteTx tx) {
         SessionData ses;
 
         if (tx != null) {
@@ -781,8 +779,6 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             ses = new SessionData(null, cctx.name());
 
         sesHolder.set(ses);
-
-        return true;
     }
 
     /**

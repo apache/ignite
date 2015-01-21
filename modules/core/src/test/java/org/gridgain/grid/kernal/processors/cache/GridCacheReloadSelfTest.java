@@ -98,6 +98,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
 
         if (cacheMode == PARTITIONED)
             cacheCfg.setBackups(1);

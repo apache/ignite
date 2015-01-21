@@ -1148,7 +1148,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (intercept) {
                             V old = entry.innerGet(null,
                                 /*swap*/true,
-                                /*read-through*/true,
+                                /*read-through*/ctx.loadPreviousValue(),
                                 /*fail-fast*/false,
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
@@ -1179,7 +1179,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (intercept) {
                             V old = entry.innerGet(null,
                                 /*swap*/true,
-                                /*read-through*/true,
+                                /*read-through*/ctx.loadPreviousValue(),
                                 /*fail-fast*/false,
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,

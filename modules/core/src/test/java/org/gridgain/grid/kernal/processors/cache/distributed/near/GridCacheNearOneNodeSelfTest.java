@@ -87,6 +87,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 

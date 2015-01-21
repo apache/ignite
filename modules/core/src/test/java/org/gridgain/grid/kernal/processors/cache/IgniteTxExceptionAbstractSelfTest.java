@@ -79,6 +79,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         ccfg.setCacheStoreFactory(null);
         ccfg.setReadThrough(false);
         ccfg.setWriteThrough(false);
+        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }

@@ -103,6 +103,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store()));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
 

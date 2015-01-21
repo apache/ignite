@@ -91,6 +91,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
 
         cacheCfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
         cacheCfg.setSwapEnabled(true);

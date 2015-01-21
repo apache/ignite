@@ -239,6 +239,9 @@ public class CacheConfiguration extends MutableConfiguration {
     /** */
     private Factory storeFactory;
 
+    /** */
+    private boolean loadPrevVal;
+
     /** Node group resolver. */
     private GridCacheAffinityFunction aff;
 
@@ -383,6 +386,7 @@ public class CacheConfiguration extends MutableConfiguration {
         isWriteThrough = cc.isWriteThrough();
         keepPortableInStore = cc.isKeepPortableInStore();
         listenerConfigurations = cc.listenerConfigurations;
+        loadPrevVal = cc.isLoadPreviousValue();
         offHeapMaxMem = cc.getOffHeapMaxMemory();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
         maxQryIterCnt = cc.getMaximumQueryIteratorCount();
@@ -787,6 +791,20 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public void setNearStartSize(int nearStartSize) {
         this.nearStartSize = nearStartSize;
+    }
+
+    /**
+     * @return
+     */
+    public boolean isLoadPreviousValue() {
+        return loadPrevVal;
+    }
+
+    /**
+     * @param loadPrevVal
+     */
+    public void setLoadPreviousValue(boolean loadPrevVal) {
+        this.loadPrevVal = loadPrevVal;
     }
 
     /**

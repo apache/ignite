@@ -80,6 +80,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }

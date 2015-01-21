@@ -342,8 +342,9 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxLocalLoadAllTest.class);
 
         suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
-        //suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
-        //suite.addTestSuite(IgniteCacheStoreSessionTest.class);
+        suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
 
         return suite;
     }

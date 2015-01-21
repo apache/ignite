@@ -32,6 +32,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
+import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Tests transaction during cache preloading.
@@ -208,9 +210,9 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setPreloadMode(GridCachePreloadMode.ASYNC);
+        cfg.setPreloadMode(ASYNC);
 
-        cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheStoreFactory(null);
 

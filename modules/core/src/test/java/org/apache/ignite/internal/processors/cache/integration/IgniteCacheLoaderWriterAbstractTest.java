@@ -28,8 +28,6 @@ import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-
 /**
  *
  */
@@ -72,88 +70,75 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
         storeMap.clear();
     }
 
-    protected boolean putFromPrimary() {
-        return atomicityMode() == ATOMIC;
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testLoaderWriter() throws Exception {
-        final Object key = Integer.MAX_VALUE;
+        IgniteCache<Object, Object> cache = jcache(0);
 
-        for (int i = 0; i < gridCount(); i++) {
-            log.info("Test with grid: " + i);
+        Object key = primaryKey(cache);
 
-            storeMap.clear();
+        assertNull(cache.get(key));
 
-            ldrCallCnt.set(0);
-            writerCallCnt.set(0);
+        checkCalls(1, 0);
 
-            IgniteCache<Object, Object> cache = jcache(i);
+        storeMap.put(key, "test");
 
-            assertNull(cache.get(key));
+        assertEquals("test", cache.get(key));
 
-            checkCalls(1, 0);
+        checkCalls(1, 0);
 
-            storeMap.put(key, "test");
+        assertTrue(storeMap.containsKey(key));
 
-            assertEquals("test", cache.get(key));
+        cache.remove(key);
 
-            checkCalls(2, 0);
+        checkCalls(0, 1);
 
-            assertTrue(storeMap.containsKey(key));
+        assertFalse(storeMap.containsKey(key));
 
-            cache.remove(key);
+        assertNull(cache.get(key));
 
-            checkCalls(2, 1);
+        checkCalls(1, 0);
 
-            assertFalse(storeMap.containsKey(key));
+        cache.put(key, "test1");
 
-            assertNull(cache.get(key));
+        checkCalls(0, 1);
 
-            checkCalls(3, 1);
+        assertEquals("test1", storeMap.get(key));
 
-            cache.put(key, "test1");
+        assertEquals("test1", cache.get(key));
 
-            checkCalls(3, 2);
+        checkCalls(0, 0);
 
-            assertEquals("test1", storeMap.get(key));
+        cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
+            @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+                e.setValue("test2");
 
-            assertEquals("test1", cache.get(key));
+                return null;
+            }
+        });
 
-            checkCalls(3, 2);
+        checkCalls(0, 1);
 
-            cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
-                @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
-                    e.setValue("test2");
+        assertEquals("test2", storeMap.get(key));
 
-                    return null;
-                }
-            });
+        assertEquals("test2", cache.get(key));
 
-            checkCalls(3, 3);
+        checkCalls(0, 0);
 
-            assertEquals("test2", storeMap.get(key));
+        cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
+            @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+                e.remove();
 
-            assertEquals("test2", cache.get(key));
+                return null;
+            }
+        });
 
-            checkCalls(3, 3);
+        checkCalls(0, 1);
 
-            cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
-                @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
-                    e.remove();
+        assertFalse(storeMap.containsKey(key));
 
-                    return null;
-                }
-            });
-
-            checkCalls(3, 4);
-
-            assertFalse(storeMap.containsKey(key));
-
-            assertNull(cache.get(key));
-        }
+        assertNull(cache.get(key));
     }
 
     /**
@@ -162,43 +147,63 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     public void testLoaderWriterBulk() throws Exception {
         Map<Object, Object> vals = new HashMap<>();
 
-        for (int i = 0; i < 100; i++)
-            vals.put(i, i);
+        IgniteCache<Object, Object> cache = jcache(0);
 
-        for (int i = 0; i < gridCount(); i++) {
-            log.info("Test with grid: " + i);
+        for (Object key : primaryKeys(cache, 100, 0))
+            vals.put(key, key);
 
-            storeMap.clear();
+        assertTrue(cache.getAll(vals.keySet()).isEmpty());
 
-            ldrCallCnt.set(0);
-            writerCallCnt.set(0);
+        checkCalls(1, 0);
 
-            IgniteCache<Object, Object> cache = jcache(i);
+        storeMap.putAll(vals);
 
-            assertTrue(cache.getAll(vals.keySet()).isEmpty());
+        assertEquals(vals, cache.getAll(vals.keySet()));
 
-            int expLoads = gridCount();
+        checkCalls(1, 0);
 
-            checkCalls(expLoads, 0);
+        for (Object key : vals.keySet())
+            assertEquals(key, storeMap.get(key));
 
-            storeMap.putAll(vals);
+        cache.removeAll(vals.keySet());
 
-            assertEquals(vals, cache.getAll(vals.keySet()));
+        checkCalls(0, 1);
 
-            expLoads += gridCount();
+        for (Object key : vals.keySet())
+            assertFalse(storeMap.containsKey(key));
 
-            checkCalls(expLoads, 0);
+        cache.putAll(vals);
 
-            for (Object key : vals.keySet())
-                assertTrue(storeMap.contains(key));
+        checkCalls(0, 1);
 
-            cache.removeAll(vals.keySet());
+        for (Object key : vals.keySet())
+            assertEquals(key, storeMap.get(key));
 
-            checkCalls(expLoads, gridCount());
+        cache.invokeAll(vals.keySet(), new EntryProcessor<Object, Object, Object>() {
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... args) {
+                entry.setValue("test1");
 
-            for (Object key : vals.keySet())
-                assertFalse(storeMap.containsKey(key));
-        }
+                return null;
+            }
+        });
+
+        checkCalls(0, 1);
+
+        for (Object key : vals.keySet())
+            assertEquals("test1", storeMap.get(key));
+
+        cache.invokeAll(vals.keySet(), new EntryProcessor<Object, Object, Object>() {
+            @Override public Object process(MutableEntry<Object, Object> entry, Object... args) {
+                entry.remove();
+
+                return null;
+            }
+        });
+
+        checkCalls(0, 1);
+
+        for (Object key : vals.keySet())
+            assertFalse(storeMap.containsKey(key));
     }
 
     /**
@@ -207,8 +212,10 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
      */
     private void checkCalls(int expLdr, int expWriter) {
         assertEquals(expLdr, ldrCallCnt.get());
-
         assertEquals(expWriter, writerCallCnt.get());
+
+        ldrCallCnt.set(0);
+        writerCallCnt.set(0);
     }
 
     /**

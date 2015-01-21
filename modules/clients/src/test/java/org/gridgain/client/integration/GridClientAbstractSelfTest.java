@@ -266,6 +266,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(cacheStore));
         cfg.setWriteThrough(true);
         cfg.setReadThrough(true);
+        cfg.setLoadPreviousValue(true);
 
         cfg.setSwapEnabled(true);
 

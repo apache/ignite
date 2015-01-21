@@ -1942,7 +1942,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                             V old = null;
 
-                            boolean readThrough = !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
+                            boolean readThrough =
+                                cacheCtx.loadPreviousValue() && !F.isEmptyOrNulls(filter) && !F.isAlwaysTrue(filter);
 
                             if (optimistic()) {
                                 try {
@@ -2275,7 +2276,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 if (!hasPrevVal)
                                     v = cached.innerGet(this,
                                         /*swap*/true,
-                                        /*read-through*/true,
+                                        /*read-through*/invoke || cacheCtx.loadPreviousValue(),
                                         /*failFast*/false,
                                         /*unmarshal*/true,
                                         /*metrics*/!invoke,

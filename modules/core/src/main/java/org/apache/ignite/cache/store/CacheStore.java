@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -125,6 +126,10 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
     /** */
     private CacheStoreSession ses;
 
+    /** */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /**
      * Loads all values from underlying persistent storage. Note that keys are not
      * passed, so it is up to implementation to figure out what to load. This method
@@ -164,5 +169,12 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
      */
     @Nullable public CacheStoreSession session() {
         return ses;
+    }
+
+    /**
+     * @return {@link Ignite} instance.
+     */
+    public Ignite ignite() {
+        return ignite;
     }
 }

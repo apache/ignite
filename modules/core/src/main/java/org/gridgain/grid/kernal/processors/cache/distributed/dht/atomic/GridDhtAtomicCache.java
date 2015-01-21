@@ -1214,7 +1214,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         assert !ctx.dr().receiveEnabled(); // Cannot update in batches during DR due to possible conflicts.
         assert !req.returnValue() || req.operation() == TRANSFORM; // Should not request return values for putAll.
 
-        if (!F.isEmpty(req.filter())) {
+        if (!F.isEmpty(req.filter()) && ctx.loadPreviousValue()) {
             try {
                 reloadIfNeeded(locked);
             }
@@ -1416,7 +1416,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         V old = entry.innerGet(
                              null,
                             /*read swap*/true,
-                            /*read through*/true,
+                            /*read through*/ctx.loadPreviousValue(),
                             /*fail fast*/false,
                             /*unmarshal*/true,
                             /*metrics*/true,
@@ -1450,7 +1450,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         V old = entry.innerGet(
                             null,
                             /*read swap*/true,
-                            /*read through*/true,
+                            /*read through*/ctx.loadPreviousValue(),
                             /*fail fast*/false,
                             /*unmarshal*/true,
                             /*metrics*/true,

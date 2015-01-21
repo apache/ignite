@@ -50,6 +50,7 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
         cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
+        cfg.setLoadPreviousValue(true);
 
         return cfg;
     }

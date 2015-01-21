@@ -746,6 +746,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cfg.setReadThrough(true);
                 cfg.setWriteThrough(true);
+                cfg.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -787,6 +788,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -825,6 +827,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -869,6 +872,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -915,6 +919,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
