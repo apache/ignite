@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.gridgain.grid.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -27,29 +26,24 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 /**
  *
  */
-public class IgniteCacheAtomicNoReadThroughTest extends IgniteCacheNoReadThroughAbstractTest {
+public class IgniteCacheTxLocalNoReadThroughTest extends IgniteCacheNoReadThroughAbstractTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 1;
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
-        return PARTITIONED;
+        return LOCAL;
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return PRIMARY;
     }
 }

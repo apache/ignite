@@ -312,6 +312,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     ) {
         if (!async) {
             try {
+                if (!cacheCtx.readThrough()) {
+                    for (K key : keys)
+                        c.apply(key, null);
+
+                    return new GridFinishedFuture<>(cctx.kernalContext(), false);
+                }
+
                 return new GridFinishedFuture<>(cctx.kernalContext(),
                     cacheCtx.store().loadAllFromStore(this, keys, c));
             }
@@ -323,6 +330,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             return cctx.kernalContext().closure().callLocalSafe(
                 new GPC<Boolean>() {
                     @Override public Boolean call() throws Exception {
+                        if (!cacheCtx.readThrough()) {
+                            for (K key : keys)
+                                c.apply(key, null);
+
+                            return false;
+                        }
+
                         return cacheCtx.store().loadAllFromStore(IgniteTxLocalAdapter.this, keys, c);
                     }
                 },

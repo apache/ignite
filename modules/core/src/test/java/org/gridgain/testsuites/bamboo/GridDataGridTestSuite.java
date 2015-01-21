@@ -346,6 +346,13 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
         suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
 
+        suite.addTestSuite(IgniteCacheAtomicNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalNoReadThroughTest.class);
+
         return suite;
     }
 }
