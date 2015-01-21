@@ -31,7 +31,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 
 import java.lang.reflect.*;
 import java.net.*;
@@ -74,8 +73,10 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
         ggfsCfg.setName("ggfs");
         ggfsCfg.setManagementPort(IgniteFsConfiguration.DFLT_MGMT_PORT + cnt);
 
-        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(
-            "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));
+        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            put("type", "shmem");
+            put("port", String.valueOf(GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
+        }});
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
