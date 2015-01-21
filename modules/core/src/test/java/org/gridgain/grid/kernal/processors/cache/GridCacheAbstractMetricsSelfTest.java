@@ -428,36 +428,6 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
-    public void testReplaceValAsyncAvgTime() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
-
-        Integer key = null;
-
-        for (int i = 0; i < 1000; i++) {
-            if (cache.affinity().isPrimary(grid(0).localNode(), i)) {
-                key = i;
-
-                break;
-            }
-        }
-
-        assertEquals(0.0f, cache.metrics().getAveragePutTime());
-        assertEquals(0.0f, cache.metrics().getAverageGetTime());
-
-        IgniteFuture<?> fut = cache.replaceAsync(key, key, key + 1);
-
-        fut.get();
-
-        TimeUnit.MILLISECONDS.sleep(100L);
-
-        assert cache.metrics().getAveragePutTime() > 0;
-        assert cache.metrics().getAverageGetTime() > 0;
-    }
-
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testPutAllAvgTime() throws Exception {
         IgniteCache<Integer, Integer> jcache = grid(0).jcache(null);
         GridCache<Object, Object> cache = grid(0).cache(null);
