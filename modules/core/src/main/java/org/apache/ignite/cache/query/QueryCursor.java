@@ -25,7 +25,7 @@ import java.util.*;
  * @author @java.author
  * @version @java.version
  */
-public interface QueryCursor<T> extends Iterable<T> {
+public interface QueryCursor<T> extends Iterable<T>, AutoCloseable {
     /**
      * Gets all query results and stores them in the collection.
      * Use this method when you know in advance that query result is
@@ -34,4 +34,9 @@ public interface QueryCursor<T> extends Iterable<T> {
      * @return Collection containing full query result.
      */
     public Collection<T> getAll();
+
+    /**
+     * Closes cursor.
+     */
+    @Override public void close();
 }
