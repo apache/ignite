@@ -17,6 +17,8 @@
 
 package org.gridgain.grid.hadoop;
 
+import org.gridgain.grid.util.typedef.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -56,6 +58,8 @@ public class GridHadoopTestUtils {
         long evtCnt = 0;
         String line;
 
+        Map<Long, String> reduceNodes = new HashMap<>();
+
         while((line = reader.readLine()) != null) {
             String[] splitLine = line.split(":");
 
@@ -71,8 +75,20 @@ public class GridHadoopTestUtils {
             if ("JOB".equals(evt[0]))
                 phase = evt[1];
             else {
-                //Try parse task number
-                Long.parseLong(evt[1]);
+                assertEquals(4, evt.length);
+                assertTrue("The node id is not defined", !F.isEmpty(evt[3]));
+
+                long taskNum = Long.parseLong(evt[1]);
+
+                if (("REDUCE".equals(evt[0]) || "SHUFFLE".equals(evt[0]))) {
+                    String nodeId = reduceNodes.get(taskNum);
+
+                    if (nodeId == null)
+                        reduceNodes.put(taskNum, evt[3]);
+                    else
+                        assertEquals("Different nodes for SHUFFLE and REDUCE tasks", nodeId, evt[3]);
+                }
+
                 phase = evt[2];
             }
 
