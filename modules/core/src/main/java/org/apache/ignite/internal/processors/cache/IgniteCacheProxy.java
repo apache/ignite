@@ -23,7 +23,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -41,7 +40,6 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 /**
  * Cache proxy.
@@ -265,107 +263,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public CacheLock lockAll(final Collection<? extends K> keys) {
-        return new CacheLock() {
-            @Override public boolean isLocked() {
-                for (K key : keys) {
-                    if (!delegate.isLocked(key))
-                        return false;
-                }
-
-                return true;
-            }
-
-            @Override public boolean isLockedByThread() {
-                for (K key : keys) {
-                    if (!delegate.isLockedByThread(key))
-                        return false;
-                }
-
-                return true;
-            }
-
-            @Override public IgniteFuture<Boolean> lockAsync() {
-                return delegate.lockAllAsync(keys, 0);
-            }
-
-            @Override public IgniteFuture<Boolean> lockAsync(long timeout, TimeUnit unit) {
-                return delegate.lockAllAsync(keys, unit.toMillis(timeout));
-            }
-
-            @Override public void lock() {
-                try {
-                    delegate.lockAll(keys, 0);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public void lockInterruptibly() throws InterruptedException {
-                tryLock(-1, TimeUnit.MILLISECONDS);
-            }
-
-            @Override public boolean tryLock() {
-                try {
-                    return delegate.lockAll(keys, -1);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-                if (Thread.interrupted())
-                    throw new InterruptedException();
-
-                try {
-                    if (time <= 0)
-                        return delegate.lockAll(keys, -1);
-
-                    IgniteFuture<Boolean> fut = null;
-
-                    try {
-                        fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
-
-                        return fut.get();
-                    }
-                    catch (GridInterruptedException e) {
-                        if (fut != null) {
-                            if (!fut.cancel()) {
-                                if (fut.isDone()) {
-                                    Boolean res = fut.get();
-
-                                    Thread.currentThread().interrupt();
-
-                                    return res;
-                                }
-                            }
-                        }
-
-                        if (e.getCause() instanceof InterruptedException)
-                            throw (InterruptedException)e.getCause();
-
-                        throw new InterruptedException();
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @Override public void unlock() {
-                try {
-                    delegate.unlockAll(keys);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e.getMessage(), e);
-                }
-            }
-
-            @NotNull @Override public Condition newCondition() {
-                throw new UnsupportedOperationException();
-            }
-        };
+        return new CacheLockImpl<K>(delegate, keys);
     }
 
     /** {@inheritDoc} */

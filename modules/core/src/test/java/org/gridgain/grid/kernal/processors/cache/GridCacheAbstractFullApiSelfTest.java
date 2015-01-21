@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import com.google.common.collect.*;
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -3350,23 +3351,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     @SuppressWarnings("BusyWait")
     public void testLockAsync() throws Exception {
         if (lockingEnabled()) {
-            cache().put("key", 1);
+            IgniteCache<String, Integer> cache = jcache();
 
-            assert !cache().isLocked("key");
+            CacheLock lock = cache.lock("key");
 
-            cache().lockAsync("key", 0).get();
+            cache.put("key", 1);
 
-            assert cache().isLocked("key");
+            assert !lock.isLocked();
 
-            cache().unlock("key");
+            lock.lock();
+
+            assert lock.isLocked();
+
+            lock.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache().isLocked("key"))
+                if (lock.isLocked())
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache().isLocked("key");
+            assert !cache.isLocked("key");
         }
     }
 
@@ -3460,38 +3465,34 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     @SuppressWarnings("BusyWait")
     public void testLockAsyncWithTimeout() throws Exception {
         if (lockingEnabled()) {
-            cache().put("key", 1);
+            final IgniteCache<String, Integer> cache = jcache();
 
-            assert !cache().isLocked("key");
+            cache.put("key", 1);
 
-            cache().lockAsync("key", 1000).get();
+            final CacheLock lock = cache.lock("key");
 
-            assert cache().isLocked("key");
-            assert cache().isLockedByThread("key");
+            assert !cache.isLocked("key");
+
+            lock.tryLock(1000, MILLISECONDS);
+
+            assert cache.isLocked("key");
+            assert cache.isLockedByThread("key");
 
             final CountDownLatch latch = new CountDownLatch(1);
 
             IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
 
             comp.call(new Callable<Boolean>() {
-                @Override
-                public Boolean call() throws Exception {
-                    IgniteFuture<Boolean> f = cache().lockAsync("key", 1000);
-
-                    try {
-                        f.get(100);
-
-                        fail();
-                    } catch (IgniteFutureTimeoutException ex) {
-                        info("Caught expected exception: " + ex);
-                    }
+                @Override public Boolean call() throws Exception {
+                    assert !lock.tryLock(1000, MILLISECONDS);
 
                     latch.countDown();
 
                     try {
-                        assert f.get();
-                    } finally {
-                        cache().unlock("key");
+                        assert lock.tryLock();
+                    }
+                    finally {
+                        lock.unlock();
                     }
 
                     return true;
@@ -3503,21 +3504,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 // Let another thread start.
             latch.await();
 
-            assert cache().isLocked("key");
-            assert cache().isLockedByThread("key");
+            assert cache.isLocked("key");
+            assert cache.isLockedByThread("key");
 
-            cache().unlock("key");
+            lock.unlock();
 
             assert f.get();
 
             for (int i = 0; i < 100; i++)
-                if (cache().isLocked("key") || cache().isLockedByThread("key"))
+                if (cache.isLocked("key") || cache.isLockedByThread("key"))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache().isLocked("key");
-            assert !cache().isLockedByThread("key");
+            assert !cache.isLocked("key");
+            assert !cache.isLockedByThread("key");
         }
     }
 
