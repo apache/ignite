@@ -29,7 +29,7 @@ public class GridWebSessionSelfTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("GridGain Web Sessions Test Suite");
+        TestSuite suite = new TestSuite("Ignite Web Sessions Test Suite");
 
         suite.addTestSuite(GridWebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);

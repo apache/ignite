@@ -22,7 +22,9 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
+import java.util.*;
 
 /**
  * Return value for cases where both, value and success flag need to be returned.
@@ -32,7 +34,7 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     private static final long serialVersionUID = 0L;
 
     /** */
-    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
+    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "JavaAbbreviationUsage", "UnusedDeclaration"})
     private static Object GG_CLASS_ID;
 
     /** Value. */
@@ -47,13 +49,6 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
      */
     public GridCacheReturn() {
         // No-op.
-    }
-
-    /**
-     * @param v Value.
-     */
-    public GridCacheReturn(V v) {
-        this.v = v;
     }
 
     /**
@@ -101,17 +96,6 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     }
 
     /**
-     * @param v Value.
-     * @return This instance for chaining.
-     */
-    public GridCacheReturn<V> valueIfNull(V v) {
-        if (this.v == null)
-            this.v = v;
-
-        return this;
-    }
-
-    /**
      * @return Success flag.
      */
     public boolean success() {
@@ -131,20 +115,6 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     }
 
     /**
-     * @param v Value.
-     * @param success Success flag.
-     * @return This instance for chaining.
-     */
-    public GridCacheReturn<V> setIfNull(V v, boolean success) {
-        if (this.v == null) {
-            this.v = v;
-            this.success = success;
-        }
-
-        return this;
-    }
-
-    /**
      * @param success Success flag.
      * @return This instance for chaining.
      */
@@ -152,6 +122,27 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
         this.success = success;
 
         return this;
+    }
+
+    /**
+     * @param key Key.
+     * @param res Result.
+     */
+    @SuppressWarnings("unchecked")
+    public synchronized void addEntryProcessResult(Object key, EntryProcessorResult<?> res) {
+        assert v == null || v instanceof Map : v;
+        assert key != null;
+        assert res != null;
+
+        HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
+
+        if (resMap == null) {
+            resMap = new HashMap<>();
+
+            v = (V)resMap;
+        }
+
+        resMap.put(key, res);
     }
 
     /** {@inheritDoc} */
@@ -165,11 +156,15 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
         out.writeObject(v);
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         success = in.readBoolean();
         v = (V)in.readObject();
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() { return S.toString(GridCacheReturn.class, this); }
+    @Override public String toString() {
+        return S.toString(GridCacheReturn.class, this);
+    }
 }

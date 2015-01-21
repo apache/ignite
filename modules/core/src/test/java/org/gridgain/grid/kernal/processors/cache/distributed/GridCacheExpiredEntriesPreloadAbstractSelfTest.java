@@ -26,8 +26,10 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
@@ -78,12 +80,12 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
         for (int i = 0; i < KEYS_NUM; i++)
             cache0.put(String.valueOf(i), 0);
 
-        for (int i = 0; i < KEYS_NUM; i++) {
-            GridCacheEntry<String, Integer> entry = cache0.entry(String.valueOf(i));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 100L));
 
-            entry.timeToLive(100);
-            entry.setValue(i);
-        }
+        IgniteCache cache = grid(0).jcache(null).withExpiryPolicy(expiry);
+
+        for (int i = 0; i < KEYS_NUM; i++)
+            cache.put(String.valueOf(i), i);
 
         // Allow entries to expire.
         U.sleep(1000);

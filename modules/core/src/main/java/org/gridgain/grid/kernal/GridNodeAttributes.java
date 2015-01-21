@@ -22,7 +22,7 @@ package org.gridgain.grid.kernal;
  */
 public final class GridNodeAttributes {
     /** Prefix for internally reserved attribute names. */
-    static final String ATTR_PREFIX = "org.gridgain";
+    public static final String ATTR_PREFIX = "org.gridgain";
 
     /** Node compound version. */
     public static final String ATTR_BUILD_VER = ATTR_PREFIX + ".build.ver";
@@ -135,9 +135,6 @@ public final class GridNodeAttributes {
 
     /** Cache interceptors. */
     public static final String ATTR_CACHE_INTERCEPTORS = ATTR_PREFIX + ".cache.interceptors";
-
-    /** Native platform. */
-    public static final String ATTR_INTEROP_PLATFORM = ATTR_PREFIX + ".interop.platform";
 
     /**
      * Enforces singleton.

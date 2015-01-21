@@ -15,37 +15,18 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.local;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.lru.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
  *
  */
-public class GridCacheLocalRefreshAheadSelfTest extends GridCacheRefreshAheadAbstractSelfTest {
+public class IgniteCacheEntryListenerTxReplicatedTest extends IgniteCacheEntryListenerTxTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
-
-        GridCacheConfiguration cc = defaultCacheConfiguration();
-
-        cc.setCacheMode(LOCAL);
-        cc.setRefreshAheadRatio(0.5);
-        cc.setStore(testStore());
-        cc.setEvictionPolicy(new GridCacheLruEvictionPolicy(1000));
-
-        c.setCacheConfiguration(cc);
-
-        return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+    @Override protected GridCacheMode cacheMode() {
+        return REPLICATED;
     }
 }

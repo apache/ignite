@@ -37,11 +37,13 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.nio.*;
 import java.util.*;
 
 import static java.util.Arrays.*;
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 
 /**
@@ -388,24 +390,28 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
                     @Nullable @Override public <K, V> V put(String cacheName, K key, V val, long ttl)
                         throws IgniteCheckedException {
-                        GridCacheEntry<K, V> e = ctx.cache().<K, V>cache(cacheName).entry(key);
+                        if (ttl > 0) {
+                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                        assert e != null;
+                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                        e.timeToLive(ttl);
-
-                        return e.set(val);
+                            return cache.getAndPut(key, val);
+                        }
+                        else
+                            return ctx.cache().<K, V>cache(cacheName).put(key, val);
                     }
 
                     @Nullable @Override public <K, V> V putIfAbsent(String cacheName, K key, V val, long ttl)
                         throws IgniteCheckedException {
-                        GridCacheEntry<K, V> e = ctx.cache().<K, V>cache(cacheName).entry(key);
+                        if (ttl > 0) {
+                            ExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                        assert e != null;
+                            IgniteCache<K, V> cache = ctx.cache().<K, V>publicJCache(cacheName).withExpiryPolicy(plc);
 
-                        e.timeToLive(ttl);
-
-                        return e.setIfAbsent(val);
+                            return cache.getAndPutIfAbsent(key, val);
+                        }
+                        else
+                            return ctx.cache().<K, V>cache(cacheName).putIfAbsent(key, val);
                     }
 
                     @Nullable @Override public <K, V> V remove(String cacheName, K key) throws IgniteCheckedException {

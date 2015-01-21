@@ -17,10 +17,13 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -84,7 +87,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testTransform(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = grid(0).jcache(null);
 
         cache.put(key, 0);
 
@@ -97,7 +100,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
                     if (i % 500 == 0)
                         log.info("Iteration " + i);
 
-                    cache.transform(key, new IncClosure());
+                    cache.invoke(key, new IncProcessor());
                 }
 
                 return null;
@@ -347,23 +350,29 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     }
 
     /**
+     *
      */
-    protected static class IncClosure implements IgniteClosure<Integer, Integer> {
+    protected static class IncProcessor implements EntryProcessor<Integer, Integer, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public Integer apply(Integer val) {
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            Integer val = e.getValue();
+
             if (val == null) {
                 failed = true;
 
-                System.out.println(Thread.currentThread() + " got null in transform: " + val);
+                System.out.println(Thread.currentThread() + " got null in processor: " + val);
 
                 return null;
             }
 
-            return val + 1;
+            e.setValue(val + 1);
+
+            return null;
         }
     }
 
     /**
+     *
      */
     protected static class TestFilter implements IgnitePredicate<GridCacheEntry<Integer, Integer>> {
         /** {@inheritDoc} */

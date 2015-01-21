@@ -82,6 +82,9 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     /** Sync commit flag. */
     private boolean syncCommit;
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -90,6 +93,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
     }
 
     /**
+     * @param cacheId Cache ID.
      * @param topVer Topology version.
      * @param nodeId Node ID.
      * @param threadId Thread ID.
@@ -104,8 +108,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param timeout Lock timeout.
      * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
+     * @param syncCommit Synchronous commit flag.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      * @param partLock If partition is locked.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
+     * @param accessTtl TTL for read operation.
      */
     public GridNearLockRequest(
         int cacheId,
@@ -127,7 +135,8 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         @Nullable IgniteTxKey grpLockKey,
         boolean partLock,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long accessTtl
     ) {
         super(
             cacheId,
@@ -154,6 +163,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+        this.accessTtl = accessTtl;
 
         dhtVers = new GridCacheVersion[keyCnt];
     }
@@ -294,8 +304,19 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         return dhtVers[idx];
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
+    @Override protected boolean transferExpiryPolicy() {
+        return true;
+    }
+
+    /**
+     * @return TTL for read operation.
+     */
+    public long accessTtl() {
+        return accessTtl;
+    }
+
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
@@ -339,6 +360,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         _clone.taskNameHash = taskNameHash;
         _clone.hasTransforms = hasTransforms;
         _clone.syncCommit = syncCommit;
+        _clone.accessTtl = accessTtl;
     }
 
     /** {@inheritDoc} */
@@ -464,6 +486,13 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     return false;
 
                 commState.idx++;
+
+            case 35:
+                if (!commState.putLong(accessTtl))
+                    return false;
+
+                commState.idx++;
+
         }
 
         return true;
@@ -609,6 +638,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
                     return false;
 
                 syncCommit = commState.getBoolean();
+
+                commState.idx++;
+
+            case 35:
+                if (buf.remaining() < 8)
+                    return false;
+
+                accessTtl = commState.getLong();
 
                 commState.idx++;
         }

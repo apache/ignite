@@ -29,6 +29,9 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.expiry.*;
+
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
@@ -41,6 +44,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     /** Test cache mode. */
     protected GridCacheMode cacheMode;
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -93,24 +97,17 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
         try {
             final String key = "key";
 
-            final GridCache<Object, Object> cache = g.cache(null);
+            g.jcache(null).withExpiryPolicy(
+                    new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put(key, 1);
 
-            GridCacheEntry<Object, Object> entry = cache.entry(key);
-
-            entry.timeToLive(1000);
-            entry.setValue(1);
+            assertEquals(1, g.jcache(null).get(key));
 
             U.sleep(1100);
 
             GridTestUtils.retryAssert(log, 10, 100, new CAX() {
                 @Override public void applyx() {
                     // Check that no more entries left in the map.
-                    try {
-                        assertNull(g.cache(null).get(key));
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        // No-op.
-                    }
+                    assertNull(g.jcache(null).get(key));
 
                     if (!g.internalCache().context().deferredDelete())
                         assertNull(g.internalCache().map().getEntry(key));

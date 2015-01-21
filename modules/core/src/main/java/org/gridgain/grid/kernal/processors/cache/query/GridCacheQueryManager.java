@@ -2701,16 +2701,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public void transform(IgniteClosure<V, V> transformer) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public V replace(V val) {
             throw new UnsupportedOperationException();
         }
@@ -2880,6 +2870,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public <T> T unwrap(Class<T> clazz) {
+            if(clazz.isAssignableFrom(getClass()))
+                return clazz.cast(this);
+
+            throw new IllegalArgumentException();
         }
     }
 

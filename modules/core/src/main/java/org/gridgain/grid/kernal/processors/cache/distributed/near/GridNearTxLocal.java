@@ -35,6 +35,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -79,6 +80,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** True if transaction contains colocated cache entries mapped to local node. */
     private boolean colocatedLocallyMapped;
 
+    /** Info for entries accessed locally in optimistic transaction. */
+    private Map<IgniteTxKey, IgniteCacheExpiryPolicy> accessMap;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -94,9 +98,13 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
+     * @param invalidate
+     * @param storeEnabled
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is a group lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridNearTxLocal(
         GridCacheSharedContext<K, V> ctx,
@@ -271,12 +279,17 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
-        boolean async, final Collection<? extends K> keys,
+        boolean async,
+        final Collection<? extends K> keys,
         boolean deserializePortable,
         final IgniteBiInClosure<K, V> c
     ) {
         if (cacheCtx.isNear()) {
-            return cacheCtx.nearTx().txLoadAsync(this, keys, CU.<K, V>empty(), deserializePortable).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
+            return cacheCtx.nearTx().txLoadAsync(this,
+                keys,
+                CU.<K, V>empty(),
+                deserializePortable,
+                accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
                     try {
                         Map<K, V> map = f.get();
@@ -297,9 +310,15 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             });
         }
         else if (cacheCtx.isColocated()) {
-            return cacheCtx.colocated().loadAsync(keys, /*reload*/false, /*force primary*/false, topologyVersion(),
-                CU.subjectId(this, cctx), resolveTaskName(), deserializePortable, null)
-                .chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
+            return cacheCtx.colocated().loadAsync(keys,
+                /*reload*/false,
+                /*force primary*/false,
+                topologyVersion(),
+                CU.subjectId(this, cctx),
+                resolveTaskName(),
+                deserializePortable,
+                null,
+                accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                     @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
                         try {
                             Map<K, V> map = f.get();
@@ -530,8 +549,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      */
-    void readyNearLocks(GridDistributedTxMapping<K, V> mapping, Collection<GridCacheVersion> pendingVers,
-        Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers) {
+    void readyNearLocks(GridDistributedTxMapping<K, V> mapping,
+        Collection<GridCacheVersion> pendingVers,
+        Collection<GridCacheVersion> committedVers,
+        Collection<GridCacheVersion> rolledbackVers)
+    {
         Collection<IgniteTxEntry<K, V>> entries = groupLock() ?
             Collections.singletonList(groupLockEntry()) :
             F.concat(false, mapping.reads(), mapping.writes());
@@ -1045,8 +1067,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    public IgniteFuture<GridCacheReturn<V>> lockAllAsync(GridCacheContext<K, V> cacheCtx, final Collection<? extends K> keys,
-        boolean implicit, boolean read) {
+    public IgniteFuture<GridCacheReturn<V>> lockAllAsync(GridCacheContext<K, V> cacheCtx,
+        final Collection<? extends K> keys,
+        boolean implicit,
+        boolean read,
+        long accessTtl) {
         assert pessimistic();
 
         try {
@@ -1067,7 +1092,14 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             log.debug("Before acquiring transaction lock on keys: " + keys);
 
         IgniteFuture<Boolean> fut = cacheCtx.colocated().lockAllAsyncInternal(keys,
-            lockTimeout(), this, isInvalidate(), read, /*retval*/false, isolation, CU.<K, V>empty());
+            lockTimeout(),
+            this,
+            isInvalidate(),
+            read,
+            /*retval*/false,
+            isolation,
+            accessTtl,
+            CU.<K, V>empty());
 
         return new GridEmbeddedFuture<>(
             fut,
@@ -1134,6 +1166,70 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         }
         else
             return cacheCtx.cache().entryEx(key.key(), topVer);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
+        IgniteTxKey key,
+        @Nullable ExpiryPolicy expiryPlc)
+    {
+        assert optimistic();
+
+        if (expiryPlc == null)
+            expiryPlc = ctx.expiry();
+
+        if (expiryPlc != null) {
+            IgniteCacheExpiryPolicy plc = ctx.cache().accessExpiryPolicy(expiryPlc);
+
+            if (plc != null) {
+                if (accessMap == null)
+                    accessMap = new HashMap<>();
+
+                accessMap.put(key, plc);
+            }
+
+            return plc;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param cacheCtx Cache context.
+     * @param keys Keys.
+     * @return Expiry policy.
+     */
+    private IgniteCacheExpiryPolicy accessPolicy(GridCacheContext<K, V> cacheCtx, Collection<? extends K> keys) {
+        if (accessMap != null) {
+            for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
+                if (e.getKey().cacheId() == cacheCtx.cacheId() && keys.contains(e.getKey().key()))
+                    return e.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws IgniteCheckedException {
+        super.close();
+
+        if (accessMap != null) {
+            assert optimistic();
+
+            for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
+                if (e.getValue().entries() != null) {
+                    GridCacheContext cctx0 = cctx.cacheContext(e.getKey().cacheId());
+
+                    if (cctx0.isNear())
+                        cctx0.near().dht().sendTtlUpdateRequest(e.getValue());
+                    else
+                        cctx0.dht().sendTtlUpdateRequest(e.getValue());
+                }
+            }
+
+            accessMap = null;
+        }
     }
 
     /** {@inheritDoc} */

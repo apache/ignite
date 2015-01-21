@@ -45,7 +45,7 @@ import java.util.*;
  */
 public class GridTcpCommunicationMessageFactory {
     /** Common message producers. */
-    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[82];
+    private static final GridTcpCommunicationMessageProducer[] COMMON = new GridTcpCommunicationMessageProducer[83];
 
     /**
      * Custom messages registry. Used for test purposes.
@@ -53,7 +53,7 @@ public class GridTcpCommunicationMessageFactory {
     private static final Map<Byte, GridTcpCommunicationMessageProducer> CUSTOM = new ConcurrentHashMap8<>();
 
     /** */
-    public static final int MAX_COMMON_TYPE = 81;
+    public static final int MAX_COMMON_TYPE = 82;
 
     static {
         registerCommon(new GridTcpCommunicationMessageProducer() {
@@ -272,6 +272,9 @@ public class GridTcpCommunicationMessageFactory {
                     case 81:
                         return new GridJobExecuteRequestV2();
 
+                    case 82:
+                        return new GridCacheTtlUpdateRequest();
+
                     default:
                         assert false : "Invalid message type.";
 
@@ -282,7 +285,7 @@ public class GridTcpCommunicationMessageFactory {
            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
            60, 61, 62, 63, 64, /* 65-72 - GGFS messages. */    73, 74, 75, 76, 77, 78, 79,
-           80, 81);
+           80, 81, 82);
     }
 
     /**
