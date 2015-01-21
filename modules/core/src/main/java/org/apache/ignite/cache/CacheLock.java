@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
