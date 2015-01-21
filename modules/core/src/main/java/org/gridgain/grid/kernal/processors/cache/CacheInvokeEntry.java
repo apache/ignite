@@ -30,9 +30,6 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     /** */
     private boolean modified;
 
-    /** */
-    private final boolean hadVal;
-
     /**
      * @param key Key.
      * @param val Value.
@@ -42,8 +39,6 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
 
         this.key = key;
         this.val = val;
-
-        hadVal = val != null;
     }
 
     /** {@inheritDoc} */
@@ -84,14 +79,9 @@ public class CacheInvokeEntry<K, V> implements MutableEntry<K, V> {
     }
 
     /**
-     * @return {@code True} if entry was modified.
+     * @return {@code True} if {@link #setValue} or {@link #remove was called}.
      */
     public boolean modified() {
-        if (modified) {
-            if (!hadVal && val == null)
-                return false;
-        }
-
         return modified;
     }
 

@@ -140,9 +140,19 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
             checkCalls(3, 3);
 
-            cache.remove(key);
+            cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
+                @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
+                    e.remove();
+
+                    return null;
+                }
+            });
 
             checkCalls(3, 4);
+
+            assertFalse(storeMap.containsKey(key));
+
+            assertNull(cache.get(key));
         }
     }
 

@@ -800,8 +800,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkTransform(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        List<String> keys =
-            concurrency == OPTIMISTIC ? primaryKeysForCache(cache, 3) : Arrays.asList("key1", "key2", "key3");
+        List<String> keys = Arrays.asList("key1", "key2", "key3");
 
         String key1 = keys.get(0);
         String key2 = keys.get(1);

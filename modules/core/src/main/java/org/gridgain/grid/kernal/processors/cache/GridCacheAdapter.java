@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.dataload.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -2811,8 +2812,10 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable final Collection<? extends K> keys,
+    @Override public void removeAll(final Collection<? extends K> keys,
         final IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        A.notNull(keys, "keys");
+
         ctx.denyOnLocalRead();
 
         if (F.isEmpty(keys))
@@ -3395,6 +3398,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             if (ctx.store().isLocalStore()) {
                 Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
 
+                if (nodes.isEmpty())
+                    return new GridFinishedFuture<>(ctx.kernalContext());
+
                 return ctx.closures().callAsyncNoFailover(BROADCAST,
                     new LoadKeysCallable<>(ctx.name(), keys, true),
                     nodes,
@@ -3413,6 +3419,9 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         else {
             Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
 
+            if (nodes.isEmpty())
+                return new GridFinishedFuture<>(ctx.kernalContext());
+
             return ctx.closures().callAsyncNoFailover(BROADCAST,
                 new LoadKeysCallable<>(ctx.name(), keys, false),
                 nodes,
@@ -3426,6 +3435,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
         try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            ldr.updater(new SkipStoreUpdater<K, V>());
+
             final Collection<Map.Entry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());
 
             ctx.store().loadAllFromStore(null, keys, new CIX2<K, V>() {
@@ -5331,6 +5342,20 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         void onDone() {
             if (!col.isEmpty())
                 ldr.addData(col);
+        }
+    }
+
+    /**
+     *
+     */
+    static class SkipStoreUpdater<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
+    /** {@inheritDoc} */
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
+            throws IgniteCheckedException {
+            cache = cache.flagsOn(SKIP_STORE);
+
+            for (Map.Entry<K, V> e : entries)
+                cache.put(e.getKey(), e.getValue());
         }
     }
 }

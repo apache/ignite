@@ -484,6 +484,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> removeAllAsync(Collection<? extends K> keys,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        A.notNull(keys, "keys");
+
         return removeAllAsync0(keys, null, null, false, false, filter);
     }
 
