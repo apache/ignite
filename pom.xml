@@ -114,6 +114,7 @@
         <module>modules/log4j</module>
         <module>modules/slf4j</module>
         <module>modules/jcl</module>
+        <module>modules/schema-load</module>
     </modules>
 
     <dependencyManagement>

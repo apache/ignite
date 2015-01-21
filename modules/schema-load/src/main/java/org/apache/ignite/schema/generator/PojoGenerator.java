@@ -1,0 +1,316 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.schema.generator;
+
+import org.apache.ignite.schema.ui.*;
+import org.gridgain.grid.cache.query.*;
+
+import java.io.*;
+import java.util.*;
+
+import static org.apache.ignite.schema.ui.MessageBox.Result.*;
+
+/**
+ * POJO generator for key and value classes.
+ */
+public class PojoGenerator {
+    /** */
+    private static final String TAB = "    ";
+    /** */
+    private static final String TAB2 = TAB + TAB;
+    /** */
+    private static final String TAB3 = TAB + TAB + TAB;
+
+    /**
+     * Add line to source code without indent.
+     *
+     * @param src Source code.
+     * @param line Code line.
+     */
+    private static void add0(Collection<String> src, String line) {
+        src.add(line);
+    }
+
+    /**
+     * Add line to source code with one indent.
+     *
+     * @param src Source code.
+     * @param line Code line.
+     */
+    private static void add1(Collection<String> src, String line) {
+        src.add(TAB + line);
+    }
+
+    /**
+     * Add line to source code with two indents.
+     *
+     * @param src Source code.
+     * @param line Code line.
+     */
+    private static void add2(Collection<String> src, String line) {
+        src.add(TAB2 + line);
+    }
+
+    /**
+     * Add line to source code with three indents.
+     *
+     * @param src Source code.
+     * @param line Code line.
+     */
+    private static void add3(Collection<String> src, String line) {
+        src.add(TAB3 + line);
+    }
+
+    /**
+     * @param str Source string.
+     * @return String with first letters in upper case.
+     */
+    private static String capitalizeFirst(String str) {
+        return Character.toUpperCase(str.charAt(0)) + str.substring(1);
+    }
+
+    /**
+     * Generate java class code.
+     *
+     * @param pkg Package name.
+     * @param type Type name.
+     * @param descs Type descriptors.
+     * @param constructor If {@code true} then generate empty and full constructors.
+     * @param askOverwrite Callback to ask user to confirm file overwrite.
+     * @throws IOException If failed to write generated code into file.
+     */
+    private static void generateCode(String pkg, String type, Collection<GridCacheQueryTypeDescriptor> descs,
+        File pkgFolder, boolean constructor, ConfirmCallable askOverwrite) throws IOException {
+        File out = new File(pkgFolder, type + ".java");
+
+        if (out.exists()) {
+            MessageBox.Result choice = askOverwrite.confirm(out.getName());
+
+            if (CANCEL == choice)
+                throw new IllegalStateException("POJO generation was canceled!");
+
+            if (NO == choice || NO_TO_ALL == choice)
+                return;
+        }
+
+        Collection<String> src = new ArrayList<>(256);
+
+        add0(src, "/*");
+        add0(src, " * Licensed to the Apache Software Foundation (ASF) under one or more");
+        add0(src, " * contributor license agreements.  See the NOTICE file distributed with");
+        add0(src, " * this work for additional information regarding copyright ownership.");
+        add0(src, " * The ASF licenses this file to You under the Apache License, Version 2.0");
+        add0(src, " * (the \"License\"); you may not use this file except in compliance with");
+        add0(src, " * the License.  You may obtain a copy of the License at");
+        add0(src, " *");
+        add0(src, " *      http://www.apache.org/licenses/LICENSE-2.0");
+        add0(src, " *");
+        add0(src, " * Unless required by applicable law or agreed to in writing, software");
+        add0(src, " * distributed under the License is distributed on an \"AS IS\" BASIS,");
+        add0(src, " * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.");
+        add0(src, " * See the License for the specific language governing permissions and");
+        add0(src, " * limitations under the License.");
+        add0(src, " */");
+
+        add0(src, "");
+
+        add0(src, "package " + pkg + ";");
+
+        add0(src, "");
+
+        add0(src, "import java.io.*;");
+
+        add0(src, "");
+
+        add0(src, "/**");
+        add0(src, " * " + type + " definition.");
+        add0(src, " *");
+        add0(src, " * Code generated by Apache Ignite Schema Load utility.");
+        add0(src, " */");
+        add0(src, "public class " + type + " implements Serializable {");
+
+        add1(src, "/** */");
+        add1(src, "private static final long serialVersionUID = 0L;");
+
+        add0(src, "");
+
+        // Fields.
+        for (GridCacheQueryTypeDescriptor desc : descs) {
+            String fldName = desc.getJavaName();
+
+            add1(src, "/** Value for " + fldName + ". */");
+            add1(src, "private " + desc.getJavaType().getSimpleName() + " " + fldName + ";");
+            add0(src, "");
+        }
+
+        // Constructors.
+        if (constructor) {
+            add1(src, "/**");
+            add1(src, " * Empty constructor.");
+            add1(src, " */");
+            add1(src, "public " + type + "() {");
+            add2(src, "// No-op.");
+            add1(src, "}");
+
+            add0(src, "");
+
+            add1(src, "/**");
+            add1(src, " * Full constructor.");
+            add1(src, " */");
+            add1(src, "public " + type + "(");
+
+            Iterator<GridCacheQueryTypeDescriptor> it = descs.iterator();
+
+            while (it.hasNext()) {
+                GridCacheQueryTypeDescriptor desc = it.next();
+
+                add2(src, desc.getJavaType().getSimpleName() + " " + desc.getJavaName() + (it.hasNext() ? "," : ""));
+            }
+            add1(src, ") {");
+
+            for (GridCacheQueryTypeDescriptor desc : descs)
+                add2(src, String.format("this.%1$s = %1$s;", desc.getJavaName()));
+
+            add1(src, "}");
+
+            add0(src, "");
+        }
+
+        // Methods.
+        for (GridCacheQueryTypeDescriptor desc : descs) {
+            String fldName = desc.getJavaName();
+
+            String fldType = desc.getJavaType().getSimpleName();
+
+            String mtdName = capitalizeFirst(fldName);
+
+            add1(src, "/**");
+            add1(src, " * Gets " + fldName + ".");
+            add1(src, " *");
+            add1(src, " * @return Value for " + fldName + ".");
+            add1(src, " */");
+            add1(src, "public " + fldType + " get" + mtdName + "() {");
+            add2(src, "return " + fldName + ";");
+            add1(src, "}");
+
+            add0(src, "");
+
+            add1(src, "/**");
+            add1(src, " * Sets " + fldName + ".");
+            add1(src, " *");
+            add1(src, " * @param " + fldName + " New value for " + fldName + ".");
+            add1(src, " */");
+            add1(src, "public void set" + mtdName + "(" + fldType + " " + fldName + ") {");
+            add2(src, "this." + fldName + " = " + fldName + ";");
+            add1(src, "}");
+
+            add0(src, "");
+        }
+
+        add1(src, "/** {@inheritDoc} */");
+        add1(src, "@Override public boolean equals(Object o) {");
+        add2(src, "if (this == o)");
+        add3(src, "return true;");
+
+        add0(src, "");
+
+        add2(src, "if (!(o instanceof " + type + "))");
+        add3(src, "return false;");
+
+        add0(src, "");
+
+        add2(src, String.format("%1$s that = (%1$s)o;", type));
+
+        for (GridCacheQueryTypeDescriptor desc : descs) {
+            add0(src, "");
+            add2(src, String.format("if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)",
+                desc.getJavaName()));
+            add3(src, "return false;");
+        }
+
+        add0(src, "");
+        add2(src, "return true;");
+        add1(src, "}");
+
+        add0(src, "");
+
+        add1(src, "/** {@inheritDoc} */");
+        add1(src, "@Override public int hashCode() {");
+
+        Iterator<GridCacheQueryTypeDescriptor> it = descs.iterator();
+
+        add2(src, String.format("int res = %1$s != null ? %1$s.hashCode() : 0;", it.next().getJavaName()));
+
+        if (it.hasNext()) {
+            add0(src, "");
+
+            while (it.hasNext())
+                add2(src, String.format("res = 31 * res + (%1$s != null ? %1$s.hashCode() : 0);",
+                    it.next().getJavaName()));
+        }
+
+        add0(src, "");
+        add2(src, "return res;");
+        add1(src, "}");
+
+        add0(src, "");
+
+        add1(src, "/** {@inheritDoc} */");
+        add1(src, "@Override public String toString() {");
+
+        it = descs.iterator();
+
+        add2(src, String.format("return \"%1$s [%2$s=\" + %2$s +", type, it.next().getJavaName()));
+
+        while (it.hasNext())
+            add3(src, String.format("\", %1$s=\" + %1$s +", it.next().getJavaName()));
+
+        add3(src, "\"]\";");
+        add1(src, "}");
+
+        add0(src, "}");
+
+        try (Writer writer = new BufferedWriter(new FileWriter(out))) {
+            for (String line : src)
+                writer.write(line + '\n');
+        }
+    }
+
+    /**
+     * Generate source code for type by its metadata.
+     *
+     * @param meta Type metadata.
+     * @param outFolder Output folder.
+     * @param pkg Types package.
+     * @param constructor If {@code true} then generate empty and full constructors.
+     * @param askOverwrite Callback to ask user to confirm file overwrite.
+     * @throws IOException If failed to write generated code into file.
+     */
+    public static void generate(GridCacheQueryTypeMetadata meta, String outFolder, String pkg, boolean constructor,
+        ConfirmCallable askOverwrite)
+        throws IOException {
+        File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
+
+        if (!pkgFolder.exists() && !pkgFolder.mkdirs())
+            throw new IOException("Failed to create folders for package: " + pkg);
+
+        generateCode(pkg, meta.getKeyType(), meta.getKeyDescriptors(), pkgFolder, constructor, askOverwrite);
+
+        generateCode(pkg, meta.getType(), meta.getValueDescriptors(), pkgFolder, constructor, askOverwrite);
+    }
+}

@@ -1,0 +1,58 @@
+.root {
+    -fx-background-color: eeeeee;
+}
+
+.button {
+    -fx-font-size: 14;
+    -fx-focus-color: gray;
+}
+
+.label {
+    -fx-font-size: 14;
+}
+
+.check-box {
+    -fx-font-size: 14;
+    -fx-focus-color: gray;
+}
+
+.text-field {
+    -fx-font-size: 14;
+    -fx-background-color: -fx-text-box-border, -fx-control-inner-background, -fx-control-inner-background;
+    -fx-background-radius: 0, 0, 0, 0;
+}
+
+.text-field:focused {
+    -fx-background-color: -fx-text-box-border, -fx-control-inner-background, -fx-control-inner-background;
+    -fx-background-radius: 0, 0, 0, 0;
+}
+
+.tree-view {
+    -fx-focus-color: gray;
+}
+
+.table-view {
+    -fx-focus-color: gray;
+}
+
+.tooltip {
+    -fx-background-radius: 0 0 0 0;
+}
+
+.page-corner {
+    -fx-shape: " ";
+}
+
+.progress-indicator {
+    -fx-progress-color: gray
+}
+
+.split-pane {
+    -fx-background-color: -fx-box-border, eeeeee;
+}
+
+#banner {
+   -fx-font-size: 20px;
+   -fx-font-weight: bold;
+   -fx-background-color: white
+}
