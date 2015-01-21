@@ -31,7 +31,6 @@ import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
