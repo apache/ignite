@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.kernal.GridTopic.*;
-import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheMessage.*;
 
 /**

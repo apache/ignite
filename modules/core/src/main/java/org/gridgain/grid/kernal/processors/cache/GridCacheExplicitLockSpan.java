@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.managers.discovery.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;

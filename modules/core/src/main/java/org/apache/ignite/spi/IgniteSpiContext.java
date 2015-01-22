@@ -22,8 +22,8 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.jetbrains.annotations.*;
 

@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 
 /**
  * Simple injector which wraps ComputeJobContext resource object.

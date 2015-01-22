@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.discovery.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.loadtests.util.*;
@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.gridgain.testframework.GridLoadTestUtils.*;
 
 /**

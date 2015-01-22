@@ -19,10 +19,9 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.checkpoint.*;
-import org.gridgain.grid.kernal.managers.communication.*;
+import org.apache.ignite.internal.managers.checkpoint.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.gridgain.grid.p2p.*;
-import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.testsuites.*;
 
 /**

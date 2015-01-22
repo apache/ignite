@@ -21,7 +21,7 @@ import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.managers.security.*;
+import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;

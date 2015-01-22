@@ -25,7 +25,7 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
-import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  * Job worker.

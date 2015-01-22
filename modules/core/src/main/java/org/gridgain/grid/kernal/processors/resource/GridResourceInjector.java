@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 
 /**
  * Resource injector implementations contain logic and resources that

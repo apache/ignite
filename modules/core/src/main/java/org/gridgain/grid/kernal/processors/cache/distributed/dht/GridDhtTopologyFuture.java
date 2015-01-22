@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.managers.discovery.*;
+import org.apache.ignite.internal.managers.discovery.*;
 
 /**
  * Future that implements a barrier after which dht topology is safe to use. Topology is considered to be

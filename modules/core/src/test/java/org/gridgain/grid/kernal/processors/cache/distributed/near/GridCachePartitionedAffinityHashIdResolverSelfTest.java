@@ -92,6 +92,6 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
                 return null;
             }
         }, IgniteCheckedException.class, "Failed to start manager: GridManagerAdapter [enabled=true, name=" +
-            "org.gridgain.grid.kernal.managers.discovery.GridDiscoveryManager]");
+            "org.apache.ignite.internal.managers.discovery.GridDiscoveryManager]");
     }
 }

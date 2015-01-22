@@ -33,7 +33,7 @@ import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.ssl.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;

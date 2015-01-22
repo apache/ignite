@@ -33,7 +33,7 @@ import org.apache.ignite.streamer.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.dotnet.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;

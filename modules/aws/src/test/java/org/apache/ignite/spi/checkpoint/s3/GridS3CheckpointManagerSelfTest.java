@@ -19,7 +19,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 
 import com.amazonaws.auth.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.kernal.managers.checkpoint.*;
+import org.apache.ignite.internal.managers.checkpoint.*;
 import org.gridgain.testsuites.bamboo.*;
 
 /**

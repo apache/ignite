@@ -25,7 +25,7 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;

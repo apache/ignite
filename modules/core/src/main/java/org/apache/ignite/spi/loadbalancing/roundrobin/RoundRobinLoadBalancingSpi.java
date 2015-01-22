@@ -24,7 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;

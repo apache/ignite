@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
+import org.apache.ignite.internal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.internal.util.direct.*;

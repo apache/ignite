@@ -30,7 +30,7 @@ import org.apache.ignite.thread.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;

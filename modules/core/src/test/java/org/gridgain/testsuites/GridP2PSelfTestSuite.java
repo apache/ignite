@@ -18,7 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.p2p.*;
 
 /**

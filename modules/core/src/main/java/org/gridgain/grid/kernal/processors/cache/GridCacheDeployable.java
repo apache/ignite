@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 
 /**
  * Deployable cache message.

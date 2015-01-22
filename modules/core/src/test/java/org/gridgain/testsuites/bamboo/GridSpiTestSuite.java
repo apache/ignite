@@ -18,7 +18,7 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.managers.*;
+import org.apache.ignite.internal.managers.*;
 import org.gridgain.testsuites.*;
 
 /**

@@ -20,12 +20,12 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.kernal.managers.discovery.*;
-import org.gridgain.grid.kernal.managers.events.*;
-import org.gridgain.grid.kernal.managers.swapspace.*;
+import org.apache.ignite.internal.managers.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.managers.events.*;
+import org.apache.ignite.internal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.service.*;
 

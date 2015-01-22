@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.future.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
 
 /**

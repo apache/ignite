@@ -30,7 +30,7 @@ import org.apache.ignite.portables.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.apache.ignite.spi.discovery.*;

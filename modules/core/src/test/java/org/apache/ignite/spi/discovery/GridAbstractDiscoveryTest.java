@@ -19,7 +19,7 @@ package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.gridgain.testframework.junits.spi.*;
 
 import javax.swing.*;

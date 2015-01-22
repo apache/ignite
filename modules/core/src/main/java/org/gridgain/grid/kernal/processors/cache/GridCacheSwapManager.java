@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.kernal.managers.swapspace.*;
+import org.apache.ignite.internal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.offheap.*;

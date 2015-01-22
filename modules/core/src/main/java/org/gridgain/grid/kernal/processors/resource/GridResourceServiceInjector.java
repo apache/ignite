@@ -20,8 +20,7 @@ package org.gridgain.grid.kernal.processors.resource;
 import org.apache.ignite.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.deployment.*;
+import org.apache.ignite.internal.managers.deployment.*;
 
 import java.util.*;
 
