@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import junit.framework.*;
 import org.apache.ignite.*;
@@ -31,7 +31,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.util.GridUtils.*;
+import static org.apache.ignite.internal.util.GridUtils.*;
 
 /**
  * Checks creation of work folder.

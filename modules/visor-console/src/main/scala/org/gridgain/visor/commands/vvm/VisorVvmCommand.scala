@@ -17,9 +17,10 @@
 
 package org.gridgain.visor.commands.vvm
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.visor.util.{VisorTaskUtils => TU}
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite.IgniteSystemProperties
 import org.apache.ignite.cluster.ClusterNode
@@ -118,7 +119,7 @@ class VisorVvmCommand {
 
             var vvmCmd: String = null
 
-            val ext = if (U.isWindows) ".exe" else ""
+            val ext = if (GridUtils.isWindows) ".exe" else ""
 
             val fs = File.separator
 
@@ -193,7 +194,7 @@ class VisorVvmCommand {
 
             val neighbors = grid.forHost(grid.localNode).nodes()
 
-            if (U.isWindows)
+            if (GridUtils.isWindows)
                 vvmCmd = "cmd /c \"%s\"".format(vvmCmd)
 
             for (node <- nodes if !neighbors.contains(node)) {
@@ -234,7 +235,7 @@ class VisorVvmCommand {
      * @param vvmCmd VisualVM command.
      */
     private def vvmCommandArray(vvmCmd: String): Array[String] = {
-        if (U.isWindows) Array("cmd", "/c", vvmCmd) else Array(vvmCmd)
+        if (GridUtils.isWindows) Array("cmd", "/c", vvmCmd) else Array(vvmCmd)
     }
 
     /**

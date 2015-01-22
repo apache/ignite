@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
+
+import org.apache.ignite.internal.util.*;
 
 /**
  * Clock timer for tests.

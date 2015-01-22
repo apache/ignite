@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -322,7 +322,7 @@ public class GridCacheConcurrentMap<K, V> {
      */
     private static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] nonInternal(
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        return F.asArray(F0.and((IgnitePredicate<GridCacheEntry<K, V>>[])NON_INTERNAL_ARR, filter));
+        return F.asArray(F0.and((IgnitePredicate<GridCacheEntry<K, V>>[]) NON_INTERNAL_ARR, filter));
     }
 
     /**

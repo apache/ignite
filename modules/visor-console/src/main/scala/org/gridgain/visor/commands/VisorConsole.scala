@@ -17,9 +17,10 @@
 
 package org.gridgain.visor.commands
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.GridProductImpl
 import org.apache.ignite.internal.util.scala.impl
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite.startup.cmdline.AboutDialog
 
@@ -93,7 +94,7 @@ object VisorConsole extends App {
     customizeUI()
 
     // Wrap line symbol for user input.
-    private val wrapLine = if (U.isWindows) "^" else "\\"
+    private val wrapLine = if (GridUtils.isWindows) "^" else "\\"
 
     private val emptyArg = "^([a-zA-z!?]+)$".r
     private val varArg = "^([a-zA-z!?]+)\\s+(.+)$".r
@@ -269,7 +270,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
             case emptyStr if emptyStr.trim == "" => ""
             case str =>
                 // replace wrong '/' on windows.
-                val translated = if (U.isWindows) str.replace('/', '\\') else str
+                val translated = if (GridUtils.isWindows) str.replace('/', '\\') else str
 
                 // line before cursor.
                 val left = translated.substring(0, cursor)

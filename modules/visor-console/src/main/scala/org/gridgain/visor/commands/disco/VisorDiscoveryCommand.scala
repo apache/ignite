@@ -17,11 +17,12 @@
 
 package org.gridgain.visor.commands.disco
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.visor.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.IgniteEventType
@@ -225,7 +226,7 @@ class VisorDiscoveryCommand {
         val nodeStartTime = node.metrics().getStartTime
 
         if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
-            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, U.gridEventName(EVT_NODE_JOINED),
+            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, GridUtils.gridEventName(EVT_NODE_JOINED),
                 node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
 
             evts = Seq(root) ++ evts

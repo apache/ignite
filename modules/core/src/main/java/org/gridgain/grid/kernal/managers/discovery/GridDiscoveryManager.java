@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.managers.discovery;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
 import org.apache.ignite.plugin.security.*;

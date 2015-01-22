@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.util.GridUtils.*;
+import static org.apache.ignite.internal.util.GridUtils.*;
 
 /**
  * Tests for proper link output in stack traces.

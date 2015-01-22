@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -29,7 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.util.GridUtils.*;
+import static org.apache.ignite.internal.util.GridUtils.*;
 
 /**
  * Checks that node can be started without operations with undefined GRIDGAIN_HOME.

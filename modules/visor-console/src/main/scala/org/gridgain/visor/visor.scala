@@ -17,6 +17,8 @@
 
 package org.gridgain.visor
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
@@ -27,7 +29,7 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNod
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
-import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
+import org.gridgain.grid.util.GridConfigurationFinder
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
@@ -1477,7 +1479,7 @@ object visor extends VisorTag {
                         new URL(path)
                     catch {
                         case e: Exception =>
-                            val url = U.resolveGridGainUrl(path)
+                            val url = GridUtils.resolveGridGainUrl(path)
 
                             if (url == null)
                                 throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
@@ -1488,7 +1490,7 @@ object visor extends VisorTag {
                 // Add no-op logger to remove no-appender warning.
                 val log4jTup =
                     if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
-                        U.addLog4jNoOpLogger()
+                        GridUtils.addLog4jNoOpLogger()
                     else
                         null
 
@@ -1501,7 +1503,7 @@ object visor extends VisorTag {
                             "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {
                         if (log4jTup != null)
-                            U.removeLog4jNoOpLogger(log4jTup)
+                            GridUtils.removeLog4jNoOpLogger(log4jTup)
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
@@ -1905,7 +1907,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
-        val neighborhood = U.neighborhood(grid.nodes()).values().toIndexedSeq
+        val neighborhood = GridUtils.neighborhood(grid.nodes()).values().toIndexedSeq
 
         if (neighborhood.isEmpty) {
             warn("Topology is empty.")
@@ -2357,7 +2359,7 @@ object visor extends VisorTag {
         val folder = Option(f.getParent).getOrElse("")
         val fileName = f.getName
 
-        logFile = new File(U.resolveWorkDirectory(folder, false), fileName)
+        logFile = new File(GridUtils.resolveWorkDirectory(folder, false), fileName)
 
         logFile.createNewFile()
 
@@ -2451,7 +2453,7 @@ object visor extends VisorTag {
                                         out,
                                         formatDateTime(e.timestamp),
                                         nodeId8Addr(e.nid()),
-                                        U.compact(e.shortDisplay())
+                                        GridUtils.compact(e.shortDisplay())
                                     )
 
                                     if (EVTS_DISCOVERY.contains(e.typeId()))
@@ -2459,7 +2461,7 @@ object visor extends VisorTag {
                                 })
                             }
                             finally {
-                                U.close(out, null)
+                                GridUtils.close(out, null)
                             }
                         }
                     }
@@ -2556,7 +2558,7 @@ object visor extends VisorTag {
                 case e: IOException => ()
             }
             finally {
-                U.close(out, null)
+                GridUtils.close(out, null)
             }
         }
     }

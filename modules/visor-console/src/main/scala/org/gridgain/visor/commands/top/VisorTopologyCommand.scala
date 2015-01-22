@@ -17,9 +17,10 @@
 
 package org.gridgain.visor.commands.top
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.apache.ignite.internal.util.typedef._
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
@@ -274,7 +275,7 @@ class VisorTopologyCommand {
             nl()
         }
 
-        val neighborhood = U.neighborhood(nodes)
+        val neighborhood = GridUtils.neighborhood(nodes)
 
         val hostsT = VisorTextTable()
 

@@ -20,7 +20,7 @@ package org.apache.ignite.client.impl;
 import org.apache.commons.io.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.context.support.*;

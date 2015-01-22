@@ -17,10 +17,11 @@
 
 package org.gridgain.visor.commands.node
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef.X
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite.cluster.ClusterNode
 import org.jetbrains.annotations._
@@ -173,7 +174,7 @@ class VisorNodeCommand {
 
                         val gridName: String = node.attribute(ATTR_GRID_NAME)
 
-                        val ver = U.productVersion(node)
+                        val ver = GridUtils.productVersion(node)
                         val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
                             (if (F.isEmpty(ver.stage())) "" else "-" + ver.stage())
 

@@ -17,11 +17,12 @@
 
 package org.gridgain.visor.commands.tasks
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.util.typedef.X
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite._
 import org.apache.ignite.events.IgniteEventType
@@ -75,7 +76,7 @@ private case class VisorExecution(
      * ID8 form of task execution ID.
      */
     lazy val id8: String =
-        U.id8(id)
+        GridUtils.id8(id)
 
     /**
      * ID8 of the task execution + its associated variable.

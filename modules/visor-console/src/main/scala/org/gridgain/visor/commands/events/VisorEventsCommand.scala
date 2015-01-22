@@ -17,10 +17,11 @@
 
 package org.gridgain.visor.commands.events
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.visor.event.VisorGridEvent
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite._
 import org.apache.ignite.events.IgniteEventType
@@ -394,7 +395,7 @@ class VisorEventsCommand {
             all #= ("Timestamp", "Description")
 
             sorted.take(cnt).foreach(evt =>
-                all += (formatDateTime(evt.timestamp()), U.compact(evt.shortDisplay))
+                all += (formatDateTime(evt.timestamp()), GridUtils.compact(evt.shortDisplay))
             )
 
             all.render()

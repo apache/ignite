@@ -17,13 +17,13 @@
 
 package org.gridgain.visor.commands.start
 
-import org.gridgain.grid.util.{GridUtils => U}
-
 import org.apache.ignite._
 
 import java.io._
 import java.util.concurrent._
 
+import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.visor._
 import org.gridgain.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.gridgain.visor.visor._
@@ -311,7 +311,7 @@ class VisorStartCommand {
 
                 errT #= ("Host", "Error")
 
-                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(U.nl()).toSeq) })
+                res.filter(!_.ok) foreach (r => { errT += (r.host, r.errMsg.replace("\t", " ").split(GridUtils.nl()).toSeq) })
 
                 errT.render()
             }

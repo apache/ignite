@@ -17,9 +17,9 @@
 
 package org.gridgain.visor.commands.deploy
 
+import org.apache.ignite.internal.util.GridUtils
 import org.apache.ignite.internal.util.io.GridFilenameUtils
 import org.apache.ignite.internal.util.typedef.X
-import org.gridgain.grid.util.{GridUtils => U}
 
 import com.jcraft.jsch._
 
@@ -27,6 +27,7 @@ import java.io._
 import java.net.UnknownHostException
 import java.util.concurrent._
 
+import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.visor._
 import org.gridgain.visor.commands.VisorConsoleCommand
 import org.gridgain.visor.visor._
@@ -183,7 +184,7 @@ private case class VisorCopier(
                 ch.connect()
 
                 // Added to skip login message.
-                U.sleep(1000)
+                GridUtils.sleep(1000)
 
                 val writer = new PrintStream(ch.getOutputStream, true)
 

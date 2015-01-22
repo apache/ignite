@@ -18,10 +18,10 @@
 package org.gridgain.grid.kernal.visor.misc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.net.*;

@@ -18,6 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -27,7 +28,6 @@ import org.gridgain.grid.kernal.managers.events.*;
 import org.gridgain.grid.kernal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.service.*;
-import org.gridgain.grid.util.*;
 
 /**
  * Kernal self test suite.

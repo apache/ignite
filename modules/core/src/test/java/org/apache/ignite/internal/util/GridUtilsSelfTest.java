@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
