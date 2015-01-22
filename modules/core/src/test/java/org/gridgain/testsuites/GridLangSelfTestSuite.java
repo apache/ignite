@@ -22,8 +22,8 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.lang.*;
 import org.gridgain.grid.lang.utils.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.future.nio.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.future.nio.*;
 
 /**
  * Gridgain language test suite.

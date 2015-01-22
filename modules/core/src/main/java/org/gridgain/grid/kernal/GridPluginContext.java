@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 
 import java.util.*;
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.communication;
 
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.nio.*;

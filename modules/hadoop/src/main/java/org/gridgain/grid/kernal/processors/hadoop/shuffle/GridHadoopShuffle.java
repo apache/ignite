@@ -24,7 +24,7 @@ import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
-import org.gridgain.grid.util.future.*;
+import org.apache.ignite.internal.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;

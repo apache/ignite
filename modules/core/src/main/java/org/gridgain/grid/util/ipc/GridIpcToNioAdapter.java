@@ -18,8 +18,7 @@
 package org.gridgain.grid.util.ipc;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 
 import java.io.*;

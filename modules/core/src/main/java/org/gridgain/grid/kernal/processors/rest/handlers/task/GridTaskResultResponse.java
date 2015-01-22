@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.task;
 
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;

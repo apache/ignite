@@ -30,7 +30,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.internal.*;

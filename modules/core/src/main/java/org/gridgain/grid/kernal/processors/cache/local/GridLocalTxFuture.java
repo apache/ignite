@@ -24,7 +24,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.future.*;
+import org.apache.ignite.internal.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 
 import java.io.*;

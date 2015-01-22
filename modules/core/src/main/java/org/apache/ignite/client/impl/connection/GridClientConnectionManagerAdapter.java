@@ -24,7 +24,7 @@ import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.util.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.nio.*;
 import org.gridgain.grid.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.*;

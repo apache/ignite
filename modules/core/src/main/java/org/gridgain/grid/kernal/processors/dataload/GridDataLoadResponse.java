@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.dataload;
 
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.nio.*;

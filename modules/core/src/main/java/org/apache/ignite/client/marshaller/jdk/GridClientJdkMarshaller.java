@@ -18,7 +18,7 @@
 package org.apache.ignite.client.marshaller.jdk;
 
 import org.apache.ignite.client.marshaller.*;
-import org.gridgain.grid.util.io.*;
+import org.apache.ignite.internal.util.io.*;
 
 import java.io.*;
 import java.nio.*;

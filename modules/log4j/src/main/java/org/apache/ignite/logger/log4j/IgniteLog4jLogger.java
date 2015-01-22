@@ -23,7 +23,6 @@ import org.apache.ignite.logger.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.apache.log4j.xml.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;

@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.email;
 
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.future.*;
+import org.apache.ignite.internal.util.future.*;
 
 import java.util.*;
 

@@ -73,7 +73,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.securesession.noop.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.future.*;
+import org.apache.ignite.internal.util.future.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nodestart.*;
 import org.gridgain.grid.util.tostring.*;

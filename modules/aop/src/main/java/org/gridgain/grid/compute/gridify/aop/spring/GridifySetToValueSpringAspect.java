@@ -21,13 +21,12 @@ import org.aopalliance.intercept.*;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.gridify.*;
+import org.apache.ignite.internal.util.gridify.*;
 import java.lang.reflect.*;
 
 import static org.apache.ignite.IgniteState.*;
-import static org.gridgain.grid.util.gridify.GridifyUtils.*;
+import static org.apache.ignite.internal.util.gridify.GridifyUtils.*;
 
 /**
  * Spring aspect that cross-cuts on all methods grid-enabled with

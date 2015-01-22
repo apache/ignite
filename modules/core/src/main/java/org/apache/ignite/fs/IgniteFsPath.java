@@ -17,7 +17,7 @@
 
 package org.apache.ignite.fs;
 
-import org.gridgain.grid.util.io.*;
+import org.apache.ignite.internal.util.io.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

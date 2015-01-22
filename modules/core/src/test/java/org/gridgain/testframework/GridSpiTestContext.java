@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

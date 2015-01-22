@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.util.nio;
 
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

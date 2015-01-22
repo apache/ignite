@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.version;
 
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 
 import java.nio.*;
 

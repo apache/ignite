@@ -24,7 +24,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;

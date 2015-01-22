@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.direct.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

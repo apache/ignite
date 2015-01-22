@@ -19,7 +19,7 @@ package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.util.io.*;
+import org.apache.ignite.internal.util.io.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

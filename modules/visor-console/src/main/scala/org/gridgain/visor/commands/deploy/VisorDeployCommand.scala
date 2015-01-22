@@ -17,7 +17,7 @@
 
 package org.gridgain.visor.commands.deploy
 
-import org.gridgain.grid.util.io.GridFilenameUtils
+import org.apache.ignite.internal.util.io.GridFilenameUtils
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
 
