@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

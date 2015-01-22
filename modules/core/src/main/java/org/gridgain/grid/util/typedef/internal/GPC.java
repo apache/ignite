@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.util.typedef.internal;
 
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Defines internal {@code typedef} for {@link GridPlainCallable}. Since Java doesn't provide type aliases

@@ -30,7 +30,7 @@ import org.apache.lucene.search.*;
 import org.apache.lucene.util.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

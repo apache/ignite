@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.future;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Future listener to fill chained future with converted result of the source future.

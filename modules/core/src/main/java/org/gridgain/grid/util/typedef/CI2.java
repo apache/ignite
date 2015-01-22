@@ -18,7 +18,7 @@
 package org.gridgain.grid.util.typedef;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Defines {@code alias} for {@link org.apache.ignite.lang.IgniteBiInClosure} by extending it. Since Java doesn't provide type aliases

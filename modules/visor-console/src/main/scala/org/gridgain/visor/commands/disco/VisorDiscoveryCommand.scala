@@ -20,7 +20,7 @@ package org.gridgain.visor.commands.disco
 import org.gridgain.grid.kernal.visor.event.VisorGridDiscoveryEvent
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite.cluster.ClusterNode

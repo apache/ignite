@@ -20,7 +20,7 @@ package org.apache.ignite.streamer.window;
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

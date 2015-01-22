@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.util.typedef;
 
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Defines {@code alias} for {@link GridInClosure3} by extending it. Since Java doesn't provide type aliases

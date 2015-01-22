@@ -19,7 +19,7 @@ package org.gridgain.grid.util.typedef;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridCacheEntry&lt;K, V&gt;&gt;</tt> by extending

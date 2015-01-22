@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.nodestart;
 import com.jcraft.jsch.*;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

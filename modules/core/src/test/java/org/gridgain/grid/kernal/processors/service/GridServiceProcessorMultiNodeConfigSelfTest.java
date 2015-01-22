@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.service;
 
 import org.apache.ignite.*;
 import org.apache.ignite.managed.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.*;
 
 import java.util.concurrent.*;

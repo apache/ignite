@@ -29,7 +29,7 @@ import collection._
 import scala.util.control.Breaks._
 import java.util.concurrent._
 import java.util.TimerTask
-import org.gridgain.grid.util.lang._
+import org.apache.ignite.internal.util.lang._
 import scala.Tuple2
 
 /**

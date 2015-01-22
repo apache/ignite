@@ -18,7 +18,7 @@
 package org.gridgain.visor.commands.node
 
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.typedef.X
 import org.gridgain.grid.util.{GridUtils => U}
 

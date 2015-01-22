@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 import java.util.concurrent.*;
 

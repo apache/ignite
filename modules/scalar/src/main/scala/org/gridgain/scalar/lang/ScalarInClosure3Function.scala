@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridInClosure3}
+import org.apache.ignite.internal.util.lang.{GridInClosure3}
 
 /**
  * Wrapping Scala function for `GridInClosure3`.

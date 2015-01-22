@@ -26,7 +26,7 @@ import collection.JavaConversions._
 import org.jetbrains.annotations.Nullable
 import org.apache.ignite._
 import org.gridgain.grid._
-import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.gridgain.grid.util.scala.impl
 import org.gridgain.scalar._
 import scalar._

@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{IgniteReducer3}
+import org.apache.ignite.internal.util.lang.{IgniteReducer3}
 
 /**
  * Wrapping Scala function for `GridReducer3`.

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.future;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;

@@ -17,7 +17,7 @@
 
 package org.gridgain.visor.commands.alert
 
-import org.gridgain.grid.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode

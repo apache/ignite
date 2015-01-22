@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.streamer;
 
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 import java.util.*;
 

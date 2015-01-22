@@ -18,9 +18,8 @@
 package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 /**

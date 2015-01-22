@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -107,7 +107,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test task that implements {@link org.gridgain.grid.util.lang.GridPeerDeployAware}.
+     * Test task that implements {@link org.apache.ignite.internal.util.lang.GridPeerDeployAware}.
      */
     @ComputeTaskName(PEER_DEPLOY_AWARE_TASK_NAME)
     private static class PeerDeployAwareTestTask extends TestTask implements GridPeerDeployAware {

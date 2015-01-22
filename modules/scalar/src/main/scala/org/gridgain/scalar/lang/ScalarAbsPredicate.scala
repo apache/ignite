@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.GridAbsPredicate
+import org.apache.ignite.internal.util.lang.GridAbsPredicate
 
 /**
  * Peer deploy aware adapter for Java's `GridAbsPredicate`.

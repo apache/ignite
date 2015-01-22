@@ -27,7 +27,7 @@ import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

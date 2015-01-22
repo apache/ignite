@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

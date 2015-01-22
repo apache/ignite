@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.GridInClosure3
+import org.apache.ignite.internal.util.lang.GridInClosure3
 
 /**
  * Peer deploy aware adapter for Java's `GridInClosure3`.

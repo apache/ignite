@@ -19,7 +19,7 @@ package org.gridgain.grid.util.typedef;
 
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Defines {@code alias} for <tt>GridPredicate&lt;GridEvent&gt;</tt> by extending

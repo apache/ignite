@@ -19,7 +19,7 @@ package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 
 /**
  * Wrapper used to covert {@link org.apache.ignite.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.

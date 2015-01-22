@@ -35,7 +35,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.internal.util.io.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
@@ -628,7 +628,8 @@ public abstract class GridUtils {
             return GRID_EVTS;
 
         List<Integer> evts = toIntList(GRID_EVTS, new P1<Integer>() {
-            @Override public boolean apply(Integer i) {
+            @Override
+            public boolean apply(Integer i) {
                 return !containsIntArray(excl, i);
             }
         });

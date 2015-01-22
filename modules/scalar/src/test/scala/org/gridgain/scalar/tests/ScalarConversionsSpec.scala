@@ -25,7 +25,7 @@ import scalar._
 import java.util.concurrent.atomic._
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.gridgain.grid.util.lang._
+import org.apache.ignite.internal.util.lang._
 
 /**
  *

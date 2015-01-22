@@ -19,7 +19,7 @@ package org.gridgain.scalar.lang
 
 import org.apache.ignite._
 import org.gridgain.grid._
-import org.gridgain.grid.util.lang.IgniteOutClosureX
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosureX`.

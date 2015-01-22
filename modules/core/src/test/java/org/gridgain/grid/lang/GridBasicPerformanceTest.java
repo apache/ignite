@@ -20,7 +20,7 @@ package org.gridgain.grid.lang;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jdk8.backport.*;

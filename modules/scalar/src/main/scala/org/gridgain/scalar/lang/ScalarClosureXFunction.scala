@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.IgniteClosureX
+import org.apache.ignite.internal.util.lang.IgniteClosureX
 
 /**
  * Wrapping Scala function for `GridClosureX`.

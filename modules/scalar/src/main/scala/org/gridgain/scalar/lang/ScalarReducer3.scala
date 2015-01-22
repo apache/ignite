@@ -18,7 +18,7 @@
 package org.gridgain.scalar.lang
 
 import collection._
-import org.gridgain.grid.util.lang.IgniteReducer3
+import org.apache.ignite.internal.util.lang.IgniteReducer3
 
 /**
  * Peer deploy aware adapter for Java's `GridReducer3`.

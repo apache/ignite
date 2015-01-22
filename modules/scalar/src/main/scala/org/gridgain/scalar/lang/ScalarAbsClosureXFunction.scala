@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.lang
 
-import org.gridgain.grid.util.lang.{GridAbsClosureX}
+import org.apache.ignite.internal.util.lang.{GridAbsClosureX}
 
 /**
  * Wrapping Scala function for `GridAbsClosureX`.

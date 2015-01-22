@@ -19,7 +19,7 @@ package org.gridgain.scalar.lang
 
 import java.util.concurrent.Callable
 import org.apache.ignite.lang.IgniteOutClosure
-import org.gridgain.grid.util.lang.GridPeerDeployAwareAdapter
+import org.apache.ignite.internal.util.lang.GridPeerDeployAwareAdapter
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosure`.

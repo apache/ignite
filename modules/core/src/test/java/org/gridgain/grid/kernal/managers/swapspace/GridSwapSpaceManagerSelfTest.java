@@ -25,7 +25,7 @@ import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.concurrent.*;
