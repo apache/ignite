@@ -30,6 +30,7 @@ import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.lang.*;
+import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
@@ -1022,7 +1023,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         A.notNull(c, "job");
 
         if (c instanceof ComputeJobMasterLeaveAware)
-            return new C3<>(c,cacheName,affKey);
+            return new C3<>(c, cacheName, affKey);
         else {
             return new ComputeJobAdapter() {
                 /** */
@@ -1669,8 +1670,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
      */
-    private static class C1<T, R> extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C1<T, R> extends MasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1678,15 +1680,18 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         private IgniteClosure<T, R> job;
 
         /** */
+        @GridToStringInclude
         private T arg;
 
         /**
+         *
          */
         public C1(){
             // No-op.
         }
 
         /**
+         *
          */
         public C1(IgniteClosure<T, R> job, T arg) {
             this.job = job;
@@ -1711,14 +1716,20 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            job = (IgniteClosure<T, R>) in.readObject();
-            arg = (T) in.readObject();
+            job = (IgniteClosure<T, R>)in.readObject();
+            arg = (T)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C1.class, this);
         }
     }
 
     /**
+     *
      */
-    private static class C2<R> extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C2<R> extends MasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1765,7 +1776,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C3<R> extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C3<R> extends MasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1827,7 +1838,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C4 extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C4 extends MasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1871,7 +1882,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
     /**
      */
-    private static class C5 extends GridMasterLeaveAwareComputeJobAdapter {
+    private static class C5 extends MasterLeaveAwareComputeJobAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 

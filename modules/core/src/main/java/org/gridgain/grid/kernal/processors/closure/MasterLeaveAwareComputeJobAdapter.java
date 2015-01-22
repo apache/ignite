@@ -24,14 +24,10 @@ import java.io.Externalizable;
 /**
  * Job adapter implementing {@link org.apache.ignite.compute.ComputeJobMasterLeaveAware}.
  */
-public abstract class GridMasterLeaveAwareComputeJobAdapter extends ComputeJobAdapter implements Externalizable, ComputeJobMasterLeaveAware {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /**
-     * No-arg constructor.
-     */
-    protected GridMasterLeaveAwareComputeJobAdapter() {
+public abstract class MasterLeaveAwareComputeJobAdapter
+    implements ComputeJob, ComputeJobMasterLeaveAware, Externalizable {
+    /** {@inheritDoc} */
+    @Override public void cancel() {
         // No-op.
     }
 }
