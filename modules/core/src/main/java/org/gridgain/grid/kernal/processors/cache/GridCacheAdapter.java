@@ -1356,7 +1356,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(F.asList(key), ctx.hasFlag(GET_PRIMARY), /*skip tx*/false, entry, null, taskName,
+        return getAllAsync(F.asList(key), !ctx.config().isReadFromBackup(), /*skip tx*/false, entry, null, taskName,
             deserializePortable, filter).get().get(key);
     }
 
@@ -1389,14 +1389,14 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     @Nullable @Override public Map<K, V> getAllOutTx(List<K> keys) throws IgniteCheckedException {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/true, null, null, taskName, true).get();
+        return getAllAsync(keys, !ctx.config().isReadFromBackup(), /*skip tx*/true, null, null, taskName, true).get();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
-        return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/true, null, null, taskName, true);
+        return getAllAsync(keys, !ctx.config().isReadFromBackup(), /*skip tx*/true, null, null, taskName, true);
     }
 
     /** {@inheritDoc} */
@@ -4936,7 +4936,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             });
         }
 
-        return getAllAsync(keys, ctx.hasFlag(GET_PRIMARY), /*skip tx*/false, null, null, taskName,
+        return getAllAsync(keys, !ctx.config().isReadFromBackup(), /*skip tx*/false, null, null, taskName,
             deserializePortable, filter);
     }
 
