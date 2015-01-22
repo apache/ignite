@@ -18,26 +18,31 @@
 package org.gridgain.testframework.junits.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 /**
  * Abstract cache store test.
  */
-public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Object, Object>>
+public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object, Object>>
     extends GridCommonAbstractTest {
     /** */
     protected final T store;
+
+    /** */
+    protected TestThreadLocalCacheSession ses = new TestThreadLocalCacheSession();
 
     /**
      * @throws Exception If failed.
@@ -58,22 +63,30 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         // Create dummy transaction
         IgniteTx tx = new DummyTx();
 
-        store.put(tx, "k1", "v1");
-        store.put(tx, "k2", "v2");
+        ses.newSession(tx);
 
-        store.txEnd(tx, true);
+        store.write(new CacheEntryImpl<>("k1", "v1"));
+        store.write(new CacheEntryImpl<>("k2", "v2"));
 
-        assertEquals("v1", store.load(null, "k1"));
-        assertEquals("v2", store.load(null, "k2"));
-        assertNull(store.load( null, "k3"));
+        store.txEnd(true);
 
-        store.remove(tx, "k1");
+        ses.newSession(null);
 
-        store.txEnd(tx, true);
+        assertEquals("v1", store.load("k1"));
+        assertEquals("v2", store.load("k2"));
+        assertNull(store.load("k3"));
 
-        assertNull(store.load(null, "k1"));
-        assertEquals("v2", store.load(null, "k2"));
-        assertNull(store.load(null, "k3"));
+        ses.newSession(tx);
+
+        store.delete("k1");
+
+        store.txEnd(true);
+
+        ses.newSession(null);
+
+        assertNull(store.load("k1"));
+        assertEquals("v2", store.load("k2"));
+        assertNull(store.load("k3"));
     }
 
     /**
@@ -82,61 +95,83 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
     public void testRollback() throws IgniteCheckedException {
         IgniteTx tx = new DummyTx();
 
-        // Put.
-        store.put(tx, "k1", "v1");
+        ses.newSession(tx);
 
-        store.txEnd(tx, false); // Rollback.
+        // Put.
+        store.write(new CacheEntryImpl<>("k1", "v1"));
+
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertNull(store.load(tx, "k1"));
+        ses.newSession(tx);
+
+        assertNull(store.load("k1"));
 
         // Put all.
-        assertNull(store.load(tx, "k2"));
+        assertNull(store.load("k2"));
 
-        store.putAll(tx, Collections.singletonMap("k2", "v2"));
+        Collection<Cache.Entry<? extends Object, ? extends Object>> col = new ArrayList<>();
 
-        store.txEnd(tx, false); // Rollback.
+        col.add(new CacheEntryImpl<>("k2", "v2"));
 
-        tx = new DummyTx();
+        store.writeAll(col);
 
-        assertNull(store.load(tx, "k2"));
-
-        store.putAll(tx, Collections.singletonMap("k3", "v3"));
-
-        store.txEnd(tx, true); // Commit.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertEquals("v3", store.load(tx, "k3"));
+        ses.newSession(tx);
 
-        store.put(tx, "k4", "v4");
+        assertNull(store.load("k2"));
 
-        store.txEnd(tx, false); // Rollback.
+        col = new ArrayList<>();
+
+        col.add(new CacheEntryImpl<>("k3", "v3"));
+
+        store.writeAll(col);
+
+        store.txEnd(true); // Commit.
 
         tx = new DummyTx();
 
-        assertNull(store.load(tx, "k4"));
+        ses.newSession(tx);
 
-        assertEquals("v3", store.load(tx, "k3"));
+        assertEquals("v3", store.load("k3"));
+
+        store.write(new CacheEntryImpl<>("k4", "v4"));
+
+        store.txEnd(false); // Rollback.
+
+        tx = new DummyTx();
+
+        ses.newSession(tx);
+
+        assertNull(store.load("k4"));
+
+        assertEquals("v3", store.load("k3"));
 
         // Remove.
-        store.remove(tx, "k3");
+        store.delete("k3");
 
-        store.txEnd(tx, false); // Rollback.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertEquals("v3", store.load(tx, "k3"));
+        ses.newSession(tx);
+
+        assertEquals("v3", store.load("k3"));
 
         // Remove all.
-        store.removeAll(tx, Arrays.asList("k3"));
+        store.deleteAll(Arrays.asList("k3"));
 
-        store.txEnd(tx, false); // Rollback.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertEquals("v3", store.load(tx, "k3"));
+        ses.newSession(tx);
+
+        assertEquals("v3", store.load("k3"));
     }
 
     /**
@@ -167,83 +202,92 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
      */
     private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) throws IgniteCheckedException {
         try {
-            store.put(tx, "key1", "val1");
+            ses.newSession(tx);
+
+            store.write(new CacheEntryImpl<>("key1", "val1"));
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
+
+                ses.newSession(tx);
             }
 
             if (tx == null || commit)
-                assertEquals("val1", store.load(tx, "key1"));
+                assertEquals("val1", store.load("key1"));
 
-            Map<String, String> m = new HashMap<>();
+            Collection<Cache.Entry<? extends Object, ? extends Object>> col = new ArrayList<>();
 
-            m.put("key2", "val2");
-            m.put("key3", "val3");
+            col.add(new CacheEntryImpl<>("key2", "val2"));
+            col.add(new CacheEntryImpl<>("key3", "val3"));
 
-            store.putAll(tx, m);
-
-            if (tx != null && commit) {
-                store.txEnd(tx, true);
-
-                tx = new DummyTx();
-            }
-
-            final AtomicInteger cntr = new AtomicInteger();
-
-            if (tx == null || commit) {
-                store.loadAll(tx, Arrays.asList("key1", "key2", "key3", "no_such_key"), new CI2<Object, Object>() {
-                    @Override public void apply(Object o, Object o1) {
-                        if ("key1".equals(o))
-                            assertEquals("val1", o1);
-
-                        if ("key2".equals(o))
-                            assertEquals("val2", o1);
-
-                        if ("key3".equals(o))
-                            assertEquals("val3", o1);
-
-                        if ("no_such_key".equals(o))
-                            fail();
-
-                        cntr.incrementAndGet();
-                    }
-                });
-
-                assertEquals(3, cntr.get());
-            }
-
-            store.removeAll(tx, Arrays.asList("key2", "key3"));
+            store.writeAll(col);
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
             }
 
             if (tx == null || commit) {
-                assertNull(store.load(tx, "key2"));
-                assertNull(store.load(tx, "key3"));
-                assertEquals("val1", store.load(tx, "key1"));
+                Map<Object, Object> loaded = store.loadAll(Arrays.asList("key1", "key2", "key3", "no_such_key"));
+
+                for (Map.Entry<Object, Object> e : loaded.entrySet()) {
+                    Object key = e.getKey();
+                    Object val = e.getValue();
+
+                    if ("key1".equals(key))
+                        assertEquals("val1", val);
+
+                    if ("key2".equals(key))
+                        assertEquals("val2", val);
+
+                    if ("key3".equals(key))
+                        assertEquals("val3", val);
+
+                    if ("no_such_key".equals(key))
+                        fail();
+                }
+
+                assertEquals(3, loaded.size());
             }
 
-            store.remove(tx, "key1");
+            store.deleteAll(Arrays.asList("key2", "key3"));
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
+
+                ses.newSession(tx);
+            }
+
+            if (tx == null || commit) {
+                assertNull(store.load("key2"));
+                assertNull(store.load("key3"));
+                assertEquals("val1", store.load("key1"));
+            }
+
+            store.delete("key1");
+
+            if (tx != null && commit) {
+                store.txEnd(true);
+
+                tx = new DummyTx();
+
+                ses.newSession(tx);
             }
 
             if (tx == null || commit)
-                assertNull(store.load(tx, "key1"));
-
+                assertNull(store.load("key1"));
         }
         finally {
-            if (tx != null)
-                store.txEnd(tx, false);
+            if (tx != null) {
+                store.txEnd(false);
+
+                ses.newSession(null);
+            }
         }
     }
 
@@ -256,10 +300,11 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         final LinkedBlockingQueue<UUID> queue = new LinkedBlockingQueue<>();
 
         multithreaded(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 for (int i = 0; i < 1000; i++) {
                     IgniteTx tx = rnd.nextBoolean() ? new DummyTx() : null;
+
+                    ses.newSession(tx);
 
                     int op = rnd.nextInt(10);
 
@@ -272,32 +317,23 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
                             queueEmpty = true;
                         else {
                             if (rnd.nextBoolean())
-                                assertNotNull(store.load(tx, key));
+                                assertNotNull(store.load(key));
                             else {
-                                final AtomicInteger cntr = new AtomicInteger();
+                                Map<Object, Object> loaded = store.loadAll(Collections.singleton(key));
 
-                                store.loadAll(tx, Collections.singleton(key), new CI2<Object, Object>() {
-                                    @Override
-                                    public void apply(Object o, Object o1) {
-                                        cntr.incrementAndGet();
+                                assertEquals(1, loaded.size());
 
-                                        assertNotNull(o);
-                                        assertNotNull(o1);
+                                Map.Entry<Object, Object> e = loaded.entrySet().iterator().next();
 
-                                        UUID key = (UUID) o;
-                                        UUID val = (UUID) o1;
+                                UUID k = (UUID)e.getKey();
+                                UUID v = (UUID)e.getValue();
 
-                                        assertTrue(key.equals(val) ||
-                                            (key.getMostSignificantBits() == val.getLeastSignificantBits() &&
-                                                key.getLeastSignificantBits() == val.getMostSignificantBits()));
-                                    }
-                                });
-
-                                assertEquals(1, cntr.get());
+                                assertTrue(k.equals(v) || (k.getMostSignificantBits() == v.getLeastSignificantBits()
+                                    && k.getLeastSignificantBits() == v.getMostSignificantBits()));
                             }
 
                             if (tx != null)
-                                store.txEnd(tx, true);
+                                store.txEnd(true);
 
                             queue.add(key);
                         }
@@ -309,12 +345,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
                             queueEmpty = true;
                         else {
                             if (rnd.nextBoolean())
-                                store.remove(tx, key);
+                                store.delete(key);
                             else
-                                store.removeAll(tx, Collections.singleton(key));
+                                store.deleteAll(Collections.singleton(key));
 
                             if (tx != null)
-                                store.txEnd(tx, true);
+                                store.txEnd(true);
                         }
                     }
                     else { // Update.
@@ -326,12 +362,17 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
                             UUID val = new UUID(key.getLeastSignificantBits(), key.getMostSignificantBits());
 
                             if (rnd.nextBoolean())
-                                store.put(tx, key, val);
-                            else
-                                store.putAll(tx, Collections.singletonMap(key, val));
+                                store.write(new CacheEntryImpl<>(key, val));
+                            else {
+                                Collection<Cache.Entry<? extends Object, ? extends Object>> col = new ArrayList<>();
+
+                                col.add(new CacheEntryImpl<>(key, val));
+
+                                store.writeAll(col);
+                            }
 
                             if (tx != null)
-                                store.txEnd(tx, true);
+                                store.txEnd(true);
 
                             queue.add(key);
                         }
@@ -341,12 +382,17 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
                         UUID key = UUID.randomUUID();
 
                         if (rnd.nextBoolean())
-                            store.put(tx, key, key);
-                        else
-                            store.putAll(tx, Collections.singletonMap(key, key));
+                            store.write(new CacheEntryImpl<>(key, key));
+                        else {
+                            Collection<Cache.Entry<? extends Object, ? extends Object>> col = new ArrayList<>();
+
+                            col.add(new CacheEntryImpl<>(key, key));
+
+                            store.writeAll(col);
+                        }
 
                         if (tx != null)
-                            store.txEnd(tx, true);
+                            store.txEnd(true);
 
                         queue.add(key);
                     }
@@ -363,6 +409,8 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
      */
     protected void inject(T store) throws Exception {
         getTestResources().inject(store);
+
+        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
     }
 
     /** {@inheritDoc} */
@@ -385,7 +433,9 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends GridCacheStore<Ob
         if (keys.isEmpty())
             return;
 
-        store.removeAll(null, keys);
+        ses.newSession(null);
+
+        store.deleteAll(keys);
 
         keys.clear();
 

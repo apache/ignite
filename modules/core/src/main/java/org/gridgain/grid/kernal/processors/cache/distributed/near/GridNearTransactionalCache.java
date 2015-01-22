@@ -118,23 +118,49 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             });
         }
 
-        subjId = ctx.subjectIdPerCall(subjId);
+        GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
-        return loadAsync(null, keys, false, forcePrimary, filter, subjId, taskName, deserializePortable);
+        subjId = ctx.subjectIdPerCall(subjId, prj);
+
+        return loadAsync(null,
+            keys,
+            false,
+            forcePrimary,
+            filter,
+            subjId,
+            taskName,
+            deserializePortable,
+            prj != null ? prj.expiry() : null);
     }
 
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
+     * @param readThrough Read through flag.
      * @param filter Filter.
+     * @param deserializePortable Deserialize portable flag.
+     * @param expiryPlc Expiry policy.
      * @return Future.
      */
-    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx, @Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean deserializePortable) {
+    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
+        @Nullable Collection<? extends K> keys,
+        boolean readThrough,
+        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        boolean deserializePortable,
+        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         assert tx != null;
 
-        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx, keys, false, false, tx, filter,
-            CU.subjectId(tx, ctx.shared()), tx.resolveTaskName(), deserializePortable);
+        GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
+            keys,
+            readThrough,
+            false,
+            false,
+            tx,
+            filter,
+            CU.subjectId(tx, ctx.shared()),
+            tx.resolveTaskName(),
+            deserializePortable,
+            expiryPlc);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();
@@ -380,11 +406,23 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgniteTxLocalEx<K, V> tx, boolean isInvalidate, boolean isRead, boolean retval,
-        IgniteTxIsolation isolation, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
-        GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx, keys, (GridNearTxLocal<K, V>)tx, isRead,
-            retval, timeout, filter);
+    @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+        long timeout,
+        IgniteTxLocalEx<K, V> tx,
+        boolean isInvalidate,
+        boolean isRead,
+        boolean retval,
+        IgniteTxIsolation isolation,
+        long accessTtl,
+        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
+            keys,
+            (GridNearTxLocal<K, V>)tx,
+            isRead,
+            retval,
+            timeout,
+            accessTtl,
+            filter);
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);

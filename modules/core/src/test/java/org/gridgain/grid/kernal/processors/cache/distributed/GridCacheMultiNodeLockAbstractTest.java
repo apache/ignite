@@ -21,15 +21,13 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -148,7 +146,25 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param key Key.
      */
+    private void checkLocked(IgniteCache<Integer,String> cache, Integer key) {
+        assert cache.isLocked(key);
+        assert cache.isLockedByThread(key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
     private void checkRemoteLocked(GridCacheProjection<Integer,String> cache, Integer key) {
+        assert cache.isLocked(key);
+        assert !cache.isLockedByThread(key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private void checkRemoteLocked(IgniteCache<Integer,String> cache, Integer key) {
         assert cache.isLocked(key);
         assert !cache.isLockedByThread(key);
     }
@@ -159,6 +175,30 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      */
     @SuppressWarnings({"BusyWait"})
     private void checkUnlocked(GridCacheProjection<Integer,String> cache, Integer key) {
+        assert !cache.isLockedByThread(key);
+
+        if (partitioned()) {
+            for(int i = 0; i < 200; i++)
+                if (cache.isLocked(key)) {
+                    try {
+                        Thread.sleep(10);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else
+                    return;
+        }
+
+        assertFalse("Key locked [key=" + key + ", entries=" + entries(key) + "]", cache.isLocked(key));
+    }
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     */
+    @SuppressWarnings({"BusyWait"})
+    private void checkUnlocked(IgniteCache<Integer,String> cache, Integer key) {
         assert !cache.isLockedByThread(key);
 
         if (partitioned()) {
@@ -192,10 +232,28 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @param cache Cache.
      * @param keys Keys.
      */
+    private void checkLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
+        for (Integer key : keys)
+            checkLocked(cache, key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys.
+     */
     private void checkRemoteLocked(GridCacheProjection<Integer,String> cache, Iterable<Integer> keys) {
         for (Integer key : keys) {
             checkRemoteLocked(cache, key);
         }
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys.
+     */
+    private void checkRemoteLocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
+        for (Integer key : keys)
+            checkRemoteLocked(cache, key);
     }
 
     /**
@@ -210,17 +268,27 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
     /**
      *
+     * @param cache Cache.
+     * @param keys Keys.
+     */
+    private void checkUnlocked(IgniteCache<Integer,String> cache, Iterable<Integer> keys) {
+        for (Integer key : keys)
+            checkUnlocked(cache, key);
+    }
+
+    /**
+     *
      * @throws Exception If test failed.
      */
     public void testBasicLock() throws Exception {
-        GridCache<Integer, String> cache = ignite1.cache(null);
+        IgniteCache<Integer, String> cache = ignite1.jcache(null);
 
-        assert cache.lock(1, 0L);
+        cache.lock(1).lock();
 
         assert cache.isLocked(1);
         assert cache.isLockedByThread(1);
 
-        cache.unlockAll(F.asList(1));
+        cache.lockAll(Collections.singleton(1)).unlock();
 
         checkUnlocked(cache, 1);
     }
@@ -250,10 +318,10 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLock() throws Exception {
-        GridCache<Integer, String> cache1 = ignite1.cache(null);
-        GridCache<Integer, String> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
-        assert cache1.lock(1, 0L);
+        cache1.lock(1).lock();
 
         assert cache1.isLocked(1) : entries(1);
         assert cache1.isLockedByThread(1);
@@ -262,18 +330,18 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         assert !cache2.isLockedByThread(1);
 
         try {
-            assert !cache2.lock(1, -1L);
+            assert !cache2.lock(1).tryLock();
 
             assert cache2.isLocked(1) : entries(1);
             assert !cache2.isLockedByThread(1);
         }
         finally {
-            cache1.unlock(1);
+            cache1.lock(1).unlock();
 
             checkUnlocked(cache1, 1);
         }
 
-        assert cache2.lock(1, 0L);
+        cache2.lock(1).lock();
 
         assert cache2.isLocked(1) : entries(1);
         assert cache2.isLockedByThread(1);
@@ -286,68 +354,16 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         addListener(ignite1, new UnlockListener(latch, 1));
 
         try {
-            assert !cache1.lock(1, -1L);
+            assert !cache1.lock(1).tryLock();
 
             assert cache1.isLocked(1) : entries(1);
             assert !cache1.isLockedByThread(1);
         }
         finally {
-            cache2.unlockAll(F.asList(1));
+            cache2.lockAll(Collections.singleton(1)).unlock();
         }
 
         latch.await();
-
-        checkUnlocked(cache1, 1);
-        checkUnlocked(cache2, 1);
-    }
-
-    /**
-     * @throws Exception If test fails.
-     */
-    public void testMultiNodeLockAsync() throws Exception {
-        GridCache<Integer, String> cache1 = ignite1.cache(null);
-        GridCache<Integer, String> cache2 = ignite2.cache(null);
-
-        assert cache1.lockAsync(1, 0L).get();
-
-        try {
-            assert cache1.isLocked(1);
-            assert cache1.isLockedByThread(1);
-
-            assert cache2.isLocked(1);
-            assert !cache2.isLockedByThread(1);
-
-            assert !cache2.lockAsync(1, -1L).get();
-        }
-        finally {
-            cache1.unlockAll(F.asList(1));
-        }
-
-        checkUnlocked(cache1, 1);
-
-        assert cache2.lockAsync(1, 0L).get();
-
-        CountDownLatch latch = new CountDownLatch(1);
-
-        addListener(ignite1, new UnlockListener(latch, 1));
-
-        try {
-            assert cache1.isLocked(1);
-            assert !cache1.isLockedByThread(1);
-
-            assert cache2.isLocked(1);
-            assert cache2.isLockedByThread(1);
-
-            assert !cache1.lockAsync(1, -1L).get();
-        }
-        finally {
-            cache2.unlockAll(F.asList(1));
-        }
-
-        latch.await();
-
-        assert !cache1.isLocked(1);
-        assert !cache1.isLockedByThread(1);
 
         checkUnlocked(cache1, 1);
         checkUnlocked(cache2, 1);
@@ -357,21 +373,21 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test fails.
      */
     public void testMultiNodeLockWithKeyLists() throws Exception {
-        GridCache<Integer, String> cache1 = ignite1.cache(null);
-        GridCache<Integer, String> cache2 = ignite2.cache(null);
+        IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
+        IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
-        Collection<Integer> keys1 = new ArrayList<>();
-        Collection<Integer> keys2 = new ArrayList<>();
+        Set<Integer> keys1 = new HashSet<>();
+        Set<Integer> keys2 = new HashSet<>();
 
         Collections.addAll(keys1, 1, 2, 3);
         Collections.addAll(keys2, 2, 3, 4);
 
-        assert cache1.lockAll(keys1, 0);
+        cache1.lockAll(keys1).lock();
 
         checkLocked(cache1, keys1);
 
         try {
-            assert !cache2.lockAll(keys2, -1);
+            assert !cache2.lockAll(keys2).tryLock();
 
             assert cache2.isLocked(2);
             assert cache2.isLocked(3);
@@ -384,7 +400,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             assert !cache2.isLockedByThread(4);
         }
         finally {
-            cache1.unlockAll(keys1);
+            cache1.lockAll(keys1).unlock();
         }
 
         checkUnlocked(cache1, keys1);
@@ -392,7 +408,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         checkUnlocked(cache1, keys2);
         checkUnlocked(cache2, 4);
 
-        assert cache2.lockAll(keys2, 0);
+        cache2.lockAll(keys2).lock();
 
         CountDownLatch latch1 = new CountDownLatch(keys2.size());
         CountDownLatch latch2 = new CountDownLatch(1);
@@ -405,7 +421,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
             checkUnlocked(cache2, 1);
 
-            assert cache1.lock(1, -1L);
+            assert cache1.lock(1).tryLock();
 
             checkLocked(cache1, 1);
 
@@ -414,9 +430,9 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             checkRemoteLocked(cache2, 1);
         }
         finally {
-            cache2.unlockAll(keys2);
+            cache2.lockAll(keys2).unlock();
 
-            cache1.unlockAll(F.asList(1));
+            cache1.lockAll(Collections.singleton(1)).unlock();
         }
 
         latch1.await();
@@ -429,103 +445,26 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * @throws Exception If test fails.
-     */
-    public void testMultiNodeLockAsyncWithKeyLists() throws Exception {
-        GridCache<Integer, String> cache1 = ignite1.cache(null);
-        GridCache<Integer, String> cache2 = ignite2.cache(null);
-
-        Collection<Integer> keys1 = new ArrayList<>();
-        Collection<Integer> keys2 = new ArrayList<>();
-
-        Collections.addAll(keys1, 1, 2, 3);
-        Collections.addAll(keys2, 2, 3, 4);
-
-        IgniteFuture<Boolean> f1 = cache1.lockAllAsync(keys1, 0);
-
-        try {
-            assert f1.get();
-
-            checkLocked(cache1, keys1);
-
-            checkRemoteLocked(cache2, keys1);
-
-            IgniteFuture<Boolean> f2 = cache2.lockAllAsync(keys2, -1);
-
-            assert !f2.get();
-
-            checkLocked(cache1, keys1);
-
-            checkUnlocked(cache1, 4);
-            checkUnlocked(cache2, 4);
-
-            checkRemoteLocked(cache2, keys1);
-        }
-        finally {
-            cache1.unlockAll(keys1);
-        }
-
-        checkUnlocked(cache1, keys1);
-
-        CountDownLatch latch = new CountDownLatch(keys2.size());
-
-        addListener(ignite1, new UnlockListener(latch, keys2));
-
-        IgniteFuture<Boolean> f2 = cache2.lockAllAsync(keys2, 0);
-
-        try {
-            assert f2.get();
-
-            checkLocked(cache2, keys2);
-
-            checkRemoteLocked(cache1, keys2);
-
-            checkUnlocked(cache1, 1);
-
-            f1 = cache1.lockAllAsync(keys2, -1);
-
-            assert !f1.get();
-
-            checkLocked(cache2, keys2);
-
-            checkUnlocked(cache1, 1);
-            checkUnlocked(cache2 , 1);
-
-            checkRemoteLocked(cache1, keys2);
-        }
-        finally {
-            cache2.unlockAll(keys2);
-        }
-
-        latch.await();
-
-        checkUnlocked(cache1, keys1);
-        checkUnlocked(cache2, keys1);
-        checkUnlocked(cache1, keys2);
-        checkUnlocked(cache2, keys2);
-    }
-
-    /**
      * @throws IgniteCheckedException If test failed.
      */
     public void testLockReentry() throws IgniteCheckedException {
-        GridCache<Integer, String> cache = ignite1.cache(null);
+        IgniteCache<Integer, String> cache = ignite1.jcache(null);
 
-        assert cache.lock(1, 0L);
+        cache.lock(1).lock();
 
         try {
             checkLocked(cache, 1);
 
-            assert cache.lock(1, 0L);
+            cache.lock(1).lock();
 
             checkLocked(cache, 1);
 
-            cache.unlockAll(F.asList(1));
+            cache.lockAll(Collections.singleton(1)).unlock();
 
             checkLocked(cache, 1);
         }
         finally {
-            cache.unlockAll(F.asList(1));
+            cache.lockAll(Collections.singleton(1)).unlock();
         }
 
         checkUnlocked(cache, 1);
@@ -535,7 +474,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
      * @throws Exception If test failed.
      */
     public void testLockMultithreaded() throws Exception {
-        final GridCache<Integer, String> cache = ignite1.cache(null);
+        final IgniteCache<Integer, String> cache = ignite1.jcache(null);
 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
@@ -545,7 +484,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for.key 1");
 
-                assert cache.lock(1, 0L);
+                cache.lock(1).lock();
 
                 info("After lock for key 1");
 
@@ -557,23 +496,23 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                     info("Let thread2 proceed.");
 
                     // Reentry.
-                    assert cache.lock(1, 0L);
+                    cache.lock(1).lock();
 
                     checkLocked(cache, 1);
 
                     // Nested lock.
-                    assert cache.lock(2, -1L);
+                    assert cache.lock(2).tryLock();
 
                     checkLocked(cache, 2);
 
                     // Unlock reentry.
-                    cache.unlockAll(F.asList(1));
+                    cache.lockAll(Collections.singleton(1)).unlock();
 
                     // Outer should still be owned.
                     checkLocked(cache, 1);
 
                     // Unlock in reverse order.
-                    cache.unlockAll(F.asList(2));
+                    cache.lockAll(Collections.singleton(2)).unlock();
 
                     checkUnlocked(cache, 2);
 
@@ -582,7 +521,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                     info("Waited for latch 2");
                 }
                 finally {
-                    cache.unlockAll(F.asList(1));
+                    cache.lockAll(Collections.singleton(1)).unlock();
 
                     info("Unlocked entry for key 1.");
                 }
@@ -603,7 +542,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
                 info("Latch1 released.");
 
-                assert !cache.lock(1, -1L);
+                assert !cache.lock(1).tryLock();
 
                 info("Tried to lock cache for key1");
 
@@ -611,7 +550,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
 
                 info("Released latch2");
 
-                assert cache.lock(1, 0L);
+                cache.lock(1).lock();
 
                 try {
                     info("Locked cache for key 1");
@@ -621,7 +560,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
                     info("Checked that cache is locked for key 1");
                 }
                 finally {
-                    cache.unlockAll(F.asList(1));
+                    cache.lockAll(Collections.singleton(1)).unlock();
 
                     info("Unlocked cache for key 1");
                 }

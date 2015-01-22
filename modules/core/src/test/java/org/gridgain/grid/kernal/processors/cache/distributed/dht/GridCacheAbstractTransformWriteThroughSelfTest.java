@@ -17,16 +17,19 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
+import javax.cache.processor.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -63,16 +66,23 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** Value increment closure. */
-    private static final IgniteClosure<Integer, Integer> INCR_CLOS = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer src) {
-            return src == null ? 1 : src + 1;
+    /** Value increment processor. */
+    private static final EntryProcessor<String, Integer, Void> INCR_CLOS = new EntryProcessor<String, Integer, Void>() {
+        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+            if (!e.exists())
+                e.setValue(1);
+            else
+                e.setValue(e.getValue() + 1);
+
+            return null;
         }
     };
 
-    /** Value remove closure. */
-    private static final IgniteClosure<Integer, Integer> RMV_CLOS = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer src) {
+    /** Value remove processor. */
+    private static final EntryProcessor<String, Integer, Void> RMV_CLOS = new EntryProcessor<String, Integer, Void>() {
+        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+            e.remove();
+
             return null;
         }
     };
@@ -87,8 +97,11 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
     protected abstract boolean batchUpdate();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -100,11 +113,14 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
 
         stores.add(store);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setStore(store);
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
@@ -229,7 +245,7 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
      * @throws Exception If failed.
      */
     protected void checkTransform(IgniteTxConcurrency concurrency, int nodeType, int op) throws Exception {
-        GridCacheProjection<String, Integer> cache = cache(0);
+        IgniteCache<String, Integer> cache = jcache(0);
 
         Collection<String> keys = keysForType(nodeType);
 
@@ -241,18 +257,18 @@ public abstract class GridCacheAbstractTransformWriteThroughSelfTest extends Gri
         nearStore.reset();
 
         for (String key : keys)
-            cache.clear(key);
+            cache(0).clear(key);
 
         info(">>> Starting transform transaction");
 
-        try (IgniteTx tx = cache.txStart(concurrency, READ_COMMITTED)) {
+        try (IgniteTx tx = ignite(0).transactions().txStart(concurrency, READ_COMMITTED)) {
             if (op == OP_UPDATE) {
                 for (String key : keys)
-                    cache.transform(key, INCR_CLOS);
+                    cache.invoke(key, INCR_CLOS);
             }
             else {
                 for (String key : keys)
-                    cache.transform(key, RMV_CLOS);
+                    cache.invoke(key, RMV_CLOS);
             }
 
             tx.commit();

@@ -17,11 +17,14 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
@@ -53,7 +56,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setBackups(backups);
         ccfg.setCacheMode(PARTITIONED);
@@ -112,6 +115,9 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     }
 
     /**
+     * @param mode Atomicity mode.
+     * @param order Atomic cache write order mode.
+     * @param b Number of backups.
      * @throws Exception If failed.
      */
     private void checkTransform(GridCacheAtomicityMode mode, GridCacheAtomicWriteOrderMode order, int b)
@@ -134,10 +140,10 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
             failDeserialization = false;
 
             // Get client grid.
-            GridCacheProjection<Integer, TestObject> cache = grid(2).cache(null);
+            IgniteCache<Integer, TestObject> cache = grid(2).jcache(null);
 
             if (backups > 0 && atomicityMode == ATOMIC)
-                cache = cache.flagsOn(FORCE_TRANSFORM_BACKUP);
+                cache = ((IgniteCacheProxy<Integer, TestObject>)cache).flagsOn(FORCE_TRANSFORM_BACKUP);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());
@@ -146,17 +152,17 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
             info(">>>>>> Transforming");
 
-            // Transform (check non-existent keys also.
+            // Transform (check non-existent keys also).
             for (int i = 0; i < 200; i++)
-                cache.transform(i, new Transform());
+                cache.invoke(i, new Transform());
 
-            Map<Integer, Transform> transformMap = new HashMap<>();
+            Set<Integer> keys = new HashSet<>();
 
             // Check transformAll.
             for (int i = 0; i < 300; i++)
-                transformMap.put(i, new Transform());
+                keys.add(i);
 
-            cache.transformAll(transformMap);
+            cache.invokeAll(keys, new Transform());
 
             // Avoid errors during stop.
             failDeserialization = false;
@@ -166,10 +172,15 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
         }
     }
 
-    private static class Transform implements IgniteClosure<TestObject, TestObject> {
+    /**
+     *
+     */
+    private static class Transform implements EntryProcessor<Integer, TestObject, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public TestObject apply(TestObject testObject) {
-            return new TestObject();
+        @Override public Void process(MutableEntry<Integer, TestObject> entry, Object... args) {
+            entry.setValue(new TestObject());
+
+            return null;
         }
     }
 
@@ -177,7 +188,11 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      *
      */
     private static class TestObject implements Externalizable {
+        /**
+         *
+         */
         public TestObject() {
+            // No-op.
         }
 
         /** {@inheritDoc} */

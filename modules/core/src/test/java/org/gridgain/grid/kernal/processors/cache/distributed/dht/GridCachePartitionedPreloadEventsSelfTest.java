@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.gridgain.grid.cache.*;
@@ -43,8 +44,8 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
     private GridCachePreloadMode preloadMode = SYNC;
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = super.cacheConfiguration();
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = super.cacheConfiguration();
 
         if (replicatedAffinity)
             // replicate entries to all nodes

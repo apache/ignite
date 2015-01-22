@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.jta;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
@@ -32,7 +32,7 @@ public abstract class GridCacheJtaManagerAdapter<K, V> extends GridCacheManagerA
      * @param ccfg Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract void createTmLookup(GridCacheConfiguration ccfg) throws IgniteCheckedException;
+    public abstract void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.

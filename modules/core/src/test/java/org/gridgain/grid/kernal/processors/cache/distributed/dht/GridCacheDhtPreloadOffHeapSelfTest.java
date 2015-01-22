@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
@@ -27,8 +27,8 @@ import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
  */
 public class GridCacheDhtPreloadOffHeapSelfTest extends GridCacheDhtPreloadSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) {
-        GridCacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);

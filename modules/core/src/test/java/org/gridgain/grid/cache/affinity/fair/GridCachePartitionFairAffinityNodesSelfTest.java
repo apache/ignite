@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.cache.affinity.fair;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
@@ -78,7 +79,7 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration ccfg = cacheConfiguration();
+        CacheConfiguration ccfg = cacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -94,8 +95,8 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setBackups(backups);
 

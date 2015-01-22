@@ -18,10 +18,9 @@
 package org.gridgain.grid.kernal.processors.dr;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
@@ -37,11 +36,11 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public void update(GridCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
+    @Override public void update(IgniteCache<K, V> cache0, Collection<Map.Entry<K, V>> col)
         throws IgniteCheckedException {
-        String cacheName = cache0.name();
+        String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
 
-        GridKernalContext ctx = ((GridKernal)cache0.gridProjection().ignite()).context();
+        GridKernalContext ctx = ((GridKernal)cache0.unwrap(Ignite.class)).context();
         IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
         GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 

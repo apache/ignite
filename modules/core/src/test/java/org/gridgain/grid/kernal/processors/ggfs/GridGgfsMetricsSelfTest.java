@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.U;
-import org.gridgain.testframework.*;
 
 import java.util.*;
 
@@ -44,8 +44,11 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
     /** Primary GGFS name. */
     private static final String GGFS_SECONDARY = "ggfs-secondary";
 
-    /** Secondary file system REST endpoint configuration string. */
-    private static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
+    /** Secondary file system REST endpoint configuration map. */
+    private static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>(){{
+        put("type", "tcp");
+        put("port", "11500");
+    }};
 
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
@@ -114,7 +117,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfsCfg.setPathModes(pathModes);
 
-        GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -125,7 +128,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -164,9 +167,9 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         ggfsCfg.setName(GGFS_SECONDARY);
         ggfsCfg.setBlockSize(SECONDARY_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(SECONDARY_REST_CFG));
+        ggfsCfg.setIpcEndpointConfiguration(SECONDARY_REST_CFG);
 
-        GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -177,7 +180,7 @@ public class GridGgfsMetricsSelfTest extends GridGgfsCommonAbstractTest {
         dataCacheCfg.setQueryIndexEnabled(false);
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);

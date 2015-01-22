@@ -68,7 +68,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             @Override public void onMessage(UUID nodeId, Object msg) {
                 assert msg instanceof GridDataLoadRequest;
 
-                processDataLoadRequest(nodeId, (GridDataLoadRequest<K, V>)msg);
+                processDataLoadRequest(nodeId, (GridDataLoadRequest)msg);
             }
         });
 
@@ -184,7 +184,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
      * @param nodeId Sender ID.
      * @param req Request.
      */
-    private void processDataLoadRequest(UUID nodeId, GridDataLoadRequest<K, V> req) {
+    private void processDataLoadRequest(UUID nodeId, GridDataLoadRequest req) {
         if (!busyLock.enterBusy()) {
             if (log.isDebugEnabled())
                 log.debug("Ignoring data load request (node is stopping): " + req);
@@ -251,8 +251,13 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
                 return;
             }
 
-            GridDataLoadUpdateJob<K, V> job = new GridDataLoadUpdateJob<>(ctx, log, req.cacheName(), col,
-                req.ignoreDeploymentOwnership(), updater);
+            GridDataLoadUpdateJob<K, V> job = new GridDataLoadUpdateJob<>(ctx,
+                log,
+                req.cacheName(),
+                col,
+                req.ignoreDeploymentOwnership(),
+                req.skipStore(),
+                updater);
 
             Exception err = null;
 

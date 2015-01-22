@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 
@@ -43,8 +44,8 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration0() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration cacheConfiguration0() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -60,8 +61,8 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration offheapCacheConfiguration0() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration offheapCacheConfiguration0() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -77,8 +78,8 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration offheapTieredCacheConfiguration0() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration offheapTieredCacheConfiguration0() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);

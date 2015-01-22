@@ -76,7 +76,7 @@ public class GridCacheHibernateBlobStoreSelfTest extends
         store.setHibernateConfigurationPath(url.toString());
 
         // Store will be implicitly initialized.
-        store.load(null, "key");
+        store.load("key");
     }
 
     /**
@@ -93,7 +93,7 @@ public class GridCacheHibernateBlobStoreSelfTest extends
         store.setHibernateConfigurationPath(file.getAbsolutePath());
 
         // Store will be implicitly initialized.
-        store.load(null, "key");
+        store.load("key");
     }
 
     /**
@@ -103,6 +103,6 @@ public class GridCacheHibernateBlobStoreSelfTest extends
         store.setHibernateConfigurationPath("/org/gridgain/grid/cache/store/hibernate/hibernate.cfg.xml");
 
         // Store will be implicitly initialized.
-        store.load(null, "key");
+        store.load("key");
     }
 }

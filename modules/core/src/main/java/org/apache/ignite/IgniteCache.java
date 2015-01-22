@@ -19,15 +19,17 @@ package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
+import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.util.*;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.*;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
@@ -87,25 +89,30 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withExpiryPolicy(ExpiryPolicy plc);
 
     /**
+     * @return Cache with read-through write-through behavior disabled.
+     */
+    public IgniteCache<K, V> withSkipStore();
+
+    /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link org.gridgain.grid.cache.store.GridCacheStore#loadCache(IgniteBiInClosure, Object...)} method.
+     *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
-     * Delegates to {@link org.gridgain.grid.cache.store.GridCacheStore#loadCache(IgniteBiInClosure,Object...)} method
+     * Delegates to {@link CacheStore#loadCache(IgniteBiInClosure,Object...)} method
      * to load state from the underlying persistent storage. The loaded values
      * will then be given to the optionally passed in predicate, and, if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
      * all loaded values will be stored in cache.
      * <p>
      * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link org.gridgain.grid.cache.store.GridCacheStore} implementation to provide all the data to be loaded.
+     * {@link CacheStore} implementation to provide all the data to be loaded.
      * <p>
      * This method is not transactional and may end up loading a stale value into
      * cache if another thread has updated the value immediately after it has been
@@ -115,7 +122,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param p Optional predicate (may be {@code null}). If provided, will be used to
      *      filter values to be put into cache.
      * @param args Optional user arguments to be passed into
-     *      {@link org.gridgain.grid.cache.store.GridCacheStore#loadCache(IgniteBiInClosure, Object...)} method.
+     *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
@@ -127,14 +134,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
-     * storage, {@link org.gridgain.grid.cache.store.GridCacheStore#load(IgniteTx, Object)} method will be used.
+     * storage, {@link CacheStore#load(Object)} method will be used.
      * <p>
      * If the returned value is not needed, method {@link #putIfAbsent(Object, Object)} should
      * always be used instead of this one to avoid the overhead associated with returning of the
      * previous value.
      * <p>
-     * If write-through is enabled, the stored value will be persisted to {@link org.gridgain.grid.cache.store.GridCacheStore}
-     * via {@link org.gridgain.grid.cache.store.GridCacheStore#put(IgniteTx, Object, Object)} method.
+     * If write-through is enabled, the stored value will be persisted to {@link CacheStore}
+     * via {@link CacheStore#write(Cache.Entry)} method.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -152,34 +159,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
-     * Removes mappings from cache for entries for which the optionally passed in filters do
-     * pass. If passed in filters are {@code null}, then all entries in cache will be enrolled
-     * into transaction.
-     * <p>
-     * <b>USE WITH CARE</b> - if your cache has many entries that pass through the filter or if filter
-     * is empty, then transaction will quickly become very heavy and slow. Also, locks
-     * are acquired in undefined order, so it may cause a deadlock when used with
-     * other concurrent transactional updates.
-     * <p>
-     * If write-through is enabled, the values will be removed from {@link org.gridgain.grid.cache.store.GridCacheStore}
-     * via {@link org.gridgain.grid.cache.store.GridCacheStore#removeAll(IgniteTx, java.util.Collection)} method.
-     * <h2 class="header">Transactions</h2>
-     * This method is transactional and will enlist the entry into ongoing transaction
-     * if there is one.
-     * <h2 class="header">Cache Flags</h2>
-     * This method is not available if any of the following flags are set on projection:
-     * {@link org.gridgain.grid.cache.GridCacheFlag#LOCAL}, {@link org.gridgain.grid.cache.GridCacheFlag#READ}.
+     * Return a {@link CacheLock} instance associated with passed key.
+     * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
      *
-     * @param filter Filter used to supply keys for remove operation (if {@code null},
-     *      then nothing will be removed).
-     * @throws CacheException If remove failed.
-     * @throws org.gridgain.grid.cache.GridCacheFlagException If flags validation failed.
+     * @param key Key for lock.
+     * @return New lock instance associated with passed key.
+     * @see CacheLock#lock()
+     * @see CacheLock#tryLock(long, TimeUnit)
      */
-    public void removeAll(IgnitePredicate<Entry<K, V>> filter) throws CacheException;
+    public CacheLock lock(K key);
 
-    public Lock lock(K key) throws CacheException;
-
-    public Lock lockAll(Set<? extends K> keys) throws CacheException;
+    /**
+     * Return a {@link CacheLock} instance associated with passed keys.
+     * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     *
+     * @param keys Keys for lock.
+     * @return New lock instance associated with passed key.
+     * @see CacheLock#lock()
+     * @see CacheLock#tryLock(long, TimeUnit)
+     */
+    public CacheLock lockAll(Collection<? extends K> keys);
 
     /**
      * Checks if any node owns a lock for this key.
@@ -224,7 +223,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
      * <p>
-     * If {@link org.gridgain.grid.cache.GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
@@ -244,7 +243,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method does not participate in any transactions, however, it will
      * peek at transactional value according to the {@link org.gridgain.grid.cache.GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link org.gridgain.grid.cache.GridCache#peek(Object, java.util.Collection)} method.
+     * you can use {@link GridCache#peek(Object, Collection)} method.
      *
      * @param key Entry key.
      * @return Peeked value.
@@ -271,7 +270,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link org.gridgain.grid.cache.GridCacheConfiguration#isSwapEnabled()} is set to {@code true} and
+     * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
      * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
@@ -306,4 +305,53 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache size on this node.
      */
     public int localSize(CachePeekMode... peekModes);
+
+    /**
+     * @param map Map containing keys and entry processors to be applied to values.
+     * @param args Additional arguments to pass to the {@link EntryProcessor}.
+     * @return The map of {@link EntryProcessorResult}s of the processing per key,
+     * if any, defined by the {@link EntryProcessor} implementation.  No mappings
+     * will be returned for {@link EntryProcessor}s that return a
+     * <code>null</code> value for a key.
+     */
+    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
+
+    /**
+     * Creates projection that will operate with portable objects.
+     * <p>
+     * Projection returned by this method will force cache not to deserialize portable objects,
+     * so keys and values will be returned from cache API methods without changes. Therefore,
+     * signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@link org.apache.ignite.portables.PortableObject} for portable classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li>
+     *         Maps, collections and array of objects (but objects inside
+     *         them will still be converted if they are portable)
+     *     </li>
+     * </ul>
+     * <p>
+     * For example, if you use {@link Integer} as a key and {@code Value} class as a value
+     * (which will be stored in portable format), you should acquire following projection
+     * to avoid deserialization:
+     * <pre>
+     * GridCacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     *
+     * // Value is not deserialized and returned in portable format.
+     * GridPortableObject po = prj.get(1);
+     * </pre>
+     * <p>
+     * Note that this method makes sense only if cache is working in portable mode
+     * ({@link CacheConfiguration#isPortableEnabled()} returns {@code true}. If not,
+     * this method is no-op and will return current projection.
+     *
+     * @return Projection for portable objects.
+     */
+    public <K1, V1> IgniteCache<K1, V1> keepPortable();
 }

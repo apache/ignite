@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -66,11 +67,17 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     /** Amount of sequential block reads before prefetch is triggered. */
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
-    /** Primary file system REST endpoint configuration string. */
-    protected static final String PRIMARY_REST_CFG = "{type:'tcp', port:10500}";
+    /** Primary file system REST endpoint configuration map. */
+    protected static final Map<String, String> PRIMARY_REST_CFG = new HashMap<String, String>() {{
+        put("type", "tcp");
+        put("port", "10500");
+    }};
 
-    /** Secondary file system REST endpoint configuration string. */
-    protected static final String SECONDARY_REST_CFG = "{type:'tcp', port:11500}";
+    /** Secondary file system REST endpoint configuration map. */
+    protected static final Map<String, String> SECONDARY_REST_CFG = new HashMap<String, String>() {{
+        put("type", "tcp");
+        put("port", "11500");
+    }};
 
     /** Directory. */
     protected static final IgniteFsPath DIR = new IgniteFsPath("/dir");
@@ -176,7 +183,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
      * @throws Exception If failed.
      */
     protected Ignite startGridWithGgfs(String gridName, String ggfsName, IgniteFsMode mode,
-        @Nullable IgniteFsFileSystem secondaryFs, @Nullable String restCfg) throws Exception {
+        @Nullable IgniteFsFileSystem secondaryFs, @Nullable Map<String, String> restCfg) throws Exception {
         IgniteFsConfiguration ggfsCfg = new IgniteFsConfiguration();
 
         ggfsCfg.setDataCacheName("dataCache");
@@ -184,12 +191,12 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         ggfsCfg.setName(ggfsName);
         ggfsCfg.setBlockSize(GGFS_BLOCK_SIZE);
         ggfsCfg.setDefaultMode(mode);
-        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(restCfg));
+        ggfsCfg.setIpcEndpointConfiguration(restCfg);
         ggfsCfg.setSecondaryFileSystem(secondaryFs);
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 
-        GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -202,7 +209,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         dataCacheCfg.setMemoryMode(memoryMode);
         dataCacheCfg.setOffHeapMaxMemory(0);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);

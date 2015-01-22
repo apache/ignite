@@ -91,6 +91,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param timeout Timeout.
      * @param txSize Expected transaction size.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridDistributedTxRemoteAdapter(
         GridCacheSharedContext<K, V> ctx,
@@ -306,43 +308,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /**
-     * @param key Key to add to read set.
-     * @param keyBytes Key bytes.
-     * @param drVer Data center replication version.
-     */
-    public void addRead(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key, byte[] keyBytes, @Nullable GridCacheVersion drVer) {
-        checkInternal(key);
-
-        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx, this, READ, null, 0L, -1L,
-            cacheCtx.cache().entryEx(key.key()), drVer);
-
-        txEntry.keyBytes(keyBytes);
-
-        readMap.put(key, txEntry);
-    }
-
-    /**
-     * @param key Key to add to write set.
-     * @param keyBytes Key bytes.
-     * @param op Cache operation.
-     * @param val Write value.
-     * @param valBytes Write value bytes.
-     * @param drVer Data center replication version.
-     */
-    public void addWrite(GridCacheContext<K, V> cacheCtx, IgniteTxKey<K> key, byte[] keyBytes, GridCacheOperation op, V val, byte[] valBytes,
-        @Nullable GridCacheVersion drVer) {
-        checkInternal(key);
-
-        IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx, this, op, val, 0L, -1L,
-            cacheCtx.cache().entryEx(key.key()), drVer);
-
-        txEntry.keyBytes(keyBytes);
-        txEntry.valueBytes(valBytes);
-
-        writeMap.put(key, txEntry);
-    }
-
-    /**
      * @param e Transaction entry to set.
      * @return {@code True} if value was set.
      */
@@ -370,7 +335,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
         else {
             // Copy values.
             entry.value(e.value(), e.hasWriteValue(), e.hasReadValue());
-            entry.transformClosures(e.transformClosures());
+            entry.entryProcessors(e.entryProcessors());
             entry.valueBytes(e.valueBytes());
             entry.op(e.op());
             entry.ttl(e.ttl());
@@ -526,7 +491,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     if (updateNearCache(cacheCtx, txEntry.key(), topVer))
                                         nearCached = cacheCtx.dht().near().peekExx(txEntry.key());
 
-                                    if (!F.isEmpty(txEntry.transformClosures()) || !F.isEmpty(txEntry.filters()))
+                                    if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
                                         txEntry.cached().unswap(true, false);
 
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
@@ -535,10 +500,6 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     GridCacheOperation op = res.get1();
                                     V val = res.get2();
                                     byte[] valBytes = res.get3();
-
-                                    // Preserve TTL if needed.
-                                    if (txEntry.ttl() < 0)
-                                        txEntry.ttl(cached.rawTtl());
 
                                     GridCacheVersion explicitVer = txEntry.drVersion();
 
@@ -563,6 +524,8 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                                             if (drRes.isMerge())
                                                 explicitVer = writeVersion();
+                                            else if (op == NOOP)
+                                                txEntry.ttl(-1L);
                                         }
                                         else
                                             // Nullify explicit version so that innerSet/innerRemove will work as usual.
@@ -634,6 +597,9 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         assert !groupLock() || txEntry.groupLockEntry() || ownsLock(txEntry.cached()):
                                             "Transaction does not own lock for group lock entry during  commit [tx=" +
                                                 this + ", txEntry=" + txEntry + ']';
+
+                                        if (txEntry.ttl() != -1L)
+                                            cached.updateTtl(null, txEntry.ttl());
 
                                         if (nearCached != null) {
                                             V val0 = null;

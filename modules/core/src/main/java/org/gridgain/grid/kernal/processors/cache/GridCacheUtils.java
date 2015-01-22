@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
@@ -34,6 +35,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -563,7 +565,7 @@ public class GridCacheUtils {
      * @param cfg Configuration to check.
      * @return {@code True} if local node is affinity node (i.e. will store partitions).
      */
-    public static boolean isAffinityNode(GridCacheConfiguration cfg) {
+    public static boolean isAffinityNode(CacheConfiguration cfg) {
         if (cfg.getCacheMode() == LOCAL)
             return true;
 
@@ -640,7 +642,7 @@ public class GridCacheUtils {
      * @return {@code True} if near cache is enabled, {@code false} otherwise.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public static boolean isNearEnabled(GridCacheConfiguration cfg) {
+    public static boolean isNearEnabled(CacheConfiguration cfg) {
         if (cfg.getCacheMode() == LOCAL)
             return false;
 
@@ -654,7 +656,7 @@ public class GridCacheUtils {
      * @param cfg Configuration.
      * @return Partitioned cache mode.
      */
-    public static GridCacheDistributionMode distributionMode(GridCacheConfiguration cfg) {
+    public static GridCacheDistributionMode distributionMode(CacheConfiguration cfg) {
         return cfg.getDistributionMode() != null ?
             cfg.getDistributionMode() : GridCacheDistributionMode.PARTITIONED_ONLY;
     }
@@ -1278,7 +1280,7 @@ public class GridCacheUtils {
         assert ctx != null;
         assert key != null;
 
-        GridCacheConfiguration cfg = ctx.cache().configuration();
+        CacheConfiguration cfg = ctx.cache().configuration();
 
         if (cfg.getCacheMode() != PARTITIONED)
             return ctx.localNode();
@@ -1386,8 +1388,8 @@ public class GridCacheUtils {
      * @param fail If true throws IgniteCheckedException in case of attribute values mismatch, otherwise logs warning.
      * @throws IgniteCheckedException If attribute values are different and fail flag is true.
      */
-    public static void checkAttributeMismatch(IgniteLogger log, GridCacheConfiguration locCfg,
-        GridCacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
+    public static void checkAttributeMismatch(IgniteLogger log, CacheConfiguration locCfg,
+        CacheConfiguration rmtCfg, ClusterNode rmt, T2<String, String> attr, boolean fail) throws IgniteCheckedException {
         assert rmt != null;
         assert attr != null;
         assert attr.get1() != null;
@@ -1493,8 +1495,8 @@ public class GridCacheUtils {
      *
      * @return Hadoop cache configuration.
      */
-    public static GridCacheConfiguration hadoopSystemCache() {
-        GridCacheConfiguration cache = new GridCacheConfiguration();
+    public static CacheConfiguration hadoopSystemCache() {
+        CacheConfiguration cache = new CacheConfiguration();
 
         cache.setName(CU.SYS_CACHE_HADOOP_MR);
         cache.setCacheMode(REPLICATED);
@@ -1504,7 +1506,7 @@ public class GridCacheUtils {
         cache.setEvictionPolicy(null);
         cache.setSwapEnabled(false);
         cache.setQueryIndexEnabled(false);
-        cache.setStore(null);
+        cache.setCacheStoreFactory(null);
         cache.setEagerTtl(true);
         cache.setPreloadMode(SYNC);
 
@@ -1601,7 +1603,7 @@ public class GridCacheUtils {
      * @return Expire time.
      */
     public static long toExpireTime(long ttl) {
-        assert ttl >= 0L;
+        assert ttl >= 0L : ttl;
 
         if (ttl == 0L)
             return 0L;
@@ -1655,5 +1657,27 @@ public class GridCacheUtils {
      */
     public static <K, V> boolean invalidate(GridCacheProjection<K, V> cache, K key) {
         return cache.clear(key);
+    }
+
+    /**
+     * @param duration Duration.
+     * @return TTL.
+     */
+    public static long toTtl(Duration duration) {
+        if (duration == null)
+            return -1;
+
+        if (duration.getDurationAmount() == 0) {
+            if (duration.isEternal())
+                return 0;
+
+            assert duration.isZero();
+
+            return 1L;
+        }
+
+        assert duration.getTimeUnit() != null;
+
+        return duration.getTimeUnit().toMillis(duration.getDurationAmount());
     }
 }

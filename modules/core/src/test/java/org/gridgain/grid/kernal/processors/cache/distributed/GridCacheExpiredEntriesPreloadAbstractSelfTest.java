@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -26,8 +27,10 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
+import javax.cache.expiry.*;
 import java.util.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
@@ -58,11 +61,13 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setPreloadMode(SYNC);
-        cfg.setStore(null);
+        cfg.setCacheStoreFactory(null);
+        cfg.setWriteThrough(false);
+        cfg.setReadThrough(false);
 
         return cfg;
     }
@@ -78,12 +83,12 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
         for (int i = 0; i < KEYS_NUM; i++)
             cache0.put(String.valueOf(i), 0);
 
-        for (int i = 0; i < KEYS_NUM; i++) {
-            GridCacheEntry<String, Integer> entry = cache0.entry(String.valueOf(i));
+        final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 100L));
 
-            entry.timeToLive(100);
-            entry.setValue(i);
-        }
+        IgniteCache cache = grid(0).jcache(null).withExpiryPolicy(expiry);
+
+        for (int i = 0; i < KEYS_NUM; i++)
+            cache.put(String.valueOf(i), i);
 
         // Allow entries to expire.
         U.sleep(1000);

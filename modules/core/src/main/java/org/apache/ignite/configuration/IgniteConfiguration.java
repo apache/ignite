@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -30,7 +31,6 @@ import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -384,7 +384,7 @@ public class IgniteConfiguration {
     private IgniteAddressResolver addrRslvr;
 
     /** Cache configurations. */
-    private GridCacheConfiguration[] cacheCfg;
+    private CacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
@@ -2241,7 +2241,7 @@ public class IgniteConfiguration {
      *
      * @return Array of fully initialized cache descriptors.
      */
-    public GridCacheConfiguration[] getCacheConfiguration() {
+    public CacheConfiguration[] getCacheConfiguration() {
         return cacheCfg;
     }
 
@@ -2251,8 +2251,8 @@ public class IgniteConfiguration {
      * @param cacheCfg Cache configurations.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
-    public void setCacheConfiguration(GridCacheConfiguration... cacheCfg) {
-        this.cacheCfg = cacheCfg == null ? new GridCacheConfiguration[0] : cacheCfg;
+    public void setCacheConfiguration(CacheConfiguration... cacheCfg) {
+        this.cacheCfg = cacheCfg == null ? new CacheConfiguration[0] : cacheCfg;
     }
 
     /**

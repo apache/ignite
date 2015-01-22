@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -53,9 +54,6 @@ public class VisorCacheConfiguration implements Serializable {
 
     /** Eager ttl flag */
     private boolean eagerTtl;
-
-    /** Refresh ahead ratio. */
-    private double refreshAheadRatio;
 
     /** Write synchronization mode. */
     private GridCacheWriteSynchronizationMode writeSynchronizationMode;
@@ -139,7 +137,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheConfiguration from(CacheConfiguration ccfg) {
         // TODO gg-9141 Update Visor.
 
         VisorCacheConfiguration cfg = new VisorCacheConfiguration();
@@ -152,7 +150,6 @@ public class VisorCacheConfiguration implements Serializable {
         cfg.atomicWriteOrderMode(ccfg.getAtomicWriteOrderMode());
         cfg.atomicSequenceReserveSize(ccfg.getAtomicSequenceReserveSize());
         cfg.eagerTtl(ccfg.isEagerTtl());
-        cfg.refreshAheadRatio(ccfg.getRefreshAheadRatio());
         cfg.writeSynchronizationMode(ccfg.getWriteSynchronizationMode());
         cfg.swapEnabled(ccfg.isSwapEnabled());
         cfg.queryIndexEnabled(ccfg.isQueryIndexEnabled());
@@ -186,13 +183,13 @@ public class VisorCacheConfiguration implements Serializable {
      * @param caches Cache configurations.
      * @return Data transfer object for cache configurations properties.
      */
-    public static Iterable<VisorCacheConfiguration> list(GridCacheConfiguration[] caches) {
+    public static Iterable<VisorCacheConfiguration> list(CacheConfiguration[] caches) {
         if (caches == null)
             return Collections.emptyList();
 
         final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
 
-        for (GridCacheConfiguration cache : caches)
+        for (CacheConfiguration cache : caches)
             cfgs.add(from(cache));
 
         return cfgs;
@@ -294,20 +291,6 @@ public class VisorCacheConfiguration implements Serializable {
      */
     public void eagerTtl(boolean eagerTtl) {
         this.eagerTtl = eagerTtl;
-    }
-
-    /**
-     * @return Refresh ahead ratio.
-     */
-    public double refreshAheadRatio() {
-        return refreshAheadRatio;
-    }
-
-    /**
-     * @param refreshAheadRatio New refresh ahead ratio.
-     */
-    public void refreshAheadRatio(double refreshAheadRatio) {
-        this.refreshAheadRatio = refreshAheadRatio;
     }
 
     /**

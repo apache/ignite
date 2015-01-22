@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -71,7 +72,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 18));
@@ -150,9 +151,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                         @Override public void run() {
                             try {
                                 try {
-                                    boolean locked = node.cache(null).lock(key, 0);
-
-                                    assert locked;
+                                    node.jcache(null).lock(key).lock();
 
                                     info(">>> Acquired explicit lock for key: " + key);
 
@@ -160,9 +159,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
                                     info(">>> Acquiring explicit lock for key: " + key * 10);
 
-                                    locked = node.cache(null).lock(key * 10, 0);
-
-                                    assert locked;
+                                    node.jcache(null).lock(key * 10).lock();
 
                                     info(">>> Releasing locks [key1=" + key + ", key2=" + key * 10 + ']');
                                 }

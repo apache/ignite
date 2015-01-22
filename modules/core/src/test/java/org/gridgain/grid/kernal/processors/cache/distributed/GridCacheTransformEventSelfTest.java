@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -27,9 +28,12 @@ import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -76,7 +80,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private UUID[] ids;
 
     /** Caches. */
-    private GridCache<Integer, Integer>[] caches;
+    private IgniteCache<Integer, Integer>[] caches;
 
     /** Recorded events.*/
     private ConcurrentHashSet<IgniteCacheEvent> evts;
@@ -106,7 +110,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
 
@@ -165,14 +169,14 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         ignites = new Ignite[GRID_CNT];
         ids = new UUID[GRID_CNT];
-        caches = new GridCache[GRID_CNT];
+        caches = new IgniteCache[GRID_CNT];
 
         for (int i = 0; i < GRID_CNT; i++) {
             ignites[i] = grid(i);
 
             ids[i] = ignites[i].cluster().localNode().id();
 
-            caches[i] = ignites[i].cache(CACHE_NAME);
+            caches[i] = ignites[i].jcache(CACHE_NAME);
 
             ignites[i].events().localListen(new IgnitePredicate<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent evt) {
@@ -192,7 +196,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         int key = 0;
 
         while (true) {
-            if (cacheMode != PARTITIONED || (caches[0].entry(key).primary() && caches[1].entry(key).backup())) {
+            if (cacheMode != PARTITIONED || (primary(0, key) && backup(1, key))) {
                 key1 = key++;
 
                 break;
@@ -202,7 +206,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         }
 
         while (true) {
-            if (cacheMode != PARTITIONED || (caches[0].entry(key).primary() && caches[1].entry(key).backup())) {
+            if (cacheMode != PARTITIONED || (primary(0, key) && backup(1, key))) {
                 key2 = key;
 
                 break;
@@ -231,6 +235,28 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_READ);
         }
+    }
+
+    /**
+     * @param gridIdx Grid index.
+     * @param key Key.
+     * @return {@code True} if grid is primary for given key.
+     */
+    private boolean primary(int gridIdx, Object key) {
+        GridCacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+
+        return aff.isPrimary(grid(gridIdx).cluster().localNode(), key);
+    }
+
+    /**
+     * @param gridIdx Grid index.
+     * @param key Key.
+     * @return {@code True} if grid is primary for given key.
+     */
+    private boolean backup(int gridIdx, Object key) {
+        GridCacheAffinity<Object> aff = grid(0).cache(CACHE_NAME).affinity();
+
+        return aff.isBackup(grid(gridIdx).cluster().localNode(), key);
     }
 
     /**
@@ -431,13 +457,13 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private void checkAtomic(GridCacheMode cacheMode) throws Exception {
         initialize(cacheMode, ATOMIC, null, null);
 
-        caches[0].transform(key1, new Transformer());
+        caches[0].invoke(key1, new Transformer());
 
         checkEventNodeIdsStrict(primaryIdsForKeys(key1));
 
         assert evts.isEmpty();
 
-        caches[0].transformAll(keys, new Transformer());
+        caches[0].invokeAll(keys, new Transformer());
 
         checkEventNodeIdsStrict(primaryIdsForKeys(key1, key2));
     }
@@ -457,7 +483,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         System.out.println("BEFORE: " + evts.size());
 
-        caches[0].transform(key1, new Transformer());
+        caches[0].invoke(key1, new Transformer());
 
         System.out.println("AFTER: " + evts.size());
 
@@ -465,7 +491,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         assert evts.isEmpty();
 
-        caches[0].transformAll(keys, new Transformer());
+        caches[0].invokeAll(keys, new Transformer());
 
         checkEventNodeIdsStrict(idsForKeys(key1, key2));
     }
@@ -508,9 +534,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         else if (cacheMode == PARTITIONED) {
             for (int key : keys) {
                 for (int i = 0; i < GRID_CNT; i++) {
-                    GridCacheEntry<Integer, Integer> entry = caches[i].entry(key);
-
-                    if (entry.primary() || (!primaryOnly && entry.backup()))
+                    if (primary(i, key) || (!primaryOnly && backup(i, key)))
                         res.add(ids[i]);
                 }
             }
@@ -518,7 +542,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         else if (cacheMode == REPLICATED) {
             for (int key : keys) {
                 if (primaryOnly)
-                    res.add(caches[0].affinity().mapKeyToNode(key).id());
+                    res.add(grid(0).cache(CACHE_NAME).affinity().mapKeyToNode(key).id());
                 else
                     res.addAll(Arrays.asList(ids));
             }
@@ -552,22 +576,19 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
                 }
 
                 if (foundEvt == null) {
-                    GridCache<Integer, Integer> affectedCache = null;
+                    int gridIdx = -1;
 
                     for (int i = 0; i < GRID_CNT; i++) {
                         if (F.eq(this.ids[i], id)) {
-                            affectedCache = caches[i];
+                            gridIdx = i;
 
                             break;
                         }
                     }
 
-                    GridCacheEntry<Integer, Integer> entry1 = affectedCache.entry(key1);
-                    GridCacheEntry<Integer, Integer> entry2 = affectedCache.entry(key2);
-
                     fail("Expected transform event was not triggered on the node [nodeId=" + id +
-                        ", key1Primary=" + entry1.primary() + ", key1Backup=" + entry1.backup() +
-                        ", key2Primary=" + entry2.primary() + ", key2Backup=" + entry2.backup() + ']');
+                        ", key1Primary=" + primary(gridIdx, key1) + ", key1Backup=" + backup(gridIdx, key1) +
+                        ", key2Primary=" + primary(gridIdx, key2) + ", key2Backup=" + backup(gridIdx, key2) + ']');
                 }
                 else
                     evts.remove(foundEvt);
@@ -578,10 +599,12 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /**
      * Transform closure.
      */
-    private static class Transformer implements IgniteClosure<Integer, Integer> {
+    private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public Integer apply(Integer val) {
-            return ++val;
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            e.setValue(e.getValue() + 1);
+
+            return null;
         }
     }
 }

@@ -18,14 +18,17 @@
 package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.expiry.*;
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
+
+import static java.util.concurrent.TimeUnit.*;
 
 /**
  * Session listener for web sessions caching.
@@ -35,7 +38,7 @@ class GridWebSessionListener {
     private static final long RETRY_DELAY = 1;
 
     /** Cache. */
-    private final GridCache<String, GridWebSession> cache;
+    private final IgniteCache<String, GridWebSession> cache;
 
     /** Maximum retries. */
     private final int retries;
@@ -48,7 +51,7 @@ class GridWebSessionListener {
      * @param cache Cache.
      * @param retries Maximum retries.
      */
-    GridWebSessionListener(Ignite ignite, GridCache<String, GridWebSession> cache, int retries) {
+    GridWebSessionListener(Ignite ignite, IgniteCache<String, GridWebSession> cache, int retries) {
         assert ignite != null;
         assert cache != null;
 
@@ -65,10 +68,10 @@ class GridWebSessionListener {
         assert sesId != null;
 
         try {
-            if (cache.removex(sesId) && log.isDebugEnabled())
+            if (cache.remove(sesId) && log.isDebugEnabled())
                 log.debug("Session destroyed: " + sesId);
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             U.error(log, "Failed to remove session: " + sesId, e);
         }
     }
@@ -78,6 +81,7 @@ class GridWebSessionListener {
      * @param updates Updates list.
      * @param maxInactiveInterval Max session inactive interval.
      */
+    @SuppressWarnings("unchecked")
     public void updateAttributes(String sesId, Collection<T2<String, Object>> updates, int maxInactiveInterval) {
         assert sesId != null;
         assert updates != null;
@@ -88,20 +92,23 @@ class GridWebSessionListener {
         try {
             for (int i = 0; i < retries; i++) {
                 try {
-                    GridCacheEntry<String, GridWebSession> entry = cache.entry(sesId);
+                    IgniteCache<String, GridWebSession> cache0;
 
-                    assert entry != null;
+                    if (maxInactiveInterval > 0) {
+                        long ttl = maxInactiveInterval * 1000;
 
-                    if (maxInactiveInterval < 0)
-                        maxInactiveInterval = 0;
+                        ExpiryPolicy plc = new ModifiedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-                    entry.timeToLive(maxInactiveInterval * 1000);
+                        cache0 = cache.withExpiryPolicy(plc);
+                    }
+                    else
+                        cache0 = cache;
 
-                    entry.transform(new AttributesUpdated(updates));
+                    cache0.invoke(sesId, new AttributesProcessor(updates));
 
                     break;
                 }
-                catch (GridCachePartialUpdateException ignored) {
+                catch (CachePartialUpdateException ignored) {
                     if (i == retries - 1) {
                         U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
                             sesId + ", retries=" + retries + ']');
@@ -114,7 +121,7 @@ class GridWebSessionListener {
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException | IgniteCheckedException e) {
             U.error(log, "Failed to update session attributes [id=" + sesId + ']', e);
         }
     }
@@ -127,7 +134,7 @@ class GridWebSessionListener {
     /**
      * Multiple attributes update transformer.
      */
-    private static class AttributesUpdated implements C1<GridWebSession, GridWebSession>, Externalizable {
+    private static class AttributesProcessor implements EntryProcessor<String, GridWebSession, Void>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -137,26 +144,25 @@ class GridWebSessionListener {
         /**
          * Required by {@link Externalizable}.
          */
-        public AttributesUpdated() {
+        public AttributesProcessor() {
             // No-op.
         }
 
         /**
          * @param updates Updates list.
          */
-        AttributesUpdated(Collection<T2<String, Object>> updates) {
+        AttributesProcessor(Collection<T2<String, Object>> updates) {
             assert updates != null;
 
             this.updates = updates;
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings("NonSerializableObjectBoundToHttpSession")
-        @Nullable @Override public GridWebSession apply(@Nullable GridWebSession ses) {
-            if (ses == null)
+        @Override public Void process(MutableEntry<String, GridWebSession> entry, Object... args) {
+            if (!entry.exists())
                 return null;
 
-            ses = new GridWebSession(ses);
+            GridWebSession ses = new GridWebSession(entry.getValue());
 
             for (T2<String, Object> update : updates) {
                 String name = update.get1();
@@ -171,7 +177,9 @@ class GridWebSessionListener {
                     ses.removeAttribute(name);
             }
 
-            return ses;
+            entry.setValue(ses);
+
+            return null;
         }
 
         /** {@inheritDoc} */

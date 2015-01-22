@@ -17,6 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -25,6 +27,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
+import javax.cache.processor.*;
+import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
@@ -66,6 +71,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     protected abstract GridCacheMode cacheMode();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -75,7 +81,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
@@ -84,7 +90,10 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
         cc.setDistributionMode(distributionMode());
         cc.setPreloadMode(SYNC);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
 
@@ -116,19 +125,21 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
             startGrid(1);
             startGrid(2);
 
-            final IgniteClosure<String, String> trans = new TransformClosure();
+            final Processor entryProcessor = new Processor();
 
             IgniteFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        GridCache<Integer, String> c = cache(ThreadLocalRandom.current().nextInt(3));
+                        IgniteCache<Integer, String> c = jcache(ThreadLocalRandom.current().nextInt(3));
 
                         while (!finish.get() && !Thread.currentThread().isInterrupted()) {
                             c.get(ThreadLocalRandom.current().nextInt(100));
+
                             c.put(ThreadLocalRandom.current().nextInt(100), "s");
-                            c.transform(
+
+                            c.invoke(
                                 ThreadLocalRandom.current().nextInt(100),
-                                trans);
+                                entryProcessor);
                         }
 
                         return null;
@@ -155,10 +166,12 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /**
      *
      */
-    private static class TransformClosure implements IgniteClosure<String, String> {
+    private static class Processor implements EntryProcessor<Integer, String, Void>, Serializable {
         /** {@inheritDoc} */
-        @Override public String apply(String s) {
-            return "str";
+        @Override public Void process(MutableEntry<Integer, String> e, Object... args) {
+            e.setValue("str");
+
+            return null;
         }
     }
 }

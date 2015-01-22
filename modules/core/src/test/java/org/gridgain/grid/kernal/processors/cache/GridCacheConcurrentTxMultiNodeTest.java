@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -101,7 +102,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
         if (cacheOn) {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
             cc.setDistributionMode(PARTITIONED_ONLY);

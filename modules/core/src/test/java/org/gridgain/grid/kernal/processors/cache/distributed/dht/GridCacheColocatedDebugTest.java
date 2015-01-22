@@ -18,12 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -33,6 +34,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -57,6 +59,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     private boolean storeEnabled;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -66,7 +69,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
@@ -75,10 +78,14 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
 
-        if (storeEnabled)
-            cacheCfg.setStore(new GridCacheTestStore());
+        if (storeEnabled) {
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new GridCacheTestStore()));
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+            cacheCfg.setLoadPreviousValue(true);
+        }
         else
-            cacheCfg.setStore(null);
+            cacheCfg.setCacheStoreFactory(null);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -372,7 +379,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        assert g0.cache(null).lock(key, 0);
+                        CacheLock lock = g0.jcache(null).lock(key);
+
+                        lock.lock();
 
                         try {
                             lockLatch.countDown();
@@ -380,7 +389,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
                             U.await(unlockLatch);
                         }
                         finally {
-                            g0.cache(null).unlock(key);
+                            lock.unlock();
                         }
                     }
                     catch (IgniteCheckedException e) {
@@ -392,21 +401,22 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             U.await(lockLatch);
 
-            assert g0.cache(null).isLocked(key);
-            assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
+            assert g0.jcache(null).isLocked(key);
+            assert !g0.jcache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
-            IgniteFuture<Boolean> lockFut = g0.cache(null).lockAsync(key, 0);
+            CacheLock lock = g0.jcache(null).lock(key);
+
+            assert !lock.tryLock();
 
             assert g0.cache(null).isLocked(key);
-            assert !lockFut.isDone() : "Key can not be locked by current thread.";
             assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
             unlockLatch.countDown();
             unlockFut.get();
 
-            assert lockFut.get();
+            assert lock.tryLock();
 
-            g0.cache(null).unlock(key);
+            lock.unlock();
         }
         finally {
             stopAllGrids();
@@ -761,7 +771,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
-        GridCacheStore store = ignite.configuration().getCacheConfiguration()[0].getStore();
+        String cacheName = ignite.configuration().getCacheConfiguration()[0].getName();
+
+        GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+
+        CacheStore store = ctx.store().configuredStore();
 
         assertEquals(map, ((GridCacheTestStore)store).getMap());
     }
@@ -773,7 +787,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private void clearStores(int cnt) {
         for (int i = 0; i < cnt; i++) {
-            GridCacheStore store = grid(i).configuration().getCacheConfiguration()[0].getStore();
+            String cacheName = grid(i).configuration().getCacheConfiguration()[0].getName();
+
+            GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+
+            CacheStore store = ctx.store().configuredStore();
 
             ((GridCacheTestStore)store).reset();
         }
@@ -877,13 +895,15 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            assert cache().lock(1, 0);
+            IgniteCache<Object, Object> cache = jcache();
 
-            assertNull(cache().put(1, "key1"));
-            assertEquals("key1", cache().put(1, "key2"));
-            assertEquals("key2", cache().get(1));
+            cache.lock(1).lock();
 
-            cache().unlock(1);
+            assertNull(cache.getAndPut(1, "key1"));
+            assertEquals("key1", cache.getAndPut(1, "key2"));
+            assertEquals("key2", cache.get(1));
+
+            cache.lock(1).unlock();
         }
         finally {
             stopAllGrids();
@@ -907,11 +927,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             Integer k1 = forPrimary(g1);
             Integer k2 = forPrimary(g2);
 
-            GridCache<Object, Object> cache = cache(0);
+            IgniteCache<Object, Object> cache = jcache(0);
 
-            assert cache.lock(k0, 0);
-            assert cache.lock(k1, 0);
-            assert cache.lock(k2, 0);
+            cache.lock(k0).lock();
+            cache.lock(k1).lock();
+            cache.lock(k2).lock();
 
             cache.put(k0, "val0");
 
@@ -921,9 +941,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             assertEquals("val1", cache.get(k1));
             assertEquals("val2", cache.get(k2));
 
-            cache.unlock(k0);
-            cache.unlock(k1);
-            cache.unlock(k2);
+            cache.lock(k0).unlock();
+            cache.lock(k1).unlock();
+            cache.lock(k2).unlock();
         }
         finally {
             stopAllGrids();

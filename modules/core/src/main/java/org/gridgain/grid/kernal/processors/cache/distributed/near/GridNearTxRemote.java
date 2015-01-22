@@ -357,7 +357,13 @@ public class GridNearTxRemote<K, V> extends GridDistributedTxRemoteAdapter<K, V>
                     return false;
                 }
                 else {
-                    IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx, this, op, val, 0L, -1L, cached,
+                    IgniteTxEntry<K, V> txEntry = new IgniteTxEntry<>(cacheCtx,
+                        this,
+                        op,
+                        val,
+                        -1L,
+                        -1L,
+                        cached,
                         drVer);
 
                     txEntry.keyBytes(keyBytes);

@@ -18,17 +18,21 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+
+import javax.cache.*;
+import javax.cache.configuration.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
@@ -47,17 +51,21 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     private static final int PUT_CNT = 100;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
-        cache.setStore(new TestStore());
-        cache.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setBackups(1);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -71,27 +79,32 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCache() throws Exception {
+    public void testLocalLoadCache() throws Exception {
         try {
             startGridsMultiThreaded(GRID_CNT);
 
-            GridCache<Integer, String> cache = cache(0);
+            IgniteCache<Integer, String> cache = jcache(0);
 
-            cache.loadCache(null, 0, PUT_CNT);
+            cache.localLoadCache(null, PUT_CNT);
 
-            int[] parts = cache.affinity().allPartitions(grid(0).localNode());
+            GridCache<Integer, String> cache0 = cache(0);
+
+            GridCacheAffinity aff = cache0.affinity();
+
+            int[] parts = aff.allPartitions(grid(0).localNode());
 
             int cnt1 = 0;
 
-            for (int i = 0; i < PUT_CNT; i++)
-                if (U.containsIntArray(parts,  cache.affinity().partition(i)))
+            for (int i = 0; i < PUT_CNT; i++) {
+                if (U.containsIntArray(parts, aff.partition(i)))
                     cnt1++;
+            }
 
             info("Number of keys to load: " + cnt1);
 
             int cnt2 = 0;
 
-            for (GridCacheEntry<Integer, String> e : cache.entrySet()) {
+            for (GridCacheEntry<Integer, String> e : cache0.entrySet()) {
                 assert e.primary() || e.backup();
 
                 cnt2++;
@@ -109,10 +122,9 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Integer, String> {
+    private static class TestStore extends CacheStoreAdapter<Integer, String> {
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, String> clo,
-            @Nullable Object... args) throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Integer, String> clo, @Nullable Object... args) {
             assert clo != null;
             assert args != null;
 
@@ -125,19 +137,19 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(Integer key) {
             // No-op.
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Integer key, String val) throws IgniteCheckedException {
+        @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             // No-op.
         }
     }

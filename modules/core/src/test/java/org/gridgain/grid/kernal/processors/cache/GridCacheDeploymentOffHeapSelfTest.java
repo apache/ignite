@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
@@ -28,8 +28,8 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  */
 public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration() throws Exception {
-        GridCacheConfiguration cacheCfg = super.cacheConfiguration();
+    @Override protected CacheConfiguration cacheConfiguration() throws Exception {
+        CacheConfiguration cacheCfg = super.cacheConfiguration();
 
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setMemoryMode(OFFHEAP_VALUES);

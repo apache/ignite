@@ -24,6 +24,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
+import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -83,6 +84,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     @GridDirectVersion(2)
     private int taskNameHash;
 
+    /** TTLs for optimistic transaction. */
+    private GridLongList ttls;
+
+    /** Near cache TTLs for optimistic transaction. */
+    private GridLongList nearTtls;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -103,6 +110,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      * @param invalidate Invalidate flag.
      * @param sys System flag.
      * @param sysInvalidate System invalidation flag.
+     * @param syncCommit Synchronous commit flag.
+     * @param syncRollback Synchronous rollback flag.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
@@ -113,6 +122,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      * @param recoverWrites Recovery write entries.
      * @param onePhaseCommit One phase commit flag.
      * @param grpLockKey Group lock key.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
      */
     public GridDhtTxFinishRequest(
         UUID nearNodeId,
@@ -253,6 +264,56 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         return pendingVers == null ? Collections.<GridCacheVersion>emptyList() : pendingVers;
     }
 
+    /**
+     * @param idx Entry index.
+     * @param ttl TTL.
+     */
+    public void ttl(int idx, long ttl) {
+        if (ttl != -1L) {
+            if (ttls == null) {
+                ttls = new GridLongList();
+
+                for (int i = 0; i < idx - 1; i++)
+                    ttls.add(-1L);
+            }
+        }
+
+        if (ttls != null)
+            ttls.add(ttl);
+    }
+
+    /**
+     * @return TTLs for optimistic transaction.
+     */
+    public GridLongList ttls() {
+        return ttls;
+    }
+
+    /**
+     * @param idx Entry index.
+     * @param ttl TTL.
+     */
+    public void nearTtl(int idx, long ttl) {
+        if (ttl != -1L) {
+            if (nearTtls == null) {
+                nearTtls = new GridLongList();
+
+                for (int i = 0; i < idx - 1; i++)
+                    nearTtls.add(-1L);
+            }
+        }
+
+        if (nearTtls != null)
+            nearTtls.add(ttl);
+    }
+
+    /**
+     * @return TTLs for optimistic transaction.
+     */
+    public GridLongList nearTtls() {
+        return nearTtls;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
@@ -315,6 +376,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         _clone.writeVer = writeVer;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;
+        _clone.ttls = ttls;
+        _clone.nearTtls = nearTtls;
     }
 
     /** {@inheritDoc} */
@@ -437,6 +500,18 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
             case 31:
                 if (!commState.putInt(taskNameHash))
+                    return false;
+
+                commState.idx++;
+
+            case 32:
+                if (!commState.putLongList(ttls))
+                    return false;
+
+                commState.idx++;
+
+            case 33:
+                if (!commState.putLongList(nearTtls))
                     return false;
 
                 commState.idx++;
@@ -592,6 +667,26 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                     return false;
 
                 taskNameHash = commState.getInt();
+
+                commState.idx++;
+
+            case 32:
+                GridLongList ttls0 = commState.getLongList();
+
+                if (ttls0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                ttls = ttls0;
+
+                commState.idx++;
+
+            case 33:
+                GridLongList nearTtls0 = commState.getLongList();
+
+                if (nearTtls0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                nearTtls = nearTtls0;
 
                 commState.idx++;
 

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -54,6 +55,8 @@ import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
+import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -92,7 +95,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private IgniteLogger log;
 
     /** Cache configuration. */
-    private GridCacheConfiguration cacheCfg;
+    private CacheConfiguration cacheCfg;
 
     /** Unsafe memory object for direct memory allocation. */
     private GridUnsafeMemory unsafeMemory;
@@ -181,6 +184,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** System cache flag. */
     private boolean sys;
 
+    /** Default expiry policy. */
+    private ExpiryPolicy expiryPlc;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -208,7 +214,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public GridCacheContext(
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
-        GridCacheConfiguration cacheCfg,
+        CacheConfiguration cacheCfg,
 
         /*
          * Managers in starting order!
@@ -288,6 +294,20 @@ public class GridCacheContext<K, V> implements Externalizable {
             cacheId = 1;
 
         sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
+
+        Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
+
+        expiryPlc = factory != null ? factory.create() : null;
+
+        if (expiryPlc instanceof EternalExpiryPolicy)
+            expiryPlc = null;
+    }
+
+    /**
+     * @return Cache default {@link ExpiryPolicy}.
+     */
+    @Nullable public ExpiryPolicy expiry() {
+        return expiryPlc;
     }
 
     /**
@@ -755,7 +775,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache configuration for given cache instance.
      */
-    public GridCacheConfiguration config() {
+    public CacheConfiguration config() {
         return cacheCfg;
     }
 
@@ -1072,6 +1092,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * Gets thread local projection.
+     *
      * @return Projection per call.
      */
     public GridCacheProjectionImpl<K, V> projectionPerCall() {
@@ -1088,8 +1109,17 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (subjId != null)
             return subjId;
 
-        GridCacheProjectionImpl<K, V> prj = projectionPerCall();
+        return subjectIdPerCall(subjId, projectionPerCall());
+    }
 
+    /**
+     * Gets subject ID per call.
+     *
+     * @param subjId Optional already existing subject ID.
+     * @param prj Optional thread local projection.
+     * @return Subject ID per call.
+     */
+    public UUID subjectIdPerCall(@Nullable UUID subjId, @Nullable GridCacheProjectionImpl<K, V> prj) {
         if (prj != null)
             subjId = prj.subjectId();
 
@@ -1369,10 +1399,24 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if store is enabled.
+     * @return {@code True} if store read-through mode is enabled.
      */
-    public boolean isStoreEnabled() {
-        return cacheCfg.getStore() != null && !hasFlag(SKIP_STORE);
+    public boolean readThrough() {
+        return cacheCfg.isReadThrough() && !hasFlag(SKIP_STORE);
+    }
+
+    /**
+     * @return {@code True} if store read-through mode is enabled.
+     */
+    public boolean loadPreviousValue() {
+        return cacheCfg.isLoadPreviousValue();
+    }
+
+    /**
+     * @return {@code True} if store write-through is enabled.
+     */
+    public boolean writeThrough() {
+        return cacheCfg.isWriteThrough() && !hasFlag(SKIP_STORE);
     }
 
     /**
@@ -1716,14 +1760,12 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             return unwrapped ? F.t(key, val) : o;
         }
-        else {
-            if (o instanceof Collection)
-                return unwrapPortablesIfNeeded((Collection<Object>)o, false);
-            else if (o instanceof Map)
-                return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
-            else if (o instanceof PortableObject)
-                return ((PortableObject)o).deserialize();
-        }
+        else if (o instanceof Collection)
+            return unwrapPortablesIfNeeded((Collection<Object>)o, false);
+        else if (o instanceof Map)
+            return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
+        else if (o instanceof PortableObject)
+            return ((PortableObject)o).deserialize();
 
         return o;
     }

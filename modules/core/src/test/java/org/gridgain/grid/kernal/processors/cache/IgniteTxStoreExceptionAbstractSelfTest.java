@@ -18,17 +18,22 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -68,10 +73,14 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setStore(store);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }
@@ -430,17 +439,21 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         info("Going to transform: " + key);
 
-        GridTestUtils.assertThrows(log, new Callable<Void>() {
+        Throwable e = GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                grid(0).cache(null).transform(key, new IgniteClosure<Object, Object>() {
-                    @Override public Object apply(Object o) {
-                        return 2;
+                grid(0).<Integer, Integer>jcache(null).invoke(key, new EntryProcessor<Integer, Integer, Void>() {
+                    @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+                        e.setValue(2);
+
+                        return null;
                     }
                 });
 
                 return null;
             }
-        }, IgniteTxRollbackException.class, null);
+        }, CacheException.class, null);
+
+        assertTrue("Unexpected cause: " + e, e.getCause() instanceof IgniteTxRollbackException);
 
         checkValue(key, putBefore);
     }
@@ -585,7 +598,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
     /**
      *
      */
-    private static class TestStore implements GridCacheStore<Object, Object> {
+    private static class TestStore extends CacheStore<Object, Object> {
         /** Fail flag. */
         private volatile boolean fail;
 
@@ -596,44 +609,50 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
             this.fail = fail;
         }
 
-
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object load(Object key) {
             return null;
         }
 
-        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args)
-            throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, @Nullable Object... args) {
             if (fail)
-                throw new IgniteCheckedException("Store exception");
+                throw new CacheLoaderException("Store exception");
         }
 
-        @Override public void loadAll(@Nullable IgniteTx tx, Collection<?> keys, IgniteBiInClosure<Object, Object> c)
-            throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public Map<Object, Object> loadAll(Iterable<?> keys) throws CacheLoaderException {
+            return Collections.emptyMap();
         }
 
-        @Override public void put(@Nullable IgniteTx tx, Object key, Object val) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) {
             if (fail)
-                throw new IgniteCheckedException("Store exception");
+                throw new CacheWriterException("Store exception");
         }
 
-        @Override public void putAll(@Nullable IgniteTx tx, Map<?, ?> map) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
             if (fail)
-                throw new IgniteCheckedException("Store exception");
+                throw new CacheWriterException("Store exception");
         }
 
-        @Override public void remove(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
             if (fail)
-                throw new IgniteCheckedException("Store exception");
+                throw new CacheWriterException("Store exception");
         }
 
-        @Override public void removeAll(@Nullable IgniteTx tx, Collection<?> keys) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
             if (fail)
-                throw new IgniteCheckedException("Store exception");
+                throw new CacheWriterException("Store exception");
         }
 
-        @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+        /** {@inheritDoc} */
+        @Override public void txEnd(boolean commit) {
             if (fail && commit)
-                throw new IgniteCheckedException("Store exception");
+                throw new CacheWriterException("Store exception");
         }
     }
 }

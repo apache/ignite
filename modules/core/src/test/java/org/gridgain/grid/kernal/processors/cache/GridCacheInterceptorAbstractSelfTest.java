@@ -17,6 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -26,6 +28,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -68,6 +71,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         assertEquals(0, interceptor.invokeCnt.get());
     }
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -77,8 +81,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration  ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         assertNotNull(interceptor);
 
@@ -90,8 +94,11 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             ccfg.setAtomicWriteOrderMode(writeOrderMode());
         }
 
-        if (!storeEnabled())
-            ccfg.setStore(null);
+        if (!storeEnabled()) {
+            ccfg.setCacheStoreFactory(null);
+            ccfg.setReadThrough(false);
+            ccfg.setWriteThrough(false);
+        }
 
         return ccfg;
     }
@@ -374,8 +381,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return dataNodes + (storeEnabled() ? 1 : 0); // One call before store is updated.
         else {
             // If update goes through primary node and it is cancelled then backups aren't updated.
-            return (writeOrderMode() == PRIMARY ||
-                (op == Operation.TRANSFORM || op == Operation.UPDATE_FILTER)) ? 1 : dataNodes;
+            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 1 : dataNodes;
         }
     }
 
@@ -389,10 +395,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         if (atomicityMode() == TRANSACTIONAL)
             // Update + after update + one call before store is updated.
             return dataNodes * 2 + (storeEnabled() ? 1 : 0);
-        else {
-            return (writeOrderMode() == PRIMARY ||
-                (op == Operation.TRANSFORM || op == Operation.UPDATE_FILTER)) ? 2 : dataNodes * 2;
-        }
+        else
+            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 2 : dataNodes * 2;
     }
 
     /**
@@ -826,10 +830,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             for (IgniteTxConcurrency txConcurrency : IgniteTxConcurrency.values()) {
                 for (IgniteTxIsolation txIsolation : IgniteTxIsolation.values()) {
                     for (Operation op : Operation.values()) {
-                        // TODO: GG-8118 enable when fixed.
-                        if (op == Operation.UPDATE_FILTER && txConcurrency == OPTIMISTIC)
-                            continue;
-
                         testNearNodeKey(txConcurrency, txIsolation, op);
 
                         afterTest();
@@ -1179,40 +1179,32 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private void cacheUpdate(int grid, boolean rmv, Operation op, String key, final Integer val,
         @Nullable final Integer expOld, @Nullable final Integer expRmvRet)
         throws Exception {
-        GridCache<String, Integer> cache = cache(grid);
+        IgniteCache<String, Integer> cache = jcache(grid);
 
         if (rmv) {
             assertNull(val);
 
             switch (op) {
                 case UPDATE: {
-                    assertEquals(expRmvRet, cache.remove(key));
+                    assertEquals(expRmvRet, cache.getAndRemove(key));
 
                     break;
                 }
 
                 case UPDATEX: {
-                    cache.removex(key);
-
-                    break;
-                }
-
-                case UPDATE_FILTER: {
-                    Object old = cache.remove(key, new IgnitePredicate<GridCacheEntry<String, Integer>>() {
-                        @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
-                            return true;
-                        }
-                    });
-
-                    assertEquals(expRmvRet, old);
+                    cache.remove(key);
 
                     break;
                 }
 
                 case TRANSFORM: {
-                    cache.transform(key, new IgniteClosure<Integer, Integer>() {
-                        @Nullable @Override public Integer apply(Integer old) {
+                    cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            Integer old = e.getValue();
+
                             assertEquals(expOld, old);
+
+                            e.remove();
 
                             return null;
                         }
@@ -1228,35 +1220,27 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         else {
             switch (op) {
                 case UPDATE: {
-                    assertEquals(expOld, cache.put(key, val));
+                    assertEquals(expOld, cache.getAndPut(key, val));
 
                     break;
                 }
 
                 case UPDATEX: {
-                    cache.putx(key, val);
-
-                    break;
-                }
-
-                case UPDATE_FILTER: {
-                    Object old = cache.put(key, val, new P1<GridCacheEntry<String, Integer>>() {
-                        @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
-                            return true;
-                        }
-                    });
-
-                    assertEquals(expOld, old);
+                    cache.put(key, val);
 
                     break;
                 }
 
                 case TRANSFORM: {
-                    cache.transform(key, new IgniteClosure<Integer, Integer>() {
-                        @Override public Integer apply(Integer old) {
+                    cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            Integer old = e.getValue();
+
                             assertEquals(expOld, old);
 
-                            return val;
+                            e.setValue(val);
+
+                            return null;
                         }
                     });
 
@@ -1301,7 +1285,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     @SuppressWarnings("unchecked")
     private void cacheBatchUpdate(int grid, boolean rmv, Operation op, final Map<String, Integer> map)
         throws Exception {
-        GridCache<String, Integer> cache = cache(grid);
+        IgniteCache<String, Integer> cache = jcache(grid);
 
         if (rmv) {
             switch (op) {
@@ -1312,10 +1296,10 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    cache.transformAll(map.keySet(), new IgniteClosure<Integer, Integer>() {
-                        @Nullable
-                        @Override
-                        public Integer apply(Integer old) {
+                    cache.invokeAll(map.keySet(), new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            e.remove();
+
                             return null;
                         }
                     });
@@ -1336,17 +1320,13 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                 }
 
                 case TRANSFORM: {
-                    Map<String, IgniteClosure<Integer, Integer>> m = new HashMap<>();
+                    cache.invokeAll(map.keySet(), new EntryProcessor<String, Integer, Void>() {
+                        @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
+                            e.setValue(map.get(e.getKey()));
 
-                    for (final String key : map.keySet()) {
-                        m.put(key, new IgniteClosure<Integer, Integer>() {
-                            @Override public Integer apply(Integer old) {
-                                return map.get(key);
-                            }
-                        });
-                    }
-
-                    cache.transformAll(m);
+                            return null;
+                        }
+                    });
 
                     break;
                 }
@@ -1483,11 +1463,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
          *
          */
         TRANSFORM,
-
-        /**
-         *
-         */
-        UPDATE_FILTER
     }
 
     /**

@@ -247,16 +247,6 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void transform(IgniteClosure<V, V> transformer) throws IgniteCheckedException {
-        throw new UnsupportedOperationException("transform");
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<?> transformAsync(IgniteClosure<V, V> transformer) {
-        throw new UnsupportedOperationException("transformAsync");
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V replace(V val) throws IgniteCheckedException {
         throw new UnsupportedOperationException("replace");
     }
@@ -428,6 +418,14 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     /** {@inheritDoc} */
     @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
         return impl.replaceMeta(name, curVal, newVal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> clazz) {
+        if(clazz.isAssignableFrom(getClass()))
+            return clazz.cast(this);
+
+        throw new IllegalArgumentException();
     }
 
     /** {@inheritDoc} */

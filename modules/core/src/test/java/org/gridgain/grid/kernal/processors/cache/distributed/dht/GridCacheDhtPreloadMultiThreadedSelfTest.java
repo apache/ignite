@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -161,7 +162,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
 
         cfg.setGridName(gridName);
 
-        for (GridCacheConfiguration cCfg : cfg.getCacheConfiguration()) {
+        for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
             if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
                 cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
                 cCfg.setBackups(1);

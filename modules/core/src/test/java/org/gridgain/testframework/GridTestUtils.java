@@ -1086,6 +1086,45 @@ public final class GridTestUtils {
     }
 
     /**
+     * Set object field value via reflection.
+     *
+     * @param obj Object to set field value to.
+     * @param cls Class to get field from.
+     * @param fieldName Field name to set value for.
+     * @param val New field value.
+     * @throws IgniteException In case of error.
+     */
+    @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
+    public static void setFieldValue(Object obj, Class cls, String fieldName, Object val) throws IgniteException {
+        assert obj != null;
+        assert fieldName != null;
+
+        try {
+            Field field = cls.getDeclaredField(fieldName);
+
+            synchronized (field) {
+                // Backup accessible field state.
+                boolean accessible = field.isAccessible();
+
+                try {
+                    if (!accessible)
+                        field.setAccessible(true);
+
+                    field.set(obj, val);
+                }
+                finally {
+                    // Recover accessible field state.
+                    if (!accessible)
+                        field.setAccessible(false);
+                }
+            }
+        }
+        catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new IgniteException("Failed to set object field [obj=" + obj + ", field=" + fieldName + ']', e);
+        }
+    }
+
+    /**
      * Invoke method on an object.
      *
      * @param obj Object to call method on.

@@ -18,9 +18,12 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.dataload.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -98,13 +101,13 @@ public class GridDataLoadCacheUpdaters {
      * @param putMap Entries to put.
      * @throws IgniteCheckedException If failed.
      */
-    protected static <K, V> void updateAll(GridCacheProjection<K,V> cache, @Nullable Collection<K> rmvCol,
+    protected static <K, V> void updateAll(IgniteCache<K, V> cache, @Nullable Collection<K> rmvCol,
         Map<K, V> putMap) throws IgniteCheckedException {
         assert rmvCol != null || putMap != null;
 
         // Here we assume that there are no key duplicates, so the following calls are valid.
         if (rmvCol != null)
-            cache.removeAll(rmvCol);
+            ((IgniteCacheProxy<K, V>)cache).removeAll(rmvCol);
 
         if (putMap != null)
             cache.putAll(putMap);
@@ -118,7 +121,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
@@ -131,9 +134,9 @@ public class GridDataLoadCacheUpdaters {
                 V val = entry.getValue();
 
                 if (val == null)
-                    cache.removex(key);
+                    cache.remove(key);
                 else
-                    cache.putx(key, val);
+                    cache.put(key, val);
             }
         }
     }
@@ -146,7 +149,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
@@ -187,7 +190,7 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
@@ -228,18 +231,22 @@ public class GridDataLoadCacheUpdaters {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void update(GridCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
+        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
             throws IgniteCheckedException {
             assert cache != null;
             assert !F.isEmpty(entries);
 
-            assert cache.configuration().getAtomicityMode() != ATOMIC;
+            assert cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC;
 
             Map<Integer, Integer> partsCounts = new HashMap<>();
 
             // Group by partition ID.
             Map<Integer, Collection<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
+
+            Ignite ignite = cache.unwrap(Ignite.class);
+
+            GridCacheAffinity<K> aff = ignite.<K, V>cache(cache.getName()).affinity();
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -248,7 +255,7 @@ public class GridDataLoadCacheUpdaters {
 
                 V val = entry.getValue();
 
-                int part = cache.affinity().partition(key);
+                int part = aff.partition(key);
 
                 Integer cnt = partsCounts.get(part);
 
@@ -268,20 +275,17 @@ public class GridDataLoadCacheUpdaters {
                 }
             }
 
+            IgniteTransactions txs = ignite.transactions();
+
             for (Map.Entry<Integer, Integer> e : partsCounts.entrySet()) {
                 Integer part = e.getKey();
                 int cnt = e.getValue();
 
-                IgniteTx tx = cache.txStartPartition(part, PESSIMISTIC, REPEATABLE_READ, 0, cnt);
-
-                try {
+                try (IgniteTx tx = txs.txStartPartition(cache.getName(), part, PESSIMISTIC, REPEATABLE_READ, 0, cnt)) {
                     updateAll(cache, rmvPartMap == null ? null : rmvPartMap.get(part),
                         putPartMap == null ? null : putPartMap.get(part));
 
                     tx.commit();
-                }
-                finally {
-                    tx.close();
                 }
             }
         }

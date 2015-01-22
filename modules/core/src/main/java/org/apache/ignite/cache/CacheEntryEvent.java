@@ -18,27 +18,58 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
+import org.gridgain.grid.cache.query.*;
 
 import javax.cache.event.*;
-import java.util.*;
 
 /**
- * TODO: Add class description.
  *
- * @author @java.author
- * @version @java.version
  */
-public abstract class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
+public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
     /** */
-    private UUID nodeId;
+    private final GridCacheContinuousQueryEntry<K, V> e;
 
-    protected CacheEntryEvent(IgniteCache source, EventType eventType, UUID nodeId) {
-        super(source, eventType);
+    /**
+     * @param src Cache.
+     * @param type Event type.
+     * @param e Ignite event.
+     */
+    public CacheEntryEvent(IgniteCache src, EventType type, GridCacheContinuousQueryEntry<K, V> e) {
+        super(src, type);
 
-        this.nodeId = nodeId;
+        this.e = e;
     }
 
-    public UUID getNodeId() {
-        return nodeId;
+    /** {@inheritDoc} */
+    @Override public V getOldValue() {
+        return e.getOldValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isOldValueAvailable() {
+        return e.getOldValue() != null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public K getKey() {
+        return e.getKey();
+    }
+
+    /** {@inheritDoc} */
+    @Override public V getValue() {
+        return e.getValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <T> T unwrap(Class<T> cls) {
+        throw new IllegalArgumentException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "CacheEntryEvent [evtType=" + getEventType() +
+            ", key=" + getKey() +
+            ", val=" + getValue() +
+            ", oldVal=" + getOldValue() + ']';
     }
 }

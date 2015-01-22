@@ -109,6 +109,9 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     /** Trackable flag (here may be non-volatile). */
     private boolean trackable;
 
+    /** TTL for read operation. */
+    private long accessTtl;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -123,6 +126,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param read Read flag.
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
+     * @param accessTtl TTL for read operation.
      * @param filter Filter.
      */
     public GridDhtColocatedLockFuture(
@@ -132,9 +136,10 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         boolean read,
         boolean retval,
         long timeout,
+        long accessTtl,
         IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
-        assert cctx != null;
+
         assert keys != null;
 
         this.cctx = cctx;
@@ -143,6 +148,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         this.read = read;
         this.retval = retval;
         this.timeout = timeout;
+        this.accessTtl = accessTtl;
         this.filter = filter;
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
@@ -166,15 +172,14 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return Participating nodes.
      */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
-                    if (isMini(f))
-                        return ((MiniFuture)f).node();
+        return F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
+                if (isMini(f))
+                    return ((MiniFuture)f).node();
 
-                    return cctx.discovery().localNode();
-                }
-            });
+                return cctx.discovery().localNode();
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -274,18 +279,38 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             }
             else {
                 // Check transaction entries (corresponding tx entries must be enlisted in transaction).
-                cand = new GridCacheMvccCandidate<>(entry, cctx.localNodeId(),
-                    null, null, threadId, lockVer, timeout, true, tx.entry(entry.txKey()).locked(), inTx(),
-                    inTx() && tx.implicitSingle(), false, false);
+                cand = new GridCacheMvccCandidate<>(entry,
+                    cctx.localNodeId(),
+                    null,
+                    null,
+                    threadId,
+                    lockVer,
+                    timeout,
+                    true,
+                    tx.entry(entry.txKey()).locked(),
+                    inTx(),
+                    inTx() && tx.implicitSingle(),
+                    false,
+                    false);
 
                 cand.topologyVersion(topSnapshot.get().topologyVersion());
             }
         }
         else {
             if (cand == null) {
-                cand = new GridCacheMvccCandidate<>(entry, cctx.localNodeId(),
-                    null, null, threadId, lockVer, timeout, true, false, inTx(),
-                    inTx() && tx.implicitSingle(), false, false);
+                cand = new GridCacheMvccCandidate<>(entry,
+                    cctx.localNodeId(),
+                    null,
+                    null,
+                    threadId,
+                    lockVer,
+                    timeout,
+                    true,
+                    false,
+                    inTx(),
+                    inTx() && tx.implicitSingle(),
+                    false,
+                    false);
 
                 cand.topologyVersion(topSnapshot.get().topologyVersion());
             }
@@ -613,8 +638,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             if (mapAsPrimary(keys, topVer))
                 return;
 
-            ConcurrentLinkedDeque8<GridNearLockMapping<K, V>> mappings =
-                new ConcurrentLinkedDeque8<>();
+            ConcurrentLinkedDeque8<GridNearLockMapping<K, V>> mappings = new ConcurrentLinkedDeque8<>();
 
             // Assign keys to primary nodes.
             GridNearLockMapping<K, V> map = null;
@@ -718,14 +742,15 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                                         inTx() ? tx.groupLockKey() : null,
                                         inTx() && tx.partitionLock(),
                                         inTx() ? tx.subjectId() : null,
-                                        inTx() ? tx.taskNameHash() : 0);
+                                        inTx() ? tx.taskNameHash() : 0,
+                                        read ? accessTtl : -1L);
 
                                     mapping.request(req);
                                 }
 
                                 distributedKeys.add(key);
 
-                                if (inTx() && implicitTx() && mappings.size() == 1 && !cctx.isStoreEnabled()) {
+                                if (inTx() && implicitTx() && mappings.size() == 1 && !cctx.writeThrough()) {
                                     tx.onePhaseCommit(true);
 
                                     req.onePhaseCommit(true);
@@ -886,8 +911,16 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
 
-        IgniteFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx, tx, threadId, lockVer,
-            topVer, keys, read, timeout, filter);
+        IgniteFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx,
+            tx,
+            threadId,
+            lockVer,
+            topVer,
+            keys,
+            read,
+            timeout,
+            accessTtl,
+            filter);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
@@ -979,7 +1012,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 for (K key : distributedKeys)
                     tx.addKeyMapping(cctx.txKey(key), cctx.localNode());
 
-                if (tx.implicit() && !cctx.isStoreEnabled())
+                if (tx.implicit() && !cctx.writeThrough())
                     tx.onePhaseCommit(true);
             }
 
@@ -1263,10 +1296,20 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     else
                         cctx.mvcc().markExplicitOwner(k, threadId);
 
-                    if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
-                        cctx.events().addEvent(cctx.affinity().partition(k), k, tx, null,
-                            EVT_CACHE_OBJECT_READ, newVal, newVal != null || newBytes != null,
-                            null, false, CU.subjectId(tx, cctx.shared()), null, tx == null ? null : tx.resolveTaskName());
+                    if (retval && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                        cctx.events().addEvent(cctx.affinity().partition(k),
+                            k,
+                            tx,
+                            null,
+                            EVT_CACHE_OBJECT_READ,
+                            newVal,
+                            newVal != null || newBytes != null,
+                            null,
+                            false,
+                            CU.subjectId(tx, cctx.shared()),
+                            null,
+                            tx == null ? null : tx.resolveTaskName());
+                    }
 
                     i++;
                 }

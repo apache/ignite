@@ -57,6 +57,7 @@ public class GridCachePartialUpdateException extends IgniteCheckedException {
         addSuppressed(err);
     }
 
+    /** {@inheritDoc} */
     @Override public String getMessage() {
         return super.getMessage() + ": " + failedKeys;
     }

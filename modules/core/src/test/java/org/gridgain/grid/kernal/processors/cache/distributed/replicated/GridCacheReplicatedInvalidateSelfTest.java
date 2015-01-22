@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.*;
@@ -80,7 +81,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
 
         c.setCommunicationSpi(new TestCommunicationSpi());
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setPreloadMode(NONE);
         cc.setCacheMode(REPLICATED);

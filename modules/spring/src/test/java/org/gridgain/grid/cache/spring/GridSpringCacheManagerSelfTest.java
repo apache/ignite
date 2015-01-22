@@ -17,11 +17,12 @@
 
 package org.gridgain.grid.cache.spring;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.beans.factory.*;
 import org.springframework.context.support.*;
@@ -43,7 +44,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = new GridCacheConfiguration();
+        CacheConfiguration cache = new CacheConfiguration();
 
         cache.setName(CACHE_NAME);
 

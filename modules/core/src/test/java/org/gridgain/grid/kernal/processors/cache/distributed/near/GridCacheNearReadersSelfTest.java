@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
@@ -59,7 +60,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -515,16 +516,16 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).nodes())));
 
-        GridCache<Integer, String> cache = cache(0);
+        IgniteCache<Integer, String> cache = jcache(0);
 
-        assertTrue(cache.lock(key1, 0L));
+        cache.lock(key1).lock();
 
         try {
             // Nested lock.
-            assertTrue(cache.lock(key2, 0L));
+            cache.lock(key2).lock();
 
             try {
-                assertNull(cache.put(key1, val1));
+                assertNull(cache.getAndPut(key1, val1));
 
                 assertEquals(val1, dht(0).peek(key1));
                 assertEquals(val1, dht(1).peek(key1));
@@ -537,7 +538,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 assertNull(near(1).peekNearOnly(key1));
                 assertNull(near(2).peekNearOnly(key1));
 
-                assertTrue(cache.putx(key2, val2));
+                cache.put(key2, val2);
 
                 assertNull(dht(0).peek(key2));
                 assertEquals(val2, dht(1).peek(key2));
@@ -574,11 +575,11 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 assertNull(near(2).peekEx(key2));
             }
             finally {
-                cache.unlock(key2);
+                cache.lock(key2).lock();
             }
         }
         finally {
-            cache.unlock(key1);
+            cache.lock(key1).unlock();
         }
     }
 }

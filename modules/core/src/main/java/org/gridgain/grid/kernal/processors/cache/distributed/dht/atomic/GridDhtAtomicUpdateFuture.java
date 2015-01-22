@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -31,6 +30,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -206,13 +206,18 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry to map.
      * @param val Value to write.
      * @param valBytes Value bytes.
-     * @param drTtl DR TTL (optional).
+     * @param entryProcessor Entry processor.
+     * @param ttl TTL (optional).
      * @param drExpireTime DR expire time (optional).
      * @param drVer DR version (optional).
-     * @param ttl Time to live.
      */
-    public void addWriteEntry(GridDhtCacheEntry<K, V> entry, @Nullable V val, @Nullable byte[] valBytes,
-        IgniteClosure<V, V> transformC, long drTtl, long drExpireTime, @Nullable GridCacheVersion drVer, long ttl) {
+    public void addWriteEntry(GridDhtCacheEntry<K, V> entry,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        EntryProcessor<K, V, ?> entryProcessor,
+        long ttl,
+        long drExpireTime,
+        @Nullable GridCacheVersion drVer) {
         long topVer = updateReq.topologyVersion();
 
         Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
@@ -238,16 +243,22 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                         writeVer,
                         syncMode,
                         topVer,
-                        ttl,
                         forceTransformBackups,
                         this.updateReq.subjectId(),
-                        this.updateReq.taskNameHash());
+                        this.updateReq.taskNameHash(),
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null);
 
                     mappings.put(nodeId, updateReq);
                 }
 
-                updateReq.addWriteValue(entry.key(), entry.keyBytes(), val, valBytes, transformC, drTtl,
-                    drExpireTime, drVer);
+                updateReq.addWriteValue(entry.key(),
+                    entry.keyBytes(),
+                    val,
+                    valBytes,
+                    entryProcessor,
+                    ttl,
+                    drExpireTime,
+                    drVer);
             }
         }
     }
@@ -257,10 +268,17 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
      * @param entry Entry.
      * @param val Value.
      * @param valBytes Value bytes.
-     * @param ttl Time to live.
+     * @param entryProcessor Entry processor..
+     * @param ttl TTL for near cache update (optional).
+     * @param expireTime Expire time for near cache update (optional).
      */
-    public void addNearWriteEntries(Iterable<UUID> readers, GridDhtCacheEntry<K, V> entry, @Nullable V val,
-        @Nullable byte[] valBytes, IgniteClosure<V, V> transformC, long ttl) {
+    public void addNearWriteEntries(Iterable<UUID> readers,
+        GridDhtCacheEntry<K, V> entry,
+        @Nullable V val,
+        @Nullable byte[] valBytes,
+        EntryProcessor<K, V, ?> entryProcessor,
+        long ttl,
+        long expireTime) {
         GridCacheWriteSynchronizationMode syncMode = updateReq.writeSynchronizationMode();
 
         keys.add(entry.key());
@@ -284,10 +302,10 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
                     writeVer,
                     syncMode,
                     topVer,
-                    ttl,
                     forceTransformBackups,
                     this.updateReq.subjectId(),
-                    this.updateReq.taskNameHash());
+                    this.updateReq.taskNameHash(),
+                    forceTransformBackups ? this.updateReq.invokeArguments() : null);
 
                 mappings.put(nodeId, updateReq);
             }
@@ -297,7 +315,13 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
 
             nearReadersEntries.put(entry.key(), entry);
 
-            updateReq.addNearWriteValue(entry.key(), entry.keyBytes(), val, valBytes, transformC);
+            updateReq.addNearWriteValue(entry.key(),
+                entry.keyBytes(),
+                val,
+                valBytes,
+                entryProcessor,
+                ttl,
+                expireTime);
         }
     }
 

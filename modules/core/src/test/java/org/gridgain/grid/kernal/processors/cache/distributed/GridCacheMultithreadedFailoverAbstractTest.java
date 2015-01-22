@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -195,7 +196,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private IgniteConfiguration configuration(int idx) throws Exception {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(cacheMode());

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -83,8 +84,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @param mode Cache mode.
      * @return Cache configuration.
      */
-    private static GridCacheConfiguration createCache(String name, GridCacheMode mode) {
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+    private static CacheConfiguration createCache(String name, GridCacheMode mode) {
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);

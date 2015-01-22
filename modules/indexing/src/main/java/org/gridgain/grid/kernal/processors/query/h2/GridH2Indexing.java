@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.query.h2;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
@@ -1119,7 +1120,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             if (cfg0 != null)
                 cfg = cfg0;
 
-            for (GridCacheConfiguration cacheCfg : ctx.config().getCacheConfiguration())
+            for (CacheConfiguration cacheCfg : ctx.config().getCacheConfiguration())
                 registerSpace(cacheCfg.getName());
 
             mapQryExec = new GridMapQueryExecutor();
@@ -1328,7 +1329,7 @@ public class GridH2Indexing implements GridQueryIndexing {
 
         return cfg != null && cfg.isIndexPrimitiveKey();
     }
-    
+
     /**
      * @param spaceName Space name.
      * @return {@code true} If primitive values must be indexed.

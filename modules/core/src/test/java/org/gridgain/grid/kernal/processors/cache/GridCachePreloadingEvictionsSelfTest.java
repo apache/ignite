@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -67,7 +68,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
 
         cfg.setDiscoverySpi(spi);
 
-        GridCacheConfiguration partCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration partCacheCfg = defaultCacheConfiguration();
 
         partCacheCfg.setCacheMode(PARTITIONED);
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(1, 1));

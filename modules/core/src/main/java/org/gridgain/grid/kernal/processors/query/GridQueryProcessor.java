@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.processors.query;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -102,7 +102,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             idx.start(ctx);
 
-            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
                 GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
@@ -533,7 +533,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (portableIds == null) {
             portableIds = new HashMap<>();
 
-            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
                 GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
@@ -559,7 +559,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (declaredTypesById == null) {
             declaredTypesById = new HashMap<>();
 
-            for (GridCacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
+            for (CacheConfiguration ccfg : ctx.config().getCacheConfiguration()){
                 GridCacheQueryConfiguration qryCfg = ccfg.getQueryConfiguration();
 
                 if (qryCfg != null) {
