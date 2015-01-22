@@ -18,7 +18,6 @@
 package org.gridgain.grid.logger.slf4j;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 import org.slf4j.*;
 

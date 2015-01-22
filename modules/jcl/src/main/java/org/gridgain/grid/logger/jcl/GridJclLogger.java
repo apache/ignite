@@ -19,7 +19,6 @@ package org.gridgain.grid.logger.jcl;
 
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 /**
