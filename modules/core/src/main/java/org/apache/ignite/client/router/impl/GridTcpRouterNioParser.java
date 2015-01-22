@@ -19,15 +19,15 @@ package org.apache.ignite.client.router.impl;
 
 import org.apache.ignite.*;
 import org.apache.ignite.client.marshaller.*;
-import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;
 
-import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
+import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
 
 /**
  *

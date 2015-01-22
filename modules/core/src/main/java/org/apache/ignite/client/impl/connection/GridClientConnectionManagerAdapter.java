@@ -22,7 +22,7 @@ import org.apache.ignite.logger.java.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.util.*;
-import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;

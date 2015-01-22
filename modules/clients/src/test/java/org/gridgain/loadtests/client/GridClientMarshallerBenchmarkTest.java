@@ -20,7 +20,7 @@ package org.gridgain.loadtests.client;
 import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.optimized.*;
-import org.gridgain.grid.kernal.processors.rest.client.message.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -28,7 +28,7 @@ import java.io.*;
 import java.nio.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 
 /**
  * Tests basic performance of marshallers.

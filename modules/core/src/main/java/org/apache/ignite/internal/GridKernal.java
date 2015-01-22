@@ -64,7 +64,7 @@ import org.apache.ignite.internal.processors.port.*;
 import org.gridgain.grid.kernal.processors.portable.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.gridgain.grid.kernal.processors.rest.*;
+import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.segmentation.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.processors.session.*;

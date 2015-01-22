@@ -18,7 +18,7 @@
 package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
+import org.apache.ignite.internal.processors.rest.handlers.cache.*;
 
 /**
  * REST support tests.

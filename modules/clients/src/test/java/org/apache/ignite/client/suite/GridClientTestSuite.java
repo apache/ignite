@@ -23,8 +23,8 @@ import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.integration.*;
 import org.apache.ignite.client.router.*;
 import org.apache.ignite.client.util.*;
-import org.gridgain.grid.kernal.processors.rest.*;
-import org.gridgain.grid.kernal.processors.rest.protocols.tcp.*;
+import org.apache.ignite.internal.processors.rest.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 
 /**
  * Test suite includes all test that concern REST processors.
