@@ -3469,16 +3469,11 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      * @param replaceExisting Replace existing values flag.
      * @return Load future.
      */
-    public IgniteFuture<?> loadAll(final Set<? extends K> keys,
-        boolean replaceExisting) {
+    public IgniteFuture<?> loadAll(
+        final Set<? extends K> keys,
+        boolean replaceExisting
+    ) {
         A.notNull(keys, "keys");
-
-        if (keys.size() < 10) {
-            for (K key : keys) {
-                if (key == null)
-                    throw new NullPointerException("Key to load is null.");
-            }
-        }
 
         if (!ctx.store().configured())
             return new GridFinishedFuture<>(ctx.kernalContext());

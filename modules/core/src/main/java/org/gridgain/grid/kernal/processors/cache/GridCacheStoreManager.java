@@ -589,8 +589,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
                         entries.add(new CacheEntryImpl<>(
-                                (K)cctx.unwrapPortableIfNeeded(k, false),
-                                (V)cctx.unwrapPortableIfNeeded(v, false)));
+                            (K)cctx.unwrapPortableIfNeeded(k, false),
+                            (V)cctx.unwrapPortableIfNeeded(v, false)));
                     }
                 }
                 else {
