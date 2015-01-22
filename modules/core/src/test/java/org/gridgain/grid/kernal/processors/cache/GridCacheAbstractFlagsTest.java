@@ -17,9 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -41,8 +42,8 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration c = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration c = super.cacheConfiguration(gridName);
 
         if (cacheMode() == GridCacheMode.PARTITIONED)
             c.setBackups(1);
@@ -56,7 +57,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return null;
     }
 

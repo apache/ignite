@@ -18,27 +18,31 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Test for {@link LifecycleAware} support in {@link GridCacheConfiguration}.
+ * Test for {@link LifecycleAware} support in {@link CacheConfiguration}.
  */
 public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
@@ -52,15 +56,30 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestStore extends TestLifecycleAware implements GridCacheStore {
-        /**
-         */
-        TestStore() {
-            super(CACHE_NAME);
+    private static class TestStore extends CacheStore implements LifecycleAware {
+        /** */
+        private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(CACHE_NAME);
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteCheckedException {
+            lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) {
+        @Override public void stop() throws IgniteCheckedException {
+            lifecycleAware.stop();
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        @IgniteCacheNameResource
+        public void setCacheName(String cacheName) {
+            lifecycleAware.cacheName(cacheName);
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object load(Object key) {
             return null;
         }
 
@@ -70,35 +89,32 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void loadAll(@Nullable IgniteTx tx, @Nullable Collection keys,
-            IgniteBiInClosure c) {
+        @Override public Map loadAll(Iterable keys) throws CacheLoaderException {
+            return Collections.emptyMap();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) {
+        @Override public void writeAll(Collection col) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map map) {
+        @Override public void delete(Object key) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key) {
+        @Override public void deleteAll(Collection keys) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void removeAll(@Nullable IgniteTx tx,
-            @Nullable Collection keys) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void txEnd(IgniteTx tx, boolean commit) {
+        @Override public void txEnd(boolean commit) {
             // No-op.
         }
     }
@@ -248,12 +264,13 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi());
 
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
 
@@ -267,9 +284,12 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         TestStore store = new TestStore();
 
-        ccfg.setStore(store);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
-        lifecycleAwares.add(store);
+        lifecycleAwares.add(store.lifecycleAware);
 
         TestAffinityFunction affinity = new TestAffinityFunction();
 

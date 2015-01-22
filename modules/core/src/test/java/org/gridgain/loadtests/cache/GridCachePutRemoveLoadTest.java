@@ -19,6 +19,7 @@ package org.gridgain.loadtests.cache;
 
 import com.beust.jcommander.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
@@ -102,7 +103,7 @@ public class GridCachePutRemoveLoadTest {
 
             cfg.setGridName("g" + i);
 
-            GridCacheConfiguration cacheCfg = cfg.getCacheConfiguration()[0];
+            CacheConfiguration cacheCfg = cfg.getCacheConfiguration()[0];
 
             GridCacheDistributionMode distro = i == 0 &&
                 args.distribution() == CLIENT_ONLY ? CLIENT_ONLY : PARTITIONED_ONLY;

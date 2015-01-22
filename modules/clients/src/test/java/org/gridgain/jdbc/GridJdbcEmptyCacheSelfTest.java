@@ -17,8 +17,8 @@
 
 package org.gridgain.jdbc;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -49,7 +49,7 @@ public class GridJdbcEmptyCacheSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setName(CACHE_NAME);
         cache.setCacheMode(PARTITIONED);

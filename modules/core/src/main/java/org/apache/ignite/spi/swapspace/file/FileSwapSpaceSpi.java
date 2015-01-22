@@ -1419,7 +1419,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
 
                         String gridName = ignite.name();
 
-                        writer = new IgniteSpiThread(gridName, "Swap writer: " + name, log) {
+                        writer = new IgniteSpiThread(gridName,  "Swap writer: " + name, log) {
                             @Override protected void body() throws InterruptedException {
                                 while (!isInterrupted()) {
                                     SwapValues vals = que.take();

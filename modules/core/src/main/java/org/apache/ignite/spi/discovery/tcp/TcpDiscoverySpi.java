@@ -5152,8 +5152,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 assert msg.verified() : msg;
 
                 if (log.isDebugEnabled())
-                    log.debug("Redirecting message to client [sock=" + sock + ", locNodeId=" +
-                        ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
+                    log.debug("Redirecting message to client [sock=" + sock + ", locNodeId="
+                        + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']');
 
                 try {
                     prepareNodeAddedMessage(msg, nodeId, null, null);
@@ -5166,8 +5166,8 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             }
             catch (IgniteCheckedException | IOException e) {
                 if (log.isDebugEnabled())
-                    U.error(log, "Client connection failed [sock=" + sock + ", locNodeId=" +
-                        ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
+                    U.error(log, "Client connection failed [sock=" + sock + ", locNodeId="
+                        + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ", msg=" + msg + ']', e);
 
                 U.interrupt(clientMsgWorkers.remove(nodeId));
 

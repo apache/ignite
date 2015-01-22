@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store.jdbc;
+package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
+import javax.cache.configuration.*;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -52,16 +57,11 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     /** Number of transactions. */
     private static final int TX_CNT = 1000;
 
-    /** Cache store. */
-    private static GridCacheStore<Integer, String> store;
-
     /** Distribution mode. */
     private GridCacheDistributionMode mode;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        store = store();
-
         mode = NEAR_PARTITIONED;
 
         startGridsMultiThreaded(GRID_CNT - 2);
@@ -81,6 +81,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -90,7 +91,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
@@ -99,7 +100,10 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         cc.setBackups(1);
         cc.setDistributionMode(mode);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store()));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
 
@@ -141,13 +145,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         fut1.get();
         fut2.get();
 
-        long opened = ((LongAdder)U.field(store, "opened")).sum();
-        long closed = ((LongAdder)U.field(store, "closed")).sum();
-
-        assert opened > 0;
-        assert closed > 0;
-
-        assertEquals(opened, closed);
+        checkOpenedClosedCount();
     }
 
     /**
@@ -173,13 +171,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
             }
         }, 8, "putAll");
 
-        long opened = ((LongAdder)U.field(store, "opened")).sum();
-        long closed = ((LongAdder)U.field(store, "closed")).sum();
-
-        assert opened > 0;
-        assert closed > 0;
-
-        assertEquals(opened, closed);
+        checkOpenedClosedCount();
     }
 
     /**
@@ -216,21 +208,15 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
             }
         }, 8, "tx");
 
-        long opened = ((LongAdder)U.field(store, "opened")).sum();
-        long closed = ((LongAdder)U.field(store, "closed")).sum();
-
-        assert opened > 0;
-        assert closed > 0;
-
-        assertEquals(opened, closed);
+        checkOpenedClosedCount();
     }
 
     /**
      * @return New store.
      * @throws Exception In case of error.
      */
-    private GridCacheStore<Integer, String> store() throws Exception {
-        GridCacheStore<Integer, String> store = new GridCacheJdbcBlobStore<>();
+    private CacheStore<Integer, String> store() throws Exception {
+        CacheStore<Integer, String> store = new CacheJdbcBlobStore<>();
 
         Field f = store.getClass().getDeclaredField("testMode");
 
@@ -239,5 +225,26 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
         f.set(store, true);
 
         return store;
+    }
+
+    /**
+     *
+     */
+    private void checkOpenedClosedCount() {
+        assertEquals(GRID_CNT, Ignition.allGrids().size());
+
+        for (Ignite ignite : Ignition.allGrids()) {
+            GridCacheContext cctx = ((GridKernal)ignite).internalCache().context();
+
+            CacheStore store = cctx.store().configuredStore();
+
+            long opened = ((LongAdder)U.field(store, "opened")).sum();
+            long closed = ((LongAdder)U.field(store, "closed")).sum();
+
+            assert opened > 0;
+            assert closed > 0;
+
+            assertEquals(opened, closed);
+        }
     }
 }

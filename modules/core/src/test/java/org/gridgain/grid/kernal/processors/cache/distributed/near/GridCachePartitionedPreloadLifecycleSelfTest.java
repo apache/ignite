@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
@@ -49,7 +50,7 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         c.getTransactionsConfiguration().setDefaultTxConcurrency(IgniteTxConcurrency.OPTIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(IgniteTxIsolation.READ_COMMITTED);
 
-        GridCacheConfiguration cc1 = defaultCacheConfiguration();
+        CacheConfiguration cc1 = defaultCacheConfiguration();
 
         cc1.setName("one");
         cc1.setCacheMode(PARTITIONED);
@@ -58,12 +59,12 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
         cc1.setPreloadMode(preloadMode);
         cc1.setEvictionPolicy(null);
         cc1.setSwapEnabled(false);
-        cc1.setStore(null);
+        cc1.setCacheStoreFactory(null);
         cc1.setEvictionPolicy(null);
         cc1.setNearEvictionPolicy(null);
 
         // Identical configuration.
-        GridCacheConfiguration cc2 = new GridCacheConfiguration(cc1);
+        CacheConfiguration cc2 = new CacheConfiguration(cc1);
 
         cc2.setName("two");
 

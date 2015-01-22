@@ -18,10 +18,10 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -78,7 +78,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         cfg.setDiscoverySpi(spi);
 
-        GridCacheConfiguration repCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration repCacheCfg = defaultCacheConfiguration();
 
         repCacheCfg.setName("replicated");
         repCacheCfg.setCacheMode(REPLICATED);
@@ -88,7 +88,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
         repCacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
-        GridCacheConfiguration partCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration partCacheCfg = defaultCacheConfiguration();
 
         partCacheCfg.setName("partitioned");
         partCacheCfg.setCacheMode(PARTITIONED);
@@ -100,7 +100,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
         partCacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
-        GridCacheConfiguration locCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration locCacheCfg = defaultCacheConfiguration();
 
         locCacheCfg.setName("local");
         locCacheCfg.setCacheMode(LOCAL);

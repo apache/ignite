@@ -18,21 +18,24 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
 import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
-import org.gridgain.grid.cache.store.GridCacheStore;
-import org.gridgain.grid.cache.store.GridCacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.U;
 import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
+
+import javax.cache.*;
+import javax.cache.configuration.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
@@ -50,7 +53,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private GridCacheEvictionPolicy<?, ?> nearPlc;
 
     /** Test store. */
-    private GridCacheStore<String, String> testStore;
+    private CacheStore<String, String> testStore;
 
     /** Tx concurrency to use. */
     private IgniteTxConcurrency txConcurrency;
@@ -59,6 +62,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private IgniteTxIsolation txIsolation;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -68,7 +72,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         txCfg.setDefaultTxIsolation(txIsolation);
         txCfg.setTxSerializableEnabled(true);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -85,7 +89,14 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
         cc.setEvictNearSynchronized(true);
         cc.setEvictSynchronized(true);
 
-        cc.setStore(testStore);
+        if (testStore != null) {
+            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(testStore));
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
+        }
+        else
+            cc.setCacheStoreFactory(null);
 
         c.setCacheConfiguration(cc);
 
@@ -131,17 +142,16 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         checkPolicy0();
 
-        testStore = new GridCacheStoreAdapter<String, String>() {
-            @Override public String load(@Nullable IgniteTx tx, String key) {
+        testStore = new CacheStoreAdapter<String, String>() {
+            @Override public String load(String key) {
                 return null;
             }
 
-            @Override public void put(@Nullable IgniteTx tx, String key,
-                @Nullable String val) {
+            @Override public void write(Cache.Entry<? extends String, ? extends String> e) {
                 // No-op.
             }
 
-            @Override public void remove(@Nullable IgniteTx tx, String key) {
+            @Override public void delete(Object key) {
                 // No-op.
             }
         };

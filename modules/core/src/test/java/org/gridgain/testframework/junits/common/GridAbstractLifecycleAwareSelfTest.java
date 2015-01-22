@@ -80,6 +80,13 @@ public abstract class GridAbstractLifecycleAwareSelfTest extends GridCommonAbstr
         public int stopCount() {
             return stopCnt.get();
         }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        public void cacheName(String cacheName) {
+            this.cacheName = cacheName;
+        }
     }
 
     /**

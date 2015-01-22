@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.managers.checkpoint;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -25,7 +26,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.mbean.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.checkpoint.cache.*;
 import org.apache.ignite.spi.checkpoint.jdbc.*;
@@ -131,7 +131,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         if (gridName.contains("cache")) {
             String cacheName = "test-checkpoints";
 
-            GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setName(cacheName);
             cacheCfg.setWriteSynchronizationMode(FULL_SYNC);

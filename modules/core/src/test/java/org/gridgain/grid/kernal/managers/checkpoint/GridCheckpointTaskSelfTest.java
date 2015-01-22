@@ -18,12 +18,11 @@
 package org.gridgain.grid.kernal.managers.checkpoint;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.cache.*;
 import org.apache.ignite.spi.discovery.*;
@@ -66,8 +65,8 @@ public class GridCheckpointTaskSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(CACHE_NAME);
         cfg.setCacheMode(REPLICATED);

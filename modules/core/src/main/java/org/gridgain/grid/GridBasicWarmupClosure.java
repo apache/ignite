@@ -18,6 +18,7 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.logger.*;
@@ -341,21 +342,21 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
 
         cp.setClientConnectionConfiguration(null);
 
-        Collection<GridCacheConfiguration> reduced = new ArrayList<>();
+        Collection<CacheConfiguration> reduced = new ArrayList<>();
 
-        for (GridCacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
+        for (CacheConfiguration ccfg : gridCfg.getCacheConfiguration()) {
             if (CU.isSystemCache(ccfg.getName()))
                 continue;
 
             if (!matches(reduced, ccfg)) {
-                GridCacheConfiguration ccfgCp = new GridCacheConfiguration(ccfg);
+                CacheConfiguration ccfgCp = new CacheConfiguration(ccfg);
 
                 if (ccfgCp.getDistributionMode() == GridCacheDistributionMode.CLIENT_ONLY)
                     ccfgCp.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
                 else if (ccfgCp.getDistributionMode() == GridCacheDistributionMode.NEAR_ONLY)
                     ccfgCp.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
 
-                ccfgCp.setStore(null);
+                ccfgCp.setCacheStoreFactory(null);
                 ccfgCp.setWriteBehindEnabled(false);
 
                 reduced.add(ccfgCp);
@@ -365,7 +366,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
         if (F.isEmpty(reduced))
             return null;
 
-        GridCacheConfiguration[] res = new GridCacheConfiguration[reduced.size()];
+        CacheConfiguration[] res = new CacheConfiguration[reduced.size()];
 
         reduced.toArray(res);
 
@@ -381,8 +382,8 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
      * @param ccfg Cache configuration to match.
      * @return {@code True} if matching configuration is found, {@code false} otherwise.
      */
-    private boolean matches(Iterable<GridCacheConfiguration> reduced, GridCacheConfiguration ccfg) {
-        for (GridCacheConfiguration ccfg0 : reduced) {
+    private boolean matches(Iterable<CacheConfiguration> reduced, CacheConfiguration ccfg) {
+        for (CacheConfiguration ccfg0 : reduced) {
             if (matches(ccfg0, ccfg))
                 return true;
         }
@@ -397,7 +398,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
      * @param ccfg1 Second configuration.
      * @return {@code True} if configurations match.
      */
-    private boolean matches(GridCacheConfiguration ccfg0, GridCacheConfiguration ccfg1) {
+    private boolean matches(CacheConfiguration ccfg0, CacheConfiguration ccfg1) {
         return
             F.eq(ccfg0.getCacheMode(), ccfg1.getCacheMode()) &&
             F.eq(ccfg0.getBackups(), ccfg1.getBackups()) &&
@@ -421,6 +422,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
             this.cache = cache;
         }
 
+        /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -434,6 +436,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
          * Runs operation.
          *
          * @param key Key.
+         * @throws Exception If failed.
          */
         protected abstract void operation(int key) throws Exception;
     }

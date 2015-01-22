@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.query.*;
@@ -50,8 +51,8 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
-        GridCacheConfiguration cc = super.cache(name, spiName);
+    @Override protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
+        CacheConfiguration cc = super.cache(name, spiName);
 
         cc.setDistributionMode(distributionMode());
 

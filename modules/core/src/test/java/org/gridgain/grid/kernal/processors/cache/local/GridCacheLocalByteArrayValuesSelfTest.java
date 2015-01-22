@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -54,7 +55,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 
-        GridCacheConfiguration cc1 = new GridCacheConfiguration();
+        CacheConfiguration cc1 = new CacheConfiguration();
 
         cc1.setName(CACHE_REGULAR);
         cc1.setAtomicityMode(TRANSACTIONAL);
@@ -64,7 +65,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
         cc1.setEvictSynchronized(false);
         cc1.setEvictNearSynchronized(false);
 
-        GridCacheConfiguration cc2 = new GridCacheConfiguration();
+        CacheConfiguration cc2 = new CacheConfiguration();
 
         cc2.setName(CACHE_OFFHEAP);
         cc2.setAtomicityMode(TRANSACTIONAL);

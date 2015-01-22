@@ -18,10 +18,10 @@
 package org.gridgain.grid.kernal.processors.ggfs.split;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -59,7 +59,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
         ggfsCfg.setBlockSize(512);
         ggfsCfg.setDefaultMode(PRIMARY);
 
-        GridCacheConfiguration dataCacheCfg = new GridCacheConfiguration();
+        CacheConfiguration dataCacheCfg = new CacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -70,7 +70,7 @@ public class GridGgfsAbstractRecordResolverSelfTest extends GridCommonAbstractTe
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
 
-        GridCacheConfiguration metaCacheCfg = new GridCacheConfiguration();
+        CacheConfiguration metaCacheCfg = new CacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
