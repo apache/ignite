@@ -174,8 +174,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      and error message (if any).
      * @throws IgniteCheckedException In case of error.
      */
-    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
-        int timeout, int maxConn) throws IgniteCheckedException;
+    @IgniteAsyncSupported
+    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
+        boolean restart,
+        int timeout,
+        int maxConn)
+        throws IgniteCheckedException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -275,8 +279,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      and error message (if any).
      * @throws IgniteCheckedException In case of error.
      */
+    @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteCheckedException;
+        @Nullable Map<String, Object> dflts,
+        boolean restart,
+        int timeout,
+        int maxConn)
+        throws IgniteCheckedException;
 
     /**
      * Stops nodes satisfying optional set of predicates.
