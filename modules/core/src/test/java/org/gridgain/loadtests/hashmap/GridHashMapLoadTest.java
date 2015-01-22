@@ -18,7 +18,7 @@
 package org.gridgain.loadtests.hashmap;
 
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.gridgain.testframework.junits.logger.*;

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.gridgain.grid.kernal.processors.cache.jta.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
-import org.gridgain.grid.kernal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.gridgain.testframework.junits.*;
 
 import java.util.*;

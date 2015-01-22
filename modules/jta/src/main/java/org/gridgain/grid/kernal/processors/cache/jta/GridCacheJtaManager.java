@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.jta.*;
-import org.gridgain.grid.kernal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;

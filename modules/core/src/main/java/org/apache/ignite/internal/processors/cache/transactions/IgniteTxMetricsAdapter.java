@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.transactions;
+package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
