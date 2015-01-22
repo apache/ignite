@@ -58,8 +58,8 @@ import org.gridgain.grid.kernal.processors.segmentation.*;
 import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.session.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.processors.timeout.*;
+import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
 

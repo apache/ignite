@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.task;
+package org.apache.ignite.internal.processors.task;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
@@ -28,7 +28,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.job.*;
-import org.gridgain.grid.kernal.processors.timeout.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -44,7 +44,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 
 /**
  * Grid task worker. Handles full task life cycle.

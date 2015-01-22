@@ -15,32 +15,24 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.version;
-
-import org.apache.ignite.internal.util.direct.*;
-
-import java.nio.*;
+package org.apache.ignite.internal.processors.task;
 
 /**
- * Version converter.
+ * Defines keys for thread-local context in task processor.
  */
-public abstract class GridVersionConverter {
-    /** State. */
-    protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();
+public enum GridTaskThreadContextKey {
+    /** Task name. */
+    TC_TASK_NAME,
 
-    /**
-     * Writes delta between two versions.
-     *
-     * @param buf Buffer to write to.
-     * @return Whether delta was fully written.
-     */
-    public abstract boolean writeTo(ByteBuffer buf);
+    /** No failover flag. */
+    TC_NO_FAILOVER,
 
-    /**
-     * Reads delta between two versions.
-     *
-     * @param buf Buffer to read from.
-     * @return Whether delta was fully read.
-     */
-    public abstract boolean readFrom(ByteBuffer buf);
+    /** Projection for the task. */
+    TC_SUBGRID,
+
+    /** Timeout in milliseconds associated with the task. */
+    TC_TIMEOUT,
+
+    /** Security subject ID. */
+    TC_SUBJ_ID
 }

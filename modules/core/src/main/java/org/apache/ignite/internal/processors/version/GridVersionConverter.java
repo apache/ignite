@@ -15,26 +15,32 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.timeout;
+package org.apache.ignite.internal.processors.version;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.direct.*;
+
+import java.nio.*;
 
 /**
- * All objects that can timeout should implement this interface.
+ * Version converter.
  */
-public interface GridTimeoutObject {
-    /**
-     * @return ID of the object.
-     */
-    public IgniteUuid timeoutId();
+public abstract class GridVersionConverter {
+    /** State. */
+    protected final GridTcpCommunicationMessageState commState = new GridTcpCommunicationMessageState();
 
     /**
-     * @return End time.
+     * Writes delta between two versions.
+     *
+     * @param buf Buffer to write to.
+     * @return Whether delta was fully written.
      */
-    public long endTime();
+    public abstract boolean writeTo(ByteBuffer buf);
 
     /**
-     * Timeout callback.
+     * Reads delta between two versions.
+     *
+     * @param buf Buffer to read from.
+     * @return Whether delta was fully read.
      */
-    public void onTimeout();
+    public abstract boolean readFrom(ByteBuffer buf);
 }

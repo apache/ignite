@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.task;
+package org.apache.ignite.internal.processors.task;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
@@ -43,7 +43,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 
 /**
  * This class defines task processor.

@@ -26,7 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.deployment.protocol.gg.*;
-import org.gridgain.grid.kernal.processors.task.*;
+import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

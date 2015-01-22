@@ -15,21 +15,26 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.task;
+package org.apache.ignite.internal.processors.timeout;
 
-import java.lang.annotation.*;
+import org.apache.ignite.lang.*;
 
 /**
- * Indicates that annotated task should always be loaded with local deployment,
- * ignoring grid source node configuration. Also jobs within such a task will
- * always be executed in the management thread pool on remote nodes and won't
- * generate job events.
- *
- * This annotation intended for internal use only.
+ * All objects that can timeout should implement this interface.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
-public @interface GridInternal {
-    // No-op.
+public interface GridTimeoutObject {
+    /**
+     * @return ID of the object.
+     */
+    public IgniteUuid timeoutId();
+
+    /**
+     * @return End time.
+     */
+    public long endTime();
+
+    /**
+     * Timeout callback.
+     */
+    public void onTimeout();
 }

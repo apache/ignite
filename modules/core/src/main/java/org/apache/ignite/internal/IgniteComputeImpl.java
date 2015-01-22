@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.internal.GridClosureCallMode.*;
-import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 
 /**
  * {@link org.apache.ignite.IgniteCompute} implementation.

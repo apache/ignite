@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.visor.node;
 
-import org.gridgain.grid.kernal.processors.task.*;
+import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
 
 /**

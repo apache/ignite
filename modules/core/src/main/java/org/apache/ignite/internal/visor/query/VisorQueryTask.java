@@ -25,8 +25,8 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.query.*;
-import org.gridgain.grid.kernal.processors.task.*;
-import org.gridgain.grid.kernal.processors.timeout.*;
+import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

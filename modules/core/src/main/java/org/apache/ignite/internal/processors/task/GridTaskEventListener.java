@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.task;
+package org.apache.ignite.internal.processors.task;
 
 import org.apache.ignite.internal.*;
 
