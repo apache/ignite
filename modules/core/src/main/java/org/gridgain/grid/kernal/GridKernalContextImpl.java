@@ -485,7 +485,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return discovery() == null ? cfg.getNodeId() : discovery().localNode().id();
+        return cfg.getNodeId();
     }
 
     /** {@inheritDoc} */
