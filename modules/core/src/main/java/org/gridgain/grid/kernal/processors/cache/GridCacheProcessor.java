@@ -35,7 +35,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;

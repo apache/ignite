@@ -23,7 +23,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
  * Thread pool for supplying partitions to demanding nodes.

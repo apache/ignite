@@ -18,8 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 
 import static org.apache.ignite.cache.GridCacheMode.*;
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 
 /**
  * Multi-node test for group lock in near cache.

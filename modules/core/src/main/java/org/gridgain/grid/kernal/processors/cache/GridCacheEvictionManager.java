@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
@@ -51,7 +51,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
 
 /**
