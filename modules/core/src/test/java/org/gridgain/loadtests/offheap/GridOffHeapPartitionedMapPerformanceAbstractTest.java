@@ -22,7 +22,7 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.offheap.*;
+import org.apache.ignite.internal.util.offheap.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 

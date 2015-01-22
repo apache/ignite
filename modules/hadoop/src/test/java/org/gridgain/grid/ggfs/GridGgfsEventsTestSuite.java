@@ -24,7 +24,7 @@ import org.apache.ignite.fs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.streams;
 
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;

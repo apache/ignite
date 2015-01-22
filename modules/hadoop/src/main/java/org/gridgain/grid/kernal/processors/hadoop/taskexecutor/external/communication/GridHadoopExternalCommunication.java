@@ -20,13 +20,12 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communi
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.ipc.*;
-import org.gridgain.grid.util.ipc.shmem.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;

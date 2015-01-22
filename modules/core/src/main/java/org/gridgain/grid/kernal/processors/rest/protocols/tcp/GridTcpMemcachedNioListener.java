@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +36,7 @@ import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Handles memcache requests.

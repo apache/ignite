@@ -21,7 +21,7 @@ import com.google.common.collect.*;
 import org.apache.hadoop.io.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;

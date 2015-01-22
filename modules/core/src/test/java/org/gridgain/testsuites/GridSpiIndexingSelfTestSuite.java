@@ -18,7 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 
 /**
  * Indexing SPI tests.

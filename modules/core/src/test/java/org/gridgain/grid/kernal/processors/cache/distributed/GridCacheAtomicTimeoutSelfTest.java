@@ -29,7 +29,7 @@ import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

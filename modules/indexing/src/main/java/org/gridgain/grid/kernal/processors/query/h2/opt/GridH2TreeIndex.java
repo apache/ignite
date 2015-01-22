@@ -21,7 +21,7 @@ import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.snaptree.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.engine.*;
 import org.h2.index.*;
 import org.h2.result.*;

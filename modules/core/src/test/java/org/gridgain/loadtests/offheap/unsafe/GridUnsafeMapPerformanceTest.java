@@ -17,7 +17,7 @@
 
 package org.gridgain.loadtests.offheap.unsafe;
 
-import org.gridgain.grid.util.offheap.*;
+import org.apache.ignite.internal.util.offheap.*;
 
 /**
  * Unsafe map test.

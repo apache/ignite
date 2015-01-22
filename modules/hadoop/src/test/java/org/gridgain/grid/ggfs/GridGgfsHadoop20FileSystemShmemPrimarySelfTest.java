@@ -20,7 +20,7 @@ package org.gridgain.grid.ggfs;
 import java.util.*;
 
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * Tests Hadoop 2.x file system in primary mode.

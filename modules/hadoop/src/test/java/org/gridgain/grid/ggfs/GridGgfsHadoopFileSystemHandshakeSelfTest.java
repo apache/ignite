@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * Tests for GGFS file system handshake.

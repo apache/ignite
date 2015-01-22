@@ -25,7 +25,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientCacheRequest.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.rest.client.message.GridClientHandshakeResponse.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Listener for nio server that handles incoming tcp rest packets.

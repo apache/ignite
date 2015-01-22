@@ -23,7 +23,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -33,7 +33,7 @@ import java.nio.charset.*;
 import java.util.*;
 
 import static org.gridgain.grid.kernal.processors.rest.protocols.tcp.GridMemcachedMessage.*;
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Parser for extended memcache protocol. Handles parsing and encoding activity.

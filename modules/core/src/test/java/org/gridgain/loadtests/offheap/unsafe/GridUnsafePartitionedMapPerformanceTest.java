@@ -18,7 +18,7 @@
 package org.gridgain.loadtests.offheap.unsafe;
 
 import org.apache.ignite.cache.affinity.consistenthash.*;
-import org.gridgain.grid.util.offheap.*;
+import org.apache.ignite.internal.util.offheap.*;
 
 /**
  * Unsafe partitioned map performance test.

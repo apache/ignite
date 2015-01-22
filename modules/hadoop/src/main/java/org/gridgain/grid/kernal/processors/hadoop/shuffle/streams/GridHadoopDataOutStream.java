@@ -17,12 +17,12 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.streams;
 
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 
 import java.io.*;
 import java.nio.charset.*;
 
-import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
+import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  * Data output stream.

@@ -24,8 +24,8 @@ import org.apache.ignite.client.*;
 import org.apache.ignite.client.router.*;
 import org.apache.ignite.client.ssl.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.nio.ssl.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

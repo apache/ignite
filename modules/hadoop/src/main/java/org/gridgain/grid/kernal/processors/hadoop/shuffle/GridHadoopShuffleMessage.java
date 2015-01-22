@@ -26,7 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
+import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  * Shuffle message.

@@ -23,13 +23,13 @@ import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * Nio listener for the router. Extracts necessary meta information from messages

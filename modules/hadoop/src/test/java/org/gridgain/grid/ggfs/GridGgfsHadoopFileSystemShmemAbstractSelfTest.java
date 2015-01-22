@@ -19,15 +19,14 @@ package org.gridgain.grid.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.ipc.*;
+import org.apache.ignite.internal.util.ipc.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * GGFS Hadoop file system IPC self test.

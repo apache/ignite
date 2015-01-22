@@ -64,7 +64,7 @@ public enum GridComponentType {
     /** Nodes starting using SSH. */
     SSH(
         null,
-        "org.gridgain.grid.util.nodestart.GridSshProcessorImpl",
+        "org.apache.ignite.internal.util.nodestart.GridSshProcessorImpl",
         "gridgain-ssh"
     ),
 

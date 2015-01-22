@@ -21,7 +21,7 @@ import org.apache.ignite.fs.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * GGFS Hadoop file system IPC loopback self test.

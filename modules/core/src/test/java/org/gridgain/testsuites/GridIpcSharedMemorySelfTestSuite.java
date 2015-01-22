@@ -18,7 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
 
 /**
  * Shared memory test suite.

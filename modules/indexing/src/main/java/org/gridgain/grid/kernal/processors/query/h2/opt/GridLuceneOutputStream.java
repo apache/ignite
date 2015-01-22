@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
 import org.apache.lucene.store.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 
 import java.io.IOException;
 

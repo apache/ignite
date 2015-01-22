@@ -18,7 +18,7 @@
 package org.gridgain.loadtests.offheap;
 
 import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.offheap.*;
+import org.apache.ignite.internal.util.offheap.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

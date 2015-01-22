@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.query.h2.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.jetbrains.annotations.*;
 
 /**

@@ -75,7 +75,7 @@ import org.apache.ignite.spi.securesession.noop.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nodestart.*;
+import org.apache.ignite.internal.util.nodestart.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -98,7 +98,7 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
 import static org.gridgain.grid.kernal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
-import static org.gridgain.grid.util.nodestart.GridNodeStartUtils.*;
+import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
 
 /**
  * GridGain kernal.

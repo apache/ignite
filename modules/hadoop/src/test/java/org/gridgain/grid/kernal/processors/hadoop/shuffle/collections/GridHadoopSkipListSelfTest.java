@@ -22,7 +22,7 @@ import org.apache.hadoop.io.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.io.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.io.*;
@@ -30,7 +30,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.Math.*;
-import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
+import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  * Skip list tests.

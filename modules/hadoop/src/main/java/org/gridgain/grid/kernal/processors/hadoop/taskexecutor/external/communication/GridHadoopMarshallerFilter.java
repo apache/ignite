@@ -19,9 +19,8 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communi
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 
 /**
  * Serialization filter.

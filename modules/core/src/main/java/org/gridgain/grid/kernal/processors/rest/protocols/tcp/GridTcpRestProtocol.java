@@ -31,8 +31,8 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.nio.ssl.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.nio.ssl.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -42,7 +42,7 @@ import java.net.*;
 import java.nio.*;
 import java.util.*;
 
-import static org.gridgain.grid.util.nio.GridNioSessionMetaKey.*;
+import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
 
 /**
  * TCP binary protocol implementation.

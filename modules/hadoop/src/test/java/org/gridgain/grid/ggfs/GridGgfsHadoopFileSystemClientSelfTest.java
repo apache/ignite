@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
  * Test interaction between a GGFS client and a GGFS server.

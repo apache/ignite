@@ -30,7 +30,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.ipc.*;
+import org.apache.ignite.internal.util.ipc.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;

@@ -23,7 +23,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.nio.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

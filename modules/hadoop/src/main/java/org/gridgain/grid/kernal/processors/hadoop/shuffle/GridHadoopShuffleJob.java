@@ -26,7 +26,7 @@ import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.io.*;
 import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.worker.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.hadoop.GridHadoopJobProperty.*;
-import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
+import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**
  * Shuffle job.

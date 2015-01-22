@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.result.*;
 
 /**

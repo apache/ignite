@@ -48,7 +48,7 @@ import java.util.concurrent.locks.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridTopic.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.util.nio.GridNioBackPressureControl.*;
+import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**

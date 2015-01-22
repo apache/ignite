@@ -18,9 +18,8 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.ipc.*;
-import org.gridgain.grid.util.nio.*;
+import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.nio.*;
 
 import java.io.*;
 import java.nio.*;

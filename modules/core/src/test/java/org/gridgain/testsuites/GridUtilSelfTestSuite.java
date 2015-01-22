@@ -24,9 +24,9 @@ import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.mbeans.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.nio.impl.*;
-import org.gridgain.grid.util.offheap.unsafe.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.nio.impl.*;
+import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.gridgain.grid.util.tostring.*;
 
 /**
