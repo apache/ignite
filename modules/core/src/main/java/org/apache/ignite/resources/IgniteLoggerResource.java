@@ -35,7 +35,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;GridLoggerResource
+ *      &#64;IgniteLoggerResource
  *      private GridLogger log;
  *      ...
  *  }
@@ -44,10 +44,10 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     private GridLogger log;
+ *     private Ignite log;
  *     ...
- *     &#64;GridLoggerResource
- *     public void setGridLogger(GridLogger log) {
+ *     &#64;IgniteLoggerResource
+ *     public void setGridLogger(IgniteLogger log) {
  *          this.log = log;
  *     }
  *     ...

@@ -129,8 +129,8 @@ import java.util.*;
  * <p>
  * <h1 class="header">Resource Injection</h1>
  * Grid task implementation can be injected using IoC (dependency injection) with
- * grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>
@@ -152,8 +152,8 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String&gt; {
  *     // Inject load balancer.
- *     &#64;GridLoadBalancerResource
- *     GridComputeLoadBalancer balancer;
+ *     &#64;IgniteLoadBalancerResource
+ *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
  *     public Map&lt;? extends ComputeJob, GridNode&gt; map(List&lt;GridNode&gt; subgrid, String arg) throws IgniteCheckedException {

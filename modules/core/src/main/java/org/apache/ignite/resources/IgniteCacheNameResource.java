@@ -31,7 +31,7 @@ import org.gridgain.grid.cache.*;
  * <pre name="code" class="java">
  * public class MyCacheStore implements GridCacheStore {
  *      ...
- *      &#64;GridCacheNameResource
+ *      &#64;IgniteCacheNameResource
  *      private String cacheName;
  *      ...
  *  }
@@ -42,7 +42,7 @@ import org.gridgain.grid.cache.*;
  *     ...
  *     private String cacheName;
  *     ...
- *     &#64;GridCacheNameResource
+ *     &#64;IgniteCacheNameResource
  *     public void setCacheName(String cacheName) {
  *          this.cacheName = cacheName;
  *     }

@@ -37,7 +37,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;GridSpringApplicationContextResource
+ *      &#64;IgniteSpringApplicationContextResource
  *      private ApplicationContext springCtx;
  *      ...
  *  }
@@ -48,7 +48,7 @@ import java.lang.annotation.*;
  *     ...
  *     private ApplicationContext springCtx;
  *     ...
- *     &#64;GridSpringApplicationContextResource
+ *     &#64;IgniteSpringApplicationContextResource
  *     public void setApplicationContext(MBeanServer springCtx) {
  *          this.springCtx = springCtx;
  *     }

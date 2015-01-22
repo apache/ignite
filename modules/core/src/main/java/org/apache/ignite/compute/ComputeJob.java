@@ -91,8 +91,8 @@ import java.util.*;
  * <p>
  * <h1 class="header">Resource Injection</h1>
  * Grid job implementation can be injected using IoC (dependency injection) with
- * grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.IgniteTaskSessionResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteJobContextResource}</li>
@@ -117,7 +117,7 @@ import java.util.*;
  * of certain event or state change that occurred during job execution.
  * <p>
  * Distributed task session can be injected into {@link ComputeJob} implementation
- * using {@link org.apache.ignite.resources.IgniteTaskSessionResource @GridTaskSessionResource} annotation.
+ * using {@link org.apache.ignite.resources.IgniteTaskSessionResource @IgniteTaskSessionResource} annotation.
  * Both, field and method based injections are supported. Refer to
  * {@link ComputeTaskSession} documentation for more information on session functionality.
  * <p>

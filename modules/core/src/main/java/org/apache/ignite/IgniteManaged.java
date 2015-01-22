@@ -79,7 +79,7 @@ import java.util.*;
  * of any topology changes, including node crashes.
  * <h1 class="header">Resource Injection</h1>
  * All distributed services can be injected with
- * grid resources. Both, field and method based injections are supported. The following grid
+ * ignite resources. Both, field and method based injections are supported. The following ignite
  * resources can be injected:
  * <ul>
  * <li>{@link IgniteInstanceResource}</li>
@@ -94,9 +94,9 @@ import java.util.*;
  * // Simple service implementation.
  * public class MyGridService implements GridService {
  *      ...
- *      // Example of grid resource injection. All resources are optional.
+ *      // Example of ignite resource injection. All resources are optional.
  *      // You should inject resources only as needed.
- *      &#64;GridInstanceResource
+ *      &#64;IgniteInstanceResource
  *      private Grid grid;
  *      ...
  *      &#64;Override public void cancel(GridServiceContext ctx) {

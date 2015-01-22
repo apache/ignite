@@ -36,7 +36,7 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;GridMBeanServerResource
+ *      &#64;IgniteMBeanServerResource
  *      private MBeanServer mbeanSrv;
  *      ...
  *  }
@@ -47,7 +47,7 @@ import java.lang.annotation.*;
  *     ...
  *     private MBeanSever mbeanSrv;
  *     ...
- *     &#64;GridMBeanServerResource
+ *     &#64;IgniteMBeanServerResource
  *     public void setMBeanServer(MBeanServer mbeanSrv) {
  *          this.mbeanSrv = mbeanSrv;
  *     }

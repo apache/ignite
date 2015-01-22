@@ -76,7 +76,7 @@ import java.util.concurrent.*;
  * {@link FailoverSpi} in grid configuration.
  * <h1 class="header">Resource Injection</h1>
  * All compute jobs, including closures, runnables, callables, and tasks can be injected with
- * grid resources. Both, field and method based injections are supported. The following grid
+ * ignite resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
  * <li>{@link IgniteTaskSessionResource}</li>
@@ -90,7 +90,7 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * public class MyGridJob extends GridRunnable {
  *      ...
- *      &#64;GridInstanceResource
+ *      &#64;IgniteInstanceResource
  *      private Grid grid;
  *      ...
  *  }

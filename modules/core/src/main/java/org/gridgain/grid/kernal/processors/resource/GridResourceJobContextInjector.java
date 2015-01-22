@@ -22,7 +22,7 @@ import org.apache.ignite.compute.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 
 /**
- * Simple injector which wraps GridComputeJobContext resource object.
+ * Simple injector which wraps ComputeJobContext resource object.
  */
 public class GridResourceJobContextInjector extends GridResourceBasicInjector<ComputeJobContext> {
     /**

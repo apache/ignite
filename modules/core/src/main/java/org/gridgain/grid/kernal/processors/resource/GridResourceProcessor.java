@@ -35,7 +35,7 @@ import java.lang.reflect.*;
 import java.util.*;
 
 /**
- * Processor for all Grid and task/job resources.
+ * Processor for all Ignite and task/job resources.
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */
