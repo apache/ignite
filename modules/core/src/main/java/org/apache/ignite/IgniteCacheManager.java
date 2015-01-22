@@ -36,6 +36,12 @@ import java.util.concurrent.atomic.*;
  */
 public class IgniteCacheManager implements CacheManager {
     /** */
+    private static final String CACHE_STATISTICS = "CacheStatistics";
+
+    /** */
+    private static final String CACHE_CONFIGURATION = "CacheConfiguration";
+
+    /** */
     private final Map<String, IgniteBiTuple<Ignite, IgniteCacheMXBean>> igniteMap = new HashMap<>();
 
     /** */
@@ -256,19 +262,17 @@ public class IgniteCacheManager implements CacheManager {
 
             MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
 
-            unregisterCacheObject(mBeanSrv, cacheName, true);
+            unregisterCacheObject(mBeanSrv, cacheName, CACHE_STATISTICS);
 
-            unregisterCacheObject(mBeanSrv, cacheName, false);
+            unregisterCacheObject(mBeanSrv, cacheName, CACHE_CONFIGURATION);
         }
     }
 
     /**
      * @param cacheName Cache name.
      */
-    private ObjectName getObjectName(String cacheName, boolean isStatistic) {
-        String mbType = isStatistic ? "CacheStatistics" : "CacheConfiguration";
-
-        String mBeanName = "javax.cache:type=" + mbType + ",CacheManager="
+    private ObjectName getObjectName(String cacheName, String objectName) {
+        String mBeanName = "javax.cache:type=" + objectName + ",CacheManager="
             + uri.toString().replaceAll(",|:|=|\n", ".")
             + ",Cache=" + cacheName.replaceAll(",|:|=|\n", ".");
 
@@ -296,11 +300,11 @@ public class IgniteCacheManager implements CacheManager {
         MBeanServer mBeanSrv = tuple.get1().configuration().getMBeanServer();
 
         if (enabled) {
-            registerCacheObject(mBeanSrv, tuple.get2(), cacheName, false);
+            registerCacheObject(mBeanSrv, tuple.get2(), cacheName, CACHE_CONFIGURATION);
 
             tuple.get1().cache(cacheName).configuration().setManagementEnabled(true);
         } else {
-            unregisterCacheObject(mBeanSrv, cacheName, false);
+            unregisterCacheObject(mBeanSrv, cacheName, CACHE_CONFIGURATION);
 
             tuple.get1().cache(cacheName).configuration().setManagementEnabled(false);
         }
@@ -322,23 +326,21 @@ public class IgniteCacheManager implements CacheManager {
 
         Ignite ignite = tuple.get1();
 
-        GridCache cache = ignite.cache(cacheName);
+        IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
-        GridCacheConfiguration configuration = ignite.jcache(cacheName).getConfiguration(GridCacheConfiguration.class);
+        GridCacheConfiguration cfg = cache.getConfiguration(GridCacheConfiguration.class);
 
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 
         if (enabled) {
-            CacheMetricsMXBean mxBean = new CacheMetricsMXBean(cache);
+            registerCacheObject(mBeanSrv, cache.metrics(), cacheName, CACHE_STATISTICS);
 
-            registerCacheObject(mBeanSrv, mxBean, cacheName, true);
-
-            configuration.setStatisticsEnabled(true);
+            cfg.setStatisticsEnabled(true);
         }
         else {
-            unregisterCacheObject(mBeanSrv, cacheName, true);
+            unregisterCacheObject(mBeanSrv, cacheName, CACHE_STATISTICS);
 
-            configuration.setStatisticsEnabled(false);
+            cfg.setStatisticsEnabled(false);
         }
     }
 
@@ -346,8 +348,8 @@ public class IgniteCacheManager implements CacheManager {
      * @param mxbean MXBean.
      * @param name cache name.
      */
-    public void registerCacheObject(MBeanServer mBeanServer, Object mxbean, String name, boolean isStatistic) {
-        ObjectName registeredObjectName = getObjectName(name, isStatistic);
+    public void registerCacheObject(MBeanServer mBeanServer, Object mxbean, String name, String objectName) {
+        ObjectName registeredObjectName = getObjectName(name, objectName);
 
         try {
             if (!isRegistered(mBeanServer, registeredObjectName))
@@ -370,15 +372,15 @@ public class IgniteCacheManager implements CacheManager {
      * UnRegisters the mxbean if registered already.
      *
      * @param mBeanSrv MBean server
-     * @param name cache name.
-     * @param stats is mxbean, a statistics mxbean.
+     * @param name Cache name.
+     * @param objectName Mxbean name.
      */
-    public void unregisterCacheObject(MBeanServer mBeanSrv, String name, boolean stats) {
+    public void unregisterCacheObject(MBeanServer mBeanSrv, String name, String objectName) {
         Set<ObjectName> registeredObjectNames;
 
-        ObjectName objectName = getObjectName(name, stats);
+        ObjectName objName = getObjectName(name, objectName);
 
-        registeredObjectNames = mBeanSrv.queryNames(objectName, null);
+        registeredObjectNames = mBeanSrv.queryNames(objName, null);
 
         //should just be one
         for (ObjectName registeredObjectName : registeredObjectNames) {

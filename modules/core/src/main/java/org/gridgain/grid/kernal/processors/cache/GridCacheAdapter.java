@@ -1749,19 +1749,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Map<K, V>>>() {
-                @Override public void apply(IgniteFuture<Map<K, V>> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
-                        }
-                    } catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateGetTimeMetricsClosure<Map<K, V>>(ctx.cache().metrics0(), start));
 
         return fut;
     }
@@ -3552,8 +3540,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMetrics metrics() {
-        return GridCacheMetricsAdapter.copyOf(metrics);
+    @Override public CacheMetricsMxBean metrics() {
+        return metrics;
     }
 
     /**
@@ -5444,6 +5432,39 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(GetExpiryPolicy.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdateGetTimeMetricsClosure<T> implements CI1<IgniteFuture<T>> {
+        /** */
+        private final GridCacheMetricsAdapter metrics;
+
+        /** */
+        private final long start;
+
+        /**
+         * @param metrics Metrics.
+         * @param start   Start time.
+         */
+        public UpdateGetTimeMetricsClosure(GridCacheMetricsAdapter metrics, long start) {
+            this.metrics = metrics;
+            this.start = start;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(IgniteFuture<T> fut) {
+            try {
+                if (!fut.isCancelled()) {
+                    fut.get();
+
+                    metrics.addGetTimeNanos(System.nanoTime() - start);
+                }
+            } catch (IgniteCheckedException ignore) {
+                //No-op.
+            }
         }
     }
 }

@@ -220,21 +220,21 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteTxMetrics metrics = grid(i).transactions().metrics();
-            GridCacheMetrics cacheMetrics = grid(i).cache(null).metrics();
+            CacheMetricsMxBean cacheMetrics = grid(i).cache(null).metrics();
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
 
                 if (put)
-                    assertEquals(TX_CNT, cacheMetrics.txCommits());
+                    assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
             }
             else {
                 assertEquals(0, metrics.txCommits());
-                assertEquals(0, cacheMetrics.txCommits());
+                assertEquals(0, cacheMetrics.getCacheTxCommits());
             }
 
             assertEquals(0, metrics.txRollbacks());
-            assertEquals(0, cacheMetrics.txRollbacks());
+            assertEquals(0, cacheMetrics.getCacheTxRollbacks());
         }
     }
 
@@ -260,20 +260,20 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteTxMetrics metrics = grid(i).transactions().metrics();
-            GridCacheMetrics cacheMetrics = grid(i).cache(null).metrics();
+            CacheMetricsMxBean cacheMetrics = grid(i).cache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
-            assertEquals(0, cacheMetrics.txCommits());
+            assertEquals(0, cacheMetrics.getCacheTxCommits());
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txRollbacks());
 
                 if (put)
-                    assertEquals(TX_CNT, cacheMetrics.txRollbacks());
+                    assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
             }
             else {
                 assertEquals(0, metrics.txRollbacks());
-                assertEquals(0, cacheMetrics.txRollbacks());
+                assertEquals(0, cacheMetrics.getCacheTxRollbacks());
             }
         }
     }

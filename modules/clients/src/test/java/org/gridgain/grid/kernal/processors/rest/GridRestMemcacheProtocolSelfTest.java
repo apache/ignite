@@ -228,14 +228,14 @@ public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
         Map<String, Long> m = client.cacheMetrics(null);
 
         assertNotNull(m);
-        assertEquals(7, m.size());
+        assertEquals(4, m.size());
         assertEquals(3, m.get("reads").longValue());
         assertEquals(3, m.get("writes").longValue());
 
         m = client.cacheMetrics(CACHE_NAME);
 
         assertNotNull(m);
-        assertEquals(7, m.size());
+        assertEquals(4, m.size());
         assertEquals(3, m.get("reads").longValue());
         assertEquals(3, m.get("writes").longValue());
     }

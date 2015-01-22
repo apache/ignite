@@ -27,27 +27,12 @@ import java.io.*;
 /**
  * Adapter for cache metrics.
  */
-public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
+public class GridCacheMetricsAdapter implements CacheMetricsMxBean, Externalizable {
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** Create time. */
-    private long createTime = U.currentTimeMillis();
-
-    /** Last read time. */
-    private volatile long readTime = createTime;
-
-    /** Last update time. */
-    private volatile long writeTime = createTime;
-
-    /** Last commit time. */
-    private volatile long commitTime = createTime;
-
-    /** Last rollback time. */
-    private volatile long rollbackTime = createTime;
 
     /** Number of reads. */
     private volatile int reads;
@@ -97,11 +82,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param m Metrics to copy from.
      */
     public GridCacheMetricsAdapter(GridCacheMetricsAdapter m) {
-        createTime = m.createTime;
-        readTime = m.readTime;
-        writeTime = m.writeTime;
-        commitTime = m.commitTime;
-        rollbackTime = m.rollbackTime;
         reads = m.reads;
         writes = m.writes;
         hits = m.hits;
@@ -123,73 +103,37 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     }
 
     /** {@inheritDoc} */
-    @Override public long createTime() {
-        return createTime;
+    @Override public float getAverageTxCommitTime() {
+        return 1.f;
     }
 
     /** {@inheritDoc} */
-    @Override public long writeTime() {
-        return writeTime;
+    @Override public float getAverageTxRollbackTime() {
+        return 1.f;
     }
 
     /** {@inheritDoc} */
-    @Override public long readTime() {
-        return readTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long commitTime() {
-        return commitTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long rollbackTime() {
-        return rollbackTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int reads() {
-        return reads;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int writes() {
-        return (int)(writes + rmCnt);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hits() {
-        return hits;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int misses() {
-        return misses;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int txCommits() {
+    @Override public int getCacheTxCommits() {
         return txCommits;
     }
 
     /** {@inheritDoc} */
-    @Override public int txRollbacks() {
+    @Override public int getCacheTxRollbacks() {
         return txRollbacks;
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        createTime = U.currentTimeMillis();
-        readTime = createTime;
-        writeTime = createTime;
-        commitTime = createTime;
-        rollbackTime = createTime;
         reads = 0;
         writes = 0;
         hits = 0;
         misses = 0;
         txCommits = 0;
         txRollbacks = 0;
+
+        putTimeNanos = 0;
+        removeTimeNanos = 0;
+        getTimeNanos = 0;
     }
 
     /** {@inheritDoc} */
@@ -342,8 +286,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param isHit Hit or miss flag.
      */
     public void onRead(boolean isHit) {
-        readTime = U.currentTimeMillis();
-
         reads++;
 
         if (isHit)
@@ -359,8 +301,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * Cache write callback.
      */
     public void onWrite() {
-        writeTime = U.currentTimeMillis();
-
         writes++;
 
         if (delegate != null)
@@ -371,8 +311,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * Cache remove callback.
      */
     public void onRemove(){
-        writeTime = U.currentTimeMillis();
-
         rmCnt++;
 
         if (delegate != null)
@@ -393,8 +331,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * Transaction commit callback.
      */
     public void onTxCommit() {
-        commitTime = U.currentTimeMillis();
-
         txCommits++;
 
         if (delegate != null)
@@ -405,8 +341,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * Transaction rollback callback.
      */
     public void onTxRollback() {
-        rollbackTime = U.currentTimeMillis();
-
         txRollbacks++;
 
         if (delegate != null)
@@ -455,12 +389,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(createTime);
-        out.writeLong(readTime);
-        out.writeLong(writeTime);
-        out.writeLong(commitTime);
-        out.writeLong(rollbackTime);
-
         out.writeInt(reads);
         out.writeInt(writes);
         out.writeInt(hits);
@@ -477,12 +405,6 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        createTime = in.readLong();
-        readTime = in.readLong();
-        writeTime = in.readLong();
-        commitTime = in.readLong();
-        rollbackTime = in.readLong();
-
         reads = in.readInt();
         writes = in.readInt();
         hits = in.readInt();

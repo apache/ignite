@@ -957,31 +957,31 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         GridClientDataMetrics m = dfltData.metrics();
 
-        GridCacheMetrics metrics = grid().cache(null).metrics();
+        CacheMetricsMxBean metrics = grid().cache(null).metrics();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
 
         m = dfltData.metricsAsync().get();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
 
         m = namedData.metrics();
 
         metrics = grid().cache(CACHE_NAME).metrics();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
 
         m = namedData.metricsAsync().get();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
     }
 
     /**

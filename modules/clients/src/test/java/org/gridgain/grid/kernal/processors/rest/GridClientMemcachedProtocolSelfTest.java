@@ -257,7 +257,7 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
 
         Map<String, String> stats = F.first(map.values());
 
-        Assert.assertEquals(7, stats.size());
+        Assert.assertEquals(4, stats.size());
         Assert.assertTrue(Integer.valueOf(stats.get("writes")) >= 1);
         Assert.assertTrue(Integer.valueOf(stats.get("reads")) >= 1);
 
@@ -270,7 +270,7 @@ public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcess
 
         stats = F.first(map.values());
 
-        Assert.assertEquals(7, stats.size());
+        Assert.assertEquals(4, stats.size());
         Assert.assertTrue(Integer.valueOf(stats.get("writes")) >= 2);
         Assert.assertTrue(Integer.valueOf(stats.get("reads")) >= 2);
     }

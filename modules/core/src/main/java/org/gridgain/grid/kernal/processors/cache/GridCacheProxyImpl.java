@@ -195,7 +195,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheMetrics metrics() {
+    @Override public CacheMetricsMxBean metrics() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

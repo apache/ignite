@@ -25,15 +25,6 @@ import java.util.*;
  * Grid cache metrics for rest.
  */
 public class GridCacheRestMetrics {
-    /** Create time. */
-    private long createTime;
-
-    /** Last read time. */
-    private long readTime;
-
-    /** Last update time. */
-    private long writeTime;
-
     /** Number of reads. */
     private int reads;
 
@@ -49,77 +40,16 @@ public class GridCacheRestMetrics {
     /**
      * Constructor.
      *
-     * @param createTime Create time.
-     * @param readTime Read time.
-     * @param writeTime Write time.
      * @param reads Reads.
      * @param writes Writes.
      * @param hits Hits.
      * @param misses Misses.
      */
-    public GridCacheRestMetrics(long createTime, long readTime, long writeTime, int reads, int writes, int hits,
-        int misses) {
-        this.createTime = createTime;
-        this.readTime = readTime;
-        this.writeTime = writeTime;
+    public GridCacheRestMetrics(int reads, int writes, int hits, int misses) {
         this.reads = reads;
         this.writes = writes;
         this.hits = hits;
         this.misses = misses;
-    }
-
-    /**
-     * Gets create time.
-     *
-     * @return Create time.
-     */
-    public long getCreateTime() {
-        return createTime;
-    }
-
-    /**
-     * Sets create time.
-     *
-     * @param createTime Create time.
-     */
-    public void setCreateTime(long createTime) {
-        this.createTime = createTime;
-    }
-
-    /**
-     * Gets read time.
-     *
-     * @return Read time.
-     */
-    public long getReadTime() {
-        return readTime;
-    }
-
-    /**
-     * Sets read time.
-     *
-     * @param readTime Read time.
-     */
-    public void setReadTime(long readTime) {
-        this.readTime = readTime;
-    }
-
-    /**
-     * Gets write time.
-     *
-     * @return Write time.
-     */
-    public long getWriteTime() {
-        return writeTime;
-    }
-
-    /**
-     * Sets write time.
-     *
-     * @param writeTime Write time.
-     */
-    public void setWriteTime(long writeTime) {
-        this.writeTime = writeTime;
     }
 
     /**
@@ -200,11 +130,8 @@ public class GridCacheRestMetrics {
      * @return Map.
      */
     public Map<String, Long> map() {
-        Map<String, Long> map = new GridLeanMap<>(7);
+        Map<String, Long> map = new GridLeanMap<>(4);
 
-        map.put("createTime", createTime);
-        map.put("readTime", readTime);
-        map.put("writeTime", writeTime);
         map.put("reads", (long)reads);
         map.put("writes", (long)writes);
         map.put("hits", (long)hits);
