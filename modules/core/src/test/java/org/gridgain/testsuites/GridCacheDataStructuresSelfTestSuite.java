@@ -18,10 +18,10 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.processors.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.datastructures.local.*;
-import org.gridgain.grid.kernal.processors.cache.datastructures.partitioned.*;
-import org.gridgain.grid.kernal.processors.cache.datastructures.replicated.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
+import org.apache.ignite.internal.processors.cache.datastructures.local.*;
+import org.apache.ignite.internal.processors.cache.datastructures.partitioned.*;
+import org.apache.ignite.internal.processors.cache.datastructures.replicated.*;
 
 /**
  * Test suite for cache data structures.
