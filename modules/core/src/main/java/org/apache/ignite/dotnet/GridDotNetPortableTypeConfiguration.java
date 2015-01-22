@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.dotnet;
+package org.apache.ignite.dotnet;
 
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.util.typedef.internal.*;

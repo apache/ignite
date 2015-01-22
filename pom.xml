@@ -923,7 +923,7 @@
                                         </group>
                                         <group>
                                             <title>.Net Configuration</title>
-                                            <packages>org.gridgain.grid.dotnet</packages>
+                                            <packages>org.apache.ignite.dotnet</packages>
                                         </group>
                                     </groups>
                                     <header>
