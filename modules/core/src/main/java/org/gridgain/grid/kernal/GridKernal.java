@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -2283,14 +2284,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      *
      */
     private void ackCacheConfiguration() {
-        GridCacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
+        CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
         if (cacheCfgs == null || cacheCfgs.length == 0)
             U.warn(log, "Cache is not configured - in-memory data grid is off.");
         else {
             SB sb = new SB();
 
-            for (GridCacheConfiguration c : cacheCfgs) {
+            for (CacheConfiguration c : cacheCfgs) {
                 String name = c.getName();
 
                 if (name == null)

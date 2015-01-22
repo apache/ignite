@@ -18,6 +18,7 @@
 package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -176,7 +177,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
         cfg.setGridName(name);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

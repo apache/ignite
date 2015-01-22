@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -54,7 +54,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(cacheMode);
         ccfg.setEagerTtl(true);

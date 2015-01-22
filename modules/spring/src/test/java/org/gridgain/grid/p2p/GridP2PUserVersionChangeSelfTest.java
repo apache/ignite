@@ -18,10 +18,10 @@
 package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -93,7 +93,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(discoSpi);
 
         if (gridName.contains("testCacheRedeployVersionChangeContinuousMode")) {
-            GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+            CacheConfiguration cacheCfg = new CacheConfiguration();
 
             cacheCfg.setCacheMode(GridCacheMode.REPLICATED);
 

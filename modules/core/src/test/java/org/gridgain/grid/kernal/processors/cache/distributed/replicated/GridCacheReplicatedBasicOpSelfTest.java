@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -31,7 +31,7 @@ public class GridCacheReplicatedBasicOpSelfTest extends GridCacheBasicOpAbstract
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
 

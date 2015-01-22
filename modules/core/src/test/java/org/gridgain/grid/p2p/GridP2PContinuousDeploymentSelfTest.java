@@ -18,8 +18,8 @@
 package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -73,8 +73,8 @@ public class GridP2PContinuousDeploymentSelfTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected GridCacheConfiguration cacheConfiguration() throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);

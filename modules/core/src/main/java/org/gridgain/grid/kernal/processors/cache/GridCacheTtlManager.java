@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -29,7 +29,7 @@ import org.gridgain.grid.util.worker.*;
 import java.util.*;
 
 /**
- * Eagerly removes expired entries from cache when {@link GridCacheConfiguration#isEagerTtl()} flag is set.
+ * Eagerly removes expired entries from cache when {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {

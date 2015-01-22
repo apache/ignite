@@ -20,6 +20,7 @@ package org.gridgain.grid.ggfs;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
@@ -136,7 +137,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         ggfsCfg.setPrefetchBlocks(PREFETCH_BLOCKS);
         ggfsCfg.setSequentialReadsBeforePrefetch(SEQ_READS_BEFORE_PREFETCH);
 
-        GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -148,7 +149,7 @@ public abstract class GridGgfsHadoopDualAbstractSelfTest extends GridGgfsCommonA
         dataCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dataCacheCfg.setOffHeapMaxMemory(0);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);

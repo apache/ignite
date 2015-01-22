@@ -129,7 +129,7 @@
     </bean>
 
     <!-- Template for all example cache configurations. -->
-    <bean id="cache-template" abstract="true" class="org.gridgain.grid.cache.GridCacheConfiguration">
+    <bean id="cache-template" abstract="true" class="org.apache.ignite.cache.CacheConfiguration">
         <!-- Initial cache size. -->
         <property name="startSize" value="3000000"/>
 

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -127,7 +128,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        GridCacheConfiguration cfg = cctx.config();
+        CacheConfiguration cfg = cctx.config();
 
         plc = cctx.isNear() ? cfg.<K, V>getNearEvictionPolicy() : cfg.<K, V>getEvictionPolicy();
 

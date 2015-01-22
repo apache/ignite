@@ -20,6 +20,8 @@ package org.gridgain.client.integration;
 import junit.framework.*;
 import net.sf.json.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -27,17 +29,17 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.client.*;
 import org.gridgain.client.ssl.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -247,8 +249,9 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(cacheName == null || CACHE_NAME.equals(cacheName) ? LOCAL : "replicated".equals(cacheName) ?
             REPLICATED : PARTITIONED);
@@ -260,7 +263,10 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         if (cacheStore == null)
             cacheStores.put(cacheName, cacheStore = new HashMapStore());
 
-        cfg.setStore(cacheStore);
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(cacheStore));
+        cfg.setWriteThrough(true);
+        cfg.setReadThrough(true);
+        cfg.setLoadPreviousValue(true);
 
         cfg.setSwapEnabled(true);
 
@@ -1564,33 +1570,29 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Simple HashMap based cache store emulation.
      */
-    private static class HashMapStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class HashMapStore extends CacheStoreAdapter<Object, Object> {
         /** Map for cache store. */
         private final Map<Object, Object> map = new HashMap<>();
 
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args)
-            throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry e : map.entrySet()) {
                 clo.apply(e.getKey(), e.getValue());
             }
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public Object load(Object key) {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) throws IgniteCheckedException {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             map.remove(key);
         }
     }

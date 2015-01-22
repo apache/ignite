@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -48,7 +48,7 @@ public class VisorCacheWriteBehindConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for write-behind cache configuration properties.
      */
-    public static VisorCacheWriteBehindConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheWriteBehindConfiguration from(CacheConfiguration ccfg) {
         VisorCacheWriteBehindConfiguration cfg = new VisorCacheWriteBehindConfiguration();
 
         cfg.enabled(ccfg.isWriteBehindEnabled());

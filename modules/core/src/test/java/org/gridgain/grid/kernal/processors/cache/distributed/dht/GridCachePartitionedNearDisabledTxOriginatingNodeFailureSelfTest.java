@@ -24,7 +24,6 @@ import org.gridgain.grid.cache.*;
  */
 public class GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest
     extends GridCachePartitionedTxOriginatingNodeFailureSelfTest {
-
     /** {@inheritDoc} */
     @Override protected GridCacheDistributionMode distributionMode() {
         return GridCacheDistributionMode.PARTITIONED_ONLY;

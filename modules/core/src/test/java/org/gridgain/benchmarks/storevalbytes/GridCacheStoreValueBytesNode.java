@@ -18,8 +18,8 @@
 package org.gridgain.benchmarks.storevalbytes;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -111,7 +111,7 @@ public class GridCacheStoreValueBytesNode {
 
         cfg.setPeerClassLoadingEnabled(p2pEnabled);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
 

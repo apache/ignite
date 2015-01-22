@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -36,7 +36,7 @@ public class GridCachePartitionedQueueJoinedNodeSelfTest extends GridCacheQueueJ
         IgniteConfiguration c = super.getConfiguration(gridName);
 
         // Default cache configuration.
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);

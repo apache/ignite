@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
@@ -108,8 +109,8 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    protected GridCacheConfiguration cacheConfiguration(String cacheName) {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 

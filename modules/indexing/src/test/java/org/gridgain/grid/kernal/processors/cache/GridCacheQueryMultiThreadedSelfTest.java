@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -84,7 +85,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);

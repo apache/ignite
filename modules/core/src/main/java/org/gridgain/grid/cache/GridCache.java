@@ -18,12 +18,13 @@
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -66,7 +67,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *
      * @return Configuration bean for this cache.
      */
-    public GridCacheConfiguration configuration();
+    public CacheConfiguration configuration();
 
     /**
      * Registers transactions synchronizations for all transactions started by this cache.
@@ -187,14 +188,14 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
     public Iterator<Map.Entry<K, V>> offHeapIterator() throws IgniteCheckedException;
 
     /**
-     * Delegates to {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
+     * Delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method
      * to load state from the underlying persistent storage. The loaded values
      * will then be given to the optionally passed in predicate, and, if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
      * all loaded values will be stored in cache.
      * <p>
      * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link GridCacheStore} implementation to provide all the data to be loaded.
+     * {@link CacheStore} implementation to provide all the data to be loaded.
      * <p>
      * This method is not transactional and may end up loading a stale value into
      * cache if another thread has updated the value immediately after it has been
@@ -205,20 +206,20 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *      filter values to be put into cache.
      * @param ttl Time to live for loaded entries ({@code 0} for infinity).
      * @param args Optional user arguments to be passed into
-     *      {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method.
      * @throws IgniteCheckedException If loading failed.
      */
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args) throws IgniteCheckedException;
 
     /**
-     * Asynchronously delegates to {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
+     * Asynchronously delegates to {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure, Object...)} method
      * to reload state from the underlying persistent storage. The reloaded values
      * will then be given to the optionally passed in predicate, and if the predicate returns
      * {@code true}, will be stored in cache. If predicate is {@code null}, then
      * all reloaded values will be stored in cache.
      * <p>
      * Note that this method does not receive keys as a parameter, so it is up to
-     * {@link GridCacheStore} implementation to provide all the data to be loaded.
+     * {@link CacheStore} implementation to provide all the data to be loaded.
      * <p>
      * This method is not transactional and may end up loading a stale value into
      * cache if another thread has updated the value immediately after it has been
@@ -229,7 +230,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      *      filter values to be put into cache.
      * @param ttl Time to live for loaded entries ({@code 0} for infinity).
      * @param args Optional user arguments to be passed into
-     *      {@link GridCacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
+     *      {@link CacheStore#loadCache(org.apache.ignite.lang.IgniteBiInClosure,Object...)} method.
      * @return Future to be completed whenever loading completes.
      */
     public IgniteFuture<?> loadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, long ttl, @Nullable Object... args);
@@ -252,7 +253,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
 
     /**
      * Forces this cache node to re-balance its partitions. This method is usually used when
-     * {@link GridCacheConfiguration#getPreloadPartitionedDelay()} configuration parameter has non-zero value.
+     * {@link CacheConfiguration#getPreloadPartitionedDelay()} configuration parameter has non-zero value.
      * When many nodes are started or stopped almost concurrently, it is more efficient to delay
      * preloading until the node topology is stable to make sure that no redundant re-partitioning
      * happens.
@@ -260,12 +261,12 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * In case of{@link GridCacheMode#PARTITIONED} caches, for better efficiency user should
      * usually make sure that new nodes get placed on the same place of consistent hash ring as
      * the left nodes, and that nodes are restarted before
-     * {@link GridCacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
+     * {@link CacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes
      * on the same place in consistent hash ring, use
      * {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)} to make sure that
      * a node maps to the same hash ID if re-started.
      * <p>
-     * See {@link GridCacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
+     * See {@link CacheConfiguration#getPreloadPartitionedDelay()} for more information on how to configure
      * preload re-partition delay.
      * <p>
      * @return Future that will be completed when preloading is finished.

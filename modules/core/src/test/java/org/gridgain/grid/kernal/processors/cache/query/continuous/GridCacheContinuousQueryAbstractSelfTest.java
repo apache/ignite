@@ -18,16 +18,16 @@
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -41,6 +41,9 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -65,19 +68,23 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     protected static final long LATCH_TIMEOUT = 5000;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setDistributionMode(distributionMode());
         cacheCfg.setPreloadMode(ASYNC);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setStore(new TestStore());
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -1506,29 +1513,26 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
     /**
      * Store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-            Object... args) throws IgniteCheckedException {
+            Object... args) {
             for (int i = 0; i < 10; i++)
                 clo.apply(i, i);
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Nullable @Override public Object load(Object key) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key,
-            @Nullable Object val) throws IgniteCheckedException {
+        @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public void delete(Object key) throws CacheWriterException {
             // No-op.
         }
     }

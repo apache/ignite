@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -46,7 +47,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);

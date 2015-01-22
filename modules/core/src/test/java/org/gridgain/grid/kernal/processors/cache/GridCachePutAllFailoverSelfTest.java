@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import com.google.common.collect.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -615,7 +616,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
         else if (gridName.startsWith("worker")) {
             cfg.setUserAttributes(ImmutableMap.of("segment", "worker"));
 
-            GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
             cacheCfg.setName("partitioned");
             cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
             cacheCfg.setStartSize(4500000);

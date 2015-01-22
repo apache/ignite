@@ -17,9 +17,9 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
 import javax.cache.*;
@@ -105,17 +105,17 @@ public class IgniteCacheManager implements CacheManager {
         if (!(cacheCfg instanceof CompleteConfiguration))
             throw new UnsupportedOperationException("Configuration is not supported: " + cacheCfg);
 
-        if (cacheCfg instanceof GridCacheConfiguration) {
-            String cfgCacheName = ((GridCacheConfiguration)cacheCfg).getName();
+        if (cacheCfg instanceof CacheConfiguration) {
+            String cfgCacheName = ((CacheConfiguration)cacheCfg).getName();
 
             if (cfgCacheName != null) {
                 if (!cacheName.equals(cfgCacheName))
                     throw new IllegalArgumentException();
             }
             else {
-                cacheCfg = (C)new GridCacheConfiguration((CompleteConfiguration)cacheCfg);
+                cacheCfg = (C)new CacheConfiguration((CompleteConfiguration)cacheCfg);
 
-                ((GridCacheConfiguration)cacheCfg).setName(cacheName);
+                ((CacheConfiguration)cacheCfg).setName(cacheName);
             }
         }
 
@@ -131,7 +131,7 @@ public class IgniteCacheManager implements CacheManager {
                 IgniteConfiguration cfg = new IgniteConfiguration();
                 cfg.setGridName("grid-for-" + cacheName);
 
-                cfg.setCacheConfiguration(new GridCacheConfiguration((CompleteConfiguration)cacheCfg));
+                cfg.setCacheConfiguration(new CacheConfiguration((CompleteConfiguration)cacheCfg));
 
                 cfg.getCacheConfiguration()[0].setName(cacheName);
 
@@ -328,7 +328,7 @@ public class IgniteCacheManager implements CacheManager {
 
         IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
-        GridCacheConfiguration cfg = cache.getConfiguration(GridCacheConfiguration.class);
+        CacheConfiguration cfg = cache.getConfiguration(CacheConfiguration.class);
 
         MBeanServer mBeanSrv = ignite.configuration().getMBeanServer();
 

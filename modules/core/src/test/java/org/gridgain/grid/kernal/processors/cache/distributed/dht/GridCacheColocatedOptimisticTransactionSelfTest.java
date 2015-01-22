@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -70,7 +71,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
 
         disco.setIpFinder(IP_FINDER);
 
-        GridCacheConfiguration cc = new GridCacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration();
 
         cc.setName(CACHE);
         cc.setCacheMode(PARTITIONED);

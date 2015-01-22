@@ -31,7 +31,7 @@ public class GridCacheGroupLockSelfTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Cache Group Lock Test Suite");
+        TestSuite suite = new TestSuite("Ignite Cache Group Lock Test Suite");
 
         // One node.
         suite.addTest(new TestSuite(GridCacheGroupLockNearSelfTest.class));

@@ -31,6 +31,9 @@ import java.util.concurrent.*;
  */
 @SuppressWarnings("InfiniteLoopStatement")
 public class GridHashMapLoadTest extends GridCommonAbstractTest {
+    /**
+     *
+     */
     public void testHashMapLoad() {
         Map<Integer, Integer> map = new HashMap<>(5 * 1024 * 1024);
 
@@ -44,6 +47,9 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     *
+     */
     public void testConcurrentHashMapLoad() {
         Map<Integer, Integer> map = new ConcurrentHashMap<>(5 * 1024 * 1024);
 
@@ -57,9 +63,11 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testMapEntry() {
-        Map<Integer, GridCacheMapEntry<Integer, Integer>> map =
-            new HashMap<>(5 * 1024 * 1024);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMapEntry() throws Exception {
+        Map<Integer, GridCacheMapEntry<Integer, Integer>> map = new HashMap<>(5 * 1024 * 1024);
 
         int i = 0;
 

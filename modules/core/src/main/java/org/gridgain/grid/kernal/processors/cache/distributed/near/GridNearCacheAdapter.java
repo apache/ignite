@@ -291,6 +291,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
+            true,
             reload,
             forcePrimary,
             txx,
@@ -309,6 +310,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public void loadCache(IgniteBiPredicate<K, V> p, long ttl, Object[] args) throws IgniteCheckedException {
         dht().loadCache(p, ttl, args);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void localLoad(Collection<? extends K> keys) throws IgniteCheckedException {
+        dht().localLoad(keys);
     }
 
     /** {@inheritDoc} */

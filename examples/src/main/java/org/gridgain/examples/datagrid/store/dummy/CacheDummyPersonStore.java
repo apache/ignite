@@ -18,55 +18,65 @@
 package org.gridgain.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
 /**
  * Dummy cache store implementation.
  */
-public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
+public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     /** Auto-inject grid instance. */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** Auto-inject cache name. */
-    @GridCacheName
+    @IgniteCacheNameResource
     private String cacheName;
 
     /** Dummy database. */
     private Map<Long, Person> dummyDB = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public Person load(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
+    @Override public Person load(Long key) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         return dummyDB.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, Long key, Person val) throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
+        IgniteTx tx = transaction();
+
+        Long key = entry.getKey();
+        Person val = entry.getValue();
+
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         dummyDB.put(key, val);
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
+    @Override public void delete(Object key) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         dummyDB.remove(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) {
         int cnt = (Integer)args[0];
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);
@@ -90,5 +100,14 @@ public class CacheDummyPersonStore extends GridCacheStoreAdapter<Long, Person> {
                 clo.apply(p.getId(), p);
             }
         }
+    }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
     }
 }

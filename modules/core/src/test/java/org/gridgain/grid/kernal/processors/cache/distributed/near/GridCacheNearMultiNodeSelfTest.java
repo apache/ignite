@@ -18,12 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -35,6 +36,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -79,6 +82,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -89,10 +93,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setStore(store);
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinity(aff);
         cacheCfg.setAtomicityMode(atomicityMode());
@@ -891,7 +898,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private static class TestStore extends GridCacheStoreAdapter<Integer, String> {
+    private static class TestStore extends CacheStoreAdapter<Integer, String> {
         /** Map. */
         private ConcurrentMap<Integer, String> map = new ConcurrentHashMap<>();
 
@@ -939,7 +946,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String load(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public String load(Integer key) {
             if (!create)
                 return map.get(key);
 
@@ -949,13 +956,12 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Integer key, @Nullable String val)
-            throws IgniteCheckedException {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             map.remove(key);
         }
     }

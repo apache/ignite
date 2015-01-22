@@ -18,12 +18,12 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.typedef.*;
@@ -113,8 +113,8 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(LOCAL);
         cfg.setName(cacheName);

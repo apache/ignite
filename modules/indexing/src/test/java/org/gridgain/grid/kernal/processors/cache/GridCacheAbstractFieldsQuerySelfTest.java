@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -84,8 +85,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @param spiName Indexing SPI name.
      * @return Cache.
      */
-    protected GridCacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+    protected CacheConfiguration cache(@Nullable String name, @Nullable String spiName) {
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(cacheMode());

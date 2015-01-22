@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -63,7 +64,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
