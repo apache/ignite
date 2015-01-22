@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.s3;
+package org.apache.ignite.testsuites.bamboo;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.testsuites.bamboo.*;
-import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import junit.framework.*;
+import org.gridgain.grid.kernal.*;
 
 /**
- * Grid S3 checkpoint SPI start stop self test.
+ * Scheduler tests.
  */
-@GridSpiTest(spi = GridS3CheckpointSpi.class, group = "Checkpoint SPI")
-public class GridS3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridS3CheckpointSpi> {
-    /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+public class GridSchedulerTestSuite extends TestSuite {
+    /**
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
 
-        spi.setAwsCredentials(cred);
+        suite.addTestSuite(GridScheduleSelfTest.class);
 
-        spi.setBucketNameSuffix("test");
-
-        super.spiConfigure(spi);
+        return suite;
     }
 }

@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 import com.amazonaws.auth.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testsuites.bamboo.*;
+import org.apache.ignite.testsuites.bamboo.*;
 
 import java.net.*;
 import java.util.*;

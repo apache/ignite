@@ -15,36 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.s3;
+package org.apache.ignite.testsuites;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testsuites.bamboo.*;
-import org.gridgain.grid.session.*;
+import junit.framework.*;
+import org.apache.ignite.streamer.index.*;
+import org.apache.ignite.streamer.window.*;
 
 /**
- * Grid session checkpoint self test using {@link GridS3CheckpointSpi}.
+ * Streamer test suite.
  */
-public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointAbstractSelfTest {
+public class GridStreamerSelfTestSuite {
     /**
+     * @return Test suite.
      * @throws Exception If failed.
      */
-    public void testS3Checkpoint() throws Exception {
-        IgniteConfiguration cfg = getConfiguration();
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Gridgain Streamer Test Suite.");
 
-        GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
+        // Streamer.
+        suite.addTestSuite(GridStreamerWindowSelfTest.class);
+        suite.addTestSuite(GridStreamerEvictionSelfTest.class);
+        suite.addTestSuite(GridStreamerSelfTest.class);
+        suite.addTestSuite(GridStreamerFailoverSelfTest.class);
+        suite.addTestSuite(GridStreamerIndexSelfTest.class);
+        suite.addTestSuite(GridStreamerLifecycleAwareSelfTest.class);
 
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
-
-        spi.setAwsCredentials(cred);
-
-        spi.setBucketNameSuffix("test");
-
-        cfg.setCheckpointSpi(spi);
-
-        GridSessionCheckpointSelfTest.spi = spi;
-
-        checkCheckpoints(cfg);
+        return suite;
     }
 }

@@ -24,11 +24,11 @@ import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
+import org.apache.ignite.testsuites.bamboo.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
-import org.gridgain.testsuites.bamboo.*;
 
 /**
  * Grid S3 checkpoint SPI self test.

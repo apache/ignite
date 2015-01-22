@@ -20,7 +20,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 import com.amazonaws.auth.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
-import org.gridgain.testsuites.bamboo.*;
+import org.apache.ignite.testsuites.bamboo.*;
 
 /**
  * Checkpoint manager test using {@link GridS3CheckpointSpi}.

@@ -15,27 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.s3;
+package org.apache.ignite.testsuites;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.testsuites.bamboo.*;
-import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import junit.framework.*;
+import org.apache.ignite.internal.processors.timeout.*;
 
 /**
- * Grid S3 checkpoint SPI start stop self test.
+ * Suite for {@link GridTimeoutProcessor} tests.
  */
-@GridSpiTest(spi = GridS3CheckpointSpi.class, group = "Checkpoint SPI")
-public class GridS3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridS3CheckpointSpi> {
-    /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+public class GridTimeoutProcessorSelfTestSuite extends TestSuite {
+    /**
+     * @return Job metrics test suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Gridgain Timeout Processor Test Suite");
 
-        spi.setAwsCredentials(cred);
+        suite.addTest(new TestSuite(GridTimeoutProcessorSelfTest.class));
 
-        spi.setBucketNameSuffix("test");
-
-        super.spiConfigure(spi);
+        return suite;
     }
 }
