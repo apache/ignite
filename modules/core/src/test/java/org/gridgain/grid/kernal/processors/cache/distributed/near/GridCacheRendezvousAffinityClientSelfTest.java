@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
@@ -39,7 +40,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(GridCacheMode.PARTITIONED);
         ccfg.setBackups(1);

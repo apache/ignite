@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -52,7 +53,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
 
         c.setDiscoverySpi(spi);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName("test");
         cc.setCacheMode(GridCacheMode.PARTITIONED);

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.*;
@@ -45,8 +46,8 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setCacheMode(PARTITIONED);

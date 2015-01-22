@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -67,7 +67,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         cfg.setDiscoverySpi(spi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);

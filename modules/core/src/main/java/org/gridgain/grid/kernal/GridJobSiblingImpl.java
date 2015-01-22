@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -33,7 +32,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
 /**
  * This class provides implementation for job sibling.
  */
-public class GridJobSiblingImpl extends GridMetadataAwareAdapter implements ComputeJobSibling, Externalizable {
+public class GridJobSiblingImpl implements ComputeJobSibling, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

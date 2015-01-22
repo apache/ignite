@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
@@ -37,7 +37,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
 
         c.getTransactionsConfiguration().setDefaultTxConcurrency(OPTIMISTIC);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);

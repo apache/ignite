@@ -19,7 +19,6 @@ package org.gridgain.grid;
 
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -27,7 +26,7 @@ import java.util.*;
 /**
  * Test job context.
  */
-public class GridTestJobContext extends GridMetadataAwareAdapter implements ComputeJobContext {
+public class GridTestJobContext implements ComputeJobContext {
     /** */
     private final IgniteUuid jobId;
 

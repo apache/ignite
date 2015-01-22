@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
@@ -46,8 +47,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
         return GridCacheAtomicityMode.ATOMIC;
     }
 
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setPreloadMode(GridCachePreloadMode.SYNC);
 

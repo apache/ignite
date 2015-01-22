@@ -124,11 +124,15 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
          /** */
-        @IgniteLocalNodeIdResource
-        private UUID locNodeId;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+            assert ignite != null;
+
+            UUID locNodeId = ignite.configuration().getNodeId();
+
             assert locNodeId != null;
 
             if (log.isInfoEnabled())
@@ -143,12 +147,16 @@ public class GridFailoverCustomTopologySelfTest extends GridCommonAbstractTest {
 
             return Collections.singletonMap(new ComputeJobAdapter(locNodeId) {
                 /** */
-               @IgniteLocalNodeIdResource
-               private UUID nodeId;
+               @IgniteInstanceResource
+               private Ignite ignite;
 
                 /** {@inheritDoc} */
                 @SuppressWarnings("NakedNotify")
                 @Override public Serializable execute() throws IgniteCheckedException {
+                    assert ignite != null;
+
+                    UUID nodeId = ignite.configuration().getNodeId();
+
                     assert nodeId != null;
 
                     if (!nodeId.equals(argument(0))) {

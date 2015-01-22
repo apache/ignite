@@ -53,8 +53,8 @@ a set of additional modules needed for this edition to work. Specifically:
 - gridgain-fabric
   - (all dependencies included in other editions)
 
-Here is how 'gridgain-datagrid' can be added to your POM file (replace '${gridgain.version}'
-with actual GridGain version you are interested in):
+Here is how 'gridgain-datagrid' can be added to your POM file (replace '${ignite.version}'
+with actual Ignite version you are interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -66,7 +66,7 @@ with actual GridGain version you are interested in):
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-datagrid</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>
@@ -91,7 +91,7 @@ Here is how it can be imported into your POM file:
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>
@@ -134,14 +134,14 @@ you should add 'gridgain-spring' module like this:
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <!-- Optional. -->
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-spring</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>

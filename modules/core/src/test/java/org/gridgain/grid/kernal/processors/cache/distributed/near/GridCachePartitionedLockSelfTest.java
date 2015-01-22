@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.cache.*;
@@ -65,7 +66,7 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
 
         cfg.setGridName(getTestGridName(0));
         cfg.setClientConnectionConfiguration(null);
-        cfg.setCacheConfiguration(new GridCacheConfiguration());
+        cfg.setCacheConfiguration(new CacheConfiguration());
 
         final Ignite g0 = G.start(cfg);
 

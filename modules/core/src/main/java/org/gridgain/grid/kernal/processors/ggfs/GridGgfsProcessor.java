@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
@@ -250,10 +250,10 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
             F.isEmpty(gridCfg.getCacheConfiguration()))
             return;
 
-        final Map<String, GridCacheConfiguration> cacheCfgs = new HashMap<>();
+        final Map<String, CacheConfiguration> cacheCfgs = new HashMap<>();
 
-        F.forEach(gridCfg.getCacheConfiguration(), new CI1<GridCacheConfiguration>() {
-            @Override public void apply(GridCacheConfiguration c) {
+        F.forEach(gridCfg.getCacheConfiguration(), new CI1<CacheConfiguration>() {
+            @Override public void apply(CacheConfiguration c) {
                 cacheCfgs.put(c.getName(), c);
             }
         });
@@ -263,7 +263,7 @@ public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
         assert gridCfg.getGgfsConfiguration() != null;
 
         for (IgniteFsConfiguration ggfsCfg : gridCfg.getGgfsConfiguration()) {
-            GridCacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
+            CacheConfiguration cacheCfg = cacheCfgs.get(ggfsCfg.getDataCacheName());
 
             if (cacheCfg == null)
                 continue; // No cache for the given GGFS configuration.

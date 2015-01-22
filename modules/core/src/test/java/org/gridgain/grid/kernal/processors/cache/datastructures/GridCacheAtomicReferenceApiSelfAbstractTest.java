@@ -18,17 +18,22 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.mockito.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
@@ -39,6 +44,9 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private AtomicBoolean storeCalled = new AtomicBoolean();
 
     /**
      * Constructs a test.
@@ -68,13 +76,32 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
     /**
      * @return Cache configuration for the test.
      */
-    protected GridCacheConfiguration getCacheConfiguration() {
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+    @SuppressWarnings("unchecked")
+    protected CacheConfiguration getCacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setDistributionMode(NEAR_PARTITIONED);
 
-        ccfg.setStore(Mockito.mock(GridCacheStore.class));
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new CacheStoreAdapter() {
+            @Override public Object load(Object key) throws CacheLoaderException {
+                storeCalled.set(true);
+
+                return null;
+            }
+
+            @Override public void write(Cache.Entry entry) throws CacheWriterException {
+                storeCalled.set(true);
+            }
+
+            @Override public void delete(Object key) throws CacheWriterException {
+                storeCalled.set(true);
+            }
+        }));
+
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }
@@ -182,6 +209,6 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         cache.dataStructures().removeAtomicReference(atomicName);
 
-        Mockito.verifyZeroInteractions(cache.configuration().getStore()); // Store shouldn't be ever called.
+        assertFalse(storeCalled.get());
     }
 }

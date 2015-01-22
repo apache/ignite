@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -31,6 +33,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -47,6 +51,9 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /** */
+    private static ConcurrentHashMap<Object, Object> storeMap;
+
+    /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
@@ -61,6 +68,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private boolean useGrpLock;
 
+    /** */
+    private TestStore store;
+
     /** {@inheritDoc} */
     @Override public void afterTest() throws Exception {
         super.afterTest();
@@ -69,7 +79,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional"})
+    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -84,7 +94,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         if (useCache) {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(mode);
             cc.setAtomicityMode(TRANSACTIONAL);
@@ -95,6 +105,12 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
+
+            if (store != null) {
+                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
+            }
 
             cfg.setCacheConfiguration(cc);
         }
@@ -750,6 +766,70 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUpdateStore() throws Exception {
+        storeMap = new ConcurrentHashMap<>();
+
+        try {
+            store = new TestStore();
+
+            useCache = true;
+
+            Ignite ignite = startGrid(1);
+
+            startGrid(2);
+            startGrid(3);
+
+            for (int i = 0; i < 1000; i++)
+                storeMap.put(i, i);
+
+            try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+                assertFalse(ldr.skipStore());
+
+                for (int i = 0; i < 1000; i++)
+                    ldr.removeData(i);
+
+                for (int i = 1000; i < 2000; i++)
+                    ldr.addData(i, i);
+            }
+
+            for (int i = 0; i < 1000; i++)
+                assertNull(storeMap.get(i));
+
+            for (int i = 1000; i < 2000; i++)
+                assertEquals(i, storeMap.get(i));
+
+            try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+                ldr.skipStore(true);
+
+                for (int i = 0; i < 1000; i++)
+                    ldr.addData(i, i);
+
+                for (int i = 1000; i < 2000; i++)
+                    ldr.removeData(i);
+            }
+
+            IgniteCache<Object, Object> cache = ignite.jcache(null);
+
+            for (int i = 0; i < 1000; i++) {
+                assertNull(storeMap.get(i));
+
+                assertEquals(i, cache.get(i));
+            }
+
+            for (int i = 1000; i < 2000; i++) {
+                assertEquals(i, storeMap.get(i));
+
+                assertNull(cache.localPeek(i));
+            }
+        }
+        finally {
+            storeMap = null;
+        }
+    }
+
+    /**
      *
      */
     private static class TestObject {
@@ -779,6 +859,26 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
+        }
+    }
+
+    /**
+     *
+     */
+    private class TestStore extends CacheStoreAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object load(Object key) {
+            return storeMap.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) {
+            storeMap.put(entry.getKey(), entry.getValue());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) {
+            storeMap.remove(key);
         }
     }
 }

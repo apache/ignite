@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -27,7 +28,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -95,7 +95,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(new CommunicationSpi());
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
 
@@ -722,10 +722,6 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * Communication SPI which could optionally block outgoing messages.
      */
     private static class CommunicationSpi extends TcpCommunicationSpi {
-        /** Marshaller. */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marsh;
-
         /** Whether to block all outgoing messages. */
         private volatile boolean block;
 

@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
@@ -2803,17 +2802,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public void copyMeta(GridMetadataAware from) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void copyMeta(Map<String, ?> data) {
-            throw new UnsupportedOperationException();
-
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public <V> V addMeta(String name, V val) {
             throw new UnsupportedOperationException();
         }
@@ -2825,16 +2813,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> V addMetaIfAbsent(String name, V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
             throw new UnsupportedOperationException();
         }
 
@@ -2851,21 +2829,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public <V> boolean removeMeta(String name, V val) {
             throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> Map<String, V> allMeta() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasMeta(String name) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> boolean hasMeta(String name, V val) {
-            return false;
         }
 
         /** {@inheritDoc} */

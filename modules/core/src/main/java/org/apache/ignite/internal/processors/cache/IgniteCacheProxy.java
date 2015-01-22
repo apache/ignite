@@ -90,16 +90,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         return ctx;
     }
 
-    /**
-     * @return Ignite instance.
-     */
-    @Override public GridEx ignite() {
-        return ctx.grid();
-    }
-
     /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
-        GridCacheConfiguration cfg = ctx.config();
+        CacheConfiguration cfg = ctx.config();
 
         if (!clazz.isAssignableFrom(cfg.getClass()))
             throw new IllegalArgumentException();
@@ -125,6 +118,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         finally {
             gate.leave(prev);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withSkipStore() {
+        return flagsOn(GridCacheFlag.SKIP_STORE);
     }
 
     /** {@inheritDoc} */
@@ -166,74 +164,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V getAndPutIf(K key, V val, IgnitePredicate<GridCacheEntry<K, V>> filter) {
-        try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-            try {
-                return delegate.put(key, val, filter);
-            }
-            finally {
-                gate.leave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean putIf(K key, V val, IgnitePredicate<GridCacheEntry<K, V>> filter) {
-        try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-            try {
-                return delegate.putx(key, val, filter);
-            }
-            finally {
-                gate.leave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public V getAndRemoveIf(K key, IgnitePredicate<GridCacheEntry<K, V>> filter) {
-        try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-            try {
-                return delegate.remove(key, filter);
-            }
-            finally {
-                gate.leave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removeIf(K key, IgnitePredicate<GridCacheEntry<K, V>> filter) {
-        try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-            try {
-                return delegate.removex(key, filter);
-            }
-            finally {
-                gate.leave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public V getAndPutIfAbsent(K key, V val) throws CacheException {
         try {
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
@@ -248,12 +178,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void removeAll(IgnitePredicate filter) throws CacheException {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -483,11 +407,34 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(Set<? extends K> keys,
-        boolean replaceExistingValues,
-        CompletionListener completionLsnr) {
-        // TODO IGNITE-1.
-        throw new UnsupportedOperationException();
+    @Override public void loadAll(
+        Set<? extends K> keys,
+        boolean replaceExisting,
+        @Nullable final CompletionListener completionLsnr
+    ) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            IgniteFuture<?>  fut = ctx.cache().loadAll(keys, replaceExisting);
+
+            if (completionLsnr != null) {
+                fut.listenAsync(new CI1<IgniteFuture<?>>() {
+                    @Override public void apply(IgniteFuture<?> fut) {
+                        try {
+                            fut.get();
+
+                            completionLsnr.onCompletion();
+                        }
+                        catch (IgniteCheckedException e) {
+                            completionLsnr.onException(cacheException(e));
+                        }
+                    }
+                });
+            }
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -839,6 +786,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     @Override public <T> T unwrap(Class<T> clazz) {
         if (clazz.equals(IgniteCache.class))
             return (T)this;
+        else if (clazz.equals(Ignite.class))
+            return (T)ctx.grid();
 
         throw new IllegalArgumentException("Unsupported class: " + clazz);
     }
@@ -967,8 +916,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> flagsOn(@Nullable GridCacheFlag... flags) {
+    /**
+     * @param flags Flags to turn on (if empty, then no-op).
+     * @return Cache with given flags enabled.
+     */
+    public IgniteCache<K, V> flagsOn(@Nullable GridCacheFlag... flags) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -1008,6 +960,9 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     private CacheException cacheException(IgniteCheckedException e) {
         if (e instanceof GridCachePartialUpdateException)
             return new CachePartialUpdateException((GridCachePartialUpdateException)e);
+
+        if (e.getCause() instanceof CacheException)
+            return (CacheException)e.getCause();
 
         return new CacheException(e);
     }

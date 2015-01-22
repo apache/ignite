@@ -18,12 +18,12 @@
 package org.gridgain.loadtests.swap;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -33,6 +33,8 @@ import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -62,8 +64,8 @@ public class GridSwapEvictAllBenchmark {
         try {
             String outputFileName = args.length > 0 ? args[0] : null;
 
-            Ignite g = start(new GridCacheStoreAdapter<Long, String>() {
-                @Nullable @Override public String load(@Nullable IgniteTx tx, Long key) {
+            Ignite g = start(new CacheStoreAdapter<Long, String>() {
+                @Nullable @Override public String load(Long key) {
                     return null;
                 }
 
@@ -73,12 +75,11 @@ public class GridSwapEvictAllBenchmark {
                         c.apply((long)i, String.valueOf(i));
                 }
 
-                @Override public void put(@Nullable IgniteTx tx, Long key,
-                    @Nullable String val) {
+                @Override public void write(Cache.Entry<? extends Long, ? extends String> e) {
                     assert false;
                 }
 
-                @Override public void remove(@Nullable IgniteTx tx, Long key) {
+                @Override public void delete(Object key) {
                     assert false;
                 }
             });
@@ -248,7 +249,8 @@ public class GridSwapEvictAllBenchmark {
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
-    private static Ignite start(GridCacheStore<Long, String> store) throws IgniteCheckedException {
+    @SuppressWarnings("unchecked")
+    private static Ignite start(CacheStore<Long, String> store) throws IgniteCheckedException {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLocalHost("127.0.0.1");
@@ -261,12 +263,18 @@ public class GridSwapEvictAllBenchmark {
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setSwapEnabled(true);
         ccfg.setEvictSynchronized(false);
         ccfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
-        ccfg.setStore(store);
+
+        if (store != null) {
+            ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            ccfg.setReadThrough(true);
+            ccfg.setWriteThrough(true);
+            ccfg.setLoadPreviousValue(true);
+        }
 
         FileSwapSpaceSpi swap = new FileSwapSpaceSpi();
 

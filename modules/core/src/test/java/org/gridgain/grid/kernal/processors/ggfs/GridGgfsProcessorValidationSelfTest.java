@@ -18,12 +18,12 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -131,7 +131,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfNoDataCacheIsConfigured() throws Exception {
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setQueryIndexEnabled(false);
         cc.setName("someName");
@@ -145,7 +145,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfNoMetadataCacheIsConfigured() throws Exception {
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setQueryIndexEnabled(false);
         cc.setName(dataCache1Name);
@@ -159,9 +159,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfAffinityMapperIsWrongClass() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        for (GridCacheConfiguration cc : g1Cfg.getCacheConfiguration())
+        for (CacheConfiguration cc : g1Cfg.getCacheConfiguration())
             cc.setAffinityMapper(new GridCacheDefaultAffinityKeyMapper());
 
         checkGridStartFails(g1Cfg, "Invalid GGFS data cache configuration (key affinity mapper class should be", true);
@@ -171,7 +171,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfGgfsConfigsHaveDifferentNames() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         String ggfsCfgName = "ggfs-cfg";
 
@@ -185,11 +185,11 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfQueryIndexingEnabledForDataCache() throws Exception {
-        GridCacheConfiguration[] dataCaches = dataCaches(1024);
+        CacheConfiguration[] dataCaches = dataCaches(1024);
 
         dataCaches[0].setQueryIndexEnabled(true);
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches, metaCaches(), CacheConfiguration.class));
 
         checkGridStartFails(g1Cfg, "GGFS data cache cannot start with enabled query indexing", true);
     }
@@ -198,11 +198,11 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfQueryIndexingEnabledForMetaCache() throws Exception {
-        GridCacheConfiguration[] metaCaches = metaCaches();
+        CacheConfiguration[] metaCaches = metaCaches();
 
         metaCaches[0].setQueryIndexEnabled(true);
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches, CacheConfiguration.class));
 
         checkGridStartFails(g1Cfg, "GGFS metadata cache cannot start with enabled query indexing", true);
     }
@@ -212,7 +212,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      */
     @SuppressWarnings("NullableProblems")
     public void testLocalNullGgfsNameIsSupported() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         g1GgfsCfg1.setName(null);
 
@@ -223,7 +223,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfOffheapIsDisabledAndMaxSpaceSizeIsGreater() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         g1GgfsCfg2.setMaxSpaceSize(999999999999999999L);
 
@@ -234,9 +234,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfOffheapIsEnabledAndMaxSpaceSizeIsGreater() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        for (GridCacheConfiguration cc : g1Cfg.getCacheConfiguration())
+        for (CacheConfiguration cc : g1Cfg.getCacheConfiguration())
             cc.setOffHeapMaxMemory(1000000);
 
         g1GgfsCfg2.setMaxSpaceSize(999999999999999999L);
@@ -249,9 +249,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfBackupsEnabled() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
-        for (GridCacheConfiguration cc : g1Cfg.getCacheConfiguration()) {
+        for (CacheConfiguration cc : g1Cfg.getCacheConfiguration()) {
             cc.setCacheMode(PARTITIONED);
             cc.setBackups(1);
         }
@@ -263,7 +263,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLocalIfNonPrimaryModeAndHadoopFileSystemUriIsNull() throws Exception {
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         g1GgfsCfg2.setDefaultMode(PROXY);
 
@@ -276,8 +276,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     public void testRemoteIfDataBlockSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         IgniteFsConfiguration g2GgfsCfg1 = new IgniteFsConfiguration(g1GgfsCfg1);
 
@@ -296,8 +296,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
     public void testRemoteIfAffinityMapperGroupSizeDiffers() throws Exception {
         IgniteConfiguration g2Cfg = getConfiguration("g2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(4021), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+        g2Cfg.setCacheConfiguration(concat(dataCaches(4021), metaCaches(), CacheConfiguration.class));
 
         G.start(g1Cfg);
 
@@ -317,9 +317,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g2GgfsCfg1.setMetaCacheName("g2MetaCache1");
         g2GgfsCfg2.setMetaCacheName("g2MetaCache2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-             GridCacheConfiguration.class));
+             CacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -343,9 +343,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g2GgfsCfg1.setDataCacheName("g2DataCache1");
         g2GgfsCfg2.setDataCacheName("g2DataCache2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-             GridCacheConfiguration.class));
+             CacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -366,9 +366,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g2GgfsCfg1.setDataCacheName("g2DataCache1");
         g2GgfsCfg2.setDataCacheName("g2DataCache2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024, "g2DataCache1", "g2DataCache2"), metaCaches(),
-             GridCacheConfiguration.class));
+             CacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -392,9 +392,9 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g2GgfsCfg1.setMetaCacheName("g2MetaCache1");
         g2GgfsCfg2.setMetaCacheName("g2MetaCache2");
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
         g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches("g2MetaCache1", "g2MetaCache2"),
-             GridCacheConfiguration.class));
+             CacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -418,8 +418,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g2GgfsCfg1.setDefaultMode(DUAL_SYNC);
         g2GgfsCfg2.setDefaultMode(DUAL_SYNC);
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -440,8 +440,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         g2GgfsCfg1.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
         g2GgfsCfg2.setPathModes(Collections.singletonMap("/somePath", DUAL_SYNC));
 
-        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
-        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), GridCacheConfiguration.class));
+        g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
+        g2Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         g2Cfg.setGgfsConfiguration(g2GgfsCfg1, g2GgfsCfg2);
 
@@ -486,16 +486,16 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured data caches.
      */
-    private GridCacheConfiguration[] dataCaches(int grpSize, String... cacheNames) {
+    private CacheConfiguration[] dataCaches(int grpSize, String... cacheNames) {
         assertTrue(F.isEmpty(cacheNames) || cacheNames.length == 2);
 
         if (F.isEmpty(cacheNames))
             cacheNames = new String[] {dataCache1Name, dataCache2Name};
 
-        GridCacheConfiguration[] res = new GridCacheConfiguration[cacheNames.length];
+        CacheConfiguration[] res = new CacheConfiguration[cacheNames.length];
 
         for (int i = 0; i < cacheNames.length; i++) {
-            GridCacheConfiguration dataCache = defaultCacheConfiguration();
+            CacheConfiguration dataCache = defaultCacheConfiguration();
 
             dataCache.setName(cacheNames[i]);
             dataCache.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(grpSize));
@@ -512,16 +512,16 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
      * @param cacheNames 2 Optional caches names.
      * @return 2 preconfigured meta caches.
      */
-    private GridCacheConfiguration[] metaCaches(String... cacheNames) {
+    private CacheConfiguration[] metaCaches(String... cacheNames) {
         assertTrue(F.isEmpty(cacheNames) || cacheNames.length == 2);
 
         if (F.isEmpty(cacheNames))
             cacheNames = new String[] {metaCache1Name, metaCache2Name};
 
-        GridCacheConfiguration[] res = new GridCacheConfiguration[cacheNames.length];
+        CacheConfiguration[] res = new CacheConfiguration[cacheNames.length];
 
         for (int i = 0; i < cacheNames.length; i++) {
-            GridCacheConfiguration metaCache = defaultCacheConfiguration();
+            CacheConfiguration metaCache = defaultCacheConfiguration();
 
             metaCache.setName(cacheNames[i]);
             metaCache.setAtomicityMode(TRANSACTIONAL);

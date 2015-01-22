@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -34,8 +34,8 @@ public class GridCacheAtomicPartitionedMetricsSelfTest extends GridCacheAbstract
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(gridCount() - 1);

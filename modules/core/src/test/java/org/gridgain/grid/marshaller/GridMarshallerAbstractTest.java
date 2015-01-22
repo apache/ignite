@@ -18,6 +18,7 @@
 package org.gridgain.grid.marshaller;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -28,7 +29,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.datastructures.*;
@@ -104,7 +104,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration namedCache = new GridCacheConfiguration();
+        CacheConfiguration namedCache = new CacheConfiguration();
 
         namedCache.setName(CACHE_NAME);
         namedCache.setAtomicityMode(TRANSACTIONAL);
@@ -112,7 +112,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
         cfg.setStreamerConfiguration(streamerConfiguration());
-        cfg.setCacheConfiguration(new GridCacheConfiguration(), namedCache);
+        cfg.setCacheConfiguration(new CacheConfiguration(), namedCache);
 
         return cfg;
     }

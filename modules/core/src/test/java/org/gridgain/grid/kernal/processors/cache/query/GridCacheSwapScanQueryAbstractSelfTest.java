@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -85,8 +86,8 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @param atomicityMode Atomicity mode.
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
 

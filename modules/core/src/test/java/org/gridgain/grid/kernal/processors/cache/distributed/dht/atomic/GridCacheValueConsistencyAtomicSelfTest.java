@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -29,6 +30,7 @@ import java.io.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheFlag.*;
 
 /**
  * Tests cache value consistency for ATOMIC mode.
@@ -73,7 +75,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
 
                             IgniteCache<Integer, Integer> cache = grid(idx).jcache(null);
 
-                            cache = cache.flagsOn(GridCacheFlag.FORCE_TRANSFORM_BACKUP);
+                            cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagsOn(FORCE_TRANSFORM_BACKUP);
 
                             cache.invoke(i, new Transformer(i));
                         }

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -122,7 +123,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         ggfsCfg.setTrashPurgeTimeout(trashPurgeTimeout);
         ggfsCfg.setManagementPort(++mgmtPort);
 
-        GridCacheConfiguration dataCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCfg = defaultCacheConfiguration();
 
         dataCfg.setName(DATA_CACHE_NAME);
         dataCfg.setCacheMode(cacheMode);
@@ -138,7 +139,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         dataCfg.setQueryIndexEnabled(false);
         dataCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCfg = defaultCacheConfiguration();
 
         metaCfg.setName(META_CACHE_NAME);
         metaCfg.setCacheMode(REPLICATED);

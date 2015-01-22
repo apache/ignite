@@ -29,7 +29,7 @@ import org.apache.ignite.*;
  * <li>
  *   {@link LifecycleEventType#BEFORE_GRID_START} invoked before grid startup
  *   routine is initiated. Note that grid is not available during this event,
- *   therefore if you injected a grid instance via {@link org.apache.ignite.resources.IgniteInstanceResource}
+ *   therefore if you injected a ignite instance via {@link org.apache.ignite.resources.IgniteInstanceResource}
  *   annotation, you cannot use it yet.
  * </li>
  * <li>
@@ -42,7 +42,7 @@ import org.apache.ignite.*;
  * <li>
  *   {@link LifecycleEventType#BEFORE_GRID_STOP} invoked right before grid
  *   stop routine is initiated. Grid is still available at this stage, so
- *   if you injected a grid instance via  {@link org.apache.ignite.resources.IgniteInstanceResource} annotation,
+ *   if you injected a ignite instance via  {@link org.apache.ignite.resources.IgniteInstanceResource} annotation,
  *   you can use it.
  * </li>
  * <li>
@@ -52,15 +52,10 @@ import org.apache.ignite.*;
  * </ul>
  * <h1 class="header">Resource Injection</h1>
  * Lifecycle beans can be injected using IoC (dependency injection) with
- * grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteInstanceResource}</li>

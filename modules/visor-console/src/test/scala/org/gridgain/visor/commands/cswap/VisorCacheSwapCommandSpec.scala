@@ -17,7 +17,8 @@
 
 package org.gridgain.visor.commands.cswap
 
-import org.gridgain.grid.cache.{GridCacheConfiguration, GridCacheMode}
+import org.apache.ignite.cache.CacheConfiguration
+import org.gridgain.grid.cache.GridCacheMode
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
@@ -60,8 +61,8 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): GridCacheConfiguration = {
-        val cfg = new GridCacheConfiguration
+    def cacheConfig(@Nullable name: String): CacheConfiguration = {
+        val cfg = new CacheConfiguration
 
         cfg.setName(name)
         cfg.setCacheMode(GridCacheMode.PARTITIONED)

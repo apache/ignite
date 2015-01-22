@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -65,13 +66,13 @@ public class GridCacheLuceneQueryIndexTest extends GridCommonAbstractTest {
         cfg.setIncludeEventTypes();
         cfg.setRestEnabled(false);
 
-        GridCacheConfiguration cacheCfg1 = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg1 = defaultCacheConfiguration();
 
         cacheCfg1.setName("local1");
         cacheCfg1.setCacheMode(LOCAL);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
 
-        GridCacheConfiguration cacheCfg2 = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg2 = defaultCacheConfiguration();
 
         cacheCfg2.setName("local2");
         cacheCfg2.setCacheMode(LOCAL);

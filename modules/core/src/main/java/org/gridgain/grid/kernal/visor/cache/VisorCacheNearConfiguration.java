@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -49,7 +49,7 @@ public class VisorCacheNearConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for near cache configuration properties.
      */
-    public static VisorCacheNearConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheNearConfiguration from(CacheConfiguration ccfg) {
         VisorCacheNearConfiguration cfg = new VisorCacheNearConfiguration();
 
         cfg.nearEnabled(GridCacheUtils.isNearEnabled(ccfg));

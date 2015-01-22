@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
@@ -67,7 +68,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setSwapEnabled(false);

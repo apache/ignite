@@ -90,20 +90,20 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 ignite1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
                 ignite2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
-                ComputeTaskFuture<int[]> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.<UUID>asList(
+                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.<UUID>asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                ComputeTaskFuture<int[]> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.<UUID>asList(
+                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.<UUID>asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                int[] res1 = fut1.get();
-                int[] res2 = fut2.get();
+                Integer res1 = fut1.get();
+                Integer res2 = fut2.get();
 
-                if (res1 == null || res2 == null || res1.length != 2 || res2.length != 2)
+                if (res1 == null || res2 == null)
                     throw new IgniteCheckedException("Received wrong result.");
             }
         }

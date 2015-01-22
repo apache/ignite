@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -31,7 +31,7 @@ public class GridCacheLocalBasicApiSelfTest extends GridCacheBasicApiAbstractTes
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(LOCAL);
 

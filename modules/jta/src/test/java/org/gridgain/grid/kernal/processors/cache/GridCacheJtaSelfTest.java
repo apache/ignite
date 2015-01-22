@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -64,8 +65,8 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
 
@@ -76,9 +77,9 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cfg1 = cacheConfiguration(gridName);
+        CacheConfiguration cfg1 = cacheConfiguration(gridName);
 
-        GridCacheConfiguration cfg2 = cacheConfiguration(gridName);
+        CacheConfiguration cfg2 = cacheConfiguration(gridName);
 
         cfg2.setName("cache-2");
 

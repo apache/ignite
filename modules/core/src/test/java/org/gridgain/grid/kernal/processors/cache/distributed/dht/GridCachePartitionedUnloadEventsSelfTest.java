@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -58,8 +59,8 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 10));

@@ -19,6 +19,7 @@ package org.gridgain.grid.ggfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
@@ -102,8 +103,8 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
      *
      * @return Cache configuration.
      */
-    private GridCacheConfiguration[] cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    private CacheConfiguration[] cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
@@ -114,7 +115,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -122,7 +123,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        return new GridCacheConfiguration[] {metaCacheCfg, cacheCfg};
+        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
     }
 
     /** {@inheritDoc} */

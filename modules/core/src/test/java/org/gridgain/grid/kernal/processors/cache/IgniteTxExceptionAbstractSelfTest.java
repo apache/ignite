@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.transactions.*;
@@ -72,11 +72,14 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setQueryIndexEnabled(true);
-        ccfg.setStore(null);
+        ccfg.setCacheStoreFactory(null);
+        ccfg.setReadThrough(false);
+        ccfg.setWriteThrough(false);
+        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }

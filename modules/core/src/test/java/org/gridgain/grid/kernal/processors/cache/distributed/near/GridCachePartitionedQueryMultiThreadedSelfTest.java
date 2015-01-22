@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -67,7 +68,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
 

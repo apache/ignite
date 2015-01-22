@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -79,8 +79,8 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String cacheName) {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(cacheName);
         cfg.setCacheMode(PARTITIONED);

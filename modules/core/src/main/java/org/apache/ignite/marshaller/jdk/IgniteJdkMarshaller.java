@@ -58,31 +58,6 @@ import java.io.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * <h2 class="header">Injection Example</h2>
- * GridMarshaller can be injected in users task, job or SPI as following:
- * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
- *     ...
- *     &#64;GridMarshallerResource
- *     private GridMarshaller marshaller;
- *     ...
- * }
- * </pre>
- * or
- * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
- *     ...
- *     private GridMarshaller marshaller;
- *     ...
- *     &#64;GridMarshallerResource
- *     public void setMarshaller(GridMarshaller marshaller) {
- *         this.marshaller = marshaller;
- *     }
- *     ...
- * }
- * </pre>
- * <br>
- *
  */
 public class IgniteJdkMarshaller extends IgniteAbstractMarshaller {
     /** {@inheritDoc} */

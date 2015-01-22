@@ -17,13 +17,14 @@
 
 package org.gridgain.grid.cache.store;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 /**
@@ -42,10 +43,14 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @SuppressWarnings("unchecked")
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setStore(new TestStore());
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cfg.setReadThrough(true);
+        cfg.setWriteThrough(true);
+        cfg.setLoadPreviousValue(true);
 
         return cfg;
     }
@@ -67,10 +72,9 @@ public class GridCacheLoadOnlyStoreAdapterSelfTest extends GridCacheAbstractSelf
     /**
      *
      */
-    private static class TestStore extends GridCacheLoadOnlyStoreAdapter<Integer, String, String> {
+    private static class TestStore extends CacheLoadOnlyStoreAdapter<Integer, String, String> {
         /** {@inheritDoc} */
-        @Override protected Iterator<String> inputIterator(@Nullable Object... args)
-            throws IgniteCheckedException {
+        @Override protected Iterator<String> inputIterator(@Nullable Object... args) {
             assertNotNull(args);
             assertTrue(Arrays.equals(EXP_ARGS, args));
 

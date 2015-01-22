@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -109,7 +110,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
         tCfg.setDefaultTxConcurrency(txConcurrency);
         tCfg.setDefaultTxIsolation(txIsolation);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
 

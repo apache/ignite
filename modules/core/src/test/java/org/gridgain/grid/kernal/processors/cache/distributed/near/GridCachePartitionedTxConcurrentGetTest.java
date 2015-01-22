@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -33,7 +33,7 @@ public class GridCachePartitionedTxConcurrentGetTest extends IgniteTxConcurrentG
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Default cache configuration.
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);

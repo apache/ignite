@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.session;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.checkpoint.cache.*;
 import org.apache.ignite.spi.checkpoint.jdbc.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
@@ -77,7 +77,7 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
 
         String cacheName = "test-checkpoints";
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
 

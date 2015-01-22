@@ -18,8 +18,9 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -70,12 +71,17 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheStore<?, ?> cacheStore() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setBackups(1);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setStore(null);
+        ccfg.setCacheStoreFactory(null);
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setDistributionMode(PARTITIONED_ONLY);
 

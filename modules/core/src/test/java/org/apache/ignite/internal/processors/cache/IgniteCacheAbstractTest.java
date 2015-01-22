@@ -18,19 +18,21 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
+import javax.cache.integration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -104,8 +106,9 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    @SuppressWarnings("unchecked")
+    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
@@ -121,7 +124,24 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         cfg.setDistributionMode(distributionMode());
         cfg.setPortableEnabled(portableEnabled());
 
-        cfg.setStore(cacheStore());
+        cfg.setCacheLoaderFactory(loaderFactory());
+
+        if (cfg.getCacheLoaderFactory() != null)
+            cfg.setReadThrough(true);
+
+        cfg.setCacheWriterFactory(writerFactory());
+
+        if (cfg.getCacheWriterFactory() != null)
+            cfg.setWriteThrough(true);
+
+        CacheStore<?, ?> store = cacheStore();
+
+        if (store != null) {
+            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cfg.setReadThrough(true);
+            cfg.setWriteThrough(true);
+            cfg.setLoadPreviousValue(true);
+        }
 
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
@@ -132,7 +152,21 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache store.
      */
-    protected GridCacheStore<?, ?> cacheStore() {
+    protected CacheStore<?, ?> cacheStore() {
+        return null;
+    }
+
+    /**
+     * @return Cache loader factory.
+     */
+    protected Factory<? extends CacheLoader> loaderFactory() {
+        return null;
+    }
+
+    /**
+     * @return Cache writer factory.
+     */
+    protected Factory<? extends CacheWriter> writerFactory() {
         return null;
     }
 
@@ -197,7 +231,7 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    public class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry<Object, Object> e : storeMap.entrySet())
@@ -205,17 +239,17 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(IgniteTx tx, Object key) {
+        @Override public Object load(Object key) {
             return storeMap.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Object key, @Nullable Object val) {
-            storeMap.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
+            storeMap.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Object key) {
+        @Override public void delete(Object key) {
             storeMap.remove(key);
         }
     }

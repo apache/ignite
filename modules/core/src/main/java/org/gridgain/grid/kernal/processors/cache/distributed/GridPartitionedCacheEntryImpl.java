@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -284,120 +283,6 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <V1> V1 addMetaIfAbsent(String name, Callable<V1> c) {
-        V1 v = null;
-
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            v = de.addMetaIfAbsent(name, c);
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
-
-            if (ne != null) {
-                V1 v1 = ne.addMetaIfAbsent(name, c);
-
-                if (v == null)
-                    v = v1;
-            }
-        }
-
-        return v;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
-        V1 v = null;
-
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            v = de.addMetaIfAbsent(name, val);
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
-
-            if (ne != null) {
-                V1 v1 = ne.addMetaIfAbsent(name, val);
-
-                if (v == null)
-                    v = v1;
-            }
-        }
-
-        return v;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> Map<String, V1> allMeta() {
-        Map<String, V1> m = null;
-
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            m = de.allMeta();
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = near().peekExx(key);
-
-            if (ne != null) {
-                Map<String, V1> m1 = ne.allMeta();
-
-                if (m == null)
-                    m = m1;
-                else if (!m1.isEmpty()) {
-                    for (Map.Entry<String, V1> e1 : m1.entrySet())
-                        if (!m.containsKey(e1.getKey())) // Give preference to DHT.
-                            m.put(e1.getKey(), e1.getValue());
-                }
-            }
-        }
-
-        return m;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        boolean b = false;
-
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            b = de.hasMeta(name);
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = near().peekExx(key);
-
-            if (ne != null)
-                b |= ne.hasMeta(name);
-        }
-
-        return b;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name, Object val) {
-        boolean b = false;
-
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            b = de.hasMeta(name, val);
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = near().peekExx(key);
-
-            if (ne != null)
-                b |= ne.hasMeta(name, val);
-        }
-
-        return b;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings( {"RedundantCast"})
     @Override public <V1> V1 meta(String name) {
         V1 v = null;
@@ -529,38 +414,6 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
         }
 
         return b;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            de.copyMeta(data);
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
-
-            if (ne != null)
-                ne.copyMeta(data);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
-        GridDhtCacheEntry<K, V> de = dht().peekExx(key);
-
-        if (de != null)
-            de.copyMeta(from);
-
-        if (ctx.isNear()) {
-            GridNearCacheEntry<K, V> ne = de != null ? near().peekExx(key) :
-                near().entryExx(key, ctx.affinity().affinityTopologyVersion());
-
-            if (ne != null)
-                ne.copyMeta(from);
-        }
     }
 
     /** {@inheritDoc} */

@@ -32,19 +32,19 @@ import java.lang.annotation.*;
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
- * public class MyGridTask extends GridComputeTask&lt;String, Integer&gt; {
- *    &#64;GridLoadBalancerResource
- *    private ` balancer;
+ * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
+ *    &#64;IgniteLoadBalancerResource
+ *    private ComputeLoadBalancer balancer;
  * }
  * </pre>
  * or
  * <pre name="code" class="java">
- * public class MyGridTask extends GridComputeTask&lt;String, Integer&gt; {
+ * public class MyGridTask extends ComputeTask&lt;String, Integer&gt; {
  *     ...
- *     private GridComputeLoadBalancer balancer;
+ *     private ComputeLoadBalancer balancer;
  *     ...
- *     &#64;GridLoadBalancerResource
- *     public void setBalancer(GridComputeLoadBalancer balancer) {
+ *     &#64;IgniteLoadBalancerResource
+ *     public void setBalancer(ComputeLoadBalancer balancer) {
  *         this.balancer = balancer;
  *     }
  *     ...

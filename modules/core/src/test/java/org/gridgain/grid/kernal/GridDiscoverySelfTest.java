@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -72,7 +73,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         //cacheCfg.setName(null);
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);

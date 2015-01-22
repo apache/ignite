@@ -32,20 +32,9 @@ public class GridResourceSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Gridgain Resource Injection Test Suite");
 
-        suite.addTest(new TestSuite(GridResourceFieldInjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceFieldOverrideInjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceMethodInjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceMethodOverrideInjectionSelfTest.class));
         suite.addTest(new TestSuite(GridResourceProcessorSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceIsolatedTaskSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceIsolatedClassLoaderSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceSharedUndeploySelfTest.class));
-        suite.addTest(new TestSuite(GridResourceUserExternalTest.class));
-        suite.addTest(new TestSuite(GridResourceEventFilterSelfTest.class));
         suite.addTest(new TestSuite(GridLoggerInjectionSelfTest.class));
         suite.addTest(new TestSuite(GridServiceInjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridResourceConcurrentUndeploySelfTest.class));
-        suite.addTest(new TestSuite(GridResourceIocSelfTest.class));
 
         return suite;
     }

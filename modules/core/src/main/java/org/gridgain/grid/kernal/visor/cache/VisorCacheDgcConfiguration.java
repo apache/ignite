@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -42,7 +42,7 @@ public class VisorCacheDgcConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for DGC configuration properties.
      */
-    public static VisorCacheDgcConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheDgcConfiguration from(CacheConfiguration ccfg) {
         VisorCacheDgcConfiguration cfg = new VisorCacheDgcConfiguration();
 
         return cfg;

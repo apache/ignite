@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.cache.hibernate;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -409,8 +410,8 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param regionName Region name.
      * @return Cache configuration for {@link GeneralDataRegion}.
      */
-    private GridCacheConfiguration generalRegionConfiguration(String regionName) {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    private CacheConfiguration generalRegionConfiguration(String regionName) {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(regionName);
 
@@ -431,8 +432,8 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param regionName Region name.
      * @return Cache configuration for {@link TransactionalDataRegion}.
      */
-    protected GridCacheConfiguration transactionalRegionConfiguration(String regionName) {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    protected CacheConfiguration transactionalRegionConfiguration(String regionName) {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(regionName);
 

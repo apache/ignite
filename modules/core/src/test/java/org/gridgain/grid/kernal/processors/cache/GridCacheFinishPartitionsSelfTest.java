@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -29,7 +30,6 @@ import org.gridgain.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
-import java.util.concurrent.locks.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -66,7 +66,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
