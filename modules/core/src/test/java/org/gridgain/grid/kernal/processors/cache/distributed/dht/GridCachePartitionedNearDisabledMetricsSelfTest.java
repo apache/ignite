@@ -91,7 +91,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
 
             assert g.cache(null).isEmpty();
 
-            g.cache(null).resetMetrics();
+            g.cache(null).metrics().clear();
         }
 
         assertNull("Value is not null for key: " + 0, cache.get(0));

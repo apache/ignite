@@ -28,7 +28,7 @@ import java.io.*;
  * Note that these metrics already represent the current snapshot and can change from call
  * to call. If projection is dynamic the metrics snapshot will also change with changes
  * in participating nodes.
- * @see ClusterNodeMetrics
+ * @see ClusterNodeMetricsMBean
  * @see ClusterGroup#metrics()
  */
 public interface ClusterMetrics extends Serializable {

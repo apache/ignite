@@ -146,7 +146,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     protected IgniteConfiguration gridCfg;
 
     /** Cache metrics. */
-    protected volatile GridCacheMetricsAdapter metrics;
+    protected volatile CacheMetricsMxBeanImpl metrics;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -225,7 +225,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
         log = ctx.gridConfig().getGridLogger().getLogger(getClass());
 
-        metrics = new GridCacheMetricsAdapter();
+        metrics = new CacheMetricsMxBeanImpl();
 
         IgniteFsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
 
@@ -1677,7 +1677,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             val = (V)ctx.config().getInterceptor().onGet(key, val);
 
         if (statsEnabled)
-            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         return val;
     }
@@ -1698,20 +1698,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                @Override public void apply(IgniteFuture<V> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore){
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -1728,7 +1715,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             map = interceptGet(keys, map);
 
         if (statsEnabled)
-            ctx.cache().metrics0().addGetTimeNanos(System.nanoTime() - start);
+            metrics0().addGetTimeNanos(System.nanoTime() - start);
 
         return map;
     }
@@ -1749,7 +1736,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
             });
 
         if (statsEnabled)
-            fut.listenAsync(new UpdateGetTimeMetricsClosure<Map<K, V>>(ctx.cache().metrics0(), start));
+            fut.listenAsync(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
 
         return fut;
     }
@@ -2139,7 +2126,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }));
 
         if (statsEnabled)
-            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
+            metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
 
         return prevValue;
     }
@@ -2179,19 +2166,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         IgniteFuture<V> fut = putAsync(key, val, null, -1, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                @Override public void apply(IgniteFuture<V> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
-                        }
-                    } catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2251,7 +2226,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
 
         return stored;
     }
@@ -2516,20 +2491,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         IgniteFuture<Boolean> fut = putxAsync(key, val, null, -1, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                @Override public void apply(IgniteFuture<Boolean> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2608,20 +2570,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }));
 
         if(statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                @Override public void apply(IgniteFuture<V> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdatePutTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2652,7 +2601,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled && stored)
-            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
 
         return stored;
     }
@@ -2684,19 +2633,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                @Override public void apply(IgniteFuture<Boolean> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
-                        }
-                    } catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdatePutTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2751,20 +2688,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }));
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                @Override public void apply(IgniteFuture<V> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -2882,20 +2806,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                @Override public void apply(IgniteFuture<Boolean> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addPutAndGetTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdatePutAndGetTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -2928,7 +2839,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            ctx.cache().metrics0().addPutTimeNanos(System.nanoTime() - start);
+            metrics0().addPutTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -2991,7 +2902,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }));
 
         if (statsEnabled)
-            ctx.cache().metrics0().addRemoveAndGetTimeNanos(System.nanoTime() - start);
+            metrics0().addRemoveAndGetTimeNanos(System.nanoTime() - start);
 
         return prevVal;
     }
@@ -3005,21 +2916,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         IgniteFuture<V> fut = removeAsync(key, null, filter);
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                @Override public void apply(IgniteFuture<V> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-
-                }
-            });
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3051,20 +2948,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         }));
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<V>>() {
-                @Override public void apply(IgniteFuture<V> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<V>(metrics0(), start));
 
         return fut;
     }
@@ -3106,7 +2990,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
     }
 
     /** {@inheritDoc} */
@@ -3135,19 +3019,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    } catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return fut;
     }
@@ -3162,7 +3034,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         boolean removed = removex(key, null, filter);
 
         if (statsEnabled && removed)
-            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return removed;
     }
@@ -3192,7 +3064,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled && removed)
-            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return removed;
     }
@@ -3228,19 +3100,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                @Override public void apply(IgniteFuture<Boolean> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    } catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3430,7 +3290,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled && removed)
-            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return removed;
     }
@@ -3484,20 +3344,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                @Override public void apply(IgniteFuture<Boolean> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<Boolean>(metrics0(), start));
 
         return fut;
     }
@@ -3547,7 +3394,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /**
      * @return Metrics.
      */
-    public GridCacheMetricsAdapter metrics0() {
+    public CacheMetricsMxBeanImpl metrics0() {
         return metrics;
     }
 
@@ -4386,11 +4233,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         finally {
             stash.remove();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        metrics = new GridCacheMetricsAdapter();
     }
 
     /** {@inheritDoc} */
@@ -5438,18 +5280,18 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
     /**
      *
      */
-    protected static class UpdateGetTimeMetricsClosure<T> implements CI1<IgniteFuture<T>> {
+    protected static abstract class UpdateTimeStatClosure<T> implements CI1<IgniteFuture<T>> {
         /** */
-        private final GridCacheMetricsAdapter metrics;
+        protected final CacheMetricsMxBeanImpl metrics;
 
         /** */
-        private final long start;
+        protected final long start;
 
         /**
          * @param metrics Metrics.
          * @param start   Start time.
          */
-        public UpdateGetTimeMetricsClosure(GridCacheMetricsAdapter metrics, long start) {
+        public UpdateTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
             this.metrics = metrics;
             this.start = start;
         }
@@ -5460,11 +5302,88 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 if (!fut.isCancelled()) {
                     fut.get();
 
-                    metrics.addGetTimeNanos(System.nanoTime() - start);
+                    updateTimeStat();
                 }
             } catch (IgniteCheckedException ignore) {
                 //No-op.
             }
+        }
+
+        /**
+         * Updates statistics.
+         */
+        abstract protected void updateTimeStat();
+    }
+
+    /**
+     *
+     */
+    protected static class UpdateGetTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /**
+         * @param metrics Metrics.
+         * @param start   Start time.
+         */
+        public UpdateGetTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat() {
+            metrics.addGetTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdateRemoveTimeStatClosure<T> extends UpdateTimeStatClosure<T> {
+        /**
+         * @param metrics Metrics.
+         * @param start   Start time.
+         */
+        public UpdateRemoveTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat() {
+            metrics.addRemoveTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdatePutTimeStatClosure<T> extends UpdateTimeStatClosure {
+        /**
+         * @param metrics Metrics.
+         * @param start   Start time.
+         */
+        public UpdatePutTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat() {
+            metrics.addPutTimeNanos(System.nanoTime() - start);
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class UpdatePutAndGetTimeStatClosure<T> extends UpdateTimeStatClosure {
+        /**
+         * @param metrics Metrics.
+         * @param start   Start time.
+         */
+        public UpdatePutAndGetTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+            super(metrics, start);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void updateTimeStat() {
+            metrics.addPutAndGetTimeNanos(System.nanoTime() - start);
         }
     }
 }

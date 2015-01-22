@@ -110,7 +110,7 @@ public class GridP2PClassLoadingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterNodeMetrics metrics() {
+        @Nullable @Override public ClusterNodeMetricsMBean metrics() {
             return null;
         }
 

@@ -347,7 +347,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
     protected DiscoveryMetricsProvider createMetricsProvider() {
         return new DiscoveryMetricsProvider() {
             /** {@inheritDoc} */
-            @Override public ClusterNodeMetrics getMetrics() { return new DiscoveryNodeMetricsAdapter(); }
+            @Override public ClusterNodeMetricsMBean getMetrics() { return new DiscoveryNodeMetricsAdapter(); }
         };
     }
 

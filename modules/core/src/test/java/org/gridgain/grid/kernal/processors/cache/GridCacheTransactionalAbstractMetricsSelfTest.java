@@ -225,8 +225,10 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
 
-                if (put)
+                if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
+                    assert cacheMetrics.getAverageTxCommitTime() > 0;
+                }
             }
             else {
                 assertEquals(0, metrics.txCommits());
@@ -268,8 +270,10 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txRollbacks());
 
-                if (put)
+                if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
+                    assert cacheMetrics.getAverageTxRollbackTime() > 0;
+                }
             }
             else {
                 assertEquals(0, metrics.txRollbacks());

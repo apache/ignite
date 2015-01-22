@@ -81,7 +81,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             assert g.cache(null).isEmpty();
 
-            g.cache(null).resetMetrics();
+            g.cache(null).metrics().clear();
 
             g.transactions().resetMetrics();
         }

@@ -422,7 +422,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 ctx.isStoreEnabled());
 
         if (statsEnabled && removed)
-            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
 
         return  removed;
     }
@@ -840,21 +840,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         });
 
         if (statsEnabled)
-            fut.listenAsync(new CI1<IgniteFuture<Boolean>>() {
-                /** {@inheritDoc} */
-                @Override public void apply(IgniteFuture<Boolean> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore) {
-                        //No-op.
-                    }
-                }
-            });
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return fut;
     }

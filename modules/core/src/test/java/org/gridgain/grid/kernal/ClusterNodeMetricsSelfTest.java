@@ -88,7 +88,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterNodeMetricsMBean metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -144,7 +144,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterNodeMetricsMBean metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -207,7 +207,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite0.cluster().localNode().metrics();
+        ClusterNodeMetricsMBean metrics = ignite0.cluster().localNode().metrics();
 
         info("Node 0 metrics: " + metrics);
 

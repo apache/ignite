@@ -316,13 +316,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return dht().loadCacheAsync(p, ttl, args);
     }
 
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        super.resetMetrics();
-
-        dht().resetMetrics();
-    }
-
     /**
      * @param nodeId Sender ID.
      * @param res Response.

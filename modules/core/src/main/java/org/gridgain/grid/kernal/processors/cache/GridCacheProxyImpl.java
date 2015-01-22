@@ -1866,18 +1866,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            cache.resetMetrics();
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public ExpiryPolicy expiry() {
         return delegate.expiry();
     }

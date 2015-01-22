@@ -271,9 +271,4 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * @return Future that will be completed when preloading is finished.
      */
     public IgniteFuture<?> forceRepartition();
-
-    /**
-     * Resets metrics for current cache.
-     */
-    public void resetMetrics();
 }

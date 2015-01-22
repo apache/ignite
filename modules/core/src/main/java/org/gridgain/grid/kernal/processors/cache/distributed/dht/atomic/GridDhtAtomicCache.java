@@ -116,8 +116,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory<K, V>() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
-                V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
+            @Override
+            public GridCacheMapEntry<K, V> create(GridCacheContext<K, V> ctx, long topVer, K key, int hash,
+                                                  V val, GridCacheMapEntry<K, V> next, long ttl, int hdrId) {
                 return new GridDhtAtomicCacheEntry<>(ctx, topVer, key, hash, val, next, ttl, hdrId);
             }
         });
@@ -154,7 +155,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        resetMetrics();
+        CacheMetricsMxBeanImpl m = new CacheMetricsMxBeanImpl();
+
+        if (ctx.dht().near() != null)
+            m.delegate(ctx.dht().near().metrics0());
+
+        metrics = m;
 
         preldr = new GridDhtPreloader<>(ctx);
 
@@ -210,18 +216,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 scheduleAtomicFutureRecheck();
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
-
-        if (ctx.dht().near() != null)
-            m.delegate(ctx.dht().near().metrics0());
-
-        metrics = m;
-
-        ctx.dr().resetMetrics();
     }
 
     /**
@@ -826,21 +820,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash);
 
         if (statsEnabled) {
-            updateFut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                /** {@inheritDoc} */
-                @Override public void apply(IgniteFuture<Object> fut) {
-                    try {
-                        if (!fut.isCancelled()) {
-                            fut.get();
-
-                            ctx.cache().metrics0().addRemoveTimeNanos(System.nanoTime() - start);
-                        }
-                    }
-                    catch (IgniteCheckedException ignore){
-                        //No-op.
-                    }
-                }
-            });
+            updateFut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
         }
 
         return asyncOp(new CO<IgniteFuture<Object>>() {
@@ -964,7 +944,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (!success)
                     break;
                 else
-                    ctx.cache().metrics0().onRead(true);
+                    metrics0().onRead(true);
             }
 
             if (success) {

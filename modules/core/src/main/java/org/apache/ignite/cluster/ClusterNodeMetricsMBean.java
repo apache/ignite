@@ -40,7 +40,8 @@ import java.io.*;
  * as a graph.
  * @see org.apache.ignite.cluster.ClusterMetrics
  */
-public interface ClusterNodeMetrics extends Serializable {
+@IgniteMBeanDescription("MBean that provides access to all local node metrics.")
+public interface ClusterNodeMetricsMBean extends Serializable {
     /**
      * Gets last update time of this node metrics.
      *

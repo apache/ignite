@@ -29,7 +29,7 @@ import java.io.*;
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update {@link DiscoveryMetricsHelper} as well.
  */
-public class DiscoveryNodeMetricsAdapter implements ClusterNodeMetrics, Externalizable {
+public class DiscoveryNodeMetricsAdapter implements ClusterNodeMetricsMBean, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

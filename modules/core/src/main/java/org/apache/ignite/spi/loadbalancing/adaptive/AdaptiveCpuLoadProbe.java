@@ -214,7 +214,7 @@ public class AdaptiveCpuLoadProbe implements AdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
-        ClusterNodeMetrics metrics = node.metrics();
+        ClusterNodeMetricsMBean metrics = node.metrics();
 
         double k = 1.0d;
 
