@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
+package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.cache.*;
 
@@ -25,7 +25,8 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 /**
  * Tests cache value consistency for ATOMIC mode with near cache enabled.
  */
-public class GridCacheValueConsistencyAtomicNearEnabledSelfTest extends GridCacheValueConsistencyAtomicSelfTest {
+public class GridCacheValueConsistencyAtomicPrimaryWriteOrderNearEnabledSelfTest
+    extends GridCacheValueConsistencyAtomicSelfTest {
     /** {@inheritDoc} */
     @Override protected GridCacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
@@ -33,6 +34,6 @@ public class GridCacheValueConsistencyAtomicNearEnabledSelfTest extends GridCach
 
     /** {@inheritDoc} */
     @Override protected GridCacheAtomicWriteOrderMode writeOrderMode() {
-        return CLOCK;
+        return PRIMARY;
     }
 }
