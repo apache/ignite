@@ -43,6 +43,7 @@ public class GridSpringTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));
 
         suite.addTest(new TestSuite(GridSpringCacheManagerSelfTest.class));
+        suite.addTest(new TestSuite(GridSpringDynamicCacheManagerSelfTest.class));
 
         return suite;
     }

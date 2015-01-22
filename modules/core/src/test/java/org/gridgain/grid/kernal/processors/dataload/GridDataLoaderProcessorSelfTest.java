@@ -22,11 +22,13 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -47,6 +49,9 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /** */
+    private static ConcurrentHashMap<Object, Object> storeMap;
+
+    /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
@@ -60,6 +65,9 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
     /** */
     private boolean useGrpLock;
+
+    /** */
+    private TestStore store;
 
     /** {@inheritDoc} */
     @Override public void afterTest() throws Exception {
@@ -95,6 +103,8 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
+
+            cc.setStore(store);
 
             cfg.setCacheConfiguration(cc);
         }
@@ -750,6 +760,70 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testUpdateStore() throws Exception {
+        storeMap = new ConcurrentHashMap<>();
+
+        try {
+            store = new TestStore();
+
+            useCache = true;
+
+            Ignite ignite = startGrid(1);
+
+            startGrid(2);
+            startGrid(3);
+
+            for (int i = 0; i < 1000; i++)
+                storeMap.put(i, i);
+
+            try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+                ldr.skipStore(false);
+
+                for (int i = 0; i < 1000; i++)
+                    ldr.removeData(i);
+
+                for (int i = 1000; i < 2000; i++)
+                    ldr.addData(i, i);
+            }
+
+            for (int i = 0; i < 1000; i++)
+                assertNull(storeMap.get(i));
+
+            for (int i = 1000; i < 2000; i++)
+                assertEquals(i, storeMap.get(i));
+
+            try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
+                ldr.skipStore(true);
+
+                for (int i = 0; i < 1000; i++)
+                    ldr.addData(i, i);
+
+                for (int i = 1000; i < 2000; i++)
+                    ldr.removeData(i);
+            }
+
+            IgniteCache<Object, Object> cache = ignite.jcache(null);
+
+            for (int i = 0; i < 1000; i++) {
+                assertNull(storeMap.get(i));
+
+                assertEquals(i, cache.get(i));
+            }
+
+            for (int i = 1000; i < 2000; i++) {
+                assertEquals(i, storeMap.get(i));
+
+                assertNull(cache.localPeek(i));
+            }
+        }
+        finally {
+            storeMap = null;
+        }
+    }
+
+    /**
      *
      */
     private static class TestObject {
@@ -779,6 +853,26 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
+        }
+    }
+
+    /**
+     *
+     */
+    private class TestStore extends GridCacheStoreAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
+            return storeMap.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void put(@Nullable IgniteTx tx, Object key, Object val) throws IgniteCheckedException {
+            storeMap.put(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void remove(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
+            storeMap.remove(key);
         }
     }
 }

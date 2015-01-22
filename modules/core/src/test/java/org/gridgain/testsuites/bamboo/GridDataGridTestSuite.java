@@ -335,6 +335,9 @@ public class GridDataGridTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
 
+        // TODO: IGNITE-114.
+        // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
+
         return suite;
     }
 }

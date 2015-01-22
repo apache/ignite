@@ -147,6 +147,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws IgniteCheckedException If failed to deploy service.
      */
+    @IgniteAsyncSupported
     public void deployClusterSingleton(String name, ManagedService svc) throws IgniteCheckedException;
 
     /**
@@ -164,6 +165,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws IgniteCheckedException If failed to deploy service.
      */
+    @IgniteAsyncSupported
     public void deployNodeSingleton(String name, ManagedService svc) throws IgniteCheckedException;
 
     /**
@@ -199,7 +201,11 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @throws IgniteCheckedException If failed to deploy service.
      */
-    public void deployKeyAffinitySingleton(String name, ManagedService svc, @Nullable String cacheName, Object affKey)
+    @IgniteAsyncSupported
+    public void deployKeyAffinitySingleton(String name,
+        ManagedService svc,
+        @Nullable String cacheName,
+        Object affKey)
         throws IgniteCheckedException;
 
     /**
@@ -234,7 +240,12 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
      * @throws IgniteCheckedException If failed to deploy service.
      */
-    public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt) throws IgniteCheckedException;
+    @IgniteAsyncSupported
+    public void deployMultiple(String name,
+        ManagedService svc,
+        int totalCnt,
+        int maxPerNodeCnt)
+        throws IgniteCheckedException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -274,6 +285,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param cfg Service configuration.
      * @throws IgniteCheckedException If failed to deploy service.
      */
+    @IgniteAsyncSupported
     public void deploy(ManagedServiceConfiguration cfg) throws IgniteCheckedException;
 
     /**
@@ -289,6 +301,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param name Name of service to cancel.
      * @throws IgniteCheckedException If failed to cancel service.
      */
+    @IgniteAsyncSupported
     public void cancel(String name) throws IgniteCheckedException;
 
     /**
@@ -301,6 +314,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @throws IgniteCheckedException If failed to cancel services.
      */
+    @IgniteAsyncSupported
     public void cancelAll() throws IgniteCheckedException;
 
     /**

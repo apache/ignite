@@ -15,35 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.gridgain.grid.cache.spring;
 
-import org.gridgain.grid.cache.*;
-
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import org.springframework.cache.annotation.*;
 
 /**
- *
+ * Test service.
  */
-public class IgniteCacheAtomicLocalInvokeTest extends IgniteCacheInvokeAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
+public class GridSpringDynamicCacheTestService {
+    /**
+     * @param key Key.
+     * @return Value.
+     */
+    @Cacheable({"testCache1", "testCache2"})
+    public String cacheable(Integer key) {
+        assert key != null;
+
+        return "value" + key;
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return LOCAL;
+    /**
+     * @param key Key.
+     * @return Value.
+     */
+    @CachePut({"testCache1", "testCache2"})
+    public String cachePut(Integer key) {
+        assert key != null;
+
+        return "value" + key;
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    /**
+     * @param key Key.
+     */
+    @CacheEvict("testCache1")
+    public void cacheEvict(Integer key) {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    /**
+     */
+    @CacheEvict(value = "testCache1", allEntries = true)
+    public void cacheEvictAll() {
+        // No-op.
     }
 }
