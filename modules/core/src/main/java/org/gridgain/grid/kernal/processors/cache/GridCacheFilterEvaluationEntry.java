@@ -350,16 +350,6 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(IgniteMetadataAware from) {
-        impl.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        impl.copyMeta(data);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public <V> V addMeta(String name, V val) {
         return impl.addMeta(name, val);
     }
@@ -375,16 +365,6 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
-        return impl.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
-        return impl.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
     @Override public <V> V meta(String name) {
         return impl.meta(name);
     }
@@ -397,21 +377,6 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     /** {@inheritDoc} */
     @Override public <V> boolean removeMeta(String name, V val) {
         return impl.removeMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> Map<String, V> allMeta() {
-        return impl.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        return impl.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
-        return impl.hasMeta(name, val);
     }
 
     /** {@inheritDoc} */

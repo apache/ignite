@@ -628,20 +628,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(IgniteMetadataAware from) {
-        assert impl != null;
-
-        impl.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        assert impl != null;
-
-        impl.copyMeta(data);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public <V> V addMeta(String name, V val) {
         assert impl != null;
 
@@ -663,20 +649,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
-        assert impl != null;
-
-        return impl.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
-        assert impl != null;
-
-        return impl.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
     @Override public <V> V meta(String name) {
         assert impl != null;
 
@@ -695,27 +667,6 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
         assert impl != null;
 
         return impl.removeMeta(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> Map<String, V> allMeta() {
-        assert impl != null;
-
-        return impl.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        assert impl != null;
-
-        return impl.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
-        assert impl != null;
-
-        return impl.hasMeta(name, val);
     }
 
     /** {@inheritDoc} */

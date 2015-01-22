@@ -27,7 +27,7 @@ import org.springframework.context.*;
  */
 public class GridDsiLifecycleBean implements LifecycleBean {
     /**
-     * Grid instance will be automatically injected. For additional resources
+     * Ignite instance will be automatically injected. For additional resources
      * that can be injected into lifecycle beans see
      * {@link org.apache.ignite.lifecycle.LifecycleBean} documentation.
      */

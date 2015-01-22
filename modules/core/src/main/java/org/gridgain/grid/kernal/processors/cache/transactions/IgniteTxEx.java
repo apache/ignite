@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteTxEx<K, V> extends IgniteMetadataAware, IgniteTx, GridTimeoutObject {
+public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     /**
      *
      */

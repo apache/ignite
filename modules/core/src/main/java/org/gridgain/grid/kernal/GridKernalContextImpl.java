@@ -64,7 +64,6 @@ import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -82,7 +81,7 @@ import static org.gridgain.grid.kernal.GridKernalState.*;
  * Implementation of kernal context.
  */
 @GridToStringExclude
-public class GridKernalContextImpl extends GridMetadataAwareAdapter implements GridKernalContext, Externalizable {
+public class GridKernalContextImpl implements GridKernalContext, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -484,7 +483,7 @@ public class GridKernalContextImpl extends GridMetadataAwareAdapter implements G
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return discovery() == null ? cfg.getNodeId() : discovery().localNode().id();
+        return cfg.getNodeId();
     }
 
     /** {@inheritDoc} */

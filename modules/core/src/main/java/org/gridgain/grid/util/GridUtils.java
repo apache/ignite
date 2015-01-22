@@ -1749,25 +1749,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Copies metadata from given object into the passed in metadata aware
-     * instance - if object is not {@code null} and implements {@link org.apache.ignite.IgniteMetadataAware}.
-     * Otherwise - returns passed metadata aware instance unchanged.
-     *
-     * @param t Passed in metadata aware instance.
-     * @param obj Object to copy metadata from.
-     * @param <T> Type of the metadata aware instance.
-     * @return Metadata aware instance with metadata potentially copied.
-     */
-    public static <T extends IgniteMetadataAware> T withMeta(T t, @Nullable Object obj) {
-        assert t != null;
-
-        if (obj instanceof IgniteMetadataAware)
-            t.copyMeta((IgniteMetadataAware)obj);
-
-        return t;
-    }
-
-    /**
      * Replace password in URI string with a single '*' character.
      * <p>
      * Parses given URI by applying &quot;.*://(.*:.*)@.*&quot;

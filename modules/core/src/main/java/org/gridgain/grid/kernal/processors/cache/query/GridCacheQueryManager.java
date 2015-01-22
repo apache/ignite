@@ -2801,17 +2801,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public void copyMeta(IgniteMetadataAware from) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void copyMeta(Map<String, ?> data) {
-            throw new UnsupportedOperationException();
-
-        }
-
-        /** {@inheritDoc} */
         @Nullable @Override public <V> V addMeta(String name, V val) {
             throw new UnsupportedOperationException();
         }
@@ -2823,16 +2812,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /** {@inheritDoc} */
         @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> V addMetaIfAbsent(String name, V val) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
             throw new UnsupportedOperationException();
         }
 
@@ -2849,21 +2828,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public <V> boolean removeMeta(String name, V val) {
             throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> Map<String, V> allMeta() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean hasMeta(String name) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <V> boolean hasMeta(String name, V val) {
-            return false;
         }
 
         /** {@inheritDoc} */

@@ -3818,30 +3818,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(IgniteMetadataAware from) {
-        A.notNull(from, "from");
-
-        synchronized (this) {
-            Map m = from.allMeta();
-
-            ensureData(m.size());
-
-            attributeDataExtras().putAll(from.allMeta());
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> attrData) {
-        A.notNull(attrData, "data");
-
-        synchronized (this) {
-            ensureData(attrData.size());
-
-            attributeDataExtras().putAll(attrData);
-        }
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Nullable @Override public <V1> V1 addMeta(String name, V1 val) {
         A.notNull(name, "name", val, "val");
@@ -3867,8 +3843,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Nullable
-    @Override public <V1> V1 removeMeta(String name) {
+    @Nullable @Override public <V1> V1 removeMeta(String name) {
         A.notNull(name, "name");
 
         synchronized (this) {
@@ -3913,33 +3888,8 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public synchronized  <V1> Map<String, V1> allMeta() {
-        GridLeanMap<String, Object> attrData = attributeDataExtras();
-
-        if (attrData == null)
-            return Collections.emptyMap();
-
-        if (attrData.size() <= 5)
-            // This is a singleton unmodifiable map.
-            return (Map<String, V1>)attrData;
-
-        // Return a copy.
-        return new HashMap<>((Map<String, V1>)attrData);
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean hasMeta(String name) {
         return meta(name) != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> boolean hasMeta(String name, V1 val) {
-        A.notNull(name, "name");
-
-        Object v = meta(name);
-
-        return v != null && v.equals(val);
     }
 
     /** {@inheritDoc} */
@@ -3968,41 +3918,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (v == null)
                 try {
                     return addMeta(name, c.call());
-                }
-                catch (Exception e) {
-                    throw F.wrap(e);
-                }
-
-            return v;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
-        A.notNull(name, "name", val, "val");
-
-        synchronized (this) {
-            V1 v = meta(name);
-
-            if (v == null)
-                addMeta(name, v = val);
-
-            return v;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V1> V1 addMetaIfAbsent(String name, @Nullable Callable<V1> c) {
-        A.notNull(name, "name", c, "c");
-
-        synchronized (this) {
-            V1 v = meta(name);
-
-            if (v == null && c != null)
-                try {
-                    addMeta(name, v = c.call());
                 }
                 catch (Exception e) {
                     throw F.wrap(e);

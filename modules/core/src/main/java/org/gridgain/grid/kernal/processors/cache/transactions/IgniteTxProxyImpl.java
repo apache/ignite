@@ -279,6 +279,22 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     private void save(Object res) {
         asyncRes = new GridFinishedFutureEx<>(res);
     }
+    /** {@inheritDoc} */
+    @Override public <V1> V1 addMeta(String name, V1 val) {
+        return tx.addMeta(name, val);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"RedundantTypeArguments"})
+    @Override public <V1> V1 meta(String name) {
+        return tx.<V1>meta(name);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"RedundantTypeArguments"})
+    @Override public <V1> V1 removeMeta(String name) {
+        return tx.<V1>removeMeta(name);
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {

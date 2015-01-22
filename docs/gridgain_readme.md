@@ -92,7 +92,7 @@ GridGain Maven repository has `4` artifacts (add `'-ent'` for enterprise edition
     <dependency>
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-fabric</artifactId>
-        <version>${gridgain.version}</version>
+        <version>${ignite.version}</version>
         <type>pom</type>
     </dependency>
 
@@ -106,7 +106,7 @@ GridGain Maven repository has `4` artifacts (add `'-ent'` for enterprise edition
     <dependency>
         <groupId>org.gridgain</groupId>
         <artifactId>gridgain-fabric-ent</artifactId>
-        <version>${gridgain.version}</version>
+        <version>${ignite.version}</version>
         <type>pom</type>
     </dependency>
 

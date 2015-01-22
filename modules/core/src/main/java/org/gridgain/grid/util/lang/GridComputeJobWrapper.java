@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * Convenient wrapper for grid job. It allows to create a job clone in cases when the same
  * job needs to be cloned to multiple grid nodes during mapping phase of task execution.
  */
-public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements ComputeJob, Callable<Object>,
+public class GridComputeJobWrapper implements ComputeJob, Callable<Object>,
     GridPeerDeployAware {
     /** */
     private static final long serialVersionUID = 0L;
@@ -40,21 +40,14 @@ public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements C
     private transient volatile GridPeerDeployAware p;
 
     /**
-     * Creates a wrapper with given grid {@code job}. If {@code job} implements {@link org.apache.ignite.IgniteMetadataAware}
-     * interface and {@code copyMeta} is {@code true} - the metadata information will be
-     * copied from given {@code job} to this wrapper.
+     * Creates a wrapper with given grid {@code job}.
      *
      * @param job Job to wrap.
-     * @param cpMeta Whether or not to copy metadata in case when {@code job}
-     *      implements {@link org.apache.ignite.IgniteMetadataAware} interface.
      */
-    public GridComputeJobWrapper(ComputeJob job, boolean cpMeta) {
+    public GridComputeJobWrapper(ComputeJob job) {
         A.notNull(job, "job");
 
         this.job = job;
-
-        if (cpMeta && job instanceof IgniteMetadataAware)
-            copyMeta((IgniteMetadataAware)job);
     }
 
     /**

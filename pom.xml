@@ -761,7 +761,7 @@
                                                             <b>GridGain Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
-                                                            ver. <strong>${gridgain.version}</strong>
+                                                            ver. <strong>${ignite.version}</strong>
                                                         </td>
                                                     </tr>
                                                     <tr style="padding: 0; margin: 0">
@@ -1057,7 +1057,7 @@
                                     <table width="100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${gridgain.version}</strong></nobr>
+                                                <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
                                                 <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                             </td>
@@ -1218,19 +1218,19 @@
                                             </fileset>
                                         </replaceregexp>
 
-                                        <replace token="@sh.file.version" value="${gridgain.version}">
+                                        <replace token="@sh.file.version" value="${ignite.version}">
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>
                                         </replace>
 
-                                        <replace token="@bat.file.version" value="${gridgain.version}">
+                                        <replace token="@bat.file.version" value="${ignite.version}">
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replace>
 
-                                        <replace token="@xml.file.version" value="${gridgain.version}">
+                                        <replace token="@xml.file.version" value="${ignite.version}">
                                             <fileset dir="target/release-package">
                                                 <include name="**/*.xml"/>
                                             </fileset>

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 import java.util.concurrent.*;
 
@@ -34,7 +33,7 @@ import java.util.concurrent.*;
  * <p>
  * You can get an instance of {@code GridNodeLocalMap} by calling {@link org.apache.ignite.IgniteCluster#nodeLocalMap()} method.
  */
-public interface ClusterNodeLocalMap<K, V> extends ConcurrentMap<K, V>, IgniteMetadataAware {
+public interface ClusterNodeLocalMap<K, V> extends ConcurrentMap<K, V> {
     /**
      * Gets the value with given key. If that value does not exist, calls given closure
      * to get the default value, puts it into the map and returns it. If closure is {@code null}

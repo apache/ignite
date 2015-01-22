@@ -32,9 +32,9 @@ import java.io.*;
  * <pre name="code" class="java">
  * public class MyGridService implements GridService {
  *      ...
- *      // Example of grid resource injection. All resources are optional.
+ *      // Example of ignite resource injection. All resources are optional.
  *      // You should inject resources only as needed.
- *      &#64;GridInstanceResource
+ *      &#64;IgniteInstanceResource
  *      private Grid grid;
  *      ...
  *      &#64;Override public void cancel(GridServiceContext ctx) {

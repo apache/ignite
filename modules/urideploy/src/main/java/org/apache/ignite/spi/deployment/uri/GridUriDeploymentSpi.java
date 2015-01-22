@@ -379,10 +379,6 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
-
     /** NOTE: flag for test purposes only. */
     @SuppressWarnings("UnusedDeclaration")
     private boolean delayOnNewOrUpdatedFile;
@@ -1086,7 +1082,8 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
         if (tmpDirPath == null)
             throw new IgniteSpiException("Error initializing temporary deployment directory.");
 
-        File dir = new File(tmpDirPath + File.separator + DEPLOY_TMP_ROOT_NAME + File.separator + locNodeId);
+        File dir = new File(tmpDirPath + File.separator + DEPLOY_TMP_ROOT_NAME + File.separator +
+            ignite.configuration().getNodeId());
 
         if (!U.mkdirs(dir))
             throw new IgniteSpiException("Error initializing temporary deployment directory: " + dir);

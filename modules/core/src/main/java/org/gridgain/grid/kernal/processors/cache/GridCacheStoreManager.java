@@ -750,7 +750,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         finally {
             sesHolder.set(null);
 
-            ((IgniteMetadataAware)tx).removeMeta(SES_ATTR);
+            tx.removeMeta(SES_ATTR);
         }
     }
 
@@ -777,12 +777,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         SessionData ses;
 
         if (tx != null) {
-            ses = ((IgniteMetadataAware)tx).meta(SES_ATTR);
+            ses = tx.meta(SES_ATTR);
 
             if (ses == null) {
                 ses = new SessionData(tx, cctx.name());
 
-                ((IgniteMetadataAware)tx).addMeta(SES_ATTR, ses);
+                tx.addMeta(SES_ATTR, ses);
             }
         }
         else

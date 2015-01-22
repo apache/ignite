@@ -26,7 +26,6 @@ import org.gridgain.grid.kernal.processors.job.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +37,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Remote job context implementation.
  */
-public class GridJobContextImpl extends GridMetadataAwareAdapter implements ComputeJobContext, Externalizable {
+public class GridJobContextImpl implements ComputeJobContext, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

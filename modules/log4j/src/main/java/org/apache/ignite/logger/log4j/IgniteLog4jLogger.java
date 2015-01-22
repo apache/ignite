@@ -24,7 +24,6 @@ import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.apache.log4j.xml.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -65,7 +64,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class IgniteLog4jLogger extends GridMetadataAwareAdapter implements IgniteLogger, IgniteLoggerNodeIdAware,
+public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
     IgniteLog4jFileAware {
     /** */
     private static final long serialVersionUID = 0L;

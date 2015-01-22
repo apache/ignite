@@ -70,7 +70,7 @@ import java.util.concurrent.*;
  *
  */
 @GridToStringExclude
-public interface GridKernalContext extends IgniteMetadataAware, Iterable<GridComponent> {
+public interface GridKernalContext extends Iterable<GridComponent> {
     /**
      * Gets list of all grid components in the order they were added.
      *

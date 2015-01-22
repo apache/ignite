@@ -760,10 +760,6 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      */
     @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** Node ID. */
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
-
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws IgniteSpiException {
@@ -786,7 +782,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             if (!(o instanceof GridDistributedLockRequest))
                 return;
 
-            GridKernal g = (GridKernal)G.ignite(nodeId);
+            GridKernal g = (GridKernal)G.ignite(ignite.configuration().getNodeId());
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 

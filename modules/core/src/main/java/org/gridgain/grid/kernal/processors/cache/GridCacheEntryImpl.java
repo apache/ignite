@@ -563,7 +563,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public <V1> V1 meta(String name) {
-        GridCacheEntryEx e = unwrapForMeta();
+        GridCacheEntryEx<K, V> e = unwrapForMeta();
 
         return e.meta(name);
     }
@@ -571,30 +571,9 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
     @Override public <V1> V1 removeMeta(String name) {
-        GridCacheEntryEx e = unwrapForMeta();
+        GridCacheEntryEx<K, V> e = unwrapForMeta();
 
         return e.removeMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> Map<String, V1> allMeta() {
-        GridCacheEntryEx e = unwrapForMeta();
-
-        return e.allMeta();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
-        GridCacheEntryEx<K, V> e = unwrapForMeta();
-
-        return e.hasMeta(name);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name, Object val) {
-        GridCacheEntryEx<K, V> e = unwrapForMeta();
-
-        return e.hasMeta(name, val);
     }
 
     /** {@inheritDoc} */
@@ -612,38 +591,10 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public <V1> V1 addMetaIfAbsent(String name, V1 val) {
-        GridCacheEntryEx<K, V> cached = unwrapForMeta();
-
-        return cached.addMetaIfAbsent(name, val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public <V1> V1 addMetaIfAbsent(String name, Callable<V1> c) {
-        GridCacheEntryEx<K, V> cached = unwrapForMeta();
-
-        return cached.addMetaIfAbsent(name, c);
-    }
-
-    /** {@inheritDoc} */
     @Override public <V1> boolean replaceMeta(String name, V1 curVal, V1 newVal) {
         GridCacheEntryEx<K, V> cached = unwrapForMeta();
 
         return cached.replaceMeta(name, curVal, newVal);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(IgniteMetadataAware from) {
-        GridCacheEntryEx<K, V> cached = unwrapForMeta();
-
-        cached.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        GridCacheEntryEx<K, V> cached = unwrapForMeta();
-
-        cached.copyMeta(data);
     }
 
     /** {@inheritDoc} */
