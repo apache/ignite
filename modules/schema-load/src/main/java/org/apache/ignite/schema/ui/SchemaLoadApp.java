@@ -26,7 +26,6 @@ import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
@@ -89,16 +88,7 @@ public class SchemaLoadApp extends Application {
     private StackPane connLayerPnl;
 
     /** */
-    private TreeView<String> tree;
-
-    /** */
-    private CheckBoxTreeItem<String> rootItem;
-
-    /** */
-    private TextField keyClsTf;
-
-    /** */
-    private TextField valClsTf;
+    private TableView<SchemaItem> schemesTbl;
 
     /** */
     private TextField outFolderTf;
@@ -146,7 +136,7 @@ public class SchemaLoadApp extends Application {
     private final Map<String, Driver> drivers = new HashMap<>();
 
     /** */
-    private final ObservableList<PojoField> NO_DATA = FXCollections.emptyObservableList();
+    private final ObservableList<PojoField> NO_FIELDS = FXCollections.emptyObservableList();
 
     /** */
     private final ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -244,14 +234,16 @@ public class SchemaLoadApp extends Application {
             @Override protected void succeeded() {
                 super.succeeded();
 
-                rootItem.getChildren().clear();
+                List<SchemaItem> schemasMdl = new ArrayList<>();
 
                 for (Map.Entry<String, Map<String, PojoDescriptor>> schema : schemas.entrySet()) {
-                    CheckBoxTreeItem<String> schemaItem = addCheckBoxTreeItem(rootItem, schema.getKey());
+                    schemasMdl.add(new SchemaItem(schema.getKey()));
 
-                    for (String tbl : schema.getValue().keySet())
-                        addCheckBoxTreeItem(schemaItem, tbl);
+                    for (PojoDescriptor pojo : schema.getValue().values())
+                        schemasMdl.add(new SchemaItem(pojo));
                 }
+
+                schemesTbl.setItems(FXCollections.observableList(schemasMdl));
 
                 unlockUI(connLayerPnl, connPnl, nextBtn);
 
@@ -308,16 +300,16 @@ public class SchemaLoadApp extends Application {
         Runnable task = new Task<Void>() {
             private void checkEmpty(Collection<GridCacheQueryTypeDescriptor> items,
                 final TreeItem<String> treeItem, String msg) {
-                if (items.isEmpty()) {
-                    Platform.runLater(new Runnable() {
-                        /** {@inheritDoc} */
-                        @Override public void run() {
-                            tree.getSelectionModel().select(treeItem);
-                        }
-                    });
-
-                    throw new IllegalStateException(msg);
-                }
+//                if (items.isEmpty()) {
+//                    Platform.runLater(new Runnable() {
+//                        /** {@inheritDoc} */
+//                        @Override public void run() {
+//                            tree.getSelectionModel().select(treeItem);
+//                        }
+//                    });
+//
+//                    throw new IllegalStateException(msg);
+//                }
             }
 
             /** {@inheritDoc} */
@@ -336,57 +328,57 @@ public class SchemaLoadApp extends Application {
                 ConfirmCallable askOverwrite = new ConfirmCallable(owner, "File already exists: %s\nOverwrite?");
 
                 // Generate POJO and XML.
-                for (TreeItem<String> schemeItem : rootItem.getChildren()) {
-                    for (TreeItem<String> tblItem : schemeItem.getChildren()) {
-                        if (((CheckBoxTreeItem)tblItem).isSelected()) {
-                            String scheme = schemeItem.getValue();
-                            String tbl = tblItem.getValue();
-
-                            PojoDescriptor pojo = schemas.get(scheme).get(tbl);
-
-                            GridCacheQueryTypeMetadata meta = pojo.metadata();
-
-                            Collection<GridCacheQueryTypeDescriptor> keys = new ArrayList<>();
-
-                            Collection<GridCacheQueryTypeDescriptor> vals = new ArrayList<>();
-
-                            // Fill list with key and value type descriptors.
-                            for (PojoField fld : pojo.fields()) {
-                                GridCacheQueryTypeDescriptor desc = fld.descriptor();
-
-                                if (fld.key()) {
-                                    keys.add(desc);
-
-                                    if (include)
-                                        vals.add(desc);
-                                }
-                                else
-                                    vals.add(desc);
-                            }
-
-                            checkEmpty(keys, tblItem, "No key fields specified for type: " + tbl);
-
-                            checkEmpty(vals, tblItem, "No value fields specified for type: " + tbl);
-
-                            meta.setKeyDescriptors(keys);
-
-                            meta.setValueDescriptors(vals);
-
-                            all.add(meta);
-
-                            if (!singleXml)
-                                XmlGenerator.transform(pkg, meta, new File(destFolder, meta.getType() + ".xml"),
-                                    askOverwrite);
-
-                            PojoGenerator.generate(meta, outFolder, pkg, constructor, askOverwrite);
-                        }
-                    }
-                }
+//                for (TreeItem<String> schemeItem : rootItem.getChildren()) {
+//                    for (TreeItem<String> tblItem : schemeItem.getChildren()) {
+//                        if (((CheckBoxTreeItem)tblItem).isSelected()) {
+//                            String scheme = schemeItem.getValue();
+//                            String tbl = tblItem.getValue();
+//
+//                            PojoDescriptor pojo = schemas.get(scheme).get(tbl);
+//
+//                            GridCacheQueryTypeMetadata meta = pojo.metadata();
+//
+//                            Collection<GridCacheQueryTypeDescriptor> keys = new ArrayList<>();
+//
+//                            Collection<GridCacheQueryTypeDescriptor> vals = new ArrayList<>();
+//
+//                            // Fill list with key and value type descriptors.
+//                            for (PojoField fld : pojo.fields()) {
+//                                GridCacheQueryTypeDescriptor desc = fld.descriptor();
+//
+//                                if (fld.key()) {
+//                                    keys.add(desc);
+//
+//                                    if (include)
+//                                        vals.add(desc);
+//                                }
+//                                else
+//                                    vals.add(desc);
+//                            }
+//
+//                            checkEmpty(keys, tblItem, "No key fields specified for type: " + tbl);
+//
+//                            checkEmpty(vals, tblItem, "No value fields specified for type: " + tbl);
+//
+//                            meta.setKeyDescriptors(keys);
+//
+//                            meta.setValueDescriptors(vals);
+//
+//                            all.add(meta);
+//
+//                            if (!singleXml)
+//                                XmlGenerator.generate(pkg, meta, new File(destFolder, meta.getType() + ".xml"),
+//                                    askOverwrite);
+//
+//                            PojoGenerator.generate(meta, outFolder, pkg, constructor, askOverwrite);
+//                        }
+//                    }
+//                }
 
                 if (all.isEmpty())
                     throw new IllegalStateException("Nothing selected!");
                 else if (singleXml)
-                    XmlGenerator.transform(pkg, all, new File(outFolder, "Ignite.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, new File(outFolder, "Ignite.xml"), askOverwrite);
 
                 perceptualDelay(started);
 
@@ -637,86 +629,52 @@ public class SchemaLoadApp extends Application {
         genPnl.addColumn(35, 35, 35, Priority.NEVER);
 
         genPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
-        genPnl.addRows(8);
+        genPnl.addRows(7);
 
-        TableColumn<PojoField, Boolean> keyCol = tableColumn("Key", "key",
-            "If checked then this field will be part of key object", 70, 70);
+        TableColumn<SchemaItem, Boolean> useCol = booleanColumn("Use", "use",
+            "If checked then this field will be part of key object");
 
-        keyCol.setCellFactory(new Callback<TableColumn<PojoField, Boolean>, TableCell<PojoField, Boolean>>() {
-            /** {@inheritDoc} */
-            @Override public TableCell<PojoField, Boolean> call(TableColumn<PojoField, Boolean> col) {
-                CheckBoxTableCell<PojoField, Boolean> cell = new CheckBoxTableCell<>();
+        TableColumn<SchemaItem, String> schemaCol = tableColumn("Schema", "schema", "Schema name in database");
 
-                cell.setAlignment(Pos.CENTER);
+        TableColumn<SchemaItem, String> tblCol = tableColumn("Table", "table", "Table name in database");
 
-                return cell;
-            }
-        });
+        TableColumn<SchemaItem, String> keyClsCol = textColumn("Key Class", "keyClass", "Key class name");
 
-        keyCol.setEditable(true);
+        TableColumn<SchemaItem, String> valClsCol = textColumn("Value Class", "valueClass", "Value class name");
 
-        TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database", 100, 0);
+        schemesTbl = tableView("Tables not found in database", useCol, schemaCol, tblCol, keyClsCol, valClsCol);
 
-        TableColumn<PojoField, String> dbTypeNameCol = tableColumn("DB Type", "dbTypeName", "Field type in database", 100, 0);
+        TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
+            "If checked then this field will be part of key object");
 
-        TableColumn<PojoField, String> javaNameCol = tableColumn("Ignite Name", "javaName",
-            "Field name in POJO class", 100, 0);
-        javaNameCol.setCellFactory(TextFieldTableCell.<PojoField>forTableColumn());
-        javaNameCol.setEditable(true);
+        TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
-        TableColumn<PojoField, String> javaTypeNameCol = tableColumn("Java Type", "javaTypeName",
-            "Field java type in POJO class", 100, 0);
-        javaTypeNameCol.setCellFactory(JavaTypeCell.forTableColumn());
-        javaTypeNameCol.setEditable(true);
+        TableColumn<PojoField, String> dbTypeNameCol = tableColumn("DB Type", "dbTypeName", "Field type in database");
 
-        final TableView<PojoField> tbl = new TableView<>();
+        TableColumn<PojoField, String> javaNameCol = textColumn("Ignite Name", "javaName", "Field name in POJO class");
 
-        tbl.setMinHeight(50);
-        tbl.setPlaceholder(text("Select table to see table columns", 0));
+        TableColumn<PojoField, String> javaTypeNameCol = customColumn("Java Type", "javaTypeName",
+            "Field java type in POJO class", JavaTypeCell.forTableColumn());
 
-        final TableColumn[] cols = {keyCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol};
-
-        //noinspection unchecked
-        tbl.getColumns().addAll(cols);
-        tbl.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        tbl.setEditable(true);
-
-        tbl.getColumns().addListener(new ListChangeListener<TableColumn<PojoField, ?>>() {
-            private boolean suspended;
-
-            /** {@inheritDoc} */
-            @Override public void onChanged(Change change) {
-                change.next();
-                if (change.wasReplaced() && !suspended) {
-                    suspended = true;
-
-                    try {
-                        //noinspection unchecked
-                        tbl.getColumns().setAll(cols);
-                    }
-                    finally {
-                        suspended = false;
-                    }
-                }
-            }
-        });
+        final TableView<PojoField> fieldsTbl = tableView("Select table to see table columns",
+            keyCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
 
         final Button upBtn = button(imageView("navigate_up", 24), "Move selected row up",
             new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
-                    TableView.TableViewSelectionModel<PojoField> selMdl = tbl.getSelectionModel();
+                    TableView.TableViewSelectionModel<PojoField> selMdl = fieldsTbl.getSelectionModel();
 
                     int selIdx = selMdl.getSelectedIndex();
 
                     if (selIdx > 0) {
-                        ObservableList<PojoField> items = tbl.getItems();
+                        ObservableList<PojoField> items = fieldsTbl.getItems();
 
                         int newId = selIdx - 1;
 
                         items.add(newId, items.remove(selIdx));
 
                         if (newId == 0)
-                            tbl.requestFocus();
+                            fieldsTbl.requestFocus();
 
                         selMdl.select(newId);
                     }
@@ -728,11 +686,11 @@ public class SchemaLoadApp extends Application {
         final Button downBtn = button(imageView("navigate_down", 24), "Move selected row down",
             new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
-                    TableView.TableViewSelectionModel<PojoField> selMdl = tbl.getSelectionModel();
+                    TableView.TableViewSelectionModel<PojoField> selMdl = fieldsTbl.getSelectionModel();
 
                     int selIdx = selMdl.getSelectedIndex();
 
-                    ObservableList<PojoField> items = tbl.getItems();
+                    ObservableList<PojoField> items = fieldsTbl.getItems();
 
                     int maxIdx = items.size() - 1;
 
@@ -742,7 +700,7 @@ public class SchemaLoadApp extends Application {
                         items.add(newId, items.remove(selIdx));
 
                         if (newId == maxIdx)
-                            tbl.requestFocus();
+                            fieldsTbl.requestFocus();
 
                         selMdl.select(newId);
 
@@ -752,22 +710,14 @@ public class SchemaLoadApp extends Application {
 
         downBtn.setDisable(true);
 
-        tbl.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
+        fieldsTbl.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
             @Override public void changed(ObservableValue<? extends Number> observable, Number oldVal, Number newVal) {
                 upBtn.setDisable(newVal == null || newVal.intValue() == 0);
-                downBtn.setDisable(newVal == null || newVal.intValue() == tbl.getItems().size() - 1);
+                downBtn.setDisable(newVal == null || newVal.intValue() == fieldsTbl.getItems().size() - 1);
             }
         });
 
-        rootItem = new CheckBoxTreeItem<>("Database");
-
-        tree = new TreeView<>(rootItem);
-
-        tree.setMinHeight(50);
-        tree.setShowRoot(false);
-        tree.setCellFactory(CheckBoxTreeCell.<String>forTreeView());
-
-        genPnl.add(splitPane(tree, borderPane(null, tbl, null, null, vBox(10, upBtn, downBtn)), 0.6), 3);
+        genPnl.add(splitPane(schemesTbl, borderPane(null, fieldsTbl, null, null, vBox(10, upBtn, downBtn)), 0.6), 3);
 
         final GridPaneEx keyValPnl = paneEx(0, 0, 0, 0);
         keyValPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
@@ -775,60 +725,55 @@ public class SchemaLoadApp extends Application {
         keyValPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         keyValPnl.addColumn();
 
-        genPnl.add(new Label("Key class:"));
-        keyClsTf = keyValPnl.add(textField("Key class name"));
-
-        valClsTf = keyValPnl.addLabeled("  Value class:", textField("Value class name"));
-
-        keyValPnl.add(button("Apply", "Change key and value class names", new EventHandler<ActionEvent>() {
-            @Override public void handle(ActionEvent evt) {
-                if (checkInput(keyClsTf, true, "Key class name must not be empty!") ||
-                    checkInput(valClsTf, true, "Value class name must not be empty!"))
-                    return;
-
-                String keyCls = keyClsTf.getText().trim();
-
-                String valCls = valClsTf.getText().trim();
-
-                if (keyCls.equals(valCls)) {
-                    MessageBox.warningDialog(owner, "Key class name must be different from value class name!");
-
-                    keyClsTf.requestFocus();
-
-                    return;
-                }
-
-                for (PojoDescriptor pojo : pojos)
-                    if (pojo != curPojo) {
-                        String pojoKeyCls = pojo.keyClassName();
-
-                        String pojoValCls = pojo.valueClassName();
-
-                        if (keyCls.equals(pojoKeyCls) || keyCls.equals(pojoValCls)) {
-                            MessageBox.warningDialog(owner, "Key class name must be unique!");
-
-                            keyClsTf.requestFocus();
-
-                            return;
-                        }
-
-                        if (valCls.equals(pojoKeyCls) || valCls.equals(pojoValCls)) {
-                            MessageBox.warningDialog(owner, "Value class name must be unique!");
-
-                            valClsTf.requestFocus();
-
-                            return;
-                        }
-                    }
-
-                curPojo.keyClassName(keyCls);
-                curPojo.valueClassName(valCls);
-            }
-        }));
-
-        keyValPnl.setDisable(true);
-
-        genPnl.add(keyValPnl, 2);
+//        keyValPnl.add(button("Apply", "Change key and value class names", new EventHandler<ActionEvent>() {
+//            @Override public void handle(ActionEvent evt) {
+//                if (checkInput(keyClsTf, true, "Key class name must not be empty!") ||
+//                    checkInput(valClsTf, true, "Value class name must not be empty!"))
+//                    return;
+//
+//                String keyCls = keyClsTf.getText().trim();
+//
+//                String valCls = valClsTf.getText().trim();
+//
+//                if (keyCls.equals(valCls)) {
+//                    MessageBox.warningDialog(owner, "Key class name must be different from value class name!");
+//
+//                    keyClsTf.requestFocus();
+//
+//                    return;
+//                }
+//
+//                for (PojoDescriptor pojo : pojos)
+//                    if (pojo != curPojo) {
+//                        String pojoKeyCls = pojo.keyClassName();
+//
+//                        String pojoValCls = pojo.valueClassName();
+//
+//                        if (keyCls.equals(pojoKeyCls) || keyCls.equals(pojoValCls)) {
+//                            MessageBox.warningDialog(owner, "Key class name must be unique!");
+//
+//                            keyClsTf.requestFocus();
+//
+//                            return;
+//                        }
+//
+//                        if (valCls.equals(pojoKeyCls) || valCls.equals(pojoValCls)) {
+//                            MessageBox.warningDialog(owner, "Value class name must be unique!");
+//
+//                            valClsTf.requestFocus();
+//
+//                            return;
+//                        }
+//                    }
+//
+//                curPojo.keyClassName(keyCls);
+//                curPojo.valueClassName(valCls);
+//            }
+//        }));
+//
+//        keyValPnl.setDisable(true);
+//
+//        genPnl.add(keyValPnl, 2);
 
         pkgTf = genPnl.addLabeled("Package:", textField("Package that will be used for POJOs generation"), 2);
 
@@ -964,40 +909,40 @@ public class SchemaLoadApp extends Application {
             })
         ), 4);
 
-        tree.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem<String>>() {
-            /** {@inheritDoc} */
-            @Override public void changed(ObservableValue<? extends TreeItem<String>> val, TreeItem<String> oldItem,
-                TreeItem<String> newItem) {
-                if (newItem != null && newItem.getParent() != null && newItem.isLeaf()) {
-                    curPojo = schemas.get(newItem.getParent().getValue()).get(newItem.getValue());
-
-                    tbl.setItems(curPojo.fields());
-                    tbl.getSelectionModel().select(0);
-
-                    keyClsTf.setText(curPojo.keyClassName());
-                    valClsTf.setText(curPojo.valueClassName());
-
-                    keyValPnl.setDisable(false);
-
-                    renBtn.setDisable(false);
-                    revertBtn.setDisable(false);
-                }
-                else {
-                    curPojo = null;
-                    tbl.setItems(NO_DATA);
-
-                    keyClsTf.setText("");
-                    valClsTf.setText("");
-
-                    keyValPnl.setDisable(true);
-
-                    renBtn.setDisable(true);
-                    revertBtn.setDisable(true);
-                    upBtn.setDisable(true);
-                    downBtn.setDisable(true);
-                }
-            }
-        });
+//        tree.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem<String>>() {
+//            /** {@inheritDoc} */
+//            @Override public void changed(ObservableValue<? extends TreeItem<String>> val, TreeItem<String> oldItem,
+//                TreeItem<String> newItem) {
+//                if (newItem != null && newItem.getParent() != null && newItem.isLeaf()) {
+//                    curPojo = schemas.get(newItem.getParent().getValue()).get(newItem.getValue());
+//
+//                    tbl.setItems(curPojo.fields());
+//                    tbl.getSelectionModel().select(0);
+//
+//                    keyClsTf.setText(curPojo.keyClassName());
+//                    valClsTf.setText(curPojo.valueClassName());
+//
+//                    keyValPnl.setDisable(false);
+//
+//                    renBtn.setDisable(false);
+//                    revertBtn.setDisable(false);
+//                }
+//                else {
+//                    curPojo = null;
+//                    tbl.setItems(NO_DATA);
+//
+//                    keyClsTf.setText("");
+//                    valClsTf.setText("");
+//
+//                    keyValPnl.setDisable(true);
+//
+//                    renBtn.setDisable(true);
+//                    revertBtn.setDisable(true);
+//                    upBtn.setDisable(true);
+//                    downBtn.setDisable(true);
+//                }
+//            }
+//        });
 
         genPnl.add(regexPnl, 3);
 
@@ -1010,10 +955,10 @@ public class SchemaLoadApp extends Application {
     private Collection<PojoDescriptor> selectedItems() {
         Collection<PojoDescriptor> res = new ArrayList<>();
 
-        for (TreeItem<String> schemeItem : rootItem.getChildren())
-            for (TreeItem<String> tblItem : schemeItem.getChildren())
-                if (((CheckBoxTreeItem)tblItem).isSelected())
-                    res.add(schemas.get(schemeItem.getValue()).get(tblItem.getValue()));
+//        for (TreeItem<String> schemeItem : rootItem.getChildren())
+//            for (TreeItem<String> tblItem : schemeItem.getChildren())
+//                if (((CheckBoxTreeItem)tblItem).isSelected())
+//                    res.add(schemas.get(schemeItem.getValue()).get(tblItem.getValue()));
 
         return res;
     }
@@ -1022,7 +967,7 @@ public class SchemaLoadApp extends Application {
     @Override public void start(Stage primaryStage) {
         owner = primaryStage;
 
-        primaryStage.setTitle("Schema Load");
+        primaryStage.setTitle("Apache Ignite Auto Schema Load Utility");
 
         primaryStage.getIcons().addAll(
             image("ignite", 16),
@@ -1395,6 +1340,76 @@ public class SchemaLoadApp extends Application {
         launch(args);
     }
 
+    public static class SchemaItem {
+        /** Selected property. */
+        private final BooleanProperty use;
+
+        /** Schema name to show on screen. */
+        private final StringProperty schema;
+
+        /** Table name to show on screen. */
+        private final StringProperty tbl;
+
+        /** Key class name to show on screen. */
+        private final StringProperty keyCls;
+
+        /** Value class name to show on screen. */
+        private final StringProperty valCls;
+
+        private final Collection<SchemaItem> tbls;
+
+        /**
+         * Default constructor.
+         */
+        private SchemaItem(String schema, String tbl, String keyCls, String valCls) {
+            this.schema = new SimpleStringProperty(schema);
+            this.tbl = new SimpleStringProperty(tbl);
+            this.keyCls = new SimpleStringProperty(keyCls);
+            this.valCls = new SimpleStringProperty(valCls);
+
+            use = new SimpleBooleanProperty(true);
+
+            tbls = new ArrayList<>();
+        }
+
+        /**
+         * Default constructor.
+         */
+        public SchemaItem(String schema) {
+            this(schema, "", "", "");
+        }
+
+        /**
+         * Default constructor.
+         */
+        public SchemaItem(PojoDescriptor pojo) {
+            this("", pojo.metadata().getTableName(), pojo.keyClassName(), pojo.valueClassName());
+        }
+
+        /**
+         * @return Boolean property support for {@code use} property.
+         */
+        public BooleanProperty useProperty() {
+            return use;
+        }
+
+        public StringProperty schemaProperty() {
+            return schema;
+        }
+
+        public StringProperty tableProperty() {
+            return tbl;
+        }
+
+        public StringProperty keyClassProperty() {
+            return keyCls;
+        }
+
+        public StringProperty valueClassProperty() {
+            return valCls;
+        }
+    }
+
     /**
      * Field descriptor with properties for JavaFX GUI bindings.
      */
@@ -1413,6 +1428,9 @@ public class SchemaLoadApp extends Application {
 
         /** Field type in database. */
         private final StringProperty dbTypeName;
+
+        /** Is NULL allowed for field in database. */
+        private final boolean nullable;
 
         /** Field type descriptor. */
         private final GridCacheQueryTypeDescriptor desc;
@@ -1499,9 +1517,10 @@ public class SchemaLoadApp extends Application {
 
         /**
          * @param key {@code true} if this field belongs to primary key.
+         * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
          * @param desc Field type descriptor.
          */
-        public PojoField(boolean key, GridCacheQueryTypeDescriptor desc) {
+        public PojoField(boolean key, boolean nullable, GridCacheQueryTypeDescriptor desc) {
             this.desc = desc;
             this.key = new SimpleBooleanProperty(key);
 
@@ -1515,7 +1534,7 @@ public class SchemaLoadApp extends Application {
 
             dbTypeName = new SimpleStringProperty(jdbcTypeName(desc.getDbType()));
 
-            boolean nullable = true;
+            this.nullable = nullable;
 
             conversions = conversions(desc.getDbType(), nullable, typeName);
         }
@@ -1648,6 +1667,13 @@ public class SchemaLoadApp extends Application {
         }
 
         /**
+         * @return Is NULL allowed for field in database.
+         */
+        public boolean nullable() {
+            return nullable;
+        }
+
+        /**
          * @return POJO field JDBC type in database.
          */
         public int dbType() {
@@ -1738,13 +1764,13 @@ public class SchemaLoadApp extends Application {
             fieldsPrev = new ArrayList<>(sz);
 
             for (GridCacheQueryTypeDescriptor key : keys) {
-                flds.add(new PojoField(true, key));
-                fieldsPrev.add(new PojoField(true, key));
+                flds.add(new PojoField(true, false /* TODO: IGNITE-32 FIX nullable*/, key));
+                fieldsPrev.add(new PojoField(true, false /* TODO: IGNITE-32 FIX nullable*/, key));
             }
 
             for (GridCacheQueryTypeDescriptor val : vals) {
-                flds.add(new PojoField(false, val));
-                fieldsPrev.add(new PojoField(false, val));
+                flds.add(new PojoField(false, false /* TODO: IGNITE-32 FIX nullable*/, val));
+                fieldsPrev.add(new PojoField(false, false /* TODO: IGNITE-32 FIX nullable*/, val));
             }
 
             fields = FXCollections.observableList(flds);

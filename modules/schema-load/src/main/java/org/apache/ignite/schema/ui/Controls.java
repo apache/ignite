@@ -17,14 +17,17 @@
 
 package org.apache.ignite.schema.ui;
 
+import javafx.beans.value.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.*;
 import javafx.scene.image.*;
+import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.*;
+import javafx.util.*;
 
 /**
  * Utility class to create controls.
@@ -318,10 +321,11 @@ public class Controls {
      * @param tip Column tooltip text.
      * @param minWidth The minimum width column is permitted to be resized to.
      * @param maxWidth The maximum width column is permitted to be resized to.
+     * @param editable {@code true} if column is editable.
      * @return New {@code TableColumn} instance.
      */
-    public static <S, T> TableColumn<S, T> tableColumn(String colName, String propName, String tip,
-        int minWidth, int maxWidth) {
+    private static <S, T> TableColumn<S, T> tableColumn(String colName, String propName, String tip,
+        int minWidth, int maxWidth, boolean editable) {
         TableColumn<S, T> col = new TableColumn<>();
 
         col.setGraphic(tooltip(new Label(colName), tip));
@@ -336,7 +340,89 @@ public class Controls {
 
         col.setCellValueFactory(new PropertyValueFactory<S, T>(propName));
 
+        col.setEditable(editable);
+
         return col;
+    }
+
+    /**
+     * Create table column.
+     *
+     * @param colName Column name to display.
+     * @param propName Property name column is bound to.
+     * @param tip Column tooltip text.
+     * @return New {@code TableColumn} instance.
+     */
+    public static <S, T> TableColumn<S, T> tableColumn(String colName, String propName, String tip) {
+        return tableColumn(colName, propName, tip, 100, 0, false);
+    }
+
+    /**
+     * Create table column.
+     *
+     * @param colName Column name to display.
+     * @param propName Property name column is bound to.
+     * @param tip Column tooltip text.
+     * @param cellFactory Custom cell factory.
+     * @return New {@code TableColumn} instance.
+     */
+    public static <S, T> TableColumn<S, T> customColumn(String colName, String propName, String tip,
+        Callback<TableColumn<S, T>, TableCell<S, T>> cellFactory) {
+        TableColumn<S, T> col = tableColumn(colName, propName, tip, 100, 0, true);
+
+        col.setCellFactory(cellFactory);
+
+        return col;
+    }
+
+    public static <S> TableColumn<S, Boolean> booleanColumn(String colName, String propName, String tip) {
+        TableColumn<S, Boolean> col = tableColumn(colName, propName, tip, 70, 70, true);
+
+        col.setCellFactory(CheckBoxTableCellEx.<S>forTableColumn());
+
+        return col;
+
+    }
+
+    public static <S> TableColumn<S, String> textColumn(String colName, String propName, String tip) {
+        TableColumn<S, String> col = tableColumn(colName, propName, tip, 100, 0, true);
+
+        col.setCellFactory(TextFieldTableCellEx.<S>forTableColumn());
+
+        return col;
+    }
+
+    /**
+     * Create table column.
+     *
+     * @param colName Column name to display.
+     * @param propName Property name column is bound to.
+     * @param tip Column tooltip text.
+     * @param editable {@code true} if column is editable.
+     * @return New {@code TableColumn} instance.
+     */
+    public static <S, T> TableColumn<S, T> tableColumn(String colName, String propName, String tip, boolean editable) {
+        return tableColumn(colName, propName, tip, 100, 0, editable);
+    }
+
+    /**
+     * Create table view.
+     *
+     * @param placeholder Text to show if table model is empty.
+     * @param cols Columns to add.
+     * @return New {@code TableView} instance.
+     */
+    public static <S> TableView<S> tableView(String placeholder, TableColumn<S, ?>... cols) {
+        TableView<S> tbl = new TableView<>();
+
+        tbl.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tbl.setEditable(true);
+        tbl.setMinHeight(50);
+        tbl.setPlaceholder(text(placeholder, 0));
+
+        tbl.getColumns().addAll(cols);
+
+        return tbl;
     }
 
     /**
@@ -373,5 +459,96 @@ public class Controls {
     public static Image image(String imgFileName, int sz) {
         return new Image(Controls.class.getClassLoader()
             .getResourceAsStream(String.format("media/%1$s_%2$dx%2$d.png", imgFileName, sz)));
+    }
+
+    /**
+     * Customized checkbox.
+     */
+    private static class CheckBoxTableCellEx<S> extends CheckBoxTableCell<S, Boolean> {
+        /** Creates a ComboBox cell factory for use in TableColumn controls. */
+        public static <S> Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>> forTableColumn() {
+            return new Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>>() {
+                public TableCell<S, Boolean> call(TableColumn<S, Boolean> col) {
+                    return new CheckBoxTableCellEx<>();
+                }
+            };
+        }
+
+        /**
+         * Default constructor.
+         */
+        private CheckBoxTableCellEx() {
+            super();
+
+            setAlignment(Pos.CENTER);
+        }
+    }
+
+    private static class TextFieldTableCellEx<S> extends TableCell<S, String> {
+        /** Text field. */
+        private final TextField textField;
+
+        public static <S> Callback<TableColumn<S, String>, TableCell<S, String>> forTableColumn() {
+            return new Callback<TableColumn<S, String>, TableCell<S, String>>() {
+                @Override public TableCell<S, String> call(TableColumn<S, String> col) {
+                    return new TextFieldTableCellEx<>();
+                }
+            };
+        }
+
+        private TextFieldTableCellEx() {
+            textField = new TextField();
+
+            textField.setOnKeyReleased(new EventHandler<KeyEvent>() {
+                /** {@inheritDoc} */
+                @Override public void handle(KeyEvent evt) {
+                    if (KeyCode.ENTER == evt.getCode())
+                        commitEdit(textField.getText());
+                    else if (KeyCode.ESCAPE == evt.getCode())
+                        cancelEdit();
+                }
+            });
+
+            textField.focusedProperty().addListener(new ChangeListener<Boolean>() {
+                /** {@inheritDoc} */
+                @Override public void changed(ObservableValue<? extends Boolean> observable, Boolean oldVal,
+                    Boolean newVal) {
+                    if (!newVal)
+                        commitEdit(textField.getText());
+                }
+            });
+
+            getStyleClass().add("text-field-table-cell");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void startEdit() {
+            super.startEdit();
+
+            setText(null);
+            setGraphic(textField);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancelEdit() {
+            super.cancelEdit();
+
+            setText(getItem());
+
+            setGraphic(null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+
+            setGraphic(null);
+
+            if (!empty) {
+                setText(item);
+
+                textField.setText(item);
+            }
+        }
     }
 }

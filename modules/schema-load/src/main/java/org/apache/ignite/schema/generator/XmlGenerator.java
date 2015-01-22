@@ -255,23 +255,23 @@ public class XmlGenerator {
      * Transform metadata into xml.
      *
      * @param pkg Package fo types.
-     * @param meta Metadata to transform.
+     * @param meta Metadata to generate.
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void transform(String pkg, GridCacheQueryTypeMetadata meta, File out, ConfirmCallable askOverwrite) {
-        transform(pkg, Collections.singleton(meta), out, askOverwrite);
+    public static void generate(String pkg, GridCacheQueryTypeMetadata meta, File out, ConfirmCallable askOverwrite) {
+        generate(pkg, Collections.singleton(meta), out, askOverwrite);
     }
 
     /**
      * Transform metadata into xml.
      *
      * @param pkg Package fo types.
-     * @param meta Metadata to transform.
+     * @param meta Metadata to generate.
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void transform(String pkg, Collection<GridCacheQueryTypeMetadata> meta, File out,
+    public static void generate(String pkg, Collection<GridCacheQueryTypeMetadata> meta, File out,
         ConfirmCallable askOverwrite) {
         try {
             if (out.exists()) {
