@@ -325,8 +325,19 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
             writerCallCnt.incrementAndGet();
 
-            for (Cache.Entry<? extends Integer, ? extends Integer> e : entries)
+            Iterator<Cache.Entry<? extends Integer, ? extends Integer>> it = entries.iterator();
+
+            while (it.hasNext()) {
+                Cache.Entry<? extends Integer, ? extends Integer> e = it.next();
+
                 storeMap.put(e.getKey(), e.getValue());
+
+                it.remove();
+            }
+
+            assertTrue(entries.isEmpty());
+
+            assertEquals(0, entries.size());
         }
 
         /** {@inheritDoc} */
@@ -352,8 +363,15 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
             writerCallCnt.incrementAndGet();
 
-            for (Object key : keys)
+            Iterator<?> it = keys.iterator();
+
+            while (it.hasNext()) {
+                Object key = it.next();
+
                 storeMap.remove(key);
+
+                it.remove();
+            }
         }
     }
 }

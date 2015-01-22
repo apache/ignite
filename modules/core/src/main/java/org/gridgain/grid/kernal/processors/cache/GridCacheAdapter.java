@@ -3519,7 +3519,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
      */
     private void localLoadAndUpdate(final Collection<? extends K> keys) throws IgniteCheckedException {
         try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
-            ldr.updater(new SkipStoreUpdater<K, V>());
+            ldr.skipStore(true);
 
             final Collection<Map.Entry<K, V>> col = new ArrayList<>(ldr.perNodeBufferSize());
 
@@ -5336,20 +5336,6 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         void onDone() {
             if (!col.isEmpty())
                 ldr.addData(col);
-        }
-    }
-
-    /**
-     *
-     */
-    static class SkipStoreUpdater<K, V> implements IgniteDataLoadCacheUpdater<K, V> {
-        /** {@inheritDoc} */
-        @Override public void update(IgniteCache<K, V> cache, Collection<Map.Entry<K, V>> entries)
-            throws IgniteCheckedException {
-            cache = cache.flagsOn(SKIP_STORE);
-
-            for (Map.Entry<K, V> e : entries)
-                cache.put(e.getKey(), e.getValue());
         }
     }
 }

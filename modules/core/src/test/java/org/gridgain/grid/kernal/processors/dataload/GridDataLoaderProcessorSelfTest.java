@@ -19,21 +19,22 @@ package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.fifo.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -78,7 +79,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"IfMayBeConditional"})
+    @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -105,7 +106,11 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
 
-            cc.setStore(store);
+            if (store != null) {
+                cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+                cc.setReadThrough(true);
+                cc.setWriteThrough(true);
+            }
 
             cfg.setCacheConfiguration(cc);
         }
@@ -780,7 +785,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 storeMap.put(i, i);
 
             try (IgniteDataLoader<Object, Object> ldr = ignite.dataLoader(null)) {
-                ldr.skipStore(false);
+                assertFalse(ldr.skipStore());
 
                 for (int i = 0; i < 1000; i++)
                     ldr.removeData(i);
@@ -860,19 +865,19 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Object load(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
+        @Nullable @Override public Object load(Object key) {
             return storeMap.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx, Object key, Object val) throws IgniteCheckedException {
-            storeMap.put(key, val);
+        @Override public void write(Cache.Entry<?, ?> entry) {
+            storeMap.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx, Object key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             storeMap.remove(key);
         }
     }

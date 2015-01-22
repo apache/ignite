@@ -579,26 +579,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
         else {
             if (store != null) {
-                Collection<Cache.Entry<? extends K, ?>> entries;
-
-                if (convertPortable) {
-                    entries = new ArrayList<>(map.size());
-
-                    for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet()) {
-                        K k = e.getKey();
-                        Object v = locStore ? e.getValue() : e.getValue().get1();
-
-                        entries.add(new CacheEntryImpl<>(
-                            (K)cctx.unwrapPortableIfNeeded(k, false),
-                            (V)cctx.unwrapPortableIfNeeded(v, false)));
-                    }
-                }
-                else {
-                    entries = new ArrayList<>(map.size());
-
-                    for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
-                        entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
-                }
+                EntriesView entries = new EntriesView(map);
 
                 if (log.isDebugEnabled())
                     log.debug("Storing values in cache store [entries=" + entries + ']');
@@ -892,6 +873,246 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.cacheName() : null;
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    private class EntriesView extends AbstractCollection<Cache.Entry<? extends K, ?>> {
+        /** */
+        private final Map<K, IgniteBiTuple<V, GridCacheVersion>> map;
+
+        /** */
+        private Set<K> rmvd;
+
+        /** */
+        private boolean cleared;
+
+        /**
+         * @param map Map.
+         */
+        private EntriesView(Map<K, IgniteBiTuple<V, GridCacheVersion>> map) {
+            assert map != null;
+
+            this.map = map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return cleared ? 0 : (map.size() - (rmvd != null ? rmvd.size() : 0));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return cleared || !iterator().hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean contains(Object o) {
+            if (cleared || !(o instanceof Cache.Entry))
+                return false;
+
+            Cache.Entry<? extends K, ?> e = (Cache.Entry<? extends K, ?>)o;
+
+            return map.containsKey(e.getKey());
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Cache.Entry<? extends K, ?>> iterator() {
+            if (cleared)
+                return F.emptyIterator();
+
+            final Iterator<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>> it0 = map.entrySet().iterator();
+
+            return new Iterator<Cache.Entry<? extends K, ?>>() {
+                /** */
+                private Cache.Entry<? extends K, ?> cur;
+
+                /** */
+                private Cache.Entry<? extends K, ?> next;
+
+                /**
+                 *
+                 */
+                {
+                    checkNext();
+                }
+
+                /**
+                 *
+                 */
+                private void checkNext() {
+                    while (it0.hasNext()) {
+                        Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e = it0.next();
+
+                        K k = e.getKey();
+
+                        if (rmvd != null && rmvd.contains(k))
+                            continue;
+
+                        Object v = locStore ? e.getValue() : e.getValue().get1();
+
+                        if (convertPortable) {
+                            k = (K)cctx.unwrapPortableIfNeeded(k, false);
+                            v = cctx.unwrapPortableIfNeeded(v, false);
+                        }
+
+                        next = new CacheEntryImpl<>(k, v);
+
+                        break;
+                    }
+                }
+
+                @Override public boolean hasNext() {
+                    return next != null;
+                }
+
+                @Override public Cache.Entry<? extends K, ?> next() {
+                    if (next == null)
+                        throw new NoSuchElementException();
+
+                    cur = next;
+
+                    next = null;
+
+                    checkNext();
+
+                    return cur;
+                }
+
+                @Override public void remove() {
+                    if (cur == null)
+                        throw new IllegalStateException();
+
+                    addRemoved(cur);
+
+                    cur = null;
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean add(Cache.Entry<? extends K, ?> entry) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addAll(Collection<? extends Cache.Entry<? extends K, ?>> col) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(Object o) {
+            if (cleared || !(o instanceof Cache.Entry))
+                return false;
+
+            Cache.Entry<? extends K, ?> e = (Cache.Entry<? extends K, ?>)o;
+
+            if (rmvd != null && rmvd.contains(e.getKey()))
+                return false;
+
+            if (mapContains(e)) {
+                addRemoved(e);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsAll(Collection<?> col) {
+            if (cleared)
+                return false;
+
+            for (Object o : col) {
+                if (contains(o))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removeAll(Collection<?> col) {
+            if (cleared)
+                return false;
+
+            boolean modified = false;
+
+            for (Object o : col) {
+                 if (remove(o))
+                     modified = true;
+            }
+
+            return modified;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean retainAll(Collection<?> col) {
+            if (cleared)
+                return false;
+
+            boolean modified = false;
+
+            for (Cache.Entry<? extends K, ?> e : this) {
+                if (!col.contains(e)) {
+                    addRemoved(e);
+
+                    modified = true;
+                }
+            }
+
+            return modified;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear() {
+            cleared = true;
+        }
+
+        /**
+         * @param e Entry.
+         */
+        private void addRemoved(Cache.Entry<? extends K, ?> e) {
+            if (rmvd == null)
+                rmvd = new HashSet<>();
+
+            rmvd.add(e.getKey());
+        }
+
+        /**
+         * @param e Entry.
+         * @return {@code True} if original map contains entry.
+         */
+        private boolean mapContains(Cache.Entry<? extends K, ?> e) {
+            K key = (K)(convertPortable ? cctx.marshalToPortable(e.getKey()) : e.getKey());
+
+            return map.containsKey(key);
+
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            Iterator<Cache.Entry<? extends K, ?>> it = iterator();
+
+            if (!it.hasNext())
+                return "[]";
+
+            SB sb = new SB("[");
+
+            while (true) {
+                Cache.Entry<? extends K, ?> e = it.next();
+
+                sb.a(e.toString());
+
+                if (!it.hasNext())
+                    return sb.a(']').toString();
+
+                sb.a(", ");
+            }
         }
     }
 }
