@@ -263,6 +263,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      *
      * @throws IgniteCheckedException In case format has failed.
      */
+    @IgniteAsyncSupported
     public void format() throws IgniteCheckedException;
 
     /**
@@ -277,6 +278,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
@@ -297,6 +299,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws IgniteCheckedException;
@@ -313,6 +316,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
@@ -332,6 +336,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws IgniteCheckedException;
