@@ -19,16 +19,16 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Projection tests for partitioned cache.

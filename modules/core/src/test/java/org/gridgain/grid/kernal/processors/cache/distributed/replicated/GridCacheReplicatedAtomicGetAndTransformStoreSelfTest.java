@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Test get and transform for store with replicated cache in atomic mode.

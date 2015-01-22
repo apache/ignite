@@ -17,10 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Tests reloadAll for colocated cache.

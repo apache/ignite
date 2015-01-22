@@ -17,12 +17,11 @@
 
 package org.gridgain.examples.datagrid.starschema;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 
 /**
  * Represents a purchase record. In our {@code snowflake} schema purchase
- * is a {@code 'fact'} and will be cached in larger {@link GridCacheMode#PARTITIONED}
+ * is a {@code 'fact'} and will be cached in larger {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED}
  * cache.
  */
 public class FactPurchase {

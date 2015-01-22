@@ -19,13 +19,14 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.cloner.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -61,11 +62,11 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheFlag.*;
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Cache context.
@@ -1554,7 +1555,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param interceptorRes Result of {@link GridCacheInterceptor#onBeforeRemove} callback.
+     * @param interceptorRes Result of {@link org.apache.ignite.cache.GridCacheInterceptor#onBeforeRemove} callback.
      * @return {@code True} if interceptor cancels remove.
      */
     public boolean cancelRemove(@Nullable IgniteBiTuple<Boolean, ?> interceptorRes) {

@@ -18,9 +18,8 @@
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -40,9 +39,9 @@ import javax.persistence.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.cache.hibernate.GridHibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
 

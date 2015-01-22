@@ -19,13 +19,12 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.spi.swapspace.file.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.junit.Assert.*;
 
 /**

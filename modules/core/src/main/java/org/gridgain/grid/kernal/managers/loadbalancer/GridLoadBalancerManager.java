@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.managers.loadbalancer;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.loadbalancing.*;

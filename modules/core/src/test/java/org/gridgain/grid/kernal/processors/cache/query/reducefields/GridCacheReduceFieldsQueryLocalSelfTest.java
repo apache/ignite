@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.reducefields;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Reduce fields queries tests for local cache.

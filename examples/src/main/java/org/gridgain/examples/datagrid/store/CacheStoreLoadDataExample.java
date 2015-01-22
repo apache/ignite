@@ -18,14 +18,13 @@
 package org.gridgain.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 
 /**
  * Loads data from persistent store at cache startup by calling
- * {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method on
+ * {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method on
  * all nodes.
  * <p>
  * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.

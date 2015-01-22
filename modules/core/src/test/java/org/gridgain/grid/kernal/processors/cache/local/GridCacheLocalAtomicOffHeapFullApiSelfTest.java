@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Tests local cache in atomic mode with values being stored offheap.

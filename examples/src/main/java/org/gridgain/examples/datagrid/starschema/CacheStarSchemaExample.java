@@ -18,10 +18,9 @@
 package org.gridgain.examples.datagrid.starschema;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.gridgain.examples.datagrid.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
 import java.util.concurrent.*;

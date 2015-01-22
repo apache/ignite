@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.GridCacheTmLookup;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -29,8 +29,8 @@ import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
 
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link GridCacheTmLookup}.

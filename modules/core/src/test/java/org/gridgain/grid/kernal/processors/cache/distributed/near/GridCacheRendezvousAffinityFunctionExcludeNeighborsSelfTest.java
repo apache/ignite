@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 
 /**
  * Tests exclude neighbors flag for rendezvous affinity function.

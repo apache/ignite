@@ -19,9 +19,9 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -31,10 +31,10 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
- * Tests affinity mapping when {@link GridCacheAffinityKeyMapper} is used.
+ * Tests affinity mapping when {@link org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapper} is used.
  */
 public class GridAffinityMappedTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */

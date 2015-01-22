@@ -17,10 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.LOCAL;
+import static org.apache.ignite.cache.GridCacheMode.LOCAL;
 
 /**
  * Tests local cache.

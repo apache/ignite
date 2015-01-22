@@ -18,13 +18,13 @@
 package org.gridgain.grid;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.fair.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.affinity.fair.*;
-import org.gridgain.grid.cache.affinity.rendezvous.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

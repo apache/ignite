@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.*;
 
 /**
  * Cache eviction policy that expires every entry essentially keeping the cache empty.

@@ -45,14 +45,14 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="evictionPolicy">
                         <bean
-                                class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                                class="org.apache.ignite.cache.eviction.lru.GridCacheLruEvictionPolicy">
                             <property name="maxSize" value="500000"/>
                         </bean>
                     </property>
                     <!-- 1 backup -->
                     <property name="backups" value="1"/>
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
                             <property name="excludeNeighbors" value="true"/>
                         </bean>
                     </property>

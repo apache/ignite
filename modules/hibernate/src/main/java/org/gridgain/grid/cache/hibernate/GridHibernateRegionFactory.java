@@ -18,7 +18,7 @@
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
@@ -46,8 +46,8 @@ import static org.hibernate.cache.spi.access.AccessType.*;
  * <pre name="code" class="brush: xml; gutter: false;">
  * org.gridgain.hibernate.grid_name=&lt;grid name&gt;
  * </pre>
- * Each Hibernate cache region must be associated with some {@link GridCache}, by default it is assumed that
- * for each cache region there is a {@link GridCache} with the same name. Also it is possible to define
+ * Each Hibernate cache region must be associated with some {@link org.apache.ignite.cache.GridCache}, by default it is assumed that
+ * for each cache region there is a {@link org.apache.ignite.cache.GridCache} with the same name. Also it is possible to define
  * region to cache mapping using properties with prefix {@code org.gridgain.hibernate.region_cache}.
  * For example if for region with name "region1" cache with name "cache1" should be used then following
  * Hibernate property should be specified:

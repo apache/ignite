@@ -17,12 +17,11 @@
 
 package org.gridgain.examples.datagrid.starschema;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 
 /**
  * Represents a product available for purchase. In our {@code snowflake} schema a {@code product}
- * is a {@code 'dimension'} and will be cached in {@link GridCacheMode#REPLICATED}
+ * is a {@code 'dimension'} and will be cached in {@link org.apache.ignite.cache.GridCacheMode#REPLICATED}
  * cache.
  */
 public class DimProduct {

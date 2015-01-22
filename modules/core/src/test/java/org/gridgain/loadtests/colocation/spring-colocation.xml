@@ -127,7 +127,7 @@
                         sets the number of backups to 1 (which is default).
                     -->
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
                             <property name="keyBackups" value="0"/> <!-- Disable backups. -->
                         </bean>
                     </property>

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
@@ -35,7 +36,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCachePeekMode.*;
+import static org.apache.ignite.cache.GridCachePeekMode.*;
 
 /**
  * Partitioned cache entry public API.

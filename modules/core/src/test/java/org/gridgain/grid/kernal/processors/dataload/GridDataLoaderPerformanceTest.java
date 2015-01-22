@@ -30,9 +30,9 @@ import org.jdk8.backport.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Data loader performance test. Compares group lock data loader to traditional lock.

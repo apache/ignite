@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.visor.query;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.*;
 
 import java.math.*;

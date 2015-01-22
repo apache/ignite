@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
@@ -50,7 +49,7 @@ import java.util.Date;
  * (assuming that class definitions are present in the classpath).
  * <p>
  * To work with the portable format directly, user should create a special cache projection
- * using {@link GridCacheProjection#keepPortable()} method and then retrieve individual fields as needed:
+ * using {@link org.apache.ignite.cache.GridCacheProjection#keepPortable()} method and then retrieve individual fields as needed:
  * <pre name=code class=java>
  * GridCacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj = cache.keepPortable();
  *
@@ -256,17 +255,17 @@ import java.util.Date;
  * or for a specific type via {@link org.apache.ignite.portables.PortableTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
- * {@link GridCacheQueryTypeMetadata} inside of specific {@link CacheConfiguration} instance,
+ * {@link org.apache.ignite.cache.query.GridCacheQueryTypeMetadata} inside of specific {@link CacheConfiguration} instance,
  * like so:
  * <pre name=code class=xml>
  * ...
  * &lt;bean class="org.gridgain.grid.cache.GridCacheConfiguration"&gt;
  *     ...
  *     &lt;property name="queryConfiguration"&gt;
- *         &lt;bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration"&gt;
+ *         &lt;bean class="GridCacheQueryConfiguration"&gt;
  *             &lt;property name="typeMetadata"&gt;
  *                 &lt;list&gt;
- *                     &lt;bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata"&gt;
+ *                     &lt;bean class="GridCacheQueryTypeMetadata"&gt;
  *                         &lt;property name="type" value="Employee"/&gt;
  *
  *                         &lt;!-- Fields to index in ascending order. --&gt;

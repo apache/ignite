@@ -18,11 +18,11 @@
 package org.gridgain.loadtests.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.util.typedef.*;
@@ -40,7 +40,7 @@ import static org.gridgain.testframework.GridLoadTestUtils.*;
 import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
- * Load test for {@link GridCacheContinuousQuery}.
+ * Load test for {@link org.apache.ignite.cache.query.GridCacheContinuousQuery}.
  */
 public class GridContinuousOperationsLoadTest {
     /**

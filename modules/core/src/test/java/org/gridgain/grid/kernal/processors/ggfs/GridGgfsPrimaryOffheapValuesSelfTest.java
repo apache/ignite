@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 
 /**
  * Tests for PRIMARY mode and OFFHEAP_VALUES memory.

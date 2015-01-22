@@ -38,7 +38,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 
 /**

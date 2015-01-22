@@ -19,17 +19,16 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.cloner.*;
+import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.cloner.*;
-import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -558,7 +557,7 @@ public class CacheConfiguration extends MutableConfiguration {
     /**
      * Gets flag indicating whether eviction is synchronized between primary and
      * backup nodes on partitioned cache. If this parameter is {@code true} and
-     * swap is disabled then {@link GridCacheProjection#evict(Object)}
+     * swap is disabled then {@link org.apache.ignite.cache.GridCacheProjection#evict(Object)}
      * and all its variations will involve all nodes where an entry is kept -
      * this is a group of nodes responsible for partition to which
      * corresponding key belongs. If this property is set to {@code false} then
@@ -1324,13 +1323,13 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Cloner to be used for cloning values that are returned to user only if {@link GridCacheFlag#CLONE}
-     * is set on {@link GridCacheProjection}. Cloning values is useful when it is needed to get value from
+     * is set on {@link org.apache.ignite.cache.GridCacheProjection}. Cloning values is useful when it is needed to get value from
      * cache, change it and put it back (if the value was not cloned, then user would be updating the
      * cached reference which would violate cache integrity).
      * <p>
-     * <b>NOTE:</b> by default, cache uses {@link GridCacheBasicCloner} implementation which will clone only objects
+     * <b>NOTE:</b> by default, cache uses {@link org.apache.ignite.cache.cloner.GridCacheBasicCloner} implementation which will clone only objects
      * implementing {@link Cloneable} interface. You can also configure cache to use
-     * {@link GridCacheDeepCloner} which will perform deep-cloning of all objects returned from cache,
+     * {@link org.apache.ignite.cache.cloner.GridCacheDeepCloner} which will perform deep-cloning of all objects returned from cache,
      * regardless of the {@link Cloneable} interface. If none of the above cloners fit your
      * logic, you can also provide your own implementation of {@link GridCacheCloner} interface.
      *
@@ -1352,7 +1351,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Gets default number of sequence values reserved for {@link GridCacheAtomicSequence} instances. After
+     * Gets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.GridCacheAtomicSequence} instances. After
      * a certain number has been reserved, consequent increments of sequence will happen locally,
      * without communication with other nodes, until the next reservation has to be made.
      * <p>
@@ -1365,7 +1364,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets default number of sequence values reserved for {@link GridCacheAtomicSequence} instances. After a certain
+     * Sets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.GridCacheAtomicSequence} instances. After a certain
      * number has been reserved, consequent increments of sequence will happen locally, without communication with other
      * nodes, until the next reservation has to be made.
      *
@@ -1428,7 +1427,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)}
+     * use {@link org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>

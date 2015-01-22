@@ -18,12 +18,12 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 

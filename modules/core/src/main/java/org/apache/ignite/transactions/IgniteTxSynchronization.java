@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * Synchronization callback for transaction. You can subscribe to receive transaction
  * state change callbacks by registering transaction synchronization via
- * {@link GridCache#txSynchronize(IgniteTxSynchronization)} method.
+ * {@link org.apache.ignite.cache.GridCache#txSynchronize(IgniteTxSynchronization)} method.
  */
 public interface IgniteTxSynchronization {
     /**

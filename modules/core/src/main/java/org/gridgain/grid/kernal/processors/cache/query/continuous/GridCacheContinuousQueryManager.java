@@ -18,12 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -506,7 +507,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      *
      */
     static class EntryListenerFilter<K1, V1> implements
-        IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K1, V1>>, Externalizable {
+        IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K1, V1>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -580,7 +581,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public boolean apply(org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K1, V1> entry) {
+        @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K1, V1> entry) {
             try {
                 EventType evtType = (((GridCacheContinuousQueryEntry)entry).eventType());
 
@@ -670,7 +671,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      *
      */
     private class EntryListenerCallback implements
-        IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> {
+        IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> {
         /** */
         private final IgniteCacheProxy<K, V> cache;
 
@@ -730,8 +731,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public boolean apply(UUID uuid,
-            Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> entries) {
-            for (org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry entry : entries) {
+            Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> entries) {
+            for (org.apache.ignite.cache.query.GridCacheContinuousQueryEntry entry : entries) {
                 try {
                     EventType evtType = (((GridCacheContinuousQueryEntry)entry).eventType());
 

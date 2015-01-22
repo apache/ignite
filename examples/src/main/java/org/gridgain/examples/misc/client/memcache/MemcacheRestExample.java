@@ -19,8 +19,8 @@ package org.gridgain.examples.misc.client.memcache;
 
 import net.spy.memcached.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.datastructures.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.datastructures.*;
 
 import java.io.*;
 import java.net.*;

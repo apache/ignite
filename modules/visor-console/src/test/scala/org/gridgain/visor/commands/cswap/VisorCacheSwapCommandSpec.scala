@@ -18,9 +18,9 @@
 package org.gridgain.visor.commands.cswap
 
 import org.apache.ignite.cache.CacheConfiguration
-import org.gridgain.grid.cache.GridCacheMode
 
 import org.apache.ignite.Ignition
+import org.apache.ignite.cache.GridCacheMode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder

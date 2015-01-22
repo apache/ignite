@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**

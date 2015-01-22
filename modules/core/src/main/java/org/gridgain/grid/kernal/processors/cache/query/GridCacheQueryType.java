@@ -17,13 +17,12 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.cache.query.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Defines different cache query types. For more information on cache query types
- * and their usage see {@link GridCacheQuery} documentation.
- * @see GridCacheQuery
+ * and their usage see {@link org.apache.ignite.cache.query.GridCacheQuery} documentation.
+ * @see org.apache.ignite.cache.query.GridCacheQuery
  */
 public enum GridCacheQueryType {
     /**

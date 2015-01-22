@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.datastructures.*;
+import org.apache.ignite.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 

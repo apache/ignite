@@ -18,17 +18,17 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
 
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Attribute validation self test.

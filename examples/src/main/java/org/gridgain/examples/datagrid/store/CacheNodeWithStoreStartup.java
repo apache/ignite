@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Starts up an empty node with example cache configuration.

@@ -20,10 +20,10 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.commons.io.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -39,8 +39,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.nio.charset.StandardCharsets.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Tests for {@link GridGgfsProcessor}.

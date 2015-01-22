@@ -18,10 +18,10 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 
 /**
- * Multi-node tests for replicated cache with {@link GridCacheRendezvousAffinityFunction}.
+ * Multi-node tests for replicated cache with {@link org.apache.ignite.cache.affinity.rendezvous.GridCacheRendezvousAffinityFunction}.
  */
 public class GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest extends GridCacheReplicatedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */

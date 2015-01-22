@@ -375,7 +375,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
 
     /**
      * Default empty implementation. This method needs to be overridden only if
-     * {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method
+     * {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method
      * is explicitly called.
      *
      * @param clo {@inheritDoc}

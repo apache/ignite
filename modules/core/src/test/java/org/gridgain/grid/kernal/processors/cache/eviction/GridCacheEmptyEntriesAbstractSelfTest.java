@@ -19,13 +19,13 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy;
-import org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.GridCacheEvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -37,7 +37,7 @@ import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
 import javax.cache.*;
 import javax.cache.configuration.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Tests that cache handles {@code setAllowEmptyEntries} flag correctly.

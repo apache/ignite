@@ -17,10 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
  * Tests for byte array values in NEAR-PARTITIONED caches.

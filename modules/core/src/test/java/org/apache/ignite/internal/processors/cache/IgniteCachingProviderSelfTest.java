@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 
 import javax.cache.*;
 import javax.cache.spi.*;

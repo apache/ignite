@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 
 import javax.cache.*;

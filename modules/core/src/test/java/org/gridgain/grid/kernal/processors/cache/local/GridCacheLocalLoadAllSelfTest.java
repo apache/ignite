@@ -30,7 +30,7 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Load-All self test.

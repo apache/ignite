@@ -19,6 +19,10 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.cloner.*;
+import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -26,10 +30,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.cloner.*;
-import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -38,8 +38,8 @@ import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Test for {@link LifecycleAware} support in {@link CacheConfiguration}.

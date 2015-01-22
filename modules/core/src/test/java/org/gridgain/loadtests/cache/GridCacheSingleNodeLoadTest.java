@@ -18,10 +18,9 @@
 package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.lru.*;
 import org.apache.ignite.spi.collision.fifoqueue.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -34,8 +33,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
  */

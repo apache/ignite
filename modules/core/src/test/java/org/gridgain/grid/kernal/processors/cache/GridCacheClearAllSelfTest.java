@@ -19,9 +19,9 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -29,14 +29,14 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.lang.reflect.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheAdapter.*;
 
 /**
- * Test {@link GridCache#clearAll()} operations in multinode environment with nodes having caches with different names.
+ * Test {@link org.apache.ignite.cache.GridCache#clearAll()} operations in multinode environment with nodes having caches with different names.
  */
 public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     /** Local cache. */

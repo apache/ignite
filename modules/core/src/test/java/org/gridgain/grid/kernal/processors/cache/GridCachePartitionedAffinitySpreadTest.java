@@ -17,15 +17,13 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction.*;
 
 /**
  *

@@ -18,9 +18,9 @@
 package org.apache.ignite.client.impl;
 
 import junit.framework.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.connection.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.cache.*;
 import org.gridgain.grid.util.typedef.*;
 

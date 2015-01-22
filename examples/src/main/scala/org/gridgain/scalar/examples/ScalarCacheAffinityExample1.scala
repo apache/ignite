@@ -17,13 +17,13 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.cache.GridCacheName
+import org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapped
 import org.gridgain.scalar.scalar
 import scalar._
 import org.apache.ignite._
 import org.jetbrains.annotations.Nullable
 import java.util.concurrent.Callable
-import org.gridgain.grid.cache.affinity.GridCacheAffinityKeyMapped
-import org.gridgain.grid.cache.GridCacheName
 
 /**
  * Example of how to collocate computations and data in GridGain using

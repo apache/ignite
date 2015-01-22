@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
  * Extended continuous query filter.
  */
 public interface GridCacheContinuousQueryFilterEx<K, V> extends
-        IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> {
+        IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> {
     /**
      * Callback for query unregister event.
      */

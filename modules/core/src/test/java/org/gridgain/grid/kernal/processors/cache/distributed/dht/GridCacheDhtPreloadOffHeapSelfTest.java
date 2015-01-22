@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader} with off-heap value storage.

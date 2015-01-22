@@ -18,14 +18,13 @@
 package org.gridgain.grid.kernal.visor.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.eviction.fifo.*;
+import org.apache.ignite.cache.eviction.lru.*;
+import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.eviction.fifo.*;
-import org.gridgain.grid.cache.eviction.lru.*;
-import org.gridgain.grid.cache.eviction.random.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.visor.event.*;
 import org.gridgain.grid.kernal.visor.file.*;

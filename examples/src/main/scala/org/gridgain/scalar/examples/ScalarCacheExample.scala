@@ -17,6 +17,7 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.cache.GridCacheEntry
 import org.apache.ignite.events.{IgniteEventType, IgniteEvent}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar.scalar

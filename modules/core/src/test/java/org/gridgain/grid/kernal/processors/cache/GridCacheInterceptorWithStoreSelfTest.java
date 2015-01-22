@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.GridCacheInterceptor;
+import org.apache.ignite.cache.GridCacheInterceptor;
 
 /**
  * Tests {@link GridCacheInterceptor}.

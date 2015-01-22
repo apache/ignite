@@ -17,18 +17,16 @@
 
 package org.apache.ignite.client.impl;
 
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.client.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
-
-import static org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction.*;
 
 /**
  * Client's partitioned affinity tests.

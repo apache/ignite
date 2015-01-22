@@ -31,7 +31,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCache(String, String...)} method.

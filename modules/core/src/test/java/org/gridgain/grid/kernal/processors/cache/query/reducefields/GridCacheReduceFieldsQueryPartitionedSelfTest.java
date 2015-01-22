@@ -17,13 +17,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.reducefields;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Reduce fields queries tests for partitioned cache.

@@ -17,13 +17,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Tests for local cache iterators.

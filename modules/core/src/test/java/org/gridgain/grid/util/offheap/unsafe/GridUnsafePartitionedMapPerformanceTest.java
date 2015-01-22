@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.util.offheap.unsafe;
 
-import org.gridgain.grid.cache.affinity.consistenthash.*;
+import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.gridgain.grid.util.offheap.*;
 
 /**

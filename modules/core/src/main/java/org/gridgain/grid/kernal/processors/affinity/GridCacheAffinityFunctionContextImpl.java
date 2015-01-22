@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.affinity;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.gridgain.grid.cache.affinity.*;

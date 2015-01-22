@@ -17,6 +17,7 @@
 
 package org.gridgain.scalar.pimps
 
+import org.apache.ignite.cache.{GridCacheEntry, GridCacheProjection}
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.lang.{IgnitePredicate, IgniteReducer, IgniteClosure, IgniteBiTuple}
 
@@ -164,7 +165,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
      * @return Value for the given key.
-     * @see `org.gridgain.grid.cache.GridCacheProjection.get(...)`
+     * @see `GridCacheProjection.get(...)`
      */
     def opt(k: K, p: EntryPred = null): Option[V] =
         Option(value.projection(p).get(k))
@@ -178,7 +179,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Key-value predicate for this projection. If `null`, then the
      *      same projection is returned.
      * @return Projection for given key-value predicate.
-     * @see `org.gridgain.grid.cache.GridCacheProjection.projection(...)`
+     * @see `GridCacheProjection.projection(...)`
      */
     def viewByKv(@Nullable p: ((K, V) => Boolean)): GridCacheProjection[K, V] =
         if (p == null)
@@ -195,7 +196,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *      same projection is returned.  If cache operation receives its own filter, then filters
      *      will be `anded`.
      * @return Projection based on given filter.
-     * @see `org.gridgain.grid.cache.GridCacheProjection.projection(...)`
+     * @see `GridCacheProjection.projection(...)`
      */
     def viewByEntry(@Nullable p: EntryPred): GridCacheProjection[K, V] =
         if (p == null)
@@ -216,7 +217,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param k Key type.
      * @param v Value type.
      * @return Cache projection for given key and value types.
-     * @see `org.gridgain.grid.cache.GridCacheProjection.projection(...)`
+     * @see `GridCacheProjection.projection(...)`
      */
     def viewByType[A, B](k: Class[A], v: Class[B]): GridCacheProjection[A, B] = {
         assert(k != null && v != null)
@@ -279,7 +280,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Optional filter to check prior to putting value in cache. Note
      *      that filter check is atomic with put operation.
      * @return `True` if value was stored in cache, `false` otherwise.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#putx(...)`
+     * @see `GridCacheProjection#putx(...)`
      */
     def putx$(kv: (K, V), @Nullable p: EntryPred*): Boolean =
         value.putx(kv._1, kv._2, unwrap(p): _*)
@@ -306,7 +307,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @return Previous value associated with specified key, or `null`
      *      if entry did not pass the filter, or if there was no mapping for the key in swap
      *      or in persistent storage.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#put(...)`
+     * @see `GridCacheProjection#put(...)`
      */
     def put$(kv: (K, V), @Nullable p: EntryPred*): V =
         value.put(kv._1, kv._2, unwrap(p): _*)
@@ -331,7 +332,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Optional filter to check prior to putting value in cache. Note
      *      that filter check is atomic with put operation.
      * @return Previous value associated with specified key as an option.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#put(...)`
+     * @see `GridCacheProjection#put(...)`
      */
     def putOpt$(kv: (K, V), @Nullable p: EntryPred*): Option[V] =
         Option(value.put(kv._1, kv._2, unwrap(p): _*))
@@ -343,7 +344,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Optional filter to check prior to putting value in cache. Note
      *      that filter check is atomic with put operation.
      * @return `True` if value was stored in cache, `false` otherwise.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#putx(...)`
+     * @see `GridCacheProjection#putx(...)`
      */
     def +=(kv: (K, V), @Nullable p: EntryPred*): Boolean =
         putx$(kv, p: _*)
@@ -365,7 +366,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param kv1 Key-value pair to store in cache.
      * @param kv2 Key-value pair to store in cache.
      * @param kvs Optional key-value pairs to store in cache.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#putAll(...)`
+     * @see `GridCacheProjection#putAll(...)`
      */
     def putAll$(kv1: (K, V), kv2: (K, V), @Nullable kvs: (K, V)*) {
         var m = mutable.Map.empty[K, V]
@@ -393,7 +394,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
      *
      * @param kvs Key-value pairs to store in cache. If `null` this function is no-op.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#putAll(...)`
+     * @see `GridCacheProjection#putAll(...)`
      */
     def putAll$(@Nullable kvs: Seq[(K, V)]) {
         if (kvs != null)
@@ -415,7 +416,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
      *
      * @param ks Sequence of additional keys to remove. If `null` - this function is no-op.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#removeAll(...)`
+     * @see `GridCacheProjection#removeAll(...)`
      */
     def removeAll$(@Nullable ks: Seq[K]) {
         if (ks != null)
@@ -428,7 +429,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param kv1 Key-value pair to store in cache.
      * @param kv2 Key-value pair to store in cache.
      * @param kvs Optional key-value pairs to store in cache.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#putAll(...)`
+     * @see `GridCacheProjection#putAll(...)`
      */
     def +=(kv1: (K, V), kv2: (K, V), @Nullable kvs: (K, V)*) {
         putAll$(kv1, kv2, kvs: _*)
@@ -464,7 +465,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key, or `null`
      *      if there was no value for this key.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#remove(...)`
+     * @see `GridCacheProjection#remove(...)`
      */
     def remove$(k: K, @Nullable p: EntryPred*): V =
         value.remove(k, unwrap(p): _*)
@@ -498,7 +499,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Optional filters to check prior to removing value form cache. Note
      *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key as an option.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#remove(...)`
+     * @see `GridCacheProjection#remove(...)`
      */
     def removeOpt$(k: K, @Nullable p: EntryPred*): Option[V] =
         Option(value.remove(k, unwrap(p): _*))
@@ -511,7 +512,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key, or `null`
      *      if there was no value for this key.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#remove(...)`
+     * @see `GridCacheProjection#remove(...)`
      */
     def -=(k: K, @Nullable p: EntryPred*): V =
         remove$(k, p: _*)
@@ -533,7 +534,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param k1 1st key to remove.
      * @param k2 2nd key to remove.
      * @param ks Optional sequence of additional keys to remove.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#removeAll(...)`
+     * @see `GridCacheProjection#removeAll(...)`
      */
     def removeAll$(k1: K, k2: K, @Nullable ks: K*) {
         val s = new mutable.ArrayBuffer[K](2 + (if (ks == null) 0 else ks.length))
@@ -553,7 +554,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param k1 1st key to remove.
      * @param k2 2nd key to remove.
      * @param ks Optional sequence of additional keys to remove.
-     * @see `org.gridgain.grid.cache.GridCacheProjection#removeAll(...)`
+     * @see `GridCacheProjection#removeAll(...)`
      */
     def -=(k1: K, k2: K, @Nullable ks: K*) {
         removeAll$(k1, k2, ks: _*)

@@ -17,6 +17,7 @@
 
 package org.gridgain.scalar.pimps
 
+import org.apache.ignite.cache.GridCache
 import org.gridgain.grid.cache._
 
 /**

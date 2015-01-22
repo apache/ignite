@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.eviction.fifo;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.fifo.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * FIFO Eviction test.

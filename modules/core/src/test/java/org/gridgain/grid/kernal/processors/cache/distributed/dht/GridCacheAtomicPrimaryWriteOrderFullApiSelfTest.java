@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
 
 /**
  * Test for atomic cache with primary write order mode.

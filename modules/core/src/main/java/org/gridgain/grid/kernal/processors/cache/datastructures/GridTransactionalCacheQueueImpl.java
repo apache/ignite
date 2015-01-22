@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -32,7 +31,7 @@ import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
- * {@link GridCacheQueue} implementation using transactional cache.
+ * {@link org.apache.ignite.cache.datastructures.GridCacheQueue} implementation using transactional cache.
  */
 public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** */

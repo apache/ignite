@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.local.atomic;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
@@ -39,7 +40,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**

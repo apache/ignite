@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Test cases for multi-threaded tests.

@@ -17,11 +17,11 @@
 
 package org.gridgain.grid.kernal.websession;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.eclipse.jetty.webapp.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

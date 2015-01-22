@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;

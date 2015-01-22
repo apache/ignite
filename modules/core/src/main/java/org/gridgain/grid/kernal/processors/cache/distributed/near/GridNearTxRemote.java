@@ -31,7 +31,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCachePeekMode.*;
+import static org.apache.ignite.cache.GridCachePeekMode.*;
 
 /**
  * Transaction created by system implicitly on remote nodes.

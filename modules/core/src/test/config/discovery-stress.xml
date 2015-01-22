@@ -35,7 +35,7 @@
                 <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
                 <property name="evictionPolicy">
-                    <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                    <bean class="org.apache.ignite.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
                         <property name="maxSize" value="20000000"/>
                     </bean>
                 </property>

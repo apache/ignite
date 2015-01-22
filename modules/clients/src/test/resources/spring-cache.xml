@@ -92,7 +92,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.GridCacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>

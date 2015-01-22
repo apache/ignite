@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
 /**
  * Test allow empty entries flag on partitioned cache.

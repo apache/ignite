@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.affinity;
 
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.rendezvous.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.affinity.rendezvous.*;
 
 /**
  * Tests affinity processor with rendezvous affinity function.

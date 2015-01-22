@@ -17,6 +17,7 @@
 
 package org.gridgain.scalar.tests
 
+import org.apache.ignite.cache.GridCache
 import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.scalar._
 import scalar._

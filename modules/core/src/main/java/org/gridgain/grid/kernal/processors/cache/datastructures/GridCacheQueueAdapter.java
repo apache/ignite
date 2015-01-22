@@ -18,9 +18,10 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -407,7 +408,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks result of closure modifying queue header, throws {@link GridCacheDataStructureRemovedRuntimeException}
+     * Checks result of closure modifying queue header, throws {@link org.apache.ignite.cache.datastructures.GridCacheDataStructureRemovedRuntimeException}
      * if queue was removed.
      *
      * @param idx Result of closure execution.
@@ -418,7 +419,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks queue state, throws {@link GridCacheDataStructureRemovedRuntimeException} if queue was removed.
+     * Checks queue state, throws {@link org.apache.ignite.cache.datastructures.GridCacheDataStructureRemovedRuntimeException} if queue was removed.
      *
      * @param hdr Queue hdr.
      */
@@ -430,7 +431,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * Marks queue as removed.
      *
-     * @param throw0 If {@code true} then throws {@link GridCacheDataStructureRemovedRuntimeException}.
+     * @param throw0 If {@code true} then throws {@link org.apache.ignite.cache.datastructures.GridCacheDataStructureRemovedRuntimeException}.
      */
     void onRemoved(boolean throw0) {
         rmvd = true;

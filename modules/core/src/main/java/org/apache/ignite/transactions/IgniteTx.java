@@ -28,7 +28,7 @@ import java.util.*;
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
  * {@gglink org.gridgain.grid.cache.jta.GridCacheTmLookup}
- * interface. Cache transactions can also be started explicitly directly from {@link GridCacheProjection} API
+ * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.GridCacheProjection} API
  * via any of the {@code 'GridCacheProjection.txStart(..)'} methods.
  * <p>
  * Cache transactions support the following isolation levels:
@@ -68,7 +68,7 @@ import java.util.*;
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
  *  {@link CacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT}.
+ *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.cache.GridCacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link IgniteTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic
@@ -88,10 +88,10 @@ import java.util.*;
  * </ul>
  * <p>
  * <h1 class="header">Cache Atomicity Mode</h1>
- * In addition to standard {@link GridCacheAtomicityMode#TRANSACTIONAL} behavior, GridGain also supports
- * a lighter {@link GridCacheAtomicityMode#ATOMIC} mode as well. In this mode distributed transactions
+ * In addition to standard {@link org.apache.ignite.cache.GridCacheAtomicityMode#TRANSACTIONAL} behavior, GridGain also supports
+ * a lighter {@link org.apache.ignite.cache.GridCacheAtomicityMode#ATOMIC} mode as well. In this mode distributed transactions
  * and distributed locking are not supported. Disabling transactions and locking allows to achieve much higher
- * performance and throughput ratios. It is recommended that {@link GridCacheAtomicityMode#ATOMIC} mode
+ * performance and throughput ratios. It is recommended that {@link org.apache.ignite.cache.GridCacheAtomicityMode#ATOMIC} mode
  * is used whenever full {@code ACID}-compliant transactions are not needed.
  * <p>
  * <h1 class="header">Usage</h1>

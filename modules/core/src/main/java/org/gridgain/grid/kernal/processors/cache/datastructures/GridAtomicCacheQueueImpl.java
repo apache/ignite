@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -28,7 +27,7 @@ import javax.cache.processor.*;
 import java.util.*;
 
 /**
- * {@link GridCacheQueue} implementation using atomic cache.
+ * {@link org.apache.ignite.cache.datastructures.GridCacheQueue} implementation using atomic cache.
  */
 public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** */

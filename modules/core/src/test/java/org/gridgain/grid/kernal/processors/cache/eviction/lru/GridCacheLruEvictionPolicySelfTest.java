@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache.eviction.lru;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.eviction.lru.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.eviction.lru.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.*;
 
 import java.util.*;

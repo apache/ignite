@@ -18,11 +18,11 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.query.*;
 
 import java.io.*;
 import java.util.*;
@@ -48,7 +48,7 @@ import java.util.*;
  *     </li>
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
- *         collocated mode. Refer to {@link GridCacheAffinityKey} javadoc for more details.
+ *         collocated mode. Refer to {@link org.apache.ignite.cache.affinity.GridCacheAffinityKey} javadoc for more details.
  *     </li>
  *     <li>
  *         Note that if you created query on to replicated cache, all data will

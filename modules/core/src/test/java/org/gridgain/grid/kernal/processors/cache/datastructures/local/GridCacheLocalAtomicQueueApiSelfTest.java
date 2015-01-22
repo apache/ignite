@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.local;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Queue tests with local atomic cache.

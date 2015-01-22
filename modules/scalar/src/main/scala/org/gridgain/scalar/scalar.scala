@@ -18,6 +18,8 @@
 package org.gridgain.scalar
 
 import java.net.URL
+import org.apache.ignite.cache.GridCache
+import org.apache.ignite.cache.query.{GridCacheQuerySqlField, GridCacheQueryTextField}
 import org.apache.ignite.{IgniteState, IgniteDataLoader, Ignition, Ignite}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration

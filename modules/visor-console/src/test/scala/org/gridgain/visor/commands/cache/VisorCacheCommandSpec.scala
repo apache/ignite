@@ -17,9 +17,8 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.cache.query.GridCacheQuerySqlField
-
 import org.apache.ignite.Ignition
+import org.apache.ignite.cache.query.GridCacheQuerySqlField
 import org.scalatest._
 
 import org.gridgain.visor._

@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -34,11 +33,11 @@ import java.io.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Filter for web sessions caching.
@@ -130,13 +129,13 @@ import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
  * parameter; if you specify both, the servlet context parameter will be ignored.
  * <h1 class="header">Web sessions caching and concurrent requests</h1>
  * If your web application can accept concurrent request for one session,
- * consider using {@link GridCacheAtomicityMode#TRANSACTIONAL} cache
- * instead of {@link GridCacheAtomicityMode#ATOMIC}. In this case each request
+ * consider using {@link org.apache.ignite.cache.GridCacheAtomicityMode#TRANSACTIONAL} cache
+ * instead of {@link org.apache.ignite.cache.GridCacheAtomicityMode#ATOMIC}. In this case each request
  * be processed inside pessimistic transaction which will guarantee that all
  * updates will be applied in correct order. This is important, for example,
  * if you get some attribute from the session, update its value and set new
- * value back to the session. In case of {@link GridCacheAtomicityMode#ATOMIC}
- * cache concurrent requests can get equal value, but {@link GridCacheAtomicityMode#TRANSACTIONAL}
+ * value back to the session. In case of {@link org.apache.ignite.cache.GridCacheAtomicityMode#ATOMIC}
+ * cache concurrent requests can get equal value, but {@link org.apache.ignite.cache.GridCacheAtomicityMode#TRANSACTIONAL}
  * cache will always process such updates one after another.
  */
 public class GridWebSessionFilter implements Filter {

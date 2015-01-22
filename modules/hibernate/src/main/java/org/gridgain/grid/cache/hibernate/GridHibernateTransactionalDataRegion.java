@@ -18,12 +18,12 @@
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.access.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Implementation of {@link TransactionalDataRegion} (transactional means that

@@ -17,15 +17,15 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
- * Tests {@link org.gridgain.grid.cache.GridCacheInterceptor}.
+ * Tests {@link org.apache.ignite.cache.GridCacheInterceptor}.
  */
 public class GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */

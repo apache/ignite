@@ -17,10 +17,10 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
-import org.gridgain.grid.cache.GridCacheMode;
+import org.apache.ignite.cache.GridCacheMode;
 import org.gridgain.grid.kernal.processors.cache.distributed.GridCachePreloadEventsAbstractSelfTest;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  */

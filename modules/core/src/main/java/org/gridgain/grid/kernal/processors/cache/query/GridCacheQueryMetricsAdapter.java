@@ -17,13 +17,13 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Adapter for {@link GridCacheQueryMetrics}.
+ * Adapter for {@link org.apache.ignite.cache.query.GridCacheQueryMetrics}.
  */
 public class GridCacheQueryMetricsAdapter implements GridCacheQueryMetrics, Externalizable {
     /** */

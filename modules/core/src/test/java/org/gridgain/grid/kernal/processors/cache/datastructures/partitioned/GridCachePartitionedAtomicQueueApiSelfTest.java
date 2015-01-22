@@ -20,8 +20,8 @@ package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Queue tests with partitioned atomic cache.

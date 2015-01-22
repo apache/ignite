@@ -18,12 +18,12 @@
 package org.gridgain.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;

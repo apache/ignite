@@ -17,10 +17,10 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.cache.GridCacheProjection
 import org.gridgain.scalar.scalar
 import org.gridgain.scalar.scalar._
 import scala.collection.JavaConversions._
-import org.gridgain.grid.cache.GridCacheProjection
 import scala.StringBuilder
 import java.util.ConcurrentModificationException
 import java.util

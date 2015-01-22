@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.gridgain.grid.util.typedef.*;
 
 import java.util.*;
@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Continuous queries tests for replicated cache.

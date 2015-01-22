@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.processors.affinity;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -40,7 +42,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.affinity.GridAffinityUtils.*;
 
@@ -364,7 +366,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link GridCacheAffinityFunction} and {@link GridCacheAffinityKeyMapper} from remote node.
+     * Requests {@link GridCacheAffinityFunction} and {@link org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param n Node from which affinity is requested.

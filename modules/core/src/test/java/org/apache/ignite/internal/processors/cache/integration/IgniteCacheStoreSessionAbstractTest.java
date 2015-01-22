@@ -15,7 +15,7 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  *

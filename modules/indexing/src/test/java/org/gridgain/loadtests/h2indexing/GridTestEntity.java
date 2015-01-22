@@ -17,7 +17,7 @@
 
 package org.gridgain.loadtests.h2indexing;
 
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 
 import java.util.*;
 

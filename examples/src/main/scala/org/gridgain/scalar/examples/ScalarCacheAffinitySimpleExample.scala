@@ -17,9 +17,9 @@
 
 package org.gridgain.scalar.examples
 
+import org.apache.ignite.cache.GridCache
 import org.gridgain.scalar.scalar
 import scalar._
-import org.gridgain.grid.cache.GridCache
 
 /**
  * This example demonstrates the simplest code that populates the distributed cache

@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -26,7 +28,6 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -48,7 +49,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.query.GridCacheQueryType.*;
@@ -485,7 +486,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
+                            org.apache.ignite.cache.query.GridCacheQueryType.SQL,
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -507,7 +508,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
+                            org.apache.ignite.cache.query.GridCacheQueryType.SCAN,
                             cctx.namex(),
                             null,
                             null,
@@ -528,7 +529,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
+                            org.apache.ignite.cache.query.GridCacheQueryType.FULL_TEXT,
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -602,7 +603,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    org.gridgain.grid.cache.query.GridCacheQueryType.SQL_FIELDS,
+                    org.apache.ignite.cache.query.GridCacheQueryType.SQL_FIELDS,
                     cctx.namex(),
                     null,
                     qry.clause(),
@@ -634,7 +635,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    org.gridgain.grid.cache.query.GridCacheQueryType.SPI,
+                    org.apache.ignite.cache.query.GridCacheQueryType.SPI,
                     cctx.namex(),
                     null,
                     null,
@@ -1066,7 +1067,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
-                            org.gridgain.grid.cache.query.GridCacheQueryType.SQL_FIELDS,
+                            org.apache.ignite.cache.query.GridCacheQueryType.SQL_FIELDS,
                             cctx.namex(),
                             null,
                             qry.clause(),
@@ -1253,7 +1254,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    org.gridgain.grid.cache.query.GridCacheQueryType.SQL,
+                                    org.apache.ignite.cache.query.GridCacheQueryType.SQL,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1276,7 +1277,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    org.gridgain.grid.cache.query.GridCacheQueryType.FULL_TEXT,
+                                    org.apache.ignite.cache.query.GridCacheQueryType.FULL_TEXT,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1299,7 +1300,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    org.gridgain.grid.cache.query.GridCacheQueryType.SCAN,
+                                    org.apache.ignite.cache.query.GridCacheQueryType.SCAN,
                                     cctx.namex(),
                                     null,
                                     null,

@@ -18,8 +18,7 @@
 package org.gridgain.loadtests.cache;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 

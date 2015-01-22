@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
  * Partitioned cache nested transaction test.

@@ -75,7 +75,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     /** Preload predicate. */
     private IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
 
-    /** Future for preload mode {@link GridCachePreloadMode#SYNC}. */
+    /** Future for preload mode {@link org.apache.ignite.cache.GridCachePreloadMode#SYNC}. */
     @GridToStringInclude
     private SyncFuture syncFut;
 
@@ -167,7 +167,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * @return Future for {@link GridCachePreloadMode#SYNC} mode.
+     * @return Future for {@link org.apache.ignite.cache.GridCachePreloadMode#SYNC} mode.
      */
     IgniteFuture<?> syncFuture() {
         return syncFut;

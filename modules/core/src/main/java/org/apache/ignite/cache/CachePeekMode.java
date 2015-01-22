@@ -22,8 +22,8 @@ import org.jetbrains.annotations.*;
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
  * {@code 'GridCacheProjection.peek(..)'} and {@code GridCacheEntry.peek(..)} methods,
- * such as {@link org.gridgain.grid.cache.GridCacheProjection#peek(Object, java.util.Collection)},
- * {@link org.gridgain.grid.cache.GridCacheEntry#peek()}, and others.
+ * such as {@link org.apache.ignite.cache.GridCacheProjection#peek(Object, java.util.Collection)},
+ * {@link org.apache.ignite.cache.GridCacheEntry#peek()}, and others.
  * <p>
  * The following modes are supported:
  * <ul>
@@ -42,7 +42,7 @@ public enum CachePeekMode {
 
     /**
      * Peek into near cache only (don't peek into partitioned cache).
-     * In case of {@link org.gridgain.grid.cache.GridCacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
+     * In case of {@link org.apache.ignite.cache.GridCacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     NEAR,
 

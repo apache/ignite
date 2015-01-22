@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
-import org.gridgain.grid.cache.GridCacheMode;
+import org.apache.ignite.cache.GridCacheMode;
 import org.gridgain.grid.kernal.processors.cache.GridCacheAbstractTxReadTest;
 
 /**

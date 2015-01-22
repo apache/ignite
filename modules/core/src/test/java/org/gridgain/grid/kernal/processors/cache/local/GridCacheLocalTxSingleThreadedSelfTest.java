@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
  * Tests for local transactions.

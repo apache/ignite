@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.cache.affinity.GridCacheAffinityKeyMapped;
+import org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapped;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

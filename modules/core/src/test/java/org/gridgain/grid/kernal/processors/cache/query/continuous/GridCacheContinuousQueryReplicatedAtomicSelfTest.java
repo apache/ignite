@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 
 /**
  * Continuous queries tests for replicated atomic cache.

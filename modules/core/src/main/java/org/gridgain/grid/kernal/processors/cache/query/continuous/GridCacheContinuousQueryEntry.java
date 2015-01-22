@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.*;
@@ -34,7 +35,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
 
 /**
@@ -42,7 +43,7 @@ import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
  */
 @SuppressWarnings("TypeParameterHidesVisibleType")
 public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>, GridCacheDeployable, Externalizable,
-    org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V> {
+    org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 

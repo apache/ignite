@@ -18,10 +18,11 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 
 /**
- * Management bean that provides access to {@link GridCache}.
+ * Management bean that provides access to {@link org.apache.ignite.cache.GridCache}.
  */
 class GridCacheMBeanAdapter implements GridCacheMBean {
     /** Cache context. */

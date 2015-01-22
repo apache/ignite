@@ -18,12 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -53,10 +54,10 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
     /** Local callback. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    private IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
+    private IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb;
 
     /** Filter. */
-    private IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
+    private IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> filter;
 
     /** Projection predicate */
     private IgnitePredicate<GridCacheEntry<K, V>> prjPred;
@@ -108,8 +109,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
      */
     GridCacheContinuousQueryHandler(@Nullable String cacheName,
         Object topic,
-        IgniteBiPredicate<UUID, Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
-        @Nullable IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
+        IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> cb,
+        @Nullable IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> filter,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred,
         boolean internal,
         boolean entryLsnr,
@@ -211,7 +212,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
 
                     if (loc) {
                         if (!cb.apply(nodeId,
-                            F.<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
+                            F.<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>asList(e)))
                             ctx.continuous().stopRoutine(routineId);
                     }
                     else {
@@ -324,8 +325,8 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         assert objs != null;
         assert ctx != null;
 
-        Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>> entries =
-            (Collection<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K, V>>)objs;
+        Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> entries =
+            (Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>)objs;
 
         if (ctx.config().isPeerClassLoadingEnabled()) {
             for (Map.Entry<K, V> e : entries) {
@@ -445,7 +446,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
         if (b)
             filterDep = (DeployableObject)in.readObject();
         else
-            filter = (IgnitePredicate<org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
+            filter = (IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K,V>>)in.readObject();
 
         b = in.readBoolean();
 

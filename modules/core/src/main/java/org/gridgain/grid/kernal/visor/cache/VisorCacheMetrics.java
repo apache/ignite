@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 

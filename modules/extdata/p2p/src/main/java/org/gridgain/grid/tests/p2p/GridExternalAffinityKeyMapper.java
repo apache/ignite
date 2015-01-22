@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.tests.p2p;
 
+import org.apache.ignite.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.*;
 
 /**

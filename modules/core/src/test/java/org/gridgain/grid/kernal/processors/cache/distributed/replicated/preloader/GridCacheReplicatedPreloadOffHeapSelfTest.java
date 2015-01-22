@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed.replicated.preload
 
 import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 
 /**
  * Tests for replicated cache {@link GridReplicatedPreloader preloader}.

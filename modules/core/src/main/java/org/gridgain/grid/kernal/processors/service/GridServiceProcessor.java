@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.service;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -28,7 +29,7 @@ import org.apache.ignite.thread.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.GridCacheContinuousQueryEntry;
+import org.apache.ignite.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;

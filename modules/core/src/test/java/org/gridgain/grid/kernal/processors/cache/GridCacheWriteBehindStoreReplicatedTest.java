@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
 /**
  * Tests {@link GridCacheWriteBehindStore} in grid configuration.

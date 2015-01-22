@@ -17,7 +17,7 @@
 
 package org.gridgain.loadtests.dsi;
 
-import org.gridgain.grid.cache.affinity.*;
+import org.apache.ignite.cache.affinity.*;
 
 import java.io.*;
 

@@ -19,6 +19,9 @@ package org.gridgain.grid.marshaller;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -29,9 +32,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -50,7 +50,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**

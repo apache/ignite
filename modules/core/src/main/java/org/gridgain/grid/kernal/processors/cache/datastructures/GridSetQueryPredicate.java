@@ -18,14 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
 
 /**
- * Predicate for query over {@link GridCacheSet} items.
+ * Predicate for query over {@link org.apache.ignite.cache.datastructures.GridCacheSet} items.
  */
 public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Externalizable {
     /** */

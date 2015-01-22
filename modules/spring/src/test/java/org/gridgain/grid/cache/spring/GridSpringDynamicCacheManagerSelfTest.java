@@ -18,11 +18,11 @@
 package org.gridgain.grid.cache.spring;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.springframework.beans.factory.*;
 import org.springframework.cache.*;

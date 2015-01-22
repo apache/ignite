@@ -18,6 +18,7 @@
 package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
+import org.apache.ignite.cache.{GridCacheEntry, GridCache, GridCacheProjection}
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.compute.ComputeJob
 import org.apache.ignite.lang._

@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.eviction.ggfs.*;
+import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.eviction.ggfs.*;
 
 /**
  * GGFS utils processor.

@@ -17,8 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures;
 
-import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.cache.datastructures.*;
 
 /**
  * Atomic reference managed by cache ({@code 'Ex'} stands for external).
