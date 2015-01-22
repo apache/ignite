@@ -50,7 +50,7 @@ public enum GridComponentType {
     /** Spring XML parsing. */
     SPRING(
         null,
-        "org.gridgain.grid.kernal.processors.spring.GridSpringProcessorImpl",
+        "org.apache.ignite.internal.processors.spring.GridSpringProcessorImpl",
         "gridgain-spring"
     ),
 
@@ -70,8 +70,8 @@ public enum GridComponentType {
 
     /** Email sending. */
     EMAIL(
-        "org.gridgain.grid.kernal.processors.email.GridNoopEmailProcessor",
-        "org.gridgain.grid.kernal.processors.email.GridEmailProcessor",
+        "org.apache.ignite.internal.processors.email.GridNoopEmailProcessor",
+        "org.apache.ignite.internal.processors.email.GridEmailProcessor",
         "gridgain-email"
     ),
 

@@ -26,8 +26,8 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.events.*;
 import org.apache.ignite.internal.managers.swapspace.*;
-import org.gridgain.grid.kernal.processors.port.*;
-import org.gridgain.grid.kernal.processors.service.*;
+import org.apache.ignite.internal.processors.port.*;
+import org.apache.ignite.internal.processors.service.*;
 
 /**
  * Kernal self test suite.

@@ -38,7 +38,7 @@ import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.kernal.processors.spring.*;
+import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;

@@ -32,7 +32,7 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
+import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;

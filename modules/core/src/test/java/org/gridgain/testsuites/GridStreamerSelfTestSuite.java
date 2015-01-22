@@ -20,7 +20,6 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
 
 /**
  * Streamer test suite.

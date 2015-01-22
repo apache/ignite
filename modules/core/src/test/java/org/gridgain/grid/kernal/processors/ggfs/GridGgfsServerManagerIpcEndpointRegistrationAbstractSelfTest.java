@@ -25,7 +25,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.kernal.processors.port.*;
+import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;

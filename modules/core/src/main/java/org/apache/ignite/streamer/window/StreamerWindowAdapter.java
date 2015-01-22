@@ -23,7 +23,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.streamer.window;
 
-import org.gridgain.grid.kernal.processors.streamer.*;
 import org.jdk8.backport.*;
 
 import java.util.*;
