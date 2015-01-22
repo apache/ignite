@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.direct.*;
@@ -30,50 +31,63 @@ import java.nio.*;
 import java.util.*;
 
 /**
- * Information about partitions of a single node.
+ * Information about partitions of all nodes in topology.
  */
-public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
+public class GridDhtPartitionsFullMessage<K, V> extends GridDhtPartitionsAbstractMessage<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Local partitions. */
+    /** */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionMap> parts = new HashMap<>();
+    private Map<Integer, GridDhtPartitionFullMap> parts = new HashMap<>();
 
-    /** Serialized partitions. */
+    /** */
     private byte[] partsBytes;
+
+    /** Topology version. */
+    private long topVer;
+
+    @GridDirectTransient
+    private List<List<ClusterNode>> affAssignment;
+
+    /** */
+    private byte[] affAssignmentBytes;
 
     /**
      * Required by {@link Externalizable}.
      */
-    public GridDhtPartitionsSingleMessage() {
+    public GridDhtPartitionsFullMessage() {
         // No-op.
     }
 
     /**
-     * @param exchId Exchange ID.
+     * @param id Exchange ID.
      * @param lastVer Last version.
      */
-    public GridDhtPartitionsSingleMessage(GridDhtPartitionExchangeId exchId, @Nullable GridCacheVersion lastVer) {
-        super(exchId, lastVer);
-    }
+    public GridDhtPartitionsFullMessage(@Nullable GridDhtPartitionExchangeId id, @Nullable GridCacheVersion lastVer,
+        long topVer) {
+        super(id, lastVer);
 
-    /**
-     * Adds partition map to this message.
-     *
-     * @param cacheId Cache ID to add local partition for.
-     * @param locMap Local partition map.
-     */
-    public void addLocalPartitionMap(int cacheId, GridDhtPartitionMap locMap) {
-        parts.put(cacheId, locMap);
+        assert parts != null;
+        assert id == null || topVer == id.topologyVersion();
+
+        this.topVer = topVer;
     }
 
     /**
      * @return Local partitions.
      */
-    public Map<Integer, GridDhtPartitionMap> partitions() {
+    public Map<Integer, GridDhtPartitionFullMap> partitions() {
         return parts;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param fullMap Full partitions map.
+     */
+    public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
+        parts.put(cacheId, fullMap);
     }
 
     /** {@inheritDoc}
@@ -83,6 +97,37 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         if (parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
+
+        if (affAssignment != null)
+            affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
+    }
+
+    /**
+     * @return Topology version.
+     */
+    @Override public long topologyVersion() {
+        return topVer;
+    }
+
+    /**
+     * @param topVer Topology version.
+     */
+    public void topologyVersion(long topVer) {
+        this.topVer = topVer;
+    }
+
+    /**
+     * @return Affinity assignment for topology version.
+     */
+    public List<List<ClusterNode>> affinityAssignment() {
+        return affAssignment;
+    }
+
+    /**
+     * @param affAssignment Affinity assignment for topology version.
+     */
+    public void affinityAssignment(List<List<ClusterNode>> affAssignment) {
+        this.affAssignment = affAssignment;
     }
 
     /** {@inheritDoc} */
@@ -91,12 +136,15 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         if (partsBytes != null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+
+        if (affAssignmentBytes != null)
+            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntCallSuperClone", "CloneCallsConstructors"})
     @Override public GridTcpCommunicationMessageAdapter clone() {
-        GridDhtPartitionsSingleMessage _clone = new GridDhtPartitionsSingleMessage();
+        GridDhtPartitionsFullMessage _clone = new GridDhtPartitionsFullMessage();
 
         clone0(_clone);
 
@@ -107,10 +155,13 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
         super.clone0(_msg);
 
-        GridDhtPartitionsSingleMessage _clone = (GridDhtPartitionsSingleMessage)_msg;
+        GridDhtPartitionsFullMessage _clone = (GridDhtPartitionsFullMessage)_msg;
 
         _clone.parts = parts;
         _clone.partsBytes = partsBytes;
+        _clone.topVer = topVer;
+        _clone.affAssignment = affAssignment;
+        _clone.affAssignmentBytes = affAssignmentBytes;
     }
 
     /** {@inheritDoc} */
@@ -130,7 +181,19 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         switch (commState.idx) {
             case 5:
+                if (!commState.putByteArray(affAssignmentBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 6:
                 if (!commState.putByteArray(partsBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 7:
+                if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
@@ -150,12 +213,30 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
         switch (commState.idx) {
             case 5:
+                byte[] affAssignmentBytes0 = commState.getByteArray();
+
+                if (affAssignmentBytes0 == BYTE_ARR_NOT_READ)
+                    return false;
+
+                affAssignmentBytes = affAssignmentBytes0;
+
+                commState.idx++;
+
+            case 6:
                 byte[] partsBytes0 = commState.getByteArray();
 
                 if (partsBytes0 == BYTE_ARR_NOT_READ)
                     return false;
 
                 partsBytes = partsBytes0;
+
+                commState.idx++;
+
+            case 7:
+                if (buf.remaining() < 8)
+                    return false;
+
+                topVer = commState.getLong();
 
                 commState.idx++;
 
@@ -166,11 +247,12 @@ public class GridDhtPartitionsSingleMessage<K, V> extends GridDhtPartitionsAbstr
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 46;
+        return 45;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionsSingleMessage.class, this, super.toString());
+        return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
+            "super", super.toString());
     }
 }

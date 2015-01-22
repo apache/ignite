@@ -30,7 +30,7 @@ public class GridStartupMain {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        //resetLog4j("org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader", Level.DEBUG, false, 0);
+        //resetLog4j("org.apache.ignite.internal.processors.cache.distributed.dht.preloader", Level.DEBUG, false, 0);
 
         //G.start("modules/tests/config/spring-multicache.xml");
         //G.start("examples/config/example-cache.xml");

@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 

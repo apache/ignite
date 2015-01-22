@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.direct.*;
