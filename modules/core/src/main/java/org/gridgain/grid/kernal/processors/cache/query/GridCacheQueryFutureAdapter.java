@@ -23,7 +23,6 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -124,7 +123,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
             cctx.time().addTimeoutObject(this);
         }
 
-        keys = qry.query().enableDedup() ? new GridConcurrentHashSet<K>() : null;
+        keys = qry.query().enableDedup() ? new HashSet<K>() : null;
     }
 
     /**
@@ -341,9 +340,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
         Collection<Object> dedupCol = new ArrayList<>(col.size());
 
-        for (Object o : col)
-            if (!(o instanceof Map.Entry) || keys.add(((Map.Entry<K, V>)o).getKey()))
-                dedupCol.add(o);
+        synchronized (mux) {
+            for (Object o : col)
+                if (!(o instanceof Map.Entry) || keys.add(((Map.Entry<K, V>) o).getKey()))
+                    dedupCol.add(o);
+        }
 
         return dedupCol;
     }

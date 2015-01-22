@@ -469,7 +469,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
                 return Collections.singletonList(cctx.localNode());
 
             case REPLICATED:
-                if (prj != null)
+                if (prj != null || !incBackups)
                     return nodes(cctx, prj);
 
                 GridCacheDistributionMode mode = cctx.config().getDistributionMode();
