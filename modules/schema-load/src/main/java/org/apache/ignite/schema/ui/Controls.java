@@ -375,19 +375,35 @@ public class Controls {
         return col;
     }
 
+    /**
+     * Create editable boolean table column.
+     *
+     * @param colName Column name to display.
+     * @param propName Property name column is bound to.
+     * @param tip Column tooltip text.
+     * @return New {@code TableColumn} instance.
+     */
     public static <S> TableColumn<S, Boolean> booleanColumn(String colName, String propName, String tip) {
         TableColumn<S, Boolean> col = tableColumn(colName, propName, tip, 70, 70, true);
 
-        col.setCellFactory(CheckBoxTableCellEx.<S>forTableColumn());
+        col.setCellFactory(CheckBoxTableCellEx.<S>cellFactory());
 
         return col;
 
     }
 
+    /**
+     * Create editable text table column.
+     *
+     * @param colName Column name to display.
+     * @param propName Property name column is bound to.
+     * @param tip Column tooltip text.
+     * @return New {@code TableColumn} instance.
+     */
     public static <S> TableColumn<S, String> textColumn(String colName, String propName, String tip) {
         TableColumn<S, String> col = tableColumn(colName, propName, tip, 100, 0, true);
 
-        col.setCellFactory(TextFieldTableCellEx.<S>forTableColumn());
+        col.setCellFactory(TextFieldTableCellEx.<S>cellFactory());
 
         return col;
     }
@@ -466,9 +482,10 @@ public class Controls {
      */
     private static class CheckBoxTableCellEx<S> extends CheckBoxTableCell<S, Boolean> {
         /** Creates a ComboBox cell factory for use in TableColumn controls. */
-        public static <S> Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>> forTableColumn() {
+        public static <S> Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>> cellFactory() {
             return new Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>>() {
-                public TableCell<S, Boolean> call(TableColumn<S, Boolean> col) {
+                /** {@inheritDoc} */
+                @Override public TableCell<S, Boolean> call(TableColumn<S, Boolean> col) {
                     return new CheckBoxTableCellEx<>();
                 }
             };
@@ -478,77 +495,86 @@ public class Controls {
          * Default constructor.
          */
         private CheckBoxTableCellEx() {
-            super();
-
             setAlignment(Pos.CENTER);
         }
     }
 
-    private static class TextFieldTableCellEx<S> extends TableCell<S, String> {
-        /** Text field. */
-        private final TextField textField;
+    /**
+     * Special table text field cell that commit its content on focus lost.
+     */
+    private static class TextFieldTableCellEx<S> extends TextFieldTableCell<S, String> {
+        /** */
+        private boolean cancelling;
+        /** */
+        private boolean hardCancel;
+        /** */
+        private String curTxt = "";
 
-        public static <S> Callback<TableColumn<S, String>, TableCell<S, String>> forTableColumn() {
+        /** Create cell factory. */
+        public static <S> Callback<TableColumn<S, String>, TableCell<S, String>> cellFactory() {
             return new Callback<TableColumn<S, String>, TableCell<S, String>>() {
+                /** {@inheritDoc} */
                 @Override public TableCell<S, String> call(TableColumn<S, String> col) {
                     return new TextFieldTableCellEx<>();
                 }
             };
         }
 
-        private TextFieldTableCellEx() {
-            textField = new TextField();
-
-            textField.setOnKeyReleased(new EventHandler<KeyEvent>() {
-                /** {@inheritDoc} */
-                @Override public void handle(KeyEvent evt) {
-                    if (KeyCode.ENTER == evt.getCode())
-                        commitEdit(textField.getText());
-                    else if (KeyCode.ESCAPE == evt.getCode())
-                        cancelEdit();
-                }
-            });
-
-            textField.focusedProperty().addListener(new ChangeListener<Boolean>() {
-                /** {@inheritDoc} */
-                @Override public void changed(ObservableValue<? extends Boolean> observable, Boolean oldVal,
-                    Boolean newVal) {
-                    if (!newVal)
-                        commitEdit(textField.getText());
-                }
-            });
-
-            getStyleClass().add("text-field-table-cell");
-        }
-
         /** {@inheritDoc} */
         @Override public void startEdit() {
             super.startEdit();
 
-            setText(null);
-            setGraphic(textField);
+            Node g = getGraphic();
+
+            if (g != null) {
+                final TextField tf = (TextField)g;
+
+                tf.textProperty().addListener(new ChangeListener<String>() {
+                    @Override public void changed(ObservableValue<? extends String> val, String oldVal, String newVal) {
+                        curTxt = newVal;
+                    }
+                });
+
+                tf.setOnKeyReleased(new EventHandler<KeyEvent>() {
+                    /** {@inheritDoc} */
+                    @Override public void handle(KeyEvent evt) {
+                        if (KeyCode.ENTER == evt.getCode())
+                            cancelEdit();
+                        else if (KeyCode.ESCAPE == evt.getCode()) {
+                            hardCancel = true;
+
+                            cancelEdit();
+                        }
+                    }
+                });
+            }
         }
 
         /** {@inheritDoc} */
         @Override public void cancelEdit() {
-            super.cancelEdit();
+            if (!cancelling) {
+                try {
+                    cancelling = true;
 
-            setText(getItem());
-
-            setGraphic(null);
+                    if (hardCancel || curTxt.trim().isEmpty())
+                        super.cancelEdit();
+                    else
+                        commitEdit(curTxt);
+                }
+                finally {
+                    cancelling = false;
+                }
+            }
+            else
+                super.cancelEdit();
         }
 
         /** {@inheritDoc} */
-        @Override public void updateItem(String item, boolean empty) {
-            super.updateItem(item, empty);
+        @Override public void commitEdit(String s) {
+            super.commitEdit(s);
 
-            setGraphic(null);
-
-            if (!empty) {
-                setText(item);
-
-                textField.setText(item);
-            }
+            hardCancel = false;
+            curTxt = "";
         }
     }
 }

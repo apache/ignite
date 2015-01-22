@@ -631,18 +631,18 @@ public class SchemaLoadApp extends Application {
         genPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         genPnl.addRows(7);
 
-        TableColumn<SchemaItem, Boolean> useCol = booleanColumn("Use", "use",
-            "If checked then this field will be part of key object");
+        TableColumn<SchemaItem, Boolean> useCol = customColumn("Use", "use",
+            "If checked then this field will be part of key object", SchemaCell.cellFactory());
 
-        TableColumn<SchemaItem, String> schemaCol = tableColumn("Schema", "schema", "Schema name in database");
-
-        TableColumn<SchemaItem, String> tblCol = tableColumn("Table", "table", "Table name in database");
+//        TableColumn<SchemaItem, String> schemaCol = tableColumn("Schema", "schema", "Schema name in database");
+//
+//        TableColumn<SchemaItem, String> tblCol = tableColumn("Table", "table", "Table name in database");
 
         TableColumn<SchemaItem, String> keyClsCol = textColumn("Key Class", "keyClass", "Key class name");
 
         TableColumn<SchemaItem, String> valClsCol = textColumn("Value Class", "valueClass", "Value class name");
 
-        schemesTbl = tableView("Tables not found in database", useCol, schemaCol, tblCol, keyClsCol, valClsCol);
+        schemesTbl = tableView("Tables not found in database", useCol, /* schemaCol, tblCol, */ keyClsCol, valClsCol);
 
         TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
             "If checked then this field will be part of key object");
@@ -654,7 +654,7 @@ public class SchemaLoadApp extends Application {
         TableColumn<PojoField, String> javaNameCol = textColumn("Ignite Name", "javaName", "Field name in POJO class");
 
         TableColumn<PojoField, String> javaTypeNameCol = customColumn("Java Type", "javaTypeName",
-            "Field java type in POJO class", JavaTypeCell.forTableColumn());
+            "Field java type in POJO class", JavaTypeCell.cellFactory());
 
         final TableView<PojoField> fieldsTbl = tableView("Select table to see table columns",
             keyCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
@@ -983,7 +983,15 @@ public class SchemaLoadApp extends Application {
 
         rootPane = borderPane(createHeaderPane(), createConnectionPane(), createButtonsPane(), null, null);
 
-        primaryStage.setScene(scene(rootPane));
+        Scene scene = scene(rootPane);
+
+//        scene.focusOwnerProperty().addListener(new ChangeListener<Node>() {
+//            @Override public void changed(ObservableValue<? extends Node> value, Node node, Node t1) {
+//                System.out.println(String.valueOf(value));
+//            }
+//        });
+
+        primaryStage.setScene(scene);
 
         primaryStage.setWidth(600);
         primaryStage.setMinWidth(600);
@@ -1857,9 +1865,10 @@ public class SchemaLoadApp extends Application {
         private final ComboBox<String> comboBox;
 
         /** Creates a ComboBox cell factory for use in TableColumn controls. */
-        public static Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>> forTableColumn() {
+        public static Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>> cellFactory() {
             return new Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>>() {
-                public TableCell<PojoField, String> call(TableColumn<PojoField, String> col) {
+                /** {@inheritDoc} */
+                @Override public TableCell<PojoField, String> call(TableColumn<PojoField, String> col) {
                     return new JavaTypeCell();
                 }
             };
@@ -1872,6 +1881,7 @@ public class SchemaLoadApp extends Application {
             comboBox = new ComboBox<>(FXCollections.<String>emptyObservableList());
 
             comboBox.valueProperty().addListener(new ChangeListener<String>() {
+                /** {@inheritDoc} */
                 @Override public void changed(ObservableValue<? extends String> val, String oldVal, String newVal) {
                     if (isEditing())
                         commitEdit(newVal);
@@ -1917,6 +1927,98 @@ public class SchemaLoadApp extends Application {
                     comboBox.setItems(pojo.conversions());
 
                     comboBox.getSelectionModel().select(pojo.javaTypeName());
+                }
+            }
+        }
+    }
+
+    /**
+     * Special table cell to select schema or table.
+     */
+    private static class SchemaCell extends TableCell<SchemaItem, Boolean> {
+        private final Pane schemaPnl;
+
+        private final Pane tblPnl;
+
+        /** Combo box. */
+        private final CheckBox ch;
+
+        /** Creates a ComboBox cell factory for use in TableColumn controls. */
+        public static Callback<TableColumn<SchemaItem, Boolean>, TableCell<SchemaItem, Boolean>> cellFactory() {
+            return new Callback<TableColumn<SchemaItem, Boolean>, TableCell<SchemaItem, Boolean>>() {
+                /** {@inheritDoc} */
+                @Override public TableCell<SchemaItem, Boolean> call(TableColumn<SchemaItem, Boolean> col) {
+                    return new SchemaCell();
+                }
+            };
+        }
+
+        /**
+         * Default constructor.
+         */
+        private SchemaCell() {
+            ch = new CheckBox();
+
+            ch.setOnAction(new EventHandler<ActionEvent>() {
+                @Override public void handle(ActionEvent event) {
+//                    int idx = getIndex();
+
+                    getTableView().getSelectionModel().select(getIndex());
+
+//                    TableRow row = getTableRow();
+//
+//                    if (row != null)
+//                        row.getTableView().getSelectionModel().select(row.getIndex()+1);
+                }
+            });
+
+            schemaPnl = new HBox();
+            schemaPnl.setPadding(new Insets(0, 0, 0, 5));
+
+            tblPnl = new HBox();
+            tblPnl.setPadding(new Insets(0, 0, 0, 15));
+
+            tblPnl.getChildren().add(ch);
+
+            setGraphic(tblPnl);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void startEdit() {
+            super.startEdit();
+        }
+
+        private void setGraphic(String text, Pane pnl) {
+            if (!text.isEmpty()) {
+                ch.setText(text);
+
+                pnl.getChildren().add(ch);
+
+                setGraphic(pnl);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateItem(Boolean item, boolean empty) {
+            super.updateItem(item, empty);
+
+            setGraphic(null);
+
+            if (!empty) {
+                TableRow row = getTableRow();
+
+                if (row != null) {
+                    SchemaItem schema = (SchemaItem)row.getItem();
+
+                    if (schema != null) {
+                        ch.setSelected(item);
+
+                        schemaPnl.getChildren().clear();
+                        tblPnl.getChildren().clear();
+
+                        setGraphic(schema.schemaProperty().get(), schemaPnl);
+                        setGraphic(schema.tableProperty().get(), tblPnl);
+                    }
                 }
             }
         }
