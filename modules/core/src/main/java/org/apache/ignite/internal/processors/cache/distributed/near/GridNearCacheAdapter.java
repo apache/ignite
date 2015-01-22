@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.future.*;
@@ -35,7 +35,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Common logic for near caches.

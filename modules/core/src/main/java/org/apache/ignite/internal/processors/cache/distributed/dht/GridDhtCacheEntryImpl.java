@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.GridCachePeekMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  * Colocated cache entry public API.

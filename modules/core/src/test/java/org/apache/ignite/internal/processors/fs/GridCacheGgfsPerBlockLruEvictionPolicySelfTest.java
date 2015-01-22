@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.ggfs.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.lang.*;

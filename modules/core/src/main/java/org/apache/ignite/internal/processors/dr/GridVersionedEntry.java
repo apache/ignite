@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.dr;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

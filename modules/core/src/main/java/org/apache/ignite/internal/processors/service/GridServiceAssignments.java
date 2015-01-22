@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.service;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

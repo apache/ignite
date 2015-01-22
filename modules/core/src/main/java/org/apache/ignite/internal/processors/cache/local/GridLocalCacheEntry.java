@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 

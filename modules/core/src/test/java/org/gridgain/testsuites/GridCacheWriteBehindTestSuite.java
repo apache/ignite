@@ -18,6 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 /**

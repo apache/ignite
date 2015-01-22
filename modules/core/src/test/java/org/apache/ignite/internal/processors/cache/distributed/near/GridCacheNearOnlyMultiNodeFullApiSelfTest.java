@@ -22,8 +22,8 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -35,7 +35,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
  *

@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -32,7 +33,7 @@ import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheVersionManager.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheVersionManager.*;
 
 /**
  * Tests that entry version is

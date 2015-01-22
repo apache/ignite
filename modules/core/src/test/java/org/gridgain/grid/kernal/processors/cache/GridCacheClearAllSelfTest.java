@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -33,7 +32,7 @@ import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheAdapter.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheAdapter.*;
 
 /**
  * Test {@link org.apache.ignite.cache.GridCache#clearAll()} operations in multinode environment with nodes having caches with different names.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**

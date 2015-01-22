@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
  * Tests {@link GridCacheWriteBehindStore} in partitioned configuration.

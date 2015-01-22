@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.*;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
 

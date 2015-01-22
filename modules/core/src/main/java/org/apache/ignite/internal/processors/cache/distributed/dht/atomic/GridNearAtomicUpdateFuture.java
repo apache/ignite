@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.discovery.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
  * DHT atomic cache near update future.

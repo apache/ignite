@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
  * Key is used for caching data structure.

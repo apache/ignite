@@ -39,7 +39,7 @@ import org.jetbrains.annotations.*;
 import javax.net.ssl.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 

@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.managers.deployment.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.gridgain.grid.kernal.processors.cache.GridCacheValueBytes.*;
+import static org.apache.ignite.internal.processors.cache.GridCacheValueBytes.*;
 
 /**
  * Entry implementation.
