@@ -818,9 +818,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskNameHash);
 
-        if (statsEnabled) {
+        if (statsEnabled) 
             updateFut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
-        }
 
         return asyncOp(new CO<IgniteFuture<Object>>() {
             @Override public IgniteFuture<Object> apply() {

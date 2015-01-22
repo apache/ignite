@@ -356,8 +356,7 @@ public class IgniteCacheManager implements CacheManager {
                 mBeanServer.registerMBean(mxbean, registeredObjectName);
         }
         catch (Exception e) {
-            throw new CacheException("Error registering cache MXBeans for CacheManager "
-                + registeredObjectName.toString() + " . Error was " + e.getMessage(), e);
+            throw new CacheException("Failed to register MBean: " + registeredObjectName, e);
         }
     }
 
