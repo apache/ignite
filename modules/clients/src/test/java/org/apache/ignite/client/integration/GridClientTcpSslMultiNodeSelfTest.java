@@ -19,7 +19,7 @@ package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 /**
  * Tests binary tcp protocol with SSL on multiple nodes.

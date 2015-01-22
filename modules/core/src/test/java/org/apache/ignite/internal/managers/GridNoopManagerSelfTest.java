@@ -20,9 +20,9 @@ package org.apache.ignite.internal.managers;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 /**

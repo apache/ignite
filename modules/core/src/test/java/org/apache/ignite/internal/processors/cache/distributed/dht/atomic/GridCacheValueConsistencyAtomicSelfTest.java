@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 
 import javax.cache.processor.*;

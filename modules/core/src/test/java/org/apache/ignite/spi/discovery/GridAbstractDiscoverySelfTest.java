@@ -24,9 +24,9 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import javax.management.*;
 import java.io.*;

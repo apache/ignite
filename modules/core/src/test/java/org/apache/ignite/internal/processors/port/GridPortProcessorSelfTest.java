@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.port;
 
 import org.apache.ignite.spi.communication.tcp.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;

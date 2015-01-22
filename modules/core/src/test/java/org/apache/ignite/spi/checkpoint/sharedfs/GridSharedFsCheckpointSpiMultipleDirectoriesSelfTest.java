@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.io.*;
 import java.util.*;

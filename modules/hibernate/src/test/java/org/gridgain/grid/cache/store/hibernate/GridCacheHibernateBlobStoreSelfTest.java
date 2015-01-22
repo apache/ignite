@@ -18,7 +18,7 @@
 package org.gridgain.grid.cache.store.hibernate;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.cache.*;
+import org.apache.ignite.testframework.junits.cache.*;
 import org.hibernate.*;
 
 import java.io.*;

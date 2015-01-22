@@ -23,7 +23,7 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.scheduler.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 

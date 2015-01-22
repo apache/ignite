@@ -19,9 +19,9 @@ package org.apache.ignite.loadtests.hashmap;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
-import org.gridgain.testframework.junits.logger.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.logger.*;
 
 import java.util.*;
 import java.util.concurrent.*;

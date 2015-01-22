@@ -20,7 +20,7 @@ package org.gridgain.grid.logger.jcl;
 import junit.framework.*;
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Jcl logger test.

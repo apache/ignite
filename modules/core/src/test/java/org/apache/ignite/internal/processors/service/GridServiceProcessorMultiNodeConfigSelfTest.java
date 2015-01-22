@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.service;
 import org.apache.ignite.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.concurrent.*;
 

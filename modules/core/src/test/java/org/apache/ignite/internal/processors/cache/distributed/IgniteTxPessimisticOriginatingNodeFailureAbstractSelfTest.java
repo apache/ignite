@@ -35,7 +35,7 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.*;
 import java.util.concurrent.*;

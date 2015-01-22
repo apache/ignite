@@ -27,8 +27,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.lang.ref.*;
 import java.util.*;
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  *

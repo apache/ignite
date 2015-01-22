@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.eventstorage.memory;
 
 import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Memory event storage SPI start-stop test.

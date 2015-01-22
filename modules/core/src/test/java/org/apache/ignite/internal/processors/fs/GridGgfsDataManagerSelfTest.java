@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;
@@ -39,7 +39,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * {@link GridGgfsDataManager} test case.

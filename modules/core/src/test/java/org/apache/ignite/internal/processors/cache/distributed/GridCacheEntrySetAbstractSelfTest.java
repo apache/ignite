@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.*;
 import java.util.concurrent.*;

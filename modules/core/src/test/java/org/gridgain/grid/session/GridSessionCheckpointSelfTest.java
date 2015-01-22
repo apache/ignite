@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.checkpoint.cache.*;
 import org.apache.ignite.spi.checkpoint.jdbc.*;
 import org.apache.ignite.spi.checkpoint.sharedfs.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.hsqldb.jdbc.*;
 
 /**

@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.net.*;

@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.logger.*;
+import org.apache.ignite.testframework.junits.logger.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

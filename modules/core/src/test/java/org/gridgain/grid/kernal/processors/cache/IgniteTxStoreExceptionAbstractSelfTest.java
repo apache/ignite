@@ -27,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;

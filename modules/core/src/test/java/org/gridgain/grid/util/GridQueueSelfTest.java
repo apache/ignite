@@ -19,7 +19,7 @@ package org.gridgain.grid.util;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Grid utils tests.

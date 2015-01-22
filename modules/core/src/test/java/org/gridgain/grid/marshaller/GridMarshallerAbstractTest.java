@@ -41,8 +41,8 @@ import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.gridgain.grid.p2p.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

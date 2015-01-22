@@ -19,7 +19,7 @@ package org.apache.ignite.spi.failover.never;
 
 import org.gridgain.grid.spi.*;
 import org.apache.ignite.spi.failover.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Never-failover SPI start-stop test.

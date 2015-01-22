@@ -46,8 +46,8 @@ import org.apache.ignite.internal.managers.failover.*;
 import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.apache.ignite.internal.processors.resource.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Managers stop test.

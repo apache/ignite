@@ -26,9 +26,9 @@ import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.mockito.*;
 
 import java.io.*;

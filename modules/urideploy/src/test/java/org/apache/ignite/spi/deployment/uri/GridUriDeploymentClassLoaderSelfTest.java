@@ -19,8 +19,8 @@ package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.net.*;
 import java.util.*;

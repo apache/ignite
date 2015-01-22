@@ -26,7 +26,7 @@ import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.loadtests.util.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.testframework.GridLoadTestUtils.*;
+import static org.apache.ignite.testframework.GridLoadTestUtils.*;
 
 /**
  * By default this benchmarks uses original GridGain configuration

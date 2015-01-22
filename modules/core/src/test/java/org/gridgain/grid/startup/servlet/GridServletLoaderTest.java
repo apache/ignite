@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.startup.servlet;
 
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.common.*;
 import javax.management.*;
 import javax.management.remote.*;
 import java.io.*;

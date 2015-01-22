@@ -20,7 +20,7 @@ package org.gridgain.scalar.tests.examples
 import org.gridgain.scalar.examples._
 import org.gridgain.scalar.scalar
 import org.scalatest.junit.JUnitSuiteLike
-import org.gridgain.testframework.junits.common.GridAbstractExamplesTest
+import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
 
 /**
  * Scalar examples self test.

@@ -22,7 +22,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;

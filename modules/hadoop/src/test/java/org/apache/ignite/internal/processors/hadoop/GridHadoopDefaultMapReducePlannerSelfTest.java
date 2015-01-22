@@ -31,7 +31,7 @@ import org.apache.ignite.internal.processors.hadoop.planner.*;
 import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.deployment.local.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.net.*;
 import java.util.*;

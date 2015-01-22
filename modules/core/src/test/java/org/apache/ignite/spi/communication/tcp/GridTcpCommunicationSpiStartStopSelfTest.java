@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * TCP communication SPI config start-stop test.

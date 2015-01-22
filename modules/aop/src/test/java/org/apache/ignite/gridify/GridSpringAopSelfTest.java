@@ -18,7 +18,7 @@
 package org.apache.ignite.gridify;
 
 import org.apache.ignite.compute.gridify.aop.spring.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Spring AOP test.

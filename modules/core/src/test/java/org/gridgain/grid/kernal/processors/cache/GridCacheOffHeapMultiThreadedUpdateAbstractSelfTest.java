@@ -19,9 +19,8 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import javax.cache.processor.*;
 import java.io.*;

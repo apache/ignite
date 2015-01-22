@@ -18,7 +18,7 @@
 package org.gridgain.grid.util;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Grid log throttle test. To verify correctness, you need to run this test

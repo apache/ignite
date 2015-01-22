@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.h2.Driver;
 import org.h2.index.*;
 import org.h2.result.*;

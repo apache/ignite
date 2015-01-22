@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.jobmetrics;
 
 import org.apache.ignite.internal.processors.resource.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Grid job metrics processor load test.

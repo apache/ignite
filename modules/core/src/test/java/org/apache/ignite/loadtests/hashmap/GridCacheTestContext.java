@@ -26,11 +26,11 @@ import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.gridgain.testframework.junits.*;
+import org.apache.ignite.testframework.junits.*;
 
 import java.util.*;
 
-import static org.gridgain.testframework.junits.GridAbstractTest.*;
+import static org.apache.ignite.testframework.junits.GridAbstractTest.*;
 
 /**
  * Cache test context.

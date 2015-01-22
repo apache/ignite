@@ -22,8 +22,8 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.p2p.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;

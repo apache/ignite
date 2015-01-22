@@ -20,7 +20,7 @@ package org.gridgain.grid.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 /**
  * Test executes GridP2PTestTask on the remote node.
  * Before running of test you MUST start at least one remote node.

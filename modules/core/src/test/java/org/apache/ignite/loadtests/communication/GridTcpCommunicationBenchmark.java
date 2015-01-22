@@ -25,9 +25,9 @@ package org.apache.ignite.loadtests.communication;
 //import org.gridgain.grid.spi.communication.tcp.*;
 //import org.gridgain.grid.typedef.*;
 //import org.gridgain.grid.typedef.internal.*;
-//import org.gridgain.testframework.*;
-//import org.gridgain.testframework.junits.*;
-//import org.gridgain.testframework.junits.spi.*;
+//import org.apache.ignite.testframework.*;
+//import org.apache.ignite.testframework.junits.*;
+//import org.apache.ignite.testframework.junits.spi.*;
 //
 //import java.util.*;
 //import java.util.concurrent.*;

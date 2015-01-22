@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;

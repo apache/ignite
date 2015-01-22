@@ -34,7 +34,7 @@ import org.apache.ignite.client.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -47,7 +47,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Tests for Java client.

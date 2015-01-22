@@ -18,12 +18,12 @@
 package org.apache.ignite.client.impl;
 
 import org.apache.ignite.client.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Simple unit test for GridClientComputeImpl which checks method parameters.

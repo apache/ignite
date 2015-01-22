@@ -22,8 +22,8 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 

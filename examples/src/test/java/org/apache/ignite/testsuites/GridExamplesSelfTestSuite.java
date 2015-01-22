@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.examples.*;
 import org.gridgain.examples.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 

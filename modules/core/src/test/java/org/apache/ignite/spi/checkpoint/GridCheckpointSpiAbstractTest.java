@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.checkpoint;
 
 import org.gridgain.grid.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Grid checkpoint SPI abstract test.

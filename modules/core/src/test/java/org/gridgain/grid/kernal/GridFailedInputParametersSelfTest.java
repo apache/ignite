@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 

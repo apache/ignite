@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Grid S3 checkpoint SPI config self test.

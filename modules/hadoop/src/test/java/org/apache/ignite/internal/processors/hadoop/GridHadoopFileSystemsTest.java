@@ -21,7 +21,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.ignite.internal.processors.hadoop.fs.*;
-import org.gridgain.testframework.GridTestUtils;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import java.io.*;
 import java.net.*;

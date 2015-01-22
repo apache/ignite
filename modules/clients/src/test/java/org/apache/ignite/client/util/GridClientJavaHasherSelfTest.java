@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.util;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 

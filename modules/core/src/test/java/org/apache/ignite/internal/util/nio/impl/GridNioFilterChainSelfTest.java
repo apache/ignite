@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.nio.impl;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

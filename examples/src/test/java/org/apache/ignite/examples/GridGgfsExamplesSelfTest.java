@@ -21,7 +21,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.ggfs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * GGFS examples self test.

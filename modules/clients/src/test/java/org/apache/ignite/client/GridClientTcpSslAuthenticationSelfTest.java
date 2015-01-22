@@ -23,8 +23,8 @@ import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import javax.net.ssl.*;
 import java.security.cert.*;

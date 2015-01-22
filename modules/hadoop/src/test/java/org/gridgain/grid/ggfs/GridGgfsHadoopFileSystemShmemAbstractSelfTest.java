@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.*;
 import java.util.concurrent.*;

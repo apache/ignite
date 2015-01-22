@@ -20,8 +20,8 @@ package org.gridgain.grid.tools;
 import org.apache.tools.ant.*;
 import org.gridgain.grid.util.antgar.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.zip.*;

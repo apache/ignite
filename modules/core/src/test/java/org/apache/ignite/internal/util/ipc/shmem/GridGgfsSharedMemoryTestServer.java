@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.*;
+import org.apache.ignite.testframework.junits.*;
 
 import java.io.*;
 

@@ -23,9 +23,9 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.concurrent.*;

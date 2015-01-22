@@ -25,7 +25,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.messaging.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.internal.processors.task.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
 import java.util.*;

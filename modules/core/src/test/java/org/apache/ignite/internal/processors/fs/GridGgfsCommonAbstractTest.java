@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Common subclass for all GGFS tests. Aimed to disabled peer class loading which is restricted for Hadoop edition.

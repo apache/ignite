@@ -19,7 +19,7 @@ package org.gridgain.grid.messaging;
 
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.config.*;
+import org.apache.ignite.testframework.config.*;
 
 import java.net.*;
 import java.util.*;

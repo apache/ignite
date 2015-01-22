@@ -31,7 +31,7 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;

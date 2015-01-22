@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
 import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Tests correct start of {@link RoundRobinLoadBalancingSpi}.

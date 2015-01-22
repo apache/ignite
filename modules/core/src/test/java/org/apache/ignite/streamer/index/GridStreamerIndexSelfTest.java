@@ -24,14 +24,14 @@ import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Tests for Streamer window index.

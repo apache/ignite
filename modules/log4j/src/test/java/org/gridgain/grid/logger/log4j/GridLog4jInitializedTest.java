@@ -21,7 +21,7 @@ import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.logger.log4j.*;
 import org.apache.log4j.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Log4j initialized test.

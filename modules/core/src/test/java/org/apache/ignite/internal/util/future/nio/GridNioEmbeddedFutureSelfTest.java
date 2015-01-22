@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.future.nio;
 
 import org.apache.ignite.internal.util.nio.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import static java.util.concurrent.TimeUnit.*;
 

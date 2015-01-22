@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.p2p;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 

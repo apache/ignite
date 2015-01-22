@@ -26,9 +26,9 @@ import org.gridgain.grid.loadtest.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 

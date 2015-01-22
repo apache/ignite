@@ -18,7 +18,7 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 /**
  * Runs multithreaded tests for client over tcp binary protocol with ssl enabled.

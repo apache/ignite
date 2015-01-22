@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.lang.utils;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
 import java.util.*;

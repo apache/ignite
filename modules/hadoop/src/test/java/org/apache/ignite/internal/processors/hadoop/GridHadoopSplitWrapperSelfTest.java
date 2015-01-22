@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.util.*;

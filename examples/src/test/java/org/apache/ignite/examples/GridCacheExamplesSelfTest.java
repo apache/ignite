@@ -21,7 +21,7 @@ import org.apache.ignite.examples.datagrid.*;
 import org.apache.ignite.examples.datagrid.datastructures.*;
 import org.apache.ignite.examples.datagrid.starschema.*;
 import org.apache.ignite.examples.datagrid.store.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Cache examples self test.

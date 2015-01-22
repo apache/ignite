@@ -20,7 +20,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 import com.amazonaws.auth.*;
 import org.apache.ignite.testsuites.bamboo.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Grid S3 checkpoint SPI start stop self test.

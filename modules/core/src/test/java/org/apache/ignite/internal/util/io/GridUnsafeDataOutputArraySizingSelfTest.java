@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.io;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 

@@ -18,11 +18,10 @@
 package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.hibernate.*;
 import org.hibernate.annotations.*;
 import org.hibernate.cache.spi.access.AccessType;

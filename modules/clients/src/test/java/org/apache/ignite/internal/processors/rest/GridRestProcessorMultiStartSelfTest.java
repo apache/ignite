@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.rest;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Rest processor test.

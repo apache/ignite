@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.loadtests.util.GridLoadTestArgs.*;
-import static org.gridgain.testframework.GridLoadTestUtils.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridLoadTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Load test for {@link org.apache.ignite.cache.query.GridCacheContinuousQuery}.

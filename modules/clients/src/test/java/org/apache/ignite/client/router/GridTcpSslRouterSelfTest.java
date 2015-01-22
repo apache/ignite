@@ -19,7 +19,7 @@ package org.apache.ignite.client.router;
 
 import org.apache.ignite.*;
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 /**
  *

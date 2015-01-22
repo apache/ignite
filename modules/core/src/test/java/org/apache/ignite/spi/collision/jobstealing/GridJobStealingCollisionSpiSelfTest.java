@@ -25,8 +25,8 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.failover.jobstealing.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

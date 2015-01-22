@@ -20,7 +20,7 @@ package org.apache.ignite.loadtests.mergesort;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.io.*;
 import java.util.*;

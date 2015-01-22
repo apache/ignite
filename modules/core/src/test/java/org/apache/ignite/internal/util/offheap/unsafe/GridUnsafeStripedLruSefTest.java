@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

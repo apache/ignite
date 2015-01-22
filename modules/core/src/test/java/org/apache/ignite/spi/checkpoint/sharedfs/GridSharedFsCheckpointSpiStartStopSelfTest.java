@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
 import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Grid shared file system checkpoint SPI start stop self test.

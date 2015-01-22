@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;

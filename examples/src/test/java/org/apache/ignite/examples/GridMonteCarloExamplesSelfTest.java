@@ -18,7 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.compute.montecarlo.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Gridify examples self test. Excludes Gridify Spring tests.

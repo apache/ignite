@@ -18,7 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.misc.springbean.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Spring bean examples self test.

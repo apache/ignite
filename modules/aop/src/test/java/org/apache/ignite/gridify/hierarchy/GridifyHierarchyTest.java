@@ -17,7 +17,7 @@
 
 package org.apache.ignite.gridify.hierarchy;
 
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Gridify hierarchy test.
