@@ -21,7 +21,7 @@ import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
-import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.apache.ignite.internal.processors.cache.local.*;
 
 /**
  * Test suite for cache API.

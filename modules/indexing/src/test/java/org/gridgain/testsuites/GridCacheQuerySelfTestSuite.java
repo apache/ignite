@@ -22,7 +22,7 @@ import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
-import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.apache.ignite.internal.processors.cache.local.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.query.reducefields.*;

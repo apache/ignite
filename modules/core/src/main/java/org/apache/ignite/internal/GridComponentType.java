@@ -77,8 +77,8 @@ public enum GridComponentType {
 
     /** Integration of cache transactions with JTA. */
     JTA(
-        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheNoopJtaManager",
-        "org.gridgain.grid.kernal.processors.cache.jta.GridCacheJtaManager",
+        "org.apache.ignite.internal.processors.cache.jta.GridCacheNoopJtaManager",
+        "org.apache.ignite.internal.processors.cache.jta.GridCacheJtaManager",
         "gridgain-jta"
     ),
 

@@ -32,7 +32,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
-import org.gridgain.grid.kernal.processors.cache.local.*;
+import org.apache.ignite.internal.processors.cache.local.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.gridgain.testsuites.*;
 
