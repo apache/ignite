@@ -65,13 +65,13 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     private volatile GridCacheQueryMetricsAdapter metrics;
 
     /** */
-    private volatile int pageSize;
+    private volatile int pageSize = DFLT_PAGE_SIZE;
 
     /** */
     private volatile long timeout;
 
     /** */
-    private volatile boolean keepAll;
+    private volatile boolean keepAll = true;
 
     /** */
     private volatile boolean incBackups;
@@ -122,13 +122,6 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         this.keepPortable = keepPortable;
 
         log = cctx.logger(getClass());
-
-        pageSize = DFLT_PAGE_SIZE;
-        timeout = 0;
-        keepAll = true;
-        incBackups = false;
-        dedup = false;
-        prj = null;
 
         metrics = new GridCacheQueryMetricsAdapter();
     }

@@ -757,7 +757,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridIterator<IgniteBiTuple<K, V>> heapIt = new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
             private IgniteBiTuple<K, V> next;
 
-            private Iterator<K> iter = qry.includeBackups() ? prj.keySet().iterator() : prj.primaryKeySet().iterator();
+            private Iterator<K> iter = qry.includeBackups() || cctx.isReplicated() ?
+                prj.keySet().iterator() : prj.primaryKeySet().iterator();
 
             {
                 advance();
