@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.gridify.*;
+import org.apache.ignite.gridify.*;
 import org.gridgain.testframework.*;
 import org.test.gridify.*;
 
