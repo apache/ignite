@@ -18,6 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.examples.*;
 import org.gridgain.examples.*;
 import org.gridgain.testframework.*;
 

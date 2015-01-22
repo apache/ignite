@@ -20,6 +20,7 @@ package org.gridgain.scalar.examples
 import javax.cache.processor.{MutableEntry, EntryProcessor}
 
 import org.apache.ignite.dataload.IgniteDataLoadCacheUpdater
+import org.apache.ignite.examples.datagrid.CacheNodeStartup
 import org.apache.ignite.{IgniteCache, IgniteCheckedException}
 
 import java.util
@@ -37,7 +38,7 @@ import scala.util.Random
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: `ggstart.sh examples/config/example-cache.xml`
  * <p>
- * Alternatively you can run [[org.gridgain.examples.datagrid.CacheNodeStartup]] in another JVM which will
+ * Alternatively you can run [[CacheNodeStartup]] in another JVM which will
  * start GridGain node with `examples/config/example-cache.xml` configuration.
  * <p>
  * The counts are kept in cache on all remote nodes. Top `10` counts from each node are then grabbed to produce

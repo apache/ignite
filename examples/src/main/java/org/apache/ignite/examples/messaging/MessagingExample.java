@@ -15,12 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.examples;
+package org.apache.ignite.examples.messaging;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
+import org.gridgain.examples.*;
 
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -51,19 +55,14 @@ public final class MessagingExample {
      */
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-compute.xml")) {
-            if (g.nodes().size() < 2) {
-                System.out.println();
-                System.out.println(">>> Please start at least 2 grid nodes to run example.");
-                System.out.println();
-
+            if (!ExamplesUtils.checkMinTopologySize(g.cluster(), 2))
                 return;
-            }
 
             System.out.println();
             System.out.println(">>> Messaging example started.");
 
             // Projection for remote nodes.
-            ClusterGroup rmtPrj = g.forRemotes();
+            ClusterGroup rmtPrj = g.cluster().forRemotes();
 
             // Listen for messages from remote nodes to make sure that they received all the messages.
             int msgCnt = rmtPrj.nodes().size() * MESSAGES_NUM;
@@ -71,20 +70,20 @@ public final class MessagingExample {
             CountDownLatch orderedLatch = new CountDownLatch(msgCnt);
             CountDownLatch unorderedLatch = new CountDownLatch(msgCnt);
 
-            localListen(g.forLocal(), orderedLatch, unorderedLatch);
+            localListen(g.message(g.cluster().forLocal()), orderedLatch, unorderedLatch);
 
             // Register listeners on all grid nodes.
-            startListening(rmtPrj);
+            startListening(g.message(rmtPrj));
 
             // Send unordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                rmtPrj.message().send(TOPIC.UNORDERED, Integer.toString(i));
+                g.message(rmtPrj).send(TOPIC.UNORDERED, Integer.toString(i));
 
             System.out.println(">>> Finished sending unordered messages.");
 
             // Send ordered messages to all remote nodes.
             for (int i = 0; i < MESSAGES_NUM; i++)
-                rmtPrj.message().sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
+                g.message(rmtPrj).sendOrdered(TOPIC.ORDERED, Integer.toString(i), 0);
 
             System.out.println(">>> Finished sending ordered messages.");
             System.out.println(">>> Check output on all nodes for message printouts.");
@@ -100,67 +99,77 @@ public final class MessagingExample {
     /**
      * Start listening to messages on all grid nodes within passed in projection.
      *
-     * @param prj Grid projection.
+     * @param msg Grid messaging.
      * @throws IgniteCheckedException If failed.
      */
-    private static void startListening(ClusterGroup prj) throws IgniteCheckedException {
+    private static void startListening(IgniteMessaging msg) throws IgniteCheckedException {
         // Add ordered message listener.
-        prj.message().remoteListen(TOPIC.ORDERED, (nodeId, msg) -> {
-            System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
+        msg.remoteListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
+            @IgniteInstanceResource
+            private Ignite g;
 
-            try {
-                // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire grid.
-                prj.ignite().forNodeId(nodeId).message().send(TOPIC.ORDERED, msg);
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-            }
+            @Override public boolean apply(UUID nodeId, String msg) {
+                System.out.println("Received ordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
-            return true; // Return true to continue listening.
-        }).get();
+                try {
+                    g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.ORDERED, msg);
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+
+                return true; // Return true to continue listening.
+            }
+        });
 
         // Add unordered message listener.
-        prj.message().remoteListen(TOPIC.UNORDERED, (nodeId, msg) -> {
-            System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
+        msg.remoteListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
+            @IgniteInstanceResource
+            private Ignite g;
 
-            try {
-                // Projection does not contain local node: GridProjection rmtPrj = g.forRemotes();
-                // So, need to get projection for sender node through entire grid.
-                prj.ignite().forNodeId(nodeId).message().send(TOPIC.UNORDERED, msg);
-            }
-            catch (IgniteCheckedException e) {
-                e.printStackTrace();
-            }
+            @Override public boolean apply(UUID nodeId, String msg) {
+                System.out.println("Received unordered message [msg=" + msg + ", fromNodeId=" + nodeId + ']');
 
-            return true; // Return true to continue listening.
-        }).get();
+                try {
+                    g.message(g.cluster().forNodeId(nodeId)).send(TOPIC.UNORDERED, msg);
+                }
+                catch (IgniteCheckedException e) {
+                    e.printStackTrace();
+                }
+
+                return true; // Return true to continue listening.
+            }
+        });
     }
 
     /**
      * Listen for messages from remote nodes.
      *
-     * @param prj Grid projection.
+     * @param msg Grid messaging.
      * @param orderedLatch Latch for ordered messages acks.
      * @param unorderedLatch Latch for unordered messages acks.
      */
     private static void localListen(
-        ClusterGroup prj,
+        IgniteMessaging msg,
         final CountDownLatch orderedLatch,
         final CountDownLatch unorderedLatch
     ) {
-        prj.message().localListen(TOPIC.ORDERED, (nodeId, msg) -> {
-            orderedLatch.countDown();
+        msg.localListen(TOPIC.ORDERED, new IgniteBiPredicate<UUID, String>() {
+            @Override public boolean apply(UUID nodeId, String msg) {
+                orderedLatch.countDown();
 
-            // Return true to continue listening, false to stop.
-            return orderedLatch.getCount() > 0;
+                // Return true to continue listening, false to stop.
+                return orderedLatch.getCount() > 0;
+            }
         });
 
-        prj.message().localListen(TOPIC.UNORDERED, (nodeId, msg) -> {
-            unorderedLatch.countDown();
+        msg.localListen(TOPIC.UNORDERED, new IgniteBiPredicate<UUID, String>() {
+            @Override public boolean apply(UUID nodeId, String msg) {
+                unorderedLatch.countDown();
 
-            // Return true to continue listening, false to stop.
-            return unorderedLatch.getCount() > 0;
+                // Return true to continue listening, false to stop.
+                return unorderedLatch.getCount() > 0;
+            }
         });
     }
 }
