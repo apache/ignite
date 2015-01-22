@@ -22,7 +22,6 @@ import org.apache.commons.codec.digest.*;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

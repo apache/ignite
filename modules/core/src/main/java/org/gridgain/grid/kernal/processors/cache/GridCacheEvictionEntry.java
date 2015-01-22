@@ -396,16 +396,6 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(IgniteMetadataAware from) {
-        cached.copyMeta(from);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
-        cached.copyMeta(data);
-    }
-
-    /** {@inheritDoc} */
     @Override public <V> boolean removeMeta(String name, V val) {
         return cached.removeMeta(name, val);
     }
