@@ -22,7 +22,7 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.fs.common.*;
-import org.gridgain.grid.kernal.processors.closure.*;
+import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

@@ -24,7 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.continuous.*;
+import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

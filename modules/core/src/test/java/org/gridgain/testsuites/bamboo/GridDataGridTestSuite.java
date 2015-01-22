@@ -33,7 +33,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.local.*;
-import org.gridgain.grid.kernal.processors.dataload.*;
+import org.apache.ignite.internal.processors.dataload.*;
 import org.gridgain.testsuites.*;
 
 /**
