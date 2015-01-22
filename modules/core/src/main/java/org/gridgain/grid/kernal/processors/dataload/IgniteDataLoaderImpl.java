@@ -56,7 +56,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  */
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
     /** */
-    public static final IgniteProductVersion COMPACT_MAP_ENTRIES_SINCE = IgniteProductVersion.fromString("1.0");
+    public static final IgniteProductVersion COMPACT_MAP_ENTRIES_SINCE = IgniteProductVersion.fromString("1.0.0");
 
     /** Cache updater. */
     private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
