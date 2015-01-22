@@ -746,6 +746,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cfg.setReadThrough(true);
                 cfg.setWriteThrough(true);
+                cfg.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -787,6 +788,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -825,6 +827,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -869,6 +872,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -915,6 +919,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
                 cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
+                cc.setLoadPreviousValue(true);
 
                 return null;
             }
@@ -974,8 +979,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
         aff = new GridCacheConsistentHashAffinityFunction(false, 200);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return startGrid(2);
             }
         }, IgniteCheckedException.class, "Affinity partitions count mismatch");
@@ -989,14 +993,13 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
 
         checkSecondGridStartFails(
             new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     cfg.setInterceptor(new GridCacheInterceptorAdapter() {/*No-op.*/});
+
                     return null;
                 }
             },
             new C1<CacheConfiguration, Void>() {
-                /** {@inheritDoc} */
                 @Override public Void apply(CacheConfiguration cfg) {
                     return null;
                 }

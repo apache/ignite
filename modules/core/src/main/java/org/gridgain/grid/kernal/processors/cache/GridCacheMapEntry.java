@@ -1426,7 +1426,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
-            if (needVal && old == null && cctx.readThrough()) {
+            if (needVal && old == null && (cctx.readThrough() && (op == TRANSFORM || cctx.loadPreviousValue()))) {
                 old = readThrough(null, key, false, CU.<K, V>empty(), subjId, taskName);
 
                 // Detach value before index update.
@@ -1766,7 +1766,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
-            if (needVal && old == null && cctx.readThrough()) {
+            if (needVal && old == null && (cctx.readThrough() && (op == TRANSFORM || cctx.loadPreviousValue()))) {
                 old = readThrough(null, key, false, CU.<K, V>empty(), subjId, taskName);
 
                 // Detach value before index update.

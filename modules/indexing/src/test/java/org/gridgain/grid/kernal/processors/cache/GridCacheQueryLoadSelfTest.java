@@ -70,6 +70,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(ccfg);

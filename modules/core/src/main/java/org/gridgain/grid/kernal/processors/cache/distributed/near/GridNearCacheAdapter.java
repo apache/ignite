@@ -291,6 +291,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
+            true,
             reload,
             forcePrimary,
             txx,

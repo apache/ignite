@@ -143,6 +143,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      */
     IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
         @Nullable Collection<? extends K> keys,
+        boolean readThrough,
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
@@ -150,6 +151,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
             keys,
+            readThrough,
             false,
             false,
             tx,

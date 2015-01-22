@@ -89,6 +89,7 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
         cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         cfg.setReadThrough(true);
         cfg.setWriteThrough(true);
+        cfg.setLoadPreviousValue(true);
         cfg.setAffinity(new GridCacheModuloAffinityFunction(3, 1));
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 

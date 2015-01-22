@@ -171,6 +171,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      */
     public IgniteFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
+        boolean readThrough,
         boolean async,
         Collection<? extends K> keys,
         boolean deserializePortable,

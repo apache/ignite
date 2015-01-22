@@ -99,6 +99,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinity(aff);
         cacheCfg.setAtomicityMode(atomicityMode());

@@ -100,8 +100,10 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
                 storeCalled.set(true);
             }
         }));
+
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
         return ccfg;
     }

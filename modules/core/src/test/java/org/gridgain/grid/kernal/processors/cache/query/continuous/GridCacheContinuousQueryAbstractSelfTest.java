@@ -84,6 +84,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
         cacheCfg.setQueryIndexEnabled(false);
 
         cfg.setCacheConfiguration(cacheCfg);

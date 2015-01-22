@@ -114,6 +114,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cc.setReadThrough(true);
         cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         cc.setWriteBehindEnabled(true);
         cc.setWriteBehindFlushFrequency(WRITE_FROM_BEHIND_FLUSH_FREQUENCY);

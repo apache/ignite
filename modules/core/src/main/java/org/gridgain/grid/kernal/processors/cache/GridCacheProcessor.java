@@ -598,6 +598,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Collection<GridCacheAdapter<?, ?>> startSeq = new ArrayList<>(cfgs.length);
 
+        IdentityHashMap<CacheStore, ThreadLocal> sesHolders = new IdentityHashMap<>();
+
         for (int i = 0; i < cfgs.length; i++) {
             CacheConfiguration cfg = new CacheConfiguration(cfgs[i]);
 
@@ -632,7 +634,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
-            GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, cfgStore, cfg);
+            GridCacheStoreManager storeMgr = new GridCacheStoreManager(ctx, sesHolders, cfgStore, cfg);
 
             GridCacheContext<?, ?> cacheCtx = new GridCacheContext(
                 ctx,
@@ -1116,9 +1118,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "evictionPolicy", "Eviction policy",
                             locAttr.evictionPolicyClassName(), rmtAttr.evictionPolicyClassName(), true);
 
-                        if (!skipStoreConsistencyCheck(locAttr, rmtAttr))
+                        if (!skipStoreConsistencyCheck(locAttr, rmtAttr)) {
                             CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "store", "Cache store",
                                 locAttr.storeClassName(), rmtAttr.storeClassName(), true);
+
+                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "readThrough",
+                                "Read through enabled", locAttr.readThrough(), locAttr.readThrough(), true);
+
+                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "writeThrough",
+                                "Write through enabled", locAttr.writeThrough(), locAttr.writeThrough(), true);
+
+                            CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "loadPreviousValue",
+                                "Load previous value enabled", locAttr.loadPreviousValue(),
+                                locAttr.loadPreviousValue(), true);
+                        }
 
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "cloner", "Cache cloner",
                             locAttr.clonerClassName(), rmtAttr.clonerClassName(), false);

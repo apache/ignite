@@ -842,7 +842,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     }
 
     /**
-     * @return Value for configuration property {@link GridCacheConfiguration#isEagerTtl()}.
+     * @return Value for configuration property {@link CacheConfiguration#isEagerTtl()}.
      */
     protected boolean eagerTtl() {
         return true;

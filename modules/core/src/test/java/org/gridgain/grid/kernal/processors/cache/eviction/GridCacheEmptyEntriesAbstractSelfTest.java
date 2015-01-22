@@ -93,6 +93,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
             cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(testStore));
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
         }
         else
             cc.setCacheStoreFactory(null);

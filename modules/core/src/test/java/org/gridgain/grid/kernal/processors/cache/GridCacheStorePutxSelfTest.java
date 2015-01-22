@@ -62,6 +62,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
         ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
         ccfg.setReadThrough(true);
         ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
         cfg.setCacheConfiguration(ccfg);
 

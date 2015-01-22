@@ -88,6 +88,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
             cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
             cc.setReadThrough(true);
             cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
         }
         else
             cc.setCacheStoreFactory(null);
