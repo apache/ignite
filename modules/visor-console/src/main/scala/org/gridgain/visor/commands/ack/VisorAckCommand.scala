@@ -17,7 +17,7 @@
 
 package org.gridgain.visor.commands.ack
 
-import org.gridgain.grid.kernal.visor.misc.VisorAckTask
+import org.apache.ignite.internal.visor.misc.VisorAckTask
 
 import org.apache.ignite.cluster.ClusterGroupEmptyException
 

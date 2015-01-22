@@ -31,7 +31,7 @@ public class GridSecurityContext implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Visor tasks prefix. */
-    private static final String VISOR_TASK_PREFIX = "org.gridgain.grid.kernal.visor.";
+    private static final String VISOR_TASK_PREFIX = "org.apache.ignite.internal.visor.";
 
     /** Cache query task name. */
     public static final String VISOR_CACHE_QUERY_TASK_NAME =

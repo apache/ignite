@@ -23,9 +23,9 @@ import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridComponentType._
 import org.gridgain.grid.kernal.GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
-import org.gridgain.grid.kernal.visor.VisorTaskArgument
-import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
-import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.VisorTaskArgument
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._

@@ -17,7 +17,7 @@
 
 package org.gridgain.visor.commands.gc
 
-import org.gridgain.grid.kernal.visor.node.VisorNodeGcTask
+import org.apache.ignite.internal.visor.node.VisorNodeGcTask
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterNode}

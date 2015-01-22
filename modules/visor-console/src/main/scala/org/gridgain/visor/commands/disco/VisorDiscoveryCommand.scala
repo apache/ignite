@@ -19,9 +19,9 @@ package org.gridgain.visor.commands.disco
 
 import org.apache.ignite.internal.util.GridUtils
 import org.apache.ignite.internal.util.typedef.internal.U
-import org.gridgain.grid.kernal.visor.event.VisorGridDiscoveryEvent
-import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
-import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite.cluster.ClusterNode

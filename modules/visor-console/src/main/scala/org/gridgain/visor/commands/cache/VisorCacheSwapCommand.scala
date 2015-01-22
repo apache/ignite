@@ -17,8 +17,8 @@
 
 package org.gridgain.visor.commands.cache
 
-import org.gridgain.grid.kernal.visor.cache.VisorCacheSwapBackupsTask
-import org.gridgain.grid.kernal.visor.util.VisorTaskUtils._
+import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask
+import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 
 import org.apache.ignite.cluster.ClusterNode
 

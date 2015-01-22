@@ -20,7 +20,7 @@ package org.gridgain.visor.commands.vvm
 import org.apache.ignite.internal.util.GridUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid.kernal.GridNodeAttributes._
-import org.gridgain.grid.kernal.visor.util.{VisorTaskUtils => TU}
+import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
 
 import org.apache.ignite.IgniteSystemProperties
 import org.apache.ignite.cluster.ClusterNode

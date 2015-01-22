@@ -19,9 +19,9 @@ package org.gridgain.visor.commands.tasks
 
 import org.apache.ignite.internal.util.GridUtils
 import org.apache.ignite.internal.util.typedef.internal.U
-import org.gridgain.grid.kernal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
-import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
-import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
+import org.apache.ignite.internal.visor.event.{VisorGridEvent, VisorGridJobEvent, VisorGridTaskEvent}
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.util.typedef.X
 
 import org.apache.ignite._

@@ -19,7 +19,7 @@ package org.gridgain.visor.commands.config
 
 import org.apache.ignite.internal.util.GridUtils
 import org.apache.ignite.internal.util.typedef.internal.U
-import org.gridgain.grid.kernal.visor.node.VisorNodeConfigurationCollectorTask
+import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
