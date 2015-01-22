@@ -17,6 +17,7 @@
 
 package org.gridgain.visor.commands.cache
 
+import org.apache.ignite.cache.CacheConfiguration
 import org.gridgain.grid.cache.GridCacheMode._
 import org.gridgain.grid.cache._
 
@@ -64,8 +65,8 @@ class VisorCacheCompactCommandSpec extends VisorRuntimeBaseSpec(2) {
      * @param name Cache name.
      * @return Cache Configuration.
      */
-    def cacheConfig(@Nullable name: String): GridCacheConfiguration = {
-        val cfg = new GridCacheConfiguration
+    def cacheConfig(@Nullable name: String): CacheConfiguration = {
+        val cfg = new CacheConfiguration
 
         cfg.setCacheMode(REPLICATED)
         cfg.setName(name)

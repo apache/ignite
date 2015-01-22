@@ -18,6 +18,7 @@
 package org.gridgain.loadtests.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -56,7 +57,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(GridCacheMode.PARTITIONED);
         cc.setStartSize(200);

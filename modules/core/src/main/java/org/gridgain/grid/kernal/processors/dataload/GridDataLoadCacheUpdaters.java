@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
@@ -235,7 +236,7 @@ public class GridDataLoadCacheUpdaters {
             assert cache != null;
             assert !F.isEmpty(entries);
 
-            assert cache.getConfiguration(GridCacheConfiguration.class).getAtomicityMode() != ATOMIC;
+            assert cache.getConfiguration(CacheConfiguration.class).getAtomicityMode() != ATOMIC;
 
             Map<Integer, Integer> partsCounts = new HashMap<>();
 
@@ -243,7 +244,9 @@ public class GridDataLoadCacheUpdaters {
             Map<Integer, Collection<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
 
-            GridCacheAffinity<K> aff = cache.ignite().<K, V>cache(cache.getName()).affinity();
+            Ignite ignite = cache.unwrap(Ignite.class);
+
+            GridCacheAffinity<K> aff = ignite.<K, V>cache(cache.getName()).affinity();
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -272,7 +275,7 @@ public class GridDataLoadCacheUpdaters {
                 }
             }
 
-            IgniteTransactions txs = cache.ignite().transactions();
+            IgniteTransactions txs = ignite.transactions();
 
             for (Map.Entry<Integer, Integer> e : partsCounts.entrySet()) {
                 Integer part = e.getKey();

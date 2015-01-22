@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -45,7 +46,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
         cacheCfg.setAtomicityMode(GridCacheAtomicityMode.TRANSACTIONAL);

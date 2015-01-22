@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -65,8 +66,8 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
     }
 
     /** {@inheritDoc} */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);

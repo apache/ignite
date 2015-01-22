@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -136,7 +137,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache configuration properties.
      */
-    public static VisorCacheConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheConfiguration from(CacheConfiguration ccfg) {
         // TODO gg-9141 Update Visor.
 
         VisorCacheConfiguration cfg = new VisorCacheConfiguration();
@@ -182,13 +183,13 @@ public class VisorCacheConfiguration implements Serializable {
      * @param caches Cache configurations.
      * @return Data transfer object for cache configurations properties.
      */
-    public static Iterable<VisorCacheConfiguration> list(GridCacheConfiguration[] caches) {
+    public static Iterable<VisorCacheConfiguration> list(CacheConfiguration[] caches) {
         if (caches == null)
             return Collections.emptyList();
 
         final Collection<VisorCacheConfiguration> cfgs = new ArrayList<>(caches.length);
 
-        for (GridCacheConfiguration cache : caches)
+        for (CacheConfiguration cache : caches)
             cfgs.add(from(cache));
 
         return cfgs;

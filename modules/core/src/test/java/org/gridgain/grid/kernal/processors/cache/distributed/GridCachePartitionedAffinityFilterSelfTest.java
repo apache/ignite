@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -70,7 +71,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
         aff.setBackupFilter(backupFilter);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(BACKUPS);

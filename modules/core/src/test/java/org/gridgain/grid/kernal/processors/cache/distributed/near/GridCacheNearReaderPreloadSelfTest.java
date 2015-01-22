@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -121,7 +121,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      */
     private IgniteConfiguration dataNode(TcpDiscoveryIpFinder ipFinder, String gridName)
         throws Exception {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);

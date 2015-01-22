@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.startup.servlet.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -218,7 +217,7 @@ public class GridWebSessionFilter implements Filter {
         if (cache == null)
             throw new IgniteException("Cache for web sessions is not started (is it configured?): " + cacheName);
 
-        GridCacheConfiguration cacheCfg = cache.getConfiguration(GridCacheConfiguration.class);
+        CacheConfiguration cacheCfg = cache.getConfiguration(CacheConfiguration.class);
 
         if (cacheCfg.getWriteSynchronizationMode() == FULL_ASYNC)
             throw new IgniteException("Cache for web sessions cannot be in FULL_ASYNC mode: " + cacheName);

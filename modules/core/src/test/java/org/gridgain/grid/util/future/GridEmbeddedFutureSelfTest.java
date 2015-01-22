@@ -26,7 +26,7 @@ import org.gridgain.testframework.junits.common.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.cache.GridCacheConfiguration.*;
+import static org.apache.ignite.cache.CacheConfiguration.*;
 
 /**
  * Tests grid embedded future use cases.

@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -54,19 +55,19 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridCacheConfiguration atomicCacheCfg = cacheConfiguration0();
+        CacheConfiguration atomicCacheCfg = cacheConfiguration0();
 
         atomicCacheCfg.setName(CACHE_ATOMIC);
         atomicCacheCfg.setAtomicityMode(ATOMIC);
         atomicCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
-        GridCacheConfiguration atomicOffheapCacheCfg = offheapCacheConfiguration0();
+        CacheConfiguration atomicOffheapCacheCfg = offheapCacheConfiguration0();
 
         atomicOffheapCacheCfg.setName(CACHE_ATOMIC_OFFHEAP);
         atomicOffheapCacheCfg.setAtomicityMode(ATOMIC);
         atomicOffheapCacheCfg.setAtomicWriteOrderMode(PRIMARY);
 
-        GridCacheConfiguration atomicOffheapTieredCacheCfg = offheapTieredCacheConfiguration();
+        CacheConfiguration atomicOffheapTieredCacheCfg = offheapTieredCacheConfiguration();
 
         atomicOffheapTieredCacheCfg.setName(CACHE_ATOMIC_OFFHEAP_TIERED);
         atomicOffheapTieredCacheCfg.setAtomicityMode(ATOMIC);

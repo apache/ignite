@@ -17,7 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -26,15 +27,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -51,6 +50,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -66,12 +66,15 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(swap);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setStore(new TestStore());
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -210,7 +213,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
         private Map<Object, Object> map = new ConcurrentHashMap<>();
 
@@ -220,19 +223,17 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public Object load(Object key) {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Object key, @Nullable Object val)
-            throws IgniteCheckedException {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
+            map.put(entry.getKey(), entry.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Object key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             map.remove(key);
         }
     }

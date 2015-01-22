@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -51,7 +52,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setDistributionMode(PARTITIONED_ONLY);

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 
 import javax.cache.processor.*;
 
@@ -55,7 +55,7 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return new TestStore();
     }
 

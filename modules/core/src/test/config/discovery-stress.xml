@@ -26,7 +26,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+            <bean class="org.apache.ignite.cache.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
                 <property name="distributionMode" value="PARTITIONED_ONLY"/>
                 <property name="preloadMode" value="SYNC"/>

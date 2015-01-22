@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -75,14 +75,14 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
         if (!gridName.equals(getTestGridName(GRID_CNT))) {
             // Default cache configuration.
-            GridCacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
+            CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
             dfltCacheCfg.setCacheMode(PARTITIONED);
             dfltCacheCfg.setBackups(1);
             dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
             // Non-default cache configuration.
-            GridCacheConfiguration namedCacheCfg = defaultCacheConfiguration();
+            CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
 
             namedCacheCfg.setCacheMode(PARTITIONED);
             namedCacheCfg.setBackups(1);

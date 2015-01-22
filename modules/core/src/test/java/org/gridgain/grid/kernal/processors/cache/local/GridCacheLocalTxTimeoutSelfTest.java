@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -56,7 +57,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(LOCAL);
 

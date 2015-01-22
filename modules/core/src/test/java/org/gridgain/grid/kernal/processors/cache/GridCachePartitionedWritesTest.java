@@ -17,15 +17,17 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -39,7 +41,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 @SuppressWarnings({"unchecked"})
 public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
     /** Cache store. */
-    private GridCacheStore store;
+    private CacheStore store;
 
     /** {@inheritDoc} */
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -51,7 +53,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(GridCacheMode.PARTITIONED);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
@@ -59,7 +61,12 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
-        cc.setStore(store);
+        assert store != null;
+
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
 
@@ -78,19 +85,18 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         final AtomicInteger putCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();
 
-        store = new GridCacheStoreAdapter() {
-            @Override public Object load(@Nullable IgniteTx tx, Object key) {
+        store = new CacheStoreAdapter<Object, Object>() {
+            @Override public Object load(Object key) {
                 info(">>> Get [key=" + key + ']');
 
                 return null;
             }
 
-            @Override public void put(@Nullable IgniteTx tx, Object key,
-                @Nullable Object val) {
+            @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
                 putCnt.incrementAndGet();
             }
 
-            @Override public void remove(@Nullable IgniteTx tx, Object key) {
+            @Override public void delete(Object key) {
                 rmvCnt.incrementAndGet();
             }
         };

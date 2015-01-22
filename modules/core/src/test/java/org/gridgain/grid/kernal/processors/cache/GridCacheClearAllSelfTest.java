@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -72,14 +73,14 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration ccfgLoc = new GridCacheConfiguration();
+        CacheConfiguration ccfgLoc = new CacheConfiguration();
 
         ccfgLoc.setName(CACHE_LOCAL);
         ccfgLoc.setCacheMode(LOCAL);
         ccfgLoc.setWriteSynchronizationMode(FULL_SYNC);
         ccfgLoc.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration ccfgPartitioned = new GridCacheConfiguration();
+        CacheConfiguration ccfgPartitioned = new CacheConfiguration();
 
         ccfgPartitioned.setName(CACHE_PARTITIONED);
         ccfgPartitioned.setCacheMode(PARTITIONED);
@@ -89,7 +90,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
             gridName.equals(getTestGridName(1)) ? NEAR_ONLY : CLIENT_ONLY);
         ccfgPartitioned.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration ccfgColocated = new GridCacheConfiguration();
+        CacheConfiguration ccfgColocated = new CacheConfiguration();
 
         ccfgColocated.setName(CACHE_COLOCATED);
         ccfgColocated.setCacheMode(PARTITIONED);
@@ -98,7 +99,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
         ccfgColocated.setDistributionMode(PARTITIONED_ONLY);
         ccfgColocated.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration ccfgReplicated = new GridCacheConfiguration();
+        CacheConfiguration ccfgReplicated = new CacheConfiguration();
 
         ccfgReplicated.setName(CACHE_REPLICATED);
         ccfgReplicated.setCacheMode(REPLICATED);

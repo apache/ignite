@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -183,7 +184,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
 
-            GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setName("partitioned");
             cacheCfg.setCacheMode(PARTITIONED);
@@ -194,7 +195,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
             cacheCfg.setQueryIndexEnabled(false);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+            CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
             metaCacheCfg.setName("replicated");
             metaCacheCfg.setCacheMode(REPLICATED);
@@ -291,8 +292,8 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration[] cacheConfiguration(String gridName) {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration[] cacheConfiguration(String gridName) {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
@@ -303,7 +304,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -311,7 +312,7 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        return new GridCacheConfiguration[] {metaCacheCfg, cacheCfg};
+        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
     }
 
     /**

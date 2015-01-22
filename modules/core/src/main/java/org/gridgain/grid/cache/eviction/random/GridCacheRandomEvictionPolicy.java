@@ -18,7 +18,7 @@
 package org.gridgain.grid.cache.eviction.random;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.util.typedef.*;
@@ -38,7 +38,7 @@ import static org.gridgain.grid.cache.GridCachePeekMode.*;
 public class GridCacheRandomEvictionPolicy<K, V> implements GridCacheEvictionPolicy<K, V>,
     GridCacheRandomEvictionPolicyMBean {
     /** Maximum size. */
-    private volatile int max = GridCacheConfiguration.DFLT_CACHE_SIZE;
+    private volatile int max = CacheConfiguration.DFLT_CACHE_SIZE;
 
     /**
      * Constructs random eviction policy with all defaults.

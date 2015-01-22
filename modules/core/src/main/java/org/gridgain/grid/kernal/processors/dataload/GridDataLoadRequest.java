@@ -31,7 +31,7 @@ import java.util.*;
 /**
  *
  */
-public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapter {
+public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,6 +52,9 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
     /** {@code True} to ignore deployment ownership. */
     private boolean ignoreDepOwnership;
+
+    /** */
+    private boolean skipStore;
 
     /** */
     private IgniteDeploymentMode depMode;
@@ -87,6 +90,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
      * @param updaterBytes Cache updater.
      * @param colBytes Collection bytes.
      * @param ignoreDepOwnership Ignore ownership.
+     * @param skipStore Skip store flag.
      * @param depMode Deployment mode.
      * @param sampleClsName Sample class name.
      * @param userVer User version.
@@ -100,6 +104,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
         byte[] updaterBytes,
         byte[] colBytes,
         boolean ignoreDepOwnership,
+        boolean skipStore,
         IgniteDeploymentMode depMode,
         String sampleClsName,
         String userVer,
@@ -112,6 +117,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
         this.updaterBytes = updaterBytes;
         this.colBytes = colBytes;
         this.ignoreDepOwnership = ignoreDepOwnership;
+        this.skipStore = skipStore;
         this.depMode = depMode;
         this.sampleClsName = sampleClsName;
         this.userVer = userVer;
@@ -160,6 +166,13 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
      */
     public boolean ignoreDeploymentOwnership() {
         return ignoreDepOwnership;
+    }
+
+    /**
+     * @return Skip store flag.
+     */
+    public boolean skipStore() {
+        return skipStore;
     }
 
     /**
@@ -314,12 +327,18 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 10:
-                if (!commState.putByteArray(updaterBytes))
+                if (!commState.putBoolean(skipStore))
                     return false;
 
                 commState.idx++;
 
             case 11:
+                if (!commState.putByteArray(updaterBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 12:
                 if (!commState.putString(userVer))
                     return false;
 
@@ -401,7 +420,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
                 if (commState.readSize >= 0) {
                     if (ldrParticipants == null)
-                        ldrParticipants = U.newHashMap(commState.readSize);
+                        ldrParticipants = new HashMap<>(commState.readSize, 1.0f);
 
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         if (!commState.keyDone) {
@@ -462,6 +481,14 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
                 commState.idx++;
 
             case 10:
+                if (buf.remaining() < 1)
+                    return false;
+
+                skipStore = commState.getBoolean();
+
+                commState.idx++;
+
+            case 11:
                 byte[] updaterBytes0 = commState.getByteArray();
 
                 if (updaterBytes0 == BYTE_ARR_NOT_READ)
@@ -471,7 +498,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
 
                 commState.idx++;
 
-            case 11:
+            case 12:
                 String userVer0 = commState.getString();
 
                 if (userVer0 == STR_NOT_READ)
@@ -510,6 +537,7 @@ public class GridDataLoadRequest<K, V> extends GridTcpCommunicationMessageAdapte
         _clone.updaterBytes = updaterBytes;
         _clone.colBytes = colBytes;
         _clone.ignoreDepOwnership = ignoreDepOwnership;
+        _clone.skipStore = skipStore;
         _clone.depMode = depMode;
         _clone.sampleClsName = sampleClsName;
         _clone.userVer = userVer;

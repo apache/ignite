@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store;
+package org.apache.ignite.cache.store;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -68,7 +69,7 @@ import static java.util.concurrent.TimeUnit.*;
  * @param <V> Value type.
  * @param <I> Input type.
  */
-public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCacheStore<K, V> {
+public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V> {
     /**
      * Default batch size (number of records read with {@link #inputIterator(Object...)}
      * and then submitted to internal pool at a time).
@@ -100,11 +101,11 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      * Note that returned iterator doesn't have to be thread-safe. Thus it could
      * operate on raw streams, DB connections, etc. without additional synchronization.
      *
-     * @param args Arguments passes into {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
+     * @param args Arguments passes into {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
      * @return Iterator over input records.
-     * @throws IgniteCheckedException If iterator can't be created with the given arguments.
+     * @throws CacheLoaderException If iterator can't be created with the given arguments.
      */
-    protected abstract Iterator<I> inputIterator(@Nullable Object... args) throws IgniteCheckedException;
+    protected abstract Iterator<I> inputIterator(@Nullable Object... args) throws CacheLoaderException;
 
     /**
      * This method should transform raw data records into valid key-value pairs
@@ -113,14 +114,13 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
      * If {@code null} is returned then this record will be just skipped.
      *
      * @param rec A raw data record.
-     * @param args Arguments passed into {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
+     * @param args Arguments passed into {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
      * @return Cache entry to be saved in cache or {@code null} if no entry could be produced from this record.
      */
     @Nullable protected abstract IgniteBiTuple<K, V> parse(I rec, @Nullable Object... args);
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<K, V> c, @Nullable Object... args)
-        throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<K, V> c, @Nullable Object... args) {
         ExecutorService exec = new ThreadPoolExecutor(
             threadsCnt,
             threadsCnt,
@@ -226,41 +226,37 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
     }
 
     /** {@inheritDoc} */
-    @Override public V load(@Nullable IgniteTx tx, K key)
-        throws IgniteCheckedException {
+    @Override public V load(K key) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable IgniteTx tx,
-        @Nullable Collection<? extends K> keys, IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
+    @Override public Map<K, V> loadAll(Iterable<? extends K> keys) {
+        return Collections.emptyMap();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, K key, @Nullable V val) throws IgniteCheckedException {
+    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable IgniteTx tx, @Nullable Map<? extends K, ? extends V> map)
-        throws IgniteCheckedException {
+    @Override public void delete(Object key) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public void deleteAll(Collection<?> keys) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgniteTx tx, @Nullable Collection<? extends K> keys)
-        throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(boolean commit) {
         // No-op.
     }
 
@@ -280,7 +276,7 @@ public abstract class GridCacheLoadOnlyStoreAdapter<K, V, I> implements GridCach
         /**
          * @param c Closure for loaded entries.
          * @param buf Set of input records to process.
-         * @param args Arguments passed into {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
+         * @param args Arguments passed into {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
          */
         Worker(IgniteBiInClosure<K, V> c, Collection<I> buf, Object[] args) {
             this.c = c;

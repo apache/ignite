@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -65,7 +66,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(true);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);

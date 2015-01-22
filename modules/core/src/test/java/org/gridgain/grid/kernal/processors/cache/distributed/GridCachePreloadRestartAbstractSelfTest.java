@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -30,7 +31,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheConfiguration.*;
+import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.cache.GridCachePreloadMode.*;
@@ -106,7 +107,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         c.setDeploymentMode(CONTINUOUS);
 
         // Cache.
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);

@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -31,7 +31,7 @@ public class GridCachePartitionedAtomicQueueApiSelfTest extends GridCachePartiti
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        GridCacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
+        CacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);

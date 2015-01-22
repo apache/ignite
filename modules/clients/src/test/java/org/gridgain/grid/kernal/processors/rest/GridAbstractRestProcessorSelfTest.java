@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.rest;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -79,7 +80,7 @@ abstract class GridAbstractRestProcessorSelfTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
 
