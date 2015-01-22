@@ -162,7 +162,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
         }
     }
 
-
     /**
      * @param keys Keys.
      * @throws Exception If failed.
@@ -181,6 +180,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
                 GridCache<Object, MyValue> c2 = grid(j).cache("two");
 
                 GridCacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
+
+                qry.includeBackups(true);
 
                 final int i0 = j;
                 final int j0 = i;
