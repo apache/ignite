@@ -23,7 +23,7 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.plugin.segmentation.*;
-import org.gridgain.client.ssl.*;
+import org.apache.ignite.client.ssl.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

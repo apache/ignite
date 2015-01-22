@@ -17,7 +17,7 @@
 
 package org.gridgain.jdbc;
 
-import org.gridgain.client.*;
+import org.apache.ignite.client.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.jdbc.typedef.*;
 

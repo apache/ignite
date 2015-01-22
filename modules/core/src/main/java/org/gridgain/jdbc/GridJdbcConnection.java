@@ -17,7 +17,7 @@
 
 package org.gridgain.jdbc;
 
-import org.gridgain.client.*;
+import org.apache.ignite.client.*;
 
 import java.sql.*;
 import java.util.*;

@@ -1028,20 +1028,21 @@
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                     </links>
                                     <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.gridgain.client</subpackages>
-                                    <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.router.impl</additionalparam>
+                                    <subpackages>org.apache.ignite.client</subpackages>
+                                    <additionalparam>-exclude
+                                        org.apache.ignite.client.impl:org.apache.ignite.client.util:org.apache.ignite.client.router.impl</additionalparam>
                                     <groups>
                                         <group>
                                             <title>Client APIs</title>
-                                            <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop:org.gridgain.client.hadoop.counter</packages>
+                                            <packages>org.gridgain.client:org.apache.ignite.client.balancer:org.apache.ignite.client.ssl:org.apache.ignite.client.hadoop:org.apache.ignite.client.hadoop.counter</packages>
                                         </group>
                                         <group>
                                             <title>Router APIs</title>
-                                            <packages>org.gridgain.client.router</packages>
+                                            <packages>org.apache.ignite.client.router</packages>
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
-                                            <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
+                                            <packages>org.apache.ignite.client.marshaller:org.apache.ignite.client.marshaller.jdk:org.apache.ignite.client.marshaller.optimized:org.apache.ignite.client.marshaller.portable</packages>
                                         </group>
                                     </groups>
                                     <header>

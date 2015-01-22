@@ -30,7 +30,7 @@ import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.client.ssl.*;
+import org.apache.ignite.client.ssl.*;
 import org.gridgain.grid.dotnet.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;

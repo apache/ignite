@@ -80,13 +80,13 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.client.GridClientTestPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
+                            <property name="className" value="org.apache.ignite.client.model.GridPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.model.GridImplicitPortablePerson"/>
+                            <property name="className" value="org.apache.ignite.client.model.GridImplicitPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>
@@ -219,7 +219,7 @@
                     <property name="queryIndexEnabled" value="false"/>
 
                     <property name="store">
-                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.GridHashMapStore"/>
                     </property>
                 </bean>
 
@@ -254,7 +254,7 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.GridHashMapStore"/>
                     </property>
                 </bean>
             </list>

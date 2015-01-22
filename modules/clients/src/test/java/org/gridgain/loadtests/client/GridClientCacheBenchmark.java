@@ -18,7 +18,7 @@
 package org.gridgain.loadtests.client;
 
 import org.apache.ignite.*;
-import org.gridgain.client.*;
+import org.apache.ignite.client.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.*;

@@ -76,7 +76,7 @@
                 <property name="restTcpSslClientAuth" value="true"/>
 
                 <property name="restTcpSslContextFactory">
-                    <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
+                    <bean class="org.apache.ignite.client.ssl.GridSslBasicContextFactory">
                         <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                         <property name="keyStorePassword" value="123456"/>
                         <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
@@ -221,7 +221,7 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.GridHashMapStore"/>
                     </property>
                 </bean>
             </list>
@@ -328,7 +328,7 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.client.GridClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

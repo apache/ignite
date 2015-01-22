@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.portable;
 
 import org.apache.ignite.portables.*;
-import org.gridgain.client.marshaller.*;
+import org.apache.ignite.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.jetbrains.annotations.*;
 

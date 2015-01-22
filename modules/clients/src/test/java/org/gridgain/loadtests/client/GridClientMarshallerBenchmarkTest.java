@@ -17,9 +17,9 @@
 
 package org.gridgain.loadtests.client;
 
-import org.gridgain.client.marshaller.*;
-import org.gridgain.client.marshaller.jdk.*;
-import org.gridgain.client.marshaller.optimized.*;
+import org.apache.ignite.client.marshaller.*;
+import org.apache.ignite.client.marshaller.jdk.*;
+import org.apache.ignite.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;

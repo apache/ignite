@@ -19,8 +19,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.client.marshaller.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.client.marshaller.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;

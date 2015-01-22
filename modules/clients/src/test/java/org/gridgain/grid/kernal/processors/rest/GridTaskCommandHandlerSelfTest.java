@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.client.*;
+import org.apache.ignite.client.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.task.*;
@@ -36,7 +36,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.client.GridClientProtocol.*;
+import static org.apache.ignite.client.GridClientProtocol.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 

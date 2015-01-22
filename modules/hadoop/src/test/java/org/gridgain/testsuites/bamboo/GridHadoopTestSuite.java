@@ -21,7 +21,7 @@ import junit.framework.*;
 import org.apache.commons.compress.archivers.tar.*;
 import org.apache.commons.compress.compressors.gzip.*;
 import org.apache.ignite.*;
-import org.gridgain.client.hadoop.*;
+import org.apache.ignite.client.hadoop.*;
 import org.gridgain.grid.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
