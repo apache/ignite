@@ -18,7 +18,6 @@
 package org.gridgain.examples;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 
 /**
  * Starts up an empty node with example compute configuration.

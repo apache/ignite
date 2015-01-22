@@ -19,7 +19,6 @@ package org.gridgain.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 
 import java.util.concurrent.*;
 

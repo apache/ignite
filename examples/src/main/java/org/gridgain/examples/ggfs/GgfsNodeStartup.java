@@ -18,7 +18,6 @@
 package org.gridgain.examples.ggfs;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 
 /**
  * Starts up an empty node with GGFS configuration.

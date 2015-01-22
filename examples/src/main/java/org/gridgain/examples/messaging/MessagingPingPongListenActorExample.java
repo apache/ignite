@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.messaging.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 import java.util.concurrent.*;

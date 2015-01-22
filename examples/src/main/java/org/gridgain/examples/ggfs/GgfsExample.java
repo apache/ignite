@@ -19,7 +19,6 @@ package org.gridgain.examples.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

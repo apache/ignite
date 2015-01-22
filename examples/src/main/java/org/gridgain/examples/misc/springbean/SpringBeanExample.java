@@ -19,7 +19,6 @@ package org.gridgain.examples.misc.springbean;
 
 import org.apache.ignite.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.*;
 import org.springframework.context.support.*;
 
 import java.util.concurrent.*;

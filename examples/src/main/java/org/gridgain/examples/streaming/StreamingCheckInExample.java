@@ -22,7 +22,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
 import org.gridgain.examples.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -18,7 +18,6 @@
 package org.gridgain.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 
 import java.util.*;
