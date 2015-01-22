@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.license;
 
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.jetbrains.annotations.*;
 
 /**

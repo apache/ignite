@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.processors.jobmetrics;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;

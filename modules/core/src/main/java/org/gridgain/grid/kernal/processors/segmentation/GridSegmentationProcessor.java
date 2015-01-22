@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.segmentation;
 
-import org.gridgain.grid.kernal.processors.*;
+import org.apache.ignite.internal.processors.*;
 
 /**
  * Kernal processor responsible for checking network segmentation issues.

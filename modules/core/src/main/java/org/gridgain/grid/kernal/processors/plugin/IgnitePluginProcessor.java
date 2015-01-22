@@ -20,8 +20,8 @@ package org.gridgain.grid.kernal.processors.plugin;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.plugin.*;
-import org.gridgain.grid.kernal.processors.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
