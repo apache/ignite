@@ -101,16 +101,6 @@ public class CacheApiExample {
         boolean b2 = cache.putIfAbsent(4, "44");
         assert b1 && !b2;
 
-
-        // Put-with-predicate, will succeed if predicate evaluates to true.
-        cache.put(5, "5");
-        cache.putIf(5, "55", new IgnitePredicate<GridCacheEntry<Integer, String>>() {
-            @Override
-            public boolean apply(GridCacheEntry<Integer, String> e) {
-                return "5".equals(e.peek()); // Update only if previous value is "5".
-            }
-        });
-
         // Invoke - assign new value based on previous value.
         cache.put(6, "6");
         cache.invoke(6, new EntryProcessor<Integer, String, Void>() {

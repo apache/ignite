@@ -76,7 +76,7 @@ import java.util.*;
  *      updates and allow data loader choose most optimal concurrent implementation.
  *  </li>
  *  <li>
- *      {@link #updater(org.apache.ignite.dataload.IgniteDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
+ *      {@link #updater(IgniteDataLoadCacheUpdater)} - defines how cache will be updated with loaded entries.
  *      It allows to provide user-defined custom logic to update the cache in the most effective and flexible way.
  *  </li>
  *  <li>
@@ -113,13 +113,29 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
 
     /**
      * Sets flag indicating that this data loader should assume that there are no other concurrent updates to the cache.
-     * Should not be used when custom cache updater set using {@link #updater(org.apache.ignite.dataload.IgniteDataLoadCacheUpdater)} method.
+     * Should not be used when custom cache updater set using {@link #updater(IgniteDataLoadCacheUpdater)} method.
      * Default is {@code false}.
      *
      * @param isolated Flag value.
      * @throws IgniteCheckedException If failed.
      */
     public void isolated(boolean isolated) throws IgniteCheckedException;
+
+    /**
+     * Gets flag indicating that write-through behavior should be disabled for data loading.
+     * Default is {@code false}.
+     *
+     * @return Skip store flag.
+     */
+    public boolean skipStore();
+
+    /**
+     * Sets flag indicating that write-through behavior should be disabled for data loading.
+     * Default is {@code false}.
+     *
+     * @param skipStore Skip store flag.
+     */
+    public void skipStore(boolean skipStore);
 
     /**
      * Gets size of per node key-value pairs buffer.
