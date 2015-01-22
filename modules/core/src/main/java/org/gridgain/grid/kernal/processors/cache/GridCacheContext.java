@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -94,7 +95,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private IgniteLogger log;
 
     /** Cache configuration. */
-    private GridCacheConfiguration cacheCfg;
+    private CacheConfiguration cacheCfg;
 
     /** Unsafe memory object for direct memory allocation. */
     private GridUnsafeMemory unsafeMemory;
@@ -213,7 +214,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public GridCacheContext(
         GridKernalContext ctx,
         GridCacheSharedContext sharedCtx,
-        GridCacheConfiguration cacheCfg,
+        CacheConfiguration cacheCfg,
 
         /*
          * Managers in starting order!
@@ -774,7 +775,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Cache configuration for given cache instance.
      */
-    public GridCacheConfiguration config() {
+    public CacheConfiguration config() {
         return cacheCfg;
     }
 
@@ -1398,10 +1399,24 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return {@code True} if store is enabled.
+     * @return {@code True} if store read-through mode is enabled.
      */
-    public boolean isStoreEnabled() {
-        return cacheCfg.getStore() != null && !hasFlag(SKIP_STORE);
+    public boolean readThrough() {
+        return cacheCfg.isReadThrough() && !hasFlag(SKIP_STORE);
+    }
+
+    /**
+     * @return {@code True} if store read-through mode is enabled.
+     */
+    public boolean loadPreviousValue() {
+        return cacheCfg.isLoadPreviousValue();
+    }
+
+    /**
+     * @return {@code True} if store write-through is enabled.
+     */
+    public boolean writeThrough() {
+        return cacheCfg.isWriteThrough() && !hasFlag(SKIP_STORE);
     }
 
     /**
@@ -1745,14 +1760,12 @@ public class GridCacheContext<K, V> implements Externalizable {
 
             return unwrapped ? F.t(key, val) : o;
         }
-        else {
-            if (o instanceof Collection)
-                return unwrapPortablesIfNeeded((Collection<Object>)o, false);
-            else if (o instanceof Map)
-                return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
-            else if (o instanceof PortableObject)
-                return ((PortableObject)o).deserialize();
-        }
+        else if (o instanceof Collection)
+            return unwrapPortablesIfNeeded((Collection<Object>)o, false);
+        else if (o instanceof Map)
+            return unwrapPortablesIfNeeded((Map<Object, Object>)o, false);
+        else if (o instanceof PortableObject)
+            return ((PortableObject)o).deserialize();
 
         return o;
     }

@@ -17,6 +17,7 @@
 
 package org.gridgain.loadtests.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.cache.*;
@@ -126,7 +127,7 @@ public class GridCacheSingleNodeLoadTest {
         c.setSystemExecutorService(new IgniteThreadPoolExecutor(THREADS * 2, THREADS * 2, 0L,
             new LinkedBlockingQueue<Runnable>()));
 
-        GridCacheConfiguration cc = new GridCacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);

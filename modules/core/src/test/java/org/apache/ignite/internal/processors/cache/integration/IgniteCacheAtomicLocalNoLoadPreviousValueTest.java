@@ -15,37 +15,35 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store.jdbc;
+package org.apache.ignite.internal.processors.cache.integration;
 
-import org.gridgain.testframework.junits.cache.*;
+import org.gridgain.grid.cache.*;
 
-import java.sql.*;
+import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
+import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
+import static org.gridgain.grid.cache.GridCacheMode.*;
 
 /**
- * Cache store test.
+ *
  */
-public class GridCacheJdbcBlobStoreSelfTest
-    extends GridAbstractCacheStoreSelfTest<GridCacheJdbcBlobStore<Object, Object>> {
-    /**
-     * @throws Exception If failed.
-     */
-    public GridCacheJdbcBlobStoreSelfTest() throws Exception {
-        // No-op.
+public class IgniteCacheAtomicLocalNoLoadPreviousValueTest extends IgniteCacheNoLoadPreviousValueAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        try (Connection c = DriverManager.getConnection(GridCacheJdbcBlobStore.DFLT_CONN_URL, null, null)) {
-            try (Statement s = c.createStatement()) {
-                s.executeUpdate("drop table ENTRIES");
-            }
-        }
+    @Override protected GridCacheMode cacheMode() {
+        return LOCAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheJdbcBlobStore<Object, Object> store() {
-        return new GridCacheJdbcBlobStore<>();
+    @Override protected GridCacheAtomicityMode atomicityMode() {
+        return ATOMIC;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridCacheDistributionMode distributionMode() {
+        return PARTITIONED_ONLY;
     }
 }

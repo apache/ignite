@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -27,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
@@ -37,6 +38,8 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -226,10 +229,19 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    @SuppressWarnings("unchecked")
+    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
-        cfg.setStore(cacheStore());
+        CacheStore<?, ?> store = cacheStore();
+
+        if (store != null) {
+            cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cfg.setReadThrough(true);
+            cfg.setWriteThrough(true);
+            cfg.setLoadPreviousValue(true);
+        }
+
         cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
@@ -247,7 +259,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Default cache mode.
      */
     protected GridCacheMode cacheMode() {
-        return GridCacheConfiguration.DFLT_CACHE_MODE;
+        return CacheConfiguration.DFLT_CACHE_MODE;
     }
 
     /**
@@ -274,23 +286,23 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /**
      * @return Write through storage emulator.
      */
-    protected GridCacheStore<?, ?> cacheStore() {
-        return new GridCacheStoreAdapter<Object, Object>() {
+    protected CacheStore<?, ?> cacheStore() {
+        return new CacheStoreAdapter<Object, Object>() {
             @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
                 Object... args) {
                 for (Map.Entry<Object, Object> e : map.entrySet())
                     clo.apply(e.getKey(), e.getValue());
             }
 
-            @Override public Object load(IgniteTx tx, Object key) {
+            @Override public Object load(Object key) {
                 return map.get(key);
             }
 
-            @Override public void put(IgniteTx tx, Object key, @Nullable Object val) {
-                map.put(key, val);
+            @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+                map.put(e.getKey(), e.getValue());
             }
 
-            @Override public void remove(IgniteTx tx, Object key) {
+            @Override public void delete(Object key) {
                 map.remove(key);
             }
         };

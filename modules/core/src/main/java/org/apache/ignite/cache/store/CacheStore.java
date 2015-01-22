@@ -15,31 +15,36 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store;
+package org.apache.ignite.cache.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.jdbc.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.integration.*;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
 
+import static javax.cache.Cache.*;
+
 /**
  * API for cache persistent storage for read-through and write-through behavior.
- * Persistent store is configured via {@link GridCacheConfiguration#getStore()}
+ * Persistent store is configured via {@link CacheConfiguration#getCacheStoreFactory()}
  * configuration property. If not provided, values will be only kept in cache memory
  * or swap storage without ever being persisted to a persistent storage.
  * <p>
- * {@link GridCacheStoreAdapter} provides default implementation for bulk operations,
- * such as {@link #loadAll(IgniteTx, Collection, org.apache.ignite.lang.IgniteBiInClosure)},
- * {@link #putAll(IgniteTx, Map)}, and {@link #removeAll(IgniteTx, Collection)}
- * by sequentially calling corresponding {@link #load(IgniteTx, Object)},
- * {@link #put(IgniteTx, Object, Object)}, and {@link #remove(IgniteTx, Object)}
+ * {@link CacheStoreAdapter} provides default implementation for bulk operations,
+ * such as {@link #loadAll(Iterable)},
+ * {@link #writeAll(Collection)}, and {@link #deleteAll(Collection)}
+ * by sequentially calling corresponding {@link #load(Object)},
+ * {@link #write(Entry)}, and {@link #delete(Object)}
  * operations. Use this adapter whenever such behaviour is acceptable. However
  * in many cases it maybe more preferable to take advantage of database batch update
  * functionality, and therefore default adapter implementation may not be the best option.
@@ -47,7 +52,7 @@ import java.util.Date;
  * Provided implementations may be used for test purposes:
  * <ul>
  *     <li>{@gglink org.gridgain.grid.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
- *     <li>{@link GridCacheJdbcBlobStore}</li>
+ *     <li>{@link CacheJdbcBlobStore}</li>
  * </ul>
  * <p>
  * All transactional operations of this API are provided with ongoing {@link IgniteTx},
@@ -66,7 +71,7 @@ import java.util.Date;
  * }
  * </pre>
  * <h1 class="header">Working With Portable Objects</h1>
- * When portables are enabled for cache by setting {@link GridCacheConfiguration#isPortableEnabled()} to
+ * When portables are enabled for cache by setting {@link CacheConfiguration#isPortableEnabled()} to
  * {@code true}), all portable keys and values are converted to instances of {@link PortableObject}.
  * Therefore, all cache store methods will take parameters in portable format. To avoid class
  * cast exceptions, store must have signature compatible with portables. E.g., if you use {@link Integer}
@@ -81,7 +86,7 @@ import java.util.Date;
  *     ...
  * }
  * </pre>
- * This behavior can be overridden by setting {@link GridCacheConfiguration#setKeepPortableInStore(boolean)}
+ * This behavior can be overridden by setting {@link CacheConfiguration#setKeepPortableInStore(boolean)}
  * flag value to {@code false}. In this case, GridGain will deserialize keys and values stored in portable
  * format before they are passed to cache store, so that you can use the following cache store signature instead:
  * <pre name="code" class="java">
@@ -113,18 +118,16 @@ import java.util.Date;
  *     </li>
  * </ul>
  *
- * @see org.apache.ignite.IgnitePortables
+ * @see IgnitePortables
+ * @see CacheStoreSession
  */
-public interface GridCacheStore<K, V> {
-    /**
-     * Loads value for the key from underlying persistent storage.
-     *
-     * @param tx Cache transaction.
-     * @param key Key to load.
-     * @return Loaded value or {@code null} if value was not found.
-     * @throws IgniteCheckedException If load failed.
-     */
-    @Nullable public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException;
+public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter<K, V> {
+    /** */
+    private CacheStoreSession ses;
+
+    /** */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /**
      * Loads all values from underlying persistent storage. Note that keys are not
@@ -134,7 +137,7 @@ public interface GridCacheStore<K, V> {
      * <p>
      * This method is optional, and cache implementation does not depend on this
      * method to do anything. Default implementation of this method in
-     * {@link GridCacheStoreAdapter} does nothing.
+     * {@link CacheStoreAdapter} does nothing.
      * <p>
      * For every loaded value method {@link org.apache.ignite.lang.IgniteBiInClosure#apply(Object, Object)}
      * should be called on the passed in closure. The closure will then make sure
@@ -143,77 +146,34 @@ public interface GridCacheStore<K, V> {
      * @param clo Closure for loaded values.
      * @param args Arguments passes into
      *      {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
-     * @throws IgniteCheckedException If loading failed.
+     * @throws CacheLoaderException If loading failed.
      */
-    public void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws IgniteCheckedException;
-
-    /**
-     * Loads all values for given keys and passes every value to the provided closure.
-     * <p>
-     * For every loaded value method {@link org.apache.ignite.lang.IgniteInClosure#apply(Object)} should be called on
-     * the passed in closure. The closure will then make sure that the loaded value is stored
-     * in cache.
-     *
-     * @param tx Cache transaction.
-     * @param keys Collection of keys to load.
-     * @param c Closure to call for every loaded element.
-     * @throws IgniteCheckedException If load failed.
-     */
-    public void loadAll(@Nullable IgniteTx tx, Collection<? extends K> keys, IgniteBiInClosure<K, V> c)
-        throws IgniteCheckedException;
-
-    /**
-     * Stores a given value in persistent storage. Note that if write-behind is configured for a
-     * particular cache, transaction object passed in the cache store will be always {@code null}.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
-     * @param key Key to put.
-     * @param val Value to put.
-     * @throws IgniteCheckedException If put failed.
-     */
-    public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException;
-
-    /**
-     * Stores given key value pairs in persistent storage. Note that if write-behind is configured
-     * for a particular cache, transaction object passed in the cache store will be always {@code null}.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
-     * @param map Values to store.
-     * @throws IgniteCheckedException If store failed.
-     */
-    public void putAll(@Nullable IgniteTx tx, Map<? extends K, ? extends V> map) throws IgniteCheckedException;
-
-    /**
-     * Removes the value identified by given key from persistent storage. Note that  if write-behind is
-     * configured for a particular cache, transaction object passed in the cache store will be always
-     * {@code null}.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
-     * @param key Key to remove.
-     * @throws IgniteCheckedException If remove failed.
-     */
-    public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException;
-
-    /**
-     * Removes all vales identified by given keys from persistent storage. Note that if write-behind
-     * is configured for a particular cache, transaction object passed in the cache store will be
-     * always {@code null}.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, {@code null} otherwise.
-     * @param keys Keys to remove.
-     * @throws IgniteCheckedException If remove failed.
-     */
-    public void removeAll(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException;
+    public abstract void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws CacheLoaderException;
 
     /**
      * Tells store to commit or rollback a transaction depending on the value of the {@code 'commit'}
      * parameter.
      *
-     * @param tx Cache transaction being ended.
      * @param commit {@code True} if transaction should commit, {@code false} for rollback.
-     * @throws IgniteCheckedException If commit or rollback failed. Note that commit failure in some cases
+     * @throws CacheWriterException If commit or rollback failed. Note that commit failure in some cases
      *      may bring cache transaction into {@link IgniteTxState#UNKNOWN} which will
      *      consequently cause all transacted entries to be invalidated.
      */
-    public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException;
+    public abstract void txEnd(boolean commit) throws CacheWriterException;
+
+    /**
+     * Gets session for current cache operation. Returns {@code null} if store is used with atomic cache.
+     *
+     * @return Session for current cache operation.
+     */
+    @Nullable public CacheStoreSession session() {
+        return ses;
+    }
+
+    /**
+     * @return {@link Ignite} instance.
+     */
+    public Ignite ignite() {
+        return ignite;
+    }
 }

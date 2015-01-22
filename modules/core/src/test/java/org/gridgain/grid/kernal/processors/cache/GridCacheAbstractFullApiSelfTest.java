@@ -111,8 +111,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         if (offHeapValues()) {
             ccfg.setQueryIndexEnabled(false);
@@ -3480,12 +3480,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    assert !lock.tryLock(1000, MILLISECONDS);
+                    assert !lock.tryLock();
 
                     latch.countDown();
 
                     try {
-                        assert lock.tryLock();
+                        assert lock.tryLock(2000, MILLISECONDS);
                     }
                     finally {
                         lock.unlock();

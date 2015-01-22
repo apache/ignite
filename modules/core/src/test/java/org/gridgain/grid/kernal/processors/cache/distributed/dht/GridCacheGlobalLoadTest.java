@@ -18,16 +18,16 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -122,21 +122,21 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Override protected CacheStore<?, ?> cacheStore() {
         return new TestStore();
     }
 
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Integer, Integer> {
+    private static class TestStore extends CacheStoreAdapter<Integer, Integer> {
         /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Integer, Integer> clo,
-            @Nullable Object... args) throws IgniteCheckedException {
+            @Nullable Object... args) {
             assertNotNull(ignite);
             assertNotNull(clo);
             assertNotNull(map);
@@ -152,19 +152,19 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer load(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public Integer load(Integer key) {
             assertEquals((Integer)5, key);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Integer key, Integer val) throws IgniteCheckedException {
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
             fail();
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             fail();
         }
     }

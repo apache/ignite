@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
@@ -32,6 +33,9 @@ import java.util.*;
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
 public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
+    /**
+     *
+     */
     @SuppressWarnings("PublicInnerClass")
     public enum FinalizationStatus {
         /** Transaction was not finalized yet. */
@@ -124,6 +128,7 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     public boolean markFinalizing(FinalizationStatus status);
 
     /**
+     * @param cacheCtx Cache context.
      * @param part Invalid partition.
      */
     public void addInvalidPartition(GridCacheContext<K, V> cacheCtx, int part);
@@ -325,6 +330,7 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     @Nullable public IgniteTxEntry<K, V> entry(IgniteTxKey<K> key);
 
     /**
+     * @param ctx Cache context.
      * @param failFast Fail-fast flag.
      * @param key Key to look up.
      * @param filter Filter to check.

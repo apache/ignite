@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -46,13 +46,13 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     private long txLockTimeout;
 
     /** Default query timeout. */
-    private long queryTimeout;
+    private long qryTimeout;
 
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for default cache configuration properties.
      */
-    public static VisorCacheDefaultConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheDefaultConfiguration from(CacheConfiguration ccfg) {
         // TODO GG-9141 Update Visor.
 
         VisorCacheDefaultConfiguration cfg = new VisorCacheDefaultConfiguration();
@@ -141,14 +141,14 @@ public class VisorCacheDefaultConfiguration implements Serializable {
      * @return Default query timeout.
      */
     public long queryTimeout() {
-        return queryTimeout;
+        return qryTimeout;
     }
 
     /**
      * @param qryTimeout New default query timeout.
      */
     public void queryTimeout(long qryTimeout) {
-        queryTimeout = qryTimeout;
+        this.qryTimeout = qryTimeout;
     }
 
     /** {@inheritDoc} */

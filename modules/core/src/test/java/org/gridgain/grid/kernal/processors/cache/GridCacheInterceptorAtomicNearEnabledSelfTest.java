@@ -25,6 +25,7 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  * Tests {@link GridCacheInterceptor}.
  */
 public class GridCacheInterceptorAtomicNearEnabledSelfTest extends GridCacheInterceptorAtomicSelfTest {
+    /** {@inheritDoc} */
     @Override protected GridCacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }

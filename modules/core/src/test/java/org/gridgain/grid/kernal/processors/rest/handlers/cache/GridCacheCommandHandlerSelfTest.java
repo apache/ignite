@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -54,7 +55,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
 
         // Cache config.
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(GridCacheMode.LOCAL);
         cacheCfg.setQueryIndexEnabled(false);

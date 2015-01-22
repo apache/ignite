@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -26,10 +28,8 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.tostring.*;
@@ -40,6 +40,8 @@ import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
 import java.util.*;
@@ -96,6 +98,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -116,19 +119,22 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        GridCacheConfiguration[] ccs = new GridCacheConfiguration[2];
+        CacheConfiguration[] ccs = new CacheConfiguration[2];
 
         for (int i = 0; i < ccs.length; i++) {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             if (i > 0)
                 cc.setName("c" + i);
 
             cc.setCacheMode(cacheMode());
             cc.setAtomicityMode(atomicityMode());
-            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY :distributionMode());
+            cc.setDistributionMode(gridName.startsWith("client") ? CLIENT_ONLY : distributionMode());
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setStore(store);
+            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
             cc.setPreloadMode(SYNC);
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);
@@ -1994,7 +2000,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
         private Map<Object, Object> map = new ConcurrentHashMap<>();
 
@@ -2004,19 +2010,17 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public Object load(Object key) {
             return map.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Object key, @Nullable Object val)
-            throws IgniteCheckedException {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Object key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             map.remove(key);
         }
     }

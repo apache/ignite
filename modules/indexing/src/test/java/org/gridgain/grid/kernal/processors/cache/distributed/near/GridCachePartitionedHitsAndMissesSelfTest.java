@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -80,8 +81,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
         cfg.setCacheMode(PARTITIONED);
         cfg.setStartSize(700000);
         cfg.setWriteSynchronizationMode(FULL_ASYNC);

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -34,8 +35,8 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
  */
 public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractProjectionSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cc = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cc = super.cacheConfiguration(gridName);
 
         cc.setEvictSynchronized(false);
         cc.setEvictNearSynchronized(false);

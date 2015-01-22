@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
@@ -25,8 +26,6 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 import org.gridgain.grid.kernal.*;
@@ -196,7 +195,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
         // Check whether GGFS LRU eviction policy is set on data cache.
         String dataCacheName = ggfsCtx.configuration().getDataCacheName();
 
-        for (GridCacheConfiguration cacheCfg : ggfsCtx.kernalContext().config().getCacheConfiguration()) {
+        for (CacheConfiguration cacheCfg : ggfsCtx.kernalContext().config().getCacheConfiguration()) {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
                 GridCacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
 

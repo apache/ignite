@@ -72,7 +72,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(LOCAL);
 

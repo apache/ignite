@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -97,8 +98,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    GridCacheConfiguration cacheConfiguration(String gridName) {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    CacheConfiguration cacheConfiguration(String gridName) {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);

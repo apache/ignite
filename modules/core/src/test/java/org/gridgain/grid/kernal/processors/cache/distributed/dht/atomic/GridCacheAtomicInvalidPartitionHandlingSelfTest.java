@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -79,8 +80,8 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
 

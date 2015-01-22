@@ -18,9 +18,9 @@
 package org.gridgain.grid.util.ipc.shmem;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
@@ -64,7 +64,7 @@ public class GridIpcSharedMemoryNodeStartup {
 
         cfg.setGgfsConfiguration(ggfsCfg);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -53,8 +54,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setCacheMode(cacheMode());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
@@ -602,9 +603,9 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertNull(cache().put("kk1", 100500));
         assertEquals(100500, map.get("kk1"));
 
-        GridCacheProjection<String, Integer> c = cache().flagsOn(GridCacheFlag.SKIP_STORE);
+        IgniteCache<String, Integer> c = jcache().withSkipStore();
 
-        assertNull(c.put("noStore", 123));
+        assertNull(c.getAndPut("noStore", 123));
         assertEquals(123, (Object) c.get("noStore"));
         assertNull(map.get("noStore"));
 

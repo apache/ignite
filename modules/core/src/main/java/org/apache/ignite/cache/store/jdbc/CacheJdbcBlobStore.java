@@ -15,26 +15,30 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store.jdbc;
+package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.store.*;
+import org.gridgain.grid.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import javax.sql.*;
 import java.sql.*;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 /**
- * {@link GridCacheStore} implementation backed by JDBC. This implementation
+ * {@link CacheStore} implementation backed by JDBC. This implementation
  * stores objects in underlying database in {@code BLOB} format.
  * <p>
  * Store will create table {@code ENTRIES} in the database to store data.
@@ -82,7 +86,7 @@ import java.util.concurrent.atomic.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
+public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
     public static final String DFLT_CONN_URL = "jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1";
 
@@ -171,10 +175,14 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     private boolean initOk;
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(boolean commit) {
         init();
 
-        Connection conn = tx.removeMeta(ATTR_CONN);
+        IgniteTx tx = transaction();
+
+        Map<String, Connection> props = session().properties();
+
+        Connection conn = props.remove(ATTR_CONN);
 
         if (conn != null) {
             try {
@@ -184,7 +192,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                     conn.rollback();
             }
             catch (SQLException e) {
-                throw new IgniteCheckedException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+                throw new CacheWriterException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
             }
             finally {
                 closeConnection(conn);
@@ -197,8 +205,10 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public V load(K key) {
         init();
+
+        IgniteTx tx = transaction();
 
         if (log.isDebugEnabled())
             log.debug("Store load [key=" + key + ", tx=" + tx + ']');
@@ -219,8 +229,8 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
             if (rs.next())
                 return fromBytes(rs.getBytes(2));
         }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to load object: " + key, e);
+        catch (IgniteCheckedException | SQLException e) {
+            throw new CacheLoaderException("Failed to load object: " + key, e);
         }
         finally {
             end(tx, conn, stmt);
@@ -230,8 +240,13 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) {
         init();
+
+        IgniteTx tx = transaction();
+
+        K key = entry.getKey();
+        V val = entry.getValue();
 
         if (log.isDebugEnabled())
             log.debug("Store put [key=" + key + ", val=" + val + ", tx=" + tx + ']');
@@ -259,8 +274,8 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                 stmt.executeUpdate();
             }
         }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to put object [key=" + key + ", val=" + val + ']', e);
+        catch (IgniteCheckedException | SQLException e) {
+            throw new CacheWriterException("Failed to put object [key=" + key + ", val=" + val + ']', e);
         }
         finally {
             end(tx, conn, stmt);
@@ -268,8 +283,10 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Override public void delete(Object key) {
         init();
+
+        IgniteTx tx = transaction();
 
         if (log.isDebugEnabled())
             log.debug("Store remove [key=" + key + ", tx=" + tx + ']');
@@ -287,8 +304,8 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
             stmt.executeUpdate();
         }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to remove object: " + key, e);
+        catch (IgniteCheckedException | SQLException e) {
+            throw new CacheWriterException("Failed to remove object: " + key, e);
         }
         finally {
             end(tx, conn, stmt);
@@ -302,14 +319,16 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
      */
     private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
         if (tx != null) {
-            Connection conn = tx.meta(ATTR_CONN);
+            Map<String, Connection> props = session().properties();
+
+            Connection conn = props.get(ATTR_CONN);
 
             if (conn == null) {
                 conn = openConnection(false);
 
-                // Store connection in transaction metadata, so it can be accessed
+                // Store connection in session properties, so it can be accessed
                 // for other operations on the same transaction.
-                tx.addMeta(ATTR_CONN, conn);
+                props.put(ATTR_CONN, conn);
             }
 
             return conn;
@@ -368,16 +387,16 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
     /**
      * Initializes store.
      *
-     * @throws IgniteCheckedException If failed to initialize.
+     * @throws IgniteException If failed to initialize.
      */
-    private void init() throws IgniteCheckedException {
+    private void init() {
         if (initLatch.getCount() > 0) {
             if (initGuard.compareAndSet(false, true)) {
                 if (log.isDebugEnabled())
                     log.debug("Initializing cache store.");
 
                 if (F.isEmpty(connUrl))
-                    throw new IgniteCheckedException("Failed to initialize cache store (connection URL is not provided).");
+                    throw new IgniteException("Failed to initialize cache store (connection URL is not provided).");
 
                 if (!initSchema) {
                     initLatch.countDown();
@@ -386,7 +405,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                 }
 
                 if (F.isEmpty(createTblQry))
-                    throw new IgniteCheckedException("Failed to initialize cache store (create table query is not provided).");
+                    throw new IgniteException("Failed to initialize cache store (create table query is not provided).");
 
                 Connection conn = null;
 
@@ -404,7 +423,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                     initOk = true;
                 }
                 catch (SQLException e) {
-                    throw new IgniteCheckedException("Failed to create database table.", e);
+                    throw new IgniteException("Failed to create database table.", e);
                 }
                 finally {
                     U.closeQuiet(stmt);
@@ -414,12 +433,18 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
                     initLatch.countDown();
                 }
             }
-            else
-                U.await(initLatch);
+            else {
+                try {
+                    U.await(initLatch);
+                }
+                catch (GridInterruptedException e) {
+                    throw new IgniteException(e);
+                }
+            }
         }
 
         if (!initOk)
-            throw new IgniteCheckedException("Cache store was not properly initialized.");
+            throw new IgniteException("Cache store was not properly initialized.");
     }
 
     /**
@@ -521,7 +546,7 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheJdbcBlobStore.class, this, "passwd", passwd != null ? "*" : null);
+        return S.toString(CacheJdbcBlobStore.class, this, "passwd", passwd != null ? "*" : null);
     }
 
     /**
@@ -548,5 +573,14 @@ public class GridCacheJdbcBlobStore<K, V> extends GridCacheStoreAdapter<K, V> {
             return null;
 
         return marsh.unmarshal(bytes, getClass().getClassLoader());
+    }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
     }
 }

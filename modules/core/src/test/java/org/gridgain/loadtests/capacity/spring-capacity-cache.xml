@@ -49,14 +49,14 @@
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
+                CacheConfiguration interface can be configured here.
                 Note that absolutely all configuration properties are optional.
             -->
             <list>
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="cacheMode" value="PARTITIONED"/>
 
                     <!-- Initial cache size. -->

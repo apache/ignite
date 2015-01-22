@@ -18,7 +18,6 @@
 package org.gridgain.grid.cache.jta;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.jndi.*;
 import org.gridgain.grid.cache.jta.reflect.*;
 import org.jetbrains.annotations.*;
@@ -28,7 +27,7 @@ import javax.transaction.*;
 /**
  * Allows grid to use different transactional systems. Implement this interface
  * to look up native transaction manager within your environment. Transaction
- * manager lookup is configured via {@link GridCacheConfiguration#getTransactionManagerLookupClassName()}
+ * manager lookup is configured via {@link org.apache.ignite.cache.CacheConfiguration#getTransactionManagerLookupClassName()}
  * method.
  * <p>
  * The following implementations are provided out of the box:
@@ -46,7 +45,7 @@ public interface GridCacheTmLookup {
     /**
      * Gets Transaction Manager (TM).
      *
-     * @return TM or {@code null} if TM cannot be looked up. 
+     * @return TM or {@code null} if TM cannot be looked up.
      * @throws IgniteCheckedException In case of error.
      */
     @Nullable public TransactionManager getTm() throws IgniteCheckedException;

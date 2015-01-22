@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.local;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -33,7 +33,7 @@ public class GridCacheLocalSequenceApiSelfTest extends GridCacheSequenceApiSelfA
         IgniteConfiguration cfg = super.getConfiguration();
 
         // Default cache configuration.
-        GridCacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setCacheMode(LOCAL);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);

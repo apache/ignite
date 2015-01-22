@@ -18,12 +18,11 @@
 package org.gridgain.grid.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -59,8 +58,8 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @return Cache configuration.
      */
     @SuppressWarnings("deprecation")
-    protected GridCacheConfiguration[] getCacheConfiguration(String gridName) {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration[] getCacheConfiguration(String gridName) {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("dataCache");
         cacheCfg.setCacheMode(PARTITIONED);
@@ -72,7 +71,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -81,7 +80,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        return new GridCacheConfiguration[] {cacheCfg, metaCacheCfg};
+        return new CacheConfiguration[] {cacheCfg, metaCacheCfg};
     }
 
     /**

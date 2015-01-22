@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -41,8 +41,8 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration0() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration cacheConfiguration0() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -55,8 +55,8 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration offheapCacheConfiguration0() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration offheapCacheConfiguration0() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);
@@ -69,8 +69,8 @@ public abstract class GridCacheAbstractReplicatedByteArrayValuesSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration offheapTieredCacheConfiguration0() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    @Override protected CacheConfiguration offheapTieredCacheConfiguration0() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(REPLICATED);
         cfg.setAtomicityMode(TRANSACTIONAL);

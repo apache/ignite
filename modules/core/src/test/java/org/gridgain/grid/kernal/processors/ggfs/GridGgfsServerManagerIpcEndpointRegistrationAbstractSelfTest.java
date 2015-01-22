@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -125,7 +126,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName("partitioned");
         cc.setCacheMode(GridCacheMode.PARTITIONED);
@@ -134,7 +135,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setQueryIndexEnabled(false);
 
-        GridCacheConfiguration metaCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCfg = defaultCacheConfiguration();
 
         metaCfg.setName("replicated");
         metaCfg.setCacheMode(GridCacheMode.REPLICATED);

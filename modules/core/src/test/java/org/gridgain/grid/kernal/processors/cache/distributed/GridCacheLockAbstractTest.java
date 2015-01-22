@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -82,8 +83,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
@@ -121,11 +122,11 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         info("Before 1st removeAll().");
 
-        cache1.flagsOn(GridCacheFlag.SYNC_COMMIT).removeAll();
+        cache1.removeAll();
 
         info("Before 2nd removeAll().");
 
-        cache2.flagsOn(GridCacheFlag.SYNC_COMMIT).removeAll();
+        cache2.removeAll();
 
         assert cache1.size() == 0 : "Cache is not empty: " + cache1;
         assert cache2.size() == 0 : "Cache is not empty: " + cache2;
