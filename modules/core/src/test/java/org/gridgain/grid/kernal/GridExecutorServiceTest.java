@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.kernal.executor.*;
+import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 

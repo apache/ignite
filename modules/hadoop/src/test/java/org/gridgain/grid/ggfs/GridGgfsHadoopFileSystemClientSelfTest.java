@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
+import org.apache.ignite.internal.fs.common.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.spi.discovery.tcp.*;

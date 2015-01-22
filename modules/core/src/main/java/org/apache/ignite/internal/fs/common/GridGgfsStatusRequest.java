@@ -15,27 +15,21 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.ggfs.common;
+package org.apache.ignite.internal.fs.common;
+
+import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
 
 /**
- * Abstract class for all messages sent between GGFS client (Hadoop File System implementation) and
- * GGFS server (GridGain data node).
+ * GGFS status (total/used/free space) request.
  */
-public abstract class GridGgfsMessage {
-    /** GGFS command. */
-    private GridGgfsIpcCommand cmd;
-
-    /**
-     * @return Command.
-     */
-    public GridGgfsIpcCommand command() {
-        return cmd;
+public class GridGgfsStatusRequest extends GridGgfsMessage {
+    /** {@inheritDoc} */
+    @Override public GridGgfsIpcCommand command() {
+        return STATUS;
     }
 
-    /**
-     * @param cmd Command.
-     */
-    public void command(GridGgfsIpcCommand cmd) {
-        this.cmd = cmd;
+    /** {@inheritDoc} */
+    @Override public void command(GridGgfsIpcCommand cmd) {
+        // No-op.
     }
 }

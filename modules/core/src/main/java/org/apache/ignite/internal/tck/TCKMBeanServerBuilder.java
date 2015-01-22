@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.tck;
+package org.apache.ignite.internal.tck;
 
 import com.sun.jmx.mbeanserver.*;
 

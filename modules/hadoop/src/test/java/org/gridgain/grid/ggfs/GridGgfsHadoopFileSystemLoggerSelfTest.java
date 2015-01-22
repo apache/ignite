@@ -18,7 +18,7 @@
 package org.gridgain.grid.ggfs;
 
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
+import org.apache.ignite.internal.fs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -26,7 +26,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsLogger.*;
+import static org.apache.ignite.internal.fs.common.GridGgfsLogger.*;
 
 /**
  * Grid GGFS client logger test.

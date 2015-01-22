@@ -15,21 +15,29 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.ggfs.common;
+package org.apache.ignite.internal.fs.common;
 
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
+import java.io.*;
 
 /**
- * GGFS status (total/used/free space) request.
+ * Data output stream implementing ObjectOutput but throwing exceptions on methods working with objects.
  */
-public class GridGgfsStatusRequest extends GridGgfsMessage {
-    /** {@inheritDoc} */
-    @Override public GridGgfsIpcCommand command() {
-        return STATUS;
+public class GridGgfsDataOutputStream extends DataOutputStream implements ObjectOutput {
+    /**
+     * Creates a new data output stream to write data to the specified
+     * underlying output stream. The counter <code>written</code> is
+     * set to zero.
+     *
+     * @param   out   the underlying output stream, to be saved for later
+     *                use.
+     * @see     FilterOutputStream#out
+     */
+    public GridGgfsDataOutputStream(OutputStream out) {
+        super(out);
     }
 
     /** {@inheritDoc} */
-    @Override public void command(GridGgfsIpcCommand cmd) {
-        // No-op.
+    @Override public void writeObject(Object obj) throws IOException {
+        throw new IOException("This method must not be invoked on GGFS data output stream.");
     }
 }

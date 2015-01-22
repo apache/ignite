@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.ggfs.common;
+package org.apache.ignite.internal.fs.common;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
 
 /**
  * Implementation of GGFS client message marshaller.

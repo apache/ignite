@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.executor;
+package org.apache.ignite.internal.executor;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;

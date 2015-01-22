@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
+import org.apache.ignite.internal.fs.common.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;

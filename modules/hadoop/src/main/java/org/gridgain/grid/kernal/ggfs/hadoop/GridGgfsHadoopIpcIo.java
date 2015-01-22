@@ -21,7 +21,7 @@ import org.apache.commons.logging.*;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
+import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.lang.*;

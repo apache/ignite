@@ -15,26 +15,27 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.ggfs.common;
-
-import java.io.*;
+package org.apache.ignite.internal.fs.common;
 
 /**
- * Data input stream implementing object input but throwing exceptions on object methods.
+ * Abstract class for all messages sent between GGFS client (Hadoop File System implementation) and
+ * GGFS server (GridGain data node).
  */
-public class GridGgfsDataInputStream extends DataInputStream implements ObjectInput {
+public abstract class GridGgfsMessage {
+    /** GGFS command. */
+    private GridGgfsIpcCommand cmd;
+
     /**
-     * Creates a DataInputStream that uses the specified
-     * underlying InputStream.
-     *
-     * @param  in The specified input stream
+     * @return Command.
      */
-    public GridGgfsDataInputStream(InputStream in) {
-        super(in);
+    public GridGgfsIpcCommand command() {
+        return cmd;
     }
 
-    /** {@inheritDoc} */
-    @Override public Object readObject() throws ClassNotFoundException, IOException {
-        throw new IOException("This method must not be invoked on GGFS data input stream.");
+    /**
+     * @param cmd Command.
+     */
+    public void command(GridGgfsIpcCommand cmd) {
+        this.cmd = cmd;
     }
 }

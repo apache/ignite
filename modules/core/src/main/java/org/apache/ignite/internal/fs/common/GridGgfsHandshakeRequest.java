@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.ggfs.common;
+package org.apache.ignite.internal.fs.common;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
 
 /**
  * Handshake request.

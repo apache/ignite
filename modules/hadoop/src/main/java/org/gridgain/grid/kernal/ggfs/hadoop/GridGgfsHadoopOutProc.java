@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.ggfs.common.*;
+import org.apache.ignite.internal.fs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.jdk8.backport.*;
@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
 
 /**
  * Communication with external process (TCP or shmem).

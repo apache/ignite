@@ -33,7 +33,7 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.executor.*;
+import org.apache.ignite.internal.executor.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;

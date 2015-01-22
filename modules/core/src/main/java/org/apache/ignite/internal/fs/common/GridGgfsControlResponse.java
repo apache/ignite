@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.ggfs.common;
+package org.apache.ignite.internal.fs.common;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.ggfs.common.GridGgfsIpcCommand.*;
+import static org.apache.ignite.internal.fs.common.GridGgfsIpcCommand.*;
 
 /**
  * GGFS path command response.
