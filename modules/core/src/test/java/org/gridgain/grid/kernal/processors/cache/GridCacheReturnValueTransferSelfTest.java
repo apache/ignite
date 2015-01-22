@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -142,7 +143,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
             IgniteCache<Integer, TestObject> cache = grid(2).jcache(null);
 
             if (backups > 0 && atomicityMode == ATOMIC)
-                cache = cache.flagsOn(FORCE_TRANSFORM_BACKUP);
+                cache = ((IgniteCacheProxy<Integer, TestObject>)cache).flagsOn(FORCE_TRANSFORM_BACKUP);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, new TestObject());

@@ -57,7 +57,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             invoke(cache, OPTIMISTIC);
         }
         else if (gridCount() > 1) {
-            cache = cache.flagsOn(FORCE_TRANSFORM_BACKUP);
+            cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagsOn(FORCE_TRANSFORM_BACKUP);
 
             invoke(cache, null);
         }
@@ -186,7 +186,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
             invokeAll(cache, OPTIMISTIC);
         }
         else if (gridCount() > 1) {
-            cache = cache.flagsOn(FORCE_TRANSFORM_BACKUP);
+            cache = ((IgniteCacheProxy<Integer, Integer>)cache).flagsOn(FORCE_TRANSFORM_BACKUP);
 
             invokeAll(cache, null);
         }

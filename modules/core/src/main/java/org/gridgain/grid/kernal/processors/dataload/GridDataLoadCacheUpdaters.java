@@ -244,7 +244,9 @@ public class GridDataLoadCacheUpdaters {
             Map<Integer, Collection<K>> rmvPartMap = null;
             Map<Integer, Map<K, V>> putPartMap = null;
 
-            GridCacheAffinity<K> aff = cache.ignite().<K, V>cache(cache.getName()).affinity();
+            Ignite ignite = cache.unwrap(Ignite.class);
+
+            GridCacheAffinity<K> aff = ignite.<K, V>cache(cache.getName()).affinity();
 
             for (Map.Entry<K, V> entry : entries) {
                 K key = entry.getKey();
@@ -273,7 +275,7 @@ public class GridDataLoadCacheUpdaters {
                 }
             }
 
-            IgniteTransactions txs = cache.ignite().transactions();
+            IgniteTransactions txs = ignite.transactions();
 
             for (Map.Entry<Integer, Integer> e : partsCounts.entrySet()) {
                 Integer part = e.getKey();
