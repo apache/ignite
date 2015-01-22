@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.future.*;

@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;

@@ -19,7 +19,7 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 /**
  * In-Memory Data Grid stability test suite on changing topology.

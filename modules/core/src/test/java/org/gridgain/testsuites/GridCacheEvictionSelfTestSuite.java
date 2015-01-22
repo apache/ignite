@@ -19,7 +19,7 @@ package org.gridgain.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.fifo.*;
 import org.gridgain.grid.kernal.processors.cache.eviction.lru.*;
