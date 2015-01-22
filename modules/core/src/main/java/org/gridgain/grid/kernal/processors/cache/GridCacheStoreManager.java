@@ -316,7 +316,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param tx Cache transaction.
      * @param keys Cache keys.
-     * @param vis Closer to cache loaded elements.
+     * @param vis Closure to apply for loaded elements.
      * @throws IgniteCheckedException If data loading failed.
      */
     public void localStoreLoadAll(@Nullable IgniteTx tx,

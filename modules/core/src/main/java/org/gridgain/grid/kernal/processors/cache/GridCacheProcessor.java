@@ -618,7 +618,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (!sysCaches.contains(cfg.getName()))
                 suggestOptimizations(cfg, cfgStore != null);
 
-            prepare(cfg, jta.tmLookup(), cfgStore);
+            List<Object> toPrepare = new ArrayList<>();
+
+            toPrepare.add(jta.tmLookup());
+            toPrepare.add(cfgStore);
+
+            if (cfgStore instanceof GridCacheLoaderWriterStore) {
+                toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).loader());
+                toPrepare.add(((GridCacheLoaderWriterStore)cfgStore).writer());
+            }
+
+            prepare(cfg, toPrepare.toArray(new Object[toPrepare.size()]));
 
             U.startLifecycleAware(lifecycleAwares(cfg, jta.tmLookup(), cfgStore));
 
