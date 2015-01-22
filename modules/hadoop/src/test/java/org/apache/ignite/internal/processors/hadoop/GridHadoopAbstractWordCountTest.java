@@ -21,7 +21,6 @@ import com.google.common.base.*;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 
 import java.io.*;
 import java.util.*;

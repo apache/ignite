@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.gridgain.testframework.*;

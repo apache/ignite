@@ -25,7 +25,6 @@ import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.file.*;
 import org.apache.ignite.internal.visor.log.*;

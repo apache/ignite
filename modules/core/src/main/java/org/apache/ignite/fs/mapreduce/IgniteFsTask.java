@@ -23,7 +23,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

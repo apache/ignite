@@ -19,7 +19,6 @@ package org.gridgain.testsuites.bamboo;
 
 import junit.framework.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 
 import static org.gridgain.testsuites.bamboo.GridHadoopTestSuite.*;

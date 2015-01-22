@@ -21,7 +21,6 @@ import com.google.common.base.Joiner;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.jobtracker.*;
 import org.apache.ignite.internal.util.typedef.*;

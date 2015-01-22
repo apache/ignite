@@ -40,7 +40,6 @@ import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.kernal.processors.dataload.*;
 import org.apache.ignite.internal.processors.email.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.apache.ignite.internal.processors.job.*;

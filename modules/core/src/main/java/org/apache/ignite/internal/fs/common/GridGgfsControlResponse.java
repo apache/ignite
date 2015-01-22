@@ -19,7 +19,6 @@ package org.apache.ignite.internal.fs.common;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

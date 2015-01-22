@@ -27,7 +27,6 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.processors.hadoop.planner.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.apache.ignite.internal.util.lang.*;
