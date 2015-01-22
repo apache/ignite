@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.managers.deployment;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.direct.*;
 
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;

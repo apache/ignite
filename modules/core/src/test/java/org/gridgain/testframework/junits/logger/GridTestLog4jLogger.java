@@ -18,12 +18,12 @@
 package org.gridgain.testframework.junits.logger;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.logger.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
 import org.apache.log4j.xml.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

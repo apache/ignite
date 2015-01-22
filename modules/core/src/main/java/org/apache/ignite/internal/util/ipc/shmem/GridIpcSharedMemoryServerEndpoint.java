@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.kernal.processors.resource.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.*;

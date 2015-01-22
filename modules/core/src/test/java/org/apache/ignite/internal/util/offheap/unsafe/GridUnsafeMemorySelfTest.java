@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.IgniteFuture;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.X;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;

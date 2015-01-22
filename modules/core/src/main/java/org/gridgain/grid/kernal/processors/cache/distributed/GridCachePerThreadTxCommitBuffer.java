@@ -18,10 +18,10 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;

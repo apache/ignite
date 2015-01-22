@@ -18,8 +18,9 @@
 package org.gridgain.grid.util;
 
 import junit.framework.*;
+import org.apache.ignite.internal.util.*;
 
-import static org.gridgain.grid.util.GridLongList.*;
+import static org.apache.ignite.internal.util.GridLongList.*;
 
 /**
  *

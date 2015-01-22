@@ -18,6 +18,7 @@
 package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;

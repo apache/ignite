@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.store.*;
 import org.h2.value.*;

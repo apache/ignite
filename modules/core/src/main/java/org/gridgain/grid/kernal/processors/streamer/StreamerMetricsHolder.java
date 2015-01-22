@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.streamer;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 

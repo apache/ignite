@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.cache;
 
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 
 import java.util.*;
 

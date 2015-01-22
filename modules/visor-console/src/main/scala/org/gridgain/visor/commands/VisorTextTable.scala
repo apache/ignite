@@ -17,8 +17,6 @@
 
 package org.gridgain.visor.commands
 
-import org.gridgain.grid.util.{GridStringBuilder => SB}
-
 import org.gridgain.visor.commands.VisorTextTable._
 
 import scala.collection.Traversable
@@ -181,7 +179,7 @@ class VisorTextTable {
 
         var i = 0
 
-        val sb = new SB(s.length * len)
+        val sb = new GridStringBuilder(s.length * len)
 
         while (i < len) {
             sb.a(s)
@@ -420,7 +418,7 @@ class VisorTextTable {
         // Table width without the border.
         val tblW = colWs.sum + colsNum - 1
 
-        val tbl = new SB()
+        val tbl = new GridStringBuilder()
 
         // Top margin.
         for (i <- 0 until margin.top)

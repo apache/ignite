@@ -17,7 +17,7 @@
 
 package org.gridgain.testframework;
 
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

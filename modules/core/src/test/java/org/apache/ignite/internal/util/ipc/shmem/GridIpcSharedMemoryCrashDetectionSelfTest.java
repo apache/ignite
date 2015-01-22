@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.commons.collections.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

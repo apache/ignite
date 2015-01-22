@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.typedef.internal;
 
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 
 /**
  * Defines internal {@code typedef} for {@link GridArgumentCheck}. Since Java doesn't provide type aliases

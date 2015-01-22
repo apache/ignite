@@ -18,7 +18,7 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

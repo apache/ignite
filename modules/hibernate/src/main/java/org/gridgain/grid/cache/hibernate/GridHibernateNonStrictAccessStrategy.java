@@ -19,7 +19,7 @@ package org.gridgain.grid.cache.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.hibernate.cache.*;
 import org.hibernate.cache.spi.access.*;

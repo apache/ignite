@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.clock;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;

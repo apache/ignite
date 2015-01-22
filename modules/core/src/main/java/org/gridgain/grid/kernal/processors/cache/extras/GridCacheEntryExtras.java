@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.extras;
 
+import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 
 /**

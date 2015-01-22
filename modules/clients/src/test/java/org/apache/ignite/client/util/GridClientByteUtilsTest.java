@@ -17,13 +17,13 @@
 
 package org.apache.ignite.client.util;
 
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.gridgain.testframework.junits.common.*;
 import org.junit.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.util.GridClientByteUtils.*;
+import static org.apache.ignite.internal.util.GridClientByteUtils.*;
 
 /**
  * Test case for client's byte convertion utility.

@@ -20,7 +20,6 @@ package org.apache.ignite.marshaller.optimized;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

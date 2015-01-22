@@ -17,8 +17,8 @@
 
 package org.gridgain.loadtests.hashmap;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.loadtests.util.*;
 import org.jdk8.backport.*;

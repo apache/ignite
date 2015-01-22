@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.license;
 
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.jdk8.backport.*;
 
 import java.util.*;

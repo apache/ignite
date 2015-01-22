@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.lucene.store.*;
-import org.gridgain.grid.util.*;
 
 import java.io.*;
 

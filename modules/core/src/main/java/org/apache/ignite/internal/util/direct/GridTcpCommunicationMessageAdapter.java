@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.util.direct;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.clock.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.jetbrains.annotations.*;
 

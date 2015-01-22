@@ -19,10 +19,10 @@ package org.gridgain.grid.kernal.processors.schedule;
 
 import it.sauronsoftware.cron4j.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 

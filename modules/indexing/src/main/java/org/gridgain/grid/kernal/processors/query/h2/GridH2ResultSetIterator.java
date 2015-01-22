@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.query.h2;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.sql.*;

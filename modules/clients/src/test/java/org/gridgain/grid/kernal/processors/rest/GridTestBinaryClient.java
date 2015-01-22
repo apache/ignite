@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.kernal.*;
