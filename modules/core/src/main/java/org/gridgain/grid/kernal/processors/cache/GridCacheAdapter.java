@@ -5304,7 +5304,8 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                     updateTimeStat();
                 }
-            } catch (IgniteCheckedException ignore) {
+            }
+            catch (IgniteCheckedException ignore) {
                 //No-op.
             }
         }

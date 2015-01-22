@@ -381,8 +381,8 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMetrics() throws Exception {
-        grid().cache(null).resetMetrics();
-        grid().cache(CACHE_NAME).resetMetrics();
+        grid().cache(null).metrics().clear();
+        grid().cache(CACHE_NAME).metrics().clear();
 
         grid().cache(null).putx("key1", "val");
         grid().cache(null).putx("key2", "val");

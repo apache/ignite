@@ -21,9 +21,9 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import javax.cache.management.CacheStatisticsMXBean;
+import javax.cache.management.*;
 import java.io.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.*;
 
 /**
  * Adapter for cache metrics.

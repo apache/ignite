@@ -24,17 +24,15 @@ import javax.cache.management.*;
 /**
  * Implementation of {@link CacheMXBean}.
  *
- * It's a simple wrapper around {@link CompleteConfiguration CompleteConfiguration} for readonly
- * access to cache configuration.
  */
-public class IgniteCacheMXBean implements CacheMXBean {
+public class CacheMXBeanImpl implements CacheMXBean {
     /** */
     private final Cache<?, ?> cache;
 
     /**
      * @param cache Cache.
      */
-    public IgniteCacheMXBean(Cache<?, ?> cache) {
+    public CacheMXBeanImpl(Cache<?, ?> cache) {
         this.cache = cache;
     }
 

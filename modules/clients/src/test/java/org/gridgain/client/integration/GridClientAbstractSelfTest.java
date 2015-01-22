@@ -936,8 +936,8 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
         GridClientData dfltData = client.data();
         GridClientData namedData = client.data(CACHE_NAME);
 
-        grid().cache(null).resetMetrics();
-        grid().cache(CACHE_NAME).resetMetrics();
+        grid().cache(null).metrics().clear();
+        grid().cache(CACHE_NAME).metrics().clear();
 
         grid().cache(null).putx("key1", "val1");
         grid().cache(null).putx("key2", "val2");
