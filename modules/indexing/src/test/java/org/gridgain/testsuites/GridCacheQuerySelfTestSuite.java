@@ -23,9 +23,9 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 import org.apache.ignite.internal.processors.cache.local.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
-import org.gridgain.grid.kernal.processors.cache.query.reducefields.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
+import org.apache.ignite.internal.processors.cache.query.reducefields.*;
 
 /**
  * Test suite for cache queries.

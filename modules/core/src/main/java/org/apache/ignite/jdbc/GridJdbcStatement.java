@@ -32,7 +32,7 @@ import static java.sql.ResultSet.*;
 class GridJdbcStatement implements Statement {
     /** Task name. */
     private static final String TASK_NAME =
-        "org.gridgain.grid.kernal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
+        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
 
     /** Default fetch size. */
     private static final int DFLT_FETCH_SIZE = 1024;

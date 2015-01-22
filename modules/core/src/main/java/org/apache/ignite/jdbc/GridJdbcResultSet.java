@@ -34,7 +34,7 @@ import java.util.*;
 class GridJdbcResultSet implements ResultSet {
     /** Task name. */
     private static final String TASK_NAME =
-        "org.gridgain.grid.kernal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
+        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
 
     /** Statement. */
     private final GridJdbcStatement stmt;

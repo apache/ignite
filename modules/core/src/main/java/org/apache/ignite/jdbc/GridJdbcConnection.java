@@ -33,7 +33,7 @@ import static org.apache.ignite.jdbc.GridJdbcDriver.*;
 class GridJdbcConnection implements Connection {
     /** Validation task name. */
     private static final String VALID_TASK_NAME =
-        "org.gridgain.grid.kernal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
+        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
 
     /** GridGain client. */
     private final GridClient client;

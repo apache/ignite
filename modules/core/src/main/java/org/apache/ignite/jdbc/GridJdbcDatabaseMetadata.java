@@ -35,7 +35,7 @@ import static java.sql.RowIdLifetime.*;
 class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** Task name. */
     private static final String TASK_NAME =
-        "org.gridgain.grid.kernal.processors.cache.query.jdbc.GridCacheQueryJdbcMetadataTask";
+        "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcMetadataTask";
 
     /** Connection. */
     private final GridJdbcConnection conn;
