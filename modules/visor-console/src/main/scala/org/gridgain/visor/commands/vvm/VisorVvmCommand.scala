@@ -17,9 +17,10 @@
 
 package org.gridgain.visor.commands.vvm
 
+import org.apache.ignite.internal.GridNodeAttributes
 import org.apache.ignite.internal.util.GridUtils
 import org.apache.ignite.internal.util.typedef.internal.U
-import org.gridgain.grid.kernal.GridNodeAttributes._
+import GridNodeAttributes._
 import org.apache.ignite.internal.visor.util.{VisorTaskUtils => TU}
 
 import org.apache.ignite.IgniteSystemProperties

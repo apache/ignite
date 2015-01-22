@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.segmentation.os;
 
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.segmentation.*;
 

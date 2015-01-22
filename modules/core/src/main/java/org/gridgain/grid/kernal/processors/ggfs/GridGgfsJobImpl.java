@@ -21,9 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 
 import java.io.*;
 

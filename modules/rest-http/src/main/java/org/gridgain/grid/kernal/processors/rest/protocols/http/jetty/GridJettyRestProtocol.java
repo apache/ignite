@@ -18,13 +18,13 @@
 package org.gridgain.grid.kernal.processors.rest.protocols.http.jetty;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.*;
 import org.eclipse.jetty.util.log.*;
 import org.eclipse.jetty.util.thread.*;
 import org.eclipse.jetty.xml.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.apache.ignite.internal.util.typedef.*;

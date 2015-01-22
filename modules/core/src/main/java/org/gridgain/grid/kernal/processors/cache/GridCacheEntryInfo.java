@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

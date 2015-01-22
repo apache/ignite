@@ -18,8 +18,8 @@
 package org.apache.ignite.spi.failover.jobstealing;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.ggfs.hadoop;
 
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;

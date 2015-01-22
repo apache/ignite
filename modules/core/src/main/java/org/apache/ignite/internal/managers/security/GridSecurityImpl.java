@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.managers.security;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.kernal.*;
 
 import java.io.*;
 import java.util.*;

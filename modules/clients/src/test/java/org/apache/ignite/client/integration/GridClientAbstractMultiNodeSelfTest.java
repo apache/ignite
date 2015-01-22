@@ -33,7 +33,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;

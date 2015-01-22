@@ -20,14 +20,14 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * GGFS context holding all required components for GGFS instance.

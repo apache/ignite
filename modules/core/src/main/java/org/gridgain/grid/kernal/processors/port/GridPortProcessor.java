@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.port;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.apache.ignite.internal.util.typedef.*;
 

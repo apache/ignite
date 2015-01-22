@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 
 /**
  * Interface was introduced to avoid compile-time dependency on spring framework. Spring resource context

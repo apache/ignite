@@ -46,8 +46,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.kernal.GridTopic.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**

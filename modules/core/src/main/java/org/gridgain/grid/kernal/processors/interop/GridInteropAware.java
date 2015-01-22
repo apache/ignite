@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.interop;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 
 /**
  * Interface for interop-aware components.

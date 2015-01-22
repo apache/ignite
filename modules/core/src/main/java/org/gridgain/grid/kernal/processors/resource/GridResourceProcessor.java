@@ -19,11 +19,11 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.apache.ignite.internal.util.lang.*;

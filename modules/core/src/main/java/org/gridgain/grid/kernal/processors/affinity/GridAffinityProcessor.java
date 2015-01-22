@@ -22,9 +22,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -41,7 +41,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.affinity.GridAffinityUtils.*;
 
 /**

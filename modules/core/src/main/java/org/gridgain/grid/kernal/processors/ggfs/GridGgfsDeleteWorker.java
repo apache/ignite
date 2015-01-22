@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.kernal.GridTopic.*;
+import static org.apache.ignite.internal.GridTopic.*;
 import static org.gridgain.grid.kernal.processors.ggfs.GridGgfsFileInfo.*;
 
 /**

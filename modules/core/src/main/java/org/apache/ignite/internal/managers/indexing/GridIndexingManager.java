@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.managers.indexing;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

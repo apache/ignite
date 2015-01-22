@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.affinity;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;

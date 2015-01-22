@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.jetbrains.annotations.*;
 

@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.processors;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;

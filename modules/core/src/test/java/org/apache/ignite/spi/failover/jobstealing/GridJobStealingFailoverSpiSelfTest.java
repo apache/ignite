@@ -28,7 +28,7 @@ import org.gridgain.testframework.junits.spi.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 import static org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi.*;
 

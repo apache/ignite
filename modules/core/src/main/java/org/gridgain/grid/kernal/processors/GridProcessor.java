@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 
 import java.util.Map;

@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.rest.handlers;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 
 /**
  * Abstract command handler.

@@ -25,8 +25,8 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.apache.ignite.internal.util.direct.*;
@@ -43,7 +43,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 
 /**

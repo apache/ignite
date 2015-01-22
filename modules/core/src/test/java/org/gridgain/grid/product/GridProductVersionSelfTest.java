@@ -21,7 +21,7 @@ import org.apache.ignite.product.*;
 import org.gridgain.testframework.junits.common.*;
 
 import static org.junit.Assert.*;
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
  * Versions test.

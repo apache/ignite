@@ -36,7 +36,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
-import static org.gridgain.grid.kernal.GridTopic.*;
+import static org.apache.ignite.internal.GridTopic.*;
 
 /**
  * Distributed query manager.

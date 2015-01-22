@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.discovery;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
@@ -29,7 +30,6 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -55,7 +55,7 @@ import java.util.zip.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Discovery SPI manager.

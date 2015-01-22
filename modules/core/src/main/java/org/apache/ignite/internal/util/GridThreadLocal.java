@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.util;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.worker.*;
 import org.jetbrains.annotations.*;
 

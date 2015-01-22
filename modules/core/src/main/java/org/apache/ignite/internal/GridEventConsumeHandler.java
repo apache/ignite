@@ -1,0 +1,416 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.*;
+import org.apache.ignite.internal.managers.deployment.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.processors.continuous.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
+import java.util.*;
+
+import static org.apache.ignite.events.IgniteEventType.*;
+
+/**
+ * Continuous routine handler for remote event listening.
+ */
+class GridEventConsumeHandler implements GridContinuousHandler {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Default callback. */
+    private static final P2<UUID, IgniteEvent> DFLT_CALLBACK = new P2<UUID, IgniteEvent>() {
+        @Override public boolean apply(UUID uuid, IgniteEvent e) {
+            return true;
+        }
+    };
+
+    /** Local callback. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
+    private IgniteBiPredicate<UUID, IgniteEvent> cb;
+
+    /** Filter. */
+    private IgnitePredicate<IgniteEvent> filter;
+
+    /** Serialized filter. */
+    private byte[] filterBytes;
+
+    /** Deployment class name. */
+    private String clsName;
+
+    /** Deployment info. */
+    private GridDeploymentInfo depInfo;
+
+    /** Types. */
+    private int[] types;
+
+    /** Listener. */
+    private GridLocalEventListener lsnr;
+
+    /**
+     * Required by {@link Externalizable}.
+     */
+    public GridEventConsumeHandler() {
+        // No-op.
+    }
+
+    /**
+     * @param cb Local callback.
+     * @param filter Filter.
+     * @param types Types.
+     */
+    GridEventConsumeHandler(@Nullable IgniteBiPredicate<UUID, IgniteEvent> cb, @Nullable IgnitePredicate<IgniteEvent> filter,
+        @Nullable int[] types) {
+        this.cb = cb == null ? DFLT_CALLBACK : cb;
+        this.filter = filter;
+        this.types = types;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForEvents() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForMessaging() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isForQuery() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean register(final UUID nodeId, final UUID routineId, final GridKernalContext ctx)
+        throws IgniteCheckedException {
+        assert nodeId != null;
+        assert routineId != null;
+        assert ctx != null;
+
+        if (cb != null)
+            ctx.resource().injectGeneric(cb);
+
+        if (filter != null)
+            ctx.resource().injectGeneric(filter);
+
+        final boolean loc = nodeId.equals(ctx.localNodeId());
+
+        lsnr = new GridLocalEventListener() {
+            @Override public void onEvent(IgniteEvent evt) {
+                if (filter == null || filter.apply(evt)) {
+                    if (loc) {
+                        if (!cb.apply(nodeId, evt))
+                            ctx.continuous().stopRoutine(routineId);
+                    }
+                    else {
+                        ClusterNode node = ctx.discovery().node(nodeId);
+
+                        if (node != null) {
+                            try {
+                                EventWrapper wrapper = new EventWrapper(evt);
+
+                                if (evt instanceof IgniteCacheEvent) {
+                                    String cacheName = ((IgniteCacheEvent)evt).cacheName();
+
+                                    if (ctx.config().isPeerClassLoadingEnabled() && U.hasCache(node, cacheName)) {
+                                        wrapper.p2pMarshal(ctx.config().getMarshaller());
+
+                                        wrapper.cacheName = cacheName;
+
+                                        GridCacheDeploymentManager depMgr =
+                                            ctx.cache().internalCache(cacheName).context().deploy();
+
+                                        depMgr.prepare(wrapper);
+                                    }
+                                }
+
+                                ctx.continuous().addNotification(nodeId, routineId, wrapper, null, false);
+                            }
+                            catch (IgniteCheckedException e) {
+                                U.error(ctx.log(getClass()), "Failed to send event notification to node: " + nodeId, e);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        if (F.isEmpty(types))
+            types = EVTS_ALL;
+
+        ctx.event().addLocalEventListener(lsnr, types);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onListenerRegistered(UUID routineId, GridKernalContext ctx) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unregister(UUID routineId, GridKernalContext ctx) {
+        assert routineId != null;
+        assert ctx != null;
+
+        if (lsnr != null)
+            ctx.event().removeLocalEventListener(lsnr, types);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param objs Notification objects.
+     */
+    @Override public void notifyCallback(UUID nodeId, UUID routineId, Collection<?> objs, GridKernalContext ctx) {
+        assert nodeId != null;
+        assert routineId != null;
+        assert objs != null;
+        assert ctx != null;
+
+        for (Object obj : objs) {
+            assert obj instanceof EventWrapper;
+
+            EventWrapper wrapper = (EventWrapper)obj;
+
+            if (wrapper.bytes != null) {
+                assert ctx.config().isPeerClassLoadingEnabled();
+
+                GridCacheAdapter cache = ctx.cache().internalCache(wrapper.cacheName);
+
+                ClassLoader ldr = null;
+
+                if (cache != null) {
+                    GridCacheDeploymentManager depMgr = cache.context().deploy();
+
+                    GridDeploymentInfo depInfo = wrapper.depInfo;
+
+                    if (depInfo != null) {
+                        depMgr.p2pContext(nodeId, depInfo.classLoaderId(), depInfo.userVersion(), depInfo.deployMode(),
+                            depInfo.participants(), depInfo.localDeploymentOwner());
+                    }
+
+                    ldr = depMgr.globalLoader();
+                }
+                else {
+                    U.warn(ctx.log(getClass()), "Received cache event for cache that is not configured locally " +
+                        "when peer class loading is enabled: " + wrapper.cacheName + ". Will try to unmarshal " +
+                        "with default class loader.");
+                }
+
+                try {
+                    wrapper.p2pUnmarshal(ctx.config().getMarshaller(), ldr);
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(ctx.log(getClass()), "Failed to unmarshal event.", e);
+                }
+            }
+
+            if (!cb.apply(nodeId, wrapper.evt)) {
+                ctx.continuous().stopRoutine(routineId);
+
+                break;
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void p2pMarshal(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
+        assert ctx.config().isPeerClassLoadingEnabled();
+
+        if (filter != null) {
+            Class cls = U.detectClass(filter);
+
+            clsName = cls.getName();
+
+            GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
+
+            if (dep == null)
+                throw new IgniteDeploymentException("Failed to deploy event filter: " + filter);
+
+            depInfo = new GridDeploymentInfoBean(dep);
+
+            filterBytes = ctx.config().getMarshaller().marshal(filter);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException {
+        assert nodeId != null;
+        assert ctx != null;
+        assert ctx.config().isPeerClassLoadingEnabled();
+
+        if (filterBytes != null) {
+            GridDeployment dep = ctx.deploy().getGlobalDeployment(depInfo.deployMode(), clsName, clsName,
+                depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
+
+            if (dep == null)
+                throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+
+            filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Object orderedTopic() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        boolean b = filterBytes != null;
+
+        out.writeBoolean(b);
+
+        if (b) {
+            U.writeByteArray(out, filterBytes);
+            U.writeString(out, clsName);
+            out.writeObject(depInfo);
+        }
+        else
+            out.writeObject(filter);
+
+        out.writeObject(types);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        boolean b = in.readBoolean();
+
+        if (b) {
+            filterBytes = U.readByteArray(in);
+            clsName = U.readString(in);
+            depInfo = (GridDeploymentInfo)in.readObject();
+        }
+        else
+            filter = (IgnitePredicate<IgniteEvent>)in.readObject();
+
+        types = (int[])in.readObject();
+    }
+
+    /**
+     * Event wrapper.
+     */
+    private static class EventWrapper implements GridCacheDeployable, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Event. */
+        private IgniteEvent evt;
+
+        /** Serialized event. */
+        private byte[] bytes;
+
+        /** Cache name (for cache events only). */
+        private String cacheName;
+
+        /** Deployment info. */
+        private GridDeploymentInfo depInfo;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public EventWrapper() {
+            // No-op.
+        }
+
+        /**
+         * @param evt Event.
+         */
+        EventWrapper(IgniteEvent evt) {
+            assert evt != null;
+
+            this.evt = evt;
+        }
+
+        /**
+         * @param marsh Marshaller.
+         * @throws IgniteCheckedException In case of error.
+         */
+        void p2pMarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+            assert marsh != null;
+
+            bytes = marsh.marshal(evt);
+        }
+
+        /**
+         * @param marsh Marshaller.
+         * @param ldr Class loader.
+         * @throws IgniteCheckedException In case of error.
+         */
+        void p2pUnmarshal(IgniteMarshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+            assert marsh != null;
+
+            assert evt == null;
+            assert bytes != null;
+
+            evt = marsh.unmarshal(bytes, ldr);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void prepare(GridDeploymentInfo depInfo) {
+            assert evt instanceof IgniteCacheEvent;
+
+            this.depInfo = depInfo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridDeploymentInfo deployInfo() {
+            return depInfo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            boolean b = bytes != null;
+
+            out.writeBoolean(b);
+
+            if (b) {
+                U.writeByteArray(out, bytes);
+                U.writeString(out, cacheName);
+                out.writeObject(depInfo);
+            }
+            else
+                out.writeObject(evt);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            boolean b = in.readBoolean();
+
+            if (b) {
+                bytes = U.readByteArray(in);
+                cacheName = U.readString(in);
+                depInfo = (GridDeploymentInfo)in.readObject();
+            }
+            else
+                evt = (IgniteEvent)in.readObject();
+        }
+    }
+}

@@ -20,7 +20,7 @@ package org.gridgain.grid.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

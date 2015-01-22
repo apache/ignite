@@ -17,16 +17,16 @@
 
 package org.gridgain.visor
 
+import org.apache.ignite.internal.{GridProductImpl, GridComponentType, GridNodeAttributes, GridEx}
 import org.apache.ignite.internal.util.{GridConfigurationFinder, GridUtils}
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid._
-import org.gridgain.grid.kernal.GridComponentType._
-import org.gridgain.grid.kernal.GridNodeAttributes._
+import GridComponentType._
+import GridNodeAttributes._
 import org.gridgain.grid.kernal.processors.spring.GridSpringProcessor
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 

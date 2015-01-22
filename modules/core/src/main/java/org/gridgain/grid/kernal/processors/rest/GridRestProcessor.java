@@ -19,11 +19,11 @@ package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.authentication.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.securesession.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.gridgain.grid.kernal.processors.*;

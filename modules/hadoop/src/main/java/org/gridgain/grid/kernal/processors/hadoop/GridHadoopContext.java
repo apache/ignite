@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;

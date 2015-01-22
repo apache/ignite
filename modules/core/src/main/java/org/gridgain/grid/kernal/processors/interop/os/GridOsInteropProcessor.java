@@ -18,8 +18,7 @@
 package org.gridgain.grid.kernal.processors.interop.os;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.jetbrains.annotations.*;
 

@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 import java.util.logging.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Client topology cache.

@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.spi.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.client.marshaller.*;
 import org.apache.ignite.client.marshaller.jdk.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;

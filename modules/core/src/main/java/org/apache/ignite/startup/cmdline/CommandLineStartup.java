@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
  * This class defines command-line GridGain startup. This startup can be used to start GridGain

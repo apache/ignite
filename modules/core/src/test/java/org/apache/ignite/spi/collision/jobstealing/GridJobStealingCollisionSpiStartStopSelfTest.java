@@ -24,7 +24,7 @@ import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Job stealing collision SPI start-stop test.

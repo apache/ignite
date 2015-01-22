@@ -17,7 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.task;
 
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
+
 import java.util.*;
 
 /**

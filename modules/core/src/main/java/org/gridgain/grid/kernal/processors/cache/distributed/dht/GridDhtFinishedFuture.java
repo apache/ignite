@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 

@@ -45,7 +45,7 @@ import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 
 /**

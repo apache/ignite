@@ -20,7 +20,7 @@ package org.apache.ignite.client.integration;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.client.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 

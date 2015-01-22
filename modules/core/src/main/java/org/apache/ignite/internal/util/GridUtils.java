@@ -23,13 +23,13 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.mbean.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
@@ -74,7 +74,7 @@ import java.util.zip.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Collection of utility methods used throughout the system.

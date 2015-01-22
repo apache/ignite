@@ -30,7 +30,7 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Tests for calculation logic for topology heap size.

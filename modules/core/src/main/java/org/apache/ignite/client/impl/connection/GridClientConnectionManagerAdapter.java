@@ -41,7 +41,7 @@ import java.util.logging.*;
 
 import static java.util.logging.Level.*;
 import static org.apache.ignite.client.impl.connection.GridClientConnectionCloseReason.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Cached connections manager.

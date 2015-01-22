@@ -20,11 +20,11 @@ package org.gridgain.grid.kernal.processors.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -39,7 +39,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.kernal.GridComponentType.*;
+import static org.apache.ignite.internal.GridComponentType.*;
 import static org.gridgain.grid.kernal.processors.query.GridQueryIndexType.*;
 
 /**

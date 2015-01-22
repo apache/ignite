@@ -46,7 +46,6 @@ import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.securesession.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.managers.swapspace.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -92,12 +91,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.GridKernalState.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.kernal.GridComponentType.*;
-import static org.gridgain.grid.kernal.GridKernalState.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
 import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
 

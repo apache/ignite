@@ -26,7 +26,7 @@ import java.nio.file.*;
 import java.text.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
  * Setup tool to configure Hadoop client.

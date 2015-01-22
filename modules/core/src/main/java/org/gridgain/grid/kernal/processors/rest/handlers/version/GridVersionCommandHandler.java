@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.handlers.version;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**

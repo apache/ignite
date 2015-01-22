@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.visor.cache.*;
 import org.apache.ignite.internal.visor.streamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

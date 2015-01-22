@@ -19,8 +19,8 @@ package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.dataload.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 

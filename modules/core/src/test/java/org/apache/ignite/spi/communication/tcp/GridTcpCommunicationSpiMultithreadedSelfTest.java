@@ -36,7 +36,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.

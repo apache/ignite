@@ -19,7 +19,7 @@ package org.gridgain.grid;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.jetbrains.annotations.*;
 import org.springframework.context.*;

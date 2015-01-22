@@ -20,13 +20,13 @@ package org.gridgain.scalar
 import java.net.URL
 import org.apache.ignite.cache.GridCache
 import org.apache.ignite.cache.query.{GridCacheQuerySqlField, GridCacheQueryTextField}
+import org.apache.ignite.internal.GridProductImpl
 import org.apache.ignite.{IgniteState, IgniteDataLoader, Ignition, Ignite}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.jetbrains.annotations.Nullable
 import java.util.UUID
 import annotation.meta.field
-import org.gridgain.grid.kernal.GridProductImpl
 
 /**
  * {{{

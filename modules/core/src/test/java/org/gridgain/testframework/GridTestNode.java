@@ -18,8 +18,8 @@
 package org.gridgain.testframework;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.lang.*;
 
 import java.util.*;

@@ -19,10 +19,10 @@ package org.gridgain.grid.kernal.processors.streamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  *

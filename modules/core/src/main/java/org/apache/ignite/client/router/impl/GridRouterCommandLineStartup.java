@@ -29,8 +29,8 @@ import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 
-import static org.gridgain.grid.kernal.GridComponentType.*;
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
  * Loader class for router.

@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.schedule;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.scheduler.*;
-import org.gridgain.grid.kernal.*;
 
 import java.util.concurrent.*;
 

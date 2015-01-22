@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;

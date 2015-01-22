@@ -33,7 +33,6 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -64,7 +63,7 @@ import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
 import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.*;
 

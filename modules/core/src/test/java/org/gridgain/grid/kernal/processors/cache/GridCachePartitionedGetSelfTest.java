@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.GridTopic.*;
+import static org.apache.ignite.internal.GridTopic.*;
 
 /**
  *

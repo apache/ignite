@@ -20,9 +20,9 @@ package org.gridgain.grid.kernal.processors.rest.handlers.top;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.port.*;
 import org.gridgain.grid.kernal.processors.rest.*;
@@ -36,7 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
 
 /**

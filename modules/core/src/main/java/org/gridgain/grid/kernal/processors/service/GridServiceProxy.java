@@ -23,7 +23,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -34,7 +33,7 @@ import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 
 /**
  * Wrapper for making {@link org.apache.ignite.managed.ManagedService} class proxies.
