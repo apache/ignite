@@ -33,9 +33,6 @@ public enum CacheFlag {
     /** Skip swap space for reads and writes. */
     SKIP_SWAP,
 
-    /** Always get data from primary node (never from backup). */
-    GET_PRIMARY,
-
     /** Synchronous commit. */
     SYNC_COMMIT,
 
