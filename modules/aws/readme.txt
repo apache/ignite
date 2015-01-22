@@ -11,7 +11,7 @@ Importing AWS Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add AWS module
-dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -24,7 +24,7 @@ interested in):
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-aws</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>

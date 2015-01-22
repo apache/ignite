@@ -57,7 +57,7 @@ import java.util.concurrent.*;
  * <ul>
  * <li>{@code {@link System#getProperties()}} - All system properties.</li>
  * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
- * <li>{@code org.gridgain.build.ver} - GridGain build version.</li>
+ * <li>{@code org.ignite.build.ver} - Ignite build version.</li>
  * <li>{@code org.gridgain.jit.name} - Name of JIT compiler used.</li>
  * <li>{@code org.gridgain.net.itf.name} - Name of network interface.</li>
  * <li>{@code org.gridgain.user.name} - Operating system user name.</li>
