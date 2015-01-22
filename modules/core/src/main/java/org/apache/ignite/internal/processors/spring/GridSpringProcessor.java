@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.spring;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.resource.*;
+import org.apache.ignite.internal.processors.resource.*;
 
 import java.net.*;
 import java.util.*;

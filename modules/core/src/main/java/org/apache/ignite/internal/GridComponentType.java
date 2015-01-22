@@ -35,8 +35,8 @@ public enum GridComponentType {
 
     /** Hadoop. */
     HADOOP(
-        "org.gridgain.grid.kernal.processors.hadoop.GridHadoopNoopProcessor",
-        "org.gridgain.grid.kernal.processors.hadoop.GridHadoopProcessor",
+        "org.apache.ignite.internal.processors.hadoop.GridHadoopNoopProcessor",
+        "org.apache.ignite.internal.processors.hadoop.GridHadoopProcessor",
         "gridgain-hadoop"
     ),
 
@@ -57,7 +57,7 @@ public enum GridComponentType {
     /** Indexing. */
     INDEXING(
         null,
-        "org.gridgain.grid.kernal.processors.query.h2.GridH2Indexing",
+        "org.apache.ignite.internal.processors.query.h2.GridH2Indexing",
         "gridgain-indexing"
     ),
 
@@ -84,8 +84,8 @@ public enum GridComponentType {
 
     /** Cron-based scheduling, see {@link org.apache.ignite.IgniteScheduler}. */
     SCHEDULE(
-        "org.gridgain.grid.kernal.processors.schedule.GridNoopScheduleProcessor",
-        "org.gridgain.grid.kernal.processors.schedule.GridScheduleProcessor",
+        "org.apache.ignite.internal.processors.schedule.GridNoopScheduleProcessor",
+        "org.apache.ignite.internal.processors.schedule.GridScheduleProcessor",
         "gridgain-schedule"
     );
 

@@ -72,7 +72,7 @@
     <!--
     <property>
         <name>gridgain.counters.writer</name>
-        <value>org.gridgain.grid.kernal.processors.hadoop.counter.GridHadoopFSCounterWriter</value>
+        <value>org.apache.ignite.internal.processors.hadoop.counter.GridHadoopFSCounterWriter</value>
     </property>
     -->
 

@@ -20,8 +20,8 @@ package org.apache.ignite.client.hadoop.counter;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.counters.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.counter.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.apache.ignite.internal.processors.hadoop.counter.*;
+import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;

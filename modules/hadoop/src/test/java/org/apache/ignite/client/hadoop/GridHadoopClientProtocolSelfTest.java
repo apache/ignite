@@ -26,7 +26,7 @@ import org.apache.hadoop.mapreduce.lib.output.*;
 import org.apache.hadoop.mapreduce.protocol.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

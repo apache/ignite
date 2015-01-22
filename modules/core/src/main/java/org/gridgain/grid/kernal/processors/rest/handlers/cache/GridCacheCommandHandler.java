@@ -26,7 +26,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.license.*;
+import org.apache.ignite.internal.processors.license.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
@@ -46,7 +46,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.gridgain.grid.kernal.processors.rest.GridRestCommand.*;
-import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
+import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Command handler for API requests.

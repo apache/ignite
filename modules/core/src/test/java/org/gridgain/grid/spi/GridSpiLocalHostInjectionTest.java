@@ -20,7 +20,7 @@ package org.gridgain.grid.spi;
 import org.apache.ignite.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.gridgain.grid.kernal.processors.resource.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

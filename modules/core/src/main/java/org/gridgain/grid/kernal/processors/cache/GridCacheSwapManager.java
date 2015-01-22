@@ -23,8 +23,8 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.managers.swapspace.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.license.*;
-import org.gridgain.grid.kernal.processors.offheap.*;
+import org.apache.ignite.internal.processors.license.*;
+import org.apache.ignite.internal.processors.offheap.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -39,7 +39,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
-import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
+import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Handles all swap operations.

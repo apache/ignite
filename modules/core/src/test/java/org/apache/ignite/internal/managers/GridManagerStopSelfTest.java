@@ -45,7 +45,7 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.failover.*;
 import org.apache.ignite.internal.managers.loadbalancer.*;
 import org.apache.ignite.internal.managers.swapspace.*;
-import org.gridgain.grid.kernal.processors.resource.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;
 

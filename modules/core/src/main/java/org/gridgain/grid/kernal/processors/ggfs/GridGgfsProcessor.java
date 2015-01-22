@@ -28,7 +28,7 @@ import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.license.*;
+import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
-import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
+import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Fully operational GGFS processor.

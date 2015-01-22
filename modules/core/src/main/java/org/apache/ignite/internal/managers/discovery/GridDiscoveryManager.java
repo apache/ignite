@@ -35,7 +35,7 @@ import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.jobmetrics.*;
+import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;

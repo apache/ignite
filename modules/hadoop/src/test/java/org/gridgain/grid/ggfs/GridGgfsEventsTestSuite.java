@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.jetbrains.annotations.*;

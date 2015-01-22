@@ -18,7 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.processors.resource.*;
+import org.apache.ignite.internal.processors.resource.*;
 
 /**
  * Gridgain resource injection test Suite.

@@ -23,10 +23,10 @@ import org.apache.commons.compress.compressors.gzip.*;
 import org.apache.ignite.*;
 import org.apache.ignite.client.hadoop.*;
 import org.gridgain.grid.ggfs.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
-import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
-import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
+import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.shuffle.collections.*;
+import org.apache.ignite.internal.processors.hadoop.shuffle.streams.*;
+import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

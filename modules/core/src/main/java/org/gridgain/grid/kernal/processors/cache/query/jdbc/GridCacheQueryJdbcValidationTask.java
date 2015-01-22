@@ -21,14 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.kernal.processors.license.*;
+import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
+import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * Task to validate connection. Checks that cache with provided name exists in grid.

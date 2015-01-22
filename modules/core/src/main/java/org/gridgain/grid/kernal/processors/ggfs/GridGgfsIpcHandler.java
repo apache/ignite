@@ -23,7 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.kernal.processors.license.*;
+import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
@@ -34,7 +34,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.processors.license.GridLicenseSubsystem.*;
+import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
  * GGFS IPC handler.

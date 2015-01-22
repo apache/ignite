@@ -22,7 +22,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.kernal.processors.resource.*;
+import org.apache.ignite.internal.processors.resource.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.logger.*;

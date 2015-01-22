@@ -28,7 +28,7 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.query.*;
+import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

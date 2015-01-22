@@ -18,7 +18,7 @@
 package org.gridgain.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.processors.jobmetrics.*;
+import org.apache.ignite.internal.processors.jobmetrics.*;
 
 /**
  * Job metrics self test suite.

@@ -18,8 +18,8 @@
 package org.apache.ignite.hadoop;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.processors.hadoop.*;
-import org.gridgain.grid.kernal.processors.hadoop.v2.*;
+import org.apache.ignite.internal.processors.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.v2.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
