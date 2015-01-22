@@ -483,7 +483,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public UUID localNodeId() {
-        return discovery() == null ? cfg.getNodeId() : discovery().localNode().id();
+        return cfg.getNodeId();
     }
 
     /** {@inheritDoc} */

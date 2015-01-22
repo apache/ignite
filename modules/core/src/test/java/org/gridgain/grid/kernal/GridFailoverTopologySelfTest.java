@@ -51,9 +51,9 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
         cfg.setNodeId(null);
 
         cfg.setFailoverSpi(new AlwaysFailoverSpi() {
-            /** */
-            @IgniteLocalNodeIdResource
-            private UUID locNodeId;
+            /** Ignite instance. */
+            @IgniteInstanceResource
+            private Ignite ignite;
 
             /** {@inheritDoc} */
             @Override public ClusterNode failover(FailoverContext ctx, List<ClusterNode> grid) {
@@ -62,6 +62,8 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
 
                     error("Unexpected grid size [expected=1, grid=" + grid + ']');
                 }
+
+                UUID locNodeId = ignite.configuration().getNodeId();
 
                 for (ClusterNode node : grid) {
                     if (node.id().equals(locNodeId)) {
@@ -109,15 +111,19 @@ public class GridFailoverTopologySelfTest extends GridCommonAbstractTest {
 
     /** */
     private static class JobFailTask implements ComputeTask<String, Object> {
-         /** */
-        @IgniteLocalNodeIdResource
-        private UUID locNodeId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** */
         private boolean jobFailedOver;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, String arg) throws IgniteCheckedException {
+            assert ignite != null;
+
+            UUID locNodeId = ignite.configuration().getNodeId();
+
             assert locNodeId != null;
 
             ClusterNode remoteNode = null;

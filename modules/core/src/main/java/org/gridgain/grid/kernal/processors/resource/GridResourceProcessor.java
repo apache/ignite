@@ -19,13 +19,10 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.managed.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.*;
@@ -33,14 +30,12 @@ import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import javax.management.*;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
- * Processor for all Grid and task/job resources.
+ * Processor for all Ignite and task/job resources.
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */
@@ -48,18 +43,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteTaskSessionResource.class,
         IgniteJobContextResource.class,
         IgniteInstanceResource.class,
-        IgniteExecutorServiceResource.class,
-        IgniteLocalNodeIdResource.class,
-        IgniteLocalHostResource.class,
-        IgniteMBeanServerResource.class,
-        IgniteHomeResource.class,
-        IgniteNameResource.class,
-        IgniteMarshallerResource.class,
         IgniteSpringApplicationContextResource.class,
         IgniteSpringResource.class,
         IgniteLoggerResource.class,
-        IgniteServiceResource.class,
-        IgniteUserResource.class);
+        IgniteServiceResource.class);
 
     /** */
     private static final Collection<Class<? extends Annotation>> TASK_INJECTIONS = Arrays.asList(
@@ -67,42 +54,13 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteLoadBalancerResource.class,
         IgniteTaskContinuousMapperResource.class,
         IgniteInstanceResource.class,
-        IgniteExecutorServiceResource.class,
-        IgniteLocalNodeIdResource.class,
-        IgniteLocalHostResource.class,
-        IgniteMBeanServerResource.class,
-        IgniteHomeResource.class,
-        IgniteNameResource.class,
-        IgniteMarshallerResource.class,
         IgniteSpringApplicationContextResource.class,
         IgniteSpringResource.class,
         IgniteLoggerResource.class,
-        IgniteServiceResource.class,
-        IgniteUserResource.class);
+        IgniteServiceResource.class);
 
     /** Grid instance injector. */
     private GridResourceBasicInjector<GridEx> gridInjector;
-
-    /** GridGain home folder injector. */
-    private GridResourceBasicInjector<String> ggHomeInjector;
-
-    /** Grid name injector. */
-    private GridResourceBasicInjector<String> ggNameInjector;
-
-    /** Local host binding injector. */
-    private GridResourceBasicInjector<String> locHostInjector;
-
-    /** MBean server injector. */
-    private GridResourceBasicInjector<MBeanServer> mbeanSrvInjector;
-
-    /** Grid thread executor injector. */
-    private GridResourceBasicInjector<Executor> execInjector;
-
-    /** Grid marshaller injector. */
-    private GridResourceBasicInjector<IgniteMarshaller> marshInjector;
-
-    /** Local node ID injector. */
-    private GridResourceBasicInjector<UUID> nodeIdInjector;
 
     /** Spring application context injector. */
     private GridResourceInjector springCtxInjector;
@@ -113,14 +71,8 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /** Services injector. */
     private GridResourceBasicInjector<Collection<ManagedService>> srvcInjector;
 
-    /** Address resolver injector. */
-    private GridResourceBasicInjector<IgniteAddressResolver> addrsRslvrInjector;
-
     /** Spring bean resources injector. */
     private GridResourceInjector springBeanInjector;
-
-    /** Task resources injector. */
-    private GridResourceCustomInjector customInjector;
 
     /** Cleaning injector. */
     private final GridResourceInjector nullInjector = new GridResourceBasicInjector<>(null);
@@ -140,34 +92,12 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         super(ctx);
 
         gridInjector = new GridResourceBasicInjector<>(ctx.grid());
-        ggHomeInjector = new GridResourceBasicInjector<>(ctx.config().getGridGainHome());
-        ggNameInjector = new GridResourceBasicInjector<>(ctx.config().getGridName());
-        locHostInjector = new GridResourceBasicInjector<>(ctx.config().getLocalHost());
-        mbeanSrvInjector = new GridResourceBasicInjector<>(ctx.config().getMBeanServer());
-        marshInjector = new GridResourceBasicInjector<>(ctx.config().getMarshaller());
-        execInjector = new GridResourceBasicInjector<Executor>(ctx.config().getExecutorService());
-        nodeIdInjector = new GridResourceBasicInjector<>(ctx.config().getNodeId());
         logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
         srvcInjector = new GridResourceServiceInjector(ctx.grid());
-        addrsRslvrInjector = new GridResourceBasicInjector<>(ctx.config().getAddressResolver());
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        customInjector = new GridResourceCustomInjector(log, ioc);
-
-        customInjector.setExecutorInjector(execInjector);
-        customInjector.setGridgainHomeInjector(ggHomeInjector);
-        customInjector.setGridNameInjector(ggNameInjector);
-        customInjector.setGridInjector(gridInjector);
-        customInjector.setMbeanServerInjector(mbeanSrvInjector);
-        customInjector.setNodeIdInjector(nodeIdInjector);
-        customInjector.setMarshallerInjector(marshInjector);
-        customInjector.setSpringContextInjector(springCtxInjector);
-        customInjector.setSpringBeanInjector(springBeanInjector);
-        customInjector.setLogInjector(logInjector);
-        customInjector.setSrvcInjector(srvcInjector);
-
         if (log.isDebugEnabled())
             log.debug("Started resource processor.");
     }
@@ -198,8 +128,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      * @param dep Deployment to release resources for.
      */
     public void onUndeployed(GridDeployment dep) {
-        customInjector.undeploy(dep);
-
         ioc.onUndeployed(dep.classLoader());
     }
 
@@ -246,20 +174,10 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         target = unwrapTarget(target);
 
         ioc.inject(target, IgniteInstanceResource.class, gridInjector, dep, depCls);
-        ioc.inject(target, IgniteExecutorServiceResource.class, execInjector, dep, depCls);
-        ioc.inject(target, IgniteLocalNodeIdResource.class, nodeIdInjector, dep, depCls);
-        ioc.inject(target, IgniteLocalHostResource.class, locHostInjector, dep, depCls);
-        ioc.inject(target, IgniteMBeanServerResource.class, mbeanSrvInjector, dep, depCls);
-        ioc.inject(target, IgniteHomeResource.class, ggHomeInjector, dep, depCls);
-        ioc.inject(target, IgniteNameResource.class, ggNameInjector, dep, depCls);
-        ioc.inject(target, IgniteMarshallerResource.class, marshInjector, dep, depCls);
         ioc.inject(target, IgniteSpringApplicationContextResource.class, springCtxInjector, dep, depCls);
         ioc.inject(target, IgniteSpringResource.class, springBeanInjector, dep, depCls);
         ioc.inject(target, IgniteLoggerResource.class, logInjector, dep, depCls);
         ioc.inject(target, IgniteServiceResource.class, srvcInjector, dep, depCls);
-
-        // Inject users resource.
-        ioc.inject(target, IgniteUserResource.class, customInjector, dep, depCls);
     }
 
     /**
@@ -295,13 +213,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         obj = unwrapTarget(obj);
 
         // No deployment for lifecycle beans.
-        ioc.inject(obj, IgniteExecutorServiceResource.class, execInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nodeIdInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, locHostInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, mbeanSrvInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, ggHomeInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, ggNameInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, marshInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, IgniteInstanceResource.class, gridInjector, null, null);
@@ -324,13 +235,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
             // Caching key is null for the life-cycle beans.
             ioc.inject(obj, IgniteLoggerResource.class, nullInjector, null, null);
             ioc.inject(obj, IgniteServiceResource.class, nullInjector, null, null);
-            ioc.inject(obj, IgniteExecutorServiceResource.class, nullInjector, null, null);
-            ioc.inject(obj, IgniteLocalNodeIdResource.class, nullInjector, null, null);
-            ioc.inject(obj, IgniteLocalHostResource.class, locHostInjector, null, null);
-            ioc.inject(obj, IgniteMBeanServerResource.class, nullInjector, null, null);
-            ioc.inject(obj, IgniteHomeResource.class, nullInjector, null, null);
-            ioc.inject(obj, IgniteNameResource.class, nullInjector, null, null);
-            ioc.inject(obj, IgniteMarshallerResource.class, nullInjector, null, null);
             ioc.inject(obj, IgniteSpringApplicationContextResource.class, nullInjector, null, null);
             ioc.inject(obj, IgniteSpringResource.class, nullInjector, null, null);
             ioc.inject(obj, IgniteInstanceResource.class, nullInjector, null, null);
@@ -388,32 +292,16 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                         dep, taskCls);
                 else if (annCls == IgniteInstanceResource.class)
                     ioc.inject(job, IgniteInstanceResource.class, gridInjector, dep, taskCls);
-                else if (annCls == IgniteExecutorServiceResource.class)
-                    ioc.inject(job, IgniteExecutorServiceResource.class, execInjector, dep, taskCls);
-                else if (annCls == IgniteLocalNodeIdResource.class)
-                    ioc.inject(job, IgniteLocalNodeIdResource.class, nodeIdInjector, dep, taskCls);
-                else if (annCls == IgniteLocalHostResource.class)
-                    ioc.inject(job, IgniteLocalHostResource.class, locHostInjector, dep, taskCls);
-                else if (annCls == IgniteMBeanServerResource.class)
-                    ioc.inject(job, IgniteMBeanServerResource.class, mbeanSrvInjector, dep, taskCls);
-                else if (annCls == IgniteHomeResource.class)
-                    ioc.inject(job, IgniteHomeResource.class, ggHomeInjector, dep, taskCls);
-                else if (annCls == IgniteNameResource.class)
-                    ioc.inject(job, IgniteNameResource.class, ggNameInjector, dep, taskCls);
-                else if (annCls == IgniteMarshallerResource.class)
-                    ioc.inject(job, IgniteMarshallerResource.class, marshInjector, dep, taskCls);
                 else if (annCls == IgniteSpringApplicationContextResource.class)
                     ioc.inject(job, IgniteSpringApplicationContextResource.class, springCtxInjector, dep, taskCls);
                 else if (annCls == IgniteSpringResource.class)
                     ioc.inject(job, IgniteSpringResource.class, springBeanInjector, dep, taskCls);
                 else if (annCls == IgniteLoggerResource.class)
                     ioc.inject(job, IgniteLoggerResource.class, logInjector, dep, taskCls);
-                else if (annCls == IgniteServiceResource.class)
-                    ioc.inject(job, IgniteServiceResource.class, srvcInjector, dep, taskCls);
                 else {
-                    assert annCls == IgniteUserResource.class;
+                    assert annCls == IgniteServiceResource.class;
 
-                    ioc.inject(job, IgniteUserResource.class, customInjector, dep, taskCls);
+                    ioc.inject(job, IgniteServiceResource.class, srvcInjector, dep, taskCls);
                 }
             }
         }
@@ -466,32 +354,16 @@ public class GridResourceProcessor extends GridProcessorAdapter {
                 injectBasicResource(obj, IgniteTaskContinuousMapperResource.class, mapper, dep, taskCls);
             else if (annCls == IgniteInstanceResource.class)
                 ioc.inject(obj, IgniteInstanceResource.class, gridInjector, dep, taskCls);
-            else if (annCls == IgniteExecutorServiceResource.class)
-                ioc.inject(obj, IgniteExecutorServiceResource.class, execInjector, dep, taskCls);
-            else if (annCls == IgniteLocalNodeIdResource.class)
-                ioc.inject(obj, IgniteLocalNodeIdResource.class, nodeIdInjector, dep, taskCls);
-            else if (annCls == IgniteLocalHostResource.class)
-                ioc.inject(obj, IgniteLocalHostResource.class, locHostInjector, dep, taskCls);
-            else if (annCls == IgniteMBeanServerResource.class)
-                ioc.inject(obj, IgniteMBeanServerResource.class, mbeanSrvInjector, dep, taskCls);
-            else if (annCls == IgniteHomeResource.class)
-                ioc.inject(obj, IgniteHomeResource.class, ggHomeInjector, dep, taskCls);
-            else if (annCls == IgniteNameResource.class)
-                ioc.inject(obj, IgniteNameResource.class, ggNameInjector, dep, taskCls);
-            else if (annCls == IgniteMarshallerResource.class)
-                ioc.inject(obj, IgniteMarshallerResource.class, marshInjector, dep, taskCls);
             else if (annCls == IgniteSpringApplicationContextResource.class)
                 ioc.inject(obj, IgniteSpringApplicationContextResource.class, springCtxInjector, dep, taskCls);
             else if (annCls == IgniteSpringResource.class)
                 ioc.inject(obj, IgniteSpringResource.class, springBeanInjector, dep, taskCls);
             else if (annCls == IgniteLoggerResource.class)
                 ioc.inject(obj, IgniteLoggerResource.class, logInjector, dep, taskCls);
-            else if (annCls == IgniteServiceResource.class)
-                ioc.inject(obj, IgniteServiceResource.class, srvcInjector, dep, taskCls);
             else {
-                assert annCls == IgniteUserResource.class;
+                assert annCls == IgniteServiceResource.class;
 
-                ioc.inject(obj, IgniteUserResource.class, customInjector, dep, taskCls);
+                ioc.inject(obj, IgniteServiceResource.class, srvcInjector, dep, taskCls);
             }
         }
     }
@@ -522,18 +394,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         Object obj = unwrapTarget(spi);
 
         // Caching key is null for the SPIs.
-        ioc.inject(obj, IgniteExecutorServiceResource.class, execInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nodeIdInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, locHostInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, mbeanSrvInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, ggHomeInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, ggNameInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, marshInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, IgniteLoggerResource.class, logInjector, null, null);
         ioc.inject(obj, IgniteServiceResource.class, srvcInjector, null, null);
-        ioc.inject(obj, IgniteAddressResolverResource.class, addrsRslvrInjector, null, null);
+        ioc.inject(obj, IgniteInstanceResource.class, gridInjector, null, null);
     }
 
     /**
@@ -552,16 +417,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
 
         ioc.inject(obj, IgniteLoggerResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteServiceResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteExecutorServiceResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteAddressResolverResource.class, nullInjector, null, null);
+        ioc.inject(obj, IgniteInstanceResource.class, nullInjector, null, null);
     }
 
     /**
@@ -578,13 +436,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         Object obj = unwrapTarget(lifecycleBean);
 
         // No deployment for lifecycle beans.
-        ioc.inject(obj, IgniteExecutorServiceResource.class, execInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nodeIdInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, locHostInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, mbeanSrvInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, ggHomeInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, ggNameInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, marshInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, IgniteInstanceResource.class, gridInjector, null, null);
@@ -609,13 +460,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Caching key is null for the life-cycle beans.
         ioc.inject(obj, IgniteLoggerResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteServiceResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteExecutorServiceResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteInstanceResource.class, nullInjector, null, null);
@@ -635,13 +479,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         Object obj = unwrapTarget(svc);
 
         // No deployment for lifecycle beans.
-        ioc.inject(obj, IgniteExecutorServiceResource.class, execInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nodeIdInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, locHostInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, mbeanSrvInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, ggHomeInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, ggNameInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, marshInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, springCtxInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, springBeanInjector, null, null);
         ioc.inject(obj, IgniteInstanceResource.class, gridInjector, null, null);
@@ -666,13 +503,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         // Caching key is null for the life-cycle beans.
         ioc.inject(obj, IgniteLoggerResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteServiceResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteExecutorServiceResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteLocalNodeIdResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteLocalHostResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteMBeanServerResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteHomeResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteNameResource.class, nullInjector, null, null);
-        ioc.inject(obj, IgniteMarshallerResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteSpringApplicationContextResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteSpringResource.class, nullInjector, null, null);
         ioc.inject(obj, IgniteInstanceResource.class, nullInjector, null, null);
@@ -754,15 +584,6 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      */
     GridResourceIoc getResourceIoc() {
         return ioc;
-    }
-
-    /**
-     * Returns GridResourceCustomInjector object. For tests only!!!
-     *
-     * @return GridResourceCustomInjector object.
-     */
-    GridResourceCustomInjector getResourceCustomInjector() {
-        return customInjector;
     }
 
     /**

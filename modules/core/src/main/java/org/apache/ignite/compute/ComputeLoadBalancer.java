@@ -63,8 +63,8 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String> {
  *     // Inject load balancer.
- *     &#64;GridLoadBalancerResource
- *     GridComputeLoadBalancer balancer;
+ *     &#64;IgniteLoadBalancerResource
+ *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
  *     public Map&lt;? extends ComputeJob, GridNode> map(List&lt;GridNode> subgrid, String arg) throws IgniteCheckedException {

@@ -76,13 +76,13 @@ import java.util.*;
  * <p>
  * <h1 class="header">Session Injection</h1>
  * Session can be injected into a task or a job using IoC (dependency
- * injection) by attaching {@link org.apache.ignite.resources.IgniteTaskSessionResource @GridTaskSessionResource}
+ * injection) by attaching {@link org.apache.ignite.resources.IgniteTaskSessionResource @IgniteTaskSessionResource}
  * annotation to a field or a setter method inside of {@link ComputeTask} or
  * {@link ComputeJob} implementations as follows:
  * <pre name="code" class="java">
  * ...
  * // This field will be injected with distributed task session.
- * &#64GridTaskSessionResource
+ * &#64IgniteTaskSessionResource
  * private GridComputeTaskSession ses;
  * ...
  * </pre>
@@ -90,7 +90,7 @@ import java.util.*;
  * <pre name="code" class="java">
  * // This setter method will be automatically called by the system
  * // to set grid task session.
- * &#64GridTaskSessionResource
+ * &#64IgniteTaskSessionResource
  * void setSession(GridComputeTaskSession ses) {
  *     this.ses = ses;
  * }
