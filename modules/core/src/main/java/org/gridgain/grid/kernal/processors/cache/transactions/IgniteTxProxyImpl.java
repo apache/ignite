@@ -20,16 +20,13 @@ package org.gridgain.grid.kernal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
 
 /**
  * Cache transaction proxy.
@@ -281,6 +278,22 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
      */
     private void save(Object res) {
         asyncRes = new GridFinishedFutureEx<>(res);
+    }
+    /** {@inheritDoc} */
+    @Override public <V1> V1 addMeta(String name, V1 val) {
+        return tx.addMeta(name, val);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"RedundantTypeArguments"})
+    @Override public <V1> V1 meta(String name) {
+        return tx.<V1>meta(name);
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings({"RedundantTypeArguments"})
+    @Override public <V1> V1 removeMeta(String name) {
+        return tx.<V1>removeMeta(name);
     }
 
     /** {@inheritDoc} */
