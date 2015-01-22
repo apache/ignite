@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.jdbc;
+package org.apache.ignite.jdbc;
 
 import org.apache.ignite.client.*;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.*;
 
 import static java.sql.ResultSet.*;
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.jdbc.GridJdbcDriver.*;
+import static org.apache.ignite.jdbc.GridJdbcDriver.*;
 
 /**
  * JDBC connection implementation.

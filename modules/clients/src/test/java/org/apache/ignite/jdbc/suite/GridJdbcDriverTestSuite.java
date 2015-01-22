@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.jdbc.suite;
+package org.apache.ignite.jdbc.suite;
 
 import junit.framework.*;
-import org.gridgain.jdbc.*;
+import org.apache.ignite.jdbc.*;
 
 /**
  * JDBC driver test suite.

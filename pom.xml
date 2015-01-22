@@ -653,7 +653,7 @@
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>
-                                            <packages>org.gridgain.jdbc</packages>
+                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
@@ -855,7 +855,7 @@
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>
-                                            <packages>org.gridgain.jdbc</packages>
+                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>

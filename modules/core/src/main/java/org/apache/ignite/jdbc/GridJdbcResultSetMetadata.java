@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.jdbc;
+package org.apache.ignite.jdbc;
 
-import org.gridgain.jdbc.typedef.*;
+import org.apache.ignite.jdbc.typedef.*;
 
 import java.sql.*;
 import java.util.*;

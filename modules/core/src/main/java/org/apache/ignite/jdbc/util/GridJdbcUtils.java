@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.jdbc.util;
+package org.apache.ignite.jdbc.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.sql.*;

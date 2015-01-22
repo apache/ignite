@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.jdbc.typedef;
+package org.apache.ignite.jdbc.typedef;
 
-import org.gridgain.jdbc.util.*;
+import org.apache.ignite.jdbc.util.*;
 
 /**
  * Defines internal {@code typedef} for {@link GridJdbcUtils}.

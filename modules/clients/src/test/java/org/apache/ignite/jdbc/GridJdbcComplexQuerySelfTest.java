@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.jdbc;
+package org.apache.ignite.jdbc;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
