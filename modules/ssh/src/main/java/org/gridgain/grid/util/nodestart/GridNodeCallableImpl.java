@@ -20,7 +20,6 @@ package org.gridgain.grid.util.nodestart;
 import com.jcraft.jsch.*;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -197,7 +196,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
             return new GridTuple3<>(spec.host(), true, null);
         }
-        catch (GridInterruptedException e) {
+        catch (IgniteInterruptedException e) {
             return new GridTuple3<>(spec.host(), false, e.getMessage());
         }
         catch (Exception e) {
@@ -216,9 +215,9 @@ public class GridNodeCallableImpl implements GridNodeCallable {
      * @param cmd Command.
      * @throws JSchException In case of SSH error.
      * @throws IOException If IO error occurs.
-     * @throws GridInterruptedException If thread was interrupted while waiting.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted while waiting.
      */
-    private void shell(Session ses, String cmd) throws JSchException, IOException, GridInterruptedException {
+    private void shell(Session ses, String cmd) throws JSchException, IOException, IgniteInterruptedException {
         ChannelShell ch = null;
 
         try {

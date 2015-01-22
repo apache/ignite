@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.apache.ignite.plugin.security.*;
@@ -66,13 +65,13 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     private volatile IgniteBiPredicate<UUID, Collection<Map.Entry<K, V>>> cb;
 
     /** Local callback. */
-    private volatile IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb;
+    private volatile IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> locCb;
 
     /** Filter. */
     private volatile IgniteBiPredicate<K, V> filter;
 
     /** Remote filter. */
-    private volatile IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter;
+    private volatile IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> rmtFilter;
 
     /** Buffer size. */
     private volatile int bufSize = DFLT_BUF_SIZE;
@@ -139,7 +138,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Override public void localCallback(IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> locCb) {
+    @Override public void localCallback(IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> locCb) {
         if (!guard.enterBusy())
             throw new IllegalStateException("Continuous query can't be changed after it was executed.");
 
@@ -152,12 +151,12 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> localCallback() {
+    @Nullable @Override public IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> localCallback() {
         return locCb;
     }
 
     /** {@inheritDoc} */
-    @Override public void remoteFilter(@Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> rmtFilter) {
+    @Override public void remoteFilter(@Nullable IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> rmtFilter) {
         if (!guard.enterBusy())
             throw new IllegalStateException("Continuous query can't be changed after it was executed.");
 
@@ -170,7 +169,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> remoteFilter() {
+    @Nullable @Override public IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> remoteFilter() {
         return rmtFilter;
     }
 
@@ -338,7 +337,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /**
      * Deprecated callback wrapper.
      */
-    static class CallbackWrapper<K, V> implements IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<K, V>>> {
+    static class CallbackWrapper<K, V> implements IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> {
         /** Serialization ID. */
         private static final long serialVersionUID = 0L;
 
@@ -354,7 +353,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<K, V>> entries) {
+        @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> entries) {
             return cb.apply(nodeId, (Collection<Map.Entry<K,V>>)(Collection)entries);
         }
     }
@@ -362,7 +361,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
     /**
      * Deprecated filter wrapper.
      */
-    static class FilterWrapper<K, V> implements IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> {
+    static class FilterWrapper<K, V> implements IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> {
         /** Serialization ID. */
         private static final long serialVersionUID = 0L;
 
@@ -378,7 +377,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public boolean apply(GridCacheContinuousQueryEntry<K, V> entry) {
+        @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V> entry) {
             return filter.apply(entry.getKey(), entry.getValue());
         }
     }

@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
@@ -797,7 +796,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 U.sleep(2000);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -888,7 +887,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1481,7 +1480,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -1505,7 +1504,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }

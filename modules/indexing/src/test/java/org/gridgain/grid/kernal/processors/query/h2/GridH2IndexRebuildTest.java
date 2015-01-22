@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
@@ -65,7 +66,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
                 try {
                     U.sleep(Long.MAX_VALUE);
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     interrupted = true;
                 }
             }

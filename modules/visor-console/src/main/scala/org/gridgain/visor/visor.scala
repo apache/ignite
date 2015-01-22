@@ -122,7 +122,7 @@ trait VisorTag
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */
-@GridNotPeerDeployable
+@IgniteNotPeerDeployable
 object visor extends VisorTag {
     /** Argument type. */
     type Arg = (String, String)

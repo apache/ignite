@@ -27,8 +27,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

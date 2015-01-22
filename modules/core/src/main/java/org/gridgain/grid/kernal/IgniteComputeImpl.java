@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -408,7 +407,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
             GridDeployment dep = ctx.deploy().deploy(taskCls, clsLdr);
 
             if (dep == null)
-                throw new GridDeploymentException("Failed to deploy task (was task (re|un)deployed?): " + taskCls);
+                throw new IgniteDeploymentException("Failed to deploy task (was task (re|un)deployed?): " + taskCls);
         }
         finally {
             unguard();

@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.clock;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
@@ -94,9 +95,9 @@ public class GridClockDeltaSnapshot {
      * Awaits either until snapshot is ready or timeout elapses.
      *
      * @param timeout Timeout to wait.
-     * @throws GridInterruptedException If wait was interrupted.
+     * @throws IgniteInterruptedException If wait was interrupted.
      */
-    public synchronized void awaitReady(long timeout) throws GridInterruptedException {
+    public synchronized void awaitReady(long timeout) throws IgniteInterruptedException {
         long start = System.currentTimeMillis();
 
         try {
@@ -112,7 +113,7 @@ public class GridClockDeltaSnapshot {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException(e);
+            throw new IgniteInterruptedException(e);
         }
     }
 

@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
@@ -182,9 +183,9 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     }
 
     /**
-     * @throws GridInterruptedException If sleep was interrupted.
+     * @throws IgniteInterruptedException If sleep was interrupted.
      */
-    private void checkWrites() throws GridInterruptedException {
+    private void checkWrites() throws IgniteInterruptedException {
         U.sleep(WRITE_BEHIND_FLUSH_FREQ * 2);
 
         Collection<Integer> allKeys = new ArrayList<>(100);

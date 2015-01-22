@@ -26,9 +26,6 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -241,7 +238,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             // Always wait thread exit.
             U.join(delWorker);
         }
-        catch (GridInterruptedException e) {
+        catch (IgniteInterruptedException e) {
             log.warning("Got interrupter while waiting for delete worker to stop (will continue stopping).", e);
         }
 
@@ -1693,7 +1690,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 while (!isCancelled()) {
                     IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.take();
@@ -1724,7 +1721,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                     block));
                         }
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         // Ignore interruption during shutdown.
                     }
                     catch (IgniteCheckedException e) {

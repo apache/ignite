@@ -28,7 +28,6 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -1593,7 +1592,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws GridInterruptedException {
+        @Override protected void body() throws IgniteInterruptedException {
             while (!isCancelled()) {
                 U.sleep(METRICS_UPDATE_FREQ);
 

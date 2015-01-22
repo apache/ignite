@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid;
-
-import org.apache.ignite.*;
+package org.apache.ignite;
 
 /**
  * Exception that represents authentication failure.
  */
-public class GridAuthenticationException extends IgniteCheckedException {
+public class IgniteAuthenticationException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +29,7 @@ public class GridAuthenticationException extends IgniteCheckedException {
      *
      * @param msg Error message.
      */
-    public GridAuthenticationException(String msg) {
+    public IgniteAuthenticationException(String msg) {
         super(msg);
     }
 }

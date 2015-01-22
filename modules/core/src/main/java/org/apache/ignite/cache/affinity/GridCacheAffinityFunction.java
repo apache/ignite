@@ -19,7 +19,6 @@ package org.apache.ignite.cache.affinity;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.cache.*;
 
 import java.io.*;
 import java.util.*;

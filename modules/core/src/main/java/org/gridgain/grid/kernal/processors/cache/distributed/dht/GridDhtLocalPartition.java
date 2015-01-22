@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.util.*;
@@ -243,7 +242,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException(e);
+            throw new IgniteInterruptedException(e);
         }
     }
 

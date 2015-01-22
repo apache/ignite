@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -207,7 +206,7 @@ class GridDeploymentCommunication {
 
                     Class<?> cls = Class.forName(clsName, true, ldr);
 
-                    if (U.getAnnotation(cls, GridNotPeerDeployable.class) != null) {
+                    if (U.getAnnotation(cls, IgniteNotPeerDeployable.class) != null) {
                         String errMsg = "Attempt to peer deploy class that has @GridNotPeerDeployable " +
                             "annotation: " + clsName;
 

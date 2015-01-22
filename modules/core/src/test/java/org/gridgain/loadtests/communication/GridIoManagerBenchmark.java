@@ -20,7 +20,6 @@ package org.gridgain.loadtests.communication;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
@@ -175,7 +174,7 @@ public class GridIoManagerBenchmark {
                         queries = newQueries;
                     }
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     // No-op.
                 }
 
@@ -208,7 +207,7 @@ public class GridIoManagerBenchmark {
         try {
             U.sleep(duration > 0 ? duration * 1000 + WARM_UP_DUR : Long.MAX_VALUE);
         }
-        catch (GridInterruptedException ignored) {
+        catch (IgniteInterruptedException ignored) {
             // No-op.
         }
 

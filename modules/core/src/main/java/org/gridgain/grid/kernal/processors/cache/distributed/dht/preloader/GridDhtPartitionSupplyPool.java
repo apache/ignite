@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -209,7 +208,7 @@ class GridDhtPartitionSupplyPool<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             while (!isCancelled()) {
                 DemandMessage<K, V> msg = poll(queue, this);
 

@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
@@ -138,7 +139,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impl
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    @Override public void copyMeta(IgniteMetadataAware from) {
         impl.copyMeta(from);
     }
 

@@ -19,7 +19,6 @@ package org.gridgain.grid.util.nio;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -36,7 +35,7 @@ public interface GridNioFuture<R> {
      * returns operation result.
      *
      * @return Operation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws IgniteCheckedException If operation failed.
      * @throws IOException If IOException occurred while performing operation.
@@ -50,7 +49,7 @@ public interface GridNioFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Operation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
      * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws IgniteCheckedException If operation failed.
@@ -65,7 +64,7 @@ public interface GridNioFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Operation result.
-     * @throws GridInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link GridException} thrown if the wait was interrupted.
      * @throws IgniteFutureTimeoutException Subclass of {@link GridException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link GridException} throws if operation was cancelled.
      * @throws IgniteCheckedException If operation failed.

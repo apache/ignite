@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.lang;
 
+import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.lang.*;
@@ -167,12 +168,12 @@ public class GridTupleSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Helper method that checks the correctness of {@link GridMetadataAware}
+     * Helper method that checks the correctness of {@link IgniteMetadataAware}
      * implementation.
      *
      * @param ma Metadata aware object.
      */
-    private void checkMetadataAware(GridMetadataAware ma) {
+    private void checkMetadataAware(IgniteMetadataAware ma) {
         // addMeta(name, val).
         assert ma.addMeta("attr1", "val1") == null;
         assert ma.addMeta("attr2", 1) == null;

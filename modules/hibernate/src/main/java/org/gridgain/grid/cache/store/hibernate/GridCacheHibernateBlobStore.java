@@ -22,7 +22,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
@@ -512,7 +511,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
             try {
                 U.await(initLatch);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteException(e);
             }
         }

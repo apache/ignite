@@ -24,7 +24,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.collision.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -1099,7 +1098,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
                 else {
                     // Deployment is null.
-                    IgniteCheckedException ex = new GridDeploymentException("Task was not deployed or was redeployed since " +
+                    IgniteCheckedException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
                         ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
                         ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +

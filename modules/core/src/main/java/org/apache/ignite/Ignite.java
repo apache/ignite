@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.IgniteFsConfiguration;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.*;

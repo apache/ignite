@@ -23,8 +23,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.typedef.*;
@@ -469,7 +467,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
 
             updateCache(entry.getKey(), entry, StoreOperation.PUT);
         }
-        catch (GridInterruptedException e) {
+        catch (IgniteInterruptedException e) {
             throw new CacheWriterException(e);
         }
     }
@@ -489,7 +487,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
 
             updateCache((K)key, null, StoreOperation.RMV);
         }
-        catch (GridInterruptedException e) {
+        catch (IgniteInterruptedException e) {
             throw new CacheWriterException(e);
         }
     }
@@ -510,12 +508,12 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
      * @param key Key for which update is performed.
      * @param val New value, may be null for remove operation.
      * @param operation Updated value status
-     * @throws GridInterruptedException If interrupted while waiting for value to be flushed.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted while waiting for value to be flushed.
      */
     private void updateCache(K key,
         @Nullable Entry<? extends K, ? extends V> val,
         StoreOperation operation)
-        throws GridInterruptedException {
+        throws IgniteInterruptedException {
         StatefulValue<K, V> newVal = new StatefulValue<>(val, operation);
 
         StatefulValue<K, V> prev;
@@ -745,7 +743,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             while (!stopping.get() || writeCache.sizex() > 0) {
                 awaitOperationsAvailable();
 
@@ -980,9 +978,9 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
         /**
          * Awaits a signal on flush condition
          *
-         * @throws GridInterruptedException If thread was interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
          */
-        private void waitForFlush() throws GridInterruptedException {
+        private void waitForFlush() throws IgniteInterruptedException {
             U.await(flushCond);
         }
 

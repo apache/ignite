@@ -25,8 +25,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.*;

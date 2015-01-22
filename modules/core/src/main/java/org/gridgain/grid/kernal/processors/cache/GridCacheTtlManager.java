@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -108,7 +107,7 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             while (!isCancelled()) {
                 long now = U.currentTimeMillis();
 

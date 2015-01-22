@@ -24,8 +24,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -138,7 +136,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 U.join(delWorker0);
             }
-            catch (GridInterruptedException ignored) {
+            catch (IgniteInterruptedException ignored) {
                 // No-op.
             }
         }

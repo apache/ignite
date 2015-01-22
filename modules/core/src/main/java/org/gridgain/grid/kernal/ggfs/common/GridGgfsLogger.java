@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.ggfs.common;
 
+import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
@@ -444,7 +444,7 @@ public final class GridGgfsLogger {
             try {
                 U.join(flushWorker);
             }
-            catch (GridInterruptedException ignore) {
+            catch (IgniteInterruptedException ignore) {
                 // No-op.
             }
 
@@ -694,7 +694,7 @@ public final class GridGgfsLogger {
                         try {
                             U.await(flushCond, 1000L, TimeUnit.MILLISECONDS);
                         }
-                        catch (GridInterruptedException ignore) {
+                        catch (IgniteInterruptedException ignore) {
                             t.interrupt();
 
                             break;

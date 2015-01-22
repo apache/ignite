@@ -21,8 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.future.*;
@@ -630,7 +628,7 @@ public class GridCacheContinuousQueryEntry<K, V> implements GridCacheEntry<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    @Override public void copyMeta(IgniteMetadataAware from) {
         assert impl != null;
 
         impl.copyMeta(from);

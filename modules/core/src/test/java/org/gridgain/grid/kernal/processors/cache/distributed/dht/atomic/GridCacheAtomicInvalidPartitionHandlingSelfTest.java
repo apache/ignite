@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.dht.atomic;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
@@ -304,7 +305,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                 if (delayMessage((GridIoMessage)msg))
                     U.sleep(ThreadLocalRandom8.current().nextInt(250) + 1);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException(e);
             }
 

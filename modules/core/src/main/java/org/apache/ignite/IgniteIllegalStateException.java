@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 /**
- * This exception indicates the grid access in invalid state.
+ * This exception indicates the ignite access in invalid state.
  */
-public class GridIllegalStateException extends IllegalStateException {
+public class IgniteIllegalStateException extends IllegalStateException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ public class GridIllegalStateException extends IllegalStateException {
      * @param msg Exception message.
      * @param cause Exception cause.
      */
-    public GridIllegalStateException(String msg, @Nullable Throwable cause) {
+    public IgniteIllegalStateException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 
@@ -43,7 +43,7 @@ public class GridIllegalStateException extends IllegalStateException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridIllegalStateException(Throwable cause) {
+    public IgniteIllegalStateException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -52,7 +52,7 @@ public class GridIllegalStateException extends IllegalStateException {
      *
      * @param msg Exception message.
      */
-    public GridIllegalStateException(String msg) {
+    public IgniteIllegalStateException(String msg) {
         super(msg);
     }
 

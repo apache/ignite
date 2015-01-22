@@ -24,7 +24,6 @@ import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -634,7 +633,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
             try {
                 U.sleep(2000);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -703,7 +702,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected IgniteSpiException authenticationFailedError(TcpDiscoveryAuthFailedMessage msg) {
         assert msg != null;
 
-        return new IgniteSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+        return new IgniteSpiException(new IgniteAuthenticationException("Authentication failed [nodeId=" +
             msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
     }
 

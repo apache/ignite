@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.apache.ignite.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
@@ -179,7 +178,7 @@ public class GridHadoopExecutorService {
             workerName = task.toString();
 
         GridWorker w = new GridWorker(gridName, workerName, log, lsnr) {
-            @Override protected void body() throws InterruptedException, GridInterruptedException {
+            @Override protected void body() throws InterruptedException, IgniteInterruptedException {
                 try {
                     task.call();
                 }

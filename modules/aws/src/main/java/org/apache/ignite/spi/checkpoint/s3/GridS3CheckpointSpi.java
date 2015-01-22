@@ -25,7 +25,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -282,7 +281,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
                     try {
                         U.sleep(200);
                     }
-                    catch (GridInterruptedException e) {
+                    catch (IgniteInterruptedException e) {
                         throw new IgniteSpiException("Thread has been interrupted.", e);
                     }
             }

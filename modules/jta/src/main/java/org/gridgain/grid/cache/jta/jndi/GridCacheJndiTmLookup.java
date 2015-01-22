@@ -34,7 +34,7 @@ public class GridCacheJndiTmLookup implements GridCacheTmLookup {
 
     /**
      * Gets a list of JNDI names.
-     * 
+     *
      * @return List of JNDI names that is used to find TM.
      */
     public List<String> getJndiNames() {
@@ -43,7 +43,7 @@ public class GridCacheJndiTmLookup implements GridCacheTmLookup {
 
     /**
      * Sets a list of JNDI names used by this TM.
-     * 
+     *
      * @param jndiNames List of JNDI names that is used to find TM.
      */
     public void setJndiNames(List<String> jndiNames) {

@@ -20,8 +20,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -423,7 +421,7 @@ public class GridCacheEvictionEntry<K, V> implements GridCacheEntry<K, V>, Exter
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    @Override public void copyMeta(IgniteMetadataAware from) {
         cached.copyMeta(from);
     }
 

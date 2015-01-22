@@ -17,7 +17,6 @@
 
 package org.apache.ignite.jdbc;
 
-import org.gridgain.grid.cache.affinity.*;
 
 import java.sql.*;
 import java.util.*;

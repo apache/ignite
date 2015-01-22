@@ -15,15 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.logger.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -37,7 +34,7 @@ import java.util.concurrent.*;
 /**
  * Basic warm-up closure which warm-ups cache operations.
  */
-public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> {
+public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> {
     /** */
     private static final long serialVersionUID = 9175346848249957458L;
 

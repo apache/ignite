@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
@@ -32,9 +31,6 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
@@ -3233,7 +3229,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
                 try {
                     return fut.get();
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     // Interrupted status of current thread was cleared, retry to get lock.
                     isInterrupted = true;
                 }
@@ -3923,7 +3919,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
 
                 return t;
             }
-            catch (GridInterruptedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
+            catch (IgniteInterruptedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -4095,7 +4091,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            return new GridFinishedFutureEx<>(new GridInterruptedException("Failed to wait for asynchronous " +
+            return new GridFinishedFutureEx<>(new IgniteInterruptedException("Failed to wait for asynchronous " +
                 "operation permit (thread got interrupted).", e));
         }
     }

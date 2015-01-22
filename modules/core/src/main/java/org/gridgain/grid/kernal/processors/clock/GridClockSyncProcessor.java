@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
@@ -340,7 +339,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             while (!isCancelled()) {
                 GridDiscoveryTopologySnapshot top = lastSnapshot;
 

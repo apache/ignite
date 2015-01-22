@@ -25,8 +25,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -428,13 +426,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().getDeployment(taskName);
 
                 if (dep == null)
-                    throw new GridDeploymentException("Unknown task name or failed to auto-deploy " +
+                    throw new IgniteDeploymentException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?): " + taskName);
 
                 taskCls = dep.deployedClass(taskName);
 
                 if (taskCls == null)
-                    throw new GridDeploymentException("Unknown task name or failed to auto-deploy " +
+                    throw new IgniteDeploymentException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
@@ -454,7 +452,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(taskCls, U.detectClassLoader(taskCls));
 
                 if (dep == null)
-                    throw new GridDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " +
+                    throw new IgniteDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " +
                         taskCls);
 
                 taskName = taskName(dep, taskCls, map);
@@ -494,7 +492,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(cls, ldr);
 
                 if (dep == null)
-                    throw new GridDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
+                    throw new IgniteDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
 
                 taskName = taskName(dep, taskCls, map);
             }
@@ -552,7 +550,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         if (deployEx == null && securityEx == null) {
             if (dep == null || !dep.acquire())
-                handleException(new GridDeploymentException("Task not deployed: " + ses.getTaskName()), fut);
+                handleException(new IgniteDeploymentException("Task not deployed: " + ses.getTaskName()), fut);
             else {
                 GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
                     ctx,

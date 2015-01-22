@@ -18,7 +18,6 @@
 package org.gridgain.grid.util;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.util.concurrent.*;
@@ -93,9 +92,9 @@ public class GridAtomicInitializer<T> {
      * Await for completion.
      *
      * @return {@code true} If initialization was completed successfully.
-     * @throws GridInterruptedException If thread was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
      */
-    public boolean await() throws GridInterruptedException {
+    public boolean await() throws IgniteInterruptedException {
         if (!finished) {
             synchronized (mux) {
                 while (!finished)

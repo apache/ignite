@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
 

@@ -23,8 +23,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.util.*;
@@ -302,7 +300,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         try {
                             U.sleep(RESEND_FREQ);
                         }
-                        catch (GridInterruptedException e1) {
+                        catch (IgniteInterruptedException e1) {
                             U.error(log,
                                 "Waiting for queries response resending was interrupted (response will not be sent) " +
                                 "[nodeId=" + nodeId + ", response=" + res + "]", e1);

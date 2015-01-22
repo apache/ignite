@@ -19,7 +19,6 @@ package org.apache.ignite.cache.eviction.ggfs;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 
 /**

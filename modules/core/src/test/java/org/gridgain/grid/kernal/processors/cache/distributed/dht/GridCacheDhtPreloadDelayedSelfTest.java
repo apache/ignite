@@ -19,14 +19,12 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
@@ -415,7 +413,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param caches Maps to compare.
      */
     private void checkMaps(final boolean strict, final GridDhtCacheAdapter<String, Integer>... caches)
-        throws GridInterruptedException {
+        throws IgniteInterruptedException {
         if (caches.length < 2)
             return;
 

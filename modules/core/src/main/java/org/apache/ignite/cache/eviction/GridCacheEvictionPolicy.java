@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.eviction;
 
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.*;
 
 /**
  * Pluggable cache eviction policy. Usually, implementations will internally order

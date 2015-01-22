@@ -19,8 +19,6 @@ package org.gridgain.grid.kernal.processors.affinity;
 
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -66,7 +64,7 @@ class GridAffinityUtils {
         GridDeployment dep = ctx.deploy().deploy(cls, cls.getClassLoader());
 
         if (dep == null)
-            throw new GridDeploymentException("Failed to deploy affinity object with class: " + cls.getName());
+            throw new IgniteDeploymentException("Failed to deploy affinity object with class: " + cls.getName());
 
         return new GridAffinityMessage(
             ctx.config().getMarshaller().marshal(o),
@@ -99,7 +97,7 @@ class GridAffinityUtils {
             null);
 
         if (dep == null)
-            throw new GridDeploymentException("Failed to obtain affinity object (is peer class loading turned on?): " +
+            throw new IgniteDeploymentException("Failed to obtain affinity object (is peer class loading turned on?): " +
                 msg);
 
         Object src = ctx.config().getMarshaller().unmarshal(msg.source(), dep.classLoader());

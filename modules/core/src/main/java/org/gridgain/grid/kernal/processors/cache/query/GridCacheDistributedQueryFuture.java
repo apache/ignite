@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -193,7 +192,7 @@ public class GridCacheDistributedQueryFuture<K, V, R> extends GridCacheQueryFutu
 
     /** {@inheritDoc} */
     @SuppressWarnings("NonPrivateFieldAccessedInSynchronizedContext")
-    @Override protected void loadAllPages() throws GridInterruptedException {
+    @Override protected void loadAllPages() throws IgniteInterruptedException {
         assert !Thread.holdsLock(mux);
 
         U.await(firstPageLatch);

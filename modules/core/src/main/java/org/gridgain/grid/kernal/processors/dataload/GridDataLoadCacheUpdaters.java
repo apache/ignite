@@ -23,8 +23,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 

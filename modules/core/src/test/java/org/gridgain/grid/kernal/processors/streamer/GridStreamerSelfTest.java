@@ -26,7 +26,6 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.router.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -237,7 +236,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
                     try {
                         U.sleep(1000);
                     }
-                    catch (GridInterruptedException ignore) {
+                    catch (IgniteInterruptedException ignore) {
                         // No-op.
                     }
 

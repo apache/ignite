@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import java.io.*;
@@ -167,7 +166,7 @@ public class GridGgfsFileWorkerBatch {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException(e);
+            throw new IgniteInterruptedException(e);
         }
 
         IgniteCheckedException err0 = err;

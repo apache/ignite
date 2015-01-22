@@ -17,7 +17,6 @@
 
 package org.apache.ignite.transactions;
 
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 /**

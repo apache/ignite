@@ -31,8 +31,6 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
@@ -824,7 +822,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
             if (verCheckErr != null)
                 U.error(log, verCheckErr.getMessage());
-            else if (X.hasCause(e, InterruptedException.class, GridInterruptedException.class))
+            else if (X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class))
                 U.warn(log, "Grid startup routine has been interrupted (will rollback).");
             else
                 U.error(log, "Got exception while starting (will rollback startup routine).", e);

@@ -19,7 +19,6 @@ package org.gridgain.grid.util.lang;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -41,21 +40,21 @@ public class GridComputeJobWrapper extends GridMetadataAwareAdapter implements C
     private transient volatile GridPeerDeployAware p;
 
     /**
-     * Creates a wrapper with given grid {@code job}. If {@code job} implements {@link GridMetadataAware}
+     * Creates a wrapper with given grid {@code job}. If {@code job} implements {@link org.apache.ignite.IgniteMetadataAware}
      * interface and {@code copyMeta} is {@code true} - the metadata information will be
      * copied from given {@code job} to this wrapper.
      *
      * @param job Job to wrap.
      * @param cpMeta Whether or not to copy metadata in case when {@code job}
-     *      implements {@link GridMetadataAware} interface.
+     *      implements {@link org.apache.ignite.IgniteMetadataAware} interface.
      */
     public GridComputeJobWrapper(ComputeJob job, boolean cpMeta) {
         A.notNull(job, "job");
 
         this.job = job;
 
-        if (cpMeta && job instanceof GridMetadataAware)
-            copyMeta((GridMetadataAware)job);
+        if (cpMeta && job instanceof IgniteMetadataAware)
+            copyMeta((IgniteMetadataAware)job);
     }
 
     /**

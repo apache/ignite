@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
@@ -411,7 +410,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                 snd.join();
             }
             catch (InterruptedException e) {
-                throw new GridInterruptedException(e);
+                throw new IgniteInterruptedException(e);
             }
         }
 
@@ -460,7 +459,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
                     log.debug("Finished waiting for sending thread to complete on shuffle job flush: " + job.id());
             }
             catch (InterruptedException e) {
-                throw new GridInterruptedException(e);
+                throw new IgniteInterruptedException(e);
             }
         }
 

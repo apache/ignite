@@ -17,8 +17,6 @@
 
 package org.apache.ignite.lang;
 
-import org.gridgain.grid.cache.*;
-
 import java.io.*;
 
 /**

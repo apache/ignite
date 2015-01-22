@@ -36,7 +36,6 @@ import org.apache.ignite.spi.authentication.noop.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.kernal.processors.spring.*;
 import org.apache.ignite.plugin.segmentation.*;
@@ -896,10 +895,10 @@ public class GridGainEx {
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws org.apache.ignite.IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite grid() throws GridIllegalStateException {
+    public static Ignite grid() throws IgniteIllegalStateException {
         return grid((String)null);
     }
 
@@ -939,10 +938,10 @@ public class GridGainEx {
      * @param locNodeId ID of local node the requested grid instance is managing.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if grid was not properly
+     * @throws org.apache.ignite.IgniteIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite grid(UUID locNodeId) throws GridIllegalStateException {
+    public static Ignite grid(UUID locNodeId) throws IgniteIllegalStateException {
         A.notNull(locNodeId, "locNodeId");
 
         GridNamedInstance dfltGrid0 = dfltGrid;
@@ -961,7 +960,7 @@ public class GridGainEx {
                 return g;
         }
 
-        throw new GridIllegalStateException("Grid instance with given local node ID was not properly " +
+        throw new IgniteIllegalStateException("Grid instance with given local node ID was not properly " +
             "started or was stopped: " + locNodeId);
     }
 
@@ -978,16 +977,16 @@ public class GridGainEx {
      *      then grid instance belonging to a default no-name grid will be returned.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws org.apache.ignite.IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite grid(@Nullable String name) throws GridIllegalStateException {
+    public static Ignite grid(@Nullable String name) throws IgniteIllegalStateException {
         GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         Ignite res;
 
         if (grid == null || (res = grid.grid()) == null)
-            throw new GridIllegalStateException("Grid instance was not properly started " +
+            throw new IgniteIllegalStateException("Grid instance was not properly started " +
                 "or was already stopped: " + name);
 
         return res;

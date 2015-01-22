@@ -22,7 +22,6 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.deployment.uri.scanners.*;
 import org.apache.ignite.spi.deployment.uri.scanners.file.*;
@@ -542,7 +541,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
                     try {
                         U.sleep(10000);
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         // No-op
                     }
 

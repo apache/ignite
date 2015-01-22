@@ -17,9 +17,8 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
@@ -107,7 +106,7 @@ import java.util.*;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterNode extends GridMetadataAware {
+public interface ClusterNode extends IgniteMetadataAware {
     /**
      * Gets globally unique node ID. A new ID is generated every time a node restarts.
      *

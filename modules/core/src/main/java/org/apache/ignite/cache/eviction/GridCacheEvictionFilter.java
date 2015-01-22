@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.eviction;
 
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.*;
 
 /**
  * Eviction filter to specify which entries should not be evicted. Not applicable when

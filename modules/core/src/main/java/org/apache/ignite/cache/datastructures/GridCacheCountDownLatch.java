@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 
 import java.util.concurrent.*;
 
@@ -85,11 +84,11 @@ public interface GridCacheCountDownLatch {
      *      <li>has its interrupted status set on entry to this method; or
      *      <li>is interrupted while waiting,
      * </ul>
-     * then {@link GridInterruptedException} is thrown and the current thread's
+     * then {@link org.apache.ignite.IgniteInterruptedException} is thrown and the current thread's
      * interrupted status is cleared.
      *
      * @throws IgniteCheckedException If operation failed.
-     * @throws GridInterruptedException if the current thread is interrupted
+     * @throws org.apache.ignite.IgniteInterruptedException if the current thread is interrupted
      *      while waiting
      */
     public void await() throws IgniteCheckedException;
@@ -119,7 +118,7 @@ public interface GridCacheCountDownLatch {
      *      <li>has its interrupted status set on entry to this method; or
      *      <li>is interrupted while waiting,
      * </ul>
-     * then {@link GridInterruptedException} is thrown and the current thread's
+     * then {@link org.apache.ignite.IgniteInterruptedException} is thrown and the current thread's
      * interrupted status is cleared.
      * <p>
      * If the specified waiting time elapses then the value {@code false}
@@ -129,7 +128,7 @@ public interface GridCacheCountDownLatch {
      * @param timeout The maximum time to wait in milliseconds.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws GridInterruptedException If the current thread is interrupted
+     * @throws org.apache.ignite.IgniteInterruptedException If the current thread is interrupted
      *      while waiting.
      * @throws IgniteCheckedException If operation failed.
      */
@@ -160,7 +159,7 @@ public interface GridCacheCountDownLatch {
      *      <li>has its interrupted status set on entry to this method; or
      *      <li>is interrupted while waiting,
      * </ul>
-     * then {@link GridInterruptedException} is thrown and the current thread's
+     * then {@link org.apache.ignite.IgniteInterruptedException} is thrown and the current thread's
      * interrupted status is cleared.
      * <p>
      * If the specified waiting time elapses then the value {@code false}
@@ -172,7 +171,7 @@ public interface GridCacheCountDownLatch {
      * @param unit The time unit of the {@code timeout} argument.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws GridInterruptedException If the current thread is interrupted
+     * @throws org.apache.ignite.IgniteInterruptedException If the current thread is interrupted
      *      while waiting.
      * @throws IgniteCheckedException If operation failed.
      */

@@ -19,11 +19,9 @@ package org.gridgain.grid.kernal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.cache.eviction.GridCacheEvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
@@ -283,10 +281,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * Checks that cache is empty.
      *
      * @param cache Cache to check.
-     * @throws GridInterruptedException If interrupted while sleeping.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted while sleeping.
      */
     @SuppressWarnings({"ErrorNotRethrown", "TypeMayBeWeakened"})
-    private void checkEmpty(GridCache<String, String> cache) throws GridInterruptedException {
+    private void checkEmpty(GridCache<String, String> cache) throws IgniteInterruptedException {
         for (int i = 0; i < 3; i++) {
             try {
                 assertTrue(cache.entrySet().toString(), cache.entrySet().isEmpty());

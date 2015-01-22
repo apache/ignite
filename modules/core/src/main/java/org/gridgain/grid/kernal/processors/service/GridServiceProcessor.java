@@ -27,8 +27,6 @@ import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.cache.query.GridCacheContinuousQueryEntry;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
@@ -817,14 +815,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             try {
                                 cp.execute(svcCtx);
                             }
-                            catch (InterruptedException | GridInterruptedException ignore) {
+                            catch (InterruptedException | IgniteInterruptedException ignore) {
                                 if (log.isDebugEnabled())
                                     log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
                                         svcCtx.executionId() + ']');
                             }
                             catch (IgniteException e) {
                                 if (e.hasCause(InterruptedException.class) ||
-                                    e.hasCause(GridInterruptedException.class)) {
+                                    e.hasCause(IgniteInterruptedException.class)) {
                                     if (log.isDebugEnabled())
                                         log.debug("Service thread was interrupted [name=" + svcCtx.name() +
                                             ", execId=" + svcCtx.executionId() + ']');

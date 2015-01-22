@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
@@ -28,10 +27,10 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.continuous.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -53,6 +52,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.query.GridCacheQueryType.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -254,8 +254,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             null
         );
 
-        q.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>>() {
-            @Override public boolean apply(UUID uuid, Collection<GridCacheContinuousQueryEntry<Object, Object>> entries) {
+        q.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Object, Object>>>() {
+            @Override public boolean apply(UUID uuid, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Object, Object>> entries) {
                 return true;
             }
         });
@@ -279,8 +279,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    q.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>>() {
-                        @Override public boolean apply(UUID uuid, Collection<GridCacheContinuousQueryEntry<Object, Object>> entries) {
+                    q.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Object, Object>>>() {
+                        @Override public boolean apply(UUID uuid, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Object, Object>> entries) {
                             return false;
                         }
                     });
@@ -358,9 +358,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
             @Override public boolean apply(UUID nodeId,
-                Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -432,8 +432,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(4);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -454,8 +454,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.remoteFilter(new P1<GridCacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, Integer> e) {
+        qry.remoteFilter(new P1<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>() {
+            @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer> e) {
                 return e.getKey() > 2;
             }
         });
@@ -465,9 +465,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         final CountDownLatch latch0 = new CountDownLatch(8);
 
-        qry0.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+        qry0.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
             @Override public boolean apply(UUID uuid,
-                Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> ignored : entries)
                     latch0.countDown();
 
@@ -531,8 +531,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -610,8 +610,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -685,8 +685,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -712,9 +712,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         final CountDownLatch latch0 = new CountDownLatch(3);
 
-        qry0.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+        qry0.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
             @Override public boolean apply(UUID nodeId,
-                Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> ignored : entries)
                     latch0.countDown();
 
@@ -763,8 +763,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -856,8 +856,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, List<Integer>> map = new HashMap<>();
         final CountDownLatch latch = new CountDownLatch(5);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     synchronized (map) {
                         List<Integer> vals = map.get(e.getKey());
@@ -940,9 +940,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
             @Override public boolean apply(UUID nodeId,
-                Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     map.put(e.getKey(), e.getValue());
 
@@ -982,8 +982,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(12);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     map.put(e.getKey(), e.getValue());
 
@@ -1026,8 +1026,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(10);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     map.put(e.getKey(), e.getValue());
 
@@ -1068,8 +1068,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     map.put(e.getKey(), e.getValue());
 
@@ -1080,8 +1080,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.remoteFilter(new P1<GridCacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, Integer> e) {
+        qry.remoteFilter(new P1<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>() {
+            @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer> e) {
                 return true;
             }
         });
@@ -1123,9 +1123,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
-                for (GridCacheContinuousQueryEntry<Integer, Integer> e : entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                for (org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer> e : entries) {
                     info("Query entry: " + e);
 
                     map.put(e.getKey(), e.getValue());
@@ -1137,8 +1137,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.remoteFilter(new P1<GridCacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, Integer> e) {
+        qry.remoteFilter(new P1<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>() {
+            @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer> e) {
                 return true;
             }
         });
@@ -1179,8 +1179,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 for (Map.Entry<Integer, Integer> e : entries) {
                     map.put(e.getKey(), e.getValue());
 
@@ -1191,8 +1191,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             }
         });
 
-        qry.remoteFilter(new P1<GridCacheContinuousQueryEntry<Integer, Integer>>() {
-            @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, Integer> e) {
+        qry.remoteFilter(new P1<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>() {
+            @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer> e) {
                 return true;
             }
         });
@@ -1231,9 +1231,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Map<Object, Object> map = new ConcurrentHashMap8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>>() {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Object, Object>>>() {
             @Override public boolean apply(UUID nodeId,
-                Collection<GridCacheContinuousQueryEntry<Object, Object>> entries) {
+                Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Object, Object>> entries) {
                 for (Map.Entry<Object, Object> e : entries) {
                     map.put(e.getKey(), e.getValue());
 
@@ -1296,8 +1296,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 latch.countDown();
 
                 return true;
@@ -1325,8 +1325,8 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         final Collection<Map.Entry<Integer, Integer>> all = new ConcurrentLinkedDeque8<>();
         final CountDownLatch latch = new CountDownLatch(2);
 
-        qry.localCallback(new P2<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
-            @Override public boolean apply(UUID nodeId, Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+        qry.localCallback(new P2<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            @Override public boolean apply(UUID nodeId, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                 assertEquals(1, entries.size());
 
                 all.addAll(entries);
@@ -1385,9 +1385,9 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             final CountDownLatch latch = new CountDownLatch(1);
             final Collection<Integer> keys = new GridConcurrentHashSet<>();
 
-            qry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+            qry.localCallback(new IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
                 @Override public boolean apply(UUID nodeId,
-                    Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                    Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                     for (Map.Entry<Integer, Integer> e : entries) {
                         keys.add(e.getKey());
 
@@ -1476,15 +1476,15 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             try (GridCacheContinuousQuery<Integer, Integer> qry = cache.queries().createContinuousQuery()) {
-                qry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, Integer>>>() {
+                qry.localCallback(new IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>>() {
                     @Override public boolean apply(UUID uuid,
-                        Collection<GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
+                        Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>> entries) {
                         return true;
                     }
                 });
 
-                qry.remoteFilter(new IgnitePredicate<GridCacheContinuousQueryEntry<Integer, Integer>>() {
-                    @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, Integer> e) {
+                qry.remoteFilter(new IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer>>() {
+                    @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<Integer, Integer> e) {
                         return e.getValue() >= 50;
                     }
                 });

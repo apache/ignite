@@ -20,6 +20,7 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.cache.query.GridCacheQueryType;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -47,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.cache.query.GridCacheQueryType.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;

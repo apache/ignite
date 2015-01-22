@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import java.lang.annotation.*;
 
@@ -36,6 +36,6 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
-public @interface GridNotPeerDeployable {
+public @interface IgniteNotPeerDeployable {
     // No-op.
 }

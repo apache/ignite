@@ -207,9 +207,9 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
      * Wrapper around {@link GridTestUtils#retryAssert(org.apache.ignite.IgniteLogger, int, long, GridAbsClosure)}.
      * Provides s3-specific timeouts.
      * @param assertion Closure with assertion inside.
-     * @throws GridInterruptedException If was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If was interrupted.
      */
-    private void assertWithRetries(GridAbsClosureX assertion) throws GridInterruptedException {
+    private void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedException {
         GridTestUtils.retryAssert(log, 6, 5000, assertion);
     }
 }

@@ -18,13 +18,11 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cache;
 
-import org.gridgain.grid.cache.affinity.*;
-
 import java.lang.annotation.*;
 import java.util.concurrent.*;
 

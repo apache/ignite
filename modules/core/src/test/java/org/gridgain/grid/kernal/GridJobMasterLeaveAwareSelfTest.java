@@ -28,7 +28,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -146,7 +145,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 try {
                     U.sleep(500);
                 }
-                catch (GridInterruptedException ignore) {
+                catch (IgniteInterruptedException ignore) {
                     // No-op.
                 }
 
@@ -763,7 +762,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                         try {
                             U.await(waitLatch);
                         }
-                        catch (GridInterruptedException ignore) {
+                        catch (IgniteInterruptedException ignore) {
                             // No-op.
                         }
                     }
@@ -798,9 +797,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         /**
          * Await for job execution response to come.
          *
-         * @throws GridInterruptedException If interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
          */
-        private void awaitResponse() throws GridInterruptedException{
+        private void awaitResponse() throws IgniteInterruptedException {
             U.await(respLatch);
         }
     }

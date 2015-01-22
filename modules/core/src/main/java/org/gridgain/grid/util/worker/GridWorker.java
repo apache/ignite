@@ -18,7 +18,6 @@
 package org.gridgain.grid.util.worker;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
@@ -144,7 +143,7 @@ public abstract class GridWorker implements Runnable {
 
             body();
         }
-        catch (GridInterruptedException e) {
+        catch (IgniteInterruptedException e) {
             if (log.isDebugEnabled())
                 log.debug("Caught interrupted exception: " + e);
         }
@@ -193,9 +192,9 @@ public abstract class GridWorker implements Runnable {
      * The implementation should provide the execution body for this runnable.
      *
      * @throws InterruptedException Thrown in case of interruption.
-     * @throws GridInterruptedException If interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
      */
-    protected abstract void body() throws InterruptedException, GridInterruptedException;
+    protected abstract void body() throws InterruptedException, IgniteInterruptedException;
 
     /**
      * Optional method that will be called after runnable is finished. Default

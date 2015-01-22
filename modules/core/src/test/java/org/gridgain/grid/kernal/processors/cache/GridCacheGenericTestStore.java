@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
 import javax.cache.*;
@@ -267,7 +266,7 @@ public class GridCacheGenericTestStore<K, V> extends CacheStore<K, V> {
             try {
                 U.sleep(operationDelay);
             }
-            catch(GridInterruptedException e) {
+            catch(IgniteInterruptedException e) {
                 throw new IgniteException(e);
             }
         }

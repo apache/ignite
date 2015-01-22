@@ -22,7 +22,6 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -245,18 +244,18 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
         /**
          * Awaits for a given count of items to be taken.
          *
-         * @throws GridInterruptedException If interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
          */
-        private void awaitItems() throws GridInterruptedException {
+        private void awaitItems() throws IgniteInterruptedException {
             U.await(takeLatch);
         }
 
         /**
          * Awaits for a given count of items to be taken.
          *
-         * @throws GridInterruptedException If interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
          */
-        private void awaitDone() throws GridInterruptedException {
+        private void awaitDone() throws IgniteInterruptedException {
             U.await(doneLatch);
         }
 
@@ -281,7 +280,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 }
             }
             catch (IgniteException e) {
-                if (e.getCause() instanceof GridInterruptedException || e.getCause() instanceof InterruptedException)
+                if (e.getCause() instanceof IgniteInterruptedException || e.getCause() instanceof InterruptedException)
                     log.info("Cancelling job due to interruption: " + e.getMessage());
                 else
                     fail("Unexpected error: " + e);

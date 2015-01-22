@@ -18,7 +18,6 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
@@ -240,7 +239,7 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
         try {
             return enqueueInternal(evt);
         }
-        catch (GridInterruptedException ignored) {
+        catch (IgniteInterruptedException ignored) {
             return false;
         }
     }
@@ -251,10 +250,10 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
      * @param evt Event to add.
      * @return {@code True} if event was added.
      *
-     * @throws GridInterruptedException If thread was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean enqueueInternal(E evt) throws GridInterruptedException {
+    private boolean enqueueInternal(E evt) throws IgniteInterruptedException {
         QueueHolder tup = holder;
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
@@ -625,9 +624,9 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
         /**
          * Waits for latch count down after last event was added.
          *
-         * @throws GridInterruptedException If wait was interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If wait was interrupted.
          */
-        public void finish() throws GridInterruptedException {
+        public void finish() throws IgniteInterruptedException {
             writeLock().lock();
 
             try {

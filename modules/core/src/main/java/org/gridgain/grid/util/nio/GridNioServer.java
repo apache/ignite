@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.nio.ssl.*;
@@ -719,7 +718,7 @@ public class GridNioServer<T> {
                     try {
                         U.sleep(50);
                     }
-                    catch (GridInterruptedException e) {
+                    catch (IgniteInterruptedException e) {
                         throw new IOException("Thread has been interrupted.", e);
                     }
                 }
@@ -943,7 +942,7 @@ public class GridNioServer<T> {
                         try {
                             U.sleep(50);
                         }
-                        catch (GridInterruptedException e) {
+                        catch (IgniteInterruptedException e) {
                             throw new IOException("Thread has been interrupted.", e);
                         }
                     }
@@ -1077,7 +1076,7 @@ public class GridNioServer<T> {
                     try {
                         U.sleep(50);
                     }
-                    catch (GridInterruptedException e) {
+                    catch (IgniteInterruptedException e) {
                         throw new IOException("Thread has been interrupted.", e);
                     }
                 }
@@ -1125,7 +1124,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 boolean reset = false;
                 while (!closed) {
@@ -1585,7 +1584,7 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 boolean reset = false;
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
 import org.jetbrains.annotations.*;
 import java.io.*;
@@ -42,13 +42,13 @@ import java.util.concurrent.*;
  * an expiration policy used by caches may add some expiration
  * context to cache entries to properly expire them.
  */
-public interface GridMetadataAware extends Serializable {
+public interface IgniteMetadataAware extends Serializable {
     /**
      * Copies all metadata from another instance.
      *
      * @param from Metadata aware instance to copy metadata from.
      */
-    public void copyMeta(GridMetadataAware from);
+    public void copyMeta(IgniteMetadataAware from);
 
     /**
      * Copies all metadata from given map.
@@ -94,7 +94,7 @@ public interface GridMetadataAware extends Serializable {
     /**
      * Adds given metadata value only if it was absent. Unlike
      * {@link #putMetaIfAbsent(String, Callable)}, this method always returns
-     * the latest value and never previous one. 
+     * the latest value and never previous one.
      *
      * @param name Metadata name.
      * @param val Value to add if it's not attached already.

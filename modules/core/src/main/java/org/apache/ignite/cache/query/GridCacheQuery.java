@@ -20,8 +20,6 @@ package org.apache.ignite.cache.query;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.jetbrains.annotations.*;
 
 /**

@@ -23,8 +23,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.future.*;
 import org.gridgain.grid.util.typedef.*;
@@ -1635,12 +1633,12 @@ public class GridFunc {
      * @param <T> Type of the metadata.
      * @return Collections of metadata value for a given collection of metadata aware objects.
      */
-    public static <T> Collection<T> meta(Collection<? extends GridMetadataAware> objs, String name) {
+    public static <T> Collection<T> meta(Collection<? extends IgniteMetadataAware> objs, String name) {
         A.notNull(objs, "objs", name, "attach");
 
         Collection<T> c = new ArrayList<>(objs.size());
 
-        for (GridMetadataAware n : objs) {
+        for (IgniteMetadataAware n : objs) {
             c.add(n.<T>meta(name));
         }
 
@@ -2804,7 +2802,7 @@ public class GridFunc {
                 catch (IgniteFutureCancelledException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
-                catch (GridInterruptedException ignore) {
+                catch (IgniteInterruptedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
                 catch (IgniteCheckedException e) {
@@ -2820,7 +2818,7 @@ public class GridFunc {
                 catch (IgniteFutureCancelledException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
-                catch (GridInterruptedException ignore) {
+                catch (IgniteInterruptedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
                 catch (IgniteFutureTimeoutException e) {
@@ -5681,34 +5679,34 @@ public class GridFunc {
     }
 
     /**
-     * Creates predicate that accepts subclass of {@link GridMetadataAware}
+     * Creates predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware}
      * interface and evaluates to {@code true} if it contains all provided metadata.
      *
      * @param meta Collection of metadata.
      * @param <T> Type of returned predicate.
-     * @return Predicate that accepts subclass of {@link GridMetadataAware} interface and
+     * @return Predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface and
      *      evaluates to {@code true} if it contains all provided metadata.
      * @see #meta(String...)
      * @see #meta(Iterable)
      * @see #meta(String, Object)
      */
-    public static <T extends GridMetadataAware> IgnitePredicate<T> metaEntry(@Nullable Map.Entry<String, ?>... meta) {
+    public static <T extends IgniteMetadataAware> IgnitePredicate<T> metaEntry(@Nullable Map.Entry<String, ?>... meta) {
         return metaEntry(isEmpty(meta) ? Collections.<Map.Entry<String, ?>>emptyList() : asList(meta));
     }
 
     /**
-     * Creates predicate that accepts subclass of {@link GridMetadataAware} interface
+     * Creates predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface
      * and evaluates to {@code true} if it contains all provided metadata.
      *
      * @param meta Collection of metadata.
      * @param <T> Type of returned predicate.
-     * @return Predicate that accepts subclass of {@link GridMetadataAware} interface and
+     * @return Predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface and
      *      evaluates to {@code true} if it contains all provided metadata.
      * @see #meta(String...)
      * @see #meta(Iterable)
      * @see #meta(String, Object)
      */
-    public static <T extends GridMetadataAware> IgnitePredicate<T> metaEntry(
+    public static <T extends IgniteMetadataAware> IgnitePredicate<T> metaEntry(
         @Nullable final Collection<? extends Map.Entry<String, ?>> meta) {
         return isEmpty(meta) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T e) {
@@ -5725,12 +5723,12 @@ public class GridFunc {
     }
 
     /**
-     * Creates predicate that accepts subclass of {@link GridMetadataAware} interface
+     * Creates predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface
      * and evaluates to {@code true} if it contains all provided metadata.
      *
      * @param meta Collection of metadata as a map.
      * @param <T> Type of returned predicate.
-     * @return Predicate that accepts subclass of {@link GridMetadataAware}
+     * @return Predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware}
      *      interface and evaluates to {@code true} if it contains all provided metadata.
      * @see #meta(String...)
      * @see #meta(Iterable)
@@ -5738,7 +5736,7 @@ public class GridFunc {
      * @see #metaEntry(Entry[])
      * @see #metaEntry(Collection)
      */
-    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(@Nullable Map<String, ?> meta) {
+    public static <T extends IgniteMetadataAware> IgnitePredicate<T> meta(@Nullable Map<String, ?> meta) {
         if (isEmpty(meta))
             return metaEntry(Collections.<Entry<String, ?>>emptySet());
         else {
@@ -5749,47 +5747,47 @@ public class GridFunc {
     }
 
     /**
-     * Creates predicate that accepts subclass of {@link GridMetadataAware} interface
+     * Creates predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface
      * and evaluates to {@code true} if it contains given metadata.
      *
      * @param name Metadata name.
      * @param val Metadata value.
      * @param <T> Type of returned predicate.
-     * @return Predicate that accepts subclass of {@link GridMetadataAware} interface
+     * @return Predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface
      *      and evaluates to {@code true} if it contains given metadata.
      * @see #metaEntry(Entry[])
      * @see #meta(String...)
      * @see #meta(Iterable)
      */
-    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(String name, Object val) {
+    public static <T extends IgniteMetadataAware> IgnitePredicate<T> meta(String name, Object val) {
         A.notNull(name, "name", val, "val");
 
         return metaEntry(F.t(name, val));
     }
 
     /**
-     * Creates predicate that accepts subclass of {@link GridMetadataAware} interface
+     * Creates predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface
      * and evaluates to {@code true} if it contains given metadata names (values are ignored).
      *
      * @param names Metadata names to evaluate by.
      * @param <T> Type of returned predicate.
-     * @return Predicate that accepts subclass of {@link GridMetadataAware} interface and
+     * @return Predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface and
      *      evaluates to {@code true} if it contains given metadata names (values are ignored).
      */
-    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(@Nullable String... names) {
+    public static <T extends IgniteMetadataAware> IgnitePredicate<T> meta(@Nullable String... names) {
         return meta(isEmpty(names) ? Collections.<String>emptyList() : asList(names));
     }
 
     /**
-     * Creates predicate that accepts subclass of {@link GridMetadataAware} interface and
+     * Creates predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface and
      * evaluates to {@code true} if it contains given metadata names (values are ignored).
      *
      * @param names Metadata names to evaluate by.
      * @param <T> Type of returned predicate.
-     * @return Predicate that accepts subclass of {@link GridMetadataAware} interface and
+     * @return Predicate that accepts subclass of {@link org.apache.ignite.IgniteMetadataAware} interface and
      *      evaluates to {@code true} if it contains given metadata names (values are ignored).
      */
-    public static <T extends GridMetadataAware> IgnitePredicate<T> meta(@Nullable final Iterable<String> names) {
+    public static <T extends IgniteMetadataAware> IgnitePredicate<T> meta(@Nullable final Iterable<String> names) {
         return isEmpty(names) ? GridFunc.<T>alwaysFalse() : new P1<T>() {
             @Override public boolean apply(T e) {
                 assert names != null;

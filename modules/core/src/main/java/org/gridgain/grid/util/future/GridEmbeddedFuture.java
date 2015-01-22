@@ -19,7 +19,6 @@ package org.gridgain.grid.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -268,7 +267,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
             try {
                 applyx(f);
             }
-            catch (GridIllegalStateException ignore) {
+            catch (IgniteIllegalStateException ignore) {
                 U.warn(log, "Will not execute future listener (grid is stopping): " + ctx.gridName());
             }
             catch (Exception e) {
@@ -300,7 +299,7 @@ public class GridEmbeddedFuture<A, B> extends GridFutureAdapter<A> {
             try {
                 applyx(f);
             }
-            catch (GridIllegalStateException ignore) {
+            catch (IgniteIllegalStateException ignore) {
                 U.warn(log, "Will not execute future listener (grid is stopping): " + ctx.gridName());
             }
             catch (Exception e) {

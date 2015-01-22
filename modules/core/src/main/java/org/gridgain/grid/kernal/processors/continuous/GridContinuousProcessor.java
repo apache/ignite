@@ -23,7 +23,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -402,7 +401,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                     GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
                     if (dep == null)
-                        throw new GridDeploymentException("Failed to deploy projection predicate: " + prjPred);
+                        throw new IgniteDeploymentException("Failed to deploy projection predicate: " + prjPred);
 
                     reqData.clsName = clsName;
                     reqData.depInfo = new GridDeploymentInfoBean(dep);
@@ -755,7 +754,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
                     if (dep == null)
-                        throw new GridDeploymentException("Failed to obtain deployment for class: " + clsName);
+                        throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
 
                     data.p2pUnmarshal(marsh, dep.classLoader());
                 }
@@ -1002,7 +1001,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             try {
                                 U.sleep(interval0);
                             }
-                            catch (GridInterruptedException ignored) {
+                            catch (IgniteInterruptedException ignored) {
                                 break;
                             }
 
@@ -1155,7 +1154,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     break;
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

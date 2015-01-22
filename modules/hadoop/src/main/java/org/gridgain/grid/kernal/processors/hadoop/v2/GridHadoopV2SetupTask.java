@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.hadoop.*;
 
 import java.io.*;
@@ -59,7 +58,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException(e);
+            throw new IgniteInterruptedException(e);
         }
     }
 }

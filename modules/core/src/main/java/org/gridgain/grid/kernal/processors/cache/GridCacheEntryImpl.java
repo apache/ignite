@@ -20,8 +20,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.lang.*;
@@ -635,7 +633,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    @Override public void copyMeta(IgniteMetadataAware from) {
         GridCacheEntryEx<K, V> cached = unwrapForMeta();
 
         cached.copyMeta(from);

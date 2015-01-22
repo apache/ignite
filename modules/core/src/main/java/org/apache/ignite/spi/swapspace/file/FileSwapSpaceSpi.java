@@ -22,7 +22,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -293,7 +292,7 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
             try {
                 space.stop();
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.error(log, "Interrupted.", e);
             }
         }
@@ -1554,9 +1553,9 @@ public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, 
         /**
          * Stops space.
          *
-         * @throws GridInterruptedException If interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
          */
-        public void stop() throws GridInterruptedException {
+        public void stop() throws IgniteInterruptedException {
             U.interrupt(writer);
             U.interrupt(compactor);
 

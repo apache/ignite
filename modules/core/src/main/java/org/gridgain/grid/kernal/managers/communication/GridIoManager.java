@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -1147,7 +1146,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             dep = ctx.deploy().deploy(cls0, U.detectClassLoader(cls0));
 
             if (dep == null)
-                throw new GridDeploymentException("Failed to deploy user message: " + msg);
+                throw new IgniteDeploymentException("Failed to deploy user message: " + msg);
 
             depClsName = cls0.getName();
         }
@@ -1711,7 +1710,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         null);
 
                     if (dep == null)
-                        throw new GridDeploymentException(
+                        throw new IgniteDeploymentException(
                             "Failed to obtain deployment information for user message. " +
                             "If you are using custom message or topic class, try implementing " +
                             "GridPeerDeployAware interface. [msg=" + ioMsg + ']');

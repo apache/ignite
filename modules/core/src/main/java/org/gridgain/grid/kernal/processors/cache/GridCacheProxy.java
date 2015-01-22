@@ -18,7 +18,6 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.*;
 
 /**
  * Cache proxy marker interface.

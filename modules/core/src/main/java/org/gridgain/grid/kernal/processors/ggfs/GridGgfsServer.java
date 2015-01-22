@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -228,7 +227,7 @@ public class GridGgfsServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 GridGgfsDataInputStream dis = new GridGgfsDataInputStream(endpoint.inputStream());
 
@@ -389,7 +388,7 @@ public class GridGgfsServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     GridIpcEndpoint client = srvEndpoint.accept();

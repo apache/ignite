@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -1142,7 +1141,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         try {
                             U.sleep(10);
                         }
-                        catch (GridInterruptedException ignored) {
+                        catch (IgniteInterruptedException ignored) {
                             // nO-op.
                         }
                     }
@@ -1461,7 +1460,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         try {
                             U.sleep(10);
                         }
-                        catch (GridInterruptedException ignored) {
+                        catch (IgniteInterruptedException ignored) {
                             // nO-op.
                         }
                     }

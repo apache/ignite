@@ -21,7 +21,6 @@ import it.sauronsoftware.cron4j.*;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.typedef.*;
@@ -724,7 +723,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
                 if (isDone())
                     return last();
 
-                throw new GridInterruptedException(e);
+                throw new IgniteInterruptedException(e);
             }
         }
 
@@ -757,7 +756,7 @@ class ScheduleFutureImpl<R> extends GridMetadataAwareAdapter implements Schedule
                 if (isDone())
                     return last();
 
-                throw new GridInterruptedException(e);
+                throw new IgniteInterruptedException(e);
             }
         }
 

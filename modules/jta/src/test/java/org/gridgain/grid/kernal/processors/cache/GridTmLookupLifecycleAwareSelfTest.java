@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.jta.GridCacheTmLookup;
+import org.gridgain.grid.cache.jta.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.gridgain.testframework.junits.common.*;

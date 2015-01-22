@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -307,7 +306,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
             try {
                 U.sleep(operationDelay);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteException(e);
             }
         }

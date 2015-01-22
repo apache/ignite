@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.future.*;
@@ -494,9 +493,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * Loads all left pages.
      *
-     * @throws GridInterruptedException If thread is interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted.
      */
-    protected abstract void loadAllPages() throws GridInterruptedException;
+    protected abstract void loadAllPages() throws IgniteInterruptedException;
 
     /**
      * Clears future.

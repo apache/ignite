@@ -19,7 +19,6 @@ package org.gridgain.grid.util.future;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -212,7 +211,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException(e);
+            throw new IgniteInterruptedException(e);
         }
     }
 
@@ -235,7 +234,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException("Got interrupted while waiting for future to complete.", e);
+            throw new IgniteInterruptedException("Got interrupted while waiting for future to complete.", e);
         }
     }
 

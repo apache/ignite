@@ -22,7 +22,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -484,7 +483,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             return rmtAddrs;
         }
-        catch (GridInterruptedException ignored) {
+        catch (IgniteInterruptedException ignored) {
             U.warn(log, "Got interrupted while sending address request.");
 
             Thread.currentThread().interrupt();

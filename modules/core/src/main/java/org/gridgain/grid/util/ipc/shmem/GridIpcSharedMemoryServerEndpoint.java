@@ -20,7 +20,6 @@ package org.gridgain.grid.util.ipc.shmem;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -321,7 +320,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             }
         } // while
 
-        throw new GridInterruptedException("Socket accept was interrupted.");
+        throw new IgniteInterruptedException("Socket accept was interrupted.");
     }
 
     /**
@@ -432,7 +431,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             try {
                 U.join(gcWorker);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Interrupted when stopping GC worker.", e);
             }
             finally {
@@ -503,7 +502,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             if (log.isDebugEnabled())
                 log.debug("GC worker started.");
 

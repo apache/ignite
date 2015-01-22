@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -185,10 +184,10 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param ignite1 Grid 1.
      * @param ignite2 Grid 2.
      * @param oldSize Old size, stable size should be .
-     * @throws GridInterruptedException If interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
      */
     private void sleepUntilCashesEqualize(final Ignite ignite1, final Ignite ignite2, final int oldSize)
-        throws GridInterruptedException {
+        throws IgniteInterruptedException {
         info("Sleeping...");
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {

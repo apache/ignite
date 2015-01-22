@@ -19,11 +19,9 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.ggfs.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -480,7 +478,7 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
      * @param curBlocks Current blocks.
      * @param curBytes Current bytes.
      */
-    private void checkEvictionPolicy(final int curBlocks, final long curBytes) throws GridInterruptedException {
+    private void checkEvictionPolicy(final int curBlocks, final long curBytes) throws IgniteInterruptedException {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return evictPlc.getCurrentBlocks() == curBlocks && evictPlc.getCurrentSize() == curBytes;

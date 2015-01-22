@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.util.*;
@@ -392,7 +391,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             // Wait for all previous fragmentizer tasks to complete.
             syncStart();
 
@@ -410,7 +409,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
                     }
                 }
                 catch (IgniteCheckedException | IgniteException e) {
-                    if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, GridInterruptedException.class))
+                    if (!X.hasCause(e, InterruptedException.class) && !X.hasCause(e, IgniteInterruptedException.class))
                         LT.warn(log, e, "Failed to get fragmentizer file info (will retry).");
                     else {
                         if (log.isDebugEnabled())
@@ -726,7 +725,7 @@ public class GridGgfsFragmentizerManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             while (!isCancelled()) {
                 IgniteBiTuple<UUID, GridGgfsCommunicationMessage> req = msgs.take();
 

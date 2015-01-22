@@ -23,8 +23,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -517,7 +515,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
             if (dep == null)
-                throw new GridDeploymentException("Failed to deploy object: " + obj);
+                throw new IgniteDeploymentException("Failed to deploy object: " + obj);
 
             depInfo = new GridDeploymentInfoBean(dep);
 
@@ -537,7 +535,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
             if (dep == null)
-                throw new GridDeploymentException("Failed to obtain deployment for class: " + clsName);
+                throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
 
             return ctx.config().getMarshaller().unmarshal(bytes, dep.classLoader());
         }

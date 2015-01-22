@@ -22,7 +22,6 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.hadoop.*;
 
 /**
@@ -72,7 +71,7 @@ public class GridHadoopV2ReduceTask extends GridHadoopV2Task {
 
             Thread.currentThread().interrupt();
 
-            throw new GridInterruptedException(e);
+            throw new IgniteInterruptedException(e);
         }
         catch (Exception e) {
             err = e;

@@ -24,7 +24,6 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -1216,11 +1215,11 @@ public final class GridTestUtils {
      * @param retryInterval Interval between retries in milliseconds.
      * @param c Closure with assertion. All {@link AssertionError}s thrown
      *      from this closure will be ignored {@code retries} times.
-     * @throws GridInterruptedException If interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public static void retryAssert(@Nullable IgniteLogger log, int retries, long retryInterval, GridAbsClosure c)
-        throws GridInterruptedException {
+        throws IgniteInterruptedException {
         for (int i = 0; i < retries; i++) {
             try {
                 c.apply();
@@ -1273,9 +1272,9 @@ public final class GridTestUtils {
      * @param sleepDur Sleep duration in milliseconds.
      * @param i Integer to increment.
      * @return Incremented value.
-     * @throws GridInterruptedException If sleep was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If sleep was interrupted.
      */
-    public static int sleepAndIncrement(int sleepDur, int i) throws GridInterruptedException {
+    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedException {
         U.sleep(sleepDur);
 
         return i + 1;
@@ -1287,9 +1286,9 @@ public final class GridTestUtils {
      * @param cond Condition to wait for.
      * @param timeout Max time to wait in milliseconds.
      * @return {@code true} if condition was achieved, {@code false} otherwise.
-     * @throws GridInterruptedException If interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws GridInterruptedException {
+    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedException {
         long curTime = U.currentTimeMillis();
         long endTime = curTime + timeout;
 

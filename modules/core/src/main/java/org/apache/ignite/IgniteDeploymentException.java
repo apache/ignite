@@ -15,17 +15,25 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid;
+package org.apache.ignite;
 
-import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
- * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteCheckedException}.
+ * Deployment or re-deployment failed.
  */
-@SuppressWarnings({"TypeMayBeWeakened"})
-public class GridInterruptedException extends IgniteCheckedException {
+public class IgniteDeploymentException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public IgniteDeploymentException(String msg) {
+        super(msg);
+    }
 
     /**
      * Creates new exception with given throwable as a nested cause and
@@ -33,17 +41,8 @@ public class GridInterruptedException extends IgniteCheckedException {
      *
      * @param cause Non-null throwable cause.
      */
-    public GridInterruptedException(InterruptedException cause) {
+    public IgniteDeploymentException(Throwable cause) {
         this(cause.getMessage(), cause);
-    }
-
-    /**
-     * Creates a new exception with given error message and optional nested cause exception.
-     *
-     * @param msg Error message.
-     */
-    public GridInterruptedException(String msg) {
-        super(msg);
     }
 
     /**
@@ -52,7 +51,7 @@ public class GridInterruptedException extends IgniteCheckedException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridInterruptedException(String msg, InterruptedException cause) {
+    public IgniteDeploymentException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

@@ -22,8 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
@@ -492,10 +490,10 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param entry Preloaded entry.
          * @param topVer Topology version.
          * @return {@code False} if partition has become invalid during preloading.
-         * @throws GridInterruptedException If interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
          */
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
-            throws IgniteCheckedException, GridInterruptedException {
+            throws IgniteCheckedException, IgniteInterruptedException {
             try {
                 GridCacheEntryEx<K, V> cached = null;
 
@@ -553,7 +551,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     return false;
                 }
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -818,7 +816,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 int preloadOrder = cctx.config().getPreloadOrder();
 
@@ -834,7 +832,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             fut.get();
                         }
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to wait for ordered preload future (grid is stopping): " +
                                 "[cacheName=" + cctx.name() + ", preloadOrder=" + preloadOrder + ']');
@@ -914,7 +912,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         missed.addAll(set);
                                     }
                                 }
-                                catch (GridInterruptedException e) {
+                                catch (IgniteInterruptedException e) {
                                     throw e;
                                 }
                                 catch (ClusterTopologyException e) {

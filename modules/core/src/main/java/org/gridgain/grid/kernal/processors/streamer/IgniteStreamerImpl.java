@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.router.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -360,7 +359,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                     execFut.get();
                 }
                 catch (IgniteCheckedException e) {
-                    if (!e.hasCause(GridInterruptedException.class))
+                    if (!e.hasCause(IgniteInterruptedException.class))
                         U.warn(log, "Failed to wait for batch execution future completion (will ignore) " +
                             "[execFut=" + execFut + ", e=" + e + ']');
                 }
@@ -570,7 +569,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
      * @param stageName Stage name.
      * @param evts Events.
      * @return Future.
-     * @throws GridInterruptedException If failed.
+     * @throws org.apache.ignite.IgniteInterruptedException If failed.
      */
     private GridStreamerStageExecutionFuture addEvents0(
         @Nullable IgniteUuid execId,
@@ -580,7 +579,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         @Nullable Collection<UUID> execNodeIds,
         String stageName,
         Collection<?> evts
-    ) throws GridInterruptedException {
+    ) throws IgniteInterruptedException {
         assert !F.isEmpty(evts);
         assert !F.isEmpty(stageName);
 
@@ -611,7 +610,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
-                throw new GridInterruptedException(e);
+                throw new IgniteInterruptedException(e);
             }
         }
 
@@ -896,7 +895,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
                 addEvents0(null, fut.failoverAttemptCount() + 1, 0, null, Collections.singleton(ctx.localNodeId()),
                     fut.stageName(), fut.events());
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 e.printStackTrace();
 
                 assert false : "Failover submit should never attempt to acquire semaphore: " + fut + ']';
@@ -1278,7 +1277,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             try {
                 long start = U.currentTimeMillis();
 

@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.util.lang.*;
@@ -130,7 +129,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         GridDeployment dep = ctx.deploy().deploy(pda.deployClass(), pda.classLoader());
 
         if (dep == null)
-            throw new GridDeploymentException("Failed to deploy message listener.");
+            throw new IgniteDeploymentException("Failed to deploy message listener.");
 
         depInfo = new GridDeploymentInfoBean(dep);
 
@@ -147,7 +146,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
             depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
         if (dep == null)
-            throw new GridDeploymentException("Failed to obtain deployment for class: " + clsName);
+            throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
 
         ClassLoader ldr = dep.classLoader();
 

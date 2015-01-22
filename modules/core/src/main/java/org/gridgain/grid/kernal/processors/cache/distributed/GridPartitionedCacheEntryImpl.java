@@ -20,8 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.colocated.*;
@@ -549,7 +547,7 @@ public class GridPartitionedCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    @Override public void copyMeta(IgniteMetadataAware from) {
         GridDhtCacheEntry<K, V> de = dht().peekExx(key);
 
         if (de != null)

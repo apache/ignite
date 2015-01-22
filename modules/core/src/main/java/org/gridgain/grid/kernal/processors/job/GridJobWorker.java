@@ -24,7 +24,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.processors.task.*;
@@ -490,7 +489,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
         }
         catch (IgniteCheckedException e) {
-            if (sysStopping && e.hasCause(GridInterruptedException.class, InterruptedException.class)) {
+            if (sysStopping && e.hasCause(IgniteInterruptedException.class, InterruptedException.class)) {
                 ex = handleThrowable(e);
 
                 assert ex != null;
@@ -561,7 +560,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }
-        else if (sysStopping && X.hasCause(e, InterruptedException.class, GridInterruptedException.class)) {
+        else if (sysStopping && X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class)) {
             msg = "Job got interrupted due to system stop (will attempt failover).";
 
             ex = new ComputeExecutionRejectedException(e);

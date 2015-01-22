@@ -22,7 +22,6 @@ import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
@@ -81,7 +80,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             return;
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
-            @Override protected void body() throws InterruptedException, GridInterruptedException {
+            @Override protected void body() throws InterruptedException, IgniteInterruptedException {
                 while (!isCancelled()) {
                     IgniteDataLoaderImpl<K, V> ldr = flushQ.take();
 
@@ -128,7 +127,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             try {
                 ldr.close(cancel);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Interrupted while waiting for completion of the data loader: " + ldr, e);
             }
             catch (IgniteCheckedException e) {

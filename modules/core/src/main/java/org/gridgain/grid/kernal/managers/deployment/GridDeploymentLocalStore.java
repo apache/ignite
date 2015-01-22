@@ -25,7 +25,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
@@ -350,7 +349,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (e.getCause() instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e.getCause();
 
-            throw new GridDeploymentException("Failed to deploy class: " + cls.getName(), e);
+            throw new IgniteDeploymentException("Failed to deploy class: " + cls.getName(), e);
         }
     }
 

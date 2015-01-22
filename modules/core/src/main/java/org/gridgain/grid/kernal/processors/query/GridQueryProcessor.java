@@ -23,7 +23,6 @@ import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.*;
@@ -1304,9 +1303,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /**
          * @return Waits for initialization.
-         * @throws GridInterruptedException If thread is interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted.
          */
-        boolean await() throws GridInterruptedException {
+        boolean await() throws IgniteInterruptedException {
             return initializer.await();
         }
 

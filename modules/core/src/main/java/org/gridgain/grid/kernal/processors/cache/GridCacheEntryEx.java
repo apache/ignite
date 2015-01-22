@@ -20,8 +20,6 @@ package org.gridgain.grid.kernal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.dr.*;
@@ -35,7 +33,7 @@ import java.util.*;
 /**
  * Internal API for cache entry ({@code 'Ex'} stands for extended).
  */
-public interface GridCacheEntryEx<K, V> extends GridMetadataAware {
+public interface GridCacheEntryEx<K, V> extends IgniteMetadataAware {
     /**
      * @return Memory size.
      * @throws IgniteCheckedException If failed.

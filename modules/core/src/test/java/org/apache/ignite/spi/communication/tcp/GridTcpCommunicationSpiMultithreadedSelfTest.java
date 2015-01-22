@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.direct.*;
 import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.nio.*;
@@ -318,7 +317,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.id());
                     }
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
             }

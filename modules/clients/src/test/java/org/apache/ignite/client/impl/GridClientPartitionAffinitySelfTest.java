@@ -28,6 +28,8 @@ import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
+import static org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction.*;
+
 /**
  * Client's partitioned affinity tests.
  */

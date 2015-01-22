@@ -24,7 +24,6 @@ import scalar._
 import org.apache.ignite._
 import org.gridgain.grid.cache._
 import GridCacheMode._
-import affinity._
 import java.util._
 
 /**

@@ -18,8 +18,6 @@
 package org.gridgain.grid.cache.jta;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.jta.jndi.*;
-import org.gridgain.grid.cache.jta.reflect.*;
 import org.jetbrains.annotations.*;
 
 import javax.transaction.*;

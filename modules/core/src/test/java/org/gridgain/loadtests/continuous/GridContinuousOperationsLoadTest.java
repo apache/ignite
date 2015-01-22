@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.util.typedef.*;
@@ -101,7 +100,7 @@ public class GridContinuousOperationsLoadTest {
 
                     qry.callback(new PX2<UUID, Collection<Map.Entry<Object, Object>>>() {
                         @Override public boolean applyx(UUID uuid, Collection<Map.Entry<Object, Object>> entries)
-                            throws GridInterruptedException {
+                            throws IgniteInterruptedException {
                             if (cbSleepMs > 0)
                                 U.sleep(cbSleepMs);
 
@@ -112,7 +111,7 @@ public class GridContinuousOperationsLoadTest {
                     });
 
                     qry.filter(new PX2<Object, Object>() {
-                        @Override public boolean applyx(Object key, Object val) throws GridInterruptedException {
+                        @Override public boolean applyx(Object key, Object val) throws IgniteInterruptedException {
                             if (filterSleepMs > 0)
                                 U.sleep(filterSleepMs);
 
@@ -133,7 +132,7 @@ public class GridContinuousOperationsLoadTest {
                         new PX2<UUID, IgniteEvent>() {
                             @Override
                             public boolean applyx(UUID uuid, IgniteEvent evt)
-                                throws GridInterruptedException {
+                                throws IgniteInterruptedException {
                                 if (cbSleepMs > 0)
                                     U.sleep(cbSleepMs);
 
@@ -144,7 +143,7 @@ public class GridContinuousOperationsLoadTest {
                         },
                         new PX1<IgniteEvent>() {
                             @Override
-                            public boolean applyx(IgniteEvent evt) throws GridInterruptedException {
+                            public boolean applyx(IgniteEvent evt) throws IgniteInterruptedException {
                                 if (filterSleepMs > 0)
                                     U.sleep(filterSleepMs);
 
@@ -173,7 +172,7 @@ public class GridContinuousOperationsLoadTest {
                                 ", updatesPerSec=" + updDelta + ']');
                         }
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         // No-op.
                     }
                 }

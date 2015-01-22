@@ -19,9 +19,7 @@ package org.apache.ignite.cache.eviction.fifo;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.gridgain.grid.cache.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 import org.gridgain.grid.util.typedef.*;

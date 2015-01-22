@@ -26,7 +26,6 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -495,7 +494,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 U.closeQuiet(sock);
                         }
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Joining thread was interrupted.");
 
@@ -518,7 +517,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     U.sleep(2000);
                 }
             }
-            catch (GridInterruptedException ignored) {
+            catch (IgniteInterruptedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Joining thread was interrupted.");
             }
@@ -617,7 +616,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         }
                     }
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Disconnect handler was interrupted.");
 
@@ -662,7 +661,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     sockRdr.addMessage(msg);
                 }
             }
-            catch (GridInterruptedException ignored) {
+            catch (IgniteInterruptedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Heartbeat sender was interrupted.");
             }
@@ -784,7 +783,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 try {
                     U.join(msgWrk);
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     // No-op.
                 }
 

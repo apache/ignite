@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -252,7 +251,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
             if (dep == null)
-                throw new GridDeploymentException("Failed to deploy event filter: " + filter);
+                throw new IgniteDeploymentException("Failed to deploy event filter: " + filter);
 
             depInfo = new GridDeploymentInfoBean(dep);
 
@@ -271,7 +270,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
             if (dep == null)
-                throw new GridDeploymentException("Failed to obtain deployment for class: " + clsName);
+                throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
 
             filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
         }

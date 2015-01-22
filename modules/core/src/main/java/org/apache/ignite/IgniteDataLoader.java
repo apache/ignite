@@ -19,8 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -238,11 +236,11 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @param key Key.
      * @return Future fo this operation.
      * @throws IgniteCheckedException If failed to map key to node.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public IgniteFuture<?> removeData(K key)  throws IgniteCheckedException, GridInterruptedException, IllegalStateException;
+    public IgniteFuture<?> removeData(K key)  throws IgniteCheckedException, IgniteInterruptedException, IllegalStateException;
 
     /**
      * Adds data for loading on remote node. This method can be called from multiple
@@ -256,11 +254,11 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @param val Value or {@code null} if respective entry must be removed from cache.
      * @return Future fo this operation.
      * @throws IgniteCheckedException If failed to map key to node.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public IgniteFuture<?> addData(K key, @Nullable V val) throws IgniteCheckedException, GridInterruptedException,
+    public IgniteFuture<?> addData(K key, @Nullable V val) throws IgniteCheckedException, IgniteInterruptedException,
         IllegalStateException;
 
     /**
@@ -274,11 +272,11 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @param entry Entry.
      * @return Future fo this operation.
      * @throws IgniteCheckedException If failed to map key to node.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, GridInterruptedException,
+    public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IgniteInterruptedException,
         IllegalStateException;
 
     /**
@@ -321,33 +319,33 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * use {@link #tryFlush()} method.
      *
      * @throws IgniteCheckedException If failed to map key to node.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      * @see #tryFlush()
      */
-    public void flush() throws IgniteCheckedException, GridInterruptedException, IllegalStateException;
+    public void flush() throws IgniteCheckedException, IgniteInterruptedException, IllegalStateException;
 
     /**
      * Makes an attempt to load remaining data. This method is mostly similar to {@link #flush},
      * with the difference that it won't wait and will exit immediately.
      *
      * @throws IgniteCheckedException If failed to map key to node.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      * @see #flush()
      */
-    public void tryFlush() throws IgniteCheckedException, GridInterruptedException, IllegalStateException;
+    public void tryFlush() throws IgniteCheckedException, IgniteInterruptedException, IllegalStateException;
 
     /**
      * Loads any remaining data and closes this loader.
      *
      * @param cancel {@code True} to cancel ongoing loading operations.
      * @throws IgniteCheckedException If failed to map key to node.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      */
-    public void close(boolean cancel) throws IgniteCheckedException, GridInterruptedException;
+    public void close(boolean cancel) throws IgniteCheckedException, IgniteInterruptedException;
 
     /**
      * Closes data loader. This method is identical to calling {@link #close(boolean) close(false)} method.
@@ -356,7 +354,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * {@code try-with-resources} statement.
      *
      * @throws IgniteCheckedException If failed to close data loader.
-     * @throws GridInterruptedException If thread has been interrupted.
+     * @throws IgniteInterruptedException If thread has been interrupted.
      */
-    @Override public void close() throws IgniteCheckedException, GridInterruptedException;
+    @Override public void close() throws IgniteCheckedException, IgniteInterruptedException;
 }

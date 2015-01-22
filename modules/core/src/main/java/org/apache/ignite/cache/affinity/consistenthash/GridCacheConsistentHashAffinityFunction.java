@@ -23,8 +23,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.*;
@@ -591,7 +589,7 @@ public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinit
                 try {
                     U.await(initLatch);
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     // Recover interrupted state flag.
                     Thread.currentThread().interrupt();
                 }

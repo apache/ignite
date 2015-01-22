@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 /**

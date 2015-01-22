@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client.impl;
 
+import org.apache.ignite.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.connection.*;
@@ -143,7 +144,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
         catch (GridClientException e) {
             return new GridClientFutureAdapter<>(e);
         }
-        catch (GridInterruptedException | InterruptedException e) {
+        catch (IgniteInterruptedException | InterruptedException e) {
             Thread.currentThread().interrupt();
 
             return new GridClientFutureAdapter<>(
@@ -215,7 +216,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
         catch (GridClientException e) {
             return new GridClientFutureAdapter<>(e);
         }
-        catch (GridInterruptedException | InterruptedException e) {
+        catch (IgniteInterruptedException | InterruptedException e) {
             Thread.currentThread().interrupt();
 
             return new GridClientFutureAdapter<>(new GridClientException("Interrupted when (re)trying to perform " +

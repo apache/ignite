@@ -22,8 +22,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -405,9 +403,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * Starts activity.
      *
-     * @throws GridInterruptedException If interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
      */
-    public void init() throws GridInterruptedException {
+    public void init() throws IgniteInterruptedException {
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
@@ -495,7 +493,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     top.beforeExchange(exchId);
                 }
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 onDone(e);
 
                 throw e;

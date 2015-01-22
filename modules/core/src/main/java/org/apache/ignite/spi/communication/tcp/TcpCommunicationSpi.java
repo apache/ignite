@@ -27,7 +27,6 @@ import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.spi.communication.*;
 import org.gridgain.grid.util.*;
@@ -1534,7 +1533,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }

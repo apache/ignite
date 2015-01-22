@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
@@ -263,7 +262,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void onKernalStop0(boolean cancel) {
         // Finish all exchange futures.
         for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
-            f.onDone(new GridInterruptedException("Grid is stopping: " + cctx.gridName()));
+            f.onDone(new IgniteInterruptedException("Grid is stopping: " + cctx.gridName()));
 
         U.cancel(exchWorker);
 
@@ -734,7 +733,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             boolean startEvtFired = false;
@@ -861,7 +860,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

@@ -20,7 +20,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -161,7 +160,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
             try {
                 U.await(initLatch);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
 

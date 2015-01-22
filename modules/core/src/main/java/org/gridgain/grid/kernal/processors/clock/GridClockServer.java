@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.clock;
 
 import org.apache.ignite.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -175,7 +174,7 @@ public class GridClockServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, GridInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
             DatagramPacket packet = new DatagramPacket(new byte[GridClockMessage.PACKET_SIZE],
                 GridClockMessage.PACKET_SIZE);
 

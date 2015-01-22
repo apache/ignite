@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.util.lang;
 
+import org.apache.ignite.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -28,12 +29,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Convenient adapter for {@link GridMetadataAware}.
+ * Convenient adapter for {@link IgniteMetadataAware}.
  * <h2 class="header">Thread Safety</h2>
  * This class provides necessary synchronization for thread-safe access.
  */
 @SuppressWarnings( {"SynchronizeOnNonFinalField"})
-public class GridMetadataAwareAdapter implements GridMetadataAware {
+public class GridMetadataAwareAdapter implements IgniteMetadataAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,7 +82,7 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
     }
 
     /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    @Override public void copyMeta(IgniteMetadataAware from) {
         A.notNull(from, "from");
 
         synchronized (mux) {
