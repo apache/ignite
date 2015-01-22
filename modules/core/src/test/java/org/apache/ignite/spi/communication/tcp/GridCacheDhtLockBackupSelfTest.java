@@ -189,7 +189,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         info("Before remove all");
 
-        cache1.flagsOn(GridCacheFlag.SYNC_COMMIT).removeAll();
+        cache1.removeAll();
 
         info("Remove all completed");
 
