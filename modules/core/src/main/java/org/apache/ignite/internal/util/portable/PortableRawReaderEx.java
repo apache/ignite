@@ -15,29 +15,18 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.portable;
+package org.apache.ignite.internal.util.portable;
 
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.kernal.processors.portable.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Extended writer interface.
+ * Extended reader interface.
  */
-public interface PortableRawWriterEx extends PortableRawWriter, AutoCloseable {
+public interface PortableRawReaderEx extends PortableRawReader {
     /**
-     * @param obj Object to write.
+     * @return Object.
      * @throws org.apache.ignite.portables.PortableException In case of error.
      */
-    public void writeObjectDetached(@Nullable Object obj) throws PortableException;
-
-    /**
-     * @return Output stream.
-     */
-    public GridPortableOutputStream out();
-
-    /**
-     * Cleans resources.
-     */
-    @Override public void close();
+    @Nullable public Object readObjectDetached() throws PortableException;
 }

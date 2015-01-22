@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.rest.client.message;
 
+import org.apache.ignite.internal.util.portable.*;
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.util.portable.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
