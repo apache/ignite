@@ -25,7 +25,7 @@ import java.util.*;
  */
 public class GridProperties {
     /** Properties file path. */
-    private static final String FILE_PATH = "gridgain.properties";
+    private static final String FILE_PATH = "ignite.properties";
 
     /** Enterprise properties file path. */
     private static final String ENT_FILE_PATH = "gridgain-ent.properties";
