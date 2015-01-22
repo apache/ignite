@@ -37,7 +37,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.util.GridConcurrentFactory.*;
+import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
 
 /**
  * DHT cache preloader.

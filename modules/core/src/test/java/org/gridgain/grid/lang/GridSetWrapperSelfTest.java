@@ -18,7 +18,6 @@
 package org.gridgain.grid.lang;
 
 import org.apache.ignite.internal.util.*;
-import org.gridgain.grid.util.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

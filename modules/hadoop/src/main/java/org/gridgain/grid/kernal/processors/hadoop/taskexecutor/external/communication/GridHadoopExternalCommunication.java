@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.nio.*;

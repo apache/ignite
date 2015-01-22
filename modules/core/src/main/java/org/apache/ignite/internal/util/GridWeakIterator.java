@@ -15,15 +15,41 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
-import java.io.*;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.util.lang.*;
+
+import java.lang.ref.*;
 import java.util.*;
 
 /**
- * Makes {@link Iterator} as {@link Serializable} and is
- * useful for making anonymous serializable iterators.
+ * Weak iterator.
  */
-public interface GridSerializableIterator<E> extends Iterator<E>, Serializable {
-    // No-op.
+public class GridWeakIterator<T> extends WeakReference<Iterator<T>> {
+    /** Nested closeable iterator. */
+    private final GridCloseableIterator<T> it;
+
+    /**
+     * @param ref Referent.
+     * @param it Closeable iterator.
+     * @param q Referent queue.
+     */
+    public GridWeakIterator(Iterator<T> ref, GridCloseableIterator<T> it,
+        ReferenceQueue<Iterator<T>> q) {
+        super(ref, q);
+
+        assert it != null;
+
+        this.it = it;
+    }
+
+    /**
+     * Closes iterator.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    public void close() throws IgniteCheckedException {
+        it.close();
+    }
 }

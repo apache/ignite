@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal;
 
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.tostring.*;
 
 import java.io.*;

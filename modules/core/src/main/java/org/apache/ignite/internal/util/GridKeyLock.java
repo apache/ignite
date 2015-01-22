@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;

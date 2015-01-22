@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.util;
 
-import org.gridgain.grid.util.*;
-
 import java.util.*;
 
 /**

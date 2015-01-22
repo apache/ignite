@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.hadoop.*;
@@ -28,7 +29,6 @@ import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

@@ -19,13 +19,13 @@ package org.gridgain.grid.kernal.managers.swapspace;
 
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

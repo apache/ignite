@@ -23,7 +23,6 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 

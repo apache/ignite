@@ -15,17 +15,21 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * Makes {@link AbstractList} as {@link Serializable} and is
- * useful for making anonymous serializable lists. It has no
- * extra logic or state in addition to {@link AbstractList}.
+ * Makes {@link AbstractSet} as {@link Serializable} and is
+ * useful for making anonymous serializable sets. It has no extra logic or state in
+ * addition to {@link AbstractSet}.
+ * <p>
+ * Note that methods {@link #contains(Object)} and {@link #remove(Object)} implemented
+ * in {@link AbstractCollection} fully iterate through collection so you need to make
+ * sure to override these methods if it's possible to create efficient implementations.
  */
-public abstract class GridSerializableList<E> extends AbstractList<E> implements Serializable {
+public abstract class GridSerializableSet<E> extends AbstractSet<E> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 

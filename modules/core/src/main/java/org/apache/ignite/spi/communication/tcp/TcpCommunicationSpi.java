@@ -29,7 +29,6 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.ipc.*;

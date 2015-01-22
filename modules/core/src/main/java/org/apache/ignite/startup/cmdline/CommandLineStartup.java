@@ -18,8 +18,8 @@
 package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

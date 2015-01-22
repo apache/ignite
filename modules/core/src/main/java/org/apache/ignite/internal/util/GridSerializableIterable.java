@@ -15,43 +15,14 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
-import org.jdk8.backport.*;
-
-import java.util.concurrent.*;
+import java.io.*;
 
 /**
- * Cache for enum constants.
+ * Makes {@link Iterable} as {@link Serializable} and is
+ * useful for making anonymous serializable iterators.
  */
-public class GridEnumCache {
-    /** Cache for enum constants. */
-    private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap8<>();
-
-    /**
-     * Gets enum constants for provided class.
-     *
-     * @param cls Class.
-     * @return Enum constants.
-     */
-    public static Object[] get(Class<?> cls) {
-        assert cls != null;
-
-        Object[] vals = ENUM_CACHE.get(cls);
-
-        if (vals == null) {
-            vals = cls.getEnumConstants();
-
-            ENUM_CACHE.putIfAbsent(cls, vals);
-        }
-
-        return vals;
-    }
-
-    /**
-     * Clears cache.
-     */
-    public static void clear() {
-        ENUM_CACHE.clear();
-    }
+public interface GridSerializableIterable<E> extends Iterable<E>, Serializable {
+    // No-op.
 }

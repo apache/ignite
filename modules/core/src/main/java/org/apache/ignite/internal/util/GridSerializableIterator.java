@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.typedef.internal;
+package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.*;
+import java.io.*;
+import java.util.*;
 
 /**
- * Convenience alias for {@link GridDebug} class.
+ * Makes {@link Iterator} as {@link Serializable} and is
+ * useful for making anonymous serializable iterators.
  */
-@SuppressWarnings("ExtendsUtilityClass")
-public class D extends GridDebug {
+public interface GridSerializableIterator<E> extends Iterator<E>, Serializable {
     // No-op.
 }

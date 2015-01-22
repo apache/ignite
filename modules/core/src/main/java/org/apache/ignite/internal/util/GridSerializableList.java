@@ -15,14 +15,19 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import java.io.*;
+import java.util.*;
 
 /**
- * Makes {@link Iterable} as {@link Serializable} and is
- * useful for making anonymous serializable iterators.
+ * Makes {@link AbstractList} as {@link Serializable} and is
+ * useful for making anonymous serializable lists. It has no
+ * extra logic or state in addition to {@link AbstractList}.
  */
-public interface GridSerializableIterable<E> extends Iterable<E>, Serializable {
+public abstract class GridSerializableList<E> extends AbstractList<E> implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

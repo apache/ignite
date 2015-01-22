@@ -27,7 +27,6 @@ import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -40,7 +39,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.util.GridConcurrentFactory.*;
+import static org.apache.ignite.internal.util.GridConcurrentFactory.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**

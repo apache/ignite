@@ -17,7 +17,7 @@
 
 package org.gridgain.visor
 
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.{GridConfigurationFinder, GridUtils}
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.gridgain.grid._
 import org.gridgain.grid.kernal.GridComponentType._
@@ -29,7 +29,6 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNod
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
-import org.gridgain.grid.util.GridConfigurationFinder
 
 import org.apache.ignite.IgniteSystemProperties._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}

@@ -15,14 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.typedef.internal;
+package org.apache.ignite.internal.util;
 
-import org.apache.ignite.internal.util.*;
+import java.io.*;
+import java.util.*;
 
 /**
- * Convenience alias for {@link GridDebug} class.
+ * Makes {@link AbstractMap} as {@link Serializable} and is
+ * useful for making anonymous serializable maps. It has no extra logic or state in addition
+ * to {@link AbstractMap}.
+ * <b>NOTE:</b> methods {@link #get(Object)}, {@link #remove(Object)} and
+ * {@link #containsKey(Object)} implemented in {@link AbstractMap} <b>fully iterate through
+ * collection</b> so you need to make sure to override these methods if it's possible to create
+ * efficient implementations.
  */
-@SuppressWarnings("ExtendsUtilityClass")
-public class D extends GridDebug {
+public abstract class GridSerializableMap<K, V> extends AbstractMap<K, V> implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     // No-op.
 }

@@ -15,29 +15,44 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.util.lang.*;
 
 /**
- * Empty closeable iterator.
+ * Wrapper used to covert {@link org.apache.ignite.spi.IgniteSpiCloseableIterator} to {@link GridCloseableIterator}.
  */
-public class GridEmptyCloseableIterator<T> extends GridEmptyIterator<T> implements GridCloseableIterator<T> {
+public class GridSpiCloseableIteratorWrapper<T> extends GridCloseableIteratorAdapter<T> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Closed flag. */
-    private boolean closed;
+    /** */
+    private final IgniteSpiCloseableIterator<T> iter;
 
-    /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
-        closed = true;
+    /**
+     * @param iter Spi iterator.
+     */
+    public GridSpiCloseableIteratorWrapper(IgniteSpiCloseableIterator<T> iter) {
+        assert iter != null;
+
+        this.iter = iter;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isClosed() {
-        return closed;
+    @Override protected T onNext() throws IgniteCheckedException {
+        return iter.next();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean onHasNext() throws IgniteCheckedException {
+        return iter.hasNext();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onClose() throws IgniteCheckedException {
+        iter.close();
     }
 }

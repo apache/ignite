@@ -39,7 +39,6 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
-import org.gridgain.grid.util.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;

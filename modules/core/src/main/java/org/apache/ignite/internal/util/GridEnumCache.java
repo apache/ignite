@@ -15,23 +15,43 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util;
+package org.apache.ignite.internal.util;
 
-import java.io.*;
-import java.util.*;
+import org.jdk8.backport.*;
+
+import java.util.concurrent.*;
 
 /**
- * Makes {@link AbstractSet} as {@link Serializable} and is
- * useful for making anonymous serializable sets. It has no extra logic or state in
- * addition to {@link AbstractSet}.
- * <p>
- * Note that methods {@link #contains(Object)} and {@link #remove(Object)} implemented
- * in {@link AbstractCollection} fully iterate through collection so you need to make
- * sure to override these methods if it's possible to create efficient implementations.
+ * Cache for enum constants.
  */
-public abstract class GridSerializableSet<E> extends AbstractSet<E> implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
+public class GridEnumCache {
+    /** Cache for enum constants. */
+    private static final ConcurrentMap<Class<?>, Object[]> ENUM_CACHE = new ConcurrentHashMap8<>();
 
-    // No-op.
+    /**
+     * Gets enum constants for provided class.
+     *
+     * @param cls Class.
+     * @return Enum constants.
+     */
+    public static Object[] get(Class<?> cls) {
+        assert cls != null;
+
+        Object[] vals = ENUM_CACHE.get(cls);
+
+        if (vals == null) {
+            vals = cls.getEnumConstants();
+
+            ENUM_CACHE.putIfAbsent(cls, vals);
+        }
+
+        return vals;
+    }
+
+    /**
+     * Clears cache.
+     */
+    public static void clear() {
+        ENUM_CACHE.clear();
+    }
 }

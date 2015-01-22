@@ -18,11 +18,11 @@
 package org.gridgain.grid.kernal.managers.indexing;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
-import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
