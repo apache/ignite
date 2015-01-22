@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.portables.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
@@ -255,7 +256,7 @@ import java.util.Date;
  * or for a specific type via {@link org.apache.ignite.portables.PortableTypeConfiguration} instance.
  * <h1 class="header">Query Indexing</h1>
  * Portable objects can be indexed for querying by specifying index fields in
- * {@link GridCacheQueryTypeMetadata} inside of specific {@link org.apache.ignite.cache.CacheConfiguration} instance,
+ * {@link GridCacheQueryTypeMetadata} inside of specific {@link CacheConfiguration} instance,
  * like so:
  * <pre name=code class=xml>
  * ...

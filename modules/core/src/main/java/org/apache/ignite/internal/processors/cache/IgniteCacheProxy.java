@@ -899,38 +899,23 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            final Iterator<GridCacheEntry<K, V>> it = delegate.iterator();
+            return F.iterator(delegate, new C1<GridCacheEntry<K, V>, Entry<K, V>>() {
+                @Override public Entry<K, V> apply(final GridCacheEntry<K, V> e) {
+                    return new Entry<K, V>() {
+                        @Override public K getKey() {
+                            return e.getKey();
+                        }
 
-            return new Iterator<Entry<K, V>>() {
-                private CacheEntryImpl e;
+                        @Override public V getValue() {
+                            return e.getValue();
+                        }
 
-                @Override
-                public boolean hasNext() {
-                    return it.hasNext();
+                        @Override public <T> T unwrap(Class<T> clazz) {
+                            throw new IllegalArgumentException();
+                        }
+                    };
                 }
-
-                @Override
-                public Entry<K, V> next() {
-                    if (!hasNext())
-                        throw new NoSuchElementException();
-
-                    GridCacheEntry<K, V> e0 = it.next();
-
-                    e = new CacheEntryImpl(e0.getKey(), e0.getValue());
-
-                    return e;
-                }
-
-                @Override
-                public void remove() {
-                    if (e == null)
-                        throw new IllegalStateException();
-
-                    IgniteCacheProxy.this.remove((K) e.getKey());
-
-                    e = null;
-                }
-            };
+            }, false);
         }
         finally {
             gate.leave(prev);

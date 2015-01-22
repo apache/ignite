@@ -43,7 +43,7 @@ import java.util.concurrent.locks.*;
 import static javax.cache.Cache.Entry;
 
 /**
- * Internal wrapper for a {@link org.apache.ignite.cache.store.CacheStore} that enables write-behind logic.
+ * Internal wrapper for a {@link CacheStore} that enables write-behind logic.
  * <p/>
  * The general purpose of this approach is to reduce cache store load under high
  * store update rate. The idea is to cache all write and remove operations in a pending
@@ -160,7 +160,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
      * <p/>
      * If this value is {@code 0}, then flush is performed only on time-elapsing basis. However,
      * when this value is {@code 0}, the cache critical size is set to
-     * {@link org.apache.ignite.cache.CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}
+     * {@link CacheConfiguration#DFLT_WRITE_BEHIND_CRITICAL_SIZE}
      *
      * @return Buffer size that triggers flush procedure.
      */

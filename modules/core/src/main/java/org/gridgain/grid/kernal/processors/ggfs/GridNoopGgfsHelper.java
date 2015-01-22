@@ -24,7 +24,6 @@ import org.apache.ignite.cache.*;
  * No-op utils processor adapter.
  */
 public class GridNoopGgfsHelper implements GridGgfsHelper {
-
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         // No-op.

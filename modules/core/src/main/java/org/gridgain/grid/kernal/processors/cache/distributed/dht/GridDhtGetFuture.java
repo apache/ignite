@@ -110,6 +110,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param msgId Message ID.
      * @param reader Reader.
      * @param keys Keys.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param tx Transaction.
      * @param topVer Topology version.

@@ -35,6 +35,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
         return 2;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 

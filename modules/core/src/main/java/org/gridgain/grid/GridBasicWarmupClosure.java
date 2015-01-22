@@ -422,6 +422,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
             this.cache = cache;
         }
 
+        /** {@inheritDoc} */
         @Override public Object call() throws Exception {
             ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
@@ -435,6 +436,7 @@ public class GridBasicWarmupClosure implements IgniteInClosure<IgniteConfigurati
          * Runs operation.
          *
          * @param key Key.
+         * @throws Exception If failed.
          */
         protected abstract void operation(int key) throws Exception;
     }

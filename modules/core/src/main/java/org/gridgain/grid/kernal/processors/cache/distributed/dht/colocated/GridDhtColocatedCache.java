@@ -226,6 +226,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /**
      * @param keys Keys to load.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.

@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.cache.affinity.fair;
 
-import org.apache.ignite.cache.CacheConfiguration;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;

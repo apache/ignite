@@ -37,14 +37,15 @@ import javax.cache.integration.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-
 /**
  * Store manager.
  */
 public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
     private static final String SES_ATTR = "STORE_SES";
+
+    /** */
+    private static final String SES_FIELD_NAME = "ses";
 
     /** */
     private final CacheStore<K, Object> store;
@@ -95,7 +96,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (!sesHolders.containsKey(cfgStore)) {
                     sesHolder0 = new ThreadLocal<>();
 
-                    Field sesField = CacheStore.class.getDeclaredField("ses");
+                    Field sesField = CacheStore.class.getDeclaredField(SES_FIELD_NAME);
 
                     sesField.setAccessible(true);
 
@@ -244,7 +245,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable public Object loadFromStore(@Nullable IgniteTx tx, K key, boolean convert) throws IgniteCheckedException {
+    @Nullable private Object loadFromStore(@Nullable IgniteTx tx,
+        K key,
+        boolean convert)
+        throws IgniteCheckedException {
         if (store != null) {
             if (key instanceof GridCacheInternal)
                 // Never load internal keys from store as they are never persisted.
@@ -317,11 +321,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     public void localStoreLoadAll(@Nullable IgniteTx tx,
         Collection<? extends K> keys,
-        final GridInClosure3<K, V, GridCacheVersion> vis) throws IgniteCheckedException {
+        final GridInClosure3<K, V, GridCacheVersion> vis)
+        throws IgniteCheckedException {
         assert store != null;
         assert locStore;
 
-        loadAllFromStore(null, keys, null, vis);
+        loadAllFromStore(tx, keys, null, vis);
     }
 
     /**
@@ -361,7 +366,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private void loadAllFromStore(@Nullable IgniteTx tx,
         Collection<? extends K> keys,
         final @Nullable IgniteBiInClosure<K, V> vis,
-        final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis) throws IgniteCheckedException {
+        final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis)
+        throws IgniteCheckedException {
         assert vis != null ^ verVis != null;
         assert verVis == null || locStore;
 
@@ -482,11 +488,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     }
                 }, args);
             }
-            catch (Exception e) {
-                throw U.cast(e);
-            }
-            catch (AssertionError e) {
+            catch (CacheLoaderException e) {
                 throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheLoaderException(e));
             }
 
             if (log.isDebugEnabled())
@@ -534,8 +540,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (ClassCastException e) {
                 handleClassCastException(e);
             }
-            catch (Exception e) {
+            catch (CacheWriterException e) {
                 throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheWriterException(e));
             }
             finally {
                 sesHolder.set(null);
@@ -612,6 +621,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         throw new CacheStorePartialUpdateException(keys, e);
                     }
 
+                    if (!(e instanceof CacheWriterException))
+                        e = new CacheWriterException(e);
+
                     throw new IgniteCheckedException(e);
                 }
                 finally {
@@ -654,8 +666,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (ClassCastException e) {
                 handleClassCastException(e);
             }
-            catch (Exception e) {
+            catch (CacheWriterException e) {
                 throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheWriterException(e));
             }
             finally {
                 sesHolder.set(null);
@@ -705,6 +720,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (Exception e) {
                 if (!keys0.isEmpty())
                     throw new CacheStorePartialUpdateException(keys0, e);
+
+                if (!(e instanceof CacheWriterException))
+                    e = new CacheWriterException(e);
 
                 throw new IgniteCheckedException(e);
             }

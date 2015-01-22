@@ -4670,9 +4670,7 @@ public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter im
         ctx.denyOnFlag(READ);
 
         return ctx.closures().callLocalSafe(ctx.projectSafe(new GPC() {
-            @Nullable
-            @Override
-            public Object call() throws IgniteCheckedException {
+            @Nullable @Override public Object call() throws IgniteCheckedException {
                 reloadAll(filter);
 
                 return null;

@@ -46,7 +46,7 @@ public class VisorCacheDefaultConfiguration implements Serializable {
     private long txLockTimeout;
 
     /** Default query timeout. */
-    private long queryTimeout;
+    private long qryTimeout;
 
     /**
      * @param ccfg Cache configuration.
@@ -141,14 +141,14 @@ public class VisorCacheDefaultConfiguration implements Serializable {
      * @return Default query timeout.
      */
     public long queryTimeout() {
-        return queryTimeout;
+        return qryTimeout;
     }
 
     /**
      * @param qryTimeout New default query timeout.
      */
     public void queryTimeout(long qryTimeout) {
-        queryTimeout = qryTimeout;
+        this.qryTimeout = qryTimeout;
     }
 
     /** {@inheritDoc} */

@@ -18,6 +18,7 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.portables.PortableObject;
@@ -159,6 +160,9 @@ public class CacheConfiguration extends MutableConfiguration {
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
+    /** Default value for load previous value flag. */
+    public static final boolean DFLT_LOAD_PREV_VAL = false;
+
     /** Default continuous query buffers queue size. */
     @SuppressWarnings("UnusedDeclaration")
     @Deprecated
@@ -242,7 +246,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private Factory storeFactory;
 
     /** */
-    private boolean loadPrevVal;
+    private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
 
     /** Node group resolver. */
     private GridCacheAffinityFunction aff;
@@ -803,14 +807,41 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * @return
+     * Gets flag indicating whether value should be loaded from store if it is not in the cache
+     * for following cache operations:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     *
+     * @return Load previous value flag.
      */
     public boolean isLoadPreviousValue() {
         return loadPrevVal;
     }
 
     /**
-     * @param loadPrevVal
+     * Sets flag indicating whether value should be loaded from store if it is not in the cache
+     * for following cache operations:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     * When not set, default value is {@link #DFLT_LOAD_PREV_VAL}.
+     *
+     * @param loadPrevVal Load previous value flag.
      */
     public void setLoadPreviousValue(boolean loadPrevVal) {
         this.loadPrevVal = loadPrevVal;

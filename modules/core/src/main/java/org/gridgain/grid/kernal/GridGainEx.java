@@ -2065,6 +2065,7 @@ public class GridGainEx {
         /**
          * Creates utility system cache configuration.
          *
+         * @param client If {@code true} creates client-only cache configuration.
          * @return Utility system cache configuration.
          */
         private CacheConfiguration utilitySystemCache(boolean client) {

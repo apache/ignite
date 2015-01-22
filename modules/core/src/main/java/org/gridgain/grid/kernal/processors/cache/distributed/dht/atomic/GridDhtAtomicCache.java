@@ -535,7 +535,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /**
-     * @return {@code True} if store enabled.
+     * @return {@code True} if store write-through enabled.
      */
     private boolean writeThrough() {
         return ctx.writeThrough() && ctx.store().configured();
@@ -875,7 +875,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
                 if (key == null)
-                    return new GridFinishedFuture<>(ctx.kernalContext(), new IgniteNullArgumentCheckedException("Key is null."));
+                    return new GridFinishedFuture<>(ctx.kernalContext(),
+                        new IgniteNullArgumentCheckedException("Key is null."));
 
                 GridCacheEntryEx<K, V> entry = null;
 
