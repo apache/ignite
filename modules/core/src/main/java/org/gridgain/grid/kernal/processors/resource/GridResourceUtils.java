@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 
 import java.lang.reflect.*;
 import java.util.concurrent.*;
@@ -99,6 +100,7 @@ final class GridResourceUtils {
 
         // Need to inspect anonymous classes, callable and runnable instances.
         return f.getName().startsWith("this$") || f.getName().startsWith("val$") ||
-            Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType());
+                Callable.class.isAssignableFrom(f.getType()) || Runnable.class.isAssignableFrom(f.getType()) ||
+                IgniteClosure.class.isAssignableFrom(f.getType());
     }
 }
