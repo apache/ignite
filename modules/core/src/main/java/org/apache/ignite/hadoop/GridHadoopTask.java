@@ -15,41 +15,59 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 import org.apache.ignite.*;
+import org.gridgain.grid.*;
 
-import java.util.*;
+import java.io.*;
 
 /**
- * Task input.
+ * Hadoop task.
  */
-public interface GridHadoopTaskInput extends AutoCloseable {
-    /**
-     * Moves cursor to the next element.
-     *
-     * @return {@code false} If input is exceeded.
-     */
-    boolean next();
+public abstract class GridHadoopTask {
+    /** */
+    private GridHadoopTaskInfo taskInfo;
 
     /**
-     * Gets current key.
+     * Creates task.
      *
-     * @return Key.
+     * @param taskInfo Task info.
      */
-    Object key();
+    protected GridHadoopTask(GridHadoopTaskInfo taskInfo) {
+        assert taskInfo != null;
+
+        this.taskInfo = taskInfo;
+    }
 
     /**
-     * Gets values for current key.
-     *
-     * @return Values.
+     * For {@link Externalizable}.
      */
-    Iterator<?> values();
+    @SuppressWarnings("ConstructorNotProtectedInAbstractClass")
+    public GridHadoopTask() {
+        // No-op.
+    }
 
     /**
-     * Closes input.
+     * Gets task info.
      *
+     * @return Task info.
+     */
+    public GridHadoopTaskInfo info() {
+        return taskInfo;
+    }
+
+    /**
+     * Runs task.
+     *
+     * @param taskCtx Context.
+     * @throws GridInterruptedException If interrupted.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void close() throws IgniteCheckedException;
+    public abstract void run(GridHadoopTaskContext taskCtx) throws IgniteCheckedException;
+
+    /**
+     * Interrupts task execution.
+     */
+    public abstract void cancel();
 }

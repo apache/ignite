@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v1;
 
 import org.apache.hadoop.mapred.JobConf;
 import org.apache.hadoop.mapred.TaskAttemptID;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.jetbrains.annotations.*;

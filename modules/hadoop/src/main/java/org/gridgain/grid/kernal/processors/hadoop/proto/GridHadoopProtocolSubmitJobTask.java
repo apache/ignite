@@ -19,12 +19,11 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
 
 /**
  * Submit job task.

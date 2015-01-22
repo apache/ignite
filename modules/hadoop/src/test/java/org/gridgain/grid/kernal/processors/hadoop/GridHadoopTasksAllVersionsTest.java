@@ -21,8 +21,7 @@ import com.google.common.base.*;
 import org.apache.hadoop.io.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 

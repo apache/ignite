@@ -15,19 +15,42 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
+
+import org.jetbrains.annotations.*;
 
 /**
- * Partitioner.
- */
-public interface GridHadoopPartitioner {
+* Task type.
+*/
+public enum GridHadoopTaskType {
+    /** Setup task. */
+    SETUP,
+
+    /** Map task. */
+    MAP,
+
+    /** Reduce task. */
+    REDUCE,
+
+    /** Combine task. */
+    COMBINE,
+
+    /** Commit task. */
+    COMMIT,
+
+    /** Abort task. */
+    ABORT;
+
+    /** Enumerated values. */
+    private static final GridHadoopTaskType[] VALS = values();
+
     /**
-     * Gets partition which is actually a reducer index for the given key and value pair.
+     * Efficiently gets enumerated value from its ordinal.
      *
-     * @param key Key.
-     * @param val Value.
-     * @param parts Number of partitions.
-     * @return Partition.
+     * @param ord Ordinal value.
+     * @return Enumerated value.
      */
-    public int partition(Object key, Object val, int parts);
+    @Nullable public static GridHadoopTaskType fromOrdinal(byte ord) {
+        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
+    }
 }

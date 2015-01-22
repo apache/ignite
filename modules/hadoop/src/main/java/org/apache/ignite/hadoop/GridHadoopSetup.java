@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -104,7 +104,7 @@ public class GridHadoopSetup {
         }
 
         File hadoopDir = new File(hadoopHome);
-        
+
         if (!hadoopDir.exists())
             exit("Hadoop installation folder does not exist.", null);
 

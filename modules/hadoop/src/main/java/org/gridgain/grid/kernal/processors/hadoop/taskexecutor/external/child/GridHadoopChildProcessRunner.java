@@ -19,8 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.child;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
@@ -35,7 +34,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
+import static org.apache.ignite.hadoop.GridHadoopTaskType.*;
 
 /**
  * Hadoop process base.

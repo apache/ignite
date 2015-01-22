@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 import java.io.*;
 

@@ -20,8 +20,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapred.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 
 import java.io.*;

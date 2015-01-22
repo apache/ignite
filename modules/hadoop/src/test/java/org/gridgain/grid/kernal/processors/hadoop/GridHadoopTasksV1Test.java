@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.mapred.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.examples.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 

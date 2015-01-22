@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.jobtracker;
 
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.tostring.*;
@@ -26,7 +26,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
 
 /**
  * Hadoop job metadata. Internal object used for distributed job state tracking.

@@ -15,22 +15,19 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
-
-import org.apache.ignite.*;
+package org.apache.ignite.hadoop;
 
 /**
- * The object that writes some system counters to some storage for each running job. This operation is a part of
- * whole statistics collection process.
+ * Partitioner.
  */
-public interface GridHadoopCounterWriter {
+public interface GridHadoopPartitioner {
     /**
-     * Writes counters of given job to some statistics storage.
+     * Gets partition which is actually a reducer index for the given key and value pair.
      *
-     * @param jobInfo Job info.
-     * @param jobId Job id.
-     * @param cntrs Counters.
-     * @throws IgniteCheckedException If failed.
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
      */
-    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IgniteCheckedException;
+    public int partition(Object key, Object val, int parts);
 }

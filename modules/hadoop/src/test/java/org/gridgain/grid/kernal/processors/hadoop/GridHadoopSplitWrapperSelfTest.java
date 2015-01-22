@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
-import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.testframework.*;
 

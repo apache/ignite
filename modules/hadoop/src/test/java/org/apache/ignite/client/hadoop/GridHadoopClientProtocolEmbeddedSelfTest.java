@@ -17,7 +17,7 @@
 
 package org.apache.ignite.client.hadoop;
 
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 /**
  * Hadoop client protocol tests in embedded process mode.

@@ -32,7 +32,7 @@ import org.apache.hadoop.security.token.*;
 import org.apache.ignite.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.hadoop.counter.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
 import org.gridgain.grid.util.typedef.internal.*;

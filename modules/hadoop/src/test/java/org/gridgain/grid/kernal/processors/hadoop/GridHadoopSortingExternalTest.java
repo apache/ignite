@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop;
 
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 /**
  * External test for sorting.

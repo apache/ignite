@@ -15,40 +15,22 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
-import java.io.*;
+import org.apache.ignite.*;
 
 /**
- * Abstract fragment of an input data source.
+ * The object that writes some system counters to some storage for each running job. This operation is a part of
+ * whole statistics collection process.
  */
-public abstract class GridHadoopInputSplit implements Externalizable {
-    /** */
-    protected String[] hosts;
-
+public interface GridHadoopCounterWriter {
     /**
-     * Array of hosts where this input split resides.
+     * Writes counters of given job to some statistics storage.
      *
-     * @return Hosts.
+     * @param jobInfo Job info.
+     * @param jobId Job id.
+     * @param cntrs Counters.
+     * @throws IgniteCheckedException If failed.
      */
-    public String[] hosts() {
-        assert hosts != null;
-
-        return hosts;
-    }
-
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @param obj Another object.
-     * @return {@code true} If objects are equal.
-     */
-    @Override public abstract boolean equals(Object obj);
-
-    /**
-     * This method must be implemented for purpose of internal implementation.
-     *
-     * @return Hash code of the object.
-     */
-    @Override public abstract int hashCode();
+    public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs) throws IgniteCheckedException;
 }

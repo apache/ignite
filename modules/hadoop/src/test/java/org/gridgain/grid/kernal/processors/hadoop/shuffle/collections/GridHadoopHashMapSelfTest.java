@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import com.google.common.collect.*;
 import org.apache.hadoop.io.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.offheap.unsafe.*;
 import org.gridgain.grid.util.typedef.*;

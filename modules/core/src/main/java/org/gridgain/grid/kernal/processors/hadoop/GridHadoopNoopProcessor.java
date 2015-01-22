@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.util.future.*;
 

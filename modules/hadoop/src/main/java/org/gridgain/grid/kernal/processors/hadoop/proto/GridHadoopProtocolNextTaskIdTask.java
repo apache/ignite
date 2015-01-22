@@ -19,8 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop.proto;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 /**
  * Task to get the next job ID.

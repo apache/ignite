@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

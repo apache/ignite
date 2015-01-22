@@ -19,8 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 
 import org.apache.hadoop.io.serializer.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import java.io.*;
 
 import org.jetbrains.annotations.*;

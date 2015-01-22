@@ -22,7 +22,7 @@ import org.apache.hadoop.mapred.*;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;

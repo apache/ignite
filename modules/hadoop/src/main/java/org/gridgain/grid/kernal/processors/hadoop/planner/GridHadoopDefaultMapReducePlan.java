@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.planner;
 
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

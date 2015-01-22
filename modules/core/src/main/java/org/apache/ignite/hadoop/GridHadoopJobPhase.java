@@ -15,30 +15,24 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 /**
- * Hadoop counter.
+ * Job run phase.
  */
-public interface GridHadoopCounter {
-    /**
-     * Gets name.
-     *
-     * @return Name of the counter.
-     */
-    public String name();
+public enum GridHadoopJobPhase {
+    /** Job is running setup task. */
+    PHASE_SETUP,
 
-    /**
-     * Gets counter group.
-     *
-     * @return Counter group's name.
-     */
-    public String group();
+    /** Job is running map and combine tasks. */
+    PHASE_MAP,
 
-    /**
-     * Merge the given counter to this counter.
-     *
-     * @param cntr Counter to merge into this counter.
-     */
-    public void merge(GridHadoopCounter cntr);
+    /** Job has finished all map tasks and running reduce tasks. */
+    PHASE_REDUCE,
+
+    /** Job is stopping due to exception during any of the phases. */
+    PHASE_CANCELLING,
+
+    /** Job has finished execution. */
+    PHASE_COMPLETE
 }

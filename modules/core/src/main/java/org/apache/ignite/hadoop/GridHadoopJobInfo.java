@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

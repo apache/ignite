@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.hadoop.counter;
 
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

@@ -22,7 +22,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
@@ -44,8 +44,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.gridgain.grid.hadoop.GridHadoopJobPhase.*;
-import static org.gridgain.grid.hadoop.GridHadoopTaskType.*;
+import static org.apache.ignite.hadoop.GridHadoopJobPhase.*;
+import static org.apache.ignite.hadoop.GridHadoopTaskType.*;
 import static org.gridgain.grid.kernal.processors.hadoop.taskexecutor.GridHadoopTaskState.*;
 
 /**

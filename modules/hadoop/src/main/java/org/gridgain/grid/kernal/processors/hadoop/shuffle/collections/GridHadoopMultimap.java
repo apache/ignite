@@ -18,8 +18,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.shuffle.collections;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.hadoop.v2;
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.util.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 /**
  * Hadoop partitioner adapter for v2 API.

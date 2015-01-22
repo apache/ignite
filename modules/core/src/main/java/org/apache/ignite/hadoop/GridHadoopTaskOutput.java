@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
+
+import org.apache.ignite.*;
 
 /**
- * Job run phase.
+ * Task output.
  */
-public enum GridHadoopJobPhase {
-    /** Job is running setup task. */
-    PHASE_SETUP,
+public interface GridHadoopTaskOutput extends AutoCloseable {
+    /**
+     * Writes key and value to the output.
+     *
+     * @param key Key.
+     * @param val Value.
+     */
+    public void write(Object key, Object val) throws IgniteCheckedException;
 
-    /** Job is running map and combine tasks. */
-    PHASE_MAP,
-
-    /** Job has finished all map tasks and running reduce tasks. */
-    PHASE_REDUCE,
-
-    /** Job is stopping due to exception during any of the phases. */
-    PHASE_CANCELLING,
-
-    /** Job has finished execution. */
-    PHASE_COMPLETE
+    /**
+     * Closes output.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override public void close() throws IgniteCheckedException;
 }

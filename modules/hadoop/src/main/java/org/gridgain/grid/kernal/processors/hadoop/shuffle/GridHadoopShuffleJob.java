@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.util.future.*;
@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.hadoop.GridHadoopJobProperty.*;
+import static org.apache.ignite.hadoop.GridHadoopJobProperty.*;
 import static org.gridgain.grid.util.offheap.unsafe.GridUnsafeMemory.*;
 
 /**

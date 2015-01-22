@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 
 /**
  * Hadoop reduce task implementation for v2 API.

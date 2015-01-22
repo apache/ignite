@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 import com.google.common.base.Joiner;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.jobtracker.*;

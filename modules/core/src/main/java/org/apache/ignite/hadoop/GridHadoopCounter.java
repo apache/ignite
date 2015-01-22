@@ -15,35 +15,30 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
-
-import java.util.*;
+package org.apache.ignite.hadoop;
 
 /**
- * Counters store.
+ * Hadoop counter.
  */
-public interface GridHadoopCounters {
+public interface GridHadoopCounter {
     /**
-     * Returns counter for the specified group and counter name. Creates new if it does not exist.
+     * Gets name.
      *
-     * @param grp Counter group name.
-     * @param name Counter name.
-     * @param cls Class for new instance creation if it's needed.
-     * @return The counter that was found or added or {@code null} if create is false.
+     * @return Name of the counter.
      */
-    <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls);
+    public String name();
 
     /**
-     * Returns all existing counters.
+     * Gets counter group.
      *
-     * @return Collection of counters.
+     * @return Counter group's name.
      */
-    Collection<GridHadoopCounter> all();
+    public String group();
 
     /**
-     * Merges all counters from another store with existing counters.
+     * Merge the given counter to this counter.
      *
-     * @param other Counters to merge with.
+     * @param cntr Counter to merge into this counter.
      */
-    void merge(GridHadoopCounters other);
+    public void merge(GridHadoopCounter cntr);
 }

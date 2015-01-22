@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+import org.jetbrains.annotations.*;
+
+import java.util.*;
 
 /**
- * Task output.
+ * Map-reduce execution planner.
  */
-public interface GridHadoopTaskOutput extends AutoCloseable {
+public interface GridHadoopMapReducePlanner {
     /**
-     * Writes key and value to the output.
+     * Prepares map-reduce execution plan for the given job and topology.
      *
-     * @param key Key.
-     * @param val Value.
+     * @param job Job.
+     * @param top Topology.
+     * @param oldPlan Old plan in case of partial failure.
+     * @return Map reduce plan.
      */
-    public void write(Object key, Object val) throws IgniteCheckedException;
-
-    /**
-     * Closes output.
-     *
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public void close() throws IgniteCheckedException;
+    public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
+        @Nullable GridHadoopMapReducePlan oldPlan) throws IgniteCheckedException;
 }

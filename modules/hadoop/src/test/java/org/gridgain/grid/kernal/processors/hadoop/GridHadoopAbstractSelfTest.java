@@ -21,7 +21,7 @@ import org.apache.hadoop.conf.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.testframework.junits.common.*;

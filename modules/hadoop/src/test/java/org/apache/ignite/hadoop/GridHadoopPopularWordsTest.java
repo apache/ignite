@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 import com.google.common.collect.*;
 import org.apache.hadoop.conf.*;

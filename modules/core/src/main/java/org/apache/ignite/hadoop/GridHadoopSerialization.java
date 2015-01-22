@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
+package org.apache.ignite.hadoop;
 
 import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
@@ -47,7 +47,7 @@ public interface GridHadoopSerialization extends AutoCloseable {
 
     /**
      * Finalise the internal objects.
-     * 
+     *
      * @throws IgniteCheckedException If failed.
      */
     @Override public void close() throws IgniteCheckedException;

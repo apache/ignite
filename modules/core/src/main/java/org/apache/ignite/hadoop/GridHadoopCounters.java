@@ -15,26 +15,35 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.hadoop;
-
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.jetbrains.annotations.*;
+package org.apache.ignite.hadoop;
 
 import java.util.*;
 
 /**
- * Map-reduce execution planner.
+ * Counters store.
  */
-public interface GridHadoopMapReducePlanner {
+public interface GridHadoopCounters {
     /**
-     * Prepares map-reduce execution plan for the given job and topology.
+     * Returns counter for the specified group and counter name. Creates new if it does not exist.
      *
-     * @param job Job.
-     * @param top Topology.
-     * @param oldPlan Old plan in case of partial failure.
-     * @return Map reduce plan.
+     * @param grp Counter group name.
+     * @param name Counter name.
+     * @param cls Class for new instance creation if it's needed.
+     * @return The counter that was found or added or {@code null} if create is false.
      */
-    public GridHadoopMapReducePlan preparePlan(GridHadoopJob job, Collection<ClusterNode> top,
-        @Nullable GridHadoopMapReducePlan oldPlan) throws IgniteCheckedException;
+    <T extends GridHadoopCounter> T counter(String grp, String name, Class<T> cls);
+
+    /**
+     * Returns all existing counters.
+     *
+     * @return Collection of counters.
+     */
+    Collection<GridHadoopCounter> all();
+
+    /**
+     * Merges all counters from another store with existing counters.
+     *
+     * @param other Counters to merge with.
+     */
+    void merge(GridHadoopCounters other);
 }

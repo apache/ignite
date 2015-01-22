@@ -21,7 +21,7 @@ package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 import org.apache.ignite.*;
 import org.apache.ignite.thread.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.worker.*;
 import org.jdk8.backport.*;
 

@@ -19,8 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.serializer.*;
-import org.apache.hadoop.io.serializer.avro.AvroReflectSerialization;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
 import org.gridgain.testframework.junits.common.*;
 
