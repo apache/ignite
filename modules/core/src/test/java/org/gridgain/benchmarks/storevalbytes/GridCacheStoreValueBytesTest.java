@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.loadtests.util.*;
+import org.apache.ignite.loadtests.util.*;
 
 import java.util.*;
 import java.util.concurrent.*;

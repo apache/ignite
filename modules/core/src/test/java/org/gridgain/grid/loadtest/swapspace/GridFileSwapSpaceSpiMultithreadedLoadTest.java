@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.loadtests.util.*;
+import org.apache.ignite.loadtests.util.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;

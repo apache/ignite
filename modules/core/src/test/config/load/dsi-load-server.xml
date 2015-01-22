@@ -78,6 +78,6 @@
     </bean>
 
     <util:list id="lifecycleBeans">
-        <bean class="org.gridgain.loadtests.dsi.GridDsiLifecycleBean"/>
+        <bean class="org.apache.ignite.loadtests.dsi.GridDsiLifecycleBean"/>
     </util:list>
 </beans>
