@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.clock;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.kernal.*;

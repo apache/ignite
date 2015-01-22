@@ -21,9 +21,9 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;

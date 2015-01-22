@@ -19,6 +19,7 @@ package org.gridgain.testframework.junits;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.*;

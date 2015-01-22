@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.internal.*;
 
 /**
  * Test kernal utils.

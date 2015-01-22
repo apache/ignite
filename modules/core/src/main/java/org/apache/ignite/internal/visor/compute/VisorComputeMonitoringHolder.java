@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.visor.compute;
 
+import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
