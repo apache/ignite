@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util.portable;
 
 import org.apache.ignite.portables.*;
-import org.gridgain.grid.kernal.processors.portable.*;
 import org.jetbrains.annotations.*;
 
 /**

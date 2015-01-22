@@ -15,24 +15,35 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.dr;
+package org.apache.ignite.internal.processors.interop;
+
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 
 /**
- * Data center replication type.
+ * Interface for interop-aware components.
  */
-public enum GridDrType {
-    /** Do not replicate that entry. */
-    DR_NONE,
+public interface GridInteropAware {
+    /**
+     * Sets configuration parameters.
+     *
+     * @param params Configuration parameters.
+     */
+    public void configure(Object... params);
 
-    /** Regular replication on primary node. */
-    DR_PRIMARY,
+    /**
+     * Initializes interop-aware component.
+     *
+     * @param ctx Context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void initialize(GridKernalContext ctx) throws IgniteCheckedException;
 
-    /** Regular replication on backup node. */
-    DR_BACKUP,
-
-    /** Replication during load. */
-    DR_LOAD,
-
-    /** Replication during preload. */
-    DR_PRELOAD
+    /**
+     * Destroys interop-aware component.
+     *
+     * @param ctx Context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void destroy(GridKernalContext ctx) throws IgniteCheckedException;
 }

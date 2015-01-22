@@ -15,39 +15,24 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.portable;
+package org.apache.ignite.internal.processors.dr;
 
 /**
- * Portable stream.
+ * Data center replication type.
  */
-public interface GridPortableStream {
-    /**
-     * @return Position.
-     */
-    public int position();
+public enum GridDrType {
+    /** Do not replicate that entry. */
+    DR_NONE,
 
-    /**
-     * @param pos Position.
-     */
-    public void position(int pos);
+    /** Regular replication on primary node. */
+    DR_PRIMARY,
 
-    /**
-     * @return Underlying array.
-     */
-    public byte[] array();
+    /** Regular replication on backup node. */
+    DR_BACKUP,
 
-    /**
-     * @return Copy of data in the stream.
-     */
-    public byte[] arrayCopy();
+    /** Replication during load. */
+    DR_LOAD,
 
-    /**
-     * @return Offheap pointer if stream is offheap based, otherwise {@code 0}.
-     */
-    public long offheapPointer();
-
-    /**
-     * @return {@code True} is stream is array based.
-     */
-    public boolean hasArray();
+    /** Replication during preload. */
+    DR_PRELOAD
 }

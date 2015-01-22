@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.portable.os;
+package org.apache.ignite.internal.processors.portable.os;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.client.marshaller.*;
-import org.gridgain.grid.kernal.processors.portable.*;
 import org.jetbrains.annotations.*;
 
 import java.nio.*;

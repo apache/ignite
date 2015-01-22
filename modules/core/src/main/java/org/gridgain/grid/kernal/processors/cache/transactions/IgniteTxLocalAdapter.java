@@ -27,7 +27,7 @@ import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
-import org.gridgain.grid.kernal.processors.dr.*;
+import org.apache.ignite.internal.processors.dr.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * Transaction adapter for cache transactions.

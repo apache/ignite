@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.portable;
+package org.apache.ignite.internal.processors.portable;
 
 /**
  * Portable input stream.

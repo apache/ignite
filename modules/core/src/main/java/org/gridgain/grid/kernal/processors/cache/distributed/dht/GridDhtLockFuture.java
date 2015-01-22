@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * Cache lock future.

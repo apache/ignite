@@ -40,7 +40,7 @@ import java.util.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * Near cache for atomic cache.

@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.interop.os;
+package org.apache.ignite.internal.processors.interop.os;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.gridgain.grid.kernal.processors.interop.*;
+import org.apache.ignite.internal.processors.interop.*;
 import org.jetbrains.annotations.*;
 
 /**

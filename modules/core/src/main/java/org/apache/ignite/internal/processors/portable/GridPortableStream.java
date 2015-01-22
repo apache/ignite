@@ -15,16 +15,39 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.clock;
+package org.apache.ignite.internal.processors.portable;
 
 /**
- * Interface representing time source for time processor.
+ * Portable stream.
  */
-public interface GridClockSource {
+public interface GridPortableStream {
     /**
-     * Gets current time in milliseconds past since 1 January, 1970.
-     *
-     * @return Current time in milliseconds.
+     * @return Position.
      */
-    public long currentTimeMillis();
+    public int position();
+
+    /**
+     * @param pos Position.
+     */
+    public void position(int pos);
+
+    /**
+     * @return Underlying array.
+     */
+    public byte[] array();
+
+    /**
+     * @return Copy of data in the stream.
+     */
+    public byte[] arrayCopy();
+
+    /**
+     * @return Offheap pointer if stream is offheap based, otherwise {@code 0}.
+     */
+    public long offheapPointer();
+
+    /**
+     * @return {@code True} is stream is array based.
+     */
+    public boolean hasArray();
 }

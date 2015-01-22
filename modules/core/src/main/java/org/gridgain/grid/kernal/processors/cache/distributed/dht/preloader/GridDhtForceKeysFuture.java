@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.gridgain.grid.kernal.processors.cache.distributed.dht.GridDhtPartitionState.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * Force keys request future.

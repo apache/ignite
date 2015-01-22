@@ -55,7 +55,7 @@ import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheOperation.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * Non-transactional partitioned cache.

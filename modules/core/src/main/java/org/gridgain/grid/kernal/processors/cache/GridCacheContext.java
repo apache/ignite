@@ -44,7 +44,6 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.apache.ignite.internal.processors.offheap.*;
-import org.gridgain.grid.kernal.processors.portable.*;
 import org.apache.ignite.internal.processors.timeout.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.internal.util.typedef.*;

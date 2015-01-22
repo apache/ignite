@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.clock;
+package org.apache.ignite.internal.processors.clock;
 
 /**
- * JVM time source.
+ * Interface representing time source for time processor.
  */
-public class GridJvmClockSource implements GridClockSource {
-    /** {@inheritDoc} */
-    @Override public long currentTimeMillis() {
-        return System.currentTimeMillis();
-    }
+public interface GridClockSource {
+    /**
+     * Gets current time in milliseconds past since 1 January, 1970.
+     *
+     * @return Current time in milliseconds.
+     */
+    public long currentTimeMillis();
 }

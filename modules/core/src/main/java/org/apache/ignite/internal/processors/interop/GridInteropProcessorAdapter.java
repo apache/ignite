@@ -15,35 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.interop;
+package org.apache.ignite.internal.processors.interop;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 
 /**
- * Interface for interop-aware components.
+ * Interop processor adapter.
  */
-public interface GridInteropAware {
-    /**
-     * Sets configuration parameters.
-     *
-     * @param params Configuration parameters.
-     */
-    public void configure(Object... params);
-
-    /**
-     * Initializes interop-aware component.
-     *
-     * @param ctx Context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void initialize(GridKernalContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Destroys interop-aware component.
-     *
-     * @param ctx Context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void destroy(GridKernalContext ctx) throws IgniteCheckedException;
+public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter implements GridInteropProcessor {
+    /** {@inheritDoc} */
+    protected GridInteropProcessorAdapter(GridKernalContext ctx) {
+        super(ctx);
+    }
 }

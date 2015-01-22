@@ -15,17 +15,14 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.interop;
-
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.*;
+package org.apache.ignite.internal.processors.clock;
 
 /**
- * Interop processor adapter.
+ * JVM time source.
  */
-public abstract class GridInteropProcessorAdapter extends GridProcessorAdapter implements GridInteropProcessor {
+public class GridJvmClockSource implements GridClockSource {
     /** {@inheritDoc} */
-    protected GridInteropProcessorAdapter(GridKernalContext ctx) {
-        super(ctx);
+    @Override public long currentTimeMillis() {
+        return System.currentTimeMillis();
     }
 }

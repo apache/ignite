@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.interop.*;
+import org.apache.ignite.internal.processors.interop.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

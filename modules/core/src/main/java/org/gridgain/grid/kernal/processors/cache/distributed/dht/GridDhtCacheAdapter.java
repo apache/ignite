@@ -40,7 +40,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.gridgain.grid.kernal.processors.cache.GridCacheUtils.*;
-import static org.gridgain.grid.kernal.processors.dr.GridDrType.*;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * DHT cache adapter.

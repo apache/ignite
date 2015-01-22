@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.interop;
+package org.apache.ignite.internal.processors.interop;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.clock;
+package org.apache.ignite.internal.processors.clock;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.direct.*;
