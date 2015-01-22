@@ -1033,8 +1033,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     private CacheException cacheException(IgniteCheckedException e) {
         if (e instanceof GridCachePartialUpdateException)
             return new CachePartialUpdateException((GridCachePartialUpdateException)e);
-        else if (e instanceof IgniteNullArgumentCheckedException)
-            throw new NullPointerException(e.getMessage());
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
