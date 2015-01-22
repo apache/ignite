@@ -18,6 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -28,6 +30,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -70,6 +73,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     protected abstract GridCacheMode cacheMode();
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -79,7 +83,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
@@ -88,7 +92,10 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         cc.setDistributionMode(distributionMode());
         cc.setPreloadMode(SYNC);
 
-        cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
 
@@ -476,7 +483,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
 
         for (int i = 1; i <= 10; i++)
-            store.put(null, i, "reloaded-" + i);
+            store.write(new CacheEntryImpl<>(i, "reloaded-" + i));
 
         cache.reloadAll(vals.keySet());
 
@@ -543,7 +550,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
         }
 
         for (int i = 1; i <= 10; i++)
-            store.put(null, i, "reloaded-" + i);
+            store.write(new CacheEntryImpl<>(i, "reloaded-" + i));
 
         store.resetLastMethod();
 

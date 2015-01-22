@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -33,7 +33,7 @@ public class GridCacheReplicatedTxMultiNodeBasicTest extends IgniteTxMultiNodeAb
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Default cache configuration.
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

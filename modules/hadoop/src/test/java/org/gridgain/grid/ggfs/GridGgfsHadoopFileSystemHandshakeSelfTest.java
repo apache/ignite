@@ -21,9 +21,9 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -34,6 +34,7 @@ import org.gridgain.testframework.*;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -206,7 +207,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
 
         cfg.setCommunicationSpi(commSpi);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -214,7 +215,7 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration dataCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
         dataCacheCfg.setName("partitioned");
         dataCacheCfg.setCacheMode(PARTITIONED);
@@ -234,7 +235,11 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
         ggfsCfg.setName(dfltGgfsName ? null : GGFS_NAME);
         ggfsCfg.setPrefetchBlocks(1);
         ggfsCfg.setDefaultMode(PRIMARY);
-        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap("{type:'tcp', port:" + DFLT_IPC_PORT + "}"));
+        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            put("type", "tcp");
+            put("port", String.valueOf(DFLT_IPC_PORT));
+        }});
+
         ggfsCfg.setManagementPort(-1);
         ggfsCfg.setBlockSize(512 * 1024);
 

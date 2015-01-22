@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query.reducefields;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -76,8 +77,8 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @param name Cache name.
      * @return Cache.
      */
-    private GridCacheConfiguration cache(@Nullable String name) {
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+    private CacheConfiguration cache(@Nullable String name) {
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setName(name);
         cache.setCacheMode(cacheMode());

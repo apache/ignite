@@ -31,7 +31,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -49,7 +49,7 @@
                     <property name="preloadMode" value="SYNC"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned_tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -67,7 +67,7 @@
                     <property name="preloadMode" value="SYNC"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <property name="cacheMode" value="REPLICATED"/>

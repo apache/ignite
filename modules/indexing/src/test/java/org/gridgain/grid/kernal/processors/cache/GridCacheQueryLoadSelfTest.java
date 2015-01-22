@@ -18,15 +18,15 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.util.typedef.*;
@@ -34,6 +34,8 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -58,16 +60,20 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        cache.setCacheMode(REPLICATED);
-        cache.setStore(new TestStore());
-        cache.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setCacheMode(REPLICATED);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cfg.setCacheConfiguration(cache);
+        cfg.setCacheConfiguration(ccfg);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -390,10 +396,9 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Integer, ValueObject> {
+    private static class TestStore extends CacheStoreAdapter<Integer, ValueObject> {
         /** {@inheritDoc} */
-        @Override public void loadCache(IgniteBiInClosure<Integer, ValueObject> clo,
-            @Nullable Object... args) throws IgniteCheckedException {
+        @Override public void loadCache(IgniteBiInClosure<Integer, ValueObject> clo, @Nullable Object... args) {
             assert clo != null;
 
             for (int i = 0; i < PUT_CNT; i++)
@@ -401,25 +406,23 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ValueObject load(@Nullable IgniteTx tx,
-            Integer key) throws IgniteCheckedException {
+        @Override public ValueObject load(Integer key) {
             assert key != null;
 
             return STORE_MAP.get(key);
         }
 
         /** {@inheritDoc} */
-        @Override public void put(@Nullable IgniteTx tx,
-            Integer key, ValueObject val) throws IgniteCheckedException {
-            assert key != null;
-            assert val != null;
+        @Override public void write(Cache.Entry<? extends Integer, ? extends ValueObject> e) {
+            assert e != null;
+            assert e.getKey() != null;
+            assert e.getValue() != null;
 
-            STORE_MAP.put(key, val);
+            STORE_MAP.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(@Nullable IgniteTx tx,
-            Integer key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             assert key != null;
 
             STORE_MAP.remove(key);

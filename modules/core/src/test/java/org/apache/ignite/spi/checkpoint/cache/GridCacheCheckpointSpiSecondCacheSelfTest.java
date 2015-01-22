@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -55,13 +56,13 @@ public class GridCacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstrac
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cacheCfg1 = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg1 = defaultCacheConfiguration();
 
         cacheCfg1.setName(DATA_CACHE);
         cacheCfg1.setCacheMode(REPLICATED);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
 
-        GridCacheConfiguration cacheCfg2 = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg2 = defaultCacheConfiguration();
 
         cacheCfg2.setName(CP_CACHE);
         cacheCfg2.setCacheMode(REPLICATED);

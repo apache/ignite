@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -62,7 +63,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         discoSpi.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(evictionPlc);

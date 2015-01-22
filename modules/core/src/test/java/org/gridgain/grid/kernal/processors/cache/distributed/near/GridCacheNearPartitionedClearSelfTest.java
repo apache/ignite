@@ -18,16 +18,19 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
+
+import javax.cache.configuration.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -50,7 +53,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private static GridCacheStore<Object, Object> store = new GridCacheGenericTestStore<>();
+    private static CacheStore<Object, Object> store = new GridCacheGenericTestStore<>();
 
     /** Shared IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -77,7 +80,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(CACHE_NAME);
         ccfg.setCacheMode(PARTITIONED);
@@ -86,7 +89,10 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         ccfg.setPreloadMode(SYNC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(BACKUP_CNT);
-        ccfg.setStore(store);
+        ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        ccfg.setReadThrough(true);
+        ccfg.setWriteThrough(true);
+        ccfg.setLoadPreviousValue(true);
 
         cfg.setCacheConfiguration(ccfg);
 

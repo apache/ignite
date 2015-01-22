@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -29,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
 import javax.cache.event.*;
+import javax.cache.event.CacheEntryEvent;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 
@@ -61,8 +63,8 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         if (lsnrCfg != null)
             cfg.addCacheEntryListenerConfiguration(lsnrCfg);
@@ -840,7 +842,7 @@ public abstract class IgniteCacheEntryListenerAbstractTest extends IgniteCacheAb
     }
 
     /**
-     * @return Value for configuration property {@link GridCacheConfiguration#isEagerTtl()}.
+     * @return Value for configuration property {@link CacheConfiguration#isEagerTtl()}.
      */
     protected boolean eagerTtl() {
         return true;

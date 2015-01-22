@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
@@ -39,8 +40,8 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration(String gridName) {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(String gridName) {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(GridCacheMode.PARTITIONED);
 

@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -76,7 +76,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -186,7 +186,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        GridCacheConfiguration cfg = g.cache(null).configuration();
+        CacheConfiguration cfg = g.cache(null).configuration();
 
         assertEquals(memoryMode, cfg.getMemoryMode());
         assertEquals(0, cfg.getOffHeapMaxMemory());

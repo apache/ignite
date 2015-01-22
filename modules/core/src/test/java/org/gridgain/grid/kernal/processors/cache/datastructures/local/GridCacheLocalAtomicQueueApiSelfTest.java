@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.local;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 
@@ -30,7 +30,7 @@ public class GridCacheLocalAtomicQueueApiSelfTest extends GridCacheLocalQueueApi
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
 
-        GridCacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
+        CacheConfiguration ccfg = cfg.getCacheConfiguration()[0];
 
         ccfg.setAtomicityMode(ATOMIC);
 

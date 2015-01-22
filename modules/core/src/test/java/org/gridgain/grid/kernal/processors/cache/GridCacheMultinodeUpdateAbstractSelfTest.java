@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 
@@ -44,7 +44,7 @@ public abstract class GridCacheMultinodeUpdateAbstractSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected GridCacheStore<?, ?> cacheStore() {
+    @Nullable @Override protected CacheStore<?, ?> cacheStore() {
         return null;
     }
 

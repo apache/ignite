@@ -37,7 +37,7 @@
 
         <property name="cacheConfiguration">
             <util:list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="REPLICATED_CACHE"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -46,7 +46,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="swapEnabled" value="false"/>
                 </bean>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="PARTITIONED_CACHE"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>

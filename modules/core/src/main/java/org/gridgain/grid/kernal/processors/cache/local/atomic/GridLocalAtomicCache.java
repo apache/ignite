@@ -121,7 +121,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -143,7 +143,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -162,7 +162,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -270,7 +270,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             true,
             ctx.equalsPeekArray(oldVal),
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -288,7 +288,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             true,
             ctx.equalsPeekArray(val),
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -329,7 +329,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -360,7 +360,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             true,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -387,7 +387,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -415,7 +415,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             filter,
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -444,7 +444,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             false,
             ctx.equalsPeekArray(val),
-            ctx.isStoreEnabled());
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -475,7 +475,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         Map<K, V> m = getAllInternal(Collections.singleton(key),
             filter != null ? new IgnitePredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
-            ctx.isStoreEnabled(),
+            ctx.readThrough(),
             ctx.hasFlag(CLONE),
             taskName,
             deserializePortable);
@@ -495,7 +495,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         return getAllInternal(keys,
             filter != null ? new IgnitePredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
-            ctx.isStoreEnabled(),
+            ctx.readThrough(),
             ctx.hasFlag(CLONE),
             taskName,
             deserializePortable);
@@ -517,7 +517,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         ctx.denyOnFlag(LOCAL);
 
         final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
-        final boolean storeEnabled = ctx.isStoreEnabled();
+        final boolean storeEnabled = ctx.readThrough();
         final boolean clone = ctx.hasFlag(CLONE);
 
         return asyncOp(new Callable<Map<K, V>>() {
@@ -639,7 +639,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, null, false, subjId, taskName, deserializePortable, false, expiry, filter).get();
+        return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry, filter).get();
     }
 
     /** {@inheritDoc} */
@@ -774,7 +774,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         final Collection<?> vals = map != null ? map.values() : invokeMap != null ? invokeMap.values() : null;
 
-        final boolean storeEnabled = ctx.isStoreEnabled();
+        final boolean writeThrough = ctx.writeThrough();
 
         final ExpiryPolicy expiry = expiryPerCall();
 
@@ -788,7 +788,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     retval,
                     rawRetval,
                     filter,
-                    storeEnabled);
+                    writeThrough);
             }
         });
     }
@@ -808,7 +808,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         final boolean rawRetval,
         @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
-        final boolean storeEnabled = ctx.isStoreEnabled();
+        final boolean writeThrough = ctx.writeThrough();
 
         final ExpiryPolicy expiryPlc = expiryPerCall();
 
@@ -822,7 +822,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     retval,
                     rawRetval,
                     filter,
-                    storeEnabled);
+                    writeThrough);
             }
         });
     }
@@ -1148,7 +1148,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (intercept) {
                             V old = entry.innerGet(null,
                                 /*swap*/true,
-                                /*read-through*/true,
+                                /*read-through*/ctx.loadPreviousValue(),
                                 /*fail-fast*/false,
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
@@ -1179,7 +1179,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (intercept) {
                             V old = entry.innerGet(null,
                                 /*swap*/true,
-                                /*read-through*/true,
+                                /*read-through*/ctx.loadPreviousValue(),
                                 /*fail-fast*/false,
                                 /*unmarshal*/true,
                                 /**update-metrics*/true,
@@ -1270,18 +1270,30 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         assert putMap == null ^ rmvKeys == null;
         GridCacheOperation op;
 
+        CacheStorePartialUpdateException storeErr = null;
+
         try {
             if (putMap != null) {
-                ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
-                    @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
-                        return F.t(v, ver);
-                    }
-                }));
+                try {
+                    ctx.store().putAllToStore(null, F.viewReadOnly(putMap, new C1<V, IgniteBiTuple<V, GridCacheVersion>>() {
+                        @Override public IgniteBiTuple<V, GridCacheVersion> apply(V v) {
+                            return F.t(v, ver);
+                        }
+                    }));
+                }
+                catch (CacheStorePartialUpdateException e) {
+                    storeErr = e;
+                }
 
                 op = UPDATE;
             }
             else {
-                ctx.store().removeAllFromStore(null, rmvKeys);
+                try {
+                    ctx.store().removeAllFromStore(null, rmvKeys);
+                }
+                catch (CacheStorePartialUpdateException e) {
+                    storeErr = e;
+                }
 
                 op = DELETE;
             }
@@ -1302,7 +1314,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             assert Thread.holdsLock(entry);
 
-            if (entry.obsolete())
+            if (entry.obsolete() || (storeErr != null && storeErr.failedKeys().contains(entry.key())))
                 continue;
 
             try {

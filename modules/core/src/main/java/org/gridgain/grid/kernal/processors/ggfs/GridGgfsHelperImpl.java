@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.eviction.*;
 import org.gridgain.grid.cache.eviction.ggfs.*;
 
@@ -27,7 +27,7 @@ import org.gridgain.grid.cache.eviction.ggfs.*;
  */
 public class GridGgfsHelperImpl implements GridGgfsHelper {
     /** {@inheritDoc} */
-    @Override public void preProcessCacheConfiguration(GridCacheConfiguration cfg) {
+    @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
 
         if (evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy && cfg.getEvictionFilter() == null)
@@ -35,7 +35,7 @@ public class GridGgfsHelperImpl implements GridGgfsHelper {
     }
 
     /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(GridCacheConfiguration cfg) throws IgniteCheckedException {
+    @Override public void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException {
         GridCacheEvictionPolicy evictPlc =  cfg.getEvictionPolicy();
 
         if (evictPlc != null && evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy) {

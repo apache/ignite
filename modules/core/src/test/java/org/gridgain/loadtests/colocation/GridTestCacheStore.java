@@ -18,22 +18,26 @@
 package org.gridgain.loadtests.colocation;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.jdk8.backport.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.concurrent.*;
 
 /**
  * Accenture cache store.
  */
-public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long> {
+public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
+    /** */
     @IgniteInstanceResource
     private Ignite ignite;
 
+    /** */
     @IgniteLoggerResource
     private IgniteLogger log;
 
@@ -42,10 +46,8 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
      *
      * @param clo Callback for every key.
      * @param args Optional arguments.
-     * @throws IgniteCheckedException If failed.
      */
-    @Override public void loadCache(final IgniteBiInClosure<GridTestKey, Long> clo,
-        Object... args) throws IgniteCheckedException {
+    @Override public void loadCache(final IgniteBiInClosure<GridTestKey, Long> clo, Object... args) {
         // Number of threads is passed in as argument by caller.
         final int numThreads = (Integer)args[0];
         int entryCnt = (Integer)args[1];
@@ -104,7 +106,7 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
                     completeSvc.take().get();
                 }
                 catch (InterruptedException | ExecutionException e) {
-                    throw new IgniteCheckedException(e);
+                    throw new CacheLoaderException(e);
                 }
             }
 
@@ -116,15 +118,18 @@ public class GridTestCacheStore extends GridCacheStoreAdapter<GridTestKey, Long>
         }
     }
 
-    @Override public Long load(IgniteTx tx, GridTestKey key) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public Long load(GridTestKey key) {
         return null; // No-op.
     }
 
-    @Override public void put(IgniteTx tx, GridTestKey key, Long val) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void write(Cache.Entry<? extends GridTestKey, ? extends Long> e) {
         // No-op.
     }
 
-    @Override public void remove(IgniteTx tx, GridTestKey key) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public void delete(Object key) {
         // No-op.
     }
 }

@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.dataload;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -77,7 +77,7 @@ public class GridDataLoaderPerformanceTest extends GridCommonAbstractTest {
         cfg.setPeerClassLoadingEnabled(true);
 
         if (useCache) {
-            GridCacheConfiguration cc = defaultCacheConfiguration();
+            CacheConfiguration cc = defaultCacheConfiguration();
 
             cc.setCacheMode(PARTITIONED);
 

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -30,7 +31,7 @@ import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
- * Test for {@link GridCacheConfiguration#isStoreValueBytes()}.
+ * Test for {@link org.apache.ignite.cache.CacheConfiguration#isStoreValueBytes()}.
  */
 public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -49,7 +50,7 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(REPLICATED);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

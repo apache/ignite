@@ -17,7 +17,6 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
@@ -127,7 +126,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
                         switch (op) {
                             case 0:
-                                store.put(null, key, "val" + key);
+                                store.write(new CacheEntryImpl<>(key, "val" + key));
                                 set.add(key);
 
                                 operations.incrementAndGet();
@@ -135,7 +134,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
                                 break;
 
                             case 1:
-                                store.remove(null, key);
+                                store.delete(key);
                                 set.remove(key);
 
                                 operations.incrementAndGet();
@@ -144,13 +143,13 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
                             case 2:
                             default:
-                                store.put(null, key, "broken");
+                                store.write(new CacheEntryImpl<>(key, "broken"));
 
-                                String val = store.load(null, key);
+                                String val = store.load(key);
 
                                 assertEquals("Invalid intermediate value: " + val, "broken", val);
 
-                                store.put(null, key, "val" + key);
+                                store.write(new CacheEntryImpl<>(key, "val" + key));
 
                                 set.add(key);
 
@@ -163,7 +162,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     error("Unexpected exception in put thread", e);
 
                     assert false;

@@ -17,6 +17,7 @@
 
 package org.gridgain.jdbc;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
@@ -49,7 +50,7 @@ public class GridJdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setBackups(1);

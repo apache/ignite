@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -85,8 +86,8 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = cacheConfiguration0();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = cacheConfiguration0();
 
         cfg.setName(CACHE_REGULAR);
         cfg.setPortableEnabled(portableEnabled());
@@ -97,13 +98,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /**
      * @return Internal cache configuration.
      */
-    protected abstract GridCacheConfiguration cacheConfiguration0();
+    protected abstract CacheConfiguration cacheConfiguration0();
 
     /**
      * @return Offheap cache configuration.
      */
-    protected GridCacheConfiguration offheapCacheConfiguration() {
-        GridCacheConfiguration cfg = offheapCacheConfiguration0();
+    protected CacheConfiguration offheapCacheConfiguration() {
+        CacheConfiguration cfg = offheapCacheConfiguration0();
 
         cfg.setName(CACHE_OFFHEAP);
         cfg.setPortableEnabled(portableEnabled());
@@ -114,8 +115,8 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /**
      * @return Offheap tiered cache configuration.
      */
-    protected GridCacheConfiguration offheapTieredCacheConfiguration() {
-        GridCacheConfiguration cfg = offheapTieredCacheConfiguration0();
+    protected CacheConfiguration offheapTieredCacheConfiguration() {
+        CacheConfiguration cfg = offheapTieredCacheConfiguration0();
 
         cfg.setName(CACHE_OFFHEAP_TIERED);
         cfg.setPortableEnabled(portableEnabled());
@@ -126,12 +127,12 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     /**
      * @return Internal offheap cache configuration.
      */
-    protected abstract GridCacheConfiguration offheapCacheConfiguration0();
+    protected abstract CacheConfiguration offheapCacheConfiguration0();
 
     /**
      * @return Internal offheap cache configuration.
      */
-    protected abstract GridCacheConfiguration offheapTieredCacheConfiguration0();
+    protected abstract CacheConfiguration offheapTieredCacheConfiguration0();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

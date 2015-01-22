@@ -15,41 +15,34 @@
  * limitations under the License.
  */
 
-package org.gridgain.testframework;
+package org.gridgain.grid.kernal.processors.cache;
 
-import net.sf.json.*;
 import org.apache.ignite.*;
 
 import java.util.*;
 
 /**
- * Utility class for tests.
+ *
  */
-public class GridGgfsTestUtils {
+public class CacheStorePartialUpdateException extends IgniteCheckedException {
+    /** */
+    private Collection<Object> failedKeys;
+
     /**
-     * Converts json string to Map<String,String>.
-     *
-     * @param jsonStr String to convert.
-     * @return Map.
-     * @throws IgniteCheckedException If fails.
+     * @param failedKeys Keys that were not successfully updated.
+     * @param cause Cause.
      */
-    public static Map<String,String> jsonToMap(String jsonStr) throws IgniteCheckedException {
-        Map<String,String> res = new HashMap<>();
+    @SuppressWarnings("unchecked")
+    CacheStorePartialUpdateException(Collection failedKeys, Exception cause) {
+        super(cause);
 
-        try {
-            JSONObject jsonObj = JSONObject.fromObject(jsonStr);
+        this.failedKeys = failedKeys;
+    }
 
-            for (Object o : jsonObj.entrySet()) {
-                Map.Entry e = (Map.Entry) o;
-
-                res.put(e.getKey().toString(), e.getValue().toString());
-            }
-
-        }
-        catch (JSONException e) {
-            throw new IgniteCheckedException(e);
-        }
-
-        return res;
+    /**
+     * @return Keys that were not successfully updated.
+     */
+    public Collection<Object> failedKeys() {
+        return failedKeys;
     }
 }

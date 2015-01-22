@@ -53,6 +53,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Reload flag. */
     private boolean reload;
 
+    /** Read through flag. */
+    private boolean readThrough;
+
     /** Context. */
     private GridCacheContext<K, V> cctx;
 
@@ -107,6 +110,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param msgId Message ID.
      * @param reader Reader.
      * @param keys Keys.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param tx Transaction.
      * @param topVer Topology version.
@@ -121,6 +125,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         long msgId,
         UUID reader,
         LinkedHashMap<? extends K, Boolean> keys,
+        boolean readThrough,
         boolean reload,
         @Nullable IgniteTxLocalEx<K, V> tx,
         long topVer,
@@ -138,6 +143,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.cctx = cctx;
         this.msgId = msgId;
         this.keys = keys;
+        this.readThrough = readThrough;
         this.reload = reload;
         this.filters = filters;
         this.tx = tx;
@@ -343,7 +349,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         IgniteFuture<Map<K, V>> fut;
 
         if (txFut == null || txFut.isDone()) {
-            if (reload && cctx.isStoreEnabled() && cctx.store().configured()) {
+            if (reload && cctx.readThrough() && cctx.store().configured()) {
                 fut = cache().reloadAllAsync(keys.keySet(),
                     true,
                     subjId,
@@ -353,6 +359,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             else {
                 if (tx == null) {
                     fut = cache().getDhtAllAsync(keys.keySet(),
+                        readThrough,
                         subjId,
                         taskName,
                         deserializePortable,
@@ -379,7 +386,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (e != null)
                             throw new GridClosureException(e);
 
-                        if (reload && cctx.isStoreEnabled() && cctx.store().configured()) {
+                        if (reload && cctx.readThrough() && cctx.store().configured()) {
                             return cache().reloadAllAsync(keys.keySet(),
                                 true,
                                 subjId,
@@ -389,6 +396,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         else {
                             if (tx == null) {
                                 return cache().getDhtAllAsync(keys.keySet(),
+                                    readThrough,
                                     subjId,
                                     taskName,
                                     deserializePortable,

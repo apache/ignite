@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -56,8 +57,8 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration ccfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);
         ccfg.setAtomicityMode(TRANSACTIONAL);

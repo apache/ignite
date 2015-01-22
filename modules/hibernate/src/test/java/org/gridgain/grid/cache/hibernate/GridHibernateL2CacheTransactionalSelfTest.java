@@ -19,6 +19,7 @@ package org.gridgain.grid.cache.hibernate;
 
 import org.apache.commons.dbcp.managed.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.jta.*;
 import org.h2.jdbcx.*;
@@ -87,8 +88,8 @@ public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2Ca
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration transactionalRegionConfiguration(String regionName) {
-        GridCacheConfiguration cfg = super.transactionalRegionConfiguration(regionName);
+    @Override protected CacheConfiguration transactionalRegionConfiguration(String regionName) {
+        CacheConfiguration cfg = super.transactionalRegionConfiguration(regionName);
 
         cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
 

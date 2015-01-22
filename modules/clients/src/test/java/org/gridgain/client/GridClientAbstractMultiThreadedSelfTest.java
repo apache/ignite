@@ -18,6 +18,7 @@
 package org.gridgain.client;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -26,8 +27,6 @@ import org.apache.ignite.resources.*;
 import org.gridgain.client.balancer.*;
 import org.gridgain.client.impl.*;
 import org.gridgain.client.ssl.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
@@ -193,8 +192,8 @@ public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommon
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setDistributionMode(NEAR_PARTITIONED);
         cfg.setAtomicityMode(TRANSACTIONAL);

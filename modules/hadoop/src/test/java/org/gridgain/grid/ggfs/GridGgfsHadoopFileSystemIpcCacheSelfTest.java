@@ -19,6 +19,7 @@ package org.gridgain.grid.ggfs;
 
 import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.cache.*;
@@ -31,7 +32,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.ipc.shmem.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
 
 import java.lang.reflect.*;
 import java.net.*;
@@ -74,8 +74,10 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
         ggfsCfg.setName("ggfs");
         ggfsCfg.setManagementPort(IgniteFsConfiguration.DFLT_MGMT_PORT + cnt);
 
-        ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(
-            "{type:'shmem', port:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt) + "}"));
+        ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
+            put("type", "shmem");
+            put("port", String.valueOf(GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
+        }});
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
 
@@ -101,8 +103,8 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
      *
      * @return Cache configuration.
      */
-    private GridCacheConfiguration[] cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    private CacheConfiguration[] cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
@@ -113,7 +115,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -121,7 +123,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        return new GridCacheConfiguration[] {metaCacheCfg, cacheCfg};
+        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
     }
 
     /** {@inheritDoc} */

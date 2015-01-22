@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -63,7 +64,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         cfg.setDiscoverySpi(disco);
 
         // Default cache configuration.
-        GridCacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setBackups(1);

@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -79,7 +79,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         cfg.setDiscoverySpi(spi);
 
         // Default cache config.
-        GridCacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setPreloadMode(ASYNC);
@@ -87,7 +87,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction());
 
         // Non-default cache configuration.
-        GridCacheConfiguration namedCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
 
         namedCacheCfg.setCacheMode(PARTITIONED);
         namedCacheCfg.setPreloadMode(ASYNC);

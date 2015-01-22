@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
@@ -129,9 +130,9 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (cacheMode() == PARTITIONED) {
-            GridCacheConfiguration ccfg1 = cacheConfiguration(gridName);
+            CacheConfiguration ccfg1 = cacheConfiguration(gridName);
 
-            GridCacheConfiguration ccfg2 = cacheConfiguration(gridName);
+            CacheConfiguration ccfg2 = cacheConfiguration(gridName);
 
             ccfg2.setName("noBackupsCache");
             ccfg2.setBackups(0);
@@ -143,8 +144,8 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setPreloadMode(SYNC);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);

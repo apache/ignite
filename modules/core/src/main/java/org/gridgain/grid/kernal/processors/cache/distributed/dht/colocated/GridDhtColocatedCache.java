@@ -184,6 +184,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(keys,
+            true,
             false,
             forcePrimary,
             topVer,
@@ -225,6 +226,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /**
      * @param keys Keys to load.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.
@@ -236,6 +238,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @return Loaded values.
      */
     public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
+        boolean readThrough,
         boolean reload,
         boolean forcePrimary,
         long topVer,
@@ -345,6 +348,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         GridPartitionedGetFuture<K, V> fut = new GridPartitionedGetFuture<>(ctx,
             keys,
             topVer,
+            readThrough,
             reload,
             forcePrimary,
             filter,

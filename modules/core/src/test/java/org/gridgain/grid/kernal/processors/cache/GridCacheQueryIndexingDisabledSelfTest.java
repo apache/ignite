@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.testframework.*;
@@ -34,8 +35,9 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
         return 2;
     }
 
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         ccfg.setCacheMode(GridCacheMode.PARTITIONED);
         ccfg.setQueryIndexEnabled(false);

@@ -149,6 +149,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** */
     private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ;
 
+    /** */
+    private boolean skipStore;
+
     /**
      * @param ctx Grid kernal context.
      * @param cacheName Cache name.
@@ -294,6 +297,16 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         updater = a.atomicityMode() == GridCacheAtomicityMode.ATOMIC ?
             GridDataLoadCacheUpdaters.<K, V>batched() :
             GridDataLoadCacheUpdaters.<K, V>groupLocked();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipStore() {
+        return skipStore;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void skipStore(boolean skipStore) {
+        this.skipStore = skipStore;
     }
 
     /** {@inheritDoc} */
@@ -905,7 +918,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
-                    new GridDataLoadUpdateJob<>(ctx, log, cacheName, entries, false, updater), false);
+                    new GridDataLoadUpdateJob<>(ctx, log, cacheName, entries, false, skipStore, updater), false);
 
                 locFuts.add(fut);
 
@@ -995,13 +1008,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 reqs.put(reqId, (GridFutureAdapter<Object>)fut);
 
-                GridDataLoadRequest<Object, Object> req = new GridDataLoadRequest<>(
+                GridDataLoadRequest req = new GridDataLoadRequest(
                     reqId,
                     topicBytes,
                     cacheName,
                     updaterBytes,
                     entriesBytes,
                     true,
+                    skipStore,
                     dep != null ? dep.deployMode() : null,
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep != null ? dep.userVersion() : null,

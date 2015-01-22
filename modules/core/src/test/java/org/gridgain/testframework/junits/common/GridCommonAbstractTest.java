@@ -18,6 +18,7 @@
 package org.gridgain.testframework.junits.common;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -152,7 +153,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code True} if near cache is enabled.
      */
     protected static <K, V> boolean nearEnabled(GridCacheProjection<K,V> cache) {
-        GridCacheConfiguration cfg = ((GridKernal)cache.gridProjection().ignite()).
+        CacheConfiguration cfg = ((GridKernal)cache.gridProjection().ignite()).
             <K, V>internalCache(cache.name()).context().config();
 
         return isNearEnabled(cfg);
@@ -248,7 +249,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected void awaitPartitionMapExchange() throws InterruptedException {
         for (Ignite g : G.allGrids()) {
             for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
-                GridCacheConfiguration cfg = c.configuration();
+                CacheConfiguration cfg = c.configuration();
 
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {
                     GridCacheAffinityFunction aff = cfg.getAffinity();
@@ -663,8 +664,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration(IgniteConfiguration cfg, String cacheName) {
-        for (GridCacheConfiguration ccfg : cfg.getCacheConfiguration()) {
+    protected CacheConfiguration cacheConfiguration(IgniteConfiguration cfg, String cacheName) {
+        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
             if (F.eq(cacheName, ccfg.getName()))
                 return ccfg;
         }

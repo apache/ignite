@@ -22,10 +22,10 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
@@ -109,7 +109,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
      * @param gridName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected abstract String primaryIpcEndpointConfiguration(String gridName);
+    protected abstract Map<String, String>  primaryIpcEndpointConfiguration(String gridName);
 
     /**
      * Gets secondary file system URI path.
@@ -130,7 +130,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
      *
      * @return Secondary IPC endpoint configuration.
      */
-    protected abstract String secondaryIpcEndpointConfiguration();
+    protected abstract Map<String, String>  secondaryIpcEndpointConfiguration();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -150,12 +150,12 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
             ggfsCfg.setDataCacheName("partitioned");
             ggfsCfg.setMetaCacheName("replicated");
             ggfsCfg.setName("ggfs_secondary");
-            ggfsCfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(secondaryIpcEndpointConfiguration()));
+            ggfsCfg.setIpcEndpointConfiguration(secondaryIpcEndpointConfiguration());
             ggfsCfg.setManagementPort(-1);
             ggfsCfg.setBlockSize(512 * 1024);
             ggfsCfg.setPrefetchBlocks(1);
 
-            GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setName("partitioned");
             cacheCfg.setCacheMode(PARTITIONED);
@@ -166,7 +166,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
             cacheCfg.setQueryIndexEnabled(false);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-            GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+            CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
             metaCacheCfg.setName("replicated");
             metaCacheCfg.setCacheMode(REPLICATED);
@@ -224,8 +224,8 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration[] cacheConfiguration(String gridName) {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration[] cacheConfiguration(String gridName) {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("partitioned");
         cacheCfg.setCacheMode(PARTITIONED);
@@ -236,7 +236,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         cacheCfg.setQueryIndexEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheConfiguration metaCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration metaCacheCfg = defaultCacheConfiguration();
 
         metaCacheCfg.setName("replicated");
         metaCacheCfg.setCacheMode(REPLICATED);
@@ -244,7 +244,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        return new GridCacheConfiguration[] {metaCacheCfg, cacheCfg};
+        return new CacheConfiguration[] {metaCacheCfg, cacheCfg};
     }
 
     /**
@@ -267,7 +267,7 @@ public abstract class GridGgfsHadoop20FileSystemAbstractSelfTest extends GridGgf
             cfg.setSecondaryFileSystem(new GridGgfsHadoopFileSystemWrapper(secondaryFileSystemUriPath(),
                 secondaryFileSystemConfigPath()));
 
-        cfg.setIpcEndpointConfiguration(GridGgfsTestUtils.jsonToMap(primaryIpcEndpointConfiguration(gridName)));
+        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
         cfg.setManagementPort(-1);
 
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.

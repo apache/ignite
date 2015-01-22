@@ -18,8 +18,8 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -34,7 +34,7 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(2); // 2 backups, so all nodes are involved.
@@ -69,16 +69,6 @@ public class GridCachePartitionedMultiNodeLockSelfTest extends GridCacheMultiNod
     /** {@inheritDoc} */
     @Override public void testMultiNodeLock() throws Exception {
         super.testMultiNodeLock();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMultiNodeLockAsync() throws Exception {
-        super.testMultiNodeLockAsync();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testMultiNodeLockAsyncWithKeyLists() throws Exception {
-        super.testMultiNodeLockAsyncWithKeyLists();
     }
 
     /** {@inheritDoc} */

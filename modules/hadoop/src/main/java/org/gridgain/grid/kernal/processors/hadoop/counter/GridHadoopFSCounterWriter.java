@@ -38,13 +38,13 @@ public class GridHadoopFSCounterWriter implements GridHadoopCounterWriter {
     private static final String DEFAULT_USER_NAME = "anonymous";
 
     /** */
-    private static final String COUNTER_WRITER_DIR_PROPERTY = "gridgain.counters.fswriter.directory";
+    public static final String COUNTER_WRITER_DIR_PROPERTY = "gridgain.counters.fswriter.directory";
 
     /** */
     private static final String USER_MACRO = "${USER}";
 
     /** */
-    private static final String DEFAULT_COUNTER_WRITER_DIR = "/users/" + USER_MACRO;
+    private static final String DEFAULT_COUNTER_WRITER_DIR = "/user/" + USER_MACRO;
 
     /** {@inheritDoc} */
     @Override public void write(GridHadoopJobInfo jobInfo, GridHadoopJobId jobId, GridHadoopCounters cntrs)

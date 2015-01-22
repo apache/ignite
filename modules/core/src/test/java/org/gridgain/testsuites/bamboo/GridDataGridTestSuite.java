@@ -20,10 +20,11 @@ package org.gridgain.testsuites.bamboo;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.expiry.*;
+import org.apache.ignite.internal.processors.cache.integration.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.affinity.fair.*;
 import org.gridgain.grid.cache.store.*;
-import org.gridgain.grid.cache.store.jdbc.*;
+import org.apache.ignite.cache.store.jdbc.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
@@ -334,6 +335,40 @@ public class GridDataGridTestSuite extends TestSuite {
         // suite.addTestSuite(GridCacheMultinodeUpdateNearEnabledNoBackupsSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicSelfTest.class);
         suite.addTestSuite(GridCacheMultinodeUpdateAtomicNearEnabledSelfTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLoadAllTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalLoadAllTest.class);
+        suite.addTestSuite(IgniteCacheTxLoadAllTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalLoadAllTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheTxLoaderWriterTest.class);
+        suite.addTestSuite(IgniteCacheAtomicStoreSessionTest.class);
+        suite.addTestSuite(IgniteCacheTxStoreSessionTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledNoReadThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalNoReadThroughTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicNoLoadPreviousValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledNoLoadPreviousValueTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalNoLoadPreviousValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNoLoadPreviousValueTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledNoLoadPreviousValueTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalNoLoadPreviousValueTest.class);
+
+        suite.addTestSuite(IgniteCacheAtomicNoWriteThroughTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledNoWriteThroughTest.class);
+        suite.addTestSuite(IgniteCacheAtomicLocalNoWriteThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxNoWriteThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxNearEnabledNoWriteThroughTest.class);
+        suite.addTestSuite(IgniteCacheTxLocalNoWriteThroughTest.class);
+
+        // TODO: IGNITE-114.
+        // suite.addTestSuite(IgniteCacheInvokeReadThroughTest.class);
 
         return suite;
     }
