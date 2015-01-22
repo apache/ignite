@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.util.*;
 import java.util.concurrent.*;

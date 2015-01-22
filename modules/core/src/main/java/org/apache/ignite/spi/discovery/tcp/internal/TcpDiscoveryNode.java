@@ -23,7 +23,7 @@ import org.apache.ignite.product.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

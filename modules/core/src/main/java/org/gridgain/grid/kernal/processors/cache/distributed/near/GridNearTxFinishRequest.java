@@ -23,7 +23,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

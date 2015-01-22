@@ -26,7 +26,7 @@ import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

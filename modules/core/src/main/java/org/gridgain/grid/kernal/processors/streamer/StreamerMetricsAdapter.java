@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.streamer;
 
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.util.*;
 

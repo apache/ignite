@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

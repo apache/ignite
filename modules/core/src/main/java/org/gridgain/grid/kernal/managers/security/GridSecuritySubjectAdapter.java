@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.managers.security;
 
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.net.*;

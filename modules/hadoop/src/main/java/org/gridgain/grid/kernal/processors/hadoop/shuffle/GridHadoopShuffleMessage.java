@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.hadoop.shuffle;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;

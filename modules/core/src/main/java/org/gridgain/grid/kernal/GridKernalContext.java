@@ -61,7 +61,7 @@ import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.util.*;
 import java.util.concurrent.*;

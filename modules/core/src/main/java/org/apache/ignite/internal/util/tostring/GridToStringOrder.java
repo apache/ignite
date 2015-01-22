@@ -15,18 +15,23 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.tostring;
+package org.apache.ignite.internal.util.tostring;
 
 import java.lang.annotation.*;
 
 /**
- * Attach this annotation to a field or a class to indicate that this field or fields of this
- * class <b>should not</b> be included in {@code toString()} output. This annotation allows
- * to override default inclusion policy.
+ * Attach this annotation to a field to provide its order in
+ * {@code toString()} output. By default the order the order is the same as
+ * the order of declaration in the class. Fields with smaller order value
+ * will come before in {@code toString()} output. If order is not specified
+ * the {@link Integer#MAX_VALUE} will be used.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD, ElementType.TYPE})
-public @interface GridToStringExclude {
-    // No-op.
+@Target(ElementType.FIELD)
+public @interface GridToStringOrder {
+    /**
+     * Numeric order value.
+     */
+    @SuppressWarnings({"JavaDoc"}) int value();
 }

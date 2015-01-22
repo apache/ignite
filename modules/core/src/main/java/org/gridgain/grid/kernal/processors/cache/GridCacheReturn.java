@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.processor.*;

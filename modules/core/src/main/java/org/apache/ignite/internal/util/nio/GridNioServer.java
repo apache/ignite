@@ -24,7 +24,7 @@ import org.apache.ignite.thread.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;

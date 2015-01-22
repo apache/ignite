@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.managers.discovery;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.util.*;
 

@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**

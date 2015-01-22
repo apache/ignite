@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.managers;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.util.*;
 

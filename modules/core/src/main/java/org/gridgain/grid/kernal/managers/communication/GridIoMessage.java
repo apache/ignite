@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.managers.communication;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.io.*;
 import java.nio.*;

@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;

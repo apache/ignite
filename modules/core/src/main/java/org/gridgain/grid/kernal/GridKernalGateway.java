@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal;
 
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 /**
  * This interface guards access to implementations of public methods that access kernal

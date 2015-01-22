@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.query;
 
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import java.io.*;
 import java.util.*;

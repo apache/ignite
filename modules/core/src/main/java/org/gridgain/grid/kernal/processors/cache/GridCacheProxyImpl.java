@@ -29,7 +29,7 @@ import org.gridgain.grid.kernal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 

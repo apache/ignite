@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.gridgain.grid.kernal.processors.cache.dr.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;

@@ -22,7 +22,7 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.uri.scanners.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 import org.w3c.dom.*;
 import org.w3c.tidy.*;

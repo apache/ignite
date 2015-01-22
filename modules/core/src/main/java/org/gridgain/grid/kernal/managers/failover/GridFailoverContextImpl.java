@@ -23,7 +23,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.failover.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.loadbalancer.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;

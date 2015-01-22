@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.offheap.unsafe;
 
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.concurrent.atomic.*;

@@ -23,7 +23,7 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;
 import org.jetbrains.annotations.*;

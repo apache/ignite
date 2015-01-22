@@ -27,7 +27,7 @@ import org.gridgain.grid.util.mbeans.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.impl.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 /**
  * Test suite for GridGain utility classes.

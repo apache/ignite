@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.util;
 
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 /**
  * Synchronization aid to track "busy" state of a subsystem that owns it.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.tostring;
+package org.apache.ignite.internal.util.tostring;
 
 /**
  * Simple field descriptor containing field name and its order in the class descriptor.

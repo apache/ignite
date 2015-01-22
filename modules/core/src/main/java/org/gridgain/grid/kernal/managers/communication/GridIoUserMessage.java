@@ -23,7 +23,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

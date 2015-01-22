@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
