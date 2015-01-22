@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.worker;
+package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.*;

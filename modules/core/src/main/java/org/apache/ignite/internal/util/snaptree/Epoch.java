@@ -33,7 +33,7 @@
  * SUCH DAMAGE.
  */
 
-package org.gridgain.grid.util.snaptree;
+package org.apache.ignite.internal.util.snaptree;
 
 /** A <code>Epoch</code> has a lifecycle consisting of three phases: active,
  *  closing, and closed.  During the active phase partipants may arrive and

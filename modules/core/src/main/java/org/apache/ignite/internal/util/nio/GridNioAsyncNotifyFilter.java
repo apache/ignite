@@ -19,7 +19,7 @@ package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.internal.util.worker.*;
 
 import java.util.concurrent.*;
 

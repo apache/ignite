@@ -33,7 +33,7 @@
  * SUCH DAMAGE.
  */
 
-package org.gridgain.grid.util.snaptree;
+package org.apache.ignite.internal.util.snaptree;
 
 import java.io.*;
 import java.util.*;

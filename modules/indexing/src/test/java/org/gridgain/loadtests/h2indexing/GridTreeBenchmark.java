@@ -17,7 +17,7 @@
 
 package org.gridgain.loadtests.h2indexing;
 
-import org.gridgain.grid.util.snaptree.*;
+import org.apache.ignite.internal.util.snaptree.*;
 
 import java.util.*;
 import java.util.concurrent.*;

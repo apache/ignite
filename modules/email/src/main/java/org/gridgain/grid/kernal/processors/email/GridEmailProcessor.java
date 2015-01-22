@@ -24,7 +24,7 @@ import org.apache.ignite.thread.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.internal.util.worker.*;
 
 import javax.mail.*;
 import javax.mail.internet.*;

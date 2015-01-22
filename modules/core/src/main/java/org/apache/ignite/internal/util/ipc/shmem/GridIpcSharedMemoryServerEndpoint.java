@@ -27,7 +27,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.internal.util.worker.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

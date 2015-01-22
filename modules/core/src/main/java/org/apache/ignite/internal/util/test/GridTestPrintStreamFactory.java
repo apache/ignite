@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.test;
+package org.apache.ignite.internal.util.test;
 
 import java.io.*;
 

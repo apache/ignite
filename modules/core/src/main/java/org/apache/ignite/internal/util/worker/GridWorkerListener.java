@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.worker;
+package org.apache.ignite.internal.util.worker;
+
+import java.util.*;
 
 /**
- * Convenience adapter for {@link GridWorkerListener}.
+ * This interface defines worker listener.
  */
-public class GridWorkerListenerAdapter implements GridWorkerListener {
-    /** {@inheritDoc} */
-    @Override public void onStarted(GridWorker w) {
-        /* No-op. */
-    }
+public interface GridWorkerListener extends EventListener {
+    /**
+     * @param w Started worker.
+     */
+    public void onStarted(GridWorker w);
 
-    /** {@inheritDoc} */
-    @Override public void onStopped(GridWorker w) {
-        /* No-op. */
-    }
+    /**
+     * @param w Stopped worker.
+     */
+    public void onStopped(GridWorker w);
 }

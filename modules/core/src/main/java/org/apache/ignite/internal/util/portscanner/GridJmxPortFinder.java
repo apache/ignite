@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.portscanner;
+package org.apache.ignite.internal.util.portscanner;
 
 import org.apache.ignite.*;
 
