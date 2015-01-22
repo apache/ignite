@@ -482,9 +482,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(Set<? extends K> keys,
+    @Override public void loadAll(
+        Set<? extends K> keys,
         boolean replaceExisting,
-        @Nullable final CompletionListener completionLsnr) {
+        @Nullable final CompletionListener completionLsnr
+    ) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
