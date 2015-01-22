@@ -3312,7 +3312,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                     else {
                         String errMsg = "Local node's and remote node's build versions are not compatible " +
                             (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                "(topologies built with different GridGain versions " +
+                                "(topologies built with different Ignite versions " +
                                     "are supported in Enterprise version only) " :
                                 "(node will not join, all nodes in topology should have " +
                                     "compatible build versions) ") +
@@ -3330,7 +3330,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         try {
                             String sndMsg = "Local node's and remote node's build versions are not compatible " +
                                 (rmtBuildVer.contains("-os") && locBuildVer.contains("-os") ?
-                                    "(topologies built with different GridGain versions " +
+                                    "(topologies built with different Ignite versions " +
                                         "are supported in Enterprise version only) " :
                                     "(node will not join, all nodes in topology should have " +
                                         "compatible build versions) ") +
