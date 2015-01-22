@@ -377,8 +377,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             return dataNodes + (storeEnabled() ? 1 : 0); // One call before store is updated.
         else {
             // If update goes through primary node and it is cancelled then backups aren't updated.
-            return (writeOrderMode() == PRIMARY ||
-                (op == Operation.TRANSFORM || op == Operation.UPDATE_FILTER)) ? 1 : dataNodes;
+            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 1 : dataNodes;
         }
     }
 
@@ -392,10 +391,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         if (atomicityMode() == TRANSACTIONAL)
             // Update + after update + one call before store is updated.
             return dataNodes * 2 + (storeEnabled() ? 1 : 0);
-        else {
-            return (writeOrderMode() == PRIMARY ||
-                (op == Operation.TRANSFORM || op == Operation.UPDATE_FILTER)) ? 2 : dataNodes * 2;
-        }
+        else
+            return (writeOrderMode() == PRIMARY || op == Operation.TRANSFORM) ? 2 : dataNodes * 2;
     }
 
     /**
@@ -829,10 +826,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
             for (IgniteTxConcurrency txConcurrency : IgniteTxConcurrency.values()) {
                 for (IgniteTxIsolation txIsolation : IgniteTxIsolation.values()) {
                     for (Operation op : Operation.values()) {
-                        // TODO: GG-8118 enable when fixed.
-                        if (op == Operation.UPDATE_FILTER && txConcurrency == OPTIMISTIC)
-                            continue;
-
                         testNearNodeKey(txConcurrency, txIsolation, op);
 
                         afterTest();
@@ -1200,18 +1193,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
                     break;
                 }
 
-                case UPDATE_FILTER: {
-                    Object old = cache.getAndRemoveIf(key, new IgnitePredicate<GridCacheEntry<String, Integer>>() {
-                        @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
-                            return true;
-                        }
-                    });
-
-                    assertEquals(expRmvRet, old);
-
-                    break;
-                }
-
                 case TRANSFORM: {
                     cache.invoke(key, new EntryProcessor<String, Integer, Void>() {
                         @Override public Void process(MutableEntry<String, Integer> e, Object... args) {
@@ -1242,18 +1223,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
 
                 case UPDATEX: {
                     cache.put(key, val);
-
-                    break;
-                }
-
-                case UPDATE_FILTER: {
-                    Object old = cache.getAndPutIf(key, val, new P1<GridCacheEntry<String, Integer>>() {
-                        @Override public boolean apply(GridCacheEntry<String, Integer> entry) {
-                            return true;
-                        }
-                    });
-
-                    assertEquals(expOld, old);
 
                     break;
                 }
@@ -1490,11 +1459,6 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
          *
          */
         TRANSFORM,
-
-        /**
-         *
-         */
-        UPDATE_FILTER
     }
 
     /**
