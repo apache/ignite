@@ -18,7 +18,7 @@
 package org.gridgain.loadtests.mapper;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;

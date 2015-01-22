@@ -21,8 +21,8 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;

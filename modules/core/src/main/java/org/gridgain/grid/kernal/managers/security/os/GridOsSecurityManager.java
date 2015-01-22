@@ -24,7 +24,7 @@ import org.apache.ignite.spi.authentication.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.security.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

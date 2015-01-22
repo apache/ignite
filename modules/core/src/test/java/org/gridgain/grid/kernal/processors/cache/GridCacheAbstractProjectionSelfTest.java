@@ -19,11 +19,10 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 import java.util.concurrent.*;

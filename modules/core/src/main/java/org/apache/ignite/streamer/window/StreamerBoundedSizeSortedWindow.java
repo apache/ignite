@@ -19,7 +19,7 @@ package org.apache.ignite.streamer.window;
 
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

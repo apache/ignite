@@ -18,12 +18,11 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

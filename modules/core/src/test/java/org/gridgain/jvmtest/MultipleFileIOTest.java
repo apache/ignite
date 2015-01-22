@@ -17,7 +17,7 @@
 
 package org.gridgain.jvmtest;
 
-import org.gridgain.grid.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.F;
 
 import java.io.*;
 import java.util.*;

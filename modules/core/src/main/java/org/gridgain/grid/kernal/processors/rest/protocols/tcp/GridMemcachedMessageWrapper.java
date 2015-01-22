@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.nio.*;

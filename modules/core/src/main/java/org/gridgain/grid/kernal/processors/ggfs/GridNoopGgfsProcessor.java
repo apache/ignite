@@ -23,7 +23,7 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.ipc.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

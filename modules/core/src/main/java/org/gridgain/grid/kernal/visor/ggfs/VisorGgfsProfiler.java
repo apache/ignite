@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.visor.ggfs;
 
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

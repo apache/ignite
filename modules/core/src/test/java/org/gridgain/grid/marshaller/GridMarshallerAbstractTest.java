@@ -19,7 +19,6 @@ package org.gridgain.grid.marshaller;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
@@ -41,7 +40,7 @@ import org.gridgain.grid.kernal.processors.service.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.gridgain.grid.p2p.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

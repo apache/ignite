@@ -33,7 +33,7 @@ import org.gridgain.grid.kernal.processors.rest.protocols.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.nio.ssl.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;

@@ -23,7 +23,7 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

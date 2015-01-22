@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import sun.misc.*;
 
 import java.net.*;

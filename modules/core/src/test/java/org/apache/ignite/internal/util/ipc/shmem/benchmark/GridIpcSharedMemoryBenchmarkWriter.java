@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import javax.swing.*;
 import java.io.*;

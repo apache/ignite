@@ -32,7 +32,7 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

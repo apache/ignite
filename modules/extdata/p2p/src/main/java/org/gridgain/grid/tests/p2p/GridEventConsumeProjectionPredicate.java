@@ -18,7 +18,7 @@
 package org.gridgain.grid.tests.p2p;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Projection predicate for event consume test.

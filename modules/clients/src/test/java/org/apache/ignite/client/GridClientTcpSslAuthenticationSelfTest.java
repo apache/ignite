@@ -21,8 +21,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.*;
 import org.apache.ignite.client.ssl.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 

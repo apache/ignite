@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.query.continuous;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 import java.util.concurrent.*;

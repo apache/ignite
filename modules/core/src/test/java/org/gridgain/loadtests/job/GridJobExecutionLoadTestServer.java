@@ -17,7 +17,7 @@
 
 package org.gridgain.loadtests.job;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  *

@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;

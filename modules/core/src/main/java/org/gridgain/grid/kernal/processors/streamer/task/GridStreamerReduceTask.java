@@ -23,9 +23,8 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.closure.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

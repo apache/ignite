@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.schedule;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Scheduled task statistics.

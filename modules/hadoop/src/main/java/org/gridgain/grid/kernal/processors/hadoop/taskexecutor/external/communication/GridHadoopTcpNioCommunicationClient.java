@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.apache.ignite.internal.util.nio.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 

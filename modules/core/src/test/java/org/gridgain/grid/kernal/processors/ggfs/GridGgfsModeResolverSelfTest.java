@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 
 import junit.framework.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

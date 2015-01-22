@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

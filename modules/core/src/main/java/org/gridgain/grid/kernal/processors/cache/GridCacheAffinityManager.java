@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.affinity.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

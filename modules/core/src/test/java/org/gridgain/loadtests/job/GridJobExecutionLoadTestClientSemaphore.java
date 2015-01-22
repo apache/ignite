@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
 import org.jdk8.backport.*;

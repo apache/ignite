@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.cloner;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Cache deep cloner that creates a copy of an object using deep reflection.

@@ -22,7 +22,7 @@ import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.spi.*;
 

@@ -22,7 +22,7 @@ import org.apache.ignite.compute.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.executor.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.management.*;
 import java.util.*;

@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.affinity;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Node hash resolver which uses {@link org.apache.ignite.cluster.ClusterNode#consistentId()} as alternate hash value.

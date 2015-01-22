@@ -19,12 +19,11 @@ package org.gridgain.grid.kernal.processors.cache.local;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.swapspace.file.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

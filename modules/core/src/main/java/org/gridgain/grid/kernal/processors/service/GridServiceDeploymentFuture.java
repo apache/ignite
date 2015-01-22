@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.service;
 import org.apache.ignite.managed.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Service deployment future.

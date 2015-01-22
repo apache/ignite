@@ -35,7 +35,7 @@ import org.apache.ignite.client.hadoop.counter.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.proto.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 

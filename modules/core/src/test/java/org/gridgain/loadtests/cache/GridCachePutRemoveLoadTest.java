@@ -20,12 +20,11 @@ package org.gridgain.loadtests.cache;
 import com.beust.jcommander.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 
 import java.util.*;

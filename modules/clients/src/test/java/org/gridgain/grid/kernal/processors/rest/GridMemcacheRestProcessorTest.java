@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.rest;
 
 import net.spy.memcached.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.net.*;

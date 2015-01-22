@@ -26,7 +26,7 @@ import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

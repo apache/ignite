@@ -28,8 +28,8 @@ import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.U;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.*;

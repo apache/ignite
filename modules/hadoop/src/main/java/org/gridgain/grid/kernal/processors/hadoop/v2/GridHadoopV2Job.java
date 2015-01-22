@@ -31,8 +31,8 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
 import java.io.*;

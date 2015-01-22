@@ -25,7 +25,7 @@ import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.eventstorage.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

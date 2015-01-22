@@ -25,7 +25,7 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.marshaller.optimized.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
 import java.net.*;

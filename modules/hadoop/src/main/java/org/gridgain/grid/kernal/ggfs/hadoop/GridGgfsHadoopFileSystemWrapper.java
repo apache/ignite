@@ -23,15 +23,14 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.hadoop.ipc.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**

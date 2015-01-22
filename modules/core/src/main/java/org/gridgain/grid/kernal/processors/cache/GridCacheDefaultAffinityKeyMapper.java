@@ -23,8 +23,8 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.lang.annotation.*;
 import java.lang.reflect.*;

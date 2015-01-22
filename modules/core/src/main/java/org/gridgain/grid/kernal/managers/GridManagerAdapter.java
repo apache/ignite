@@ -32,8 +32,8 @@ import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;

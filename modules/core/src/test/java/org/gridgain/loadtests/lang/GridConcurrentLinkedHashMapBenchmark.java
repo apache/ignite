@@ -17,7 +17,7 @@
 
 package org.gridgain.loadtests.lang;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
 
 import java.util.*;

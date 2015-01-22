@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
 import org.jetbrains.annotations.*;
 

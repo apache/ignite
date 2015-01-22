@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Defines generic {@code for-each} type of closure. Closure is a first-class function that is defined with

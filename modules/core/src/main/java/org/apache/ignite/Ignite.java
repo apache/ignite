@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

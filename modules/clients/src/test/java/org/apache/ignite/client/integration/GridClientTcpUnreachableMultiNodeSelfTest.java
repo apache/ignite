@@ -19,7 +19,7 @@ package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.net.*;
 import java.util.*;

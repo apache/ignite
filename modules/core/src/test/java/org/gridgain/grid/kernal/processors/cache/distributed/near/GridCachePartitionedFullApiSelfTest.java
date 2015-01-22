@@ -19,12 +19,11 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

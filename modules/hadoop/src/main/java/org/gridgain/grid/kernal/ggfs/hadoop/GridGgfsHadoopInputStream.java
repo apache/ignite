@@ -22,7 +22,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.ggfs.common.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

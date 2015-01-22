@@ -20,8 +20,8 @@ package org.gridgain.grid.kernal.websession;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.eclipse.jetty.webapp.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.servlet.*;
 import javax.servlet.http.*;

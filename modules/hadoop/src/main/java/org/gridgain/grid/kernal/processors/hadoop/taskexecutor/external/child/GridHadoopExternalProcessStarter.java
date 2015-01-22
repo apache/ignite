@@ -21,10 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;

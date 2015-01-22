@@ -30,8 +30,8 @@ import org.gridgain.grid.kernal.processors.cache.query.continuous.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 

@@ -19,8 +19,8 @@ package org.gridgain.grid.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.*;
 import javax.cache.expiry.*;

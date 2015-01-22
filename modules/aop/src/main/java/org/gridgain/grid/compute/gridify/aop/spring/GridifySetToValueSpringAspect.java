@@ -21,7 +21,7 @@ import org.aopalliance.intercept.*;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.compute.gridify.aop.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.gridify.*;
 import java.lang.reflect.*;
 

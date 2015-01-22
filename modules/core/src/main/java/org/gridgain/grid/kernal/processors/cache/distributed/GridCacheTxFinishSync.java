@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.future.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;

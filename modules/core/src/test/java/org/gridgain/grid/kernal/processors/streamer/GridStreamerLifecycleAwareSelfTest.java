@@ -21,7 +21,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

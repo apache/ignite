@@ -19,7 +19,7 @@ package org.gridgain.loadtests.job;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.loadtests.util.*;
 import org.gridgain.testframework.*;
 import org.jdk8.backport.*;

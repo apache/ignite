@@ -29,7 +29,7 @@ import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.lang.reflect.*;

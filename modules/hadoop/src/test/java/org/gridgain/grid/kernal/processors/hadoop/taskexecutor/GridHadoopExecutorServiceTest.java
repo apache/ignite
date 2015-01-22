@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.hadoop.taskexecutor;
 
 import org.apache.ignite.lang.IgniteFuture;
-import org.gridgain.grid.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.X;
 import org.gridgain.testframework.junits.common.GridCommonAbstractTest;
 import org.jdk8.backport.LongAdder;
 

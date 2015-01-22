@@ -30,7 +30,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.*;
 

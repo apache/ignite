@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.ggfs;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * GGFS ad-hoc thread.

@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Local node metrics MBean.

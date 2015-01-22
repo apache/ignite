@@ -19,7 +19,7 @@ package org.gridgain.jvmtest;
 
 import junit.framework.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.jetbrains.annotations.*;
 

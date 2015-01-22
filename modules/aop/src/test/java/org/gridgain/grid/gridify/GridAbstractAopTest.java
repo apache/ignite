@@ -24,7 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.deployment.local.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 

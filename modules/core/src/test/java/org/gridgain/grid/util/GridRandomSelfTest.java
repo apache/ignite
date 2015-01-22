@@ -18,7 +18,7 @@
 package org.gridgain.grid.util;
 
 import junit.framework.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 import java.util.concurrent.*;

@@ -25,7 +25,7 @@ import org.gridgain.grid.kernal.processors.closure.*;
 import org.gridgain.grid.kernal.processors.continuous.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testsuites.*;
 
 /**

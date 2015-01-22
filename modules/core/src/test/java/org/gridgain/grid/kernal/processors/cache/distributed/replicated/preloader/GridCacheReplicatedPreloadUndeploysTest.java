@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.replicated.preloader;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import javax.swing.*;
 import java.util.*;

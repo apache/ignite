@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Defines a convenient {@code side-effect only} closure, i.e. the closure that has {@code void} return type.

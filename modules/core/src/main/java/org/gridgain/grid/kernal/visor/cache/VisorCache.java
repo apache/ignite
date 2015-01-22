@@ -26,7 +26,7 @@ import org.gridgain.grid.kernal.processors.cache.distributed.dht.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.dht.preloader.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.streamer.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 

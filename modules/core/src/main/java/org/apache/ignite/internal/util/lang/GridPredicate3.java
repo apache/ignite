@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Defines predicate construct. Predicate like closure is a first-class function

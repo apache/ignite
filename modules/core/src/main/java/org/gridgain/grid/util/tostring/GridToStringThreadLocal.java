@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.util.tostring;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Helper wrapper containing StringBuilder and additional values. Stored as a thread-lcal variable.

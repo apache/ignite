@@ -25,7 +25,7 @@ import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;

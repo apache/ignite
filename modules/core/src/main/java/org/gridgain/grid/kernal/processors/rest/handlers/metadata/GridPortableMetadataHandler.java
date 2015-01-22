@@ -26,7 +26,7 @@ import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.gridgain.grid.kernal.processors.rest.handlers.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.apache.ignite.internal.util.future.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 

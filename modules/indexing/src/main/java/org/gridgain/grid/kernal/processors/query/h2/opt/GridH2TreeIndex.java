@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.query.h2.opt;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.snaptree.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.h2.engine.*;
 import org.h2.index.*;

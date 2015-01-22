@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.resource;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.managers.deployment.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Simple injector which wraps only one resource object.

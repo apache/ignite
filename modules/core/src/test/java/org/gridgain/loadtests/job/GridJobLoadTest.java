@@ -19,8 +19,8 @@ package org.gridgain.loadtests.job;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.springframework.beans.factory.*;
 import org.springframework.context.support.*;
 

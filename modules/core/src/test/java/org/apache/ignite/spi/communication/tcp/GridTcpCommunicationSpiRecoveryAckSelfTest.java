@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.nio.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.spi.*;

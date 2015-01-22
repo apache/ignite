@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.rest.request;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Grid command request of log file.

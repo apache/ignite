@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.ggfs;
 import org.apache.ignite.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

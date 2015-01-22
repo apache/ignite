@@ -20,7 +20,7 @@ package org.gridgain.loadtests.direct.session;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.gridgain.grid.loadtest.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.config.*;
 import org.gridgain.testframework.junits.common.*;

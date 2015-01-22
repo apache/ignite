@@ -24,7 +24,7 @@ import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.kernal.processors.cache.transactions.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 

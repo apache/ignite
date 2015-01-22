@@ -19,7 +19,7 @@ package org.gridgain.grid.lang.utils;
 
 import com.romix.scala.collection.concurrent.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;

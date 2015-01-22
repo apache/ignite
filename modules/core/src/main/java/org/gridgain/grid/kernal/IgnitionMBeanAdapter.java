@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.mbean.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Management bean that provides access to {@link org.apache.ignite.Ignition}.

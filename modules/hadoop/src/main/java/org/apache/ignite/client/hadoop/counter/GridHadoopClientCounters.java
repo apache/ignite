@@ -22,7 +22,7 @@ import org.apache.hadoop.mapreduce.counters.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
 import java.util.*;

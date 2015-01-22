@@ -19,7 +19,7 @@ package org.apache.ignite.client;
 
 import org.apache.ignite.*;
 import org.apache.ignite.client.impl.connection.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.nio.channels.*;

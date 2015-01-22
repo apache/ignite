@@ -21,7 +21,6 @@ import org.apache.hadoop.conf.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.gridgain.grid.ggfs.hadoop.v1.*;
@@ -29,8 +28,8 @@ import org.gridgain.grid.kernal.ggfs.common.*;
 import org.gridgain.grid.kernal.processors.ggfs.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.lang.reflect.*;
 import java.net.*;

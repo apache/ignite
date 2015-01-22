@@ -18,7 +18,7 @@
 package org.gridgain.visor.commands
 
 import org.gridgain.grid.kernal.GridProductImpl
-import org.gridgain.grid.util.scala.impl
+import org.apache.ignite.internal.util.scala.impl
 import org.gridgain.grid.util.{GridUtils => U}
 
 import org.apache.ignite.startup.cmdline.AboutDialog

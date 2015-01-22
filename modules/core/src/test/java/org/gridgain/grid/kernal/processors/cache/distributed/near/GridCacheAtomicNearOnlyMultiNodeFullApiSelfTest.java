@@ -18,8 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import javax.cache.expiry.*;
 import java.util.*;

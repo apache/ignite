@@ -18,9 +18,8 @@
 package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.hadoop.v2.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.objectweb.asm.*;

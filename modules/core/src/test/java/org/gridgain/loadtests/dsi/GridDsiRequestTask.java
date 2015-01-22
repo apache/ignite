@@ -19,7 +19,7 @@ package org.gridgain.loadtests.dsi;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

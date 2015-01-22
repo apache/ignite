@@ -18,7 +18,7 @@
 package org.gridgain.grid.marshaller;
 
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 

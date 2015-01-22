@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.nodestart;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -18,8 +18,8 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Starts up one grid node (server) with pre-defined ports and tasks to test client-server interactions.

@@ -19,8 +19,7 @@ package org.gridgain.grid.kernal.processors.hadoop;
 
 import org.apache.hadoop.conf.*;
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Hadoop node startup.

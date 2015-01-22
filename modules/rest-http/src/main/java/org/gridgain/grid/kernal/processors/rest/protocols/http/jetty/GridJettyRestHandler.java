@@ -22,12 +22,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.request.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.servlet.*;

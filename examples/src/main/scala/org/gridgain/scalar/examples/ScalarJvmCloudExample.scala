@@ -23,7 +23,7 @@ import javax.swing.{JComponent, JLabel, JOptionPane}
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
-import org.gridgain.grid.util.scala.impl
+import org.apache.ignite.internal.util.scala.impl
 import org.gridgain.scalar.scalar
 
 /**

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;

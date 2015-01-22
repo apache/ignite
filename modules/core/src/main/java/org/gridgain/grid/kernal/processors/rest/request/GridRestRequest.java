@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.rest.request;
 
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.net.*;
 import java.util.*;

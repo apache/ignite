@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.ggfs;
 
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import static org.apache.ignite.fs.IgniteFsConfiguration.*;
 

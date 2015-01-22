@@ -22,7 +22,7 @@ import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.integration.*;
 import org.apache.ignite.client.router.impl.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

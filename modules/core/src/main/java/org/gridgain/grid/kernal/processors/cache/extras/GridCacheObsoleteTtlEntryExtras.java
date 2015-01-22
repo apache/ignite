@@ -19,7 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.extras;
 
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Extras where obsolete version and TTL are set.

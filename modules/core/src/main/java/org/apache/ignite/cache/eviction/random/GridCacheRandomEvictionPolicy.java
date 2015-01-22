@@ -20,8 +20,8 @@ package org.apache.ignite.cache.eviction.random;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Cache eviction policy which will select random cache entry for eviction if cache

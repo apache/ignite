@@ -23,8 +23,8 @@ import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

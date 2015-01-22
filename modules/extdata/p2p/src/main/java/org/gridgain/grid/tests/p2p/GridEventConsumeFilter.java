@@ -18,7 +18,7 @@
 package org.gridgain.grid.tests.p2p;
 
 import org.apache.ignite.events.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Filter for event consume test.

@@ -34,7 +34,7 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.counter.*;
 import org.gridgain.grid.kernal.processors.hadoop.fs.*;
 import org.gridgain.grid.kernal.processors.hadoop.v1.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

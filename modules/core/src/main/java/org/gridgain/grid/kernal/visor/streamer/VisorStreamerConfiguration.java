@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.visor.streamer;
 
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

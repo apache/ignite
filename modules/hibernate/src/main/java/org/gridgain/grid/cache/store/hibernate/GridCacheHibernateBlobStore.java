@@ -19,11 +19,10 @@ package org.gridgain.grid.cache.store.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.grid.util.tostring.*;
 import org.hibernate.*;
 import org.hibernate.cfg.*;

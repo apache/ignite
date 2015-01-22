@@ -23,7 +23,7 @@ import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.io.*;
 import java.util.*;

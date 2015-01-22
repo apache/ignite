@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.springframework.beans.*;
 import org.springframework.context.*;

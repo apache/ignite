@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.timeout;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Default implementation for {@link GridTimeoutObject}.

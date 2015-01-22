@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.cloner;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Basic cache cloner based on utilization of {@link Cloneable} interface. If

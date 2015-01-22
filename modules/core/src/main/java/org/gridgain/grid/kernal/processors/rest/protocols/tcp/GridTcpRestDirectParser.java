@@ -22,7 +22,7 @@ import org.apache.ignite.client.marshaller.*;
 import org.gridgain.grid.kernal.processors.rest.client.message.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.nio.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

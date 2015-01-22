@@ -18,7 +18,7 @@
 package org.gridgain.testframework;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**

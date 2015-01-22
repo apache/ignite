@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.visor.compute;
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Reset compute grid metrics task.

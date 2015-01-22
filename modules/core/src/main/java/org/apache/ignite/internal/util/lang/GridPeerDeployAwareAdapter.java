@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.util.lang;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Adapter for common interfaces in closures, reducers and predicates.

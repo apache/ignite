@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.managers.discovery.*;
 import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.*;
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
 
 import java.net.*;

@@ -19,7 +19,7 @@ package org.apache.ignite.client.impl.connection;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import javax.net.ssl.*;

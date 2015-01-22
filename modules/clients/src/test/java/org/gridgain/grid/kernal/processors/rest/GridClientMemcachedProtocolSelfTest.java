@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.rest;
 import net.spy.memcached.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.junit.*;
 
 import java.io.*;

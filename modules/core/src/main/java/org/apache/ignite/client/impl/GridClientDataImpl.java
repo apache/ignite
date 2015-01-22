@@ -21,7 +21,7 @@ import org.apache.ignite.client.*;
 import org.apache.ignite.client.balancer.*;
 import org.apache.ignite.client.impl.connection.*;
 import org.apache.ignite.client.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 

@@ -18,7 +18,7 @@
 package org.gridgain.grid.lang.utils;
 
 import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;

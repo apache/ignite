@@ -20,7 +20,7 @@ package org.apache.ignite.events;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 

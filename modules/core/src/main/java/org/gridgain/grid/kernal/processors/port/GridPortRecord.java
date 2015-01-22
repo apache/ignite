@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.port;
 
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * This class defines record about port use.

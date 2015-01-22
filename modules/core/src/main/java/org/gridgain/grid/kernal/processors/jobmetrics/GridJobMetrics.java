@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.jobmetrics;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Job metrics.

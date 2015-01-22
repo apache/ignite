@@ -26,7 +26,7 @@ import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask
 import org.gridgain.grid.kernal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.gridgain.grid.kernal.{GridEx, GridProductImpl}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
-import org.gridgain.grid.util.typedef._
+import org.apache.ignite.internal.util.typedef._
 import org.gridgain.grid.util.{GridConfigurationFinder, GridUtils => U}
 
 import org.apache.ignite.IgniteSystemProperties._

@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.message.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.concurrent.atomic.*;

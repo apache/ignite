@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;

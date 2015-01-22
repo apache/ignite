@@ -19,7 +19,6 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
@@ -33,7 +32,7 @@ import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.gridgain.grid.kernal.processors.query.*;
 import org.gridgain.grid.kernal.processors.query.h2.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 

@@ -46,7 +46,7 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;

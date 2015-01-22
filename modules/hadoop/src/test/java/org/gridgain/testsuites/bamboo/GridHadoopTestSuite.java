@@ -27,8 +27,8 @@ import org.gridgain.grid.kernal.processors.hadoop.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.collections.*;
 import org.gridgain.grid.kernal.processors.hadoop.shuffle.streams.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.communication.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.net.*;

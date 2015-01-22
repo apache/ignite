@@ -19,8 +19,7 @@ package org.gridgain.grid.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 /**
  * Test executes GridP2PTestTask on the remote node.

@@ -19,7 +19,7 @@ package org.gridgain.visor.commands.cache
 
 import org.gridgain.grid.kernal.visor.cache._
 import org.gridgain.grid.kernal.visor.node.{VisorGridConfiguration, VisorNodeConfigurationCollectorTask}
-import org.gridgain.grid.util.typedef._
+import org.apache.ignite.internal.util.typedef._
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode

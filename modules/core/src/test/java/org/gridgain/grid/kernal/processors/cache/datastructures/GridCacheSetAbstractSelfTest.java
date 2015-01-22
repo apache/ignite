@@ -20,14 +20,13 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 
 import java.util.*;

@@ -22,7 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.kernal.processors.closure.*;
 import org.apache.ignite.internal.util.io.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.*;
 import org.gridgain.testframework.junits.common.*;

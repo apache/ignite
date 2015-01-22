@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.tests.p2p;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 

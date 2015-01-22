@@ -20,7 +20,7 @@ package org.gridgain.grid.cache.spring;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.springframework.cache.*;
 import org.springframework.cache.support.*;
 

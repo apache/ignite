@@ -30,7 +30,7 @@ import org.gridgain.grid.kernal.visor.compute.*;
 import org.gridgain.grid.kernal.visor.ggfs.*;
 import org.gridgain.grid.kernal.visor.streamer.*;
 import org.apache.ignite.internal.util.ipc.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 

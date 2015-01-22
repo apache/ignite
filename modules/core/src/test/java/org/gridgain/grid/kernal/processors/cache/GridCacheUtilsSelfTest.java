@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
 

@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Thrown when an operation is performed on removed entry.

@@ -24,7 +24,7 @@ import org.apache.ignite.spi.authentication.*;
 import org.gridgain.grid.kernal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Default implementation of the authentication SPI which permits any request.

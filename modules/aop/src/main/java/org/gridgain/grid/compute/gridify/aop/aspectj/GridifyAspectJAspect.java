@@ -24,8 +24,7 @@ import org.apache.ignite.compute.gridify.aop.*;
 import org.aspectj.lang.*;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import java.lang.reflect.*;
 
 import static org.apache.ignite.IgniteState.*;

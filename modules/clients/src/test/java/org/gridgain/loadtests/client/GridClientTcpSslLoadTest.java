@@ -18,7 +18,7 @@
 package org.gridgain.loadtests.client;
 
 import org.apache.ignite.client.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Makes a long run to ensure stability and absence of memory leaks.

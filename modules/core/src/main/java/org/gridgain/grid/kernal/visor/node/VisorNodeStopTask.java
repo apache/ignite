@@ -19,10 +19,9 @@ package org.gridgain.grid.kernal.visor.node;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.task.*;
 import org.gridgain.grid.kernal.visor.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

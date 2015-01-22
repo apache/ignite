@@ -17,7 +17,7 @@
 
 package org.gridgain.visor.commands
 
-import org.gridgain.grid.util.scala.impl
+import org.apache.ignite.internal.util.scala.impl
 
 import org.gridgain.visor.visor
 

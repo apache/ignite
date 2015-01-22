@@ -24,12 +24,11 @@ import org.eclipse.jetty.util.*;
 import org.eclipse.jetty.util.log.*;
 import org.eclipse.jetty.util.thread.*;
 import org.eclipse.jetty.xml.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.rest.*;
 import org.gridgain.grid.kernal.processors.rest.protocols.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import org.xml.sax.*;
 

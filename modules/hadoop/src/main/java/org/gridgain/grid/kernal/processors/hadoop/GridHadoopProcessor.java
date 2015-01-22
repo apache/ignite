@@ -27,7 +27,7 @@ import org.gridgain.grid.kernal.processors.hadoop.shuffle.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.*;
 import org.gridgain.grid.kernal.processors.hadoop.taskexecutor.external.*;
 import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;

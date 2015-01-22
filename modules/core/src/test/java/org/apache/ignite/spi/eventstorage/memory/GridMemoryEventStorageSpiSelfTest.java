@@ -19,7 +19,7 @@ package org.apache.ignite.spi.eventstorage.memory;
 
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.spi.*;
 
 import java.util.*;

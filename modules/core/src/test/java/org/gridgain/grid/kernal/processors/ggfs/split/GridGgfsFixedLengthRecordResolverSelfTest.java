@@ -20,7 +20,7 @@ package org.gridgain.grid.kernal.processors.ggfs.split;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.fs.mapreduce.records.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
  * Fixed length split resolver self test.

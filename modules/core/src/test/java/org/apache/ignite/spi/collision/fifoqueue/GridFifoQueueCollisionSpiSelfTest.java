@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.collision.fifoqueue;
 
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.gridgain.testframework.junits.spi.*;
 
 import java.util.*;

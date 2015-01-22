@@ -18,7 +18,7 @@
 package org.apache.ignite.client.impl;
 
 import org.apache.ignite.client.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;

@@ -21,8 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
