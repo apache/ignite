@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
-
 /**
  * Near cache preload restart test.
  */

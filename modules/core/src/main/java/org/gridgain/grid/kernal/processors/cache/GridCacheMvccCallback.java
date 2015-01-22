@@ -17,8 +17,6 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
-
 /**
  * Lock and Unlock callbacks.
  */

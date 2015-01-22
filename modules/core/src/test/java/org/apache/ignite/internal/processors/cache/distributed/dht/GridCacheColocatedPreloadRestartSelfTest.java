@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
-
 /**
  * Colocated preload restart test.
  */

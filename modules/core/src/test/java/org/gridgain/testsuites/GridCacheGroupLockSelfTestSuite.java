@@ -20,7 +20,6 @@ package org.gridgain.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.replicated.*;
 
 /**
  * Group lock test suite.

@@ -21,7 +21,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
 import java.util.*;

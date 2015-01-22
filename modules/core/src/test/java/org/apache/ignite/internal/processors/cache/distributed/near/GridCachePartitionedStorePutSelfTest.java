@@ -24,7 +24,6 @@ import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 
@@ -34,7 +33,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.gridgain.grid.kernal.processors.cache.distributed.GridCacheModuloAffinityFunction.*;
 
 /**
  * Test that store is called correctly on puts.

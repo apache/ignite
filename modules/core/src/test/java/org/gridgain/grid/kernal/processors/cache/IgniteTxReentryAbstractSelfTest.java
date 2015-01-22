@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.tcp.*;
