@@ -3480,12 +3480,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    assert !lock.tryLock(1000, MILLISECONDS);
+                    assert !lock.tryLock();
 
                     latch.countDown();
 
                     try {
-                        assert lock.tryLock();
+                        assert lock.tryLock(2000, MILLISECONDS);
                     }
                     finally {
                         lock.unlock();
