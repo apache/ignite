@@ -36,7 +36,7 @@ import org.apache.ignite.streamer.window.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.executor.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.affinity.*;
+import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.service.*;
 import org.gridgain.grid.p2p.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.dr;
+package org.apache.ignite.internal.processors.cache.dr;
 
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -23,22 +23,22 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Cache DR info used as argument in PUT cache internal interfaces with expiration info added.
+ * Cache DR info used as argument in PUT cache internal interfaces.
  */
-public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
+public class GridCacheDrInfo<V> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** TTL. */
-    private long ttl;
+    /** Value. */
+    private V val;
 
-    /** Expire time. */
-    private long expireTime;
+    /** DR version. */
+    private GridCacheVersion ver;
 
     /**
-     *
+     * {@link Externalizable} support.
      */
-    public GridCacheDrExpirationInfo() {
+    public GridCacheDrInfo() {
         // No-op.
     }
 
@@ -47,44 +47,57 @@ public class GridCacheDrExpirationInfo<V> extends GridCacheDrInfo<V> {
      *
      * @param val Value.
      * @param ver Version.
-     * @param ttl TTL.
-     * @param expireTime Expire time.
      */
-    public GridCacheDrExpirationInfo(V val, GridCacheVersion ver, long ttl, long expireTime) {
-        super(val, ver);
+    public GridCacheDrInfo(V val, GridCacheVersion ver) {
+        assert val != null;
+        assert ver != null;
 
-        this.ttl = ttl;
-        this.expireTime = expireTime;
+        this.val = val;
+        this.ver = ver;
     }
 
-    /** {@inheritDoc} */
-    @Override public long ttl() {
-        return ttl;
+    /**
+     * @return Value.
+     */
+    public V value() {
+        return val;
     }
 
-    /** {@inheritDoc} */
-    @Override public long expireTime() {
-        return expireTime;
+    /**
+     * @return Version.
+     */
+    public GridCacheVersion version() {
+        return ver;
+    }
+
+    /**
+     * @return TTL.
+     */
+    public long ttl() {
+        return 0L;
+    }
+
+    /**
+     * @return Expire time.
+     */
+    public long expireTime() {
+        return 0L;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheDrExpirationInfo.class, this);
+        return S.toString(GridCacheDrInfo.class, this);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
-
-        out.writeLong(ttl);
-        out.writeLong(expireTime);
+        out.writeObject(val);
+        CU.writeVersion(out, ver);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-
-        ttl = in.readLong();
-        expireTime = in.readLong();
+        val = (V)in.readObject();
+        ver = CU.readVersion(in);
     }
 }

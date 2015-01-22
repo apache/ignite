@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.dr;
+package org.apache.ignite.internal.processors.cache.dr;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.affinity;
+package org.apache.ignite.internal.processors.cache.affinity;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
