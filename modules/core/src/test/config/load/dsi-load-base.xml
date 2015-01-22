@@ -30,6 +30,8 @@
     <bean abstract="true" id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="gridName" value="dsi"/>
 
+        <property name="localHost" value="127.0.0.1"/>
+
         <property name="marshaller">
             <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
                 <property name="classNames">
@@ -49,9 +51,8 @@
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean
+                            class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>127.0.0.1:47500</value>

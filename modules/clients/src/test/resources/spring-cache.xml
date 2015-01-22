@@ -43,6 +43,10 @@
         -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
+
+        <!-- Set to local host address just for examples. -->
+        <property name="localHost" value="127.0.0.1"/>
+
         <!-- Client configuration. -->
         <property name="clientConnectionConfiguration">
             <bean class="org.apache.ignite.configuration.ClientConnectionConfiguration"/>
@@ -199,9 +203,7 @@
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.GridTcpDiscoverySpi">
                 <property name="ipFinder">
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.GridTcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!--

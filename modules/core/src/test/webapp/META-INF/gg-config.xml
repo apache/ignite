@@ -65,6 +65,9 @@
             </bean>
         </property>
 
+        <!-- Set to local host address just for examples. -->
+        <property name="localHost" value="127.0.0.1"/>
+
         <!-- Configure REST TCP server address. -->
         <property name="restTcpHost" value="127.0.0.1"/>
 
@@ -299,9 +302,7 @@
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <!--
@@ -322,6 +323,21 @@
                             </list>
                         </property>
                     </bean>
+                    <!--
+                    Uncomment this to provide IP finder using multicast for nodes discovery.
+                    In addition to addresses received via multicast this finder can work with pre-configured
+                    list of addresses.
+                    -->
+                    <!--
+                    <bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>host1:port1</value>
+                                <value>host2:port2</value>
+                            </list>
+                        </property>
+                    </bean>
+                    -->
                 </property>
             </bean>
         </property>

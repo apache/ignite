@@ -29,6 +29,8 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="restEnabled" value="false"/>
 
+        <property name="localHost" value="127.0.0.1"/>
+
         <property name="networkTimeout" value="20000"/>
 
         <!--
@@ -112,9 +114,7 @@
                 <property name="statisticsPrintFrequency" value="60000"/>
 
                 <property name="ipFinder">
-                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
-                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
                                 <value>127.0.0.1:47500</value>
