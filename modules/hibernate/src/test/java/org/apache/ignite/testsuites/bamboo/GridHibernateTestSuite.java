@@ -18,8 +18,8 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.cache.hibernate.*;
-import org.gridgain.grid.cache.store.hibernate.*;
+import org.apache.ignite.cache.hibernate.*;
+import org.apache.ignite.cache.store.hibernate.*;
 
 /**
  * Hibernate integration tests.
