@@ -18,8 +18,8 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.gridgain.grid.ggfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 
 import static org.apache.ignite.testsuites.bamboo.GridHadoopTestSuite.*;
