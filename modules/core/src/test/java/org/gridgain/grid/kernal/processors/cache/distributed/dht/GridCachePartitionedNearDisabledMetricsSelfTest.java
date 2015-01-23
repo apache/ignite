@@ -104,7 +104,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         long misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetricsMxBean m = grid(i).cache(null).metrics();
+            CacheMetrics m = grid(i).cache(null).metrics();
 
             removes += m.getCacheRemovals();
             reads += m.getCacheGets();

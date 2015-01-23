@@ -21,14 +21,13 @@ import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.tostring.*;
 import org.gridgain.grid.util.typedef.internal.*;
 
-import javax.cache.management.*;
 import java.io.*;
 import java.util.concurrent.atomic.*;
 
 /**
  * Adapter for cache metrics.
  */
-public class CacheMetricsMxBeanImpl implements CacheMetricsMxBean, CacheStatisticsMXBean, Externalizable {
+public class CacheMetricsImpl implements CacheMetrics, Externalizable {
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
@@ -76,19 +75,19 @@ public class CacheMetricsMxBeanImpl implements CacheMetricsMxBean, CacheStatisti
 
     /** Cache metrics. */
     @GridToStringExclude
-    private transient CacheMetricsMxBeanImpl delegate;
+    private transient CacheMetricsImpl delegate;
 
     /**
      * No-args constructor.
      */
-    public CacheMetricsMxBeanImpl() {
+    public CacheMetricsImpl() {
         delegate = null;
     }
 
     /**
      * @param delegate Metrics to delegate to.
      */
-    public void delegate(CacheMetricsMxBeanImpl delegate) {
+    public void delegate(CacheMetricsImpl delegate) {
         this.delegate = delegate;
     }
 
@@ -400,6 +399,6 @@ public class CacheMetricsMxBeanImpl implements CacheMetricsMxBean, CacheStatisti
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheMetricsMxBeanImpl.class, this);
+        return S.toString(CacheMetricsImpl.class, this);
     }
 }

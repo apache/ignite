@@ -20,11 +20,77 @@ package org.gridgain.grid.cache;
 import org.apache.ignite.cache.CacheConfiguration;
 import org.apache.ignite.mbean.*;
 
+import javax.cache.management.CacheStatisticsMXBean;
+
 /**
  * This interface defines JMX view on {@link GridCache}.
  */
 @IgniteMBeanDescription("MBean that provides access to cache descriptor.")
-public interface GridCacheMBean {
+public interface IgniteCacheMxBean extends CacheStatisticsMXBean, CacheMetrics {
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Clear statistics.")
+    public void clear();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of hits.")
+    public long getCacheHits();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Percentage of successful hits.")
+    public float getCacheHitPercentage();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of misses.")
+    public long getCacheMisses();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Percentage of accesses that failed to find anything.")
+    public float getCacheMissPercentage();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of gets.")
+    public long getCacheGets();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of puts.")
+    public long getCachePuts();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of removals.")
+    public long getCacheRemovals();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of eviction entries.")
+    public long getCacheEvictions();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Average time to execute get.")
+    public float getAverageGetTime();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Average time to execute put.")
+    public float getAveragePutTime();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Average time to execute remove.")
+    public float getAverageRemoveTime();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Average time to commit transaction.")
+    public float getAverageTxCommitTime();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Average time to rollback transaction.")
+    public float getAverageTxRollbackTime();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of transaction commits.")
+    public long getCacheTxCommits();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Number of transaction rollback.")
+    public long getCacheTxRollbacks();
+
     /**
      * Gets name of this cache.
      *

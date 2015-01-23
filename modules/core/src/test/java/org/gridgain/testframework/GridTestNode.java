@@ -53,7 +53,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     private Object consistentId = consistentIdCtr.incrementAndGet();
 
     /** */
-    private ClusterNodeMetricsMBean metrics;
+    private ClusterNodeMetrics metrics;
 
     /** */
     private long order;
@@ -84,7 +84,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
      * @param id Node ID.
      * @param metrics Node metrics.
      */
-    public GridTestNode(UUID id, ClusterNodeMetricsMBean metrics) {
+    public GridTestNode(UUID id, ClusterNodeMetrics metrics) {
         this.id = id;
         this.metrics = metrics;
 
@@ -182,7 +182,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNodeMetricsMBean metrics() {
+    @Override public ClusterNodeMetrics metrics() {
         return metrics;
     }
 
@@ -208,7 +208,7 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
      *
      * @param metrics Node metrics.
      */
-    public void setMetrics(ClusterNodeMetricsMBean metrics) {
+    public void setMetrics(ClusterNodeMetrics metrics) {
         this.metrics = metrics;
     }
 

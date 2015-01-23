@@ -896,7 +896,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values()) {
             try {
                 ObjectName mb = U.registerCacheMBean(mBeanSrv, ctx.gridName(), cache.name(), "Cache",
-                    new GridCacheMBeanAdapter(cache.context()), GridCacheMBean.class);
+                    new CacheMxBeanAdapter(cache.context()), IgniteCacheMxBean.class);
 
                 cacheMBeans.add(mb);
 

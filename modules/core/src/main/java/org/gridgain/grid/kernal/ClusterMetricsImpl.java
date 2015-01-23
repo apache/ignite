@@ -260,7 +260,7 @@ class ClusterMetricsImpl implements ClusterMetrics {
         int size = nodes.size();
 
         for (ClusterNode node : nodes) {
-            ClusterNodeMetricsMBean m = node.metrics();
+            ClusterNodeMetrics m = node.metrics();
 
             minActJobs = min(minActJobs, m.getCurrentActiveJobs());
             maxActJobs = max(maxActJobs, m.getCurrentActiveJobs());

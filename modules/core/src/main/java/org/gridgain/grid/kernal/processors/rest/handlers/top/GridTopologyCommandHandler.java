@@ -201,7 +201,7 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         if (mtr) {
-            ClusterNodeMetricsMBean metrics = node.metrics();
+            ClusterNodeMetrics metrics = node.metrics();
 
             GridClientNodeMetricsBean metricsBean = new GridClientNodeMetricsBean();
 

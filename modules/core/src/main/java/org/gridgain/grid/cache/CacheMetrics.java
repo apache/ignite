@@ -23,7 +23,7 @@ import org.apache.ignite.*;
  * Cache metrics used to obtain statistics on cache itself.
  * Use {@link IgniteCache#metrics()} to obtain metrics for a cache.
  */
-public interface CacheMetricsMxBean {
+public interface CacheMetrics {
     /**
      * Clears the statistics counters to 0 for the associated Cache.
      */

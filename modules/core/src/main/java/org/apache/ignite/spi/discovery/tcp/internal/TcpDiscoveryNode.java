@@ -72,7 +72,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile ClusterNodeMetricsMBean metrics;
+    private volatile ClusterNodeMetrics metrics;
 
     /** Node order in the topology. */
     private volatile long order;
@@ -192,7 +192,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNodeMetricsMBean metrics() {
+    @Override public ClusterNodeMetrics metrics() {
         if (metricsProvider != null)
             metrics = metricsProvider.getMetrics();
 
@@ -204,7 +204,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      *
      * @param metrics Node metrics.
      */
-    public void setMetrics(ClusterNodeMetricsMBean metrics) {
+    public void setMetrics(ClusterNodeMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;

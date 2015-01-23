@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.dataload.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -148,7 +147,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     protected IgniteConfiguration gridCfg;
 
     /** Cache metrics. */
-    protected volatile CacheMetricsMxBeanImpl metrics;
+    protected volatile CacheMetricsImpl metrics;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -227,7 +226,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         log = ctx.gridConfig().getGridLogger().getLogger(getClass());
 
-        metrics = new CacheMetricsMxBeanImpl();
+        metrics = new CacheMetricsImpl();
 
         IgniteFsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
 
@@ -3392,14 +3391,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMxBean metrics() {
+    @Override public CacheMetrics metrics() {
         return metrics;
     }
 
     /**
      * @return Metrics.
      */
-    public CacheMetricsMxBeanImpl metrics0() {
+    public CacheMetricsImpl metrics0() {
         return metrics;
     }
 
@@ -5543,7 +5542,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     protected static abstract class UpdateTimeStatClosure<T> implements CI1<IgniteFuture<T>> {
         /** */
-        protected final CacheMetricsMxBeanImpl metrics;
+        protected final CacheMetricsImpl metrics;
 
         /** */
         protected final long start;
@@ -5552,7 +5551,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param metrics Metrics.
          * @param start   Start time.
          */
-        public UpdateTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+        public UpdateTimeStatClosure(CacheMetricsImpl metrics, long start) {
             this.metrics = metrics;
             this.start = start;
         }
@@ -5585,7 +5584,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param metrics Metrics.
          * @param start   Start time.
          */
-        public UpdateGetTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+        public UpdateGetTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
         }
 
@@ -5603,7 +5602,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param metrics Metrics.
          * @param start   Start time.
          */
-        public UpdateRemoveTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+        public UpdateRemoveTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
         }
 
@@ -5621,7 +5620,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param metrics Metrics.
          * @param start   Start time.
          */
-        public UpdatePutTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+        public UpdatePutTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
         }
 
@@ -5639,7 +5638,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param metrics Metrics.
          * @param start   Start time.
          */
-        public UpdatePutAndGetTimeStatClosure(CacheMetricsMxBeanImpl metrics, long start) {
+        public UpdatePutAndGetTimeStatClosure(CacheMetricsImpl metrics, long start) {
             super(metrics, start);
         }
 

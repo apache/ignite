@@ -4341,7 +4341,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                        for (T2<UUID, ClusterNodeMetricsMBean> t : metricsSet.clientMetrics())
+                        for (T2<UUID, ClusterNodeMetrics> t : metricsSet.clientMetrics())
                             updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
@@ -4355,7 +4355,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
-                        ClusterNodeMetricsMBean metrics = e.getValue().metrics();
+                        ClusterNodeMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
                             msg.setClientMetrics(locNodeId, nodeId, metrics);
@@ -4400,7 +4400,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param metrics Metrics.
          * @param tstamp Timestamp.
          */
-        private void updateMetrics(UUID nodeId, ClusterNodeMetricsMBean metrics, long tstamp) {
+        private void updateMetrics(UUID nodeId, ClusterNodeMetrics metrics, long tstamp) {
             assert nodeId != null;
             assert metrics != null;
 
@@ -5109,7 +5109,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private final Socket sock;
 
         /** Current client metrics. */
-        private volatile ClusterNodeMetricsMBean metrics;
+        private volatile ClusterNodeMetrics metrics;
 
         /**
          * @param sock Socket.
@@ -5125,7 +5125,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @return Current client metrics.
          */
-        ClusterNodeMetricsMBean metrics() {
+        ClusterNodeMetrics metrics() {
             return metrics;
         }
 

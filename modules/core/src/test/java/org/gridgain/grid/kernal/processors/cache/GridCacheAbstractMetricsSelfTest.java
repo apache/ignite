@@ -491,7 +491,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         int misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetricsMxBean m = grid(i).cache(null).metrics();
+            CacheMetrics m = grid(i).cache(null).metrics();
 
             puts += m.getCachePuts();
             reads += m.getCacheGets();
@@ -534,7 +534,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         // Check metrics for the whole cache.
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetricsMxBean m = grid(i).cache(null).metrics();
+            CacheMetrics m = grid(i).cache(null).metrics();
 
             assertEquals(m.getCacheHits() * 100f / m.getCacheGets(), m.getCacheHitPercentage(), 0.1f);
             assertEquals(m.getCacheMisses() * 100f / m.getCacheGets(), m.getCacheMissPercentage(), 0.1f);
@@ -569,7 +569,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         long misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            CacheMetricsMxBean m = grid(i).cache(null).metrics();
+            CacheMetrics m = grid(i).cache(null).metrics();
 
             puts += m.getCachePuts();
             reads += m.getCacheGets();

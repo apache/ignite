@@ -23,7 +23,7 @@ import org.gridgain.grid.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link org.gridgain.grid.cache.CacheMetricsMxBean}.
+ * Data transfer object for {@link org.gridgain.grid.cache.CacheMetrics}.
  */
 public class VisorCacheMetrics implements Serializable {
     /** */
@@ -100,7 +100,7 @@ public class VisorCacheMetrics implements Serializable {
     public static VisorCacheMetrics from(GridCache c) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
 
-        CacheMetricsMxBean m = c.metrics();
+        CacheMetrics m = c.metrics();
 
         cm.size = c.size();
 

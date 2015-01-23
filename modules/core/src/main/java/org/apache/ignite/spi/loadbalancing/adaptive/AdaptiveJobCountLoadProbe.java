@@ -83,7 +83,7 @@ public class AdaptiveJobCountLoadProbe implements AdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
-        ClusterNodeMetricsMBean metrics = node.metrics();
+        ClusterNodeMetrics metrics = node.metrics();
 
         if (useAvg) {
             double load = metrics.getAverageActiveJobs() + metrics.getAverageWaitingJobs();

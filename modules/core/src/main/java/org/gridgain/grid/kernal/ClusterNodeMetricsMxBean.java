@@ -15,25 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.discovery;
+package org.gridgain.grid.kernal;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.mbean.*;
 
 /**
- * Provides metrics to discovery SPI. It is responsibility of discovery SPI
- * to make sure that all nodes have updated metrics data about each other.
- * <p>
- * GridGain implementation will supply discovery SPI with metrics provider
- * via {@link DiscoverySpi#setMetricsProvider(DiscoveryMetricsProvider)}
- * method.
+ * MBean for local node metrics.
  */
-@GridToStringExclude
-public interface DiscoveryMetricsProvider {
-    /**
-     * This method always returns up-to-date metrics data about local node.
-     *
-     * @return Up to date metrics data about local node.
-     */
-    public ClusterNodeMetrics getMetrics();
+@IgniteMBeanDescription("MBean that provides access to all local node metrics.")
+public interface ClusterNodeMetricsMxBean extends ClusterNodeMetrics {
+    // No-op.
 }

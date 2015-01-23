@@ -963,7 +963,7 @@ public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest 
 
         GridClientDataMetrics m = dfltData.metrics();
 
-        CacheMetricsMxBean metrics = grid().cache(null).metrics();
+        CacheMetrics metrics = grid().cache(null).metrics();
 
         assertNotNull(m);
         assertEquals(metrics.getCacheGets(), m.reads());

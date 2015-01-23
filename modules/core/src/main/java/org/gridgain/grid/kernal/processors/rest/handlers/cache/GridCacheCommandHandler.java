@@ -1137,7 +1137,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteFuture<?> applyx(GridCacheProjection<Object, Object> c, GridKernalContext ctx) {
-            CacheMetricsMxBean metrics = c.cache().metrics();
+            CacheMetrics metrics = c.cache().metrics();
 
             assert metrics != null;
 

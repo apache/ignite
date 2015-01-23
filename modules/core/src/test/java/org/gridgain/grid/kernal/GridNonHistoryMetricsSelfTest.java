@@ -84,13 +84,13 @@ public class GridNonHistoryMetricsSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                ClusterNodeMetricsMBean metrics = ignite.cluster().localNode().metrics();
+                ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
                 return metrics.getTotalExecutedJobs() == 5;
             }
         }, 5000);
 
-        ClusterNodeMetricsMBean metrics = ignite.cluster().localNode().metrics();
+        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 

@@ -220,7 +220,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteTxMetrics metrics = grid(i).transactions().metrics();
-            CacheMetricsMxBean cacheMetrics = grid(i).cache(null).metrics();
+            CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
@@ -262,7 +262,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteTxMetrics metrics = grid(i).transactions().metrics();
-            CacheMetricsMxBean cacheMetrics = grid(i).cache(null).metrics();
+            CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
             assertEquals(0, cacheMetrics.getCacheTxCommits());

@@ -23,7 +23,7 @@ import org.gridgain.grid.cache.*;
 /**
  * Management bean that provides access to {@link GridCache}.
  */
-class GridCacheMBeanAdapter implements GridCacheMBean {
+class CacheMxBeanAdapter implements IgniteCacheMxBean {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
@@ -38,7 +38,7 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
      *
      * @param cctx Cache context.
      */
-    GridCacheMBeanAdapter(GridCacheContext<?, ?> cctx) {
+    CacheMxBeanAdapter(GridCacheContext<?, ?> cctx) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -213,5 +213,84 @@ class GridCacheMBeanAdapter implements GridCacheMBean {
     /** {@inheritDoc} */
     @Override public int getWriteBehindBufferSize() {
         return store != null ? store.getWriteBehindBufferSize() : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void clear() {
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheHits() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getCacheHitPercentage() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheMisses() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getCacheMissPercentage() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheGets() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCachePuts() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheRemovals() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheEvictions() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAverageGetTime() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAveragePutTime() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAverageRemoveTime() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAverageTxCommitTime() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getAverageTxRollbackTime() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheTxCommits() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCacheTxRollbacks() {
+        return 0;
     }
 }
