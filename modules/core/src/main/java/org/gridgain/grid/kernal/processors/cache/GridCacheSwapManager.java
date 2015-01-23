@@ -1434,11 +1434,10 @@ public class GridCacheSwapManager<K, V> extends GridCacheManagerAdapter<K, V> {
     }
 
     /**
-     * @param leftNodeId Left Node ID.
      * @param ldr Undeployed class loader.
      * @return Undeploy count.
      */
-    public int onUndeploy(UUID leftNodeId, ClassLoader ldr) {
+    public int onUndeploy(ClassLoader ldr) {
         if (cctx.portableEnabled())
             return 0;
 

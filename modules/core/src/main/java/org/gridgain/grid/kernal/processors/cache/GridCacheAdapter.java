@@ -951,11 +951,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /**
      * Undeploys and removes all entries for class loader.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader to undeploy.
      */
-    public void onUndeploy(@Nullable UUID leftNodeId, ClassLoader ldr) {
-        ctx.deploy().onUndeploy(leftNodeId, ldr);
+    public void onUndeploy(ClassLoader ldr) {
+        ctx.deploy().onUndeploy(ldr);
     }
 
     /** {@inheritDoc} */

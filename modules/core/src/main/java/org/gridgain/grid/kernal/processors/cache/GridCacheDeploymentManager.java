@@ -194,10 +194,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Undeploys given class loader.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader to undeploy.
      */
-    public void onUndeploy(@Nullable final UUID leftNodeId, final ClassLoader ldr) {
+    public void onUndeploy(final ClassLoader ldr) {
         assert ldr != null;
 
         if (log.isDebugEnabled())
@@ -205,7 +204,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
         undeploys.add(new CA() {
             @Override public void apply() {
-                onUndeploy0(leftNodeId, ldr);
+                onUndeploy0(ldr);
             }
         });
 
@@ -218,10 +217,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @param leftNodeId Left node ID.
      * @param ldr Loader.
      */
-    private void onUndeploy0(@Nullable final UUID leftNodeId, final ClassLoader ldr) {
+    private void onUndeploy0(final ClassLoader ldr) {
         for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
             GridCacheAdapter<K, V> cache = cacheCtx.cache();
 
@@ -295,8 +293,8 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
 
             // Examine swap for entries to undeploy.
             int swapUndeployCnt = cacheCtx.isNear() ?
-                cacheCtx.near().dht().context().swap().onUndeploy(leftNodeId, ldr) :
-                cacheCtx.swap().onUndeploy(leftNodeId, ldr);
+                cacheCtx.near().dht().context().swap().onUndeploy(ldr) :
+                cacheCtx.swap().onUndeploy(ldr);
 
             if (cacheCtx.system())
                 continue;

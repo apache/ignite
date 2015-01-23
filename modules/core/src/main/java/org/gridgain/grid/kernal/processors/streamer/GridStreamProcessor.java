@@ -351,11 +351,10 @@ public class GridStreamProcessor extends GridProcessorAdapter {
     /**
      * Callback for undeployed class loaders.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader.
      */
-    public void onUndeployed(UUID leftNodeId, ClassLoader ldr) {
+    public void onUndeployed(ClassLoader ldr) {
         for (IgniteStreamerEx streamer : map.values())
-            streamer.onUndeploy(leftNodeId, ldr);
+            streamer.onUndeploy(ldr);
     }
 }
