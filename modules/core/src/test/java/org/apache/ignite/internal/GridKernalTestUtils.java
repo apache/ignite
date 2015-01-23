@@ -15,23 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal;
 
-import junit.framework.*;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.internal.*;
 
 /**
- * Externalizable self-test suite.
+ * Test kernal utils.
  */
-public class GridExternalizableSelfTestSuite extends TestSuite {
+public class GridKernalTestUtils {
     /**
-     * @return Test suite.
+     * Ensures singleton.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Gridgain Externalizable Test Suite");
+    private GridKernalTestUtils() {
+        /* No-op. */
+    }
 
-        suite.addTest(new TestSuite(GridTopicExternalizableSelfTest.class));
+    /**
+     * Returns context by grid.
+     *
+     * @param ignite Grid.
+     * @return Kernal context.
+     */
+    public static GridKernalContext context(Ignite ignite) {
+        assert ignite != null;
 
-        return suite;
+        return ((GridKernal) ignite).context();
     }
 }

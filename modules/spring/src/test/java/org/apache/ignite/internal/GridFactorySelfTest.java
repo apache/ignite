@@ -53,7 +53,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
  * Tests for {@link org.apache.ignite.Ignition}.
- * @see org.gridgain.grid.kernal.GridFactoryVmShutdownTest
+ * @see GridFactoryVmShutdownTest
  */
 @SuppressWarnings("UnusedDeclaration")
 @GridCommonTest(group = "NonDistributed Kernal Self")

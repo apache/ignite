@@ -18,8 +18,8 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.testsuites.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.p2p.*;

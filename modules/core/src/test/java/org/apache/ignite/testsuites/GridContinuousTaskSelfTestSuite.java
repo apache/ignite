@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.kernal.*;
+import org.apache.ignite.internal.*;
 
 /**
  * Continuous task self-test suite.

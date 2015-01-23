@@ -34,7 +34,6 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;

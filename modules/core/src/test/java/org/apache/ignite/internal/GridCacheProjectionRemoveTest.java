@@ -15,23 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal;
 
-import junit.framework.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 
 /**
- * Externalizable self-test suite.
+ *
  */
-public class GridExternalizableSelfTestSuite extends TestSuite {
+public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
     /**
-     * @return Test suite.
+     * @throws IgniteCheckedException If failed.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Gridgain Externalizable Test Suite");
+    public void testRemove() throws IgniteCheckedException {
+        cache().put("key", 1);
 
-        suite.addTest(new TestSuite(GridTopicExternalizableSelfTest.class));
-
-        return suite;
+        assert cache().remove("key", 1);
+        assert !cache().remove("key", 1);
     }
 }
