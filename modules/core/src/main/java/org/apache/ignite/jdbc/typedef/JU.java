@@ -20,9 +20,9 @@ package org.apache.ignite.jdbc.typedef;
 import org.apache.ignite.jdbc.util.*;
 
 /**
- * Defines internal {@code typedef} for {@link GridJdbcUtils}.
+ * Defines internal {@code typedef} for {@link org.apache.ignite.jdbc.util.IgniteJdbcUtils}.
  */
 @SuppressWarnings("ExtendsUtilityClass")
-public class JU extends GridJdbcUtils {
+public class JU extends IgniteJdbcUtils {
     // No-op
 }

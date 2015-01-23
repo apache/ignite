@@ -20,7 +20,7 @@ package org.apache.ignite.jdbc;
 /**
  * Connection properties.
  */
-class GridJdbcConnectionInfo {
+class IgniteJdbcConnectionInfo {
     /** URL. */
     private final String url;
 
@@ -36,7 +36,7 @@ class GridJdbcConnectionInfo {
     /**
      * @param url URL.
      */
-    GridJdbcConnectionInfo(String url) {
+    IgniteJdbcConnectionInfo(String url) {
         this.url = url;
     }
 

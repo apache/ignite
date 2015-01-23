@@ -200,7 +200,7 @@ import java.util.logging.*;
  * <h1 class="header">Example</h1>
  * <pre name="code" class="java">
  * // Register JDBC driver.
- * Class.forName("org.gridgain.jdbc.GridJdbcDriver");
+ * Class.forName("org.gridgain.jdbc.IgniteJdbcDriver");
  *
  * // Open JDBC connection.
  * Connection conn = DriverManager.getConnection("jdbc:gridgain://localhost/cache");
@@ -230,7 +230,7 @@ import java.util.logging.*;
  * </pre>
  */
 @SuppressWarnings("JavadocReference")
-public class GridJdbcDriver implements Driver {
+public class IgniteJdbcDriver implements Driver {
     /** Prefix for property names. */
     private static final String PROP_PREFIX = "gg.jdbc.";
 
@@ -266,7 +266,7 @@ public class GridJdbcDriver implements Driver {
      */
     static {
         try {
-            DriverManager.registerDriver(new GridJdbcDriver());
+            DriverManager.registerDriver(new IgniteJdbcDriver());
         }
         catch (SQLException e) {
             throw new RuntimeException("Failed to register GridGain JDBC driver.", e);
@@ -278,7 +278,7 @@ public class GridJdbcDriver implements Driver {
         if (!parseUrl(url, props))
             throw new SQLException("URL is invalid: " + url);
 
-        return new GridJdbcConnection(url, props);
+        return new IgniteJdbcConnection(url, props);
     }
 
     /** {@inheritDoc} */

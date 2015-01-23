@@ -25,12 +25,12 @@ import java.util.concurrent.*;
 
 import static java.sql.ResultSet.*;
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.jdbc.GridJdbcDriver.*;
+import static org.apache.ignite.jdbc.IgniteJdbcDriver.*;
 
 /**
  * JDBC connection implementation.
  */
-class GridJdbcConnection implements Connection {
+class IgniteJdbcConnection implements Connection {
     /** Validation task name. */
     private static final String VALID_TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcValidationTask";
@@ -60,7 +60,7 @@ class GridJdbcConnection implements Connection {
      * @param props Additional properties.
      * @throws SQLException In case GridGain client failed to start.
      */
-    GridJdbcConnection(String url, Properties props) throws SQLException {
+    IgniteJdbcConnection(String url, Properties props) throws SQLException {
         assert url != null;
         assert props != null;
 
@@ -167,7 +167,7 @@ class GridJdbcConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new GridJdbcDatabaseMetadata(this);
+        return new IgniteJdbcDatabaseMetadata(this);
     }
 
     /** {@inheritDoc} */
@@ -315,7 +315,7 @@ class GridJdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        GridJdbcStatement stmt = new GridJdbcStatement(this);
+        IgniteJdbcStatement stmt = new IgniteJdbcStatement(this);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -337,7 +337,7 @@ class GridJdbcConnection implements Connection {
         if (resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        GridJdbcPreparedStatement stmt = new GridJdbcPreparedStatement(this, sql);
+        IgniteJdbcPreparedStatement stmt = new IgniteJdbcPreparedStatement(this, sql);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -541,7 +541,7 @@ class GridJdbcConnection implements Connection {
      * @return Internal statement.
      * @throws SQLException In case of error.
      */
-    GridJdbcStatement createStatement0() throws SQLException {
-        return (GridJdbcStatement)createStatement();
+    IgniteJdbcStatement createStatement0() throws SQLException {
+        return (IgniteJdbcStatement)createStatement();
     }
 }

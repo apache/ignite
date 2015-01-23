@@ -29,7 +29,7 @@ import static java.sql.ResultSet.*;
 /**
  * JDBC statement implementation.
  */
-class GridJdbcStatement implements Statement {
+class IgniteJdbcStatement implements Statement {
     /** Task name. */
     private static final String TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
@@ -38,7 +38,7 @@ class GridJdbcStatement implements Statement {
     private static final int DFLT_FETCH_SIZE = 1024;
 
     /** Connection. */
-    private final GridJdbcConnection conn;
+    private final IgniteJdbcConnection conn;
 
     /** Closed flag. */
     private boolean closed;
@@ -63,7 +63,7 @@ class GridJdbcStatement implements Statement {
      *
      * @param conn Connection.
      */
-    GridJdbcStatement(GridJdbcConnection conn) {
+    IgniteJdbcStatement(IgniteJdbcConnection conn) {
         assert conn != null;
 
         this.conn = conn;
@@ -103,7 +103,7 @@ class GridJdbcStatement implements Statement {
                 Collection<List<Object>> fields = (Collection<List<Object>>)msg.get(5);
                 boolean finished = (Boolean)msg.get(6);
 
-                return new GridJdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
+                return new IgniteJdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
             }
         }
         catch (GridClientException e) {
@@ -433,7 +433,7 @@ class GridJdbcStatement implements Statement {
     /**
      * @return Connection.
      */
-    GridJdbcConnection connection() {
+    IgniteJdbcConnection connection() {
         return conn;
     }
 

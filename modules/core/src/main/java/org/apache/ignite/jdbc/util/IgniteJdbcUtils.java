@@ -31,7 +31,7 @@ import static java.sql.Types.*;
 /**
  * Utility methods for JDBC driver.
  */
-public class GridJdbcUtils {
+public class IgniteJdbcUtils {
     /** Marshaller. */
     private static final IgniteMarshaller MARSHALLER = new IgniteJdkMarshaller();
 

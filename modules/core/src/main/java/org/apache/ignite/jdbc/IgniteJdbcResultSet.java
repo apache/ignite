@@ -31,13 +31,13 @@ import java.util.*;
 /**
  * JDBC result set implementation.
  */
-class GridJdbcResultSet implements ResultSet {
+class IgniteJdbcResultSet implements ResultSet {
     /** Task name. */
     private static final String TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcTask";
 
     /** Statement. */
-    private final GridJdbcStatement stmt;
+    private final IgniteJdbcStatement stmt;
 
     /** Node ID. */
     private final UUID nodeId;
@@ -88,9 +88,9 @@ class GridJdbcResultSet implements ResultSet {
      * @param finished Finished flag.
      * @param fetchSize Fetch size.
      */
-    GridJdbcResultSet(GridJdbcStatement stmt, UUID nodeId, UUID futId,
-        List<String> tbls, List<String> cols, List<String> types,
-        Collection<List<Object>> fields, boolean finished, int fetchSize) {
+    IgniteJdbcResultSet(IgniteJdbcStatement stmt, UUID nodeId, UUID futId,
+                        List<String> tbls, List<String> cols, List<String> types,
+                        Collection<List<Object>> fields, boolean finished, int fetchSize) {
         assert stmt != null;
         assert nodeId != null;
         assert futId != null;
@@ -122,8 +122,8 @@ class GridJdbcResultSet implements ResultSet {
      * @param types Types.
      * @param fields Fields.
      */
-    GridJdbcResultSet(GridJdbcStatement stmt, List<String> tbls, List<String> cols,
-        List<String> types, Collection<List<Object>> fields) {
+    IgniteJdbcResultSet(IgniteJdbcStatement stmt, List<String> tbls, List<String> cols,
+                        List<String> types, Collection<List<Object>> fields) {
         assert stmt != null;
         assert tbls != null;
         assert cols != null;
@@ -430,7 +430,7 @@ class GridJdbcResultSet implements ResultSet {
     @Override public ResultSetMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return new GridJdbcResultSetMetadata(tbls, cols, types);
+        return new IgniteJdbcResultSetMetadata(tbls, cols, types);
     }
 
     /** {@inheritDoc} */

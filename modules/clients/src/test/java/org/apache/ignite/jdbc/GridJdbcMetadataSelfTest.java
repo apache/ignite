@@ -87,7 +87,7 @@ public class GridJdbcMetadataSelfTest extends GridCommonAbstractTest {
         personCache.put(new GridCacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new GridCacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        Class.forName("org.gridgain.jdbc.GridJdbcDriver");
+        Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
     }
 
     /** {@inheritDoc} */

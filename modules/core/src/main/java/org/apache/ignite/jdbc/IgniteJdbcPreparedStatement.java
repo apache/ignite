@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * JDBC prepared statement implementation.
  */
-class GridJdbcPreparedStatement extends GridJdbcStatement implements PreparedStatement {
+class IgniteJdbcPreparedStatement extends IgniteJdbcStatement implements PreparedStatement {
     /** SQL query. */
     private final String sql;
 
@@ -40,7 +40,7 @@ class GridJdbcPreparedStatement extends GridJdbcStatement implements PreparedSta
      * @param conn Connection.
      * @param sql SQL query.
      */
-    GridJdbcPreparedStatement(GridJdbcConnection conn, String sql) {
+    IgniteJdbcPreparedStatement(IgniteJdbcConnection conn, String sql) {
         super(conn);
 
         this.sql = sql;

@@ -32,13 +32,13 @@ import static java.sql.RowIdLifetime.*;
  * JDBC database metadata implementation.
  */
 @SuppressWarnings("RedundantCast")
-class GridJdbcDatabaseMetadata implements DatabaseMetaData {
+class IgniteJdbcDatabaseMetadata implements DatabaseMetaData {
     /** Task name. */
     private static final String TASK_NAME =
         "org.apache.ignite.internal.processors.cache.query.jdbc.GridCacheQueryJdbcMetadataTask";
 
     /** Connection. */
-    private final GridJdbcConnection conn;
+    private final IgniteJdbcConnection conn;
 
     /** Metadata. */
     private Map<String, Map<String, Map<String, String>>> meta;
@@ -49,7 +49,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /**
      * @param conn Connection.
      */
-    GridJdbcDatabaseMetadata(GridJdbcConnection conn) {
+    IgniteJdbcDatabaseMetadata(IgniteJdbcConnection conn) {
         this.conn = conn;
     }
 
@@ -646,7 +646,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getProcedures(String catalog, String schemaPtrn,
         String procedureNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
@@ -660,7 +660,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getProcedureColumns(String catalog, String schemaPtrn, String procedureNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
@@ -692,7 +692,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
                         if (matches(tbl, tblNamePtrn))
                             rows.add(tableRow(schema.getKey(), tbl));
 
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
@@ -733,7 +733,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getCatalogs() throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT"),
@@ -744,7 +744,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getTableTypes() throws SQLException {
-        return new GridJdbcResultSet(conn.createStatement0(),
+        return new IgniteJdbcResultSet(conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.singletonList("TABLE_TYPE"),
             Collections.<String>singletonList(String.class.getName()),
@@ -769,7 +769,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
                                 JU.type(col.getValue()), JU.typeName(col.getValue()),
                                 JU.nullable(col.getKey(), col.getValue()), ++cnt));
 
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
@@ -827,7 +827,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getColumnPrivileges(String catalog, String schema, String tbl,
         String colNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -839,7 +839,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getTablePrivileges(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -851,7 +851,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getBestRowIdentifier(String catalog, String schema, String tbl, int scope,
         boolean nullable) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -862,7 +862,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getVersionColumns(String catalog, String schema, String tbl) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -884,7 +884,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
                         rows.add(Arrays.<Object>asList((String)null, s.getKey().toUpperCase(),
                             t.getKey().toUpperCase(), "_KEY", 1, "_KEY"));
 
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
@@ -896,7 +896,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getImportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -907,7 +907,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getExportedKeys(String catalog, String schema, String tbl) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -919,7 +919,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getCrossReference(String parentCatalog, String parentSchema, String parentTbl,
         String foreignCatalog, String foreignSchema, String foreignTbl) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -930,7 +930,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getTypeInfo() throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -969,7 +969,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
             }
         }
 
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "NON_UNIQUE", "INDEX_QUALIFIER",
@@ -1046,7 +1046,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getUDTs(String catalog, String schemaPtrn, String typeNamePtrn,
         int[] types) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1083,7 +1083,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTypes(String catalog, String schemaPtrn,
         String typeNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1095,7 +1095,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getSuperTables(String catalog, String schemaPtrn,
         String tblNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1107,7 +1107,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getAttributes(String catalog, String schemaPtrn, String typeNamePtrn,
         String attributeNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1176,7 +1176,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
             if (matches(schema, schemaPtrn))
                 rows.add(Arrays.<Object>asList(schema, (String)null));
 
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
@@ -1197,7 +1197,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public ResultSet getClientInfoProperties() throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),
@@ -1209,7 +1209,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getFunctions(String catalog, String schemaPtrn,
         String functionNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
@@ -1223,7 +1223,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getFunctionColumns(String catalog, String schemaPtrn, String functionNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
@@ -1255,7 +1255,7 @@ class GridJdbcDatabaseMetadata implements DatabaseMetaData {
     /** {@inheritDoc} */
     @Override public ResultSet getPseudoColumns(String catalog, String schemaPtrn, String tblNamePtrn,
         String colNamePtrn) throws SQLException {
-        return new GridJdbcResultSet(
+        return new IgniteJdbcResultSet(
             conn.createStatement0(),
             Collections.<String>emptyList(),
             Collections.<String>emptyList(),

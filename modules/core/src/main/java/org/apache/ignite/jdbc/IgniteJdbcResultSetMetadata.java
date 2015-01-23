@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * JDBC result set metadata implementation.
  */
-class GridJdbcResultSetMetadata implements ResultSetMetaData {
+class IgniteJdbcResultSetMetadata implements ResultSetMetaData {
     /** Column width. */
     private static final int COL_WIDTH = 30;
 
@@ -43,7 +43,7 @@ class GridJdbcResultSetMetadata implements ResultSetMetaData {
      * @param cols Column names.
      * @param types Types.
      */
-    GridJdbcResultSetMetadata(List<String> tbls, List<String> cols, List<String> types) {
+    IgniteJdbcResultSetMetadata(List<String> tbls, List<String> cols, List<String> types) {
         assert cols != null;
         assert types != null;
 
