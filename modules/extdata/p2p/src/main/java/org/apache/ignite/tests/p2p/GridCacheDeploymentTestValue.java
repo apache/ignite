@@ -15,28 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
-
-import org.apache.ignite.internal.util.typedef.internal.*;
+package org.apache.ignite.tests.p2p;
 
 import java.io.*;
 
 /**
- *
+ * Value object for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestValue3 implements Serializable {
-    /** */
-    private String val = "test-" + System.currentTimeMillis();
-
-    /**
-     * @return Value.
-     */
-    public String getValue() {
-        return val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCacheDeploymentTestValue3.class, this);
-    }
+public class GridCacheDeploymentTestValue implements Serializable {
 }

@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
@@ -30,10 +29,7 @@ import java.util.*;
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Object> {
-    /** Number of puts. */
-    private static final int PUT_CNT = 100;
-
+public class GridCacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable ClusterNode node) throws IgniteCheckedException {
@@ -42,14 +38,9 @@ public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() throws IgniteCheckedException {
-                    X.println("Executing GridCacheDeploymentTestTask1 job on node " +
+                @Override public Object execute() {
+                    X.println("Executing GridCacheDeploymentTestTask2 job on node " +
                         ignite.cluster().localNode().id());
-
-                    GridCache<String, GridCacheDeploymentTestValue> cache = ignite.cache(null);
-
-                    for (int i = 0; i < PUT_CNT; i++)
-                        cache.putx("1" + i, new GridCacheDeploymentTestValue());
 
                     return null;
                 }

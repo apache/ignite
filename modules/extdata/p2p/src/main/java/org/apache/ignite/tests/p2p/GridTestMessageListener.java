@@ -15,35 +15,41 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
-import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.internal.util.typedef.*;
+
+import java.util.*;
+import java.util.concurrent.atomic.*;
 
 /**
- * Simple event filter
+ * Test message listener.
  */
-@SuppressWarnings({"ProhibitedExceptionThrown"})
-public class GridP2PEventFilterExternalPath2 implements IgnitePredicate<IgniteEvent> {
-    /** Instance of grid. Used for save class loader and injected resource. */
+public class GridTestMessageListener implements P2<UUID, Object> {
+    /** */
     @IgniteInstanceResource
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public boolean apply(IgniteEvent evt) {
-        try {
-            int[] res = new int[] {
-                System.identityHashCode(getClass().getClassLoader())
-            };
+    @Override public boolean apply(UUID nodeId, Object msg) {
+        ignite.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() +
+            ", msg=" + msg + ']');
 
-            ignite.message(ignite.cluster().forRemotes()).send(null, res);
+        ClusterNodeLocalMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
+
+        AtomicInteger cnt = map.get("msgCnt");
+
+        if (cnt == null) {
+            AtomicInteger old = map.putIfAbsent("msgCnt", cnt = new AtomicInteger(0));
+
+            if (old != null)
+                cnt = old;
         }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
+
+        cnt.incrementAndGet();
 
         return true;
     }

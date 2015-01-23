@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
@@ -27,12 +28,17 @@ import java.util.*;
 /**
  * Test task for {@code GridP2PContinuousDeploymentSelfTest}.
  */
-public class GridP2PContinuousDeploymentTask2 extends ComputeTaskSplitAdapter<Object, Object> {
+public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
         return Collections.singleton(new ComputeJobAdapter() {
-            @Override public Object execute() {
-                X.println(">>> Executing GridP2PContinuousDeploymentTask2 job.");
+            @IgniteInstanceResource
+            private Ignite ignite;
+
+            @Override public Object execute() throws IgniteCheckedException {
+                X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
+
+                ignite.cache(null).putx("key", new GridTestUserResource());
 
                 return null;
             }

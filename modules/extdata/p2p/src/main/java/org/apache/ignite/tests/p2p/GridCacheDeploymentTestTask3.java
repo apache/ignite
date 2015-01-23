@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -26,23 +27,31 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Test task for {@code GridP2PContinuousDeploymentSelfTest}.
+ * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridP2PContinuousDeploymentTask1 extends ComputeTaskSplitAdapter<Object, Object> {
+public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode, String>, Object> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
-        return Collections.singleton(new ComputeJobAdapter() {
-            @IgniteInstanceResource
-            private Ignite ignite;
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+        @Nullable T2<ClusterNode, String> tup) throws IgniteCheckedException {
+        final String val = tup.getValue();
 
-            @Override public Object execute() throws IgniteCheckedException {
-                X.println(">>> Executing GridP2PContinuousDeploymentTask1 job.");
+        return F.asMap(
+                new ComputeJobAdapter() {
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
-                ignite.cache(null).putx("key", new GridTestUserResource());
+                    @Override public Object execute() throws IgniteCheckedException {
+                        X.println("Executing GridCacheDeploymentTestTask3 job on node " +
+                                ignite.cluster().localNode().id());
 
-                return null;
-            }
-        });
+                        ignite.<String, GridCacheDeploymentTestValue>cache(null).putx(val,
+                                new GridCacheDeploymentTestValue());
+
+                        return null;
+                    }
+                },
+                tup.get1()
+        );
     }
 
     /** {@inheritDoc} */

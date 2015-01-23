@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;

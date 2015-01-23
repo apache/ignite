@@ -15,38 +15,49 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
-
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-
-import java.util.*;
+package org.apache.ignite.tests.p2p;
 
 /**
- * This node filter excludes the node with the given UUID
- * from the topology.
+ * Test key for cache deployment tests.
  */
-public class GridExcludeNodeFilter implements IgnitePredicate<ClusterNode> {
-    /** Node ID to exclude. */
-    private final UUID excludeId;
+public class GridCacheDeploymentTestKey {
+    /** */
+    private String key;
 
     /**
-     * @param excludeId Excluded node UUID.
+     * Empty constructor.
      */
-    public GridExcludeNodeFilter(UUID excludeId) {
-        assert excludeId != null;
+    public GridCacheDeploymentTestKey() {
+        // No-op.
+    }
 
-        this.excludeId = excludeId;
+    /**
+     * @param key Key.
+     */
+    public GridCacheDeploymentTestKey(String key) {
+        this.key = key;
+    }
+
+    /**
+     * @param key Key value.
+     */
+    public void key(String key) {
+        this.key = key;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(ClusterNode e) {
-        return !excludeId.equals(e.id());
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        GridCacheDeploymentTestKey that = (GridCacheDeploymentTestKey)o;
+
+        return !(key != null ? !key.equals(that.key) : that.key != null);
+
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridExcludeNodeFilter.class, this);
+    @Override public int hashCode() {
+        return key != null ? key.hashCode() : 0;
     }
 }

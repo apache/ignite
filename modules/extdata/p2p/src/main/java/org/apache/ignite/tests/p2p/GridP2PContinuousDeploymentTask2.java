@@ -15,42 +15,32 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.jetbrains.annotations.*;
 
 import java.util.*;
-import java.util.concurrent.atomic.*;
 
 /**
- * Test message listener.
+ * Test task for {@code GridP2PContinuousDeploymentSelfTest}.
  */
-public class GridTestMessageListener implements P2<UUID, Object> {
-    /** */
-    @IgniteInstanceResource
-    private Ignite ignite;
+public class GridP2PContinuousDeploymentTask2 extends ComputeTaskSplitAdapter<Object, Object> {
+    /** {@inheritDoc} */
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        return Collections.singleton(new ComputeJobAdapter() {
+            @Override public Object execute() {
+                X.println(">>> Executing GridP2PContinuousDeploymentTask2 job.");
+
+                return null;
+            }
+        });
+    }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(UUID nodeId, Object msg) {
-        ignite.log().info("Received message [nodeId=" + nodeId + ", locNodeId=" + ignite.cluster().localNode().id() +
-            ", msg=" + msg + ']');
-
-        ClusterNodeLocalMap<String, AtomicInteger> map = ignite.cluster().nodeLocalMap();
-
-        AtomicInteger cnt = map.get("msgCnt");
-
-        if (cnt == null) {
-            AtomicInteger old = map.putIfAbsent("msgCnt", cnt = new AtomicInteger(0));
-
-            if (old != null)
-                cnt = old;
-        }
-
-        cnt.incrementAndGet();
-
-        return true;
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        return null;
     }
 }

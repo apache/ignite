@@ -15,17 +15,36 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
+import org.gridgain.grid.*;
 
 /**
- * Projection predicate for event consume test.
+ * Simple event filter
  */
-public class GridEventConsumeProjectionPredicate implements PN {
+@SuppressWarnings({"ProhibitedExceptionThrown"})
+public class GridP2PEventFilterExternalPath1 implements IgnitePredicate<IgniteEvent> {
+    /** Instance of grid. Used for save class loader and injected resource. */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
     /** {@inheritDoc} */
-    @Override public boolean apply(ClusterNode n) {
+    @Override public boolean apply(IgniteEvent evt) {
+        try {
+            int[] res = new int[] {
+                System.identityHashCode(getClass().getClassLoader())
+            };
+
+            ignite.message(ignite.cluster().forRemotes()).send(null, res);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e);
+        }
+
         return true;
     }
 }

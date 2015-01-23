@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.io.*;
 import java.util.*;

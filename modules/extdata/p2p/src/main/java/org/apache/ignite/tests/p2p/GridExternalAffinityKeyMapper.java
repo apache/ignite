@@ -15,17 +15,24 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.events.*;
-import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.cache.affinity.*;
 
 /**
- * Filter for event consume test.
+ * Test mapper for P2P class loading tests.
  */
-public class GridEventConsumeFilter implements P1<IgniteEvent> {
+public class GridExternalAffinityKeyMapper implements GridCacheAffinityKeyMapper {
     /** {@inheritDoc} */
-    @Override public boolean apply(IgniteEvent e) {
-        return true;
+    @Override public Object affinityKey(Object key) {
+        if (key instanceof Integer)
+            return 1 == (Integer)key ? key : 0;
+
+        return key;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        // This mapper is stateless and needs no initialization logic.
     }
 }

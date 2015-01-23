@@ -15,24 +15,28 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
+import java.io.*;
 
 /**
- * Test mapper for P2P class loading tests.
+ *
  */
-public class GridExternalAffinityKeyMapper implements GridCacheAffinityKeyMapper {
-    /** {@inheritDoc} */
-    @Override public Object affinityKey(Object key) {
-        if (key instanceof Integer)
-            return 1 == (Integer)key ? key : 0;
+public class GridCacheDeploymentTestValue3 implements Serializable {
+    /** */
+    private String val = "test-" + System.currentTimeMillis();
 
-        return key;
+    /**
+     * @return Value.
+     */
+    public String getValue() {
+        return val;
     }
 
     /** {@inheritDoc} */
-    @Override public void reset() {
-        // This mapper is stateless and needs no initialization logic.
+    @Override public String toString() {
+        return S.toString(GridCacheDeploymentTestValue3.class, this);
     }
 }

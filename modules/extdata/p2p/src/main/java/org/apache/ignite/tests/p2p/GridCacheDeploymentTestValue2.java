@@ -15,21 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
-
-import java.io.*;
+package org.apache.ignite.tests.p2p;
 
 /**
- * Test message topic.
+ * Second test value for deployment.
  */
-public class GridTestMessageTopic implements Serializable {
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this != o && getClass() == o.getClass();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return 123;
-    }
+public class GridCacheDeploymentTestValue2 {
 }

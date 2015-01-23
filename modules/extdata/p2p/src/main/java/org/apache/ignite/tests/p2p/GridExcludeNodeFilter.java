@@ -15,36 +15,38 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.*;
-import org.apache.ignite.events.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
+import java.util.*;
 
 /**
- * Simple event filter
+ * This node filter excludes the node with the given UUID
+ * from the topology.
  */
-@SuppressWarnings({"ProhibitedExceptionThrown"})
-public class GridP2PEventFilterExternalPath1 implements IgnitePredicate<IgniteEvent> {
-    /** Instance of grid. Used for save class loader and injected resource. */
-    @IgniteInstanceResource
-    private Ignite ignite;
+public class GridExcludeNodeFilter implements IgnitePredicate<ClusterNode> {
+    /** Node ID to exclude. */
+    private final UUID excludeId;
+
+    /**
+     * @param excludeId Excluded node UUID.
+     */
+    public GridExcludeNodeFilter(UUID excludeId) {
+        assert excludeId != null;
+
+        this.excludeId = excludeId;
+    }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(IgniteEvent evt) {
-        try {
-            int[] res = new int[] {
-                System.identityHashCode(getClass().getClassLoader())
-            };
+    @Override public boolean apply(ClusterNode e) {
+        return !excludeId.equals(e.id());
+    }
 
-            ignite.message(ignite.cluster().forRemotes()).send(null, res);
-        }
-        catch (IgniteCheckedException e) {
-            throw new RuntimeException(e);
-        }
-
-        return true;
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridExcludeNodeFilter.class, this);
     }
 }

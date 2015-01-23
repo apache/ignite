@@ -15,12 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tests.p2p;
+package org.apache.ignite.tests.p2p;
 
-import java.io.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 /**
- * Value object for {@code GridCacheDeploymentSelfTest}.
+ * Projection predicate for event consume test.
  */
-public class GridCacheDeploymentTestValue implements Serializable {
+public class GridEventConsumeProjectionPredicate implements PN {
+    /** {@inheritDoc} */
+    @Override public boolean apply(ClusterNode n) {
+        return true;
+    }
 }
