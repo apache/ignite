@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
@@ -26,7 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.gridgain.grid.kernal.processors.cache.GridCacheAbstractQuerySelfTest.*;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractQuerySelfTest.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;

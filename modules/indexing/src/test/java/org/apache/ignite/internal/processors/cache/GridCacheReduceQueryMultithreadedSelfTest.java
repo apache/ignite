@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.util.*;
 import java.util.concurrent.*;

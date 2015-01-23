@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.apache.ignite.internal.processors.cache;
 
 /**
  * Multi-threaded tests for cache queries.
  */
-public class GridCacheQueryOffheapEvictsMultiThreadedSelfTest extends GridCacheQueryOffheapMultiThreadedSelfTest {
+public class GridCacheQueryEvictsMultiThreadedSelfTest extends GridCacheQueryMultiThreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean evictsEnabled() {
         return true;
