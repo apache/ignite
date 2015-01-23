@@ -623,11 +623,19 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public int[] allPartitions(ClusterNode n) {
             try {
-                Set<Integer> parts = GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.backupPartitions(n.id());
+                Collection<Integer> parts = new HashSet<>();
 
-                parts.addAll(GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.primaryPartitions(n.id()));
+                AffinityInfo affInfo= GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion());
+
+                for (int partsCnt = affInfo.affFunc.partitions(), part = 0; part < partsCnt; part++) {
+                    for (ClusterNode affNode : affInfo.assignment.get(part)) {
+                        if (n.id().equals(affNode.id())) {
+                            parts.add(part);
+
+                            break;
+                        }
+                    }
+                }
 
                 return U.toIntArray(parts);
             }
