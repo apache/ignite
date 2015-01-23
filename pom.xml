@@ -617,11 +617,11 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.apache.ignite.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
-                                            <packages>org.gridgain.grid.messaging</packages>
+                                            <packages>org.apache.ignite.messaging</packages>
                                         </group>
                                         <group>
                                             <title>Event Notification APIs</title>
@@ -819,11 +819,11 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.apache.ignite.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
-                                            <packages>org.gridgain.grid.messaging</packages>
+                                            <packages>org.apache.ignite.messaging</packages>
                                         </group>
                                         <group>
                                             <title>Event Notification APIs</title>

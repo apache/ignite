@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.*;
-import org.gridgain.grid.thread.*;
+import org.apache.ignite.thread.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.mbeans.*;
 import org.apache.ignite.internal.util.nio.*;

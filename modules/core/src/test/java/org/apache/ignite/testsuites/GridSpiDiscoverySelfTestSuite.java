@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;

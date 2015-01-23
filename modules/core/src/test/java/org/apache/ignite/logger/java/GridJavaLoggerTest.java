@@ -34,7 +34,9 @@ public class GridJavaLoggerTest extends TestCase {
     @SuppressWarnings({"FieldCanBeLocal"})
     private IgniteLogger log;
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testLogInitialize() throws Exception {
         U.setWorkDirectory(null, U.getGridGainHome());
 

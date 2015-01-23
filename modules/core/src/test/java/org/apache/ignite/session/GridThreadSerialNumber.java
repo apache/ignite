@@ -15,17 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.loadbalancing.roundrobin;
-
-import org.apache.ignite.spi.*;
-import org.apache.ignite.testframework.junits.spi.*;
+package org.apache.ignite.session;
 
 /**
- * Tests correct start of {@link RoundRobinLoadBalancingSpi}.
+ * Thread serial number.
  */
-@SuppressWarnings({"JUnitTestCaseWithNoTests"})
-@GridSpiTest(spi = RoundRobinLoadBalancingSpi.class, group = "LoadBalancing SPI")
-public class GridRoundRobinLoadBalancingSpiStartStopSelfTest
-    extends GridSpiStartStopAbstractTest<RoundRobinLoadBalancingSpi> {
-    // No configs.
+class GridThreadSerialNumber {
+    /** The next serial number to be assigned. */
+    private int nextSerialNum = 0;
+
+    /** */
+    private ThreadLocal<Integer> serialNum = new ThreadLocal<Integer>() {
+        @Override protected synchronized Integer initialValue() {
+            return nextSerialNum++;
+        }
+    };
+
+    /**
+     * @return Serial number value.
+     */
+    public int get() {
+        return serialNum.get();
+    }
 }

@@ -15,36 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.checkpoint.s3;
+package org.apache.ignite.thread;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testsuites.bamboo.*;
-import org.apache.ignite.session.*;
+import org.apache.ignite.testframework.junits.common.*;
+
+import java.util.*;
 
 /**
- * Grid session checkpoint self test using {@link GridS3CheckpointSpi}.
+ * Test for {@link org.apache.ignite.thread.IgniteThread}.
  */
-public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointAbstractSelfTest {
+@GridCommonTest(group = "Utils")
+public class GridThreadTest extends GridCommonAbstractTest {
+    /** Thread count. */
+    private static final int THREAD_CNT = 3;
+
     /**
      * @throws Exception If failed.
      */
-    public void testS3Checkpoint() throws Exception {
-        IgniteConfiguration cfg = getConfiguration();
+    public void testAssertion() throws Exception {
+        Collection<IgniteThread> ts = new ArrayList<>();
 
-        GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
+        for (int i = 0; i < THREAD_CNT; i++) {
+            ts.add(new IgniteThread("test-grid-" + i, "test-thread", new Runnable() {
+                @Override public void run() {
+                    assert false : "Expected assertion.";
+                }
+            }));
+        }
 
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+        for (IgniteThread t : ts)
+            t.start();
 
-        spi.setAwsCredentials(cred);
-
-        spi.setBucketNameSuffix("test");
-
-        cfg.setCheckpointSpi(spi);
-
-        GridSessionCheckpointSelfTest.spi = spi;
-
-        checkCheckpoints(cfg);
+        for (IgniteThread t : ts)
+            t.join();
     }
 }

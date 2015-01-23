@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.messaging.*;
+import org.apache.ignite.messaging.*;
 
 /**
  * Test suite.

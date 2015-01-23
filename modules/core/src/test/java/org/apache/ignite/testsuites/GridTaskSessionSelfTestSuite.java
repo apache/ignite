@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.session.*;
+import org.apache.ignite.session.*;
 
 /**
  * Task session test suite.

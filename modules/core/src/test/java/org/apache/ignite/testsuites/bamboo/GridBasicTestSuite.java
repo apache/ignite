@@ -18,14 +18,14 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.product.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.testsuites.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.processors.affinity.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
-import org.gridgain.grid.product.*;
-import org.gridgain.grid.spi.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**

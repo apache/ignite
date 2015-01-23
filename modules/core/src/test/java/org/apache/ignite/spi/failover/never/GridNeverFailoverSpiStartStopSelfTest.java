@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.failover.never;
 
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
