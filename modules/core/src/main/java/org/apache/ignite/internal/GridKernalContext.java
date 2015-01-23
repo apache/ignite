@@ -250,14 +250,14 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Email processor.
      */
-    public GridEmailProcessorAdapter email();
+    public IgniteEmailProcessorAdapter email();
 
     /**
      * Gets schedule processor.
      *
      * @return Schedule processor.
      */
-    public GridScheduleProcessorAdapter schedule();
+    public IgniteScheduleProcessorAdapter schedule();
 
     /**
      * Gets REST processor.

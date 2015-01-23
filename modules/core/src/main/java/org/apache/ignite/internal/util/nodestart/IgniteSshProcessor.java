@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.jta;
+package org.apache.ignite.internal.util.nodestart;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
-import org.jetbrains.annotations.*;
+import java.util.concurrent.*;
 
 /**
- * No-op implementation of {@link GridCacheJtaManagerAdapter}.
+ * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
  */
-public class GridCacheNoopJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> {
-    /** {@inheritDoc} */
-    @Override public void checkJta() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public Object tmLookup() {
-        return null;
-    }
+public interface IgniteSshProcessor {
+    /**
+     * Creates {@link Callable} starting node using SSH.
+     *
+     * @param spec Specification.
+     * @param timeout Connection timeout.
+     * @return {@link Callable} starting node using SSH.
+     */
+    public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout);
 }

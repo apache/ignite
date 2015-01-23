@@ -24,10 +24,10 @@ public class GridH2IndexingOffheapSelfTest extends GridIndexingSpiAbstractSelfTe
     /** */
     private static final long offheap = 10000000;
 
-    private static GridH2Indexing currentSpi;
+    private static IgniteH2Indexing currentSpi;
 
     /** {@inheritDoc} */
-    @Override protected void startIndexing(GridH2Indexing spi) throws Exception {
+    @Override protected void startIndexing(IgniteH2Indexing spi) throws Exception {
         spi.configuration().setMaxOffHeapMemory(offheap);
 
         currentSpi = spi;

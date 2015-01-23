@@ -17,18 +17,12 @@
 
 package org.apache.ignite.internal.util.nodestart;
 
-import java.util.concurrent.*;
-
 /**
- * SSH processor, interface was introduced to avoid mandatory runtime dependency on SSH library.
+ * Implementation of {@link IgniteSshProcessor}.
  */
-public interface GridSshProcessor {
-    /**
-     * Creates {@link Callable} starting node using SSH.
-     *
-     * @param spec Specification.
-     * @param timeout Connection timeout.
-     * @return {@link Callable} starting node using SSH.
-     */
-    public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout);
+public class IgniteSshProcessorImpl implements IgniteSshProcessor {
+    /** {@inheritDoc} */
+    @Override public GridNodeCallable nodeStartCallable(GridRemoteStartSpecification spec, int timeout) {
+        return new GridNodeCallableImpl(spec, timeout);
+    }
 }

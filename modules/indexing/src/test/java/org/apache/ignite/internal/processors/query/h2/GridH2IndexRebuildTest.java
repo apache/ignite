@@ -45,7 +45,7 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     /**
      * Overrides rebuildIndexes to check it can be interrupted.
      */
-    private static class SleepingH2Indexing extends GridH2Indexing {
+    private static class SleepingH2Indexing extends IgniteH2Indexing {
         /** */
         private volatile boolean sleepInRebuild;
 

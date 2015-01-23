@@ -19,32 +19,24 @@ package org.apache.ignite.internal.processors.cache.jta;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Provides possibility to integrate cache transactions with JTA.
+ * No-op implementation of {@link CacheJtaManagerAdapter}.
  */
-public abstract class GridCacheJtaManagerAdapter<K, V> extends GridCacheManagerAdapter<K, V> {
-    /**
-     * Creates transaction manager finder.
-     *
-     * @param ccfg Cache configuration.
-     * @throws IgniteCheckedException If failed.
-     */
-    public abstract void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException;
+public class CacheNoopJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
+    /** {@inheritDoc} */
+    @Override public void checkJta() throws IgniteCheckedException {
+        // No-op.
+    }
 
-    /**
-     * Checks if cache is working in JTA transaction and enlist cache as XAResource if necessary.
-     *
-     * @throws IgniteCheckedException In case of error.
-     */
-    public abstract void checkJta() throws IgniteCheckedException;
+    /** {@inheritDoc} */
+    @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
+        // No-op.
+    }
 
-    /**
-     * Gets transaction manager finder. Returns Object to avoid dependency on JTA library.
-     *
-     * @return Transaction manager finder.
-     */
-    @Nullable public abstract Object tmLookup();
+    /** {@inheritDoc} */
+    @Nullable @Override public Object tmLookup() {
+        return null;
+    }
 }

@@ -15,40 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.schedule;
+package org.apache.ignite.internal.processors.email;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.scheduler.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.util.future.*;
 
-import java.util.concurrent.*;
+import java.util.*;
 
 /**
- * No-op implementation of {@link GridScheduleProcessorAdapter}, throws exception on usage attempt.
+ * No-op implementation of {@code GridEmailProcessorAdapter}.
  */
-public class GridNoopScheduleProcessor extends GridScheduleProcessorAdapter {
+public class IgniteNoopEmailProcessor extends IgniteEmailProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridNoopScheduleProcessor(GridKernalContext ctx) {
+    public IgniteNoopEmailProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public SchedulerFuture<?> schedule(Runnable c, String pattern) {
-        throw processorException();
+    @Override public void sendNow(String subj, String body, boolean html) {
+        // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
-        throw processorException();
+    @Override public void sendNow(String subj, String body, boolean html, Collection<String> addrs) {
+        // No-op.
     }
 
-    /**
-     * @return No-op processor usage exception;
-     */
-    private IgniteException processorException() {
-        return new IgniteException("Current GridGain configuration does not support schedule functionality " +
-            "(consider adding gridgain-schedule module to classpath).");
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html) {
+        return new GridFinishedFuture<>(ctx, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
+        return new GridFinishedFuture<>(ctx, true);
     }
 }

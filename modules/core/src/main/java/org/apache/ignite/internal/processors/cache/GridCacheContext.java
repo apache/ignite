@@ -130,7 +130,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheDrManager<K, V> drMgr;
 
     /** JTA manager. */
-    private GridCacheJtaManagerAdapter<K, V> jtaMgr;
+    private CacheJtaManagerAdapter<K, V> jtaMgr;
 
     /** Managers. */
     private List<GridCacheManager<K, V>> mgrs = new LinkedList<>();
@@ -230,7 +230,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
-        GridCacheJtaManagerAdapter<K, V> jtaMgr) {
+        CacheJtaManagerAdapter<K, V> jtaMgr) {
         assert ctx != null;
         assert sharedCtx != null;
         assert cacheCfg != null;
@@ -895,7 +895,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return JTA manager.
      */
-    public GridCacheJtaManagerAdapter<K, V> jta() {
+    public CacheJtaManagerAdapter<K, V> jta() {
         return jtaMgr;
     }
     /**

@@ -199,11 +199,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridEmailProcessorAdapter emailProc;
+    private IgniteEmailProcessorAdapter emailProc;
 
     /** */
     @GridToStringInclude
-    private GridScheduleProcessorAdapter scheduleProc;
+    private IgniteScheduleProcessorAdapter scheduleProc;
 
     /** */
     @GridToStringInclude
@@ -414,14 +414,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             sesProc = (GridTaskSessionProcessor)comp;
         else if (comp instanceof GridPortProcessor)
             portProc = (GridPortProcessor)comp;
-        else if (comp instanceof GridEmailProcessorAdapter)
-            emailProc = (GridEmailProcessorAdapter)comp;
+        else if (comp instanceof IgniteEmailProcessorAdapter)
+            emailProc = (IgniteEmailProcessorAdapter)comp;
         else if (comp instanceof GridClosureProcessor)
             closProc = (GridClosureProcessor)comp;
         else if (comp instanceof GridServiceProcessor)
             svcProc = (GridServiceProcessor)comp;
-        else if (comp instanceof GridScheduleProcessorAdapter)
-            scheduleProc = (GridScheduleProcessorAdapter)comp;
+        else if (comp instanceof IgniteScheduleProcessorAdapter)
+            scheduleProc = (IgniteScheduleProcessorAdapter)comp;
         else if (comp instanceof GridSegmentationProcessor)
             segProc = (GridSegmentationProcessor)comp;
         else if (comp instanceof GridAffinityProcessor)
@@ -561,7 +561,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridEmailProcessorAdapter email() {
+    @Override public IgniteEmailProcessorAdapter email() {
         return emailProc;
     }
 
@@ -571,7 +571,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridScheduleProcessorAdapter schedule() {
+    @Override public IgniteScheduleProcessorAdapter schedule() {
         return scheduleProc;
     }
 

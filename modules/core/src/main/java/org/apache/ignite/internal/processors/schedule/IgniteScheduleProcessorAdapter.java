@@ -27,11 +27,11 @@ import java.util.concurrent.*;
  * Schedules cron-based execution of grid tasks and closures. Abstract class was introduced to
  * avoid mandatory runtime dependency on cron library.
  */
-public abstract class GridScheduleProcessorAdapter extends GridProcessorAdapter {
+public abstract class IgniteScheduleProcessorAdapter extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected GridScheduleProcessorAdapter(GridKernalContext ctx) {
+    protected IgniteScheduleProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

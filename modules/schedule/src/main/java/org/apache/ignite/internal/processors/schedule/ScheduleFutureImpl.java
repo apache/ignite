@@ -309,7 +309,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
 
         this.task = task;
 
-        ((GridScheduleProcessor)ctx.schedule()).onScheduled(this);
+        ((IgniteScheduleProcessor)ctx.schedule()).onScheduled(this);
 
         if (delay > 0) {
             // Schedule after delay.
@@ -351,7 +351,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         if (descheduled.compareAndSet(false, true)) {
             sched.deschedule(id);
 
-            ((GridScheduleProcessor)ctx.schedule()).onDescheduled(this);
+            ((IgniteScheduleProcessor)ctx.schedule()).onDescheduled(this);
         }
     }
 

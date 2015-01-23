@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Email (SMTP) processor. Responsible for sending emails.
  */
-public class GridEmailProcessor extends GridEmailProcessorAdapter {
+public class IgniteEmailProcessor extends IgniteEmailProcessorAdapter {
     /** Maximum emails queue size. */
     public static final int QUEUE_SIZE = 1024;
 
@@ -53,7 +53,7 @@ public class GridEmailProcessor extends GridEmailProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridEmailProcessor(GridKernalContext ctx) {
+    public IgniteEmailProcessor(GridKernalContext ctx) {
         super(ctx);
 
         isSmtpEnabled = ctx.config().getSmtpHost() != null;

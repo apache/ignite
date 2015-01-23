@@ -608,7 +608,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             validate(ctx.config(), cfg, cfgStore);
 
-            GridCacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
+            CacheJtaManagerAdapter jta = JTA.create(cfg.getTransactionManagerLookupClassName() == null);
 
             jta.createTmLookup(cfg);
 

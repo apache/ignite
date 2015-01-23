@@ -29,7 +29,7 @@ public interface GridH2RowDescriptor extends GridOffHeapSmartPointerFactory<Grid
     /**
      * @return Owner.
      */
-    public GridH2Indexing owner();
+    public IgniteH2Indexing owner();
 
     /**
      * Creates new row.

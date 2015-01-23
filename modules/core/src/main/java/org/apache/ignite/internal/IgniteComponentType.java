@@ -57,35 +57,35 @@ public enum IgniteComponentType {
     /** Indexing. */
     INDEXING(
         null,
-        "org.apache.ignite.internal.processors.query.h2.GridH2Indexing",
+        "org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing",
         "ignite-indexing"
     ),
 
     /** Nodes starting using SSH. */
     SSH(
         null,
-        "org.apache.ignite.internal.util.nodestart.GridSshProcessorImpl",
+        "org.apache.ignite.internal.util.nodestart.IgniteSshProcessorImpl",
         "ignite-ssh"
     ),
 
     /** Email sending. */
     EMAIL(
-        "org.apache.ignite.internal.processors.email.GridNoopEmailProcessor",
-        "org.apache.ignite.internal.processors.email.GridEmailProcessor",
+        "org.apache.ignite.internal.processors.email.IgniteNoopEmailProcessor",
+        "org.apache.ignite.internal.processors.email.IgniteEmailProcessor",
         "ignite-email"
     ),
 
     /** Integration of cache transactions with JTA. */
     JTA(
-        "org.apache.ignite.internal.processors.cache.jta.GridCacheNoopJtaManager",
-        "org.apache.ignite.internal.processors.cache.jta.GridCacheJtaManager",
+        "org.apache.ignite.internal.processors.cache.jta.CacheNoopJtaManager",
+        "org.apache.ignite.internal.processors.cache.jta.CacheJtaManager",
         "ignite-jta"
     ),
 
     /** Cron-based scheduling, see {@link org.apache.ignite.IgniteScheduler}. */
     SCHEDULE(
-        "org.apache.ignite.internal.processors.schedule.GridNoopScheduleProcessor",
-        "org.apache.ignite.internal.processors.schedule.GridScheduleProcessor",
+        "org.apache.ignite.internal.processors.schedule.IgniteNoopScheduleProcessor",
+        "org.apache.ignite.internal.processors.schedule.IgniteScheduleProcessor",
         "ignite-schedule"
     );
 

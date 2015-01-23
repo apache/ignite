@@ -70,7 +70,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     private static TypeDesc typeBA = new TypeDesc("B", "A", fieldsBA, null);
 
     /** */
-    private GridH2Indexing idx = new GridH2Indexing();
+    private IgniteH2Indexing idx = new IgniteH2Indexing();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -80,7 +80,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    protected void startIndexing(GridH2Indexing spi) throws Exception {
+    protected void startIndexing(IgniteH2Indexing spi) throws Exception {
         spi.registerSpace("A");
         spi.registerSpace("B");
 
@@ -151,7 +151,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     /**
      * @return Indexing.
      */
-    private GridH2Indexing getIndexing() {
+    private IgniteH2Indexing getIndexing() {
         return idx;
     }
 
@@ -159,7 +159,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testSpi() throws Exception {
-        GridH2Indexing spi = getIndexing();
+        IgniteH2Indexing spi = getIndexing();
 
         assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(-1, spi.size(typeAB.space(), typeAB, null));
@@ -354,7 +354,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testLongQueries() throws Exception {
-        GridH2Indexing spi = getIndexing();
+        IgniteH2Indexing spi = getIndexing();
 
         long longQryExecTime = 100;
 
@@ -399,7 +399,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
     }
 
     public void _testResultReuse() throws Exception {
-        final GridH2Indexing spi = getIndexing();
+        final IgniteH2Indexing spi = getIndexing();
 
         multithreaded(new Callable<Object>() {
               @Override public Object call() throws Exception {
@@ -415,7 +415,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testZeroLongQuery() throws Exception {
-        GridH2Indexing spi = getIndexing();
+        IgniteH2Indexing spi = getIndexing();
 
         long longQryExecTime = -1;
 

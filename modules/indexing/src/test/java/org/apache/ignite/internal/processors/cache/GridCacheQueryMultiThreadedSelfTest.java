@@ -122,7 +122,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
     /**
      *
      */
-    private static class FakeIndexing extends GridH2Indexing {
+    private static class FakeIndexing extends IgniteH2Indexing {
         @Override public void onSwap(@Nullable String spaceName, Object key) throws IgniteCheckedException {
             super.onSwap(spaceName, key);
 

@@ -39,7 +39,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.internal.processors.query.h2.GridH2Indexing.*;
+import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.*;
 
 /**
  * Lucene fulltext index.

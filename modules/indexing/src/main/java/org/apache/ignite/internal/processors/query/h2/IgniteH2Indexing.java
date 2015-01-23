@@ -85,7 +85,7 @@ import static org.h2.result.SortOrder.*;
  * @see GridIndexingSpi
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
-public class GridH2Indexing implements GridQueryIndexing {
+public class IgniteH2Indexing implements GridQueryIndexing {
     /** Default DB options. */
     private static final String DFLT_DB_OPTIONS = ";LOCK_MODE=3;MULTI_THREADED=1;DB_CLOSE_ON_EXIT=FALSE" +
         ";DEFAULT_LOCK_TIMEOUT=10000";
@@ -118,7 +118,7 @@ public class GridH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private static final ThreadLocal<GridH2Indexing> localSpi = new ThreadLocal<>();
+    private static final ThreadLocal<IgniteH2Indexing> localSpi = new ThreadLocal<>();
 
     /** */
     private volatile String cachedSearchPathCmd;
@@ -1584,7 +1584,7 @@ public class GridH2Indexing implements GridQueryIndexing {
             this.spaceName = spaceName;
             this.type = type;
 
-            schema = GridH2Indexing.schema(spaceName);
+            schema = IgniteH2Indexing.schema(spaceName);
 
             fullTblName = '\"' + schema + "\"." + escapeName(type.name(), isEscapeAll(spaceName));
         }
@@ -1918,8 +1918,8 @@ public class GridH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Indexing owner() {
-            return GridH2Indexing.this;
+        @Override public IgniteH2Indexing owner() {
+            return IgniteH2Indexing.this;
         }
 
         /** {@inheritDoc} */

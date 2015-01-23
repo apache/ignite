@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 /**
  * Schedules cron-based execution of grid tasks and closures.
  */
-public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
+public class IgniteScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /** Cron scheduler. */
     private Scheduler sched;
 
@@ -42,7 +42,7 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridScheduleProcessor(GridKernalContext ctx) {
+    public IgniteScheduleProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

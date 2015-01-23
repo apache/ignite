@@ -27,11 +27,11 @@ import java.util.*;
 /**
  * Email processor.
  */
-public abstract class GridEmailProcessorAdapter extends GridProcessorAdapter {
+public abstract class IgniteEmailProcessorAdapter extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected GridEmailProcessorAdapter(GridKernalContext ctx) {
+    protected IgniteEmailProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

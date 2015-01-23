@@ -1900,7 +1900,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 notifyLifecycleBeansEx(LifecycleEventType.BEFORE_GRID_STOP);
             }
 
-            GridEmailProcessorAdapter email = ctx.email();
+            IgniteEmailProcessorAdapter email = ctx.email();
 
             List<GridComponent> comps = ctx.components();
 
@@ -2672,7 +2672,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         guard();
 
         try {
-            GridSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
+            IgniteSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
 
             Map<String, Collection<GridRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 

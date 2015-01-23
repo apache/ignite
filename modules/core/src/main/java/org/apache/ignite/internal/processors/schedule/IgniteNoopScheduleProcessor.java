@@ -15,42 +15,40 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.email;
+package org.apache.ignite.internal.processors.schedule;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.scheduler.*;
 
-import java.util.*;
+import java.util.concurrent.*;
 
 /**
- * No-op implementation of {@code GridEmailProcessorAdapter}.
+ * No-op implementation of {@link IgniteScheduleProcessorAdapter}, throws exception on usage attempt.
  */
-public class GridNoopEmailProcessor extends GridEmailProcessorAdapter {
+public class IgniteNoopScheduleProcessor extends IgniteScheduleProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridNoopEmailProcessor(GridKernalContext ctx) {
+    public IgniteNoopScheduleProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNow(String subj, String body, boolean html) {
-        // No-op.
+    @Override public SchedulerFuture<?> schedule(Runnable c, String pattern) {
+        throw processorException();
     }
 
     /** {@inheritDoc} */
-    @Override public void sendNow(String subj, String body, boolean html, Collection<String> addrs) {
-        // No-op.
+    @Override public <R> SchedulerFuture<R> schedule(Callable<R> c, String pattern) {
+        throw processorException();
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html) {
-        return new GridFinishedFuture<>(ctx, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
-        return new GridFinishedFuture<>(ctx, true);
+    /**
+     * @return No-op processor usage exception;
+     */
+    private IgniteException processorException() {
+        return new IgniteException("Current GridGain configuration does not support schedule functionality " +
+            "(consider adding gridgain-schedule module to classpath).");
     }
 }

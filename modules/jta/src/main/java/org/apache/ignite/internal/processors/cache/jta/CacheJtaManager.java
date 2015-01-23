@@ -28,9 +28,9 @@ import org.jetbrains.annotations.*;
 import javax.transaction.*;
 
 /**
- * Implementation of {@link GridCacheJtaManagerAdapter}.
+ * Implementation of {@link CacheJtaManagerAdapter}.
  */
-public class GridCacheJtaManager<K, V> extends GridCacheJtaManagerAdapter<K, V> {
+public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
     /** */
     private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
 
