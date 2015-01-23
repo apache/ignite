@@ -18,11 +18,15 @@
 package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
+import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.testframework.*;
+
+import java.util.*;
 
 /**
- * Test for TCP binary rest protocol.
+ *
  */
-public class GridClientTcpMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
+public class ClientTcpSslDirectSelfTest extends ClientAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -30,6 +34,26 @@ public class GridClientTcpMultiNodeSelfTest extends GridClientAbstractMultiNodeS
 
     /** {@inheritDoc} */
     @Override protected String serverAddress() {
-        return HOST + ":" + REST_TCP_PORT_BASE;
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean useSsl() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridSslContextFactory sslContextFactory() {
+        return GridTestUtils.sslContextFactory();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
+        GridClientConfiguration cfg = super.clientConfiguration();
+
+        cfg.setServers(Collections.<String>emptySet());
+        cfg.setRouters(Collections.singleton(HOST + ":" + BINARY_PORT));
+
+        return cfg;
     }
 }

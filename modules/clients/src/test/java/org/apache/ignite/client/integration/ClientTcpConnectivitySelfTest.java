@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
 /**
  * Tests the REST client-server TCP connectivity with various configurations.
  */
-public class GridClientTcpConnectivitySelfTest extends GridClientAbstractConnectivitySelfTest {
+public class ClientTcpConnectivitySelfTest extends ClientAbstractConnectivitySelfTest {
     /** {@inheritDoc} */
     @Override protected Ignite startRestNode(String name, @Nullable String addr, @Nullable Integer port)
         throws Exception {

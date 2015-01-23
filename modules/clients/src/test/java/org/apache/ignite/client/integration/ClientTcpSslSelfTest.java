@@ -19,11 +19,12 @@ package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.testframework.*;
 
 /**
- * Tests TCP protocol.
+ * Tests TCP binary protocol with client when SSL is enabled.
  */
-public class GridClientTcpSelfTest extends GridClientAbstractSelfTest {
+public class ClientTcpSslSelfTest extends ClientAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -36,11 +37,11 @@ public class GridClientTcpSelfTest extends GridClientAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected boolean useSsl() {
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override protected GridSslContextFactory sslContextFactory() {
-        return null;
+        return GridTestUtils.sslContextFactory();
     }
 }

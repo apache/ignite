@@ -53,7 +53,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
  * Tests for Java client.
  */
 @SuppressWarnings("deprecation")
-public abstract class GridClientAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

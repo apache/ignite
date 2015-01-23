@@ -19,14 +19,11 @@ package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.testframework.*;
-
-import java.util.*;
 
 /**
- *
+ * Tests TCP protocol.
  */
-public class GridClientTcpSslDirectSelfTest extends GridClientAbstractSelfTest {
+public class ClientTcpSelfTest extends ClientAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -34,26 +31,16 @@ public class GridClientTcpSslDirectSelfTest extends GridClientAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected String serverAddress() {
-        return null;
+        return HOST + ":" + BINARY_PORT;
     }
 
     /** {@inheritDoc} */
     @Override protected boolean useSsl() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override protected GridSslContextFactory sslContextFactory() {
-        return GridTestUtils.sslContextFactory();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
-        GridClientConfiguration cfg = super.clientConfiguration();
-
-        cfg.setServers(Collections.<String>emptySet());
-        cfg.setRouters(Collections.singleton(HOST + ":" + BINARY_PORT));
-
-        return cfg;
+        return null;
     }
 }

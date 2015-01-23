@@ -22,9 +22,9 @@ import org.apache.ignite.client.ssl.*;
 import org.apache.ignite.testframework.*;
 
 /**
- * Tests TCP binary protocol with client when SSL is enabled.
+ * Tests binary tcp protocol with SSL on multiple nodes.
  */
-public class GridClientTcpSslSelfTest extends GridClientAbstractSelfTest {
+public class ClientTcpSslMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -32,12 +32,7 @@ public class GridClientTcpSslSelfTest extends GridClientAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected String serverAddress() {
-        return HOST + ":" + BINARY_PORT;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean useSsl() {
-        return true;
+        return HOST + ":" + REST_TCP_PORT_BASE;
     }
 
     /** {@inheritDoc} */

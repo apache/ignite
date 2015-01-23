@@ -19,13 +19,14 @@ package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.*;
 
 /**
  *
  */
-public class GridClientTcpDirectSelfTest extends GridClientAbstractSelfTest {
+public class ClientTcpSslDirectMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -37,21 +38,24 @@ public class GridClientTcpDirectSelfTest extends GridClientAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean useSsl() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override protected GridSslContextFactory sslContextFactory() {
-        return null;
+        return GridTestUtils.sslContextFactory();
     }
 
     /** {@inheritDoc} */
     @Override protected GridClientConfiguration clientConfiguration() throws GridClientException {
+        assert NODES_CNT > 3 : "Too few nodes to execute direct multinode test";
+
         GridClientConfiguration cfg = super.clientConfiguration();
 
         cfg.setServers(Collections.<String>emptySet());
-        cfg.setRouters(Collections.singleton(HOST + ":" + BINARY_PORT));
+
+        Collection<String> srvs = new ArrayList<>(3);
+
+        for (int i = 0; i < NODES_CNT / 2; i++)
+            srvs.add(HOST + ':' + (REST_TCP_PORT_BASE + i));
+
+        cfg.setRouters(srvs);
 
         return cfg;
     }

@@ -65,18 +65,18 @@ public class IgniteClientTestSuite extends TestSuite {
         // Test clients.
         suite.addTest(new TestSuite(ClientDataImplSelfTest.class));
         suite.addTest(new TestSuite(ClientComputeImplSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpDirectSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslDirectSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpDirectSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSslSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSslDirectSelfTest.class));
 
         // Test client with many nodes.
-        suite.addTest(new TestSuite(GridClientTcpMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpDirectMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslDirectMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpUnreachableMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridClientPreferDirectSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpDirectMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSslMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSslDirectMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpUnreachableMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(ClientPreferDirectSelfTest.class));
 
         // Test client with many nodes and in multithreaded scenarios
         suite.addTest(new TestSuite(GridClientTcpMultiThreadedSelfTest.class));
@@ -85,7 +85,7 @@ public class IgniteClientTestSuite extends TestSuite {
         // Test client authentication.
         suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
 
-        suite.addTest(new TestSuite(GridClientTcpConnectivitySelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpConnectivitySelfTest.class));
         suite.addTest(new TestSuite(GridClientReconnectionSelfTest.class));
 
         // Rest task command handler test.

@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.client.GridClientProtocol.*;
-import static org.apache.ignite.client.integration.GridClientAbstractSelfTest.*;
+import static org.apache.ignite.client.integration.ClientAbstractSelfTest.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**

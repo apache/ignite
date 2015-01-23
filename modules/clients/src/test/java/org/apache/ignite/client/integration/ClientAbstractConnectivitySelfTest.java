@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Tests the REST client-server connectivity with various configurations.
  */
-public abstract class GridClientAbstractConnectivitySelfTest extends GridCommonAbstractTest {
+public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstractTest {
     /** */
     private static final String WILDCARD_IP = "0.0.0.0";
 

@@ -18,13 +18,11 @@
 package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.testframework.*;
 
 /**
- * Tests binary tcp protocol with SSL on multiple nodes.
+ * Test for TCP binary rest protocol.
  */
-public class GridClientTcpSslMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
+public class ClientTcpMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -33,10 +31,5 @@ public class GridClientTcpSslMultiNodeSelfTest extends GridClientAbstractMultiNo
     /** {@inheritDoc} */
     @Override protected String serverAddress() {
         return HOST + ":" + REST_TCP_PORT_BASE;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
-        return GridTestUtils.sslContextFactory();
     }
 }

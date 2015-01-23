@@ -18,15 +18,13 @@
 package org.apache.ignite.client.integration;
 
 import org.apache.ignite.client.*;
-import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.testframework.*;
 
 import java.util.*;
 
 /**
  *
  */
-public class GridClientTcpSslDirectMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
+public class ClientTcpDirectMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;
@@ -35,11 +33,6 @@ public class GridClientTcpSslDirectMultiNodeSelfTest extends GridClientAbstractM
     /** {@inheritDoc} */
     @Override protected String serverAddress() {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
-        return GridTestUtils.sslContextFactory();
     }
 
     /** {@inheritDoc} */

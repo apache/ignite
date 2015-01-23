@@ -25,12 +25,12 @@ import org.apache.ignite.client.router.impl.*;
 
 import java.util.*;
 
-import static org.apache.ignite.client.integration.GridClientAbstractSelfTest.*;
+import static org.apache.ignite.client.integration.ClientAbstractSelfTest.*;
 
 /**
  *
  */
-public class TcpRouterMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
+public class TcpRouterMultiNodeSelfTest extends ClientAbstractMultiNodeSelfTest {
     /** Number of routers to start in this test. */
     private static final int ROUTERS_CNT = 5;
 

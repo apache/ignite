@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Test for TCP binary rest protocol with unreachable address.
  */
-public class GridClientTcpUnreachableMultiNodeSelfTest extends GridClientTcpMultiNodeSelfTest {
+public class ClientTcpUnreachableMultiNodeSelfTest extends ClientTcpMultiNodeSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientLoadBalancer getBalancer() {
         final GridClientLoadBalancer b = super.getBalancer();

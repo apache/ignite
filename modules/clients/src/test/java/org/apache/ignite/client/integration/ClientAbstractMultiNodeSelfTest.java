@@ -57,7 +57,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * Tests basic client behavior with multiple nodes.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
+public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

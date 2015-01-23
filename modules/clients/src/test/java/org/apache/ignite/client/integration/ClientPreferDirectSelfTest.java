@@ -30,12 +30,12 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.client.integration.GridClientAbstractMultiNodeSelfTest.*;
+import static org.apache.ignite.client.integration.ClientAbstractMultiNodeSelfTest.*;
 
 /**
  *
  */
-public class GridClientPreferDirectSelfTest extends GridCommonAbstractTest {
+public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
