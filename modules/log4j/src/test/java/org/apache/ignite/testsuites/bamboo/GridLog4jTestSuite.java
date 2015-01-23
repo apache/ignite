@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.logger.log4j.*;
+import org.apache.ignite.logger.log4j.*;
 
 /**
  * Log4j logging tests.

@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.logger.log4j;
+package org.apache.ignite.logger.log4j;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.logger.log4j.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**

@@ -15,35 +15,41 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.logger.log4j;
+package org.apache.ignite.logger.log4j;
 
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.logger.log4j.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
+import java.io.*;
 
 /**
  * Grid Log4j SPI test.
  */
 @GridCommonTest(group = "Logger")
-public class GridLog4jLoggingPathTest extends TestCase {
+public class GridLog4jLoggingFileTest extends TestCase {
     /** */
     private IgniteLogger log;
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        log = new IgniteLog4jLogger("modules/core/src/test/config/log4j-test.xml").getLogger(getClass());
+        File xml = GridTestUtils.resolveGridGainPath("modules/core/src/test/config/log4j-test.xml");
+
+        assert xml != null;
+        assert xml.exists() == true;
+
+        log = new IgniteLog4jLogger(xml).getLogger(getClass());
     }
 
     /**
      * Tests log4j logging SPI.
      */
     public void testLog() {
+        assert log.isDebugEnabled() == true;
         assert log.isInfoEnabled() == true;
 
-        if (log.isDebugEnabled())
-            log.debug("This is 'debug' message.");
-
+        log.debug("This is 'debug' message.");
         log.info("This is 'info' message.");
         log.warning("This is 'warning' message.");
         log.warning("This is 'warning' message.", new Exception("It's a test warning exception"));
