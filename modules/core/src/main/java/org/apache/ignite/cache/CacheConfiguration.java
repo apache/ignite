@@ -19,18 +19,15 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.cache.cloner.*;
+import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.cloner.*;
-import org.gridgain.grid.cache.datastructures.*;
-import org.gridgain.grid.cache.eviction.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -71,13 +68,13 @@ public class CacheConfiguration extends MutableConfiguration {
     public static final int DFLT_BACKUPS = 0;
 
     /** Default caching mode. */
-    public static final GridCacheMode DFLT_CACHE_MODE = GridCacheMode.REPLICATED;
+    public static final CacheMode DFLT_CACHE_MODE = CacheMode.REPLICATED;
 
     /** Default atomicity mode. */
-    public static final GridCacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = GridCacheAtomicityMode.ATOMIC;
+    public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
     /** Default value for cache distribution mode. */
-    public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
+    public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = CacheDistributionMode.PARTITIONED_ONLY;
 
     /** Default query timeout. */
     public static final long DFLT_QUERY_TIMEOUT = 0;
@@ -101,7 +98,7 @@ public class CacheConfiguration extends MutableConfiguration {
     public static final boolean DFLT_STORE_VALUE_BYTES = true;
 
     /** Default preload mode for distributed cache. */
-    public static final GridCachePreloadMode DFLT_PRELOAD_MODE = GridCachePreloadMode.ASYNC;
+    public static final CachePreloadMode DFLT_PRELOAD_MODE = CachePreloadMode.ASYNC;
 
     /** Default preload batch size in bytes. */
     public static final int DFLT_PRELOAD_BATCH_SIZE = 512 * 1024; // 512K
@@ -169,7 +166,7 @@ public class CacheConfiguration extends MutableConfiguration {
     public static final int DFLT_CONT_QUERY_QUEUE_SIZE = 1024 * 1024;
 
     /** Default memory mode. */
-    public static final GridCacheMemoryMode DFLT_MEMORY_MODE = GridCacheMemoryMode.ONHEAP_TIERED;
+    public static final CacheMemoryMode DFLT_MEMORY_MODE = CacheMemoryMode.ONHEAP_TIERED;
 
     /** Default continuous query max buffer size. */
     @SuppressWarnings("UnusedDeclaration")
@@ -195,10 +192,10 @@ public class CacheConfiguration extends MutableConfiguration {
     private long ttl = DFLT_TIME_TO_LIVE;
 
     /** Cache expiration policy. */
-    private GridCacheEvictionPolicy evictPlc;
+    private CacheEvictionPolicy evictPlc;
 
     /** Near cache eviction policy. */
-    private GridCacheEvictionPolicy nearEvictPlc;
+    private CacheEvictionPolicy nearEvictPlc;
 
     /** Flag indicating whether eviction is synchronized. */
     private boolean evictSync = DFLT_EVICT_SYNCHRONIZED;
@@ -216,7 +213,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private long evictSyncTimeout = DFLT_EVICT_SYNCHRONIZED_TIMEOUT;
 
     /** Eviction filter. */
-    private GridCacheEvictionFilter<?, ?> evictFilter;
+    private CacheEvictionFilter<?, ?> evictFilter;
 
     /** Maximum eviction overflow ratio. */
     private float evictMaxOverflowRatio = DFLT_MAX_EVICTION_OVERFLOW_RATIO;
@@ -237,10 +234,10 @@ public class CacheConfiguration extends MutableConfiguration {
     private int nearStartSize = DFLT_NEAR_START_SIZE;
 
     /** Cache distribution mode. */
-    private GridCacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
+    private CacheDistributionMode distro = DFLT_DISTRIBUTION_MODE;
 
     /** Write synchronization mode. */
-    private GridCacheWriteSynchronizationMode writeSync;
+    private CacheWriteSynchronizationMode writeSync;
 
     /** */
     private Factory storeFactory;
@@ -249,16 +246,16 @@ public class CacheConfiguration extends MutableConfiguration {
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
 
     /** Node group resolver. */
-    private GridCacheAffinityFunction aff;
+    private CacheAffinityFunction aff;
 
     /** Cache mode. */
-    private GridCacheMode cacheMode = DFLT_CACHE_MODE;
+    private CacheMode cacheMode = DFLT_CACHE_MODE;
 
     /** Cache atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** Write ordering mode. */
-    private GridCacheAtomicWriteOrderMode atomicWriteOrderMode;
+    private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
@@ -273,7 +270,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private String tmLookupClsName;
 
     /** Distributed cache preload mode. */
-    private GridCachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
+    private CachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
 
     /** Cache preload order. */
     private int preloadOrder;
@@ -312,13 +309,13 @@ public class CacheConfiguration extends MutableConfiguration {
     private int maxQryIterCnt = DFLT_MAX_QUERY_ITERATOR_CNT;
 
     /** Memory mode. */
-    private GridCacheMemoryMode memMode = DFLT_MEMORY_MODE;
+    private CacheMemoryMode memMode = DFLT_MEMORY_MODE;
 
     /** */
-    private GridCacheCloner cloner;
+    private CacheCloner cloner;
 
     /** */
-    private GridCacheAffinityKeyMapper affMapper;
+    private CacheAffinityKeyMapper affMapper;
 
     /** */
     private String indexingSpiName;
@@ -330,7 +327,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private long preloadThrottle = DFLT_PRELOAD_THROTTLE;
 
     /** */
-    private GridCacheInterceptor<?, ?> interceptor;
+    private CacheInterceptor<?, ?> interceptor;
 
     /** */
     private boolean portableEnabled;
@@ -339,7 +336,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private boolean keepPortableInStore = true;
 
     /** Query configuration. */
-    private GridCacheQueryConfiguration qryCfg;
+    private CacheQueryConfiguration qryCfg;
 
     /**
      * Flag indicating whether data can be read from backup.
@@ -480,7 +477,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> GridCacheEvictionPolicy<K, V> getEvictionPolicy() {
+    @Nullable public <K, V> CacheEvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
     }
 
@@ -489,19 +486,19 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param evictPlc Cache expiration policy.
      */
-    public void setEvictionPolicy(@Nullable GridCacheEvictionPolicy evictPlc) {
+    public void setEvictionPolicy(@Nullable CacheEvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
     }
 
     /**
      * Gets cache distribution mode. This parameter is taken into account only if
-     * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} mode.
+     * {@link #getCacheMode()} is set to {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} mode.
      * <p>
      * If not set, default value is {@link #DFLT_DISTRIBUTION_MODE}.
      *
      * @return Cache distribution mode.
      */
-    public GridCacheDistributionMode getDistributionMode() {
+    public CacheDistributionMode getDistributionMode() {
         return distro;
     }
 
@@ -510,7 +507,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param distro Distribution mode.
      */
-    public void setDistributionMode(GridCacheDistributionMode distro) {
+    public void setDistributionMode(CacheDistributionMode distro) {
         this.distro = distro;
     }
 
@@ -520,7 +517,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Write synchronization mode.
      */
-    public GridCacheWriteSynchronizationMode getWriteSynchronizationMode() {
+    public CacheWriteSynchronizationMode getWriteSynchronizationMode() {
         return writeSync;
     }
 
@@ -529,7 +526,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param writeSync Write synchronization mode.
      */
-    public void setWriteSynchronizationMode(GridCacheWriteSynchronizationMode writeSync) {
+    public void setWriteSynchronizationMode(CacheWriteSynchronizationMode writeSync) {
         this.writeSync = writeSync;
     }
 
@@ -541,24 +538,24 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> GridCacheEvictionPolicy<K, V> getNearEvictionPolicy() {
+    @Nullable public <K, V> CacheEvictionPolicy<K, V> getNearEvictionPolicy() {
         return nearEvictPlc;
     }
 
     /**
-     * Sets eviction policy for near cache. This property is only used for {@link GridCacheMode#PARTITIONED} caching
+     * Sets eviction policy for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching
      * mode.
      *
      * @param nearEvictPlc Eviction policy for near cache.
      */
-    public void setNearEvictionPolicy(@Nullable GridCacheEvictionPolicy nearEvictPlc) {
+    public void setNearEvictionPolicy(@Nullable CacheEvictionPolicy nearEvictPlc) {
         this.nearEvictPlc = nearEvictPlc;
     }
 
     /**
      * Gets flag indicating whether eviction is synchronized between primary and
      * backup nodes on partitioned cache. If this parameter is {@code true} and
-     * swap is disabled then {@link GridCacheProjection#evict(Object)}
+     * swap is disabled then {@link CacheProjection#evict(Object)}
      * and all its variations will involve all nodes where an entry is kept -
      * this is a group of nodes responsible for partition to which
      * corresponding key belongs. If this property is set to {@code false} then
@@ -718,8 +715,8 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets eviction filter to specify which entries should not be evicted
-     * (except explicit evict by calling {@link GridCacheEntry#evict()}).
-     * If {@link GridCacheEvictionFilter#evictAllowed(GridCacheEntry)} method returns
+     * (except explicit evict by calling {@link CacheEntry#evict()}).
+     * If {@link org.apache.ignite.cache.eviction.CacheEvictionFilter#evictAllowed(CacheEntry)} method returns
      * {@code false} then eviction policy will not be notified and entry will
      * never be evicted.
      * <p>
@@ -729,8 +726,8 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Eviction filter or {@code null}.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> GridCacheEvictionFilter<K, V> getEvictionFilter() {
-        return (GridCacheEvictionFilter<K, V>)evictFilter;
+    public <K, V> CacheEvictionFilter<K, V> getEvictionFilter() {
+        return (CacheEvictionFilter<K, V>)evictFilter;
     }
 
     /**
@@ -738,7 +735,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param evictFilter Eviction filter.
      */
-    public <K, V> void setEvictionFilter(GridCacheEvictionFilter<K, V> evictFilter) {
+    public <K, V> void setEvictionFilter(CacheEvictionFilter<K, V> evictFilter) {
         this.evictFilter = evictFilter;
     }
 
@@ -749,8 +746,8 @@ public class CacheConfiguration extends MutableConfiguration {
      * When not set, default value is {@link #DFLT_EAGER_TTL}.
      * <p>
      * <b>Note</b> that this flag only matters for entries expiring based on
-     * {@link GridCacheEntry#timeToLive()} value and should not be confused with entry
-     * evictions based on configured {@link GridCacheEvictionPolicy}.
+     * {@link CacheEntry#timeToLive()} value and should not be confused with entry
+     * evictions based on configured {@link org.apache.ignite.cache.eviction.CacheEvictionPolicy}.
      *
      * @return Flag indicating whether GridGain will eagerly remove expired entries.
      */
@@ -798,7 +795,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Start size for near cache. This property is only used for {@link GridCacheMode#PARTITIONED} caching mode.
+     * Start size for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching mode.
      *
      * @param nearStartSize Start size for near cache.
      */
@@ -872,7 +869,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Key topology resolver to provide mapping from keys to nodes.
      */
-    public GridCacheAffinityFunction getAffinity() {
+    public CacheAffinityFunction getAffinity() {
         return aff;
     }
 
@@ -881,18 +878,18 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param aff Cache key affinity.
      */
-    public void setAffinity(GridCacheAffinityFunction aff) {
+    public void setAffinity(CacheAffinityFunction aff) {
         this.aff = aff;
     }
 
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
-     * fully replicated, partitioned, or near. If not provided, {@link GridCacheMode#REPLICATED}
+     * fully replicated, partitioned, or near. If not provided, {@link CacheMode#REPLICATED}
      * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
      */
-    public GridCacheMode getCacheMode() {
+    public CacheMode getCacheMode() {
         return cacheMode;
     }
 
@@ -901,7 +898,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param cacheMode Caching mode.
      */
-    public void setCacheMode(GridCacheMode cacheMode) {
+    public void setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
     }
 
@@ -912,7 +909,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Cache atomicity mode.
      */
-    public GridCacheAtomicityMode getAtomicityMode() {
+    public CacheAtomicityMode getAtomicityMode() {
         return atomicityMode;
     }
 
@@ -921,32 +918,32 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param atomicityMode Cache atomicity mode.
      */
-    public void setAtomicityMode(GridCacheAtomicityMode atomicityMode) {
+    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
     }
 
     /**
-     * Gets cache write ordering mode. This property can be enabled only for {@link GridCacheAtomicityMode#ATOMIC}
+     * Gets cache write ordering mode. This property can be enabled only for {@link CacheAtomicityMode#ATOMIC}
      * cache (for other atomicity modes it will be ignored).
      *
      * @return Cache write ordering mode.
      */
-    public GridCacheAtomicWriteOrderMode getAtomicWriteOrderMode() {
+    public CacheAtomicWriteOrderMode getAtomicWriteOrderMode() {
         return atomicWriteOrderMode;
     }
 
     /**
-     * Sets cache write ordering mode. This property can be enabled only for {@link GridCacheAtomicityMode#ATOMIC}
+     * Sets cache write ordering mode. This property can be enabled only for {@link CacheAtomicityMode#ATOMIC}
      * cache (for other atomicity modes it will be ignored).
      *
      * @param atomicWriteOrderMode Cache write ordering mode.
      */
-    public void setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode atomicWriteOrderMode) {
+    public void setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
     }
 
     /**
-     * Gets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * Gets number of nodes used to back up single partition for {@link CacheMode#PARTITIONED} cache.
      * <p>
      * If not set, default value is {@link #DFLT_BACKUPS}.
      *
@@ -957,7 +954,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * Sets number of nodes used to back up single partition for {@link CacheMode#PARTITIONED} cache.
      * <p>
      * If not set, default value is {@link #DFLT_BACKUPS}.
      *
@@ -1068,7 +1065,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param preloadMode Preload mode.
      */
-    public void setPreloadMode(GridCachePreloadMode preloadMode) {
+    public void setPreloadMode(CachePreloadMode preloadMode) {
         this.preloadMode = preloadMode;
     }
 
@@ -1079,13 +1076,13 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Preload mode.
      */
-    public GridCachePreloadMode getPreloadMode() {
+    public CachePreloadMode getPreloadMode() {
         return preloadMode;
     }
 
     /**
      * Gets cache preload order. Preload order can be set to non-zero value for caches with
-     * {@link GridCachePreloadMode#SYNC SYNC} or {@link GridCachePreloadMode#ASYNC ASYNC} preload modes only.
+     * {@link CachePreloadMode#SYNC SYNC} or {@link CachePreloadMode#ASYNC ASYNC} preload modes only.
      * <p/>
      * If cache preload order is positive, preloading for this cache will be started only when preloading for
      * all caches with smaller preload order (except caches with preload order {@code 0}) will be completed.
@@ -1138,7 +1135,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
      * <p>
      * Note that this flag may be overridden for cache projection created with flag
-     * {@link GridCacheFlag#SKIP_SWAP}.
+     * {@link CacheFlag#SKIP_SWAP}.
      *
      * @return {@code True} if swap storage is enabled.
      */
@@ -1323,36 +1320,36 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Cloner to be used for cloning values that are returned to user only if {@link GridCacheFlag#CLONE}
-     * is set on {@link GridCacheProjection}. Cloning values is useful when it is needed to get value from
+     * Cloner to be used for cloning values that are returned to user only if {@link CacheFlag#CLONE}
+     * is set on {@link CacheProjection}. Cloning values is useful when it is needed to get value from
      * cache, change it and put it back (if the value was not cloned, then user would be updating the
      * cached reference which would violate cache integrity).
      * <p>
-     * <b>NOTE:</b> by default, cache uses {@link GridCacheBasicCloner} implementation which will clone only objects
+     * <b>NOTE:</b> by default, cache uses {@link org.apache.ignite.cache.cloner.CacheBasicCloner} implementation which will clone only objects
      * implementing {@link Cloneable} interface. You can also configure cache to use
-     * {@link GridCacheDeepCloner} which will perform deep-cloning of all objects returned from cache,
+     * {@link org.apache.ignite.cache.cloner.CacheDeepCloner} which will perform deep-cloning of all objects returned from cache,
      * regardless of the {@link Cloneable} interface. If none of the above cloners fit your
-     * logic, you can also provide your own implementation of {@link GridCacheCloner} interface.
+     * logic, you can also provide your own implementation of {@link org.apache.ignite.cache.cloner.CacheCloner} interface.
      *
-     * @return Cloner to be used if {@link GridCacheFlag#CLONE} flag is set on cache projection.
+     * @return Cloner to be used if {@link CacheFlag#CLONE} flag is set on cache projection.
      */
     @SuppressWarnings({"unchecked"})
-    public GridCacheCloner getCloner() {
+    public CacheCloner getCloner() {
         return cloner;
     }
 
     /**
-     * Sets cloner to be used if {@link GridCacheFlag#CLONE} flag is set on projection.
+     * Sets cloner to be used if {@link CacheFlag#CLONE} flag is set on projection.
      *
      * @param cloner Cloner to use.
      * @see #getCloner()
      */
-    public void setCloner(GridCacheCloner cloner) {
+    public void setCloner(CacheCloner cloner) {
         this.cloner = cloner;
     }
 
     /**
-     * Gets default number of sequence values reserved for {@link GridCacheAtomicSequence} instances. After
+     * Gets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After
      * a certain number has been reserved, consequent increments of sequence will happen locally,
      * without communication with other nodes, until the next reservation has to be made.
      * <p>
@@ -1365,7 +1362,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets default number of sequence values reserved for {@link GridCacheAtomicSequence} instances. After a certain
+     * Sets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After a certain
      * number has been reserved, consequent increments of sequence will happen locally, without communication with other
      * nodes, until the next reservation has to be made.
      *
@@ -1424,11 +1421,11 @@ public class CacheConfiguration extends MutableConfiguration {
      * after they leave topology, or if you plan to start multiple nodes at once or one after another
      * and don't want to repartition and preload until all nodes are started.
      * <p>
-     * Delayed preloading is applied to {@link GridCacheMode#PARTITIONED} caches only.
+     * Delayed preloading is applied to {@link CacheMode#PARTITIONED} caches only.
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,
-     * use {@link GridCacheConsistentHashAffinityFunction#setHashIdResolver(GridCacheAffinityNodeHashResolver)}
+     * use {@link org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction#setHashIdResolver(org.apache.ignite.cache.affinity.CacheAffinityNodeHashResolver)}
      * to make sure that a node maps to the same hash ID event if restarted. As an example,
      * node IP address and port combination may be used in this case.
      * <p>
@@ -1493,21 +1490,21 @@ public class CacheConfiguration extends MutableConfiguration {
      * on the same node (they will also be backed up on the same nodes as well).
      * <p>
      * If not provided, then default implementation will be used. The default behavior
-     * is described in {@link GridCacheAffinityKeyMapper} documentation.
+     * is described in {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} documentation.
      *
      * @return Mapper to use for affinity key mapping.
      */
-    public GridCacheAffinityKeyMapper getAffinityMapper() {
+    public CacheAffinityKeyMapper getAffinityMapper() {
         return affMapper;
     }
 
     /**
      * Sets custom affinity mapper. If not provided, then default implementation will be used. The default behavior is
-     * described in {@link GridCacheAffinityKeyMapper} documentation.
+     * described in {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} documentation.
      *
      * @param affMapper Affinity mapper.
      */
-    public void setAffinityMapper(GridCacheAffinityKeyMapper affMapper) {
+    public void setAffinityMapper(CacheAffinityKeyMapper affMapper) {
         this.affMapper = affMapper;
     }
 
@@ -1633,13 +1630,13 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets memory mode for cache. Memory mode helps control whether value is stored in on-heap memory,
-     * off-heap memory, or swap space. Refer to {@link GridCacheMemoryMode} for more info.
+     * off-heap memory, or swap space. Refer to {@link CacheMemoryMode} for more info.
      * <p>
      * Default value is {@link #DFLT_MEMORY_MODE}.
      *
      * @return Memory mode.
      */
-    public GridCacheMemoryMode getMemoryMode() {
+    public CacheMemoryMode getMemoryMode() {
         return memMode;
     }
 
@@ -1648,7 +1645,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param memMode Memory mode.
      */
-    public void setMemoryMode(GridCacheMemoryMode memMode) {
+    public void setMemoryMode(CacheMemoryMode memMode) {
         this.memMode = memMode;
     }
 
@@ -1686,8 +1683,8 @@ public class CacheConfiguration extends MutableConfiguration {
      * @return Cache interceptor.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public <K, V> GridCacheInterceptor<K, V> getInterceptor() {
-        return (GridCacheInterceptor<K, V>)interceptor;
+    @Nullable public <K, V> CacheInterceptor<K, V> getInterceptor() {
+        return (CacheInterceptor<K, V>)interceptor;
     }
 
     /**
@@ -1695,7 +1692,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param interceptor Cache interceptor.
      */
-    public <K, V> void setInterceptor(GridCacheInterceptor<K, V> interceptor) {
+    public <K, V> void setInterceptor(CacheInterceptor<K, V> interceptor) {
         this.interceptor = interceptor;
     }
 
@@ -1760,7 +1757,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Cache query configuration.
      */
-    public GridCacheQueryConfiguration getQueryConfiguration() {
+    public CacheQueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
@@ -1768,9 +1765,9 @@ public class CacheConfiguration extends MutableConfiguration {
      * Sets query configuration.
      *
      * @param qryCfg Query configuration.
-     * @see GridCacheQueryConfiguration
+     * @see org.apache.ignite.cache.query.CacheQueryConfiguration
      */
-    public void setQueryConfiguration(GridCacheQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(CacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 

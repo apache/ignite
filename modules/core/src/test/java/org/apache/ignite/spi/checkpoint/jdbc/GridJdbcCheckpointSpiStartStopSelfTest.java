@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.checkpoint.jdbc;
 
-import org.gridgain.grid.spi.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import org.hsqldb.jdbc.*;
 
 /**

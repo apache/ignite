@@ -36,7 +36,7 @@
         Test tasks specification.
     -->
     <util:list id="tasks">
-        <value>org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1</value>
-        <value>org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath2</value>
+        <value>org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1</value>
+        <value>org.apache.ignite.tests.p2p.GridP2PTestTaskExternalPath2</value>
     </util:list>
 </beans>

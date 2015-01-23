@@ -20,8 +20,7 @@ package org.apache.ignite.cache.store;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -101,7 +100,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V
      * Note that returned iterator doesn't have to be thread-safe. Thus it could
      * operate on raw streams, DB connections, etc. without additional synchronization.
      *
-     * @param args Arguments passes into {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
+     * @param args Arguments passes into {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
      * @return Iterator over input records.
      * @throws CacheLoaderException If iterator can't be created with the given arguments.
      */
@@ -114,7 +113,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V
      * If {@code null} is returned then this record will be just skipped.
      *
      * @param rec A raw data record.
-     * @param args Arguments passed into {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
+     * @param args Arguments passed into {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
      * @return Cache entry to be saved in cache or {@code null} if no entry could be produced from this record.
      */
     @Nullable protected abstract IgniteBiTuple<K, V> parse(I rec, @Nullable Object... args);
@@ -276,7 +275,7 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> extends CacheStore<K, V
         /**
          * @param c Closure for loaded entries.
          * @param buf Set of input records to process.
-         * @param args Arguments passed into {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
+         * @param args Arguments passed into {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method.
          */
         Worker(IgniteBiInClosure<K, V> c, Collection<I> buf, Object[] args) {
             this.c = c;

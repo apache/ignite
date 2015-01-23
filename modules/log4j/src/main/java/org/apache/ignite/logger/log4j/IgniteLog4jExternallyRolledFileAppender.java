@@ -19,7 +19,7 @@ package org.apache.ignite.logger.log4j;
 
 import org.apache.ignite.lang.*;
 import org.apache.log4j.varia.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 

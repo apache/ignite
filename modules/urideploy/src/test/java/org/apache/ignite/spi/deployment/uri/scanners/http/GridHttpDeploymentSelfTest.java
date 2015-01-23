@@ -21,9 +21,9 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.server.handler.*;
 import org.eclipse.jetty.util.resource.*;
 import org.apache.ignite.spi.deployment.uri.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import javax.servlet.http.*;
 import java.util.*;

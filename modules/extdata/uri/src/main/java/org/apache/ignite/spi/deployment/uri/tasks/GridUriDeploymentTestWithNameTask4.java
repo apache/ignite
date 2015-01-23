@@ -19,7 +19,6 @@ package org.apache.ignite.spi.deployment.uri.tasks;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 

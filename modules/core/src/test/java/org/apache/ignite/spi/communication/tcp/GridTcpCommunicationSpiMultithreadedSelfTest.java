@@ -21,15 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import org.jdk8.backport.*;
 
 import java.util.*;
@@ -37,7 +36,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -318,7 +317,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.id());
                     }
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
             }
