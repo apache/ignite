@@ -51,7 +51,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridMonteCarloExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridTaskExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridSpringBeanExamplesSelfTest.class));
-        suite.addTest(new TestSuite(GridGgfsExamplesSelfTest.class));
+        suite.addTest(new TestSuite(IgniteFsExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridCheckpointExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridHibernateL2CacheExampleSelfTest.class));
         suite.addTest(new TestSuite(GridProjectionExampleSelfTest.class));

@@ -24,9 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * GGFS examples self test.
+ * IgniteFs examples self test.
  */
-public class GridGgfsExamplesSelfTest extends GridAbstractExamplesTest {
+public class IgniteFsExamplesSelfTest extends GridAbstractExamplesTest {
     /** Grid name for light client example. */
     private static final String CLIENT_LIGHT_GRID_NAME = "client-light-grid";
 
