@@ -21,15 +21,15 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.failover.jobstealing.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi.*;
 
 /**

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
  * Job stealing collision SPI config test.

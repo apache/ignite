@@ -18,7 +18,6 @@
 package org.apache.ignite.lang;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -35,7 +34,7 @@ public interface IgniteFuture<R> {
      * returns computation result.
      *
      * @return Computation result.
-     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
@@ -48,7 +47,7 @@ public interface IgniteFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
-     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
      * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
@@ -62,7 +61,7 @@ public interface IgniteFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
-     * @throws GridInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
      * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.

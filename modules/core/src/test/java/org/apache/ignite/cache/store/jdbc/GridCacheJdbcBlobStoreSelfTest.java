@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.gridgain.testframework.junits.cache.*;
+import org.apache.ignite.testframework.junits.cache.*;
 
 import java.sql.*;
 
