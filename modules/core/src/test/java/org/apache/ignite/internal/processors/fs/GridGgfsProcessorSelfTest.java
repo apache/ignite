@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
- * Tests for {@link GridGgfsProcessor}.
+ * Tests for {@link IgniteFsProcessor}.
  */
 public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     /** Test IP finder. */

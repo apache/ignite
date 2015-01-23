@@ -219,7 +219,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridGgfsHelper ggfsHelper;
+    private IgniteFsHelper ggfsHelper;
 
     /** */
     @GridToStringInclude
@@ -259,7 +259,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSpringProcessor spring;
+    private IgniteSpringProcessor spring;
 
     /** */
     @GridToStringExclude
@@ -462,8 +462,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     public void addHelper(Object helper) {
         assert helper != null;
 
-        if (helper instanceof GridGgfsHelper)
-            ggfsHelper = (GridGgfsHelper)helper;
+        if (helper instanceof IgniteFsHelper)
+            ggfsHelper = (IgniteFsHelper)helper;
         else
             assert false : "Unknown helper class: " + helper.getClass();
     }
@@ -672,7 +672,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsHelper ggfsHelper() {
+    @Override public IgniteFsHelper ggfsHelper() {
         return ggfsHelper;
     }
 

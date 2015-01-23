@@ -549,7 +549,7 @@ public class GridGainEx {
      */
     public static IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> loadConfigurations(
         URL springCfgUrl) throws IgniteCheckedException {
-        GridSpringProcessor spring = SPRING.create(false);
+        IgniteSpringProcessor spring = SPRING.create(false);
 
         return spring.loadConfigurations(springCfgUrl);
     }

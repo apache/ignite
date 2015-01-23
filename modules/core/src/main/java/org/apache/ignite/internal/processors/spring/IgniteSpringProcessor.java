@@ -29,7 +29,7 @@ import java.util.*;
  * Spring processor which can parse Spring configuration files, interface was introduced to avoid mandatory
  * runtime dependency on Spring framework.
  */
-public interface GridSpringProcessor {
+public interface IgniteSpringProcessor {
     /**
      * Loads all grid configurations specified within given configuration file.
      * <p>

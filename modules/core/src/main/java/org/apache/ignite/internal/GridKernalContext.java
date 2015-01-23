@@ -292,7 +292,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return GGFS utils processor.
      */
-    public GridGgfsHelper ggfsHelper();
+    public IgniteFsHelper ggfsHelper();
 
     /**
      * Gets stream processor.

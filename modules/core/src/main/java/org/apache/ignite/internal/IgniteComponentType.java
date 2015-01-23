@@ -42,15 +42,15 @@ public enum IgniteComponentType {
 
     /** GGFS helper component. */
     GGFS_HELPER(
-        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
-        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
+        "org.apache.ignite.internal.processors.fs.IgniteFsNoopHelper",
+        "org.apache.ignite.internal.processors.fs.IgniteFsHelperImpl",
         "ignite-hadoop"
     ),
 
     /** Spring XML parsing. */
     SPRING(
         null,
-        "org.apache.ignite.internal.processors.spring.GridSpringProcessorImpl",
+        "org.apache.ignite.internal.processors.spring.IgniteSpringProcessorImpl",
         "ignite-spring"
     ),
 

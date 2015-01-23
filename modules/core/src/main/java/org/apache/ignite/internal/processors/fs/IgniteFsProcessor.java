@@ -49,7 +49,7 @@ import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem
 /**
  * Fully operational Ignite file system processor.
  */
-public class GridGgfsProcessor extends IgniteFsProcessorAdapter {
+public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
     /** Null GGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 
@@ -67,7 +67,7 @@ public class GridGgfsProcessor extends IgniteFsProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridGgfsProcessor(GridKernalContext ctx) {
+    public IgniteFsProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

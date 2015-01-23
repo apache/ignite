@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Spring configuration processor.
  */
-public class GridSpringProcessorImpl implements GridSpringProcessor {
+public class IgniteSpringProcessorImpl implements IgniteSpringProcessor {
     /** Path to {@code gridgain.xml} file. */
     public static final String GRIDGAIN_XML_PATH = "META-INF/gridgain.xml";
 

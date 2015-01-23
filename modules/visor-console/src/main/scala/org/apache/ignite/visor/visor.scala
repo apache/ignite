@@ -30,7 +30,7 @@ import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.events.{IgniteDiscoveryEvent, IgniteEvent}
 import org.apache.ignite.internal.IgniteComponentType._
 import org.apache.ignite.internal.GridNodeAttributes._
-import org.apache.ignite.internal.processors.spring.GridSpringProcessor
+import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
 import org.apache.ignite.internal.util.{GridConfigurationFinder, GridUtils}
@@ -1490,7 +1490,7 @@ object visor extends VisorTag {
                     else
                         null
 
-                val spring: GridSpringProcessor = SPRING.create(false)
+                val spring: IgniteSpringProcessor = SPRING.create(false)
 
                 val cfgs =
                     try

@@ -21,21 +21,29 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 
 /**
- * No-op utils processor adapter.
+ * GGFS utility processor adapter.
  */
-public class GridNoopGgfsHelper implements GridGgfsHelper {
-    /** {@inheritDoc} */
-    @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
-        // No-op.
-    }
+public interface IgniteFsHelper {
+    /**
+     * Pre-process cache configuration.
+     *
+     * @param cfg Cache configuration.
+     */
+    public abstract void preProcessCacheConfiguration(CacheConfiguration cfg);
 
-    /** {@inheritDoc} */
-    @Override public void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException {
-        // No-op.
-    }
+    /**
+     * Validate cache configuration for GGFS.
+     *
+     * @param cfg Cache configuration.
+     * @throws IgniteCheckedException If validation failed.
+     */
+    public abstract void validateCacheConfiguration(CacheConfiguration cfg) throws IgniteCheckedException;
 
-    /** {@inheritDoc} */
-    @Override public boolean isGgfsBlockKey(Object key) {
-        return false;
-    }
+    /**
+     * Check whether object is of type {@code GridGgfsBlockKey}
+     *
+     * @param key Key.
+     * @return {@code True} if GGFS block key.
+     */
+    public abstract boolean isGgfsBlockKey(Object key);
 }

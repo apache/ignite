@@ -35,12 +35,12 @@ import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
- * Tests for node validation logic in {@link GridGgfsProcessor}.
+ * Tests for node validation logic in {@link IgniteFsProcessor}.
  * <p>
  * Tests starting with "testLocal" are checking
- * {@link GridGgfsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.fs.IgniteFsConfiguration[])}.
+ * {@link IgniteFsProcessor#validateLocalGgfsConfigurations(org.apache.ignite.fs.IgniteFsConfiguration[])}.
  * <p>
- * Tests starting with "testRemote" are checking {@link GridGgfsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
+ * Tests starting with "testRemote" are checking {@link IgniteFsProcessor#checkGgfsOnRemoteNode(org.apache.ignite.cluster.ClusterNode)}.
  */
 public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractTest {
     /** IP finder. */

@@ -25,7 +25,7 @@ import org.apache.ignite.cache.eviction.ggfs.*;
 /**
  * GGFS utils processor.
  */
-public class GridGgfsHelperImpl implements GridGgfsHelper {
+public class IgniteFsHelperImpl implements IgniteFsHelper {
     /** {@inheritDoc} */
     @Override public void preProcessCacheConfiguration(CacheConfiguration cfg) {
         GridCacheEvictionPolicy evictPlc = cfg.getEvictionPolicy();
