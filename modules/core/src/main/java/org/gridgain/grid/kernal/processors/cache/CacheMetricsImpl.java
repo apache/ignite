@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Adapter for cache metrics.
  */
-public class CacheMetricsImpl implements CacheMetrics, Externalizable {
+public class CacheMetricsImpl implements CacheMetrics {
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
@@ -123,8 +123,10 @@ public class CacheMetricsImpl implements CacheMetrics, Externalizable {
         return txRollbacks.get();
     }
 
-    /** {@inheritDoc} */
-    @Override public void clear() {
+    /**
+     * Clear metrics.
+     */
+    public void clear() {
         reads.set(0);
         writes.set(0);
         rmCnt.set(0);
@@ -359,42 +361,6 @@ public class CacheMetricsImpl implements CacheMetrics, Externalizable {
 
         if (delegate != null)
             delegate.addPutAndGetTimeNanos(duration);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(reads.get());
-        out.writeLong(writes.get());
-        out.writeLong(hits.get());
-        out.writeLong(misses.get());
-        out.writeLong(txCommits.get());
-        out.writeLong(txRollbacks.get());
-        out.writeLong(rmCnt.get());
-        out.writeLong(evictCnt.get());
-
-        out.writeLong(putTimeNanos.get());
-        out.writeLong(getTimeNanos.get());
-        out.writeLong(removeTimeNanos.get());
-        out.writeLong(commitTimeNanos.get());
-        out.writeLong(rollbackTimeNanos.get());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reads = new AtomicLong(in.readLong());
-        writes = new AtomicLong(in.readLong());
-        hits = new AtomicLong(in.readLong());
-        misses = new AtomicLong(in.readLong());
-        txCommits = new AtomicLong(in.readLong());
-        txRollbacks = new AtomicLong(in.readLong());
-        rmCnt = new AtomicLong(in.readLong());
-        evictCnt = new AtomicLong(in.readLong());
-
-        putTimeNanos = new AtomicLong(in.readLong());
-        getTimeNanos = new AtomicLong(in.readLong());
-        removeTimeNanos = new AtomicLong(in.readLong());
-        commitTimeNanos = new AtomicLong(in.readLong());
-        rollbackTimeNanos = new AtomicLong(in.readLong());
     }
 
     /** {@inheritDoc} */

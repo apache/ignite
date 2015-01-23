@@ -25,11 +25,6 @@ import org.apache.ignite.*;
  */
 public interface CacheMetrics {
     /**
-     * Clears the statistics counters to 0 for the associated Cache.
-     */
-    void clear();
-
-    /**
      * The number of get requests that were satisfied by the cache.
      *
      * @return the number of hits

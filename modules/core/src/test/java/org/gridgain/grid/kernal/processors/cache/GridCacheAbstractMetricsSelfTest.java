@@ -81,7 +81,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             assert g.cache(null).isEmpty();
 
-            g.cache(null).metrics().clear();
+            g.cache(null).mxBean().clear();
 
             g.transactions().resetMetrics();
         }
@@ -96,6 +96,15 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
             g.cache(null).configuration().setStatisticsEnabled(true);
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetMetricsSnapshot() throws Exception {
+        IgniteCache<Object, Object> cache = grid(0).jcache(null);
+
+        assertNotSame("Method metrics() should return snapshot.", cache.metrics(), cache.metrics());
     }
 
     /**

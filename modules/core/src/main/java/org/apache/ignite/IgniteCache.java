@@ -361,4 +361,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
+
+    /**
+     * Gets MxBean for this cache.
+     *
+     * @return MxBean.
+     */
+    public IgniteCacheMxBean mxBean();
 }

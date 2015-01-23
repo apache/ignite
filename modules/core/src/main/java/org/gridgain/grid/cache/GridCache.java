@@ -118,6 +118,14 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      */
     public CacheMetrics metrics();
 
+
+    /**
+     * Gets metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public IgniteCacheMxBean mxBean();
+
     /**
      * Gets size (in bytes) of all entries swapped to disk.
      *

@@ -25,14 +25,14 @@ import javax.cache.management.*;
  * Implementation of {@link CacheMXBean}.
  *
  */
-public class CacheMXBeanImpl implements CacheMXBean {
+public class CacheMxBeanImpl implements CacheMXBean {
     /** */
     private final Cache<?, ?> cache;
 
     /**
      * @param cache Cache.
      */
-    public CacheMXBeanImpl(Cache<?, ?> cache) {
+    public CacheMxBeanImpl(Cache<?, ?> cache) {
         this.cache = cache;
     }
 

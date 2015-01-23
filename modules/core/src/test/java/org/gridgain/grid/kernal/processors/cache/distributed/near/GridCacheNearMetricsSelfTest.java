@@ -70,7 +70,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
 
             assert g.cache(null).isEmpty();
 
-            g.cache(null).metrics().clear();
+            g.cache(null).mxBean().clear();
         }
     }
 

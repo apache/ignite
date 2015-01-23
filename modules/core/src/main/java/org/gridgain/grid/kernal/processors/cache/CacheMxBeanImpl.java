@@ -23,7 +23,7 @@ import org.gridgain.grid.cache.*;
 /**
  * Management bean that provides access to {@link GridCache}.
  */
-class CacheMxBeanAdapter implements IgniteCacheMxBean {
+class CacheMxBeanImpl implements IgniteCacheMxBean {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 
@@ -38,7 +38,7 @@ class CacheMxBeanAdapter implements IgniteCacheMxBean {
      *
      * @param cctx Cache context.
      */
-    CacheMxBeanAdapter(GridCacheContext<?, ?> cctx) {
+    CacheMxBeanImpl(GridCacheContext<?, ?> cctx) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -217,80 +217,81 @@ class CacheMxBeanAdapter implements IgniteCacheMxBean {
 
     /** {@inheritDoc} */
     @Override public void clear() {
+        cctx.cache().metrics0().clear();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheHits() {
-        return 0;
+        return cctx.cache().metrics0().getCacheHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheHitPercentage() {
-        return 0;
+        return cctx.cache().metrics0().getCacheHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheMisses() {
-        return 0;
+        return cctx.cache().metrics0().getCacheMisses();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheMissPercentage() {
-        return 0;
+        return cctx.cache().metrics0().getCacheMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        return 0;
+        return cctx.cache().metrics0().getCacheGets();
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        return 0;
+        return cctx.cache().metrics0().getCachePuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
-        return 0;
+        return cctx.cache().metrics0().getCacheRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheEvictions() {
-        return 0;
+        return cctx.cache().metrics0().getCacheEvictions();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageGetTime() {
-        return 0;
+        return cctx.cache().metrics0().getAverageGetTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAveragePutTime() {
-        return 0;
+        return cctx.cache().metrics0().getAveragePutTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageRemoveTime() {
-        return 0;
+        return cctx.cache().metrics0().getAverageRemoveTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxCommitTime() {
-        return 0;
+        return cctx.cache().metrics0().getAverageTxCommitTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxRollbackTime() {
-        return 0;
+        return cctx.cache().metrics0().getAverageTxRollbackTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxCommits() {
-        return 0;
+        return cctx.cache().metrics0().getCacheTxCommits();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxRollbacks() {
-        return 0;
+        return cctx.cache().metrics0().getCacheTxRollbacks();
     }
 }
