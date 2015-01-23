@@ -75,16 +75,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (intLsnrCnt.get() > 0 || lsnrCnt.get() > 0) {
-            Collection<ClusterNode> nodes = cctx.discovery().cacheNodes(cctx.name(), -1);
-
-            for (ClusterNode n : nodes) {
-                if (!n.version().greaterThanEqual(6, 2, 0))
-                    throw new IgniteCheckedException("Rolling update is not supported for continuous queries " +
-                        "for versions below 6.2.0");
-            }
-        }
-
         Iterable<CacheEntryListenerConfiguration<K, V>> lsnrCfgs = cctx.config().getCacheEntryListenerConfigurations();
 
         if (lsnrCfgs != null) {
