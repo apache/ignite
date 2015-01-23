@@ -409,19 +409,6 @@ public class Controls {
     }
 
     /**
-     * Create table column.
-     *
-     * @param colName Column name to display.
-     * @param propName Property name column is bound to.
-     * @param tip Column tooltip text.
-     * @param editable {@code true} if column is editable.
-     * @return New {@code TableColumn} instance.
-     */
-    public static <S, T> TableColumn<S, T> tableColumn(String colName, String propName, String tip, boolean editable) {
-        return tableColumn(colName, propName, tip, 100, 0, editable);
-    }
-
-    /**
      * Create table view.
      *
      * @param placeholder Text to show if table model is empty.
@@ -522,6 +509,9 @@ public class Controls {
 
         /** {@inheritDoc} */
         @Override public void startEdit() {
+            if (getItem().isEmpty())
+                return;
+
             super.startEdit();
 
             Node g = getGraphic();
@@ -552,7 +542,9 @@ public class Controls {
 
         /** {@inheritDoc} */
         @Override public void cancelEdit() {
-            if (!cancelling) {
+            if (cancelling)
+                super.cancelEdit();
+            else
                 try {
                     cancelling = true;
 
@@ -564,9 +556,6 @@ public class Controls {
                 finally {
                     cancelling = false;
                 }
-            }
-            else
-                super.cancelEdit();
         }
 
         /** {@inheritDoc} */
