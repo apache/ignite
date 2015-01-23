@@ -114,7 +114,7 @@ import java.util.*;
  * &lt;/beans&gt;
  * </pre>
  * This can be used, for example, when you are running your application
- * in a J2EE Web container and use {@gglink org.gridgain.grid.startup.servlet.GridServletContextListenerStartup}
+ * in a J2EE Web container and use {@ignitelink org.gridgain.grid.startup.servlet.GridServletContextListenerStartup}
  * for node startup.
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},

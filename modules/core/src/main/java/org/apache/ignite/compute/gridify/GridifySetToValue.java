@@ -135,7 +135,7 @@ import java.lang.annotation.*;
  * Spring AOP framework is based on dynamic proxy implementation and doesn't require
  * any specific runtime parameters for online weaving. All weaving is on-demand and should
  * be performed by calling method
- * {@gglink org.gridgain.grid.compute.gridify.aop.spring.GridifySpringEnhancer#enhance(java.lang.Object)} for the object
+ * {@ignitelink org.gridgain.grid.compute.gridify.aop.spring.GridifySpringEnhancer#enhance(java.lang.Object)} for the object
  * that has method with {@link GridifySetToValue} annotation.
  * <p>
  * Note that this method of weaving is rather inconvenient and AspectJ or JBoss AOP is

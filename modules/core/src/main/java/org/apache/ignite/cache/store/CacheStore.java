@@ -51,7 +51,7 @@ import static javax.cache.Cache.*;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@gglink org.gridgain.grid.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
+ *     <li>{@ignitelink org.gridgain.grid.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
  *     <li>{@link CacheJdbcBlobStore}</li>
  * </ul>
  * <p>

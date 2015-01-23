@@ -35,7 +35,7 @@ import java.util.*;
  * {@link org.gridgain.grid.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@gglink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
+ * <li>{@ignitelink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -77,7 +77,7 @@ import java.util.*;
  * ...
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
- * For more information refer to {@gglink org.gridgain.grid.GridSpringBean} documentation.
+ * For more information refer to {@ignitelink org.gridgain.grid.GridSpringBean} documentation.
  */
 public class Ignition {
     /**

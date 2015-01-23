@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
- * {@gglink org.gridgain.grid.cache.jta.GridCacheTmLookup}
+ * {@ignitelink org.gridgain.grid.cache.jta.GridCacheTmLookup}
  * interface. Cache transactions can also be started explicitly directly from {@link GridCacheProjection} API
  * via any of the {@code 'GridCacheProjection.txStart(..)'} methods.
  * <p>

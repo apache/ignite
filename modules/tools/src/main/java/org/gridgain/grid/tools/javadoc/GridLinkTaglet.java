@@ -24,13 +24,13 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Represents {@gglink ...} tag. This tag can
+ * Represents {@ignitelink ...} tag. This tag can
  * be used as replacement of {@link ...} tag that references to the GridGain class that is not in classpath.
  * Class and its arguments should have fully qualified names.
  */
 public class GridLinkTaglet implements Taglet {
     /** */
-    private static final String NAME = "gglink";
+    private static final String NAME = "ignitelink";
 
     /**
      * Return the name of this custom tag.
