@@ -1738,6 +1738,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             c = (Callable<R>)in.readObject();
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C2.class, this);
+        }
     }
 
     /**
@@ -1826,6 +1831,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ak = in.readObject();
             c = (Callable<R>)in.readObject();
         }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C3.class, this);
+        }
     }
 
     /**
@@ -1895,6 +1905,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             r = (Runnable)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C4.class, this);
         }
     }
 
@@ -1980,6 +1995,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             cn = (String)in.readObject();
             ak = in.readObject();
             r = (Runnable)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C5.class, this);
         }
     }
 
