@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.loadbalancing.weightedrandom;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
 import java.util.*;

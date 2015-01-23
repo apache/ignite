@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.collision.priorityqueue;
 
-import org.gridgain.grid.*;
+import org.apache.ignite.*;
 import org.apache.ignite.spi.collision.*;
 import org.apache.ignite.testframework.junits.spi.*;
 import org.jetbrains.annotations.*;

@@ -21,6 +21,7 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lang.utils.*;
+import org.apache.ignite.util.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.future.nio.*;

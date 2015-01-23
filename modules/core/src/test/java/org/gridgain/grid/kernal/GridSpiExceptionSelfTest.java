@@ -22,7 +22,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.deployment.*;
 import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.*;

@@ -25,7 +25,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.testsuites.bamboo.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;

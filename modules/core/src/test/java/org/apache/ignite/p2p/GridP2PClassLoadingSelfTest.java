@@ -17,10 +17,10 @@
 
 package org.apache.ignite.p2p;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;

@@ -49,7 +49,7 @@ import java.io.*;
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.gridgain.grid.marshaller.jdk.GridJdkMarshaller"/&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.jdk.GridJdkMarshaller"/&gt;
  *     &lt;/property&gt;
  *     ...
  * &lt;/bean&gt;

@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.gridgain.grid.marshaller.jdk.*;
+import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.internal.util.io.*;
 
 /**
