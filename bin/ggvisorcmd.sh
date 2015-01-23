@@ -108,13 +108,13 @@ case $osname in
         "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" \
         -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DGRIDGAIN_PROG_NAME="$0" \
         -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
-        org.gridgain.visor.commands.VisorConsole
+        org.apache.ignite.visor.commands.VisorConsole
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DGRIDGAIN_UPDATE_NOTIFIER=false \
         -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DGRIDGAIN_PROG_NAME="$0" -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
         ${JVM_XOPTS} -cp "${CP}" \
-        org.gridgain.visor.commands.VisorConsole
+        org.apache.ignite.visor.commands.VisorConsole
     ;;
 esac
 

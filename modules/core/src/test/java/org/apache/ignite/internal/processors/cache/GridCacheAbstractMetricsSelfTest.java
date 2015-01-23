@@ -1,0 +1,218 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+
+/**
+ * Cache metrics test.
+ */
+public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstractSelfTest {
+    /** */
+    private static final int KEY_CNT = 50;
+
+    /** {@inheritDoc} */
+    @Override protected boolean swapEnabled() {
+        return false;
+    }
+
+    /**
+     * @return Key count.
+     */
+    protected int keyCount() {
+        return KEY_CNT;
+    }
+
+    /**
+     * Gets number of inner reads per "put" operation.
+     *
+     * @param isPrimary {@code true} if local node is primary for current key, {@code false} otherwise.
+     * @return Expected number of inner reads.
+     */
+    protected int expectedReadsPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
+
+    /**
+     * Gets number of missed per "put" operation.
+     *
+     * @param isPrimary {@code true} if local node is primary for current key, {@code false} otherwise.
+     * @return Expected number of misses.
+     */
+    protected int expectedMissesPerPut(boolean isPrimary) {
+        return isPrimary ? 1 : 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite g = grid(i);
+
+            g.cache(null).removeAll();
+
+            assert g.cache(null).isEmpty();
+
+            g.cache(null).resetMetrics();
+
+            g.transactions().resetMetrics();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWritesReads() throws Exception {
+        GridCache<Integer, Integer> cache0 = grid(0).cache(null);
+
+        int keyCnt = keyCount();
+
+        int expReads = 0;
+        int expMisses = 0;
+
+        // Put and get a few keys.
+        for (int i = 0; i < keyCnt; i++) {
+            cache0.put(i, i); // +1 read
+
+            boolean isPrimary = cache0.affinity().isPrimary(grid(0).localNode(), i);
+
+            expReads += expectedReadsPerPut(isPrimary);
+            expMisses += expectedMissesPerPut(isPrimary);
+
+            info("Writes: " + cache0.metrics().writes());
+
+            for (int j = 0; j < gridCount(); j++) {
+                GridCache<Integer, Integer> cache = grid(j).cache(null);
+
+                int cacheWrites = cache.metrics().writes();
+
+                assertEquals("Wrong cache metrics [i=" + i + ", grid=" + j + ']', i + 1, cacheWrites);
+            }
+
+            assertEquals("Wrong value for key: " + i, Integer.valueOf(i), cache0.get(i)); // +1 read
+
+            expReads++;
+        }
+
+        // Check metrics for the whole cache.
+        long writes = 0;
+        long reads = 0;
+        long hits = 0;
+        long misses = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            CacheMetrics m = grid(i).cache(null).metrics();
+
+            writes += m.writes();
+            reads += m.reads();
+            hits += m.hits();
+            misses += m.misses();
+        }
+
+        info("Stats [reads=" + reads + ", hits=" + hits + ", misses=" + misses + ']');
+
+        assertEquals(keyCnt * gridCount(), writes);
+        assertEquals(expReads, reads);
+        assertEquals(keyCnt, hits);
+        assertEquals(expMisses, misses);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMisses() throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        // TODO: GG-7578.
+        if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
+            return;
+
+        int keyCnt = keyCount();
+
+        int expReads = 0;
+
+        // Get a few keys missed keys.
+        for (int i = 0; i < keyCnt; i++) {
+            assertNull("Value is not null for key: " + i, cache.get(i));
+
+            if (cache.affinity().isPrimary(grid(0).localNode(), i))
+                expReads++;
+            else
+                expReads += 2;
+        }
+
+        // Check metrics for the whole cache.
+        long writes = 0;
+        long reads = 0;
+        long hits = 0;
+        long misses = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            CacheMetrics m = grid(i).cache(null).metrics();
+
+            writes += m.writes();
+            reads += m.reads();
+            hits += m.hits();
+            misses += m.misses();
+        }
+
+        assertEquals(0, writes);
+        assertEquals(expReads, reads);
+        assertEquals(0, hits);
+        assertEquals(expReads, misses);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMissesOnEmptyCache() throws Exception {
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
+
+        // TODO: GG-7578.
+        if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
+            return;
+
+        Integer key =  null;
+
+        for (int i = 0; i < 1000; i++) {
+            if (cache.affinity().isPrimary(grid(0).localNode(), i)) {
+                key = i;
+
+                break;
+            }
+        }
+
+        assertNotNull(key);
+
+        cache.get(key);
+
+        assertEquals("Expected 1 read", 1, cache.metrics().reads());
+        assertEquals("Expected 1 miss", 1, cache.metrics().misses());
+
+        cache.put(key, key); // +1 read, +1 miss.
+
+        cache.get(key);
+
+        assertEquals("Expected 1 write", 1, cache.metrics().writes());
+        assertEquals("Expected 3 reads", 3, cache.metrics().reads());
+        assertEquals("Expected 2 misses", 2, cache.metrics().misses());
+        assertEquals("Expected 1 hit", 1, cache.metrics().hits());
+    }
+}

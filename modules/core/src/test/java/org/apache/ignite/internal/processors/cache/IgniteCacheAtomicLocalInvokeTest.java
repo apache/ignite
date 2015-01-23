@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
@@ -33,17 +33,17 @@ public class IgniteCacheAtomicLocalInvokeTest extends IgniteCacheInvokeAbstractT
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return LOCAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 }

@@ -18,11 +18,10 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -274,7 +273,7 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
         try {
             return enqueue0(evt, U.currentTimeMillis());
         }
-        catch (GridInterruptedException ignored) {
+        catch (IgniteInterruptedException ignored) {
             return false;
         }
     }
@@ -286,9 +285,9 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
      * @param ts Event timestamp.
      * @return {@code True} if event was added.
      *
-     * @throws GridInterruptedException If thread was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
      */
-    private boolean enqueue0(E evt, long ts) throws GridInterruptedException {
+    private boolean enqueue0(E evt, long ts) throws IgniteInterruptedException {
         WindowHolder tup = ref.get();
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
@@ -705,9 +704,9 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
         /**
          * Waits for latch count down after last event was added.
          *
-         * @throws GridInterruptedException If wait was interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If wait was interrupted.
          */
-        public void finish() throws GridInterruptedException {
+        public void finish() throws IgniteInterruptedException {
             writeLock().lock();
 
             try {

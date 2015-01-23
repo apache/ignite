@@ -19,13 +19,12 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.continuous.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.internal.processors.continuous.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -40,7 +39,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static javax.cache.event.EventType.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *

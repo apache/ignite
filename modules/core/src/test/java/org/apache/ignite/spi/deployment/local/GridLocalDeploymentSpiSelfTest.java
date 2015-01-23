@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.io.*;
 import java.util.*;

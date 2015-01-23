@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.IgniteCluster;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
