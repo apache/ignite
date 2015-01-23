@@ -640,18 +640,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         cctx.denyOnFlag(LOCAL);
 
         return innerGet0(tx,
-                readSwap,
-                readThrough,
-                evt,
-                failFast,
-                unmarshal,
-                updateMetrics,
-                tmp,
-                subjId,
-                transformClo,
-                taskName,
-                filter,
-                expirePlc);
+            readSwap,
+            readThrough,
+            evt,
+            failFast,
+            unmarshal,
+            updateMetrics,
+            tmp,
+            subjId,
+            transformClo,
+            taskName,
+            filter,
+            expirePlc);
     }
 
     /** {@inheritDoc} */

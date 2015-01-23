@@ -109,14 +109,12 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      */
     public CacheDataStructures dataStructures();
 
-
     /**
      * Gets metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */
     public CacheMetrics metrics();
-
 
     /**
      * Gets metrics (statistics) for this cache.
