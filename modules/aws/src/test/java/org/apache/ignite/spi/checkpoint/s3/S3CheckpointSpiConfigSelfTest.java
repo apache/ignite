@@ -17,34 +17,17 @@
 
 package org.apache.ignite.spi.checkpoint.s3;
 
-import com.amazonaws.auth.*;
-import org.apache.ignite.configuration.*;
-import org.apache.ignite.testsuites.*;
-import org.apache.ignite.session.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 /**
- * Grid session checkpoint self test using {@link GridS3CheckpointSpi}.
+ * Grid S3 checkpoint SPI config self test.
  */
-public class GridS3SessionCheckpointSelfTest extends GridSessionCheckpointAbstractSelfTest {
+@GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
+public class S3CheckpointSpiConfigSelfTest extends GridSpiAbstractConfigTest<S3CheckpointSpi> {
     /**
      * @throws Exception If failed.
      */
-    public void testS3Checkpoint() throws Exception {
-        IgniteConfiguration cfg = getConfiguration();
-
-        GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
-
-        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
-            IgniteS3TestSuite.getSecretKey());
-
-        spi.setAwsCredentials(cred);
-
-        spi.setBucketNameSuffix("test");
-
-        cfg.setCheckpointSpi(spi);
-
-        GridSessionCheckpointSelfTest.spi = spi;
-
-        checkCheckpoints(cfg);
+    public void testNegativeConfig() throws Exception {
+        checkNegativeSpiProperty(new S3CheckpointSpi(), "awsCredentials", null);
     }
 }

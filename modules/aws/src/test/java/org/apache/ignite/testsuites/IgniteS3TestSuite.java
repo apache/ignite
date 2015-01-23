@@ -33,14 +33,14 @@ public class IgniteS3TestSuite extends TestSuite {
         TestSuite suite = new TestSuite("S3 Integration Test Suite");
 
         // Checkpoint SPI.
-        suite.addTest(new TestSuite(GridS3CheckpointSpiConfigSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointSpiStartStopSelfTest.class));
-        suite.addTest(new TestSuite(GridS3CheckpointManagerSelfTest.class));
-        suite.addTest(new TestSuite(GridS3SessionCheckpointSelfTest.class));
+        suite.addTest(new TestSuite(S3CheckpointSpiConfigSelfTest.class));
+        suite.addTest(new TestSuite(S3CheckpointSpiSelfTest.class));
+        suite.addTest(new TestSuite(S3CheckpointSpiStartStopSelfTest.class));
+        suite.addTest(new TestSuite(S3CheckpointManagerSelfTest.class));
+        suite.addTest(new TestSuite(S3SessionCheckpointSelfTest.class));
 
         // S3 IP finder.
-        suite.addTest(new TestSuite(GridTcpDiscoveryS3IpFinderSelfTest.class));
+        suite.addTest(new TestSuite(TcpDiscoveryS3IpFinderSelfTest.class));
 
         return suite;
     }

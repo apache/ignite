@@ -23,16 +23,16 @@ import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.testsuites.*;
 
 /**
- * Checkpoint manager test using {@link GridS3CheckpointSpi}.
+ * Checkpoint manager test using {@link S3CheckpointSpi}.
  */
-public class GridS3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
+public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         assertTrue("Unexpected grid name: " + gridName, gridName.contains("s3"));
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
+        S3CheckpointSpi spi = new S3CheckpointSpi();
 
         AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
             IgniteS3TestSuite.getSecretKey());

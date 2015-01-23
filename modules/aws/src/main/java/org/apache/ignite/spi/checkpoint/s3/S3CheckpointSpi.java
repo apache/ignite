@@ -52,11 +52,11 @@ import java.util.*;
  * <li>{@link #setClientConfiguration(ClientConfiguration)}</li>
  * </ul>
  * <h2 class="header">Java Example</h2>
- * {@link GridS3CheckpointSpi} can be configured as follows:
+ * {@link S3CheckpointSpi} can be configured as follows:
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  *
- * GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
+ * S3CheckpointSpi spi = new S3CheckpointSpi();
  *
  * AWSCredentials cred = new BasicAWSCredentials(YOUR_ACCESS_KEY_ID, YOUR_SECRET_ACCESS_KEY);
  *
@@ -71,12 +71,12 @@ import java.util.*;
  * G.start(cfg);
  * </pre>
  * <h2 class="header">Spring Example</h2>
- * {@link GridS3CheckpointSpi} can be configured from Spring XML configuration file:
+ * {@link S3CheckpointSpi} can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
  *        &lt;property name=&quot;checkpointSpi&quot;&gt;
- *            &lt;bean class=&quot;org.gridgain.grid.spi.checkpoint.s3.GridS3CheckpointSpi&quot;&gt;
+ *            &lt;bean class=&quot;org.gridgain.grid.spi.checkpoint.s3.S3CheckpointSpi&quot;&gt;
  *                &lt;property name=&quot;awsCredentials&quot;&gt;
  *                    &lt;bean class=&quot;com.amazonaws.auth.BasicAWSCredentials&quot;&gt;
  *                        &lt;constructor-arg value=&quot;YOUR_ACCESS_KEY_ID&quot; /&gt;
@@ -99,7 +99,7 @@ import java.util.*;
  * @see org.apache.ignite.spi.checkpoint.CheckpointSpi
  */
 @IgniteSpiMultipleInstancesSupport(true)
-public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, GridS3CheckpointSpiMBean {
+public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, S3CheckpointSpiMBean {
     /** Logger. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @IgniteLoggerResource
@@ -110,7 +110,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     private Ignite ignite;
 
     /** Task that takes care about outdated files. */
-    private GridS3TimeoutWorker timeoutWrk;
+    private S3TimeoutWorker timeoutWrk;
 
     /** Listener. */
     private CheckpointListener lsnr;
@@ -291,17 +291,17 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
             }
         }
 
-        Collection<GridS3TimeData> s3TimeDataLst = new LinkedList<>();
+        Collection<S3TimeData> s3TimeDataLst = new LinkedList<>();
 
         try {
             ObjectListing list = s3.listObjects(bucketName);
 
             while (true) {
                 for (S3ObjectSummary sum : list.getObjectSummaries()) {
-                    GridS3CheckpointData data = read(sum.getKey());
+                    S3CheckpointData data = read(sum.getKey());
 
                     if (data != null) {
-                        s3TimeDataLst.add(new GridS3TimeData(data.getExpireTime(), data.getKey()));
+                        s3TimeDataLst.add(new S3TimeData(data.getExpireTime(), data.getKey()));
 
                         if (log.isDebugEnabled())
                             log.debug("Registered existing checkpoint from key: " + data.getKey());
@@ -322,13 +322,13 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         }
 
         // Track expiration for only those data that are made by this node
-        timeoutWrk = new GridS3TimeoutWorker();
+        timeoutWrk = new S3TimeoutWorker();
 
         timeoutWrk.add(s3TimeDataLst);
 
         timeoutWrk.start();
 
-        registerMBean(gridName, this, GridS3CheckpointSpiMBean.class);
+        registerMBean(gridName, this, S3CheckpointSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())
@@ -354,7 +354,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         assert !F.isEmpty(key);
 
         try {
-            GridS3CheckpointData data = read(key);
+            S3CheckpointData data = read(key);
 
             return data != null ?
                 data.getExpireTime() == 0 || data.getExpireTime() > U.currentTimeMillis() ?
@@ -393,7 +393,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
                     log.debug("Overriding existing key: " + key);
             }
 
-            GridS3CheckpointData data = new GridS3CheckpointData(state, expireTime, key);
+            S3CheckpointData data = new S3CheckpointData(state, expireTime, key);
 
             write(data);
         }
@@ -407,7 +407,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         }
 
         if (timeout > 0)
-            timeoutWrk.add(new GridS3TimeData(expireTime, key));
+            timeoutWrk.add(new S3TimeData(expireTime, key));
 
         return true;
     }
@@ -445,7 +445,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
      * @throws IgniteCheckedException Thrown if an error occurs while unmarshalling.
      * @throws AmazonClientException If an error occurs while querying Amazon S3.
      */
-    @Nullable private GridS3CheckpointData read(String key) throws IgniteCheckedException, AmazonClientException {
+    @Nullable private S3CheckpointData read(String key) throws IgniteCheckedException, AmazonClientException {
         assert !F.isEmpty(key);
 
         if (log.isDebugEnabled())
@@ -479,7 +479,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
      * @throws IgniteCheckedException Thrown if an error occurs while marshalling.
      * @throws AmazonClientException If an error occurs while querying Amazon S3.
      */
-    private void write(GridS3CheckpointData data) throws IgniteCheckedException, AmazonClientException {
+    private void write(S3CheckpointData data) throws IgniteCheckedException, AmazonClientException {
         assert data != null;
 
         if (log.isDebugEnabled())
@@ -544,7 +544,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridS3CheckpointSpi.class, this);
+        return S.toString(S3CheckpointSpi.class, this);
     }
 
     /**
@@ -553,14 +553,14 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
      * keep it. This worker periodically cleans S3 bucket according to checkpoints
      * expiration time.
      */
-    private class GridS3TimeoutWorker extends IgniteSpiThread {
+    private class S3TimeoutWorker extends IgniteSpiThread {
         /** List of data with access and expiration date. */
-        private Map<String, GridS3TimeData> map = new HashMap<>();
+        private Map<String, S3TimeData> map = new HashMap<>();
 
         /**
          * Constructor.
          */
-        GridS3TimeoutWorker() {
+        S3TimeoutWorker() {
             super(ignite.name(), "grid-s3-checkpoint-worker", log);
         }
 
@@ -585,12 +585,12 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
 
                     // check map one by one and physically remove
                     // if (now - last modification date) > expiration time
-                    for (Iterator<Map.Entry<String, GridS3TimeData>> iter = map.entrySet().iterator(); iter.hasNext();) {
-                        Map.Entry<String, GridS3TimeData> entry = iter.next();
+                    for (Iterator<Map.Entry<String, S3TimeData>> iter = map.entrySet().iterator(); iter.hasNext();) {
+                        Map.Entry<String, S3TimeData> entry = iter.next();
 
                         String key = entry.getKey();
 
-                        GridS3TimeData timeData = entry.getValue();
+                        S3TimeData timeData = entry.getValue();
 
                         if (timeData.getExpireTime() > 0)
                             if (timeData.getExpireTime() <= now) {
@@ -631,7 +631,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
          *
          * @param timeData File expiration and access information.
          */
-        void add(GridS3TimeData timeData) {
+        void add(S3TimeData timeData) {
             assert timeData != null;
 
             synchronized (mux) {
@@ -646,11 +646,11 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
          *
          * @param newData List of data.
          */
-        void add(Iterable<GridS3TimeData> newData) {
+        void add(Iterable<S3TimeData> newData) {
             assert newData != null;
 
             synchronized (mux) {
-                for(GridS3TimeData data : newData)
+                for(S3TimeData data : newData)
                     map.put(data.getKey(), data);
 
                 mux.notifyAll();
@@ -672,7 +672,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(GridS3TimeoutWorker.class, this);
+            return S.toString(S3TimeoutWorker.class, this);
         }
     }
 }

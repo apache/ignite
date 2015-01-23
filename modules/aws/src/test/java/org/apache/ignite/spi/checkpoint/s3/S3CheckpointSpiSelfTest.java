@@ -32,8 +32,8 @@ import org.apache.ignite.testframework.junits.spi.*;
 /**
  * Grid S3 checkpoint SPI self test.
  */
-@GridSpiTest(spi = GridS3CheckpointSpi.class, group = "Checkpoint SPI")
-public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3CheckpointSpi> {
+@GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
+public class S3CheckpointSpiSelfTest extends GridSpiAbstractTest<S3CheckpointSpi> {
     /** */
     private static final int CHECK_POINT_COUNT = 10;
 
@@ -41,7 +41,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
     private static final String KEY_PREFIX = "testCheckpoint";
 
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
+    @Override protected void spiConfigure(S3CheckpointSpi spi) throws Exception {
         AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
             IgniteS3TestSuite.getSecretKey());
 
@@ -61,7 +61,7 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
 
         AmazonS3 s3 = new AmazonS3Client(cred);
 
-        String bucketName = GridS3CheckpointSpi.BUCKET_NAME_PREFIX + "test";
+        String bucketName = S3CheckpointSpi.BUCKET_NAME_PREFIX + "test";
 
         try {
             ObjectListing list = s3.listObjects(bucketName);

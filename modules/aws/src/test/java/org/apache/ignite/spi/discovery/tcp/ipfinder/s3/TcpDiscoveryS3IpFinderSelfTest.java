@@ -26,22 +26,22 @@ import java.net.*;
 import java.util.*;
 
 /**
- * GridTcpDiscoveryS3IpFinder test.
+ * TcpDiscoveryS3IpFinder test.
  */
-public class GridTcpDiscoveryS3IpFinderSelfTest
-    extends GridTcpDiscoveryIpFinderAbstractSelfTest<GridTcpDiscoveryS3IpFinder> {
+public class TcpDiscoveryS3IpFinderSelfTest
+    extends GridTcpDiscoveryIpFinderAbstractSelfTest<TcpDiscoveryS3IpFinder> {
     /**
      * Constructor.
      *
      * @throws Exception If any error occurs.
      */
-    public GridTcpDiscoveryS3IpFinderSelfTest() throws Exception {
+    public TcpDiscoveryS3IpFinderSelfTest() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override protected GridTcpDiscoveryS3IpFinder ipFinder() throws Exception {
-        GridTcpDiscoveryS3IpFinder finder = new GridTcpDiscoveryS3IpFinder();
+    @Override protected TcpDiscoveryS3IpFinder ipFinder() throws Exception {
+        TcpDiscoveryS3IpFinder finder = new TcpDiscoveryS3IpFinder();
 
         injectLogger(finder);
 

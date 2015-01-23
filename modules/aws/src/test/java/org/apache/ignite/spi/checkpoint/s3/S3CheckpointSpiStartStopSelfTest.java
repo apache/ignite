@@ -25,10 +25,10 @@ import org.apache.ignite.testframework.junits.spi.*;
 /**
  * Grid S3 checkpoint SPI start stop self test.
  */
-@GridSpiTest(spi = GridS3CheckpointSpi.class, group = "Checkpoint SPI")
-public class GridS3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridS3CheckpointSpi> {
+@GridSpiTest(spi = S3CheckpointSpi.class, group = "Checkpoint SPI")
+public class S3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<S3CheckpointSpi> {
     /** {@inheritDoc} */
-    @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
+    @Override protected void spiConfigure(S3CheckpointSpi spi) throws Exception {
         AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
             IgniteS3TestSuite.getSecretKey());
 

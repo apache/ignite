@@ -21,10 +21,10 @@ import org.apache.ignite.mbean.*;
 import org.apache.ignite.spi.*;
 
 /**
- * Management bean for {@link GridS3CheckpointSpi}.
+ * Management bean for {@link S3CheckpointSpi}.
  */
 @IgniteMBeanDescription("MBean that provides access to S3 checkpoint SPI configuration.")
-public interface GridS3CheckpointSpiMBean extends IgniteSpiManagementMBean {
+public interface S3CheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets S3 bucket name to use.
      *

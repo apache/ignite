@@ -18,73 +18,62 @@
 package org.apache.ignite.spi.checkpoint.s3;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
-import java.io.*;
 
 /**
- * Wrapper of all checkpoint that are saved to the S3. It
- * extends every checkpoint with expiration time and host name
- * which created this checkpoint.
- * <p>
- * Host name is used by {@link GridS3CheckpointSpi} SPI to give node
- * correct files if it is restarted.
+ * Helper class that keeps checkpoint expiration date inside to track and delete
+ * obsolete files.
  */
-class GridS3CheckpointData implements Serializable {
-    /** */
-    private static final long serialVersionUID = 0L;
+class S3TimeData {
+    /** Checkpoint expiration date. */
+    private long expTime;
 
-    /** Checkpoint data. */
-    private final byte[] state;
-
-    /** Checkpoint expiration time. */
-    private final long expTime;
-
-    /** Checkpoint key. */
-    private final String key;
+    /** Key of checkpoint. */
+    private String key;
 
     /**
-     * Creates new instance of checkpoint data wrapper.
+     * Creates new instance of checkpoint time information.
      *
-     * @param state Checkpoint data.
-     * @param expTime Checkpoint expiration time in milliseconds.
+     * @param expTime Checkpoint expiration time.
      * @param key Key of checkpoint.
      */
-    GridS3CheckpointData(byte[] state, long expTime, String key) {
+    S3TimeData(long expTime, String key) {
         assert expTime >= 0;
 
-        this.state = state;
         this.expTime = expTime;
         this.key = key;
     }
 
     /**
-     * Gets checkpoint data.
-     *
-     * @return Checkpoint data.
-     */
-    byte[] getState() {
-        return state;
-    }
-
-    /**
      * Gets checkpoint expiration time.
      *
-     * @return Expire time in milliseconds.
+     * @return Expire time.
      */
     long getExpireTime() {
         return expTime;
     }
 
     /**
-     * Gets key of checkpoint.
+     * Sets checkpoint expiration time.
      *
-     * @return Key of checkpoint.
+     * @param expTime Checkpoint time-to-live value.
      */
-    public String getKey() {
+    void setExpireTime(long expTime) {
+        assert expTime >= 0;
+
+        this.expTime = expTime;
+    }
+
+    /**
+     * Gets checkpoint key.
+     *
+     * @return Checkpoint key.
+     */
+    String getKey() {
         return key;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridS3CheckpointData.class, this);
+        return S.toString(S3TimeData.class, this);
     }
 }

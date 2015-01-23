@@ -60,7 +60,7 @@ import java.util.concurrent.atomic.*;
  * <p>
  * Note that this finder is shared by default (see {@link org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder#isShared()}.
  */
-public class GridTcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
+public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Delimiter to use in S3 entries name. */
     public static final String DELIM = "#";
 
@@ -105,7 +105,7 @@ public class GridTcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Constructor.
      */
-    public GridTcpDiscoveryS3IpFinder() {
+    public TcpDiscoveryS3IpFinder() {
         setShared(true);
     }
 
@@ -314,6 +314,6 @@ public class GridTcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTcpDiscoveryS3IpFinder.class, this, "super", super.toString());
+        return S.toString(TcpDiscoveryS3IpFinder.class, this, "super", super.toString());
     }
 }
