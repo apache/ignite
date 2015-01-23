@@ -116,11 +116,6 @@ public class CacheMetricsAdapter implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public String metricsFormatted() {
-        return String.valueOf(cctx.cache().metrics());
-    }
-
-    /** {@inheritDoc} */
     @Override public long getOverflowSize() {
         try {
             return cctx.cache().overflowSize();
@@ -157,7 +152,9 @@ public class CacheMetricsAdapter implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        return cctx.isNear() ? dhtCtx.evicts().evictQueueSize() : cctx.evicts().evictQueueSize();
+        return cctx.isNear() ?
+            dhtCtx != null ? dhtCtx.evicts().evictQueueSize() : -1
+            : cctx.evicts().evictQueueSize();
     }
 
     /** {@inheritDoc} */
@@ -197,37 +194,37 @@ public class CacheMetricsAdapter implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public int getTxDhtThreadMapSize() {
-        return cctx.isNear() ? dhtCtx.tm().threadMapSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().threadMapSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtXidMapSize() {
-        return cctx.isNear() ? dhtCtx.tm().idMapSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().idMapSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommitQueueSize() {
-        return cctx.isNear() ? dhtCtx.tm().commitQueueSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().commitQueueSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtPrepareQueueSize() {
-        return cctx.isNear() ? dhtCtx.tm().prepareQueueSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().prepareQueueSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtStartVersionCountsSize() {
-        return cctx.isNear() ? dhtCtx.tm().startVersionCountsSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().startVersionCountsSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommittedVersionsSize() {
-        return cctx.isNear() ? dhtCtx.tm().committedVersionsSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().committedVersionsSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
-        return cctx.isNear() ? dhtCtx.tm().rolledbackVersionsSize() : -1;
+        return cctx.isNear() && dhtCtx !=null ? dhtCtx.tm().rolledbackVersionsSize() : -1;
     }
 
     /** {@inheritDoc} */

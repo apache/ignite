@@ -68,6 +68,99 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Commit transaction time taken nanos. */
     private float rollbackAvgTimeNanos = 0;
 
+    /** Cache name */
+    private String cacheName;
+
+    /** Number of entries that was swapped to disk. */
+    private long overflowSize;
+
+    /** Number of entries stored in off-heap memory. */
+    private long offHeapEntriesCount;
+
+    /** Memory size allocated in off-heap. */
+    private long offHeapAllocatedSize;
+
+    /** Number of non-{@code null} values in the cache. */
+    private int size;
+
+    /** Number of keys in the cache, possibly with {@code null} values. */
+    private int keySize;
+
+    /** Cache is empty. */
+    private boolean isEmpty;
+
+    /** Gets current size of evict queue used to batch up evictions. */
+    private int dhtEvictQueueCurrentSize;
+
+    /** Transaction per-thread map size. */
+    private int txThreadMapSize;
+
+    /** Transaction per-Xid map size. */
+    private int txXidMapSize;
+
+    /** Committed transaction queue size. */
+    private int txCommitQueueSize;
+
+    /** Prepared transaction queue size. */
+    private int txPrepareQueueSize;
+
+    /** Start version counts map size. */
+    private int txStartVersionCountsSize;
+
+    /** Number of cached committed transaction IDs. */
+    private int txCommittedVersionsSize;
+
+    /** Number of cached rolled back transaction IDs. */
+    private int txRolledbackVersionsSize;
+
+    /** DHT thread map size. */
+    private int txDhtThreadMapSize;
+
+    /** Transaction DHT per-Xid map size. */
+    private int txDhtXidMapSize;
+
+    /** Committed DHT transaction queue size. */
+    private int txDhtCommitQueueSize;
+
+    /** Prepared DHT transaction queue size. */
+    private int txDhtPrepareQueueSize;
+
+    /** DHT start version counts map size. */
+    private int txDhtStartVersionCountsSize;
+
+    /** Number of cached committed DHT transaction IDs. */
+    private int txDhtCommittedVersionsSize;
+
+    /** Number of cached rolled back DHT transaction IDs. */
+    private int txDhtRolledbackVersionsSize;
+
+    /** Write-behind is enabled. */
+    private boolean isWriteBehindEnabled;
+
+    /** Buffer size that triggers flush procedure. */
+    private int writeBehindFlushSize;
+
+    /** Count of worker threads. */
+    private int writeBehindFlushThreadCount;
+
+    /** Flush frequency in milliseconds. */
+    private long writeBehindFlushFrequency;
+
+    /** Maximum size of batch. */
+    private int writeBehindStoreBatchSize;
+
+    /** Count of cache overflow events since start. */
+    private int writeBehindTotalCriticalOverflowCount;
+
+    /** Count of cache overflow events since start. */
+    private int writeBehindCriticalOverflowCount;
+
+    /** Count of entries in store-retry state. */
+    private int writeBehindErrorRetryCount;
+
+    /** Total count of entries in cache store internal buffer. */
+    private int writeBehindBufferSize;
+
     /**
      * Create snapshot for given metrics.
      *
@@ -88,6 +181,38 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         removeAvgTimeNanos = m.getAverageRemoveTime();
         commitAvgTimeNanos = m.getAverageTxCommitTime();
         rollbackAvgTimeNanos = m.getAverageTxRollbackTime();
+
+        cacheName = m.name();
+        overflowSize = m.getOverflowSize();
+        offHeapEntriesCount = m.getOffHeapEntriesCount();
+        offHeapAllocatedSize = m.getOffHeapAllocatedSize();
+        size = m.getSize();
+        keySize = m.getKeySize();
+        isEmpty = m.isEmpty();
+        dhtEvictQueueCurrentSize = m.getDhtEvictQueueCurrentSize();
+        txThreadMapSize = m.getTxThreadMapSize();
+        txXidMapSize = m.getTxXidMapSize();
+        txCommitQueueSize = m.getTxCommitQueueSize();
+        txPrepareQueueSize = m.getTxPrepareQueueSize();
+        txStartVersionCountsSize = m.getTxStartVersionCountsSize();
+        txCommittedVersionsSize = m.getTxCommittedVersionsSize();
+        txRolledbackVersionsSize = m.getTxRolledbackVersionsSize();
+        txDhtThreadMapSize = m.getTxDhtThreadMapSize();
+        txDhtXidMapSize = m.getTxDhtXidMapSize();
+        txDhtCommitQueueSize = m.getTxDhtCommitQueueSize();
+        txDhtPrepareQueueSize = m.getTxDhtPrepareQueueSize();
+        txDhtStartVersionCountsSize = m.getTxDhtStartVersionCountsSize();
+        txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
+        txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
+        isWriteBehindEnabled = m.isWriteBehindEnabled();
+        writeBehindFlushSize = m.getWriteBehindFlushSize();
+        writeBehindFlushThreadCount = m.getWriteBehindFlushThreadCount();
+        writeBehindFlushFrequency = m.getWriteBehindFlushFrequency();
+        writeBehindStoreBatchSize = m.getWriteBehindStoreBatchSize();
+        writeBehindTotalCriticalOverflowCount = m.getWriteBehindTotalCriticalOverflowCount();
+        writeBehindCriticalOverflowCount = m.getWriteBehindCriticalOverflowCount();
+        writeBehindErrorRetryCount = m.getWriteBehindErrorRetryCount();
+        writeBehindBufferSize = m.getWriteBehindBufferSize();
     }
 
     /** {@inheritDoc} */
@@ -172,164 +297,159 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return txRollbacks;
     }
 
-    @Override
-    public String name() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public String name() {
+        return cacheName;
     }
 
-    @Override
-    public String metricsFormatted() {
-        return null;
+    /** {@inheritDoc} */
+    @Override public long getOverflowSize() {
+        return overflowSize;
     }
 
-    @Override
-    public long getOverflowSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public long getOffHeapEntriesCount() {
+        return offHeapEntriesCount;
     }
 
-    @Override
-    public long getOffHeapEntriesCount() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public long getOffHeapAllocatedSize() {
+        return offHeapAllocatedSize;
     }
 
-    @Override
-    public long getOffHeapAllocatedSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getSize() {
+        return size;
     }
 
-    @Override
-    public int getSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getKeySize() {
+        return keySize;
     }
 
-    @Override
-    public int getKeySize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public boolean isEmpty() {
+        return isEmpty;
     }
 
-    @Override
-    public boolean isEmpty() {
-        return false;
+    /** {@inheritDoc} */
+    @Override public int getDhtEvictQueueCurrentSize() {
+        return dhtEvictQueueCurrentSize;
     }
 
-    @Override
-    public int getDhtEvictQueueCurrentSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxThreadMapSize() {
+        return txThreadMapSize;
     }
 
-    @Override
-    public int getTxThreadMapSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxXidMapSize() {
+        return txXidMapSize;
     }
 
-    @Override
-    public int getTxXidMapSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxCommitQueueSize() {
+        return txCommitQueueSize;
     }
 
-    @Override
-    public int getTxCommitQueueSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxPrepareQueueSize() {
+        return txPrepareQueueSize;
     }
 
-    @Override
-    public int getTxPrepareQueueSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxStartVersionCountsSize() {
+        return txStartVersionCountsSize;
     }
 
-    @Override
-    public int getTxStartVersionCountsSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxCommittedVersionsSize() {
+        return txCommittedVersionsSize;
     }
 
-    @Override
-    public int getTxCommittedVersionsSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxRolledbackVersionsSize() {
+        return txRolledbackVersionsSize;
     }
 
-    @Override
-    public int getTxRolledbackVersionsSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtThreadMapSize() {
+        return txDhtThreadMapSize;
     }
 
-    @Override
-    public int getTxDhtThreadMapSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtXidMapSize() {
+        return txDhtXidMapSize;
     }
 
-    @Override
-    public int getTxDhtXidMapSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtCommitQueueSize() {
+        return txDhtCommitQueueSize;
     }
 
-    @Override
-    public int getTxDhtCommitQueueSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtPrepareQueueSize() {
+        return txDhtPrepareQueueSize;
     }
 
-    @Override
-    public int getTxDhtPrepareQueueSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtStartVersionCountsSize() {
+        return txDhtStartVersionCountsSize;
     }
 
-    @Override
-    public int getTxDhtStartVersionCountsSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtCommittedVersionsSize() {
+        return txDhtCommittedVersionsSize;
     }
 
-    @Override
-    public int getTxDhtCommittedVersionsSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getTxDhtRolledbackVersionsSize() {
+        return txDhtRolledbackVersionsSize;
     }
 
-    @Override
-    public int getTxDhtRolledbackVersionsSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public boolean isWriteBehindEnabled() {
+        return isWriteBehindEnabled;
     }
 
-    @Override
-    public boolean isWriteBehindEnabled() {
-        return false;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindFlushSize() {
+        return writeBehindFlushSize;
     }
 
-    @Override
-    public int getWriteBehindFlushSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindFlushThreadCount() {
+        return writeBehindFlushThreadCount;
     }
 
-    @Override
-    public int getWriteBehindFlushThreadCount() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public long getWriteBehindFlushFrequency() {
+        return writeBehindFlushFrequency;
     }
 
-    @Override
-    public long getWriteBehindFlushFrequency() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindStoreBatchSize() {
+        return writeBehindStoreBatchSize;
     }
 
-    @Override
-    public int getWriteBehindStoreBatchSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindTotalCriticalOverflowCount() {
+        return writeBehindTotalCriticalOverflowCount;
     }
 
-    @Override
-    public int getWriteBehindTotalCriticalOverflowCount() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindCriticalOverflowCount() {
+        return writeBehindCriticalOverflowCount;
     }
 
-    @Override
-    public int getWriteBehindCriticalOverflowCount() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindErrorRetryCount() {
+        return writeBehindErrorRetryCount;
     }
 
-    @Override
-    public int getWriteBehindErrorRetryCount() {
-        return 0;
-    }
-
-    @Override
-    public int getWriteBehindBufferSize() {
-        return 0;
+    /** {@inheritDoc} */
+    @Override public int getWriteBehindBufferSize() {
+        return writeBehindBufferSize;
     }
 
     /** {@inheritDoc} */
@@ -348,6 +468,38 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeFloat(removeAvgTimeNanos);
         out.writeFloat(commitAvgTimeNanos);
         out.writeFloat(rollbackAvgTimeNanos);
+
+        out.writeObject(cacheName);
+        out.writeLong(overflowSize);
+        out.writeLong(offHeapEntriesCount);
+        out.writeLong(offHeapAllocatedSize);
+        out.writeInt(size);
+        out.writeInt(keySize);
+        out.writeBoolean(isEmpty);
+        out.writeInt(dhtEvictQueueCurrentSize);
+        out.writeInt(txThreadMapSize);
+        out.writeInt(txXidMapSize);
+        out.writeInt(txCommitQueueSize);
+        out.writeInt(txPrepareQueueSize);
+        out.writeInt(txStartVersionCountsSize);
+        out.writeInt(txCommittedVersionsSize);
+        out.writeInt(txRolledbackVersionsSize);
+        out.writeInt(txDhtThreadMapSize);
+        out.writeInt(txDhtXidMapSize);
+        out.writeInt(txDhtCommitQueueSize);
+        out.writeInt(txDhtPrepareQueueSize);
+        out.writeInt(txDhtStartVersionCountsSize);
+        out.writeInt(txDhtCommittedVersionsSize);
+        out.writeInt(txDhtRolledbackVersionsSize);
+        out.writeBoolean(isWriteBehindEnabled);
+        out.writeInt(writeBehindFlushSize);
+        out.writeInt(writeBehindFlushThreadCount);
+        out.writeLong(writeBehindFlushFrequency);
+        out.writeInt(writeBehindStoreBatchSize);
+        out.writeInt(writeBehindTotalCriticalOverflowCount);
+        out.writeInt(writeBehindCriticalOverflowCount);
+        out.writeInt(writeBehindErrorRetryCount);
+        out.writeInt(writeBehindBufferSize);
     }
 
     /** {@inheritDoc} */
@@ -366,6 +518,38 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         removeAvgTimeNanos = in.readFloat();
         commitAvgTimeNanos = in.readFloat();
         rollbackAvgTimeNanos = in.readFloat();
+
+        cacheName = (String)in.readObject();
+        overflowSize = in.readLong();
+        offHeapEntriesCount = in.readLong();
+        offHeapAllocatedSize = in.readLong();
+        size = in.readInt();
+        keySize = in.readInt();
+        isEmpty = in.readBoolean();
+        dhtEvictQueueCurrentSize = in.readInt();
+        txThreadMapSize = in.readInt();
+        txXidMapSize = in.readInt();
+        txCommitQueueSize = in.readInt();
+        txPrepareQueueSize = in.readInt();
+        txStartVersionCountsSize = in.readInt();
+        txCommittedVersionsSize = in.readInt();
+        txRolledbackVersionsSize = in.readInt();
+        txDhtThreadMapSize = in.readInt();
+        txDhtXidMapSize = in.readInt();
+        txDhtCommitQueueSize = in.readInt();
+        txDhtPrepareQueueSize = in.readInt();
+        txDhtStartVersionCountsSize = in.readInt();
+        txDhtCommittedVersionsSize = in.readInt();
+        txDhtRolledbackVersionsSize = in.readInt();
+        isWriteBehindEnabled = in.readBoolean();
+        writeBehindFlushSize = in.readInt();
+        writeBehindFlushThreadCount = in.readInt();
+        writeBehindFlushFrequency = in.readLong();
+        writeBehindStoreBatchSize = in.readInt();
+        writeBehindTotalCriticalOverflowCount = in.readInt();
+        writeBehindCriticalOverflowCount = in.readInt();
+        writeBehindErrorRetryCount = in.readInt();
+        writeBehindBufferSize = in.readInt();
     }
 
     /** {@inheritDoc} */

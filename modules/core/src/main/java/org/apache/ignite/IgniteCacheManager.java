@@ -41,7 +41,7 @@ public class IgniteCacheManager implements CacheManager {
     private static final String CACHE_CONFIGURATION = "CacheConfiguration";
 
     /** */
-    private final Map<String, IgniteBiTuple<Ignite, CacheMxBeanImpl>> igniteMap = new HashMap<>();
+    private final Map<String, IgniteBiTuple<Ignite, CacheMXBeanImpl>> igniteMap = new HashMap<>();
 
     /** */
     private final URI uri;
@@ -147,7 +147,7 @@ public class IgniteCacheManager implements CacheManager {
 
             res = ignite.jcache(cacheName);
 
-            igniteMap.put(cacheName, new T2<>(ignite, new CacheMxBeanImpl(res)));
+            igniteMap.put(cacheName, new T2<>(ignite, new CacheMXBeanImpl(res)));
         }
 
         if (((CompleteConfiguration)cacheCfg).isManagementEnabled())
@@ -163,7 +163,7 @@ public class IgniteCacheManager implements CacheManager {
      * @param cacheName Cache name.
      */
     private <K, V> IgniteCache<K, V> findCache(String cacheName) {
-        IgniteBiTuple<Ignite, CacheMxBeanImpl> tuple;
+        IgniteBiTuple<Ignite, CacheMXBeanImpl> tuple;
 
         synchronized (igniteMap) {
             tuple = igniteMap.get(cacheName);
@@ -229,7 +229,7 @@ public class IgniteCacheManager implements CacheManager {
      */
     public boolean isManagedIgnite(Ignite ignite) {
         synchronized (igniteMap) {
-            for (IgniteBiTuple<Ignite, CacheMxBeanImpl> tuple : igniteMap.values()) {
+            for (IgniteBiTuple<Ignite, CacheMXBeanImpl> tuple : igniteMap.values()) {
                 if (ignite.equals(tuple.get1()))
                     return true;
             }
@@ -245,7 +245,7 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        IgniteBiTuple<Ignite, CacheMxBeanImpl> tuple;
+        IgniteBiTuple<Ignite, CacheMXBeanImpl> tuple;
 
         synchronized (igniteMap) {
             tuple = igniteMap.remove(cacheName);
@@ -290,7 +290,7 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        IgniteBiTuple<Ignite, CacheMxBeanImpl> tuple;
+        IgniteBiTuple<Ignite, CacheMXBeanImpl> tuple;
 
         synchronized (igniteMap) {
             tuple = igniteMap.get(cacheName);
@@ -318,7 +318,7 @@ public class IgniteCacheManager implements CacheManager {
         if (cacheName == null)
             throw new NullPointerException();
 
-        IgniteBiTuple<Ignite, CacheMxBeanImpl> tuple;
+        IgniteBiTuple<Ignite, CacheMXBeanImpl> tuple;
 
         synchronized (igniteMap) {
             tuple = igniteMap.get(cacheName);
@@ -403,13 +403,13 @@ public class IgniteCacheManager implements CacheManager {
     /** {@inheritDoc} */
     @Override public void close() {
         if (closed.compareAndSet(false, true)) {
-            IgniteBiTuple<Ignite, CacheMxBeanImpl>[] ignites;
+            IgniteBiTuple<Ignite, CacheMXBeanImpl>[] ignites;
 
             synchronized (igniteMap) {
                 ignites = igniteMap.values().toArray(new IgniteBiTuple[igniteMap.values().size()]);
             }
 
-            for (IgniteBiTuple<Ignite, CacheMxBeanImpl> tuple : ignites) {
+            for (IgniteBiTuple<Ignite, CacheMXBeanImpl> tuple : ignites) {
                 try {
                     tuple.get1().close();
                 }
