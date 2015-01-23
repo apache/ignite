@@ -557,12 +557,11 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
     /**
      * @param node Destination node.
      * @param topic Topic to send the message to.
-     * @param msgId Ordered message ID.
      * @param msg Message to send.
      * @param timeout Timeout to keep a message on receiving queue.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void sendOrderedMessage(ClusterNode node, Object topic, long msgId, GridCacheMessage<K, V> msg,
+    public void sendOrderedMessage(ClusterNode node, Object topic, GridCacheMessage<K, V> msg,
         long timeout) throws IgniteCheckedException {
         onSend(msg, node.id());
 
@@ -572,7 +571,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             try {
                 cnt++;
 
-                cctx.gridIO().sendOrderedMessage(node, topic, msgId, msg, SYSTEM_POOL, timeout, false);
+                cctx.gridIO().sendOrderedMessage(node, topic, msg, SYSTEM_POOL, timeout, false);
 
                 if (log.isDebugEnabled())
                     log.debug("Sent ordered cache message [topic=" + topic + ", msg=" + msg +
@@ -592,15 +591,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
 
             U.sleep(retryDelay);
         }
-    }
-
-    /**
-     * @param topic Message topic.
-     * @param nodeId Node ID.
-     * @return Next ordered message ID.
-     */
-    public long messageId(Object topic, UUID nodeId) {
-        return cctx.gridIO().nextMessageId(topic, nodeId);
     }
 
     /**
@@ -731,7 +721,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      */
     public void removeOrderedHandler(Object topic) {
         if (orderedHandlers.remove(topic) != null) {
-            cctx.gridIO().removeMessageId(topic);
             cctx.gridIO().removeMessageListener(topic);
 
             if (log != null && log.isDebugEnabled())
@@ -740,13 +729,6 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
         else if (log != null)
             U.warn(log, "Failed to unregister ordered cache communication handler because it was not found " +
                 "for topic: " + topic);
-    }
-
-    /**
-     * @param topic Message topic.
-     */
-    public void removeMessageId(Object topic) {
-        cctx.gridIO().removeMessageId(topic);
     }
 
     /**

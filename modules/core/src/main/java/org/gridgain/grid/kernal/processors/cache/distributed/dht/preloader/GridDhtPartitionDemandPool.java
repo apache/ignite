@@ -66,9 +66,6 @@ public class GridDhtPartitionDemandPool<K, V> {
     private final ReadWriteLock busyLock;
 
     /** */
-    private GridDhtPartitionTopology<K, V> top;
-
-    /** */
     @GridToStringInclude
     private final Collection<DemandWorker> dmdWorkers;
 
@@ -109,8 +106,6 @@ public class GridDhtPartitionDemandPool<K, V> {
         this.busyLock = busyLock;
 
         log = cctx.logger(getClass());
-
-        top = cctx.dht().topology();
 
         poolSize = cctx.preloadEnabled() ? cctx.config().getPreloadThreadPoolSize() : 0;
 
@@ -160,7 +155,6 @@ public class GridDhtPartitionDemandPool<K, V> {
         if (log.isDebugEnabled())
             log.debug("After joining on demand workers: " + dmdWorkers);
 
-        top = null;
         lastExchangeFut = null;
 
         lastTimeoutObj.set(null);
@@ -264,13 +258,6 @@ public class GridDhtPartitionDemandPool<K, V> {
     }
 
     /**
-     * @return Dummy node-left message.
-     */
-    private SupplyMessage<K, V> dummyTopology() {
-        return DUMMY_TOP;
-    }
-
-    /**
      * @param msg Message to check.
      * @return {@code True} if dummy message.
      */
@@ -332,7 +319,7 @@ public class GridDhtPartitionDemandPool<K, V> {
      * @return Nodes owning this partition.
      */
     private Collection<ClusterNode> remoteOwners(int p, long topVer) {
-        return F.view(top.owners(p, topVer), F.remoteNodes(cctx.nodeId()));
+        return F.view(cctx.dht().topology().owners(p, topVer), F.remoteNodes(cctx.nodeId()));
     }
 
     /**
@@ -495,7 +482,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @throws GridInterruptedException If interrupted.
          */
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
-            throws IgniteCheckedException, GridInterruptedException {
+            throws IgniteCheckedException {
             try {
                 GridCacheEntryEx<K, V> cached = null;
 
@@ -705,7 +692,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             int p = e.getKey();
 
                             if (cctx.affinity().localNode(p, topVer)) {
-                                GridDhtLocalPartition<K, V> part = top.localPartition(p, topVer, true);
+                                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, topVer, true);
 
                                 assert part != null;
 
@@ -749,7 +736,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         if (last) {
                                             remaining.remove(p);
 
-                                            top.own(part);
+                                            cctx.dht().topology().own(part);
 
                                             if (log.isDebugEnabled())
                                                 log.debug("Finished preloading partition: " + part);
@@ -981,6 +968,8 @@ public class GridDhtPartitionDemandPool<K, V> {
      */
     GridDhtPreloaderAssignments<K, V> assign(GridDhtPartitionsExchangeFuture<K, V> exchFut) {
         // No assignments for disabled preloader.
+        GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
+
         if (!cctx.preloadEnabled())
             return new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 
@@ -988,7 +977,8 @@ public class GridDhtPartitionDemandPool<K, V> {
 
         assert exchFut.forcePreload() || exchFut.dummyReassign() ||
             exchFut.exchangeId().topologyVersion() == top.topologyVersion() :
-            "Topology version mismatch [exchId=" + exchFut.exchangeId() + ", topVer=" + top.topologyVersion() + ']';
+            "Topology version mismatch [exchId=" + exchFut.exchangeId() +
+                ", topVer=" + top.topologyVersion() + ']';
 
         GridDhtPreloaderAssignments<K, V> assigns = new GridDhtPreloaderAssignments<>(exchFut, top.topologyVersion());
 

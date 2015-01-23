@@ -660,9 +660,6 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         // We should save message ID here since listener callback will reset sequence.
         ClusterNode sndNode = ctx.discovery().node(taskNode.id());
 
-        long msgId = sndNode != null && ses.isFullSupport() ?
-            ctx.io().nextMessageId(taskTopic, sndNode.id()) : -1;
-
         finishTime = U.currentTimeMillis();
 
         Collection<IgniteBiTuple<Integer, String>> evts = null;
@@ -726,12 +723,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 // Send response to designated job topic.
                                 // Always go through communication to preserve order,
                                 // if attributes are enabled.
-                                assert msgId > 0;
-
                                 ctx.io().sendOrderedMessage(
                                     sndNode,
                                     taskTopic,
-                                    msgId,
                                     jobRes,
                                     internal ? MANAGEMENT_POOL : SYSTEM_POOL,
                                     timeout,

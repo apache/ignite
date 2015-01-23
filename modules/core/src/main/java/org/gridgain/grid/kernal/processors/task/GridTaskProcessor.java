@@ -773,7 +773,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             return;
         }
 
-        Map<UUID, Long> msgIds = new HashMap<>(siblings.size(), 1.0f);
+        Set<UUID> rcvrs = new HashSet<>();
 
         UUID locNodeId = ctx.localNodeId();
 
@@ -794,8 +794,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                 UUID nodeId = sib.nodeId();
 
-                if (!nodeId.equals(locNodeId) && !sib.isJobDone() && !msgIds.containsKey(nodeId))
-                    msgIds.put(nodeId, commMgr.nextMessageId(sib.jobTopic(), nodeId));
+                if (!nodeId.equals(locNodeId) && !sib.isJobDone() && !rcvrs.contains(nodeId))
+                    rcvrs.add(nodeId);
             }
         }
 
@@ -821,12 +821,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
             UUID nodeId = sib.nodeId();
 
-            Long msgId = msgIds.remove(nodeId);
-
             // Pair can be null if job is finished.
-            if (msgId != null) {
-                assert msgId > 0;
-
+            if (rcvrs.remove(nodeId)) {
                 ClusterNode node = ctx.discovery().node(nodeId);
 
                 // Check that node didn't change (it could happen in case of failover).
@@ -845,7 +841,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                         commMgr.sendOrderedMessage(
                             node,
                             sib.jobTopic(),
-                            msgId,
                             req,
                             SYSTEM_POOL,
                             timeout,
@@ -1051,7 +1046,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
             // Remove message ID registration and old listener.
             if (worker.getSession().isFullSupport()) {
-                ioMgr.removeMessageId(sib.jobTopic());
                 ioMgr.removeMessageListener(sib.taskTopic(), msgLsnr);
 
                 synchronized (worker.getSession()) {
@@ -1113,7 +1107,6 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     for (ComputeJobSibling sibling : worker.getSession().getJobSiblings()) {
                         GridJobSiblingImpl s = (GridJobSiblingImpl)sibling;
 
-                        ctx.io().removeMessageId(s.jobTopic());
                         ctx.io().removeMessageListener(s.taskTopic(), msgLsnr);
                     }
                 }

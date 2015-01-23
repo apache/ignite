@@ -45,7 +45,6 @@ public class GridCacheSyncReplicatedPreloadSelfTest extends GridCommonAbstractTe
     /** */
     private static final boolean DISCO_DEBUG_MODE = false;
 
-
     /**
      * Constructs test.
      */
