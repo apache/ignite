@@ -385,7 +385,8 @@ public class IgniteCacheManager implements CacheManager {
         for (ObjectName registeredObjectName : registeredObjectNames) {
             try {
                 mBeanSrv.unregisterMBean(registeredObjectName);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 throw new CacheException("Error unregistering object instance " + registeredObjectName
                     + " . Error was " + e.getMessage(), e);
             }
