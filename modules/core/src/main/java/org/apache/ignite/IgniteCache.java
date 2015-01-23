@@ -129,7 +129,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.
-     * In case of {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED} or {@link org.apache.ignite.cache.GridCacheMode#REPLICATED} caches,
+     * In case of {@link org.apache.ignite.cache.CacheMode#PARTITIONED} or {@link org.apache.ignite.cache.CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent

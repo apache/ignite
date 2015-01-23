@@ -21,7 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
  */
 public class GridCacheReplicatedFullApiSelfTest extends GridCacheAbstractFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 

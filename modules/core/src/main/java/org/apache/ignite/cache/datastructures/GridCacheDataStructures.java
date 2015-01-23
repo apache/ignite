@@ -78,7 +78,7 @@ public interface GridCacheDataStructures {
      * Will get a named queue from cache and create one if it has not been created yet and {@code create} flag
      * is {@code true}.
      * If queue is present in cache already, queue properties will not be changed. Use
-     * collocation for {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED} caches if you have lots of relatively
+     * collocation for {@link org.apache.ignite.cache.CacheMode#PARTITIONED} caches if you have lots of relatively
      * small queues as it will make fetching, querying, and iteration a lot faster. If you have
      * few very large queues, then you should consider turning off collocation as they simply
      * may not fit in a single node's memory. However note that in this case
@@ -89,7 +89,7 @@ public interface GridCacheDataStructures {
      * @param collocated If {@code true} then all items within the same queue will be collocated on the same node.
      *      Otherwise elements of the same queue maybe be cached on different nodes. If you have lots of relatively
      *      small queues, then you should use collocation. If you have few large queues, then you should turn off
-     *      collocation. This parameter works only for {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED} cache.
+     *      collocation. This parameter works only for {@link org.apache.ignite.cache.CacheMode#PARTITIONED} cache.
      * @param create Boolean flag indicating whether data structure should be created if does not exist.
      * @return Queue with given properties.
      * @throws IgniteCheckedException If remove failed.
@@ -130,7 +130,7 @@ public interface GridCacheDataStructures {
      * @param name Set name.
      * @param collocated If {@code true} then all items within the same set will be collocated on the same node.
      *      Otherwise elements of the same set maybe be cached on different nodes. This parameter works only
-     *      for {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED} cache.
+     *      for {@link org.apache.ignite.cache.CacheMode#PARTITIONED} cache.
      * @param create Flag indicating whether set should be created if does not exist.
      * @return Set with given properties.
      * @throws IgniteCheckedException If failed.

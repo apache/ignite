@@ -30,8 +30,8 @@ public class GridCacheEmptyEntriesPartitionedSelfTest extends GridCacheEmptyEntr
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */

@@ -20,7 +20,7 @@ package org.apache.ignite.cache;
 import org.jetbrains.annotations.*;
 
 /**
- * Cache write ordering mode. This enumeration is taken into account only in {@link GridCacheAtomicityMode#ATOMIC}
+ * Cache write ordering mode. This enumeration is taken into account only in {@link CacheAtomicityMode#ATOMIC}
  * atomicity mode. Write ordering mode determines which node assigns the write version, sender or the primary node.
  * <p>
  * For example, {@link #CLOCK} mode assigns write versions on a sender node which generally leads to better
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
  * {@link #CLOCK} mode will be automatically configured only with {@link GridCacheWriteSynchronizationMode#FULL_SYNC}
  * write synchronization mode, as for other synchronization modes it does not render better performance.
  */
-public enum GridCacheAtomicWriteOrderMode {
+public enum CacheAtomicWriteOrderMode {
     /**
      * In this mode, write versions are assigned on a sender node which generally leads to better
      * performance in {@link GridCacheWriteSynchronizationMode#FULL_SYNC} synchronization mode, since in this case
@@ -50,7 +50,7 @@ public enum GridCacheAtomicWriteOrderMode {
     PRIMARY;
 
     /** Enumerated values. */
-    private static final GridCacheAtomicWriteOrderMode[] VALS = values();
+    private static final CacheAtomicWriteOrderMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -58,7 +58,7 @@ public enum GridCacheAtomicWriteOrderMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheAtomicWriteOrderMode fromOrdinal(byte ord) {
+    @Nullable public static CacheAtomicWriteOrderMode fromOrdinal(byte ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -30,8 +30,8 @@ public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbs
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.LOCAL;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.LOCAL;
     }
 
     /** {@inheritDoc} */

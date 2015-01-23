@@ -26,7 +26,7 @@ import org.objectweb.jotm.*;
 
 import javax.transaction.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 
 /**
@@ -59,7 +59,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

@@ -49,9 +49,9 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.query.GridCacheQueryType.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.junit.Assert.*;
@@ -80,12 +80,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * @return Cache mode.
      */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /**
      * @return Atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
+    protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 
@@ -146,7 +146,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cc.setQueryConfiguration(qcfg);
 
             // Explicitly set number of backups equal to number of grids.
-            if (cacheMode() == GridCacheMode.PARTITIONED)
+            if (cacheMode() == CacheMode.PARTITIONED)
                 cc.setBackups(gridCount());
 
             ccs[i] = cc;

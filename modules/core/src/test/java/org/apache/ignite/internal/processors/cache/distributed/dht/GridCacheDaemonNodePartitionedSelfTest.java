@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
  */
 public class GridCacheDaemonNodePartitionedSelfTest extends GridCacheDaemonNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 }

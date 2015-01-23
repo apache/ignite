@@ -32,8 +32,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 
@@ -66,7 +66,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     /**
      * @return Cache mode.
      */
-    protected abstract GridCacheMode getCacheMode();
+    protected abstract CacheMode getCacheMode();
 
     /**
      * @return Cache configuration.

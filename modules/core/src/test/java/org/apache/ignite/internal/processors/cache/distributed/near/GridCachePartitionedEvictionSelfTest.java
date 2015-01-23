@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import javax.cache.expiry.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;

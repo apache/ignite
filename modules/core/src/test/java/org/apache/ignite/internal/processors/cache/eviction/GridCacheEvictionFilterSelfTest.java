@@ -31,8 +31,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 
@@ -44,7 +44,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Replicated cache. */
-    private GridCacheMode mode = REPLICATED;
+    private CacheMode mode = REPLICATED;
 
     /** Near enabled flag. */
     private boolean nearEnabled;

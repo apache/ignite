@@ -33,8 +33,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -49,7 +49,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
     protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Replicated cache. */
-    protected GridCacheMode mode = REPLICATED;
+    protected CacheMode mode = REPLICATED;
 
     /** Near enabled flag. */
     protected boolean nearEnabled;

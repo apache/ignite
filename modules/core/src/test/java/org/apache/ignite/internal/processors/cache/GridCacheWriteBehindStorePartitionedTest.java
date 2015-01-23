@@ -24,7 +24,7 @@ import org.apache.ignite.cache.*;
  */
 public class GridCacheWriteBehindStorePartitionedTest extends GridCacheWriteBehindStoreAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 }

@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.IgniteTxIsolation.REPEATABLE_READ;
@@ -77,7 +77,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
         ccfg.setDistributionMode(partitionDistributionMode());
         ccfg.setPreloadMode(SYNC);
 
-        if (cacheMode() == GridCacheMode.PARTITIONED)
+        if (cacheMode() == CacheMode.PARTITIONED)
             ccfg.setBackups(1);
 
         return ccfg;
@@ -86,7 +86,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @return Cache mode.
      */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /**
      * @return Partition distribution mode for PARTITIONED cache.

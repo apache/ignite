@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests local query.
@@ -36,7 +36,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return LOCAL;
     }
 

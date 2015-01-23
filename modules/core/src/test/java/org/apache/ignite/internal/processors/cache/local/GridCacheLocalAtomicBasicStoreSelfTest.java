@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Test store with local cache in atomic mode.
  */
 public class GridCacheLocalAtomicBasicStoreSelfTest extends GridCacheLocalBasicStoreSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 }

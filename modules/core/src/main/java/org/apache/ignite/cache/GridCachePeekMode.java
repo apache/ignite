@@ -58,14 +58,14 @@ public enum GridCachePeekMode {
 
     /**
      * Peek value from near cache only (don't peek from partitioned cache).
-     * In case of {@link GridCacheMode#LOCAL} or {@link GridCacheMode#REPLICATED} cache,
+     * In case of {@link CacheMode#LOCAL} or {@link CacheMode#REPLICATED} cache,
      * behaves as {@link #GLOBAL} mode.
      */
     NEAR_ONLY,
 
     /**
      * Peek value from partitioned cache only (skip near cache).
-     * In case of {@link GridCacheMode#LOCAL} or {@link GridCacheMode#REPLICATED} cache,
+     * In case of {@link CacheMode#LOCAL} or {@link CacheMode#REPLICATED} cache,
      * behaves as {@link #GLOBAL} mode.
      */
     PARTITIONED_ONLY;

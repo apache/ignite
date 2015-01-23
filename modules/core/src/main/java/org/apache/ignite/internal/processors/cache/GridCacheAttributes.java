@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 
 import static org.apache.ignite.cache.CacheConfiguration.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -43,10 +43,10 @@ public class GridCacheAttributes implements Externalizable {
     private String name;
 
     /** Cache mode. */
-    private GridCacheMode cacheMode;
+    private CacheMode cacheMode;
 
     /** Cache atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** Default time to live for cache entries. */
     private long ttl;
@@ -236,14 +236,14 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @return Cache mode.
      */
-    public GridCacheMode cacheMode() {
+    public CacheMode cacheMode() {
         return cacheMode != null ? cacheMode : DFLT_CACHE_MODE;
     }
 
     /**
      * @return Cache atomicity mode.
      */
-    public GridCacheAtomicityMode atomicityMode() {
+    public CacheAtomicityMode atomicityMode() {
         return atomicityMode != null ? atomicityMode : DFLT_CACHE_ATOMICITY_MODE;
     }
 
@@ -575,8 +575,8 @@ public class GridCacheAttributes implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        atomicityMode = GridCacheAtomicityMode.fromOrdinal(U.readEnumOrdinal0(in));
-        cacheMode = GridCacheMode.fromOrdinal(U.readEnumOrdinal0(in));
+        atomicityMode = CacheAtomicityMode.fromOrdinal(U.readEnumOrdinal0(in));
+        cacheMode = CacheMode.fromOrdinal(U.readEnumOrdinal0(in));
         dfltLockTimeout = in.readLong();
         dfltQryTimeout = in.readLong();
         evictMaxOverflowRatio = in.readFloat();

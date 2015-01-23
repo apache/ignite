@@ -56,7 +56,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         // Cache config.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.LOCAL);
+        cacheCfg.setCacheMode(CacheMode.LOCAL);
         cacheCfg.setQueryIndexEnabled(false);
 
         // Grid config.

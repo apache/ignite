@@ -40,9 +40,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
@@ -1037,7 +1037,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      */
     private void checkTransactionalWithNear() throws IgniteCheckedException {
         if (cctx.atomic())
-            throw new IgniteCheckedException("Data structures require GridCacheAtomicityMode.TRANSACTIONAL atomicity mode " +
+            throw new IgniteCheckedException("Data structures require CacheAtomicityMode.TRANSACTIONAL atomicity mode " +
                 "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
 
         if (!cctx.isReplicated() && !cctx.isLocal() && !CU.isNearEnabled(cctx))

@@ -33,8 +33,8 @@ import java.util.concurrent.*;
  * as your master or reference data, while <i>facts</i> are usually large data sets of events or
  * other objects that continuously come into the system and may change frequently. In GridGain
  * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
- * {@link GridCacheMode#REPLICATED REPLICATED} caches and <i>facts</i> in much larger
- * {@link GridCacheMode#PARTITIONED PARTITIONED} caches you can freely execute distributed joins across
+ * {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED} caches and <i>facts</i> in much larger
+ * {@link org.apache.ignite.cache.CacheMode#PARTITIONED PARTITIONED} caches you can freely execute distributed joins across
  * your whole in-memory data grid, thus querying your in memory data without any limitations.
  * <p>
  * In this example we have two <i>dimensions</i>, {@link DimProduct} and {@link DimStore} and

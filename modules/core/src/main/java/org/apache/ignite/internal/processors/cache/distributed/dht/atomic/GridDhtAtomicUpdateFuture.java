@@ -167,7 +167,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
         long mapTime0 = mapTime;
 
         if (mapTime0 > 0 && U.currentTimeMillis() > mapTime0 + timeout) {
-            IgniteCheckedException ex = new GridCacheAtomicUpdateTimeoutException("Cache update timeout out " +
+            IgniteCheckedException ex = new CacheAtomicUpdateTimeoutException("Cache update timeout out " +
                 "(consider increasing networkTimeout configuration property).");
 
             updateRes.addFailedKeys(keys, ex);
@@ -189,7 +189,7 @@ public class GridDhtAtomicUpdateFuture<K, V> extends GridFutureAdapter<Void>
     /** {@inheritDoc} */
     @Override public boolean waitForPartitionExchange() {
         // Wait dht update futures in PRIMARY mode.
-        return cctx.config().getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.PRIMARY;
+        return cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.PRIMARY;
     }
 
     /** {@inheritDoc} */

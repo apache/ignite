@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -48,7 +48,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** @return Cache mode. */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /** @return Near enabled. */
     protected abstract boolean nearEnabled();

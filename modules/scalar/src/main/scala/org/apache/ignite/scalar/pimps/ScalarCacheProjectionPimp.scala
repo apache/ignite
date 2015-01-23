@@ -435,9 +435,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
     /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,
-     * then this value is returned. Otherwise, in case of `GridCacheMode#REPLICATED` caches,
+     * then this value is returned. Otherwise, in case of `CacheMode#REPLICATED` caches,
      * the value will be loaded from swap and, if it's not there, and read-through is allowed,
-     * from the underlying `GridCacheStore` storage. In case of `GridCacheMode#PARTITIONED`
+     * from the underlying `GridCacheStore` storage. In case of `CacheMode#PARTITIONED`
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap and read-through is allowed,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -470,9 +470,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
 
     /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,
-     * then this value is returned. Otherwise, in case of `GridCacheMode#REPLICATED` caches,
+     * then this value is returned. Otherwise, in case of `CacheMode#REPLICATED` caches,
      * the value will be loaded from swap and, if it's not there, and read-through is allowed,
-     * from the underlying `GridCacheStore` storage. In case of `GridCacheMode#PARTITIONED`
+     * from the underlying `GridCacheStore` storage. In case of `CacheMode#PARTITIONED`
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap and read-through is allowed,
      * from the underlying persistent storage. If value has to be loaded from persistent

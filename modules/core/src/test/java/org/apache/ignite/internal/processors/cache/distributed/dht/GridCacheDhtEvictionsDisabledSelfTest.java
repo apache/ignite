@@ -25,7 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -55,7 +55,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName("test");
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setDefaultTimeToLive(0);
         cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);

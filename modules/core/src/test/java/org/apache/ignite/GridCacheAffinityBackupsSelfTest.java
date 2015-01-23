@@ -47,7 +47,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setCacheMode(GridCacheMode.PARTITIONED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(backups);
         ccfg.setAffinity(func);
 

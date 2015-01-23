@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.cache.GridCacheMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFlagsTest;
 
 import java.text.*;
@@ -26,8 +26,8 @@ import java.util.*;
 public class GridCachePartitionedFlagsTest extends GridCacheAbstractFlagsTest {
 
     @Override
-    protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     @Override

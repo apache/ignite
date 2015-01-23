@@ -37,19 +37,19 @@ public class VisorCacheConfiguration implements Serializable {
     private String name;
 
     /** Cache mode. */
-    private GridCacheMode mode;
+    private CacheMode mode;
 
     /** Distribution mode. */
     private GridCacheDistributionMode distributionMode;
 
     /** Cache atomicity mode */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** Cache atomic sequence reserve size */
     private int atomicSequenceReserveSize;
 
     /** Cache atomicity write ordering mode. */
-    private GridCacheAtomicWriteOrderMode atomicWriteOrderMode;
+    private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Eager ttl flag */
     private boolean eagerTtl;
@@ -211,14 +211,14 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Cache mode.
      */
-    public GridCacheMode mode() {
+    public CacheMode mode() {
         return mode;
     }
 
     /**
      * @param mode New cache mode.
      */
-    public void mode(GridCacheMode mode) {
+    public void mode(CacheMode mode) {
         this.mode = mode;
     }
 
@@ -239,14 +239,14 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Cache atomicity mode
      */
-    public GridCacheAtomicityMode atomicityMode() {
+    public CacheAtomicityMode atomicityMode() {
         return atomicityMode;
     }
 
     /**
      * @param atomicityMode New cache atomicity mode
      */
-    public void atomicityMode(GridCacheAtomicityMode atomicityMode) {
+    public void atomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
     }
 
@@ -267,14 +267,14 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Cache atomicity write ordering mode.
      */
-    public GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    public CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return atomicWriteOrderMode;
     }
 
     /**
      * @param atomicWriteOrderMode New cache atomicity write ordering mode.
      */
-    public void atomicWriteOrderMode(GridCacheAtomicWriteOrderMode atomicWriteOrderMode) {
+    public void atomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
     }
 

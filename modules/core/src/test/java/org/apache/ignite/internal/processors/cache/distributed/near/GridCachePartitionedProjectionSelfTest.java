@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Projection tests for partitioned cache.
@@ -44,7 +44,7 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

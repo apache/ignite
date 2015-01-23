@@ -46,7 +46,7 @@ public class VisorCache implements Serializable {
     private String name;
 
     /** Cache mode. */
-    private GridCacheMode mode;
+    private CacheMode mode;
 
     /** Cache size in bytes. */
     private long memorySize;
@@ -123,9 +123,9 @@ public class VisorCache implements Serializable {
 
         CacheConfiguration cfg = ca.configuration();
 
-        GridCacheMode mode = cfg.getCacheMode();
+        CacheMode mode = cfg.getCacheMode();
 
-        boolean partitioned = (mode == GridCacheMode.PARTITIONED || mode == GridCacheMode.REPLICATED)
+        boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
             && cfg.getDistributionMode() != GridCacheDistributionMode.CLIENT_ONLY;
 
         if (partitioned) {
@@ -139,7 +139,7 @@ public class VisorCache implements Serializable {
             if (dca != null) {
                 GridDhtPartitionTopology top = dca.topology();
 
-                if (cfg.getCacheMode() != GridCacheMode.LOCAL && cfg.getBackups() > 0)
+                if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0)
                     partsMap = top.localPartitionMap();
 
                 List<GridDhtLocalPartition> parts = top.localPartitions();
@@ -270,14 +270,14 @@ public class VisorCache implements Serializable {
     /**
      * @return Cache mode.
      */
-    public GridCacheMode mode() {
+    public CacheMode mode() {
         return mode;
     }
 
     /**
      * @param mode New cache mode.
      */
-    public void mode(GridCacheMode mode) {
+    public void mode(CacheMode mode) {
         this.mode = mode;
     }
 

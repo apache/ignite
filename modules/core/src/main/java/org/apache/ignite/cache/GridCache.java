@@ -256,7 +256,7 @@ public interface GridCache<K, V> extends GridCacheProjection<K, V> {
      * preloading until the node topology is stable to make sure that no redundant re-partitioning
      * happens.
      * <p>
-     * In case of{@link GridCacheMode#PARTITIONED} caches, for better efficiency user should
+     * In case of{@link CacheMode#PARTITIONED} caches, for better efficiency user should
      * usually make sure that new nodes get placed on the same place of consistent hash ring as
      * the left nodes, and that nodes are restarted before
      * {@link CacheConfiguration#getPreloadPartitionedDelay() preloadDelay} expires. To place nodes

@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Tests for replicated atomic cache.
  */
 public class GridCacheReplicatedAtomicFullApiSelfTest extends GridCacheReplicatedFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 

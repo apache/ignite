@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Partitioned affinity hash ID resolver self test.

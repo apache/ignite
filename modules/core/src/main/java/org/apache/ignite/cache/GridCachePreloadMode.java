@@ -29,8 +29,8 @@ import org.jetbrains.annotations.*;
  * pluggable {@link org.apache.ignite.cache.affinity.GridCacheAffinityFunction}), while partitioned caches will only load the entries for which
  * current node is primary or back up.
  * <p>
- * Note that preload mode only makes sense for {@link GridCacheMode#REPLICATED} and {@link GridCacheMode#PARTITIONED}
- * caches. Caches with {@link GridCacheMode#LOCAL} mode are local by definition and therefore cannot preload
+ * Note that preload mode only makes sense for {@link CacheMode#REPLICATED} and {@link CacheMode#PARTITIONED}
+ * caches. Caches with {@link CacheMode#LOCAL} mode are local by definition and therefore cannot preload
  * any values from neighboring nodes.
  */
 public enum GridCachePreloadMode {

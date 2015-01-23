@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.eviction.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * FIFO Eviction test.

@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Tests local cache in atomic mode with values being stored offheap.
  */
 public class GridCacheLocalAtomicOffHeapFullApiSelfTest extends GridCacheLocalOffHeapFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 

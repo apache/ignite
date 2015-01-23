@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 
 /**
@@ -47,10 +47,10 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     public static final String SECOND_CACHE_NAME = "second";
 
     /** First cache mode. */
-    private GridCacheMode firstCacheMode;
+    private CacheMode firstCacheMode;
 
     /** Second cache mode. */
-    private GridCacheMode secondCacheMode;
+    private CacheMode secondCacheMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -75,7 +75,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
      * @param name Cache name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfig(GridCacheMode cacheMode, int preloadOrder, String name) {
+    private CacheConfiguration cacheConfig(CacheMode cacheMode, int preloadOrder, String name) {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
@@ -119,7 +119,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
      * @param second Second cache mode.
      * @throws Exception If failed.
      */
-    private void checkPreloadOrder(GridCacheMode first, GridCacheMode second) throws Exception {
+    private void checkPreloadOrder(CacheMode first, CacheMode second) throws Exception {
         firstCacheMode = first;
         secondCacheMode = second;
 

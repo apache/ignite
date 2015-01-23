@@ -578,7 +578,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private boolean replicatedCacheAvailable(String cacheName) {
         GridCacheAdapter<Object,Object> cache = ctx.cache().internalCache(cacheName);
 
-        return cache != null && cache.configuration().getCacheMode() == GridCacheMode.REPLICATED;
+        return cache != null && cache.configuration().getCacheMode() == CacheMode.REPLICATED;
     }
 
     /**

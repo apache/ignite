@@ -131,7 +131,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      */
     public void testPessimisticReadCommitted() throws Throwable {
         // TODO:  GG-7437.
-        if (cache(0).configuration().getCacheMode() == GridCacheMode.REPLICATED)
+        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
             return;
 
         checkTransaction(PESSIMISTIC, READ_COMMITTED);
@@ -240,7 +240,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         GridCache<Integer, String> cache = cache(idx);
 
         // TODO:  GG-7437.
-        if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED)
+        if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
             return;
 
         cache.put(KEY, VALUE);

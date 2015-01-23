@@ -583,7 +583,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * be stored in cache only if they pass the filter. Note that filter check is atomic,
      * so value stored in cache is guaranteed to be consistent with the filters. If cache
      * previously contained value for the given key, then this value is returned.
-     * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
+     * In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -620,9 +620,9 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * be stored in cache only if they pass the filter. Note that filter check is atomic,
      * so value stored in cache is guaranteed to be consistent with the filters. If cache
      * previously contained value for the given key, then this value is returned. Otherwise,
-     * in case of {@link GridCacheMode#REPLICATED} caches, the value will be loaded from swap
+     * in case of {@link CacheMode#REPLICATED} caches, the value will be loaded from swap
      * and, if it's not there, and read-through is allowed, from the underlying
-     * {@link CacheStore} storage. In case of {@link GridCacheMode#PARTITIONED} caches,
+     * {@link CacheStore} storage. In case of {@link CacheMode#PARTITIONED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap and read-through is allowed,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -717,7 +717,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.
-     * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
+     * In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -748,7 +748,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     /**
      * Asynchronously stores given key-value pair in cache only if cache had no previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned. In case of
-     * {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
+     * {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -829,7 +829,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Stores given key-value pair in cache only if there is a previous mapping for it.
-     * In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} caches,
+     * In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -860,7 +860,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
     /**
      * Asynchronously stores given key-value pair in cache only if there is a previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.In case of
-     * {@link GridCacheMode#PARTITIONED} caches, the value will be loaded from the primary node,
+     * {@link CacheMode#PARTITIONED} caches, the value will be loaded from the primary node,
      * which in its turn may load the value from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
      * storage, {@link CacheStore#load(IgniteTx, Object)} method will be used.
@@ -1142,7 +1142,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      *
      * @return New transaction
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
+     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStart() throws IllegalStateException;
 
@@ -1153,7 +1153,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param isolation Isolation.
      * @return New transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
+     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
@@ -1167,7 +1167,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @param txSize Number of entries participating in transaction (may be approximate).
      * @return New transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
-     * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
+     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStart(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, long timeout,
         int txSize);
@@ -1203,7 +1203,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
-     * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
+     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStartAffinity(Object affinityKey, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
@@ -1239,7 +1239,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * @return Started transaction.
      * @throws IllegalStateException If transaction is already started by this thread.
      * @throws IgniteCheckedException If local node is not primary for any of provided keys.
-     * @throws UnsupportedOperationException If cache is {@link GridCacheAtomicityMode#ATOMIC}.
+     * @throws UnsupportedOperationException If cache is {@link CacheAtomicityMode#ATOMIC}.
      */
     public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException;
@@ -1399,7 +1399,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Removes given key mapping from cache. If cache previously contained value for the given key,
-     * then this value is returned. In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED}
+     * then this value is returned. In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED}
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the disk-based swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -1432,7 +1432,7 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
 
     /**
      * Asynchronously removes given key mapping from cache. If cache previously contained value for the given key,
-     * then this value is returned. In case of {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED}
+     * then this value is returned. In case of {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED}
      * caches, the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -1852,15 +1852,15 @@ public interface GridCacheProjection<K, V> extends Iterable<GridCacheEntry<K, V>
      * <p>
      * Note that for {@code LOCAL} non-distributed caches this method will always return {@code 0}
      *
-     * @return Size of near cache key set or {@code 0} if cache is not {@link GridCacheMode#PARTITIONED}.
+     * @return Size of near cache key set or {@code 0} if cache is not {@link CacheMode#PARTITIONED}.
      */
     public int nearSize();
 
     /**
-     * Gets the number of all primary entries cached on this node. For {@link GridCacheMode#LOCAL} non-distributed
+     * Gets the number of all primary entries cached on this node. For {@link CacheMode#LOCAL} non-distributed
      * cache mode, this method is identical to {@link #size()}.
      * <p>
-     * For {@link GridCacheMode#PARTITIONED} and {@link GridCacheMode#REPLICATED} modes, this method will
+     * For {@link CacheMode#PARTITIONED} and {@link CacheMode#REPLICATED} modes, this method will
      * return number of primary entries cached on this node (excluding any backups). The complexity of
      * this method is O(P), where P is the total number of partitions.
      * <p>

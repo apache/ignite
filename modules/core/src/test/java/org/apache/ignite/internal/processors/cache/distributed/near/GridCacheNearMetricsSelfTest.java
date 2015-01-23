@@ -77,7 +77,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cc = super.cacheConfiguration(gridName);
 
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setBackups(1);
 
         return cc;

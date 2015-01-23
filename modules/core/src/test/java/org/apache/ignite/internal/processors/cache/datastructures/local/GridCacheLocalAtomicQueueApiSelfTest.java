@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.datastructures.local;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Queue tests with local atomic cache.

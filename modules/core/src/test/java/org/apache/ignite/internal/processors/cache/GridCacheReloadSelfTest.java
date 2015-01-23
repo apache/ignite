@@ -30,7 +30,7 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -47,7 +47,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "test";
 
     /** Cache mode. */
-    private GridCacheMode cacheMode;
+    private CacheMode cacheMode;
 
     /** Near enabled flag. */
     private boolean nearEnabled = true;
@@ -113,7 +113,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testReloadEvictionLocalCache() throws Exception {
-        cacheMode = GridCacheMode.LOCAL;
+        cacheMode = CacheMode.LOCAL;
 
         doTest();
     }
@@ -150,7 +150,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If error occurs.
      */
     public void testReloadEvictionReplicatedCache() throws Exception {
-        cacheMode = GridCacheMode.REPLICATED;
+        cacheMode = CacheMode.REPLICATED;
 
         doTest();
     }

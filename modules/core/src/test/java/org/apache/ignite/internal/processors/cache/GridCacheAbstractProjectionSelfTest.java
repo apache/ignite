@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -66,7 +66,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     /**
      * @return Cache mode.
      */
-    @Override protected abstract GridCacheMode cacheMode();
+    @Override protected abstract CacheMode cacheMode();
 
     /**
      * @return Cache instance.

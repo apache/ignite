@@ -34,8 +34,8 @@ import org.jdk8.backport.ThreadLocalRandom8
  * as your master or reference data, while <i>facts</i> are usually large data sets of events or
  * other objects that continuously come into the system and may change frequently. In GridGain
  * such architecture is supported via cross-cache queries. By storing <i>dimensions</i> in
- * `GridCacheMode#REPLICATED REPLICATED` caches and <i>facts</i> in much larger
- * `GridCacheMode#PARTITIONED PARTITIONED` caches you can freely execute distributed joins across
+ * `CacheMode#REPLICATED REPLICATED` caches and <i>facts</i> in much larger
+ * `CacheMode#PARTITIONED PARTITIONED` caches you can freely execute distributed joins across
  * your whole in-memory data grid, thus querying your in memory data without any limitations.
  * <p>
  * In this example we have two <i>dimensions</i>, `DimProduct` and `DimStore` and
@@ -192,7 +192,7 @@ object ScalarSnowflakeSchemaExample {
 
 /**
  * Represents a physical store location. In our `snowflake` schema a `store`
- * is a `dimension` and will be cached in `GridCacheMode#REPLICATED` cache.
+ * is a `dimension` and will be cached in `CacheMode#REPLICATED` cache.
  *
  * @param id Primary key.
  * @param name Store name.
@@ -225,7 +225,7 @@ class DimStore(
 
 /**
  * Represents a product available for purchase. In our `snowflake` schema a `product`
- * is a `dimension` and will be cached in `GridCacheMode#REPLICATED` cache.
+ * is a `dimension` and will be cached in `CacheMode#REPLICATED` cache.
  *
  * @param id Product ID.
  * @param name Product name.
@@ -258,7 +258,7 @@ class DimProduct(
 
 /**
  * Represents a purchase record. In our `snowflake` schema purchase
- * is a `fact` and will be cached in larger `GridCacheMode#PARTITIONED` cache.
+ * is a `fact` and will be cached in larger `CacheMode#PARTITIONED` cache.
  *
  * @param id Purchase ID.
  * @param productId Purchased product ID.

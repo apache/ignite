@@ -65,7 +65,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
 
         CacheStore store = new CacheStoreAdapter<Long, String>() {
             @Nullable @Override public String load(Long key) {

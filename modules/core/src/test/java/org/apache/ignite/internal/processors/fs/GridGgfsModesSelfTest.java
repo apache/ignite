@@ -31,8 +31,8 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * GGFS modes self test.

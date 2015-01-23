@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test for asynchronous cache entry lock with timeout.
@@ -36,7 +36,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

@@ -617,7 +617,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
             cacheCfg.setName("partitioned");
-            cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
             cacheCfg.setStartSize(4500000);
 
             cacheCfg.setBackups(backups);

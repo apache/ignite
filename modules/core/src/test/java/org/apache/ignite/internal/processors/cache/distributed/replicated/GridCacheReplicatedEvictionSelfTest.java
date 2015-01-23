@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -40,7 +40,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 

@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
  * Enumeration of all supported caching modes. Cache mode is specified in {@link CacheConfiguration}
  * and cannot be changed after cache has started.
  */
-public enum GridCacheMode {
+public enum CacheMode {
     /**
      * Specifies local-only cache behaviour. In this mode caches residing on
      * different grid nodes will not know about each other.
@@ -59,7 +59,7 @@ public enum GridCacheMode {
     PARTITIONED;
 
     /** Enumerated values. */
-    private static final GridCacheMode[] VALS = values();
+    private static final CacheMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -67,7 +67,7 @@ public enum GridCacheMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheMode fromOrdinal(int ord) {
+    @Nullable public static CacheMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

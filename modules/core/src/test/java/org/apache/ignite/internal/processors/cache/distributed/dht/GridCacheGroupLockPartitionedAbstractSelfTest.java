@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -36,7 +36,7 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  */
 public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends GridCacheGroupLockAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

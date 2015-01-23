@@ -35,14 +35,14 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for fields queries.
  */
 public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 

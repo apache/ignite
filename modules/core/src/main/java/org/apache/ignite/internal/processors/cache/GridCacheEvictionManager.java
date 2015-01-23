@@ -49,7 +49,7 @@ import java.util.concurrent.locks.Lock;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 import static org.jdk8.backport.ConcurrentLinkedDeque8.*;
@@ -226,7 +226,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * Outputs warnings if potential configuration problems are detected.
      */
     private void reportConfigurationProblems() {
-        GridCacheMode mode = cctx.config().getCacheMode();
+        CacheMode mode = cctx.config().getCacheMode();
 
         if (plcEnabled && !cctx.isNear() && mode == PARTITIONED) {
             if (!evictSync) {

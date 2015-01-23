@@ -89,8 +89,8 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     /**
      * @return Caching mode.
      */
-    protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */

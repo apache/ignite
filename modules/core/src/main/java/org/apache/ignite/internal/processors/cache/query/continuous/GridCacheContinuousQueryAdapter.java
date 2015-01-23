@@ -34,7 +34,7 @@ import javax.cache.event.*;
 import java.util.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Continuous query implementation.
@@ -261,7 +261,7 @@ public class GridCacheContinuousQueryAdapter<K, V> implements GridCacheContinuou
         if (prj.nodes().isEmpty())
             throw new ClusterTopologyException("Failed to execute query (projection is empty): " + this);
 
-        GridCacheMode mode = ctx.config().getCacheMode();
+        CacheMode mode = ctx.config().getCacheMode();
 
         if (mode == LOCAL || mode == REPLICATED) {
             Collection<ClusterNode> nodes = prj.nodes();

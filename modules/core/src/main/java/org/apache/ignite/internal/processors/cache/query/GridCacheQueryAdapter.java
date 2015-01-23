@@ -455,7 +455,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @return Nodes to execute on.
      */
     private Collection<ClusterNode> nodes() {
-        GridCacheMode cacheMode = cctx.config().getCacheMode();
+        CacheMode cacheMode = cctx.config().getCacheMode();
 
         switch (cacheMode) {
             case LOCAL:

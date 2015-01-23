@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.Date;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**

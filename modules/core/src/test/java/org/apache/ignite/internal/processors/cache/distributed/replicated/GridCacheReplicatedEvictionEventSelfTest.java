@@ -20,19 +20,19 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Tests local cache eviction event.
  */
 public class GridCacheReplicatedEvictionEventSelfTest extends GridCacheEvictionEventAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 }

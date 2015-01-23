@@ -34,7 +34,7 @@ import java.lang.ref.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
@@ -46,7 +46,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache mode for the current test. */
-    private GridCacheMode mode;
+    private CacheMode mode;
 
     /** */
     private boolean cancel;
@@ -77,7 +77,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongPartitioned() throws Exception {
-        mode = GridCacheMode.PARTITIONED;
+        mode = CacheMode.PARTITIONED;
 
         startGrids(2);
 
@@ -91,7 +91,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongReplicated() throws Exception {
-        mode = GridCacheMode.REPLICATED;
+        mode = CacheMode.REPLICATED;
 
         startGrids(2);
 
@@ -105,7 +105,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAtomicLongLocal() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
 
         try {
             checkReferenceCleanup(atomicLongCallable());
@@ -117,7 +117,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOneAsyncOpPartitioned() throws Exception {
-        mode = GridCacheMode.PARTITIONED;
+        mode = CacheMode.PARTITIONED;
 
         startGrids(2);
 
@@ -131,7 +131,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOneAsyncOpReplicated() throws Exception {
-        mode = GridCacheMode.REPLICATED;
+        mode = CacheMode.REPLICATED;
 
         startGrids(2);
 
@@ -145,7 +145,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOneAsyncOpLocal() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
 
         try {
             checkReferenceCleanup(oneAsyncOpCallable());
@@ -157,7 +157,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSeveralAsyncOpsPartitioned() throws Exception {
-        mode = GridCacheMode.PARTITIONED;
+        mode = CacheMode.PARTITIONED;
 
         startGrids(2);
 
@@ -171,7 +171,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSeveralAsyncOpsReplicated() throws Exception {
-        mode = GridCacheMode.REPLICATED;
+        mode = CacheMode.REPLICATED;
 
         startGrids(2);
 
@@ -185,7 +185,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSeveralAsyncOpsLocal() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
 
         try {
             checkReferenceCleanup(severalAsyncOpsCallable());
@@ -197,7 +197,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSyncOpAsyncCommitPartitioned() throws Exception {
-        mode = GridCacheMode.PARTITIONED;
+        mode = CacheMode.PARTITIONED;
 
         startGrids(2);
 
@@ -211,7 +211,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSyncOpAsyncCommitReplicated() throws Exception {
-        mode = GridCacheMode.REPLICATED;
+        mode = CacheMode.REPLICATED;
 
         startGrids(2);
 
@@ -225,7 +225,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testSyncOpAsyncCommitLocal() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
 
         try {
             checkReferenceCleanup(syncOpAsyncCommitCallable());
@@ -237,7 +237,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAsyncOpsAsyncCommitPartitioned() throws Exception {
-        mode = GridCacheMode.PARTITIONED;
+        mode = CacheMode.PARTITIONED;
 
         startGrids(2);
 
@@ -251,7 +251,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAsyncOpsAsyncCommitReplicated() throws Exception {
-        mode = GridCacheMode.REPLICATED;
+        mode = CacheMode.REPLICATED;
 
         startGrids(2);
 
@@ -265,7 +265,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testAsyncOpsAsyncCommitLocal() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
 
         try {
             checkReferenceCleanup(asyncOpsAsyncCommitCallable());

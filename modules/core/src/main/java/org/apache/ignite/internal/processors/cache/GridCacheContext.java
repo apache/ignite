@@ -60,7 +60,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheFlag.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
@@ -401,7 +401,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if cache is replicated cache.
      */
     public boolean isReplicated() {
-        return cacheCfg.getCacheMode() == GridCacheMode.REPLICATED;
+        return cacheCfg.getCacheMode() == CacheMode.REPLICATED;
     }
 
     /**

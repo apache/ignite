@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.*;
  */
 public class GridCacheDaemonNodeReplicatedSelfTest extends GridCacheDaemonNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 }

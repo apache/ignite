@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.affinity.GridAffinityUtils.*;
 
@@ -317,7 +317,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             ClusterNode n = it.next();
 
-            GridCacheMode mode = U.cacheMode(n, cacheName);
+            CacheMode mode = U.cacheMode(n, cacheName);
 
             assert mode != null;
 

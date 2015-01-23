@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
  * Cache atomicity may be set via {@link CacheConfiguration#getAtomicityMode()}
  * configuration property.
  */
-public enum GridCacheAtomicityMode {
+public enum CacheAtomicityMode {
     /**
      * Specified fully {@code ACID}-compliant transactional cache behavior. See
      * {@link IgniteTx} for more information about transactions.
@@ -60,12 +60,12 @@ public enum GridCacheAtomicityMode {
      * Also note that all data modifications in {@code ATOMIC} mode are guaranteed to be atomic
      * and consistent with writes to the underlying persistent store, if one is configured.
      * <p>
-     * This mode is currently implemented for {@link GridCacheMode#PARTITIONED} caches only.
+     * This mode is currently implemented for {@link CacheMode#PARTITIONED} caches only.
      */
     ATOMIC;
 
     /** Enumerated values. */
-    private static final GridCacheAtomicityMode[] VALS = values();
+    private static final CacheAtomicityMode[] VALS = values();
 
     /**
      * Efficiently gets enumerated value from its ordinal.
@@ -73,7 +73,7 @@ public enum GridCacheAtomicityMode {
      * @param ord Ordinal value.
      * @return Enumerated value or {@code null} if ordinal out of range.
      */
-    @Nullable public static GridCacheAtomicityMode fromOrdinal(int ord) {
+    @Nullable public static CacheAtomicityMode fromOrdinal(int ord) {
         return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
     }
 }

@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.GridCacheMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  */
 public class GridCacheReplicatedPreloadEventsSelfTest extends GridCachePreloadEventsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode getCacheMode() {
+    @Override protected CacheMode getCacheMode() {
         return REPLICATED;
     }
 }

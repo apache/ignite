@@ -34,8 +34,8 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -102,21 +102,21 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     /**
      * @return Cache mode.
      */
-    protected GridCacheMode cacheMode() {
+    protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /**
      * @return Atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
-        return GridCacheAtomicityMode.TRANSACTIONAL;
+    protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /**
      * @return Write order mode for atomic cache.
      */
-    protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return CLOCK;
     }
 

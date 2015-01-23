@@ -38,7 +38,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setCacheMode(GridCacheMode.PARTITIONED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setQueryIndexEnabled(false);
 
         return ccfg;

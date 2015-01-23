@@ -47,7 +47,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
     private boolean swapEnabled;
 
     /** */
-    private GridCacheMode mode;
+    private CacheMode mode;
 
     /** */
     private GridCacheMemoryMode memoryMode;
@@ -59,7 +59,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
     private long offheapSize;
 
     /** */
-    private GridCacheAtomicityMode atomicity;
+    private CacheAtomicityMode atomicity;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -106,11 +106,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOnheap() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         memoryMode = GridCacheMemoryMode.ONHEAP_TIERED;
         maxOnheapSize = Integer.MAX_VALUE;
         swapEnabled = false;
-        atomicity = GridCacheAtomicityMode.ATOMIC;
+        atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = -1;
 
         doTestPutAndPutAll(1000, 0, true, true);
@@ -120,11 +120,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOnheapSwap() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         memoryMode = GridCacheMemoryMode.ONHEAP_TIERED;
         maxOnheapSize = 330;
         swapEnabled = true;
-        atomicity = GridCacheAtomicityMode.ATOMIC;
+        atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = -1;
 
         doTestPutAndPutAll(330, 670, true, false);
@@ -134,11 +134,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOffheap() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         memoryMode = GridCacheMemoryMode.OFFHEAP_TIERED;
         maxOnheapSize = Integer.MAX_VALUE;
         swapEnabled = false;
-        atomicity = GridCacheAtomicityMode.ATOMIC;
+        atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = -1; // Must be fixed in config validation.
 
         doTestPutAndPutAll(0, 1000, false, true);
@@ -148,11 +148,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOffheapSwap() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         memoryMode = GridCacheMemoryMode.OFFHEAP_TIERED;
         maxOnheapSize = Integer.MAX_VALUE;
         swapEnabled = true;
-        atomicity = GridCacheAtomicityMode.ATOMIC;
+        atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = 1000; // Small for evictions from offheap to swap.
 
         doTestPutAndPutAll(0, 1000, false, false);
@@ -162,11 +162,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTiered() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         memoryMode = GridCacheMemoryMode.ONHEAP_TIERED;
         maxOnheapSize = 24;
         swapEnabled = true;
-        atomicity = GridCacheAtomicityMode.ATOMIC;
+        atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = 1000; // Small for evictions from offheap to swap.
 
         doTestPutAndPutAll(24, 976, false, false);
@@ -176,11 +176,11 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOffheapValuesConfigFixBackward() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         memoryMode = GridCacheMemoryMode.OFFHEAP_VALUES;
         maxOnheapSize = 24;
         swapEnabled = true;
-        atomicity = GridCacheAtomicityMode.ATOMIC;
+        atomicity = CacheAtomicityMode.ATOMIC;
         offheapSize = -1;
 
         Ignite g = startGrid();

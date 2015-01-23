@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * JTA integration test using REPLICATED cache.
  */
 public class GridCacheReplicatedJtaSelfTest extends GridCacheJtaSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 }

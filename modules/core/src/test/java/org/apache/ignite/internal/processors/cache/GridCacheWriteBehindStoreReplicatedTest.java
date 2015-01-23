@@ -24,7 +24,7 @@ import org.apache.ignite.cache.*;
  */
 public class GridCacheWriteBehindStoreReplicatedTest extends GridCacheWriteBehindStoreAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 }

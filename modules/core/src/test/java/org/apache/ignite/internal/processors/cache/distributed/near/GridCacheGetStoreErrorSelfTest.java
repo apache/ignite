@@ -32,9 +32,9 @@ import javax.cache.configuration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Checks that exception is propagated to user when cache store throws an exception.
@@ -47,7 +47,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
     private boolean nearEnabled;
 
     /** Cache mode for test. */
-    private GridCacheMode cacheMode;
+    private CacheMode cacheMode;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -113,7 +113,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
     }
 
     /** @throws Exception If failed. */
-    private void checkGetError(boolean nearEnabled, GridCacheMode cacheMode) throws Exception {
+    private void checkGetError(boolean nearEnabled, CacheMode cacheMode) throws Exception {
         this.nearEnabled = nearEnabled;
         this.cacheMode = cacheMode;
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test get and transform for store with replicated cache.
@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.GridCacheMode.*;
 public class GridCacheReplicatedGetAndTransformStoreSelfTest
     extends GridCacheGetAndTransformStoreAbstractTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 

@@ -57,10 +57,10 @@ import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
@@ -206,12 +206,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (cfg.getAtomicityMode() == ATOMIC) {
             if (cfg.getAtomicWriteOrderMode() == null) {
                 cfg.setAtomicWriteOrderMode(cfg.getWriteSynchronizationMode() == FULL_SYNC ?
-                    GridCacheAtomicWriteOrderMode.CLOCK :
-                    GridCacheAtomicWriteOrderMode.PRIMARY);
+                    CacheAtomicWriteOrderMode.CLOCK :
+                    CacheAtomicWriteOrderMode.PRIMARY);
             }
             else if (cfg.getWriteSynchronizationMode() != FULL_SYNC &&
-                cfg.getAtomicWriteOrderMode() == GridCacheAtomicWriteOrderMode.CLOCK) {
-                cfg.setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode.PRIMARY);
+                cfg.getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK) {
+                cfg.setAtomicWriteOrderMode(CacheAtomicWriteOrderMode.PRIMARY);
 
                 U.warn(log, "Automatically set write order mode to PRIMARY for better performance " +
                     "[writeSynchronizationMode=" + cfg.getWriteSynchronizationMode() + ", " +

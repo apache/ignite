@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 
 /**
  * Tests reloadAll for colocated cache with primary write order.
  */
 public class GridCacheAtomicPrimaryWriteOrderReloadAllSelfTest extends GridCacheAtomicReloadAllSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return PRIMARY;
     }
 }

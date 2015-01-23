@@ -27,7 +27,7 @@ public class GridCachePartitionedTxReadTest extends GridCacheAbstractTxReadTest 
     /**
      * @return {@code LOCAL} for this test.
      */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 }

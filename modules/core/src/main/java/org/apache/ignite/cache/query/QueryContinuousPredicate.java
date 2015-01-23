@@ -28,8 +28,8 @@ import javax.cache.event.*;
  * Continuous queries are executed as follows:
  * <ol>
  * <li>
- *  Query is sent to requested grid nodes. Note that for {@link org.apache.ignite.cache.GridCacheMode#LOCAL LOCAL}
- *  and {@link org.apache.ignite.cache.GridCacheMode#REPLICATED REPLICATED} caches query will be always executed
+ *  Query is sent to requested grid nodes. Note that for {@link org.apache.ignite.cache.CacheMode#LOCAL LOCAL}
+ *  and {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED} caches query will be always executed
  *  locally.
  * </li>
  * <li>

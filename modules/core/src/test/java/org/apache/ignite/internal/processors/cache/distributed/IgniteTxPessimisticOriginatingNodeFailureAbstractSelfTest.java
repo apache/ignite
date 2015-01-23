@@ -455,7 +455,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected abstract GridCacheMode cacheMode();
+    @Override protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

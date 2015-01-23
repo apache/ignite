@@ -33,8 +33,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -52,7 +52,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     private GridCacheDistributionMode partDistMode;
 
     /** Write sync mode. */
-    private GridCacheAtomicWriteOrderMode writeOrderMode;
+    private CacheAtomicWriteOrderMode writeOrderMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -120,7 +120,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     protected void checkMessages(GridCacheDistributionMode distMode,
-        GridCacheAtomicWriteOrderMode orderMode) throws Exception {
+        CacheAtomicWriteOrderMode orderMode) throws Exception {
 
         partDistMode = distMode;
         writeOrderMode = orderMode;

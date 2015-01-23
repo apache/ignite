@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for local cache iterators.
@@ -35,7 +35,7 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return LOCAL;
     }
 

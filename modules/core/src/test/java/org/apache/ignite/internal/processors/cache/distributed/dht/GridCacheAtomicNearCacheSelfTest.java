@@ -33,10 +33,10 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
@@ -61,7 +61,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** */
-    private GridCacheAtomicWriteOrderMode writeOrderMode;
+    private CacheAtomicWriteOrderMode writeOrderMode;
 
     /** */
     private int lastKey;
@@ -97,7 +97,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoBackupsPrimaryWriteOrder() throws Exception {
-        startGrids(0, GridCacheAtomicWriteOrderMode.PRIMARY);
+        startGrids(0, CacheAtomicWriteOrderMode.PRIMARY);
 
         checkNearCache();
     }
@@ -115,7 +115,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWithBackupsPrimaryWriteOrder() throws Exception {
-        startGrids(2, GridCacheAtomicWriteOrderMode.PRIMARY);
+        startGrids(2, CacheAtomicWriteOrderMode.PRIMARY);
 
         checkNearCache();
     }
@@ -781,7 +781,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
      * @param writeOrderMode Write order mode.
      * @throws Exception If failed.
      */
-    private void startGrids(int backups, GridCacheAtomicWriteOrderMode writeOrderMode) throws Exception {
+    private void startGrids(int backups, CacheAtomicWriteOrderMode writeOrderMode) throws Exception {
         this.backups = backups;
 
         this.writeOrderMode = writeOrderMode;

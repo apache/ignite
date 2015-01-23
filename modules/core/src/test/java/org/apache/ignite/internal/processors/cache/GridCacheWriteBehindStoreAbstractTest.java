@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -71,7 +71,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
     }
 
     /** @return Caching mode. */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

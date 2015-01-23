@@ -30,8 +30,8 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test for configuration property {@link CacheConfiguration#isReadThrough}.

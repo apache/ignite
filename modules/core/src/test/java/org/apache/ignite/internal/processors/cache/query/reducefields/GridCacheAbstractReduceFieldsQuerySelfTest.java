@@ -34,9 +34,9 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -137,7 +137,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * @return cache mode.
      */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /**
      * @return Number of grids to start.
@@ -147,7 +147,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * @return Cache atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
+    protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 

@@ -48,7 +48,7 @@ public enum GridCacheWriteSynchronizationMode {
     FULL_ASYNC,
 
     /**
-     * This flag only makes sense for {@link GridCacheMode#PARTITIONED} mode. When enabled, GridGain
+     * This flag only makes sense for {@link CacheMode#PARTITIONED} mode. When enabled, GridGain
      * will wait for write or commit to complete on {@code primary} node, but will not wait for
      * backups to be updated.
      */

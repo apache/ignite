@@ -35,7 +35,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import javax.cache.*;
 import javax.cache.configuration.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Tests that cache handles {@code setAllowEmptyEntries} flag correctly.
@@ -116,7 +116,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     protected abstract Ignite startGrids() throws Exception;
 
     /** @return Cache mode for particular test. */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /**
      * Tests FIFO eviction policy.

@@ -19,15 +19,14 @@ package org.apache.ignite.examples.datagrid.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -85,7 +84,7 @@ public class HibernateL2CacheExampleNodeStartup {
      * @param atomicityMode Atomicity mode.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
+    private static CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);

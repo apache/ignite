@@ -68,10 +68,10 @@ public class CacheConfiguration extends MutableConfiguration {
     public static final int DFLT_BACKUPS = 0;
 
     /** Default caching mode. */
-    public static final GridCacheMode DFLT_CACHE_MODE = GridCacheMode.REPLICATED;
+    public static final CacheMode DFLT_CACHE_MODE = CacheMode.REPLICATED;
 
     /** Default atomicity mode. */
-    public static final GridCacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = GridCacheAtomicityMode.ATOMIC;
+    public static final CacheAtomicityMode DFLT_CACHE_ATOMICITY_MODE = CacheAtomicityMode.ATOMIC;
 
     /** Default value for cache distribution mode. */
     public static final GridCacheDistributionMode DFLT_DISTRIBUTION_MODE = GridCacheDistributionMode.PARTITIONED_ONLY;
@@ -249,13 +249,13 @@ public class CacheConfiguration extends MutableConfiguration {
     private GridCacheAffinityFunction aff;
 
     /** Cache mode. */
-    private GridCacheMode cacheMode = DFLT_CACHE_MODE;
+    private CacheMode cacheMode = DFLT_CACHE_MODE;
 
     /** Cache atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** Write ordering mode. */
-    private GridCacheAtomicWriteOrderMode atomicWriteOrderMode;
+    private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
@@ -492,7 +492,7 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets cache distribution mode. This parameter is taken into account only if
-     * {@link #getCacheMode()} is set to {@link GridCacheMode#PARTITIONED} or {@link GridCacheMode#REPLICATED} mode.
+     * {@link #getCacheMode()} is set to {@link CacheMode#PARTITIONED} or {@link CacheMode#REPLICATED} mode.
      * <p>
      * If not set, default value is {@link #DFLT_DISTRIBUTION_MODE}.
      *
@@ -543,7 +543,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets eviction policy for near cache. This property is only used for {@link GridCacheMode#PARTITIONED} caching
+     * Sets eviction policy for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching
      * mode.
      *
      * @param nearEvictPlc Eviction policy for near cache.
@@ -795,7 +795,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Start size for near cache. This property is only used for {@link GridCacheMode#PARTITIONED} caching mode.
+     * Start size for near cache. This property is only used for {@link CacheMode#PARTITIONED} caching mode.
      *
      * @param nearStartSize Start size for near cache.
      */
@@ -884,12 +884,12 @@ public class CacheConfiguration extends MutableConfiguration {
 
     /**
      * Gets caching mode to use. You can configure cache either to be local-only,
-     * fully replicated, partitioned, or near. If not provided, {@link GridCacheMode#REPLICATED}
+     * fully replicated, partitioned, or near. If not provided, {@link CacheMode#REPLICATED}
      * mode will be used by default (defined by {@link #DFLT_CACHE_MODE} constant).
      *
      * @return {@code True} if cache is local.
      */
-    public GridCacheMode getCacheMode() {
+    public CacheMode getCacheMode() {
         return cacheMode;
     }
 
@@ -898,7 +898,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param cacheMode Caching mode.
      */
-    public void setCacheMode(GridCacheMode cacheMode) {
+    public void setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
     }
 
@@ -909,7 +909,7 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @return Cache atomicity mode.
      */
-    public GridCacheAtomicityMode getAtomicityMode() {
+    public CacheAtomicityMode getAtomicityMode() {
         return atomicityMode;
     }
 
@@ -918,32 +918,32 @@ public class CacheConfiguration extends MutableConfiguration {
      *
      * @param atomicityMode Cache atomicity mode.
      */
-    public void setAtomicityMode(GridCacheAtomicityMode atomicityMode) {
+    public void setAtomicityMode(CacheAtomicityMode atomicityMode) {
         this.atomicityMode = atomicityMode;
     }
 
     /**
-     * Gets cache write ordering mode. This property can be enabled only for {@link GridCacheAtomicityMode#ATOMIC}
+     * Gets cache write ordering mode. This property can be enabled only for {@link CacheAtomicityMode#ATOMIC}
      * cache (for other atomicity modes it will be ignored).
      *
      * @return Cache write ordering mode.
      */
-    public GridCacheAtomicWriteOrderMode getAtomicWriteOrderMode() {
+    public CacheAtomicWriteOrderMode getAtomicWriteOrderMode() {
         return atomicWriteOrderMode;
     }
 
     /**
-     * Sets cache write ordering mode. This property can be enabled only for {@link GridCacheAtomicityMode#ATOMIC}
+     * Sets cache write ordering mode. This property can be enabled only for {@link CacheAtomicityMode#ATOMIC}
      * cache (for other atomicity modes it will be ignored).
      *
      * @param atomicWriteOrderMode Cache write ordering mode.
      */
-    public void setAtomicWriteOrderMode(GridCacheAtomicWriteOrderMode atomicWriteOrderMode) {
+    public void setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
     }
 
     /**
-     * Gets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * Gets number of nodes used to back up single partition for {@link CacheMode#PARTITIONED} cache.
      * <p>
      * If not set, default value is {@link #DFLT_BACKUPS}.
      *
@@ -954,7 +954,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets number of nodes used to back up single partition for {@link GridCacheMode#PARTITIONED} cache.
+     * Sets number of nodes used to back up single partition for {@link CacheMode#PARTITIONED} cache.
      * <p>
      * If not set, default value is {@link #DFLT_BACKUPS}.
      *
@@ -1421,7 +1421,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * after they leave topology, or if you plan to start multiple nodes at once or one after another
      * and don't want to repartition and preload until all nodes are started.
      * <p>
-     * Delayed preloading is applied to {@link GridCacheMode#PARTITIONED} caches only.
+     * Delayed preloading is applied to {@link CacheMode#PARTITIONED} caches only.
      * For better efficiency user should usually make sure that new nodes get placed on
      * the same place of consistent hash ring as the left nodes, and that nodes are
      * restarted before this delay expires. To place nodes on the same place in consistent hash ring,

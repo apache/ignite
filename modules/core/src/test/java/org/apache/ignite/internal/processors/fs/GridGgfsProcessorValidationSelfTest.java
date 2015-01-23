@@ -31,8 +31,8 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for node validation logic in {@link IgniteFsProcessor}.

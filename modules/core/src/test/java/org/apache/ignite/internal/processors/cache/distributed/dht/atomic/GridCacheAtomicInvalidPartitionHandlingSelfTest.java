@@ -39,8 +39,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -56,7 +56,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     private static volatile boolean delay;
 
     /** Write order. */
-    private GridCacheAtomicWriteOrderMode writeOrder;
+    private CacheAtomicWriteOrderMode writeOrder;
 
     /** Write sync. */
     private GridCacheWriteSynchronizationMode writeSync;
@@ -148,7 +148,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      * @param writeSync Write synchronization mode to check.
      * @throws Exception If failed.
      */
-    private void checkRestarts(GridCacheAtomicWriteOrderMode writeOrder, GridCacheWriteSynchronizationMode writeSync)
+    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder, GridCacheWriteSynchronizationMode writeSync)
         throws Exception {
         this.writeOrder = writeOrder;
         this.writeSync = writeSync;

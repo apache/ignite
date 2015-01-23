@@ -41,8 +41,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -115,7 +115,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * @return Atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
+    protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 

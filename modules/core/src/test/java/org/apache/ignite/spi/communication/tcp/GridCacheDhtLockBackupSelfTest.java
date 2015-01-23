@@ -88,7 +88,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setPreloadMode(SYNC);
 

@@ -222,7 +222,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemove() throws Exception {
         // TODO: GG-7578.
-        if (cache(0).configuration().getCacheMode() == GridCacheMode.REPLICATED)
+        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
             return;
 
         runTest(
@@ -321,7 +321,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     public void testGetPutRemoveAsync() throws Exception {
         // TODO: GG-7578.
-        if (cache(0).configuration().getCacheMode() == GridCacheMode.REPLICATED)
+        if (cache(0).configuration().getCacheMode() == CacheMode.REPLICATED)
             return;
 
         runTest(new TestCacheRunnable() {

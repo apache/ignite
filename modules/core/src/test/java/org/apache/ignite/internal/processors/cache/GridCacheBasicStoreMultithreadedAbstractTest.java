@@ -58,7 +58,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
     /**
      * @return Caching mode.
      */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

@@ -20,17 +20,16 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests transform for extra traffic.
@@ -40,10 +39,10 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
     private GridCacheDistributionMode distroMode;
 
     /** Atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** Atomic write order mode. */
-    private GridCacheAtomicWriteOrderMode writeOrderMode;
+    private CacheAtomicWriteOrderMode writeOrderMode;
 
     /** Number of backups. */
     private int backups;
@@ -119,7 +118,7 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
      * @param b Number of backups.
      * @throws Exception If failed.
      */
-    private void checkTransform(GridCacheAtomicityMode mode, GridCacheAtomicWriteOrderMode order, int b)
+    private void checkTransform(CacheAtomicityMode mode, CacheAtomicWriteOrderMode order, int b)
         throws Exception {
         try {
             atomicityMode = mode;

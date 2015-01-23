@@ -32,7 +32,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -46,7 +46,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Replicated cache. */
-    private GridCacheMode mode = REPLICATED;
+    private CacheMode mode = REPLICATED;
 
     /** */
     private GridCacheEvictionPolicy<?, ?> plc;

@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests {@link GridCacheInterceptor}.
@@ -28,12 +28,12 @@ import static org.apache.ignite.cache.GridCacheMode.*;
 public class GridCacheInterceptorReplicatedSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
     @SuppressWarnings("RedundantMethodOverride")
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 }

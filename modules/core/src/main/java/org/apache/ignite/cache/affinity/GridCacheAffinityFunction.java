@@ -36,9 +36,9 @@ import java.util.*;
  * On each topology change, partition-to-node mapping is calculated using
  * {@link #assignPartitions(GridCacheAffinityFunctionContext)} method, which assigns a collection
  * of nodes to each partition.
- * This collection of nodes is used for node affinity. In {@link org.apache.ignite.cache.GridCacheMode#REPLICATED REPLICATED}
+ * This collection of nodes is used for node affinity. In {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED}
  * cache mode the key will be cached on all returned nodes; generally, all caching nodes
- * participate in caching every key in replicated mode. In {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED PARTITIONED}
+ * participate in caching every key in replicated mode. In {@link org.apache.ignite.cache.CacheMode#PARTITIONED PARTITIONED}
  * mode, only primary and backup nodes are returned with primary node always in the
  * first position. So if there is {@code 1} backup node, then the returned collection will
  * have {@code 2} nodes in it - {@code primary} node in first position, and {@code backup}

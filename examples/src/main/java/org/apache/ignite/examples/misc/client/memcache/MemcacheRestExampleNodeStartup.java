@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import java.util.*;
 
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 

@@ -26,14 +26,14 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for fields queries.
  */
 public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFieldsQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 

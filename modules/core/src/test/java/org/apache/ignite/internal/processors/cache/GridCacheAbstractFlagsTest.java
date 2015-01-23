@@ -44,7 +44,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration c = super.cacheConfiguration(gridName);
 
-        if (cacheMode() == GridCacheMode.PARTITIONED)
+        if (cacheMode() == CacheMode.PARTITIONED)
             c.setBackups(1);
 
         return c;

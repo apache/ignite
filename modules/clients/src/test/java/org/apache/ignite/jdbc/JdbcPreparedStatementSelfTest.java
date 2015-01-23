@@ -32,7 +32,7 @@ import java.sql.*;
 import java.util.Date;
 
 import static java.sql.Types.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**

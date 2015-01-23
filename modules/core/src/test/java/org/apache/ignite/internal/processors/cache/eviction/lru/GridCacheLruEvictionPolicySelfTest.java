@@ -340,7 +340,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        mode = GridCacheMode.LOCAL;
+        mode = CacheMode.LOCAL;
         syncCommit = true;
         plcMax = 100;
 

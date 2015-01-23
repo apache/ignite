@@ -20,7 +20,7 @@ package org.apache.ignite.visor.commands.cswap
 import org.apache.ignite.cache.CacheConfiguration
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.cache.GridCacheMode
+import org.apache.ignite.cache.CacheMode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
@@ -65,7 +65,7 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
         val cfg = new CacheConfiguration
 
         cfg.setName(name)
-        cfg.setCacheMode(GridCacheMode.PARTITIONED)
+        cfg.setCacheMode(CacheMode.PARTITIONED)
         cfg.setSwapEnabled(true)
 
         cfg

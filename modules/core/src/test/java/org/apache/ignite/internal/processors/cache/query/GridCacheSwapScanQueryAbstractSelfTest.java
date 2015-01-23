@@ -33,10 +33,10 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -85,7 +85,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @param atomicityMode Atomicity mode.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
+    private CacheConfiguration cacheConfiguration(String name, CacheAtomicityMode atomicityMode) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);

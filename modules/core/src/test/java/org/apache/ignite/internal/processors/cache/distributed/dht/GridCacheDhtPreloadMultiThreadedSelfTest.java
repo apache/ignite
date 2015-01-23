@@ -162,7 +162,7 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
         cfg.setGridName(gridName);
 
         for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
-            if (cCfg.getCacheMode() == GridCacheMode.PARTITIONED) {
+            if (cCfg.getCacheMode() == CacheMode.PARTITIONED) {
                 cCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(2048, null));
                 cCfg.setBackups(1);
             }

@@ -23,9 +23,9 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -36,7 +36,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -124,7 +124,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkGet(GridCacheAtomicityMode atomicityMode) throws Exception {
+    private void checkGet(CacheAtomicityMode atomicityMode) throws Exception {
         this.atomicityMode = atomicityMode;
 
         try {
@@ -144,7 +144,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkPut(GridCacheAtomicityMode atomicityMode) throws Exception {
+    private void checkPut(CacheAtomicityMode atomicityMode) throws Exception {
         this.atomicityMode = atomicityMode;
 
         try {
@@ -164,7 +164,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkRemove(GridCacheAtomicityMode atomicityMode) throws Exception {
+    private void checkRemove(CacheAtomicityMode atomicityMode) throws Exception {
         this.atomicityMode = atomicityMode;
 
         try {

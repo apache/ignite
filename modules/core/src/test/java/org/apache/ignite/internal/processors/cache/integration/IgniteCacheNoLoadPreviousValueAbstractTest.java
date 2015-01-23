@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,8 +26,8 @@ import org.apache.ignite.transactions.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test for configuration property {@link CacheConfiguration#isLoadPreviousValue()}.

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 
-import static org.apache.ignite.cache.GridCacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
  * Specific test case for GG-3946

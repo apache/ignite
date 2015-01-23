@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Multithreaded update test with off heap enabled.
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 public class GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest extends
     GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 }

@@ -268,7 +268,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     }
 
     /** {@inheritDoc} */
-    @Override protected abstract GridCacheMode cacheMode();
+    @Override protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {

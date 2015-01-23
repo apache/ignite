@@ -32,8 +32,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */
@@ -42,8 +42,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
-        return GridCacheAtomicityMode.ATOMIC;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {

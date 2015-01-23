@@ -38,8 +38,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
@@ -103,21 +103,21 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
     /**
      * @return Cache mode.
      */
-    protected GridCacheMode cacheMode() {
+    protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /**
      * @return Cache atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
+    protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 
     /**
      * @return Atomic write order mode.
      */
-    protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return null;
     }
 

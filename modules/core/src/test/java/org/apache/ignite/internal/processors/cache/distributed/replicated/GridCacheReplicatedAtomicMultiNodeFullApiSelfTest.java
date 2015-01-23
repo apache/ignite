@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Multi-node tests for replicated atomic cache.
@@ -29,12 +29,12 @@ public class GridCacheReplicatedAtomicMultiNodeFullApiSelfTest extends GridCache
     /**
      * @return Write order mode for atomic cache.
      */
-    protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return CLOCK;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 

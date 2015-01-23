@@ -42,7 +42,7 @@ public enum CachePeekMode {
 
     /**
      * Peek into near cache only (don't peek into partitioned cache).
-     * In case of {@link org.apache.ignite.cache.GridCacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     NEAR,
 

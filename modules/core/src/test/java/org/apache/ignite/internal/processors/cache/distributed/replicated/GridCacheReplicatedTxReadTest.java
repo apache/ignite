@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.cache.GridCacheMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractTxReadTest;
 
 /**
@@ -27,7 +27,7 @@ public class GridCacheReplicatedTxReadTest extends GridCacheAbstractTxReadTest {
     /**
      * @return {@code LOCAL} for this test.
      */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 }

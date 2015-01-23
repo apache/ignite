@@ -32,7 +32,7 @@ import java.io.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
@@ -67,7 +67,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     }
 
     /** @return Caching mode. */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -109,7 +109,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /**
      * @return Cache atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
+    protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 

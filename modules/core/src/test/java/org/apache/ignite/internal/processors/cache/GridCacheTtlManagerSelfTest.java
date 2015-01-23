@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.cache.expiry.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * TTL manager self test.
@@ -41,7 +41,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Test cache mode. */
-    protected GridCacheMode cacheMode;
+    protected CacheMode cacheMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -88,7 +88,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
      * @param mode Cache mode.
      * @throws Exception If failed.
      */
-    private void checkTtl(GridCacheMode mode) throws Exception {
+    private void checkTtl(CacheMode mode) throws Exception {
         cacheMode = mode;
 
         final GridKernal g = (GridKernal)startGrid(0);

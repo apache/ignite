@@ -76,7 +76,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setPreloadMode(GridCachePreloadMode.SYNC);

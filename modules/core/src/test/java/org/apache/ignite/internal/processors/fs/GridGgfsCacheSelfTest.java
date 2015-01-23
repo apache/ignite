@@ -27,8 +27,8 @@ import org.apache.ignite.testframework.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests ensuring that GGFS data and meta caches are not "visible" through public API.

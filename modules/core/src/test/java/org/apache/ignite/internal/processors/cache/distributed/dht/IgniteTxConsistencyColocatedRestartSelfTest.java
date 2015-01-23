@@ -25,8 +25,8 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
  */
 public class IgniteTxConsistencyColocatedRestartSelfTest extends IgniteTxConsistencyRestartAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.PARTITIONED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */

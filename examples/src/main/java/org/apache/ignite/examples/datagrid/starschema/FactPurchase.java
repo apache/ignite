@@ -21,7 +21,7 @@ import org.apache.ignite.cache.query.*;
 
 /**
  * Represents a purchase record. In our {@code snowflake} schema purchase
- * is a {@code 'fact'} and will be cached in larger {@link org.apache.ignite.cache.GridCacheMode#PARTITIONED}
+ * is a {@code 'fact'} and will be cached in larger {@link org.apache.ignite.cache.CacheMode#PARTITIONED}
  * cache.
  */
 public class FactPurchase {

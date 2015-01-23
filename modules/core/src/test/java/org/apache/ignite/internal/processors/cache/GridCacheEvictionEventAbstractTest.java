@@ -72,12 +72,12 @@ public abstract class GridCacheEvictionEventAbstractTest extends GridCommonAbstr
     /**
      * @return Cache mode.
      */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /**
      * @return Atomicity mode.
      */
-    protected abstract GridCacheAtomicityMode atomicityMode();
+    protected abstract CacheAtomicityMode atomicityMode();
 
     /**
      * @return {@code True} if near evicts synchronized.

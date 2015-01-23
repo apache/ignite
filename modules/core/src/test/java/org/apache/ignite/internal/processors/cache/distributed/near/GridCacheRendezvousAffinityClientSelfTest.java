@@ -41,7 +41,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
 
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
-        ccfg.setCacheMode(GridCacheMode.PARTITIONED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(1);
         ccfg.setAffinity(new GridCacheRendezvousAffinityFunction());
 

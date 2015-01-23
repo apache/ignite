@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 /**
  * Exception thrown when atomic operation timeout occurs.
  */
-public class GridCacheAtomicUpdateTimeoutException extends IgniteCheckedException {
+public class CacheAtomicUpdateTimeoutException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +31,7 @@ public class GridCacheAtomicUpdateTimeoutException extends IgniteCheckedExceptio
      *
      * @param msg Error message.
      */
-    public GridCacheAtomicUpdateTimeoutException(String msg) {
+    public CacheAtomicUpdateTimeoutException(String msg) {
         super(msg);
     }
 
@@ -41,7 +41,7 @@ public class GridCacheAtomicUpdateTimeoutException extends IgniteCheckedExceptio
      * @param msg Error message.
      * @param cause Optional nested exception (can be <tt>null</tt>).
      */
-    public GridCacheAtomicUpdateTimeoutException(String msg, Throwable cause) {
+    public CacheAtomicUpdateTimeoutException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

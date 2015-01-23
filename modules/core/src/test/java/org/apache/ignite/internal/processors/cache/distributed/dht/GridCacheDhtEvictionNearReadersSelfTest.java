@@ -35,8 +35,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -92,7 +92,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
     /**
      * @return Atomicity mode.
      */
-    public GridCacheAtomicityMode atomicityMode() {
+    public CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 

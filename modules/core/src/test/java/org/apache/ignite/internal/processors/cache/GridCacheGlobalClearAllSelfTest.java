@@ -24,9 +24,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test {@link org.apache.ignite.cache.GridCache#globalClearAll()} operation in multinode environment with nodes
@@ -52,7 +52,7 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name which will be passed to grid configuration. */
-    private GridCacheMode cacheMode = PARTITIONED;
+    private CacheMode cacheMode = PARTITIONED;
 
     /** Cache mode which will be passed to grid configuration. */
     private String cacheName = CACHE_NAME;

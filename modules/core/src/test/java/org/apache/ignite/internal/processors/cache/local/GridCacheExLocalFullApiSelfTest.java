@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.*;
  * Tests private cache interface on local cache.
  */
 public class GridCacheExLocalFullApiSelfTest extends GridCacheExAbstractFullApiSelfTest {
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.LOCAL;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.LOCAL;
     }
 }

@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.net.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests affinity and affinity mapper P2P loading.

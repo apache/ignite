@@ -31,9 +31,9 @@ import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests {@link GridCacheInterceptor}.
@@ -102,14 +102,14 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /**
      * @return Atomic cache write order mode.
      */
-    @Nullable protected GridCacheAtomicWriteOrderMode writeOrderMode() {
+    @Nullable protected CacheAtomicWriteOrderMode writeOrderMode() {
         return null;
     }
 

@@ -35,7 +35,7 @@ public class GridCacheReplicatedJobExecutionTest extends GridCacheAbstractJobExe
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(GridCacheMode.REPLICATED);
+        cc.setCacheMode(CacheMode.REPLICATED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         c.setCacheConfiguration(cc);

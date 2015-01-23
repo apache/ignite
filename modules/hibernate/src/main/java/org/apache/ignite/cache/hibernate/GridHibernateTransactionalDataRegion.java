@@ -23,7 +23,7 @@ import org.hibernate.cache.*;
 import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.access.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Implementation of {@link TransactionalDataRegion} (transactional means that

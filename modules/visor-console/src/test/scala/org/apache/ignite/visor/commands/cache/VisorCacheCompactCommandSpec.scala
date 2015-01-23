@@ -18,8 +18,8 @@
 package org.apache.ignite.visor.commands.cache
 
 import org.apache.ignite.cache.CacheConfiguration
-import org.apache.ignite.cache.GridCacheMode
-import GridCacheMode._
+import org.apache.ignite.cache.CacheMode
+import CacheMode._
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
 import org.apache.ignite.Ignition

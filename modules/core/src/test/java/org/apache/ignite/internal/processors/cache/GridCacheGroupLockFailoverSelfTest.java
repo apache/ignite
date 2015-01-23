@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -440,7 +440,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
             cacheCfg.setName("partitioned");
-            cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
             cacheCfg.setStartSize(4500000);
             cacheCfg.setBackups(backups);
             cacheCfg.setStoreValueBytes(true);

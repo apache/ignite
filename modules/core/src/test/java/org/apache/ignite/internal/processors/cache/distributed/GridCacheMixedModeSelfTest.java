@@ -42,7 +42,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     private CacheConfiguration cacheConfiguration(String gridName) {
         CacheConfiguration cfg = new CacheConfiguration();
 
-        cfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
 
         if (F.eq(gridName, getTestGridName(0)))
             cfg.setDistributionMode(GridCacheDistributionMode.NEAR_ONLY);

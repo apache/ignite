@@ -30,7 +30,6 @@ import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -48,8 +47,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
@@ -65,7 +64,7 @@ public class GridCacheConfigurationConsistencySelfTest extends GridCommonAbstrac
     private String cacheName;
 
     /** */
-    private GridCacheMode cacheMode = REPLICATED;
+    private CacheMode cacheMode = REPLICATED;
 
     /** */
     private IgniteDeploymentMode depMode = SHARED;

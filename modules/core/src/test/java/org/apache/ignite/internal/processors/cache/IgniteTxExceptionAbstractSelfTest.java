@@ -33,7 +33,7 @@ import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicException}.

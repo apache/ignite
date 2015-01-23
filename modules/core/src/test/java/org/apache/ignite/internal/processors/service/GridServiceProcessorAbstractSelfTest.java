@@ -69,7 +69,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         CacheConfiguration cc = new CacheConfiguration();
 
         cc.setName(CACHE_NAME);
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setBackups(nodeCount());
 
         c.setCacheConfiguration(cc);

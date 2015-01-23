@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
 import javax.transaction.*;
 
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link org.apache.ignite.cache.jta.GridCacheTmLookup}.
@@ -70,7 +70,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
         ccfg.setDistributionMode(distroMode);
 
-        ccfg.setCacheMode(GridCacheMode.PARTITIONED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
 
         ccfg.setName(CACHE_NAME);
 

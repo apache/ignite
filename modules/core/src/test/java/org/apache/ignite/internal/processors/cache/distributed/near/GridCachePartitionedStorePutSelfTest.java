@@ -32,7 +32,7 @@ import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.*;
 

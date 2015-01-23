@@ -31,7 +31,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -68,7 +68,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     }
 
     /** @return Caching mode. */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -110,7 +110,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
     /**
      * @return Cache atomicity mode.
      */
-    protected GridCacheAtomicityMode atomicityMode() {
+    protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 

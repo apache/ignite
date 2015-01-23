@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Client only test for REPLICATED cache.
@@ -36,7 +36,7 @@ public class GridCacheReplicatedClientOnlySelfTest extends GridCacheClientOnlySe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 }

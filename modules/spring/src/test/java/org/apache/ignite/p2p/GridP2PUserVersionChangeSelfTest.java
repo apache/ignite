@@ -94,7 +94,7 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
         if (gridName.contains("testCacheRedeployVersionChangeContinuousMode")) {
             CacheConfiguration cacheCfg = new CacheConfiguration();
 
-            cacheCfg.setCacheMode(GridCacheMode.REPLICATED);
+            cacheCfg.setCacheMode(CacheMode.REPLICATED);
 
             cfg.setCacheConfiguration(cacheCfg);
         }

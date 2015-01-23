@@ -23,8 +23,8 @@ import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -34,12 +34,12 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
     /**
      * @return Write order mode for atomic cache.
      */
-    protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return CLOCK;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 

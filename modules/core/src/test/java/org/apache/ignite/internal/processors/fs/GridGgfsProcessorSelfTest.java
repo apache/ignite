@@ -38,8 +38,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static java.nio.charset.StandardCharsets.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Tests for {@link IgniteFsProcessor}.

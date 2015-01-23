@@ -26,8 +26,8 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 public class GridCacheReplicatedTxOriginatingNodeFailureSelfTest extends
     IgniteTxOriginatingNodeFailureAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */

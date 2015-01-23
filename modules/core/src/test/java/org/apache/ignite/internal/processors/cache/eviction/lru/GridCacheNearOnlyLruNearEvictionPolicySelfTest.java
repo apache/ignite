@@ -26,9 +26,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
@@ -49,10 +49,10 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
     private int cnt;
 
     /** Caching mode specified by test. */
-    private GridCacheMode cacheMode;
+    private CacheMode cacheMode;
 
     /** Cache atomicity mode specified by test. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {

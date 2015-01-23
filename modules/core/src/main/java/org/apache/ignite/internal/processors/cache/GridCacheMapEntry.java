@@ -1163,9 +1163,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     subjId, null, taskName);
             }
 
-            GridCacheMode mode = cctx.config().getCacheMode();
+            CacheMode mode = cctx.config().getCacheMode();
 
-            if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
+            if (mode == CacheMode.LOCAL || mode == CacheMode.REPLICATED ||
                 (tx != null && tx.local() && !isNear()))
                 cctx.continuousQueries().onEntryUpdate(this, key, val, valueBytesUnlocked(), old, oldBytes, false);
 
@@ -1325,9 +1325,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         null, taskName);
                 }
 
-                GridCacheMode mode = cctx.config().getCacheMode();
+                CacheMode mode = cctx.config().getCacheMode();
 
-                if (mode == GridCacheMode.LOCAL || mode == GridCacheMode.REPLICATED ||
+                if (mode == CacheMode.LOCAL || mode == CacheMode.REPLICATED ||
                     (tx != null && tx.local() && !isNear()))
                     cctx.continuousQueries().onEntryUpdate(this, key, null, null, old, oldBytes, false);
 

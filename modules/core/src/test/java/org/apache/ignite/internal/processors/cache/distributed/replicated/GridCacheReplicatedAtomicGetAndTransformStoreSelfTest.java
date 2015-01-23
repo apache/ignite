@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Test get and transform for store with replicated cache in atomic mode.
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 public class GridCacheReplicatedAtomicGetAndTransformStoreSelfTest
     extends GridCacheReplicatedGetAndTransformStoreSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 }

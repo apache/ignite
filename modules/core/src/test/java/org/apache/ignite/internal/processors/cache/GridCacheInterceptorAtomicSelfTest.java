@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.jetbrains.annotations.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
  */
 public class GridCacheInterceptorAtomicSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 
@@ -39,7 +39,7 @@ public class GridCacheInterceptorAtomicSelfTest extends GridCacheInterceptorAbst
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected GridCacheAtomicWriteOrderMode writeOrderMode() {
+    @Nullable @Override protected CacheAtomicWriteOrderMode writeOrderMode() {
         return CLOCK;
     }
 }

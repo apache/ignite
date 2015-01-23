@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -100,7 +99,7 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
 
         cfg.setBackups(backups);
 
-        cfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cfg.setCacheMode(CacheMode.PARTITIONED);
 
         cfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
 

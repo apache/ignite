@@ -38,7 +38,7 @@ import javax.cache.integration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test for {@link LifecycleAware} support in {@link CacheConfiguration}.
@@ -277,7 +277,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
         ccfg.setWriteBehindEnabled(writeBehind);
 
-        ccfg.setCacheMode(GridCacheMode.PARTITIONED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
 
         ccfg.setName(CACHE_NAME);
 

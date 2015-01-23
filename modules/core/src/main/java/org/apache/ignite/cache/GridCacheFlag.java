@@ -18,7 +18,6 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.CacheConfiguration;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -86,7 +85,7 @@ public enum GridCacheFlag {
 
     /**
      * Skips version check during {@link IgniteCache#invoke(Object, EntryProcessor, Object[])} writes in
-     * {@link GridCacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
+     * {@link CacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
      * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
      * node to backup nodes to ensure proper update ordering.
      * <p>

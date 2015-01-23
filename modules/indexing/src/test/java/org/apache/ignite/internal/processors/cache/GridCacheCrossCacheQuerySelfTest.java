@@ -30,7 +30,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 
@@ -56,8 +56,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        c.setCacheConfiguration(createCache("replicated", GridCacheMode.REPLICATED),
-            createCache("partitioned", GridCacheMode.PARTITIONED));
+        c.setCacheConfiguration(createCache("replicated", CacheMode.REPLICATED),
+            createCache("partitioned", CacheMode.PARTITIONED));
 
         return c;
     }
@@ -81,7 +81,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @param mode Cache mode.
      * @return Cache configuration.
      */
-    private static CacheConfiguration createCache(String name, GridCacheMode mode) {
+    private static CacheConfiguration createCache(String name, CacheMode mode) {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(name);
@@ -209,7 +209,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Represents a product available for purchase. In our {@code snowflake} schema a {@code product} is a {@code
-     * 'dimension'} and will be cached in {@link GridCacheMode#REPLICATED} cache.
+     * 'dimension'} and will be cached in {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache.
      */
     private static class DimProduct {
         /** Primary key. */
@@ -251,7 +251,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Represents a physical store location. In our {@code snowflake} schema a {@code store} is a {@code 'dimension'}
-     * and will be cached in {@link GridCacheMode#REPLICATED} cache.
+     * and will be cached in {@link org.apache.ignite.cache.CacheMode#REPLICATED} cache.
      */
     private static class DimStore {
         /** Primary key. */
@@ -294,7 +294,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Represents a purchase record. In our {@code snowflake} schema purchase is a {@code 'fact'} and will be cached in
-     * larger {@link GridCacheMode#PARTITIONED} cache.
+     * larger {@link org.apache.ignite.cache.CacheMode#PARTITIONED} cache.
      */
     private static class FactPurchase {
         /** Primary key. */

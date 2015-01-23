@@ -21,7 +21,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -29,9 +28,9 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -45,7 +44,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "ggfs-data";
 
     /** Atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -101,7 +100,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    private void checkLeak(GridCacheAtomicityMode mode) throws Exception {
+    private void checkLeak(CacheAtomicityMode mode) throws Exception {
         atomicityMode = mode;
 
         startGrids(3);

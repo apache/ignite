@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -38,7 +38,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
     private static final int GRID_CNT = 2;
 
     /** */
-    private static final GridCacheMode CACHE_MODE = REPLICATED;
+    private static final CacheMode CACHE_MODE = REPLICATED;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

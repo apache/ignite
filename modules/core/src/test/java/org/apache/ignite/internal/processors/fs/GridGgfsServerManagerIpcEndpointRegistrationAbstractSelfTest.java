@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.fs.IgniteFsConfiguration.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Base test class for {@link GridGgfsServer} checking IPC endpoint registrations.
@@ -128,7 +128,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName("partitioned");
-        cc.setCacheMode(GridCacheMode.PARTITIONED);
+        cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         cc.setBackups(0);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -137,7 +137,7 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         CacheConfiguration metaCfg = defaultCacheConfiguration();
 
         metaCfg.setName("replicated");
-        metaCfg.setCacheMode(GridCacheMode.REPLICATED);
+        metaCfg.setCacheMode(CacheMode.REPLICATED);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
         metaCfg.setQueryIndexEnabled(false);
 

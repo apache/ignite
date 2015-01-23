@@ -7215,7 +7215,7 @@ public abstract class GridUtils {
      * @param cacheName Cache to check.
      * @return Cache mode or {@code null} if cache is not found.
      */
-    @Nullable public static GridCacheMode cacheMode(ClusterNode n, String cacheName) {
+    @Nullable public static CacheMode cacheMode(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
         if (caches != null)
@@ -7234,7 +7234,7 @@ public abstract class GridUtils {
      * @param cacheName Cache to check.
      * @return Cache mode or {@code null} if cache is not found.
      */
-    @Nullable public static GridCacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
+    @Nullable public static CacheAtomicityMode atomicityMode(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
         if (caches != null)

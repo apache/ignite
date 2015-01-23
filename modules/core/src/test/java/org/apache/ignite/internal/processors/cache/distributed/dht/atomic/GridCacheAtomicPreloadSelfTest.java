@@ -47,8 +47,8 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
-        cacheCfg.setAtomicityMode(GridCacheAtomicityMode.TRANSACTIONAL);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
         cacheCfg.setBackups(1);

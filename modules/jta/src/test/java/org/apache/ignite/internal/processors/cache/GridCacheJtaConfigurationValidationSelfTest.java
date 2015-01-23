@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 import javax.transaction.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 
 /**
  * Configuration validation test.

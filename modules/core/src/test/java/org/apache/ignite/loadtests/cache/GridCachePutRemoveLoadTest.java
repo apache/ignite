@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMemoryMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
@@ -112,7 +112,7 @@ public class GridCachePutRemoveLoadTest {
             cacheCfg.setWriteSynchronizationMode(args.synchronization());
             cacheCfg.setAtomicWriteOrderMode(args.orderMode());
 
-            if (cacheCfg.getCacheMode() == GridCacheMode.PARTITIONED)
+            if (cacheCfg.getCacheMode() == CacheMode.PARTITIONED)
                 cacheCfg.setBackups(args.backups());
 
             if (args.isOffHeap()) {
@@ -236,7 +236,7 @@ public class GridCachePutRemoveLoadTest {
 
         /** */
         @Parameter(names = "-cm", description = "Cache Mode")
-        private GridCacheMode cacheMode = GridCacheMode.PARTITIONED;
+        private CacheMode cacheMode = CacheMode.PARTITIONED;
 
         /** */
         @Parameter(names = "-sm", description = "Synchronization Mode")
@@ -244,7 +244,7 @@ public class GridCachePutRemoveLoadTest {
 
         /** */
         @Parameter(names = "-wo", description = "Write Ordering Mode")
-        private GridCacheAtomicWriteOrderMode orderMode = GridCacheAtomicWriteOrderMode.CLOCK;
+        private CacheAtomicWriteOrderMode orderMode = CacheAtomicWriteOrderMode.CLOCK;
 
         /** */
         @Parameter(names = "-dm", description = "Distribution mode")
@@ -291,7 +291,7 @@ public class GridCachePutRemoveLoadTest {
         /**
          * @return Cache Mode.
          */
-        public GridCacheMode cache() {
+        public CacheMode cache() {
             return cacheMode;
         }
 
@@ -305,7 +305,7 @@ public class GridCachePutRemoveLoadTest {
         /**
          * @return Cache write ordering mode.
          */
-        public GridCacheAtomicWriteOrderMode orderMode() {
+        public CacheAtomicWriteOrderMode orderMode() {
             return orderMode;
         }
 

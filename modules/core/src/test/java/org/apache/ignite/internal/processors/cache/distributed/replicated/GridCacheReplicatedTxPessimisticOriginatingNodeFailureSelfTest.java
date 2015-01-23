@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 
 /**
@@ -36,7 +36,7 @@ public class GridCacheReplicatedTxPessimisticOriginatingNodeFailureSelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 

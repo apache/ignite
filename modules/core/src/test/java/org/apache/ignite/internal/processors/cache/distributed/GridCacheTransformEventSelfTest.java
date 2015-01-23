@@ -35,9 +35,9 @@ import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
@@ -85,10 +85,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private ConcurrentHashSet<IgniteCacheEvent> evts;
 
     /** Cache mode. */
-    private GridCacheMode cacheMode;
+    private CacheMode cacheMode;
 
     /** Atomicity mode. */
-    private GridCacheAtomicityMode atomicityMode;
+    private CacheAtomicityMode atomicityMode;
 
     /** TX concurrency. */
     private IgniteTxConcurrency txConcurrency;
@@ -155,7 +155,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void initialize(GridCacheMode cacheMode, GridCacheAtomicityMode atomicityMode,
+    private void initialize(CacheMode cacheMode, CacheAtomicityMode atomicityMode,
         IgniteTxConcurrency txConcurrency, IgniteTxIsolation txIsolation) throws Exception {
         this.cacheMode = cacheMode;
         this.atomicityMode = atomicityMode;
@@ -453,7 +453,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @throws Exception If failed.
      */
-    private void checkAtomic(GridCacheMode cacheMode) throws Exception {
+    private void checkAtomic(CacheMode cacheMode) throws Exception {
         initialize(cacheMode, ATOMIC, null, null);
 
         caches[0].invoke(key1, new Transformer());
@@ -476,7 +476,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      *
      * @throws Exception If failed.
      */
-    private void checkTx(GridCacheMode cacheMode, IgniteTxConcurrency txConcurrency,
+    private void checkTx(CacheMode cacheMode, IgniteTxConcurrency txConcurrency,
         IgniteTxIsolation txIsolation) throws Exception {
         initialize(cacheMode, TRANSACTIONAL, txConcurrency, txIsolation);
 

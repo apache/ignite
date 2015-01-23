@@ -69,7 +69,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setCacheMode(GridCacheMode.REPLICATED);
+        cc.setCacheMode(CacheMode.REPLICATED);
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 

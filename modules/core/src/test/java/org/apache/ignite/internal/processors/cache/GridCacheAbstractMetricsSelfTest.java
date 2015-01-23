@@ -141,7 +141,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         // TODO: GG-7578.
-        if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED)
+        if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
             return;
 
         int keyCnt = keyCount();
@@ -186,7 +186,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         // TODO: GG-7578.
-        if (cache.configuration().getCacheMode() == GridCacheMode.REPLICATED)
+        if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
             return;
 
         Integer key =  null;

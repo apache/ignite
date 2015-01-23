@@ -293,7 +293,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
         assert a != null;
 
-        updater = a.atomicityMode() == GridCacheAtomicityMode.ATOMIC ?
+        updater = a.atomicityMode() == CacheAtomicityMode.ATOMIC ?
             GridDataLoadCacheUpdaters.<K, V>batched() :
             GridDataLoadCacheUpdaters.<K, V>groupLocked();
     }

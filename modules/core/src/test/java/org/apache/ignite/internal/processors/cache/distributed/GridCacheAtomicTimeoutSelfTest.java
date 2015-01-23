@@ -37,10 +37,10 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 
 /**
@@ -134,7 +134,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (GridCacheAtomicUpdateTimeoutException ignore) {
+        catch (CacheAtomicUpdateTimeoutException ignore) {
             // Expected exception.
         }
     }
@@ -168,7 +168,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (GridCacheAtomicUpdateTimeoutException ignore) {
+        catch (CacheAtomicUpdateTimeoutException ignore) {
             // Expected exception.
         }
     }
@@ -203,8 +203,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
             fail();
         }
         catch (IgniteCheckedException e) {
-            assertTrue("Invalid exception thrown: " + e, X.hasCause(e, GridCacheAtomicUpdateTimeoutException.class)
-                || X.hasSuppressed(e, GridCacheAtomicUpdateTimeoutException.class));
+            assertTrue("Invalid exception thrown: " + e, X.hasCause(e, CacheAtomicUpdateTimeoutException.class)
+                || X.hasSuppressed(e, CacheAtomicUpdateTimeoutException.class));
         }
     }
 
@@ -238,8 +238,8 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
             fail();
         }
         catch (IgniteCheckedException e) {
-            assertTrue("Invalid exception thrown: " + e, X.hasCause(e, GridCacheAtomicUpdateTimeoutException.class)
-                || X.hasSuppressed(e, GridCacheAtomicUpdateTimeoutException.class));
+            assertTrue("Invalid exception thrown: " + e, X.hasCause(e, CacheAtomicUpdateTimeoutException.class)
+                || X.hasSuppressed(e, CacheAtomicUpdateTimeoutException.class));
         }
     }
 

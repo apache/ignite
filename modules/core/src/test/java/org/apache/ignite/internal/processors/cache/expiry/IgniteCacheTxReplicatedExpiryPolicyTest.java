@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
 public class IgniteCacheTxReplicatedExpiryPolicyTest extends IgniteCacheTxExpiryPolicyTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 }
