@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Tests the correctness of web sessions caching functionality.
  */
-public class GridWebSessionSelfTest extends GridCommonAbstractTest {
+public class WebSessionSelfTest extends GridCommonAbstractTest {
     /** Port for test Jetty server. */
     private static final int TEST_JETTY_PORT = 49090;
 

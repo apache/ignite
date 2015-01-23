@@ -25,7 +25,7 @@ import org.apache.loadtests.gridify.*;
 /**
  * Single split test job target.
  */
-public class GridSingleSplitTestJobTarget {
+public class SingleSplitTestJobTarget {
     /**
      * @param level Level.
      * @param jobSes Job session.

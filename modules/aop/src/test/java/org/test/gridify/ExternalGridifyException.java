@@ -20,11 +20,11 @@ package org.test.gridify;
 /**
  * External gridify exception.
  */
-public class GridExternalGridifyException extends Exception {
+public class ExternalGridifyException extends Exception {
     /**
      * @param msg Message.
      */
-    public GridExternalGridifyException(String msg) {
+    public ExternalGridifyException(String msg) {
         super(msg);
     }
 
@@ -32,7 +32,7 @@ public class GridExternalGridifyException extends Exception {
      * @param msg Message.
      * @param cause Exception cause.
      */
-    public GridExternalGridifyException(String msg, Throwable cause) {
+    public ExternalGridifyException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

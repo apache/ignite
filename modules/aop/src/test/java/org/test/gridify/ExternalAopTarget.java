@@ -25,12 +25,12 @@ import java.util.*;
 /**
  * AOP target.
  */
-public class GridExternalAopTarget {
+public class ExternalAopTarget {
     /**
      * @param arg Argument.
      * @return Argument parsed to integer.
      */
-    @Gridify(gridName="GridExternalAopTarget")
+    @Gridify(gridName="ExternalAopTarget")
     public int gridifyDefault(String arg) {
         return Integer.parseInt(arg);
     }
@@ -39,7 +39,7 @@ public class GridExternalAopTarget {
      * @param arg Argument.
      * @return Argument parsed to integer.
      */
-    @Gridify(gridName="GridExternalAopTarget", taskClass = GridExternalGridifyTask.class)
+    @Gridify(gridName="ExternalAopTarget", taskClass = ExternalGridifyTask.class)
     public int gridifyNonDefaultClass(String arg) {
         return Integer.parseInt(arg);
     }
@@ -49,7 +49,7 @@ public class GridExternalAopTarget {
      * @param arg Argument.
      * @return Argument parsed to integer.
      */
-    @Gridify(gridName="GridExternalAopTarget", taskName = GridExternalGridifyTask.TASK_NAME)
+    @Gridify(gridName="ExternalAopTarget", taskName = ExternalGridifyTask.TASK_NAME)
     public int gridifyNonDefaultName(String arg) {
         return Integer.parseInt(arg);
     }
@@ -58,7 +58,7 @@ public class GridExternalAopTarget {
      * @param arg Argument.
      * @return ALways 0.
      */
-    @Gridify(gridName="GridExternalAopTarget", taskName = "myTask", taskClass = GridExternalGridifyTask.class)
+    @Gridify(gridName="ExternalAopTarget", taskName = "myTask", taskClass = ExternalGridifyTask.class)
     public int gridifyTaskClassAndTaskName(String arg) {
         assert arg != null;
 
@@ -68,20 +68,20 @@ public class GridExternalAopTarget {
     /**
      * @param arg Argument.
      * @return No-op.
-     * @throws GridExternalGridifyException Always.
+     * @throws ExternalGridifyException Always.
      */
-    @Gridify(gridName="GridExternalAopTarget")
-    public int gridifyDefaultException(String arg) throws GridExternalGridifyException {
-        throw new GridExternalGridifyException(arg);
+    @Gridify(gridName="ExternalAopTarget")
+    public int gridifyDefaultException(String arg) throws ExternalGridifyException {
+        throw new ExternalGridifyException(arg);
     }
 
     /**
      * @param arg Argument.
      * @return Argument parsed to integer.
-     * @throws GridExternalGridifyException If failed.
+     * @throws ExternalGridifyException If failed.
      */
-    @Gridify(gridName="GridExternalAopTarget")
-    public int gridifyDefaultResource(String arg) throws GridExternalGridifyException {
+    @Gridify(gridName="ExternalAopTarget")
+    public int gridifyDefaultResource(String arg) throws ExternalGridifyException {
         getResource();
 
         return Integer.parseInt(arg);
@@ -90,10 +90,10 @@ public class GridExternalAopTarget {
     /**
      * @param arg Argument.
      * @return Argument parsed to integer.
-     * @throws GridExternalGridifyException If failed.
+     * @throws ExternalGridifyException If failed.
      */
-    @Gridify(gridName="GridExternalAopTarget", taskClass = GridExternalGridifyTask.class)
-    public int gridifyNonDefaultClassResource(String arg) throws GridExternalGridifyException {
+    @Gridify(gridName="ExternalAopTarget", taskClass = ExternalGridifyTask.class)
+    public int gridifyNonDefaultClassResource(String arg) throws ExternalGridifyException {
         getResource();
 
         return Integer.parseInt(arg);
@@ -103,19 +103,19 @@ public class GridExternalAopTarget {
     /**
      * @param arg Argument.
      * @return Argument parsed to integer.
-     * @throws GridExternalGridifyException If failed.
+     * @throws ExternalGridifyException If failed.
      */
-    @Gridify(gridName="GridExternalAopTarget", taskName = GridExternalGridifyTask.TASK_NAME)
-    public int gridifyNonDefaultNameResource(String arg) throws GridExternalGridifyException {
+    @Gridify(gridName="ExternalAopTarget", taskName = ExternalGridifyTask.TASK_NAME)
+    public int gridifyNonDefaultNameResource(String arg) throws ExternalGridifyException {
         getResource();
 
         return Integer.parseInt(arg);
     }
 
     /**
-     * @throws GridExternalGridifyException If failed.
+     * @throws ExternalGridifyException If failed.
      */
-    private void getResource() throws GridExternalGridifyException {
+    private void getResource() throws ExternalGridifyException {
         try (InputStream in = getClass().getResourceAsStream("test_resource.properties")) {
             assert in != null;
 
@@ -128,7 +128,7 @@ public class GridExternalAopTarget {
             assert "1".equals(val);
         }
         catch (IOException e) {
-            throw new GridExternalGridifyException("Failed to test load properties file.", e);
+            throw new ExternalGridifyException("Failed to test load properties file.", e);
         }
     }
 }

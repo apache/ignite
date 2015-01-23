@@ -49,20 +49,20 @@ import org.apache.ignite.testframework.junits.common.*;
  * 2. Classpath should contains the ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj folder.
  */
 @GridCommonTest(group="AOP")
-public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
+public class ExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
     /** */
     private IgniteDeploymentMode depMode = IgniteDeploymentMode.PRIVATE;
 
     /** */
-    public GridExternalNonSpringAopSelfTest() {
+    public ExternalNonSpringAopSelfTest() {
         super(/**start grid*/false);
     }
 
     /**
      * @return External AOP target.
      */
-    protected GridExternalAopTarget getTarget() {
-        return new GridExternalAopTarget();
+    protected ExternalAopTarget getTarget() {
+        return new ExternalAopTarget();
     }
 
     /**
@@ -419,7 +419,7 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
 
             getTarget().gridifyDefaultException("0");
         }
-        catch (GridExternalGridifyException e) {
+        catch (ExternalGridifyException e) {
             info("@Gridify method gridifyDefaultException(0) returns exception: " + e);
 
             isException = true;
@@ -534,6 +534,6 @@ public class GridExternalNonSpringAopSelfTest extends GridCommonAbstractTest {
      * @return Test grid name.
      */
     @Override public String getTestGridName() {
-        return "GridExternalAopTarget";
+        return "ExternalAopTarget";
     }
 }

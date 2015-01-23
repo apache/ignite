@@ -31,7 +31,7 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Web Sessions Test Suite");
 
-        suite.addTestSuite(GridWebSessionSelfTest.class);
+        suite.addTestSuite(WebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
 
@@ -41,7 +41,7 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
     /**
      * Tests web sessions with TRANSACTIONAL cache.
      */
-    public static class WebSessionTransactionalSelfTest extends GridWebSessionSelfTest {
+    public static class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
         /** {@inheritDoc} */
         @Override protected String getCacheName() {
             return "partitioned_tx";
@@ -56,7 +56,7 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
     /**
      * Tests web sessions with REPLICATED cache.
      */
-    public static class WebSessionReplicatedSelfTest extends GridWebSessionSelfTest {
+    public static class WebSessionReplicatedSelfTest extends WebSessionSelfTest {
         /** {@inheritDoc} */
         @Override protected String getCacheName() {
             return "replicated";

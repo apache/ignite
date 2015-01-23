@@ -36,9 +36,9 @@ import java.util.concurrent.*;
  * Single split load test.
  */
 @GridCommonTest(group = "Load Test")
-public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
+public class SingleSplitsLoadTest extends GridCommonAbstractTest {
     /** */
-    public GridSingleSplitsLoadTest() {
+    public SingleSplitsLoadTest() {
         super(true);
     }
 
@@ -89,7 +89,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
         final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
 
         // Warm up.
-        ignite.compute().withTimeout(5000).execute(GridSingleSplitTestTask.class.getName(), 3);
+        ignite.compute().withTimeout(5000).execute(SingleSplitTestTask.class.getName(), 3);
 
         info("Load test will be executed for '" + getTestDurationInMinutes() + "' mins.");
         info("Thread count: " + getThreadCount());
@@ -107,7 +107,7 @@ public class GridSingleSplitsLoadTest extends GridCommonAbstractTest {
 
                         IgniteCompute comp = ignite.compute().enableAsync();
 
-                        comp.execute(new GridSingleSplitTestTask(), levels);
+                        comp.execute(new SingleSplitTestTask(), levels);
 
                         ComputeTaskFuture<Integer> fut = comp.future();
 

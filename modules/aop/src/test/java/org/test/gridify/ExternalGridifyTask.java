@@ -28,9 +28,9 @@ import java.util.*;
 /**
  * External gridify task.
  */
-public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Object> {
+public class ExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Object> {
     /** */
-    public static final String TASK_NAME = "org.test.gridify.GridExternalGridifyTask";
+    public static final String TASK_NAME = "org.test.gridify.ExternalGridifyTask";
 
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
@@ -46,7 +46,7 @@ public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgu
                 if (log.isInfoEnabled())
                     log.info("Execute GridTestGridifyJob.execute(" + argument(0) + ')');
 
-                GridExternalAopTarget target = new GridExternalAopTarget();
+                ExternalAopTarget target = new ExternalAopTarget();
 
                 try {
                     if ("1".equals(argument(0)))
@@ -58,7 +58,7 @@ public class GridExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgu
                     else if ("4".equals(argument(0)))
                         return target.gridifyNonDefaultNameResource("40");
                 }
-                catch (GridExternalGridifyException e) {
+                catch (ExternalGridifyException e) {
                     throw new RuntimeException("Failed to execute target method.", e);
                 }
 

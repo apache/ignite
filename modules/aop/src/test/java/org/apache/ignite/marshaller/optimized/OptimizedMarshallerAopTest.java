@@ -43,14 +43,14 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * </li>
  * </ul>
  */
-public class GridOptimizedMarshallerAopTest extends GridCommonAbstractTest {
+public class OptimizedMarshallerAopTest extends GridCommonAbstractTest {
     /** */
     private static final AtomicInteger cntr = new AtomicInteger();
 
     /**
      * Constructs a test.
      */
-    public GridOptimizedMarshallerAopTest() {
+    public OptimizedMarshallerAopTest() {
         super(false /* start grid. */);
     }
 

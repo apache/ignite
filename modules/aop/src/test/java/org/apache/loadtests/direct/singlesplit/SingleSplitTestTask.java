@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Single split test task.
  */
-public class GridSingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
+public class SingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer> {
     /** */
     @IgniteTaskSessionResource
     private ComputeTaskSession taskSes;
@@ -61,7 +61,7 @@ public class GridSingleSplitTestTask extends ComputeTaskAdapter<Integer, Integer
 
                     assert arg != null;
 
-                    return new GridSingleSplitTestJobTarget().executeLoadTestJob(arg, jobSes);
+                    return new SingleSplitTestJobTarget().executeLoadTestJob(arg, jobSes);
                 }
             };
 

@@ -30,7 +30,7 @@ import java.io.*;
 /**
  * Server starter for web sessions caching test.
  */
-public class GridWebSessionServerStart {
+public class WebSessionServerStart {
     /**
      * @param args Arguments.
      * @throws Exception In case of error.

@@ -32,7 +32,7 @@ import java.util.*;
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 @GridCommonTest(group = "P2P")
-public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
+public class P2PGridifySelfTest extends GridCommonAbstractTest {
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
     private IgniteDeploymentMode depMode;
 

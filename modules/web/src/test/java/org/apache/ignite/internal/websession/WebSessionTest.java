@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Web sessions caching test.
  */
-public class GridWebSessionTest {
+public class WebSessionTest {
     /** */
     private static final AtomicReference<String> SES_ID = new AtomicReference<>();
 
