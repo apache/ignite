@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Abstract base class for http routing tests.
  */
-public abstract class GridTcpRouterAbstractSelfTest extends GridClientAbstractSelfTest {
+public abstract class TcpRouterAbstractSelfTest extends GridClientAbstractSelfTest {
     /** Port number to use by router. */
     private static final int ROUTER_PORT = BINARY_PORT + 1;
 

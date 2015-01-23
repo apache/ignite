@@ -30,7 +30,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Test routers factory.
  */
-public class GridRouterFactorySelfTest extends GridCommonAbstractTest {
+public class RouterFactorySelfTest extends GridCommonAbstractTest {
     /** Shared IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

@@ -36,7 +36,7 @@ public class IgniteClientTestSuite extends TestSuite {
     public static TestSuite suite() {
         TestSuite suite = new TestSuite("Ignite Clients Test Suite");
 
-        suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
+        suite.addTest(new TestSuite(RouterFactorySelfTest.class));
 
         // Parser standalone test.
         suite.addTest(new TestSuite(TcpRestParserSelfTest.class));
@@ -105,11 +105,11 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientTopologyCacheSelfTest.class));
 
         // Router tests.
-        suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
+        suite.addTest(new TestSuite(TcpRouterSelfTest.class));
+        suite.addTest(new TestSuite(TcpSslRouterSelfTest.class));
+        suite.addTest(new TestSuite(TcpRouterMultiNodeSelfTest.class));
 
-        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
+        suite.addTest(new TestSuite(ClientFailedInitSelfTest.class));
 
         suite.addTest(new TestSuite(GridClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
 

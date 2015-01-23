@@ -30,7 +30,7 @@ import static org.apache.ignite.client.integration.GridClientAbstractSelfTest.*;
 /**
  *
  */
-public class GridTcpRouterMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
+public class TcpRouterMultiNodeSelfTest extends GridClientAbstractMultiNodeSelfTest {
     /** Number of routers to start in this test. */
     private static final int ROUTERS_CNT = 5;
 

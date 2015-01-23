@@ -37,7 +37,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  *
  */
-public class GridClientFailedInitSelfTest extends GridCommonAbstractTest {
+public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int RECONN_CNT = 3;
 

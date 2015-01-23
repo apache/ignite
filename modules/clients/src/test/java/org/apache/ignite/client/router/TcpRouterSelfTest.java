@@ -17,32 +17,19 @@
 
 package org.apache.ignite.client.router;
 
-import org.apache.ignite.*;
 import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.testframework.*;
 
 /**
- *
+ * Tests the simplest use case for router: singe router proxies connections to a single node.
  */
-public class GridTcpSslRouterSelfTest extends GridTcpRouterAbstractSelfTest {
+public class TcpRouterSelfTest extends TcpRouterAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean useSsl() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */
     @Override protected GridSslContextFactory sslContextFactory() {
-        return GridTestUtils.sslContextFactory();
-    }
-
-    /**
-     * @return Router configuration.
-     */
-    @Override public GridTcpRouterConfiguration routerConfiguration() throws IgniteCheckedException {
-        GridTcpRouterConfiguration cfg = super.routerConfiguration();
-
-        cfg.setSslContextFactory(sslContextFactory());
-
-        return cfg;
+        return null;
     }
 }
