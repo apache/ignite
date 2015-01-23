@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.jta;
+package org.apache.ignite.cache.jta;
 
 import org.apache.ignite.*;
 import org.jetbrains.annotations.*;

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.gridgain.grid.cache.jta.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
@@ -32,7 +32,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 
 /**
- * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link GridCacheTmLookup}.
+ * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link org.apache.ignite.cache.jta.GridCacheTmLookup}.
  */
 public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */

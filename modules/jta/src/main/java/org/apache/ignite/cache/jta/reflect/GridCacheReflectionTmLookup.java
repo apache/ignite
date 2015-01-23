@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.jta.reflect;
+package org.apache.ignite.cache.jta.reflect;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.jta.*;
+import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.transaction.*;
 import java.lang.reflect.*;
 
 /**
- * Implementation of {@link GridCacheTmLookup} interface that attempts to obtain
+ * Implementation of {@link org.apache.ignite.cache.jta.GridCacheTmLookup} interface that attempts to obtain
  * JTA manager by calling static method on the class.
  */
 public class GridCacheReflectionTmLookup implements GridCacheTmLookup {

@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.jta.jndi;
+package org.apache.ignite.cache.jta.jndi;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.jta.*;
+import org.apache.ignite.cache.jta.*;
 import org.jetbrains.annotations.*;
 
 import javax.naming.*;
@@ -26,7 +26,7 @@ import javax.transaction.*;
 import java.util.*;
 
 /**
- * Implementation of {@link GridCacheTmLookup} interface that is using list of JNDI names to find TM.
+ * Implementation of {@link org.apache.ignite.cache.jta.GridCacheTmLookup} interface that is using list of JNDI names to find TM.
  */
 public class GridCacheJndiTmLookup implements GridCacheTmLookup {
     /** */

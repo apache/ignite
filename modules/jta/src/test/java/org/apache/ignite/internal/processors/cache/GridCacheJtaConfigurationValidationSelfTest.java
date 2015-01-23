@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.jta.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;

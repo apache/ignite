@@ -20,7 +20,7 @@ package org.apache.ignite.cache.hibernate;
 import org.apache.commons.dbcp.managed.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.gridgain.grid.cache.jta.*;
+import org.apache.ignite.cache.jta.*;
 import org.h2.jdbcx.*;
 import org.hibernate.cache.spi.access.*;
 import org.hibernate.engine.transaction.internal.jta.*;
