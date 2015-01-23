@@ -17,43 +17,37 @@
 
 package org.gridgain.client;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.store.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
 /**
  * Simple HashMap based cache store emulation.
  */
-public class GridHashMapStore extends GridCacheStoreAdapter {
+public class GridHashMapStore extends CacheStoreAdapter {
     /** Map for cache store. */
     private final Map<Object, Object> map = new HashMap<>();
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure c, Object... args)
-        throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure c, Object... args) {
         for (Map.Entry e : map.entrySet())
             c.apply(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public Object load(@Nullable IgniteTx tx, Object key)
-        throws IgniteCheckedException {
+    @Override public Object load(Object key) {
         return map.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, Object key,
-        @Nullable Object val) throws IgniteCheckedException {
-        map.put(key, val);
+    @Override public void write(Cache.Entry e) {
+        map.put(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, Object key)
-        throws IgniteCheckedException {
+    @Override public void delete(Object key) {
         map.remove(key);
     }
 }

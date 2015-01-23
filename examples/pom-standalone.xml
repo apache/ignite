@@ -28,55 +28,55 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <gridgain.version>6.5.6</gridgain.version>
+        <ignite.version>1.0.0</ignite.version>
         <src.dir>src/main/java</src.dir>
     </properties>
 
     <groupId>org.gridgain</groupId>
     <artifactId>gridgain-examples</artifactId>
-    <version>${gridgain.version}</version>
+    <version>${ignite.version}</version>
 
     <dependencies>
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-core</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-hibernate</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-scalar</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-spring</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-log4j</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-indexing</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.gridgain</groupId>
             <artifactId>gridgain-schedule</artifactId>
-            <version>${gridgain.version}</version>
+            <version>${ignite.version}</version>
         </dependency>
 
         <dependency>

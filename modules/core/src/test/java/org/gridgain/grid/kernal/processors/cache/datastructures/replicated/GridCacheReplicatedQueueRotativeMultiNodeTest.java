@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.replicated;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.datastructures.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -34,7 +34,7 @@ public class GridCacheReplicatedQueueRotativeMultiNodeTest extends GridCacheQueu
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         // Default cache configuration.
-        GridCacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setCacheMode(REPLICATED);
         dfltCacheCfg.setPreloadMode(SYNC);

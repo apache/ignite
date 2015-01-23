@@ -30,8 +30,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;GridTaskContinuousMapperResource
- *      private GridComputeTaskContinuousMapper mapper;
+ *      &#64;IgniteTaskContinuousMapperResource
+ *      private ComputeTaskContinuousMapper mapper;
  *      ...
  *  }
  * </pre>
@@ -39,10 +39,10 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     private GridComputeTaskContinuousMapper mapper;
+ *     private ComputeTaskContinuousMapper mapper;
  *     ...
- *     &#64;GridTaskContinuousMapperResource
- *     public void setMapper(GridComputeTaskContinuousMapper mapper) {
+ *     &#64;IgniteTaskContinuousMapperResource
+ *     public void setMapper(ComputeTaskContinuousMapper mapper) {
  *          this.mapper = mapper;
  *     }
  *     ...

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
@@ -85,8 +86,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
@@ -189,7 +190,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         info("Before remove all");
 
-        cache1.flagsOn(GridCacheFlag.SYNC_COMMIT).removeAll();
+        cache1.removeAll();
 
         info("Remove all completed");
 

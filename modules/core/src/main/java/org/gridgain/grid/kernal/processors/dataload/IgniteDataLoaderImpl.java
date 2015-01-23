@@ -56,7 +56,7 @@ import static org.gridgain.grid.kernal.managers.communication.GridIoPolicy.*;
  */
 public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delayed {
     /** */
-    public static final IgniteProductVersion COMPACT_MAP_ENTRIES_SINCE = IgniteProductVersion.fromString("6.5.6");
+    public static final IgniteProductVersion COMPACT_MAP_ENTRIES_SINCE = IgniteProductVersion.fromString("1.0.0");
 
     /** Cache updater. */
     private IgniteDataLoadCacheUpdater<K, V> updater = GridDataLoadCacheUpdaters.individual();
@@ -148,6 +148,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** */
     private final DelayQueue<IgniteDataLoaderImpl<K, V>> flushQ;
+
+    /** */
+    private boolean skipStore;
 
     /**
      * @param ctx Grid kernal context.
@@ -294,6 +297,16 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         updater = a.atomicityMode() == GridCacheAtomicityMode.ATOMIC ?
             GridDataLoadCacheUpdaters.<K, V>batched() :
             GridDataLoadCacheUpdaters.<K, V>groupLocked();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean skipStore() {
+        return skipStore;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void skipStore(boolean skipStore) {
+        this.skipStore = skipStore;
     }
 
     /** {@inheritDoc} */
@@ -905,7 +918,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
-                    new GridDataLoadUpdateJob<>(ctx, log, cacheName, entries, false, updater), false);
+                    new GridDataLoadUpdateJob<>(ctx, log, cacheName, entries, false, skipStore, updater), false);
 
                 locFuts.add(fut);
 
@@ -995,13 +1008,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 reqs.put(reqId, (GridFutureAdapter<Object>)fut);
 
-                GridDataLoadRequest<Object, Object> req = new GridDataLoadRequest<>(
+                GridDataLoadRequest req = new GridDataLoadRequest(
                     reqId,
                     topicBytes,
                     cacheName,
                     updaterBytes,
                     entriesBytes,
                     true,
+                    skipStore,
                     dep != null ? dep.deployMode() : null,
                     dep != null ? jobPda0.deployClass().getName() : null,
                     dep != null ? dep.userVersion() : null,

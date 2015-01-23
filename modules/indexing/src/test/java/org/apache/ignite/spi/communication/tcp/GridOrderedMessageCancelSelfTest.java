@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -26,7 +27,6 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.managers.communication.*;
@@ -63,7 +63,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache = defaultCacheConfiguration();
+        CacheConfiguration cache = defaultCacheConfiguration();
 
         cache.setCacheMode(PARTITIONED);
         cache.setPreloadMode(NONE);
@@ -147,10 +147,6 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * Communication SPI.
      */
     private static class CommunicationSpi extends TcpCommunicationSpi {
-        /** */
-        @IgniteMarshallerResource
-        private IgniteMarshaller marsh;
-
         /** {@inheritDoc} */
         @Override protected void notifyListener(UUID sndId, GridTcpCommunicationMessageAdapter msg,
             IgniteRunnable msgC) {

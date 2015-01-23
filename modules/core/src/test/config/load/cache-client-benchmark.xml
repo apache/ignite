@@ -31,7 +31,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -46,7 +46,7 @@
 
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="local"/>
 
                     <property name="cacheMode" value="LOCAL"/>

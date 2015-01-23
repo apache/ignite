@@ -22,7 +22,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.processors.resource.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.config.*;
@@ -123,6 +122,13 @@ public class GridTestResources {
     }
 
     /**
+     * @return Resource processor.
+     */
+    public GridResourceProcessor resources() {
+        return rsrcProc;
+    }
+
+    /**
      * @return Local host.
      */
     @Nullable private String localHost() {
@@ -166,21 +172,10 @@ public class GridTestResources {
     public void inject(Object target) throws IgniteCheckedException {
         assert target != null;
         assert getLogger() != null;
-        assert getNodeId() != null;
-        assert getMBeanServer() != null;
-        assert getGridgainHome() != null;
-
-        ExecutorService execSvc = getExecutorService();
-
-        if (execSvc != null)
-            rsrcProc.injectBasicResource(target, IgniteExecutorServiceResource.class, execSvc);
 
         rsrcProc.injectBasicResource(target, IgniteLoggerResource.class, getLogger().getLogger(target.getClass()));
-        rsrcProc.injectBasicResource(target, IgniteMarshallerResource.class, getMarshaller());
-        rsrcProc.injectBasicResource(target, IgniteLocalNodeIdResource.class, getNodeId());
-        rsrcProc.injectBasicResource(target, IgniteMBeanServerResource.class, getMBeanServer());
-        rsrcProc.injectBasicResource(target, IgniteHomeResource.class, getGridgainHome());
-        rsrcProc.injectBasicResource(target, IgniteLocalHostResource.class, getLocalHost());
+        rsrcProc.injectBasicResource(target, IgniteInstanceResource.class,
+            new GridTestIgnite(null, locHost, nodeId, getMarshaller(), jmx, home));
     }
 
     /**

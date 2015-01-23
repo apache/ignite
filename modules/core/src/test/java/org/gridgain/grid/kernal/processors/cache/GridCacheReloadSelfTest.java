@@ -18,16 +18,17 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.eviction.lru.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -37,7 +38,6 @@ import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
  * Checks that GridCacheProjection.reload() operations are performed correctly.
  */
 public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
-
     /** Maximum allowed number of cache entries. */
     public static final int MAX_CACHE_ENTRIES = 500;
 
@@ -60,6 +60,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -74,25 +75,30 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setEvictionPolicy(new GridCacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
         cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
-        cacheCfg.setStore(new GridCacheStoreAdapter<Integer, Integer>() {
-            @Override public Integer load(@Nullable IgniteTx tx, Integer key) {
+
+        final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
+            @Override public Integer load(Integer key) {
                 return key;
             }
 
-            @Override public void put(@Nullable IgniteTx tx, Integer key,
-                @Nullable Integer val) {
+            @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
                 //No-op.
             }
 
-            @Override public void remove(@Nullable IgniteTx tx, Integer key) {
+            @Override public void delete(Object key) {
                 //No-op.
             }
-        });
+        };
+
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
+        cacheCfg.setLoadPreviousValue(true);
 
         if (cacheMode == PARTITIONED)
             cacheCfg.setBackups(1);

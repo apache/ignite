@@ -17,8 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.*;
 
@@ -37,8 +37,8 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration cCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration cCfg = super.cacheConfiguration(gridName);
 
         cCfg.setMaxConcurrentAsyncOperations(MAX_CONCURRENT_ASYNC_OPS);
 

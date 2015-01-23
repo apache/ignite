@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.cache.datastructures.partitioned;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -28,8 +28,8 @@ import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
 public class GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest
     extends GridCachePartitionedQueueCreateMultiNodeSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration ccfg = super.cacheConfiguration();
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration ccfg = super.cacheConfiguration();
 
         ccfg.setAtomicityMode(ATOMIC);
         ccfg.setAtomicWriteOrderMode(PRIMARY);

@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -75,8 +76,8 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
      * @param name Cache name.
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfig(GridCacheMode cacheMode, int preloadOrder, String name) {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfig(GridCacheMode cacheMode, int preloadOrder, String name) {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(name);
         cfg.setCacheMode(cacheMode);

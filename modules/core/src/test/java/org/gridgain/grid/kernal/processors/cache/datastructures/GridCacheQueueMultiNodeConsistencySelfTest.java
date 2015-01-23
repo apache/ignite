@@ -19,6 +19,7 @@ package org.gridgain.grid.kernal.processors.cache.datastructures;
 
 import org.apache.commons.collections.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -57,7 +58,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     private boolean stopRandomGrid;
 
     /** */
-    private GridCacheConfiguration cc = new GridCacheConfiguration();
+    private CacheConfiguration cc = new CacheConfiguration();
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

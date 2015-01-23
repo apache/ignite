@@ -46,6 +46,9 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
     private final boolean ignoreDepOwnership;
 
     /** */
+    private final boolean skipStore;
+
+    /** */
     private final IgniteDataLoadCacheUpdater<K, V> updater;
 
     /**
@@ -57,9 +60,12 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
      * @param updater Updater.
      */
     GridDataLoadUpdateJob(
-        GridKernalContext ctx, IgniteLogger log, @Nullable String cacheName,
+        GridKernalContext ctx,
+        IgniteLogger log,
+        @Nullable String cacheName,
         Collection<Map.Entry<K, V>> col,
         boolean ignoreDepOwnership,
+        boolean skipStore,
         IgniteDataLoadCacheUpdater<K, V> updater) {
         this.ctx = ctx;
         this.log = log;
@@ -70,6 +76,7 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
         this.cacheName = cacheName;
         this.col = col;
         this.ignoreDepOwnership = ignoreDepOwnership;
+        this.skipStore = skipStore;
         this.updater = updater;
     }
 
@@ -90,6 +97,9 @@ class GridDataLoadUpdateJob<K, V> implements GridPlainCallable<Object> {
 //            cache.context().deploy().ignoreOwnership(true);
 
         IgniteCacheProxy<K, V> cache = ctx.cache().jcache(cacheName);
+
+        if (skipStore)
+            cache = (IgniteCacheProxy<K, V>)cache.withSkipStore();
 
         if (ignoreDepOwnership)
             cache.context().deploy().ignoreOwnership(true);

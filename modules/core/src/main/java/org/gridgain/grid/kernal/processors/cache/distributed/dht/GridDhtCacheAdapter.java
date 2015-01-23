@@ -356,6 +356,28 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
+    @Override public void localLoad(Collection<? extends K> keys) throws IgniteCheckedException {
+        if (ctx.store().isLocalStore()) {
+            super.localLoad(keys);
+
+            return;
+        }
+
+        // Version for all loaded entries.
+        final GridCacheVersion ver0 = ctx.shared().versions().nextForLoad(topology().topologyVersion());
+
+        final boolean replicate = ctx.isDrEnabled();
+
+        final long topVer = ctx.affinity().affinityTopologyVersion();
+
+        ctx.store().loadAllFromStore(null, keys, new CI2<K, V>() {
+            @Override public void apply(K key, V val) {
+                loadEntry(key, val, ver0, null, topVer, replicate, 0);
+            }
+        });
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiPredicate<K, V> p, final long ttl, Object[] args) throws IgniteCheckedException {
         if (ctx.store().isLocalStore()) {
             super.loadCache(p, ttl, args);
@@ -374,50 +396,69 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             @Override public void apply(K key, V val, @Nullable GridCacheVersion ver) {
                 assert ver == null;
 
-                if (p != null && !p.apply(key, val))
-                    return;
-
-                try {
-                    GridDhtLocalPartition<K, V> part = top.localPartition(ctx.affinity().partition(key), -1, true);
-
-                    // Reserve to make sure that partition does not get unloaded.
-                    if (part.reserve()) {
-                        GridCacheEntryEx<K, V> entry = null;
-
-                        try {
-                            if (ctx.portableEnabled()) {
-                                key = (K)ctx.marshalToPortable(key);
-                                val = (V)ctx.marshalToPortable(val);
-                            }
-
-                            entry = entryEx(key, false);
-
-                            entry.initialValue(val, null, ver0, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException("Failed to put cache value: " + entry, e);
-                        }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry during loadCache (will ignore): " + entry);
-                        }
-                        finally {
-                            if (entry != null)
-                                entry.context().evicts().touch(entry, topVer);
-
-                            part.release();
-                        }
-                    }
-                    else if (log.isDebugEnabled())
-                        log.debug("Will node load entry into cache (partition is invalid): " + part);
-                }
-                catch (GridDhtInvalidPartitionException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Ignoring entry for partition that does not belong [key=" + key + ", val=" + val +
-                            ", err=" + e + ']');
-                }
+                loadEntry(key, val, ver0, p, topVer, replicate, ttl);
             }
         }, args);
+    }
+
+    /**
+     * @param key Key.
+     * @param val Value.
+     * @param ver Cache version.
+     * @param p Optional predicate.
+     * @param topVer Topology version.
+     * @param replicate Replication flag.
+     * @param ttl TTL.
+     */
+    private void loadEntry(K key,
+        V val,
+        GridCacheVersion ver,
+        @Nullable IgniteBiPredicate<K, V> p,
+        long topVer,
+        boolean replicate,
+        long ttl) {
+        if (p != null && !p.apply(key, val))
+            return;
+
+        try {
+            GridDhtLocalPartition<K, V> part = top.localPartition(ctx.affinity().partition(key), -1, true);
+
+            // Reserve to make sure that partition does not get unloaded.
+            if (part.reserve()) {
+                GridCacheEntryEx<K, V> entry = null;
+
+                try {
+                    if (ctx.portableEnabled()) {
+                        key = (K)ctx.marshalToPortable(key);
+                        val = (V)ctx.marshalToPortable(val);
+                    }
+
+                    entry = entryEx(key, false);
+
+                    entry.initialValue(val, null, ver, ttl, -1, false, topVer, replicate ? DR_LOAD : DR_NONE);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException("Failed to put cache value: " + entry, e);
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry during loadCache (will ignore): " + entry);
+                }
+                finally {
+                    if (entry != null)
+                        entry.context().evicts().touch(entry, topVer);
+
+                    part.release();
+                }
+            }
+            else if (log.isDebugEnabled())
+                log.debug("Will node load entry into cache (partition is invalid): " + part);
+        }
+        catch (GridDhtInvalidPartitionException e) {
+            if (log.isDebugEnabled())
+                log.debug("Ignoring entry for partition that does not belong [key=" + key + ", val=" + val +
+                    ", err=" + e + ']');
+        }
     }
 
     /** {@inheritDoc} */
@@ -436,7 +477,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, long, UUID, int, boolean, IgnitePredicate[], org.gridgain.grid.kernal.processors.cache.IgniteCacheExpiryPolicy)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgnitePredicate[], IgniteCacheExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -456,6 +497,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter
     ) {
         return getAllAsync(keys,
+            true,
             null,
             /*don't check local tx. */false,
             subjId,
@@ -479,6 +521,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * @param keys Keys to get
+     * @param readThrough Read through flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
@@ -487,6 +530,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @return Get future.
      */
     IgniteFuture<Map<K, V>> getDhtAllAsync(@Nullable Collection<? extends K> keys,
+        boolean readThrough,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -494,6 +538,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable IgniteCacheExpiryPolicy expiry
         ) {
         return getAllAsync(keys,
+            readThrough,
             null,
             /*don't check local tx. */false,
             subjId,
@@ -508,6 +553,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param reader Reader node ID.
      * @param msgId Message ID.
      * @param keys Keys to get.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param topVer Topology version.
      * @param subjId Subject ID.
@@ -520,6 +566,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     public GridDhtFuture<Collection<GridCacheEntryInfo<K, V>>> getDhtAsync(UUID reader,
         long msgId,
         LinkedHashMap<? extends K, Boolean> keys,
+        boolean readThrough,
         boolean reload,
         long topVer,
         @Nullable UUID subjId,
@@ -531,6 +578,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             msgId,
             reader,
             keys,
+            readThrough,
             reload,
             /*tx*/null,
             topVer,
@@ -560,6 +608,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             getDhtAsync(nodeId,
                 req.messageId(),
                 req.keys(),
+                req.readThrough(),
                 req.reload(),
                 req.topologyVersion(),
                 req.subjectId(),

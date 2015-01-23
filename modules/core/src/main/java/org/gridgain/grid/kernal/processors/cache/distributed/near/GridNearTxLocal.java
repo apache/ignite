@@ -98,8 +98,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      * @param concurrency Concurrency.
      * @param isolation Isolation.
      * @param timeout Timeout.
-     * @param invalidate
-     * @param storeEnabled
+     * @param invalidate Invalidate flag.
+     * @param storeEnabled Store enabled flag.
      * @param txSize Transaction size.
      * @param grpLockKey Group lock key if this is a group lock transaction.
      * @param partLock {@code True} if this is a group-lock transaction and the whole partition should be locked.
@@ -279,6 +279,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
+        boolean readThrough,
         boolean async,
         final Collection<? extends K> keys,
         boolean deserializePortable,
@@ -287,6 +288,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         if (cacheCtx.isNear()) {
             return cacheCtx.nearTx().txLoadAsync(this,
                 keys,
+                readThrough,
                 CU.<K, V>empty(),
                 deserializePortable,
                 accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
@@ -311,6 +313,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         }
         else if (cacheCtx.isColocated()) {
             return cacheCtx.colocated().loadAsync(keys,
+                readThrough,
                 /*reload*/false,
                 /*force primary*/false,
                 topologyVersion(),
@@ -341,7 +344,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         else {
             assert cacheCtx.isLocal();
 
-            return super.loadMissing(cacheCtx, async, keys, deserializePortable, c);
+            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, c);
         }
     }
 

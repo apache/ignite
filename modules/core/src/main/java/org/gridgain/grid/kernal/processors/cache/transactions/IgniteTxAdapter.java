@@ -1186,7 +1186,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         assert cacheCtx != null;
 
         if (isSystemInvalidate())
-            return F.t(cacheCtx.isStoreEnabled() ? RELOAD : DELETE, null, null);
+            return F.t(cacheCtx.writeThrough() ? RELOAD : DELETE, null, null);
+
         if (F.isEmpty(txEntry.entryProcessors()))
             return F.t(txEntry.op(), txEntry.value(), txEntry.valueBytes());
         else {

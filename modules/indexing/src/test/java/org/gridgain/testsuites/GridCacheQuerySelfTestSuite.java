@@ -41,7 +41,6 @@ public class GridCacheQuerySelfTestSuite extends TestSuite {
         // Queries tests.
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);
         suite.addTestSuite(GridCacheQueryMetricsSelfTest.class);
-        suite.addTestSuite(GridCacheQueryUserResourceSelfTest.class);
         suite.addTestSuite(GridCacheLocalQuerySelfTest.class);
         suite.addTestSuite(GridCacheLocalAtomicQuerySelfTest.class);
         suite.addTestSuite(GridCacheReplicatedQuerySelfTest.class);
