@@ -42,11 +42,12 @@ public class IgniteCachingProvider implements CachingProvider {
 
         try {
             URL dfltCfgURL = U.resolveGridGainUrl(GridGainEx.DFLT_CFG);
+
             if (dfltCfgURL != null)
                 uri = dfltCfgURL.toURI();
         }
         catch (URISyntaxException ignored) {
-
+            // No-op.
         }
 
         if (uri == null)
