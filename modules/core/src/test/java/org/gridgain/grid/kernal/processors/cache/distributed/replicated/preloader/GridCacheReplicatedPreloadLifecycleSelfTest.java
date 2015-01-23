@@ -182,8 +182,6 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
 
                 GridCacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
-                qry.includeBackups(true);
-
                 final int i0 = j;
                 final int j0 = i;
 
