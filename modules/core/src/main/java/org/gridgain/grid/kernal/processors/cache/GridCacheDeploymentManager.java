@@ -182,6 +182,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     public void unwind(GridCacheContext ctx) {
         int cnt = 0;
 
+        //TODO:
+        if (undeploys.get(ctx) == null) {
+            return;
+        }
+
         for (CA c = undeploys.get(ctx).poll(); c != null; c = undeploys.get(ctx).poll()) {
             c.apply();
 
