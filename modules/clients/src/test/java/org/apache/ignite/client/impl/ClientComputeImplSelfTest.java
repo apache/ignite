@@ -29,7 +29,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
  * Simple unit test for GridClientComputeImpl which checks method parameters.
  * It tests only those methods that can produce assertion underneath upon incorrect arguments.
  */
-public class GridClientComputeImplSelfTest extends GridCommonAbstractTest {
+public class ClientComputeImplSelfTest extends GridCommonAbstractTest {
     /** Mocked client compute. */
     private GridClientCompute compute = allocateInstance0(GridClientComputeImpl.class);
 

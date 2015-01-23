@@ -34,7 +34,7 @@ import static org.apache.ignite.client.GridClientConfiguration.*;
 /**
  * Properties-based configuration self test.
  */
-public class GridClientPropertiesConfigurationSelfTest extends GridCommonAbstractTest {
+public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTest {
     /**
      * Grid client spring configuration.
      */

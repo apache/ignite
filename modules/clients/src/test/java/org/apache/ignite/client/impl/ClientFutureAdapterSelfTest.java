@@ -26,7 +26,7 @@ import java.util.concurrent.*;
 /**
  * Grid client future implementation self test.
  */
-public class GridClientFutureAdapterSelfTest extends GridCommonAbstractTest {
+public class ClientFutureAdapterSelfTest extends GridCommonAbstractTest {
     /**
      * Test finished futures.
      */

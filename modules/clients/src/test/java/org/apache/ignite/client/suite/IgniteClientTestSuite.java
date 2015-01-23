@@ -57,14 +57,14 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(RestProcessorStartSelfTest.class));
 
         // Test cache flag conversion.
-        suite.addTest(new TestSuite(GridClientCacheFlagsCodecTest.class));
+        suite.addTest(new TestSuite(ClientCacheFlagsCodecTest.class));
 
         // Test multi-start.
         suite.addTest(new TestSuite(RestProcessorMultiStartSelfTest.class));
 
         // Test clients.
-        suite.addTest(new TestSuite(GridClientDataImplSelfTest.class));
-        suite.addTest(new TestSuite(GridClientComputeImplSelfTest.class));
+        suite.addTest(new TestSuite(ClientDataImplSelfTest.class));
+        suite.addTest(new TestSuite(ClientComputeImplSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpDirectSelfTest.class));
         suite.addTest(new TestSuite(GridClientTcpSslSelfTest.class));
@@ -94,9 +94,9 @@ public class IgniteClientTestSuite extends TestSuite {
         // Default cache only test.
         suite.addTest(new TestSuite(GridClientDefaultCacheSelfTest.class));
 
-        suite.addTestSuite(GridClientFutureAdapterSelfTest.class);
-        suite.addTestSuite(GridClientPartitionAffinitySelfTest.class);
-        suite.addTestSuite(GridClientPropertiesConfigurationSelfTest.class);
+        suite.addTestSuite(ClientFutureAdapterSelfTest.class);
+        suite.addTestSuite(ClientPartitionAffinitySelfTest.class);
+        suite.addTestSuite(ClientPropertiesConfigurationSelfTest.class);
         suite.addTestSuite(ClientConsistentHashSelfTest.class);
         suite.addTestSuite(ClientJavaHasherSelfTest.class);
 

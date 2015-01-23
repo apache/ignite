@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.affinity.consistenthash.GridCacheConsisten
 /**
  * Client's partitioned affinity tests.
  */
-public class GridClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
+public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
     /** Hash ID resolver. */
     private static final GridClientPartitionAffinity.HashIdResolver HASH_ID_RSLVR =
         new GridClientPartitionAffinity.HashIdResolver() {

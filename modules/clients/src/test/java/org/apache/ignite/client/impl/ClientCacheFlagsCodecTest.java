@@ -31,7 +31,7 @@ import static org.apache.ignite.client.GridClientCacheFlag.*;
 /**
  * Tests conversions between GridClientCacheFlag and GridCacheFlag.
  */
-public class GridClientCacheFlagsCodecTest extends TestCase {
+public class ClientCacheFlagsCodecTest extends TestCase {
     /**
      * Tests that each client flag will be correctly converted to server flag.
      */

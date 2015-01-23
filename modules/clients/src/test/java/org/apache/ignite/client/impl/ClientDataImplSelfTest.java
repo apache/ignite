@@ -27,7 +27,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
 /**
  * Simple unit test for GridClientDataImpl which checks method parameters.
  */
-public class GridClientDataImplSelfTest extends GridCommonAbstractTest {
+public class ClientDataImplSelfTest extends GridCommonAbstractTest {
     /** Mocked client data. */
     private GridClientData data = allocateInstance0(GridClientDataImpl.class);
 
