@@ -200,7 +200,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 cache.putAll(upd);
                             }
                         }
-                        catch (GridCachePartialUpdateException ignored) {
+                        catch (CachePartialUpdateCheckedException ignored) {
                             // No-op.
                         }
                     }

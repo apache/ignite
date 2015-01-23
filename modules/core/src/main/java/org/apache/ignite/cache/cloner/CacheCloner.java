@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 
 /**
  * Cache cloner which clones cached values before returning them from cache.
- * It will only be used if {@link org.apache.ignite.cache.CacheFlag#CLONE} flag is set
+ * It will only be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set
  * on projection which the user is working with (this flag is disabled
  * by default).
  * <p>

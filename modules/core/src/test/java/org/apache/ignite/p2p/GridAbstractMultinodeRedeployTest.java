@@ -39,7 +39,7 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
     private IgniteDeploymentMode depMode;
 
     /** */
-    private static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

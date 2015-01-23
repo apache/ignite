@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.transactions.*;
@@ -25,10 +25,10 @@ import javax.cache.processor.*;
 
 /**
  * Cache projection flags that specify projection behaviour. This flags can be explicitly passed into
- * the following methods on {@link CacheProjection}:
+ * the following methods on {@link org.apache.ignite.cache.CacheProjection}:
  * <ul>
- * <li>{@link CacheProjection#flagsOn(CacheFlag...)}</li>
- * <li>{@link CacheProjection#flagsOff(CacheFlag...)}</li>
+ * <li>{@link org.apache.ignite.cache.CacheProjection#flagsOn(CacheFlag...)}</li>
+ * <li>{@link org.apache.ignite.cache.CacheProjection#flagsOff(CacheFlag...)}</li>
  * </ul>
  * Also, some flags, like {@link #LOCAL}, or {@link #READ} may be implicitly set whenever
  * creating new projections and passing entries to predicate filters.
@@ -60,7 +60,7 @@ public enum CacheFlag {
      * automatic cloning of values prior to returning so they can be directly
      * updated.
      *
-     * @see CacheConfiguration#getCloner()
+     * @see org.apache.ignite.cache.CacheConfiguration#getCloner()
      */
     CLONE,
 
@@ -79,13 +79,13 @@ public enum CacheFlag {
      * messages will be sent to set the values to {@code null}.
      *
      * @see IgniteTx#isInvalidate()
-     * @see CacheConfiguration#isInvalidate()
+     * @see org.apache.ignite.cache.CacheConfiguration#isInvalidate()
      */
     INVALIDATE,
 
     /**
      * Skips version check during {@link IgniteCache#invoke(Object, EntryProcessor, Object[])} writes in
-     * {@link CacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
+     * {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode. By default, in {@code ATOMIC} mode, whenever
      * {@code transform(...)} is called, cache values (and not the {@code transform} closure) are sent from primary
      * node to backup nodes to ensure proper update ordering.
      * <p>
