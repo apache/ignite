@@ -15,24 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.spring;
 
-import junit.framework.*;
-import org.apache.ignite.internal.processors.schedule.*;
+import org.springframework.cache.annotation.*;
 
 /**
- * Scheduler tests.
+ * Test service.
  */
-public class GridSchedulerTestSuite extends TestSuite {
+public class GridSpringDynamicCacheTestService {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @param key Key.
+     * @return Value.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
+    @Cacheable({"testCache1", "testCache2"})
+    public String cacheable(Integer key) {
+        assert key != null;
 
-        suite.addTestSuite(GridScheduleSelfTest.class);
+        return "value" + key;
+    }
 
-        return suite;
+    /**
+     * @param key Key.
+     * @return Value.
+     */
+    @CachePut({"testCache1", "testCache2"})
+    public String cachePut(Integer key) {
+        assert key != null;
+
+        return "value" + key;
+    }
+
+    /**
+     * @param key Key.
+     */
+    @CacheEvict("testCache1")
+    public void cacheEvict(Integer key) {
+        // No-op.
+    }
+
+    /**
+     */
+    @CacheEvict(value = "testCache1", allEntries = true)
+    public void cacheEvictAll() {
+        // No-op.
     }
 }

@@ -15,24 +15,45 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
-
-import junit.framework.*;
-import org.apache.ignite.internal.processors.schedule.*;
+package org.apache.ignite.spring;
 
 /**
- * Scheduler tests.
+ * Complex key.
  */
-public class GridSchedulerTestSuite extends TestSuite {
+public class GridSpringCacheTestKey {
+    /** */
+    private final Integer p1;
+
+    /** */
+    private final String p2;
+
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @param p1 Parameter 1.
+     * @param p2 Parameter 2.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
+    public GridSpringCacheTestKey(Integer p1, String p2) {
+        assert p1 != null;
+        assert p2 != null;
 
-        suite.addTestSuite(GridScheduleSelfTest.class);
+        this.p1 = p1;
+        this.p2 = p2;
+    }
 
-        return suite;
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        GridSpringCacheTestKey key = (GridSpringCacheTestKey)o;
+
+        return p1.equals(key.p1) && p2.equals(key.p2);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return 31 * p1 + p2.hashCode();
     }
 }
