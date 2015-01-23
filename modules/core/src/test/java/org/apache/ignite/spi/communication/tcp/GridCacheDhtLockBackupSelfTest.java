@@ -23,24 +23,23 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Special cases for GG-2329.
@@ -89,7 +88,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setPreloadMode(SYNC);
 

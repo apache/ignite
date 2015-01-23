@@ -17,11 +17,11 @@
 
 package org.apache.ignite.events;
 
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -66,7 +66,7 @@ public class IgniteCacheQueryExecutedEvent<K, V> extends IgniteEventAdapter {
     private static final long serialVersionUID = 3738753361235304496L;
 
     /** Query type. */
-    private final GridCacheQueryType qryType;
+    private final CacheQueryType qryType;
 
     /** Cache name. */
     private final String cacheName;
@@ -83,7 +83,7 @@ public class IgniteCacheQueryExecutedEvent<K, V> extends IgniteEventAdapter {
 
     /** Continuous query filter. */
     @GridToStringInclude
-    private final IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter;
+    private final IgnitePredicate<CacheContinuousQueryEntry<K, V>> contQryFilter;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -111,12 +111,12 @@ public class IgniteCacheQueryExecutedEvent<K, V> extends IgniteEventAdapter {
         ClusterNode node,
         String msg,
         int type,
-        GridCacheQueryType qryType,
+        CacheQueryType qryType,
         @Nullable String cacheName,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
-        @Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
+        @Nullable IgnitePredicate<CacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
         @Nullable String taskName) {
@@ -140,7 +140,7 @@ public class IgniteCacheQueryExecutedEvent<K, V> extends IgniteEventAdapter {
      *
      * @return Query type.
      */
-    public GridCacheQueryType queryType() {
+    public CacheQueryType queryType() {
         return qryType;
     }
 
@@ -193,7 +193,7 @@ public class IgniteCacheQueryExecutedEvent<K, V> extends IgniteEventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
+    @Nullable public IgnitePredicate<CacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
         return contQryFilter;
     }
 

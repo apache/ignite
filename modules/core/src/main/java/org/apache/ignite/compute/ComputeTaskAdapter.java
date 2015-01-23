@@ -19,7 +19,6 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 
 import java.util.*;
 

@@ -92,7 +92,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -233,7 +233,7 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

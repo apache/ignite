@@ -22,14 +22,13 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.gridify.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.gridify.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.util.gridify.GridifyUtils.*;
+import static org.apache.ignite.internal.util.gridify.GridifyUtils.*;
 
 /**
  * Default gridify task which simply executes a method on remote node.

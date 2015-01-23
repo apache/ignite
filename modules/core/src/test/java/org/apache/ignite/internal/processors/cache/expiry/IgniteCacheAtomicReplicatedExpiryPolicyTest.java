@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
  */
 public class IgniteCacheAtomicReplicatedExpiryPolicyTest extends IgniteCacheAtomicExpiryPolicyTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 }

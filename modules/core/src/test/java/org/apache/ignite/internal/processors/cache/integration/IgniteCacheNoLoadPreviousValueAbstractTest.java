@@ -23,13 +23,11 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 
-import javax.cache.processor.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test for configuration property {@link CacheConfiguration#isLoadPreviousValue()}.

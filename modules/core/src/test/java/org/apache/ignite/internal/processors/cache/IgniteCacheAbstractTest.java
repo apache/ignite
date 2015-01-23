@@ -26,8 +26,7 @@ import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
 import javax.cache.*;
@@ -35,9 +34,9 @@ import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Abstract class for cache tests.
@@ -173,29 +172,29 @@ public abstract class IgniteCacheAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Default cache mode.
      */
-    protected abstract GridCacheMode cacheMode();
+    protected abstract CacheMode cacheMode();
 
     /**
      * @return Cache atomicity mode.
      */
-    protected abstract GridCacheAtomicityMode atomicityMode();
+    protected abstract CacheAtomicityMode atomicityMode();
 
     /**
      * @return Atomic cache write order mode.
      */
-    protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return null;
     }
 
     /**
      * @return Partitioned mode.
      */
-    protected abstract GridCacheDistributionMode distributionMode();
+    protected abstract CacheDistributionMode distributionMode();
 
     /**
      * @return Write synchronization.
      */
-    protected GridCacheWriteSynchronizationMode writeSynchronization() {
+    protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_SYNC;
     }
 
