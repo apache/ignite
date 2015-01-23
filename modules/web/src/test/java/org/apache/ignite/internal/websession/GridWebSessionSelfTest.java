@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.websession;
+package org.apache.ignite.internal.websession;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;

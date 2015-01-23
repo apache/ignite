@@ -25,13 +25,13 @@
 
     <!-- Declare listener for web sessions caching. -->
     <listener>
-        <listener-class>org.gridgain.grid.startup.servlet.GridServletContextListenerStartup</listener-class>
+        <listener-class>org.apache.ignite.startup.servlet.GridServletContextListenerStartup</listener-class>
     </listener>
 
     <!-- Declare filter for web sessions caching. -->
     <filter>
         <filter-name>GridGainWebSessionsFilter</filter-name>
-        <filter-class>org.gridgain.grid.cache.websession.GridWebSessionFilter</filter-class>
+        <filter-class>org.apache.ignite.cache.websession.GridWebSessionFilter</filter-class>
     </filter>
 
     <filter-mapping>

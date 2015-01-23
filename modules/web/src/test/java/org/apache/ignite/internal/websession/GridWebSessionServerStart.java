@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.websession;
+package org.apache.ignite.internal.websession;
 
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;

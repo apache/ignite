@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.websession;
+package org.apache.ignite.cache.websession;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.startup.servlet.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -43,15 +42,15 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * Filter for web sessions caching.
  * <p>
  * This is a request filter, that you need to specify in your {@code web.xml} along
- * with {@link GridServletContextListenerStartup} to enable web sessions caching:
+ * with {@link org.apache.ignite.startup.servlet.GridServletContextListenerStartup} to enable web sessions caching:
  * <pre name="code" class="xml">
  * &lt;listener&gt;
- *     &lt;listener-class&gt;org.gridgain.grid.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
+ *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
  *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.gridgain.grid.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;!-- You can also specify a custom URL pattern. --&gt;
@@ -65,7 +64,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * <pre name="code" class="xml">
  * &lt;filter&gt;
  *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.gridgain.grid.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  * &lt;/filter&gt;
  *
  * &lt;filter-mapping&gt;
@@ -108,7 +107,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * <pre name="code" class="xml">
  * &lt;filter&gt;
  *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
- *     &lt;filter-class&gt;org.gridgain.grid.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
+ *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;GridGainWebSessionsGridName&lt;/param-name&gt;
  *         &lt;param-value&gt;WebGrid&lt;/param-value&gt;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.startup.servlet;
+package org.apache.ignite.startup.servlet;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
@@ -38,7 +38,7 @@ import java.util.*;
  * <pre name="code" class="xml">
  * &lt;servlet&gt;
  *     &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
- *     &lt;servlet-class&gt;org.gridgain.grid.startup.servlet.GridServletStartup&lt;/servlet-class&gt;
+ *     &lt;servlet-class&gt;org.apache.ignite.startup.servlet.GridServletStartup&lt;/servlet-class&gt;
  *     &lt;init-param&gt;
  *         &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
  *         &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
@@ -69,7 +69,7 @@ import java.util.*;
  *         <pre name="code" class="xml">
  *         &lt;servlet&gt;
  *             &lt;servlet-name&gt;GridGain&lt;/servlet-name&gt;
- *             &lt;servlet-class&gt;org.gridgain.grid.startup.servlet.GridServletStartup&lt;/servlet-class&gt;
+ *             &lt;servlet-class&gt;org.apache.ignite.startup.servlet.GridServletStartup&lt;/servlet-class&gt;
  *             &lt;init-param&gt;
  *                 &lt;param-name&gt;cfgFilePath&lt;/param-name&gt;
  *                 &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
@@ -97,7 +97,7 @@ import java.util.*;
  * ServletHttpContext ctx = (ServletHttpContext)service.getContext("/");
  *
  * ServletHolder servlet = ctx.addServlet("GridGain", "/GridGainStartup",
- *      "org.gridgain.grid.startup.servlet.GridServletStartup");
+ *      "org.apache.ignite.startup.servlet.GridServletStartup");
  *
  * servlet.setInitParameter("cfgFilePath", "config/default-config.xml");
  *

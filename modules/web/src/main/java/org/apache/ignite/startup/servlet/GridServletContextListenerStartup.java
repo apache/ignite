@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.startup.servlet;
+package org.apache.ignite.startup.servlet;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
@@ -36,7 +36,7 @@ import java.util.*;
  * This startup must be defined in {@code web.xml} file.
  * <pre name="code" class="xml">
  * &lt;listener&gt;
- *     &lt;listener-class&gt;org.gridgain.grid.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
+ *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;context-param&gt;
@@ -66,7 +66,7 @@ import java.util.*;
  *     <li>Configure this startup in {@code $TOMCAT_HOME/conf/web.xml}
  *         <pre name="code" class="xml">
  *         &lt;listener&gt;
- *             &lt;listener-class&gt;org.gridgain.grid.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
+ *             &lt;listener-class&gt;org.apache.ignite.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
  *         &lt;/listener&gt;
  *
  *         &lt;context-param&gt;
