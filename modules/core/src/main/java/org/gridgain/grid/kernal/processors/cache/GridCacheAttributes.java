@@ -17,6 +17,8 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
@@ -25,7 +27,7 @@ import org.jetbrains.annotations.*;
 
 import java.io.*;
 
-import static org.gridgain.grid.cache.GridCacheConfiguration.*;
+import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.gridgain.grid.cache.GridCacheMode.*;
 import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
 
@@ -85,9 +87,6 @@ public class GridCacheAttributes implements Externalizable {
 
     /** Flag indicating whether  query indexing is enabled. */
     private boolean qryIdxEnabled;
-
-    /** Flag indicating whether GridGain should activate read-through/write-through behaviour by default. */
-    private boolean storeEnabled;
 
     /** Flag indicating whether GridGain should use write-behind behaviour for the cache store. */
     private boolean writeBehindEnabled;
@@ -152,10 +151,20 @@ public class GridCacheAttributes implements Externalizable {
     /** Transaction Manager lookup class name. */
     private String tmLookupClsName;
 
+    /** Store read-through flag. */
+    private boolean readThrough;
+
+    /** Store write-through flag. */
+    private boolean writeThrough;
+
+    /** Store load previous value flag. */
+    private boolean loadPrevVal;
+
     /**
      * @param cfg Cache configuration.
+     * @param store Cache store.
      */
-    public GridCacheAttributes(GridCacheConfiguration cfg) {
+    public GridCacheAttributes(CacheConfiguration cfg, @Nullable CacheStore<?, ?> store) {
         atomicityMode = cfg.getAtomicityMode();
         cacheMode = cfg.getCacheMode();
         dfltLockTimeout = cfg.getDefaultLockTimeout();
@@ -164,13 +173,14 @@ public class GridCacheAttributes implements Externalizable {
         evictNearSync = cfg.isEvictNearSynchronized();
         evictSync = cfg.isEvictSynchronized();
         indexingSpiName = cfg.getIndexingSpiName();
+        loadPrevVal = cfg.isLoadPreviousValue();
         name = cfg.getName();
         partDistro = GridCacheUtils.distributionMode(cfg);
         preloadBatchSize = cfg.getPreloadBatchSize();
         preloadMode = cfg.getPreloadMode();
         qryIdxEnabled = cfg.isQueryIndexEnabled();
+        readThrough = cfg.isReadThrough();
         seqReserveSize = cfg.getAtomicSequenceReserveSize();
-        storeEnabled = cfg.getStore() != null;
         storeValBytes = cfg.isStoreValueBytes();
         swapEnabled = cfg.isSwapEnabled();
         ttl = cfg.getDefaultTimeToLive();
@@ -180,6 +190,7 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushSize = cfg.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cfg.getWriteBehindFlushThreadCount();
         writeSyncMode = cfg.getWriteSynchronizationMode();
+        writeThrough = cfg.isWriteThrough();
 
         affMapperClsName = className(cfg.getAffinityMapper());
 
@@ -205,7 +216,7 @@ public class GridCacheAttributes implements Externalizable {
         evictFilterClsName = className(cfg.getEvictionFilter());
         evictPlcClsName = className(cfg.getEvictionPolicy());
         nearEvictPlcClsName = className(cfg.getNearEvictionPolicy());
-        storeClsName = className(cfg.getStore());
+        storeClsName = className(store);
         tmLookupClsName = cfg.getTransactionManagerLookupClassName();
     }
 
@@ -448,10 +459,24 @@ public class GridCacheAttributes implements Externalizable {
     }
 
     /**
-     * @return Flag indicating whether GridGain should activate read-through/write-through behaviour by default.
+     * @return Flag indicating whether read-through behaviour is enabled.
      */
-    public boolean storeEnabled() {
-        return storeEnabled;
+    public boolean readThrough() {
+        return readThrough;
+    }
+
+    /**
+     * @return Flag indicating whether read-through behaviour is enabled.
+     */
+    public boolean writeThrough() {
+        return writeThrough;
+    }
+
+    /**
+     * @return Flag indicating whether old value is loaded from store for cache operation.
+     */
+    public boolean loadPreviousValue() {
+        return loadPrevVal;
     }
 
     /**
@@ -513,13 +538,14 @@ public class GridCacheAttributes implements Externalizable {
         out.writeBoolean(evictNearSync);
         out.writeBoolean(evictSync);
         U.writeString(out, indexingSpiName);
+        out.writeBoolean(loadPrevVal);
         U.writeString(out, name);
         U.writeEnum0(out, partDistro);
         out.writeInt(preloadBatchSize);
         U.writeEnum0(out, preloadMode);
         out.writeBoolean(qryIdxEnabled);
+        out.writeBoolean(readThrough);
         out.writeInt(seqReserveSize);
-        out.writeBoolean(storeEnabled);
         out.writeBoolean(storeValBytes);
         out.writeBoolean(swapEnabled);
         out.writeLong(ttl);
@@ -529,6 +555,7 @@ public class GridCacheAttributes implements Externalizable {
         out.writeInt(writeBehindFlushSize);
         out.writeInt(writeBehindFlushThreadCnt);
         U.writeEnum0(out, writeSyncMode);
+        out.writeBoolean(writeThrough);
 
         U.writeString(out, affClsName);
         U.writeString(out, affMapperClsName);
@@ -557,13 +584,14 @@ public class GridCacheAttributes implements Externalizable {
         evictNearSync = in.readBoolean();
         evictSync  = in.readBoolean();
         indexingSpiName = U.readString(in);
+        loadPrevVal = in.readBoolean();
         name = U.readString(in);
         partDistro = GridCacheDistributionMode.fromOrdinal(U.readEnumOrdinal0(in));
         preloadBatchSize = in.readInt();
         preloadMode = GridCachePreloadMode.fromOrdinal(U.readEnumOrdinal0(in));
         qryIdxEnabled = in.readBoolean();
+        readThrough = in.readBoolean();
         seqReserveSize = in.readInt();
-        storeEnabled = in.readBoolean();
         storeValBytes = in.readBoolean();
         swapEnabled = in.readBoolean();
         ttl = in.readLong();
@@ -573,6 +601,7 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
         writeSyncMode = GridCacheWriteSynchronizationMode.fromOrdinal(U.readEnumOrdinal0(in));
+        writeThrough = in.readBoolean();
 
         affClsName = U.readString(in);
         affMapperClsName = U.readString(in);

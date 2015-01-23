@@ -18,10 +18,11 @@
 package org.gridgain.examples.datagrid.hibernate;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
 
 import java.util.*;
 
@@ -84,8 +85,8 @@ public class HibernateL2CacheExampleNodeStartup {
      * @param atomicityMode Atomicity mode.
      * @return Cache configuration.
      */
-    private static GridCacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+    private static CacheConfiguration cacheConfiguration(String name, GridCacheAtomicityMode atomicityMode) {
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
         ccfg.setCacheMode(PARTITIONED);

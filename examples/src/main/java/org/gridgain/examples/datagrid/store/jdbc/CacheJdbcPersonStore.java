@@ -18,21 +18,23 @@
 package org.gridgain.examples.datagrid.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.examples.datagrid.store.*;
-import org.gridgain.grid.cache.store.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.sql.*;
 import java.util.*;
 
 /**
- * Example of {@link GridCacheStore} implementation that uses JDBC
+ * Example of {@link CacheStore} implementation that uses JDBC
  * transaction with cache transactions and maps {@link UUID} to {@link Person}.
  *
  */
-public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
+public class CacheJdbcPersonStore extends CacheStoreAdapter<Long, Person> {
     /** Transaction metadata attribute name. */
     private static final String ATTR_NAME = "SIMPLE_STORE_CONNECTION";
 
@@ -64,8 +66,12 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
-        try (Connection conn = tx.removeMeta(ATTR_NAME)) {
+    @Override public void txEnd(boolean commit) {
+        IgniteTx tx = transaction();
+
+        Map<String, Connection> props = session().properties();
+
+        try (Connection conn = props.remove(ATTR_NAME)) {
             if (conn != null) {
                 if (commit)
                     conn.commit();
@@ -76,12 +82,14 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             System.out.println(">>> Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+            throw new CacheWriterException("Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
         }
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Person load(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
+    @Nullable @Override public Person load(Long key) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store load [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -99,7 +107,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             }
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to load object: " + key, e);
+            throw new CacheLoaderException("Failed to load object: " + key, e);
         }
         finally {
             end(tx, conn);
@@ -109,8 +117,13 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, Long key, Person val)
-        throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
+        IgniteTx tx = transaction();
+
+        Long key = entry.getKey();
+
+        Person val = entry.getValue();
+
         System.out.println(">>> Store put [key=" + key + ", val=" + val + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -142,7 +155,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
         }
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to put object [key=" + key + ", val=" + val + ']', e);
+            throw new CacheLoaderException("Failed to put object [key=" + key + ", val=" + val + ']', e);
         }
         finally {
             end(tx, conn);
@@ -150,7 +163,9 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, Long key) throws IgniteCheckedException {
+    @Override public void delete(Object key) {
+        IgniteTx tx = transaction();
+
         System.out.println(">>> Store remove [key=" + key + ", xid=" + (tx == null ? null : tx.xid()) + ']');
 
         Connection conn = null;
@@ -159,13 +174,13 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             conn = connection(tx);
 
             try (PreparedStatement st = conn.prepareStatement("delete from PERSONS where id=?")) {
-                st.setLong(1, key);
+                st.setLong(1, (Long)key);
 
                 st.executeUpdate();
             }
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to remove object: " + key, e);
+            throw new CacheLoaderException("Failed to remove object: " + key, e);
         }
         finally {
             end(tx, conn);
@@ -173,9 +188,9 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<Long, Person> clo, Object... args) {
         if (args == null || args.length == 0 || args[0] == null)
-            throw new IgniteCheckedException("Expected entry count parameter is not provided.");
+            throw new CacheLoaderException("Expected entry count parameter is not provided.");
 
         final int entryCnt = (Integer)args[0];
 
@@ -201,7 +216,7 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
             }
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to load values from cache store.", e);
+            throw new CacheLoaderException("Failed to load values from cache store.", e);
         }
         finally {
             end(null, conn);
@@ -215,14 +230,16 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      */
     private Connection connection(@Nullable IgniteTx tx) throws SQLException  {
         if (tx != null) {
-            Connection conn = tx.meta(ATTR_NAME);
+            Map<Object, Object> props = session().properties();
+
+            Connection conn = (Connection)props.get(ATTR_NAME);
 
             if (conn == null) {
                 conn = openConnection(false);
 
-                // Store connection in transaction metadata, so it can be accessed
+                // Store connection in session properties, so it can be accessed
                 // for other operations on the same transaction.
-                tx.addMeta(ATTR_NAME, conn);
+                props.put(ATTR_NAME, conn);
             }
 
             return conn;
@@ -275,5 +292,14 @@ public class CacheJdbcPersonStore extends GridCacheStoreAdapter<Long, Person> {
      */
     private Person person(Long id, String firstName, String lastName) {
         return new Person(id, firstName, lastName);
+    }
+
+    /**
+     * @return Current transaction.
+     */
+    @Nullable private IgniteTx transaction() {
+        CacheStoreSession ses = session();
+
+        return ses != null ? ses.transaction() : null;
     }
 }

@@ -102,11 +102,11 @@ import java.util.*;
  * be activated first (one by one) and jobs from {@code MyGridUsualTask} with lowest priority
  * will wait. Once higher priority jobs complete, lower priority jobs will be scheduled.
  * <pre name="code" class="java">
- * public class MyGridUsualTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyGridUsualTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 20;
  *
- *    &#64;GridTaskSessionResource
- *    private GridComputeTaskSession taskSes;
+ *    &#64;IgniteTaskSessionResource
+ *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -118,7 +118,7 @@ import java.util.*;
  *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
- *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
+ *            jobs.add(new ComputeJobAdapter&lt;Integer&gt;(i) {
  *                ...
  *            });
  *        }
@@ -128,11 +128,11 @@ import java.util.*;
  * </pre>
  * and
  * <pre name="code" class="java">
- * public class MyGridUrgentTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyGridUrgentTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 5;
  *
- *    &#64;GridTaskSessionResource
- *    private GridComputeTaskSession taskSes;
+ *    &#64;IgniteTaskSessionResource
+ *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -144,7 +144,7 @@ import java.util.*;
  *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
- *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
+ *            jobs.add(new ComputeJobAdapter&lt;Integer&gt;(i) {
  *                ...
  *            });
  *        }

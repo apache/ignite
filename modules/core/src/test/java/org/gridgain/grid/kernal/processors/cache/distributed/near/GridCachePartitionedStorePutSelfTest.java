@@ -17,20 +17,20 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -81,11 +81,15 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setStore(new TestStore());
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new TestStore()));
+        cfg.setReadThrough(true);
+        cfg.setWriteThrough(true);
+        cfg.setLoadPreviousValue(true);
         cfg.setAffinity(new GridCacheModuloAffinityFunction(3, 1));
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -124,23 +128,21 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     /**
      * Test store.
      */
-    private static class TestStore extends GridCacheStoreAdapter<Object, Object> {
+    private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Object load(@Nullable IgniteTx tx, Object key)
-            throws IgniteCheckedException {
+        @Override public Object load(Object key) {
             assert false;
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Object key, @Nullable Object val)
-            throws IgniteCheckedException {
+        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
             // No-op
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Object key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             // No-op
         }
     }

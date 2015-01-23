@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.log4j.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
@@ -66,8 +65,8 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(getTestGridName(0));
-        cfg.setRestEnabled(false);
-        cfg.setCacheConfiguration(new GridCacheConfiguration());
+        cfg.setClientConnectionConfiguration(null);
+        cfg.setCacheConfiguration(new CacheConfiguration());
 
         final Ignite g0 = G.start(cfg);
 
@@ -84,17 +83,5 @@ public class GridCachePartitionedLockSelfTest extends GridCacheLockAbstractTest 
                 return cache.lockAll(Collections.singleton(1)).tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
             }
         }, CacheException.class, "Locks are not supported");
-
-        CacheLock lock = g0.jcache(null).lock(1);
-
-        lock.enableAsync().tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
-
-        final IgniteFuture<Boolean> lockFut1 = lock.enableAsync().future();
-
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return lockFut1.get();
-            }
-        }, IgniteCheckedException.class, "Locks are not supported");
     }
 }

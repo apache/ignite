@@ -25,18 +25,12 @@ import java.util.*;
  * this interface. Kernal will not load SPI that doesn't implement this interface.
  * <p>
  * Grid SPI's can be injected using IoC (dependency injection)
- * with grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * with ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteAddressResolverResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  */

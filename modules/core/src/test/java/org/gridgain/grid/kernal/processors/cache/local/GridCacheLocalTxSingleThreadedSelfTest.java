@@ -17,9 +17,9 @@
 
 package org.gridgain.grid.kernal.processors.cache.local;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.gridgain.grid.cache.GridCacheMode.*;
@@ -38,7 +38,7 @@ public class GridCacheLocalTxSingleThreadedSelfTest extends IgniteTxSingleThread
 
         c.getTransactionsConfiguration().setTxSerializableEnabled(true);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(LOCAL);
 

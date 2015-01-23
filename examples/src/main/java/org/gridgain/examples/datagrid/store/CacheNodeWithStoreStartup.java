@@ -18,13 +18,15 @@
 package org.gridgain.examples.datagrid.store;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.gridgain.examples.datagrid.store.dummy.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.examples.datagrid.store.dummy.*;
-import org.gridgain.grid.cache.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
@@ -63,15 +65,21 @@ public class CacheNodeWithStoreStartup {
 
         discoSpi.setIpFinder(ipFinder);
 
-        GridCacheConfiguration cacheCfg = new GridCacheConfiguration();
+        CacheConfiguration cacheCfg = new CacheConfiguration();
 
         // Set atomicity as transaction, since we are showing transactions in example.
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
+        CacheStore store;
+
         // Uncomment other cache stores to try them.
-        cacheCfg.setStore(new CacheDummyPersonStore());
-        // cacheCfg.setStore(new CacheJdbcPersonStore());
-        // cacheCfg.setStore(new CacheHibernatePersonStore());
+        store = new CacheDummyPersonStore();
+        // store = new CacheJdbcPersonStore();
+        // store = new CacheHibernatePersonStore();
+
+        cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cacheCfg.setReadThrough(true);
+        cacheCfg.setWriteThrough(true);
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheCfg);

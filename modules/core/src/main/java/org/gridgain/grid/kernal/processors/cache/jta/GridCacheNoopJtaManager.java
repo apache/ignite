@@ -18,7 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.jta;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -31,7 +31,7 @@ public class GridCacheNoopJtaManager<K, V> extends GridCacheJtaManagerAdapter<K,
     }
 
     /** {@inheritDoc} */
-    @Override public void createTmLookup(GridCacheConfiguration ccfg) throws IgniteCheckedException {
+    @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
         // No-op.
     }
 

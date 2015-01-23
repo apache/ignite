@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -42,18 +43,18 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cc1 = defaultCacheConfiguration();
+        CacheConfiguration cc1 = defaultCacheConfiguration();
 
         cc1.setName("partitioned");
         cc1.setCacheMode(PARTITIONED);
         cc1.setBackups(1);
 
-        GridCacheConfiguration cc2 = defaultCacheConfiguration();
+        CacheConfiguration cc2 = defaultCacheConfiguration();
 
         cc2.setName("replicated");
         cc2.setCacheMode(REPLICATED);
 
-        GridCacheConfiguration cc3 = defaultCacheConfiguration();
+        CacheConfiguration cc3 = defaultCacheConfiguration();
 
         cc3.setName("local");
         cc3.setCacheMode(LOCAL);

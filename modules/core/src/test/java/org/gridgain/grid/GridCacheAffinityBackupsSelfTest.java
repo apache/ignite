@@ -17,6 +17,7 @@
 
 package org.gridgain.grid;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
@@ -38,13 +39,14 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     /** Affinity function. */
     private GridCacheAffinityFunction func;
 
+    /** */
     private int nodesCnt = 5;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(GridCacheMode.PARTITIONED);
         ccfg.setBackups(backups);

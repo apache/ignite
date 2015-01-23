@@ -38,7 +38,7 @@ public interface IgniteMBean {
      *
      * @return String presentation of the version.
      */
-    @IgniteMBeanDescription("String presentation of the GridGain version.")
+    @IgniteMBeanDescription("String presentation of the Ignite version.")
     public String getFullVersion();
 
     /**

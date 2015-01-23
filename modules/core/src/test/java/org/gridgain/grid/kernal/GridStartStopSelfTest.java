@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.common.*;
@@ -79,7 +79,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setGridName(getTestGridName(0));
 
-        GridCacheConfiguration cc = new GridCacheConfiguration();
+        CacheConfiguration cc = new CacheConfiguration();
 
         cc.setAtomicityMode(TRANSACTIONAL);
 
@@ -91,7 +91,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setGridName(getTestGridName(1));
 
-        cc = new GridCacheConfiguration();
+        cc = new CacheConfiguration();
 
         cc.setAtomicityMode(TRANSACTIONAL);
 

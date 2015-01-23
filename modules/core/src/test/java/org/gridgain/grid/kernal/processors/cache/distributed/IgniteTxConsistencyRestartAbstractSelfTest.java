@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -68,8 +69,8 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
      * @param gridName Grid name.
      * @return Cache configuration.
      */
-    public GridCacheConfiguration cacheConfiguration(String gridName) {
-        GridCacheConfiguration ccfg = new GridCacheConfiguration();
+    public CacheConfiguration cacheConfiguration(String gridName) {
+        CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setCacheMode(cacheMode());

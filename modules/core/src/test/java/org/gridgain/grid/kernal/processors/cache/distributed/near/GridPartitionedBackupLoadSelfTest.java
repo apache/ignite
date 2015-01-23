@@ -17,18 +17,18 @@
 
 package org.gridgain.grid.kernal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -76,12 +76,16 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     /**
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    @SuppressWarnings("unchecked")
+    private CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
-        cfg.setStore(store);
+        cfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cfg.setReadThrough(true);
+        cfg.setWriteThrough(true);
+        cfg.setLoadPreviousValue(true);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return cfg;
@@ -130,26 +134,24 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
     /**
      * Test store.
      */
-    private class TestStore extends GridCacheStoreAdapter<Integer, Integer> {
+    private class TestStore extends CacheStoreAdapter<Integer, Integer> {
         /** */
         private Map<Integer, Integer> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public Integer load(@Nullable IgniteTx tx, Integer key)
-            throws IgniteCheckedException {
+        @Override public Integer load(Integer key) {
             cnt.incrementAndGet();
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void put(IgniteTx tx, Integer key, @Nullable Integer val)
-            throws IgniteCheckedException {
-            map.put(key, val);
+        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+            map.put(e.getKey(), e.getValue());
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(IgniteTx tx, Integer key) throws IgniteCheckedException {
+        @Override public void delete(Object key) {
             // No-op
         }
 

@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.ggfs;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -87,8 +88,8 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
      *
      * @return Meta cache configuration.
      */
-    protected GridCacheConfiguration metaConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration metaConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(META_CACHE_NAME);
 
@@ -105,8 +106,8 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
      *
      * @return Data cache configuration.
      */
-    protected GridCacheConfiguration dataConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration dataConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setName(DATA_CACHE_NAME);
 

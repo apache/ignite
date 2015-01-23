@@ -19,12 +19,12 @@ package org.gridgain.grid.kernal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -34,6 +34,7 @@ import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.testframework.junits.common.*;
 
+import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -58,6 +59,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     private boolean storeEnabled;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -67,7 +69,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
@@ -76,10 +78,14 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
 
-        if (storeEnabled)
-            cacheCfg.setStore(new GridCacheTestStore());
+        if (storeEnabled) {
+            cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(new GridCacheTestStore()));
+            cacheCfg.setReadThrough(true);
+            cacheCfg.setWriteThrough(true);
+            cacheCfg.setLoadPreviousValue(true);
+        }
         else
-            cacheCfg.setStore(null);
+            cacheCfg.setCacheStoreFactory(null);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -400,20 +406,17 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             CacheLock lock = g0.jcache(null).lock(key);
 
-            lock.enableAsync().lock();
-
-            IgniteFuture<Boolean> lockFut = lock.enableAsync().future();
+            assert !lock.tryLock();
 
             assert g0.cache(null).isLocked(key);
-            assert !lockFut.isDone() : "Key can not be locked by current thread.";
             assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
             unlockLatch.countDown();
             unlockFut.get();
 
-            assert lockFut.get();
+            assert lock.tryLock();
 
-            g0.cache(null).unlock(key);
+            lock.unlock();
         }
         finally {
             stopAllGrids();
@@ -768,7 +771,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
-        GridCacheStore store = ignite.configuration().getCacheConfiguration()[0].getStore();
+        String cacheName = ignite.configuration().getCacheConfiguration()[0].getName();
+
+        GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+
+        CacheStore store = ctx.store().configuredStore();
 
         assertEquals(map, ((GridCacheTestStore)store).getMap());
     }
@@ -780,7 +787,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
      */
     private void clearStores(int cnt) {
         for (int i = 0; i < cnt; i++) {
-            GridCacheStore store = grid(i).configuration().getCacheConfiguration()[0].getStore();
+            String cacheName = grid(i).configuration().getCacheConfiguration()[0].getName();
+
+            GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+
+            CacheStore store = ctx.store().configuredStore();
 
             ((GridCacheTestStore)store).reset();
         }

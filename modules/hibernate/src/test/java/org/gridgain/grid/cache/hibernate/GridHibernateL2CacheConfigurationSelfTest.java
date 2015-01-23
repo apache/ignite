@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.cache.hibernate;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -102,8 +103,8 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    private GridCacheConfiguration cacheConfiguration(String cacheName) {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(String cacheName) {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setName(cacheName);
 

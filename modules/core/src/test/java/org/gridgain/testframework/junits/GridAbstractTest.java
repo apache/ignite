@@ -19,6 +19,7 @@ package org.gridgain.testframework.junits;
 
 import junit.framework.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
@@ -27,8 +28,6 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.license.*;
 import org.gridgain.grid.kernal.processors.resource.*;
@@ -1120,8 +1119,8 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return New cache configuration with modified defaults.
      */
-    public static GridCacheConfiguration defaultCacheConfiguration() {
-        GridCacheConfiguration cfg = new GridCacheConfiguration();
+    public static CacheConfiguration defaultCacheConfiguration() {
+        CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setStartSize(1024);
         cfg.setQueryIndexEnabled(true);

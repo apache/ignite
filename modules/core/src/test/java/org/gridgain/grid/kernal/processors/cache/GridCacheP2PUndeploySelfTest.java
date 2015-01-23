@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.cache.distributed.*;
@@ -78,7 +78,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
 
-        GridCacheConfiguration repCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration repCacheCfg = defaultCacheConfiguration();
 
         repCacheCfg.setName("replicated");
         repCacheCfg.setCacheMode(REPLICATED);
@@ -92,7 +92,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         else
             repCacheCfg.setSwapEnabled(true);
 
-        GridCacheConfiguration partCacheCfg = defaultCacheConfiguration();
+        CacheConfiguration partCacheCfg = defaultCacheConfiguration();
 
         partCacheCfg.setName("partitioned");
         partCacheCfg.setCacheMode(PARTITIONED);

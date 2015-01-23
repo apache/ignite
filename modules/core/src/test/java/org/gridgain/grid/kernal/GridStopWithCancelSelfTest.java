@@ -79,15 +79,15 @@ public class GridStopWithCancelSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"PublicInnerClass"})
     public static final class CancelledTask extends ComputeTaskAdapter<String, Object> {
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID locId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String arg) throws IgniteCheckedException {
             for (ClusterNode node : subgrid) {
-                if (node.id().equals(locId)) {
+                if (node.id().equals(ignite.configuration().getNodeId())) {
                     return Collections.singletonMap(new ComputeJobAdapter() {
                         @IgniteInstanceResource
                         private Ignite ignite;

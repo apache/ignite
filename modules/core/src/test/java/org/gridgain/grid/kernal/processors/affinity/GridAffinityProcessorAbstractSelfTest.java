@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.processors.affinity;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
@@ -61,7 +62,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
         cfg.setDiscoverySpi(discoSpi);
 
         if (withCache) {
-            GridCacheConfiguration cacheCfg = defaultCacheConfiguration();
+            CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setName(CACHE_NAME);
             cacheCfg.setCacheMode(PARTITIONED);

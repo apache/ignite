@@ -17,19 +17,20 @@
 
 package org.gridgain.grid.cache.store;
 
-import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.util.typedef.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.util.*;
 
 /**
  * Test store that generates objects on demand.
  */
-public class GridGeneratingTestStore implements GridCacheStore<String, String> {
+public class GridGeneratingTestStore extends CacheStore<String, String> {
     /** Number of entries to be generated. */
     private static final int DFLT_GEN_CNT = 100;
 
@@ -38,14 +39,12 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
     private String cacheName;
 
     /** {@inheritDoc} */
-    @Override public String load(@Nullable IgniteTx tx, String key)
-        throws IgniteCheckedException {
+    @Override public String load(String key) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure<String, String> clo,
-        @Nullable Object... args) throws IgniteCheckedException {
+    @Override public void loadCache(IgniteBiInClosure<String, String> clo, @Nullable Object... args) {
         if (args.length > 0) {
             try {
                 int cnt = ((Number)args[0]).intValue();
@@ -57,7 +56,7 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
             catch (Exception e) {
                 X.println("Unexpected exception in loadAll: " + e);
 
-                throw new IgniteCheckedException(e);
+                throw new CacheLoaderException(e);
             }
         }
         else {
@@ -67,38 +66,37 @@ public class GridGeneratingTestStore implements GridCacheStore<String, String> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadAll(@Nullable IgniteTx tx,
-        @Nullable Collection<? extends String> keys, IgniteBiInClosure<String, String> c) throws IgniteCheckedException {
+    @Override public Map<String, String> loadAll(Iterable<? extends String> keys) {
+        Map<String, String> loaded = new HashMap<>();
+
         for (String key : keys)
-            c.apply(key, "val" + key);
+            loaded.put(key, "val" + key);
+
+        return loaded;
     }
 
     /** {@inheritDoc} */
-    @Override public void put(@Nullable IgniteTx tx, String key, @Nullable String val)
-        throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends String, ? extends String> entry) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void putAll(@Nullable IgniteTx tx,
-        @Nullable Map<? extends String, ? extends String> map) throws IgniteCheckedException {
+    @Override public void writeAll(Collection<Cache.Entry<? extends String, ? extends String>> entries) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable IgniteTx tx, String key)
-        throws IgniteCheckedException {
+    @Override public void delete(Object key) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void removeAll(@Nullable IgniteTx tx,
-        @Nullable Collection<? extends String> keys) throws IgniteCheckedException {
+    @Override public void deleteAll(Collection<?> keys) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    @Override public void txEnd(boolean commit) {
         // No-op.
     }
 }

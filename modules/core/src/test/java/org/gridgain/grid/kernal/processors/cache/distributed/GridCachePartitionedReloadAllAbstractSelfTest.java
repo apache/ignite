@@ -18,20 +18,21 @@
 package org.gridgain.grid.kernal.processors.cache.distributed;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.store.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.testframework.junits.common.*;
 import org.jdk8.backport.*;
-import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
@@ -59,6 +60,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private List<GridCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
@@ -68,7 +70,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         c.setDiscoverySpi(disco);
 
-        GridCacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
 
@@ -80,7 +82,16 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
 
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
-        cc.setStore(cacheStore());
+        CacheStore store = cacheStore();
+
+        if (store != null) {
+            cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+            cc.setReadThrough(true);
+            cc.setWriteThrough(true);
+            cc.setLoadPreviousValue(true);
+        }
+        else
+            cc.setCacheStoreFactory(null);
 
         cc.setAtomicWriteOrderMode(atomicWriteOrderMode());
 
@@ -139,8 +150,8 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      *
      * @return Write through storage emulator.
      */
-    protected GridCacheStore<?, ?> cacheStore() {
-        return new GridCacheStoreAdapter<Integer, String>() {
+    protected CacheStore<?, ?> cacheStore() {
+        return new CacheStoreAdapter<Integer, String>() {
             @IgniteInstanceResource
             private Ignite g;
 
@@ -152,17 +163,17 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                     c.apply(e.getKey(), e.getValue());
             }
 
-            @Override public String load(IgniteTx tx, Integer key) {
+            @Override public String load(Integer key) {
                 X.println("Loading on: " + caches.indexOf(g.<Integer, String>cache(null)) + " key=" + key);
 
                 return map.get(key);
             }
 
-            @Override public void put(IgniteTx tx, Integer key, @Nullable String val) {
+            @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
                 fail("Should not be called within the test.");
             }
 
-            @Override public void remove(IgniteTx tx, Integer key) {
+            @Override public void delete(Object key) {
                 fail("Should not be called within the test.");
             }
         };

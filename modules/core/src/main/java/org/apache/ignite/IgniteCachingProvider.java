@@ -119,7 +119,7 @@ public class IgniteCachingProvider implements CachingProvider {
      * @param cache Cache.
      */
     public CacheManager findManager(IgniteCache<?,?> cache) {
-        Ignite ignite = cache.ignite();
+        Ignite ignite = cache.unwrap(Ignite.class);
 
         synchronized (cacheManagers) {
             for (Map<URI, IgniteCacheManager> map : cacheManagers.values()) {

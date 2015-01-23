@@ -18,6 +18,7 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -56,8 +57,8 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** @return Cache configuration. */
-    protected GridCacheConfiguration cacheConfiguration() {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(mode);
         cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);

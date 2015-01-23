@@ -19,11 +19,11 @@ package org.apache.ignite.cluster;
 
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Interface representing a single grid node. Use {@link #attribute(String)} or
@@ -57,7 +57,7 @@ import java.util.*;
  * <ul>
  * <li>{@code {@link System#getProperties()}} - All system properties.</li>
  * <li>{@code {@link System#getenv(String)}} - All environment properties.</li>
- * <li>{@code org.gridgain.build.ver} - GridGain build version.</li>
+ * <li>{@code org.ignite.build.ver} - Ignite build version.</li>
  * <li>{@code org.gridgain.jit.name} - Name of JIT compiler used.</li>
  * <li>{@code org.gridgain.net.itf.name} - Name of network interface.</li>
  * <li>{@code org.gridgain.user.name} - Operating system user name.</li>
@@ -107,7 +107,7 @@ import java.util.*;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterNode extends GridMetadataAware {
+public interface ClusterNode {
     /**
      * Gets globally unique node ID. A new ID is generated every time a node restarts.
      *
@@ -254,4 +254,39 @@ public interface ClusterNode extends GridMetadataAware {
      * @return {@code True} if this node is a client node, {@code false} otherwise.
      */
     public boolean isClient();
+
+    /**
+     * Adds a new metadata.
+     *
+     * @param name Metadata name.
+     * @param val Metadata value.
+     * @param <V> Type of the value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
+    @Nullable public <V> V addMeta(String name, V val);
+
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param name Metadata name.
+     * @param c Factory closure to produce value to add if it's not attached already.
+     *      Not that unlike {@link #addMeta(String, Object)} method the factory closure will
+     *      not be called unless the value is required and therefore value will only be created
+     *      when it is actually needed. If {@code null} and metadata value is missing - {@code null}
+     *      will be returned from this method.
+     * @param <V> Type of the value.
+     * @return The value of the metadata after execution of this method.
+     */
+    @Nullable public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c);
+
+
+    /**
+     * Gets metadata by name.
+     *
+     * @param name Metadata name.
+     * @param <V> Type of the value.
+     * @return Metadata value or {@code null}.
+     */
+    @Nullable public <V> V meta(String name);
 }

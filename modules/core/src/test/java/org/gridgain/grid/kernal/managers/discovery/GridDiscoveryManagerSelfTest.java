@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.kernal.managers.discovery;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.*;
@@ -54,11 +55,11 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disc);
 
-        GridCacheConfiguration ccfg1 = defaultCacheConfiguration();
+        CacheConfiguration ccfg1 = defaultCacheConfiguration();
 
         ccfg1.setName(CACHE_NAME);
 
-        GridCacheConfiguration ccfg2 = defaultCacheConfiguration();
+        CacheConfiguration ccfg2 = defaultCacheConfiguration();
 
         ccfg2.setName(null);
 

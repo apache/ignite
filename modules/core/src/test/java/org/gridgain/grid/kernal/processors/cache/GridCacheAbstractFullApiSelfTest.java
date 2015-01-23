@@ -111,8 +111,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        GridCacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
         if (offHeapValues()) {
             ccfg.setQueryIndexEnabled(false);
@@ -3355,8 +3355,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert !lock.isLocked();
 
-            lock.enableAsync().lock();
-            lock.enableAsync().future().get();
+            lock.lock();
 
             assert lock.isLocked();
 
@@ -3470,8 +3469,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert !cache.isLocked("key");
 
-            lock.enableAsync().tryLock(1000, MILLISECONDS);
-            lock.enableAsync().future().get();
+            lock.tryLock(1000, MILLISECONDS);
 
             assert cache.isLocked("key");
             assert cache.isLockedByThread("key");
@@ -3482,23 +3480,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    lock.enableAsync().tryLock(1000, MILLISECONDS);
-
-                    IgniteFuture<Boolean> f = lock.enableAsync().future();
-
-                    try {
-                        f.get(100);
-
-                        fail();
-                    } catch (IgniteFutureTimeoutException ex) {
-                        info("Caught expected exception: " + ex);
-                    }
+                    assert !lock.tryLock();
 
                     latch.countDown();
 
                     try {
-                        assert f.get();
-                    } finally {
+                        assert lock.tryLock(2000, MILLISECONDS);
+                    }
+                    finally {
                         lock.unlock();
                     }
 

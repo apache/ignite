@@ -18,6 +18,7 @@
 package org.gridgain.client.integration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
@@ -196,8 +197,8 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
-    private GridCacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
-        GridCacheConfiguration cfg = defaultCacheConfiguration();
+    private CacheConfiguration cacheConfiguration(@Nullable String cacheName) throws Exception {
+        CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setAtomicityMode(TRANSACTIONAL);
         cfg.setDistributionMode(NEAR_PARTITIONED);
@@ -760,10 +761,6 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
      */
     @SuppressWarnings("unchecked")
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** Node ID. */
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
-
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, GridTcpCommunicationMessageAdapter msg)
             throws IgniteSpiException {
@@ -786,7 +783,7 @@ public abstract class GridClientAbstractMultiNodeSelfTest extends GridCommonAbst
             if (!(o instanceof GridDistributedLockRequest))
                 return;
 
-            GridKernal g = (GridKernal)G.ignite(nodeId);
+            GridKernal g = (GridKernal)G.ignite(ignite.configuration().getNodeId());
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 

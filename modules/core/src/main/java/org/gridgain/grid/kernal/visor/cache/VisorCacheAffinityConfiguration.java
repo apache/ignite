@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.cache.affinity.consistenthash.*;
 import org.gridgain.grid.util.typedef.internal.*;
@@ -56,7 +56,7 @@ public class VisorCacheAffinityConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Data transfer object for affinity configuration properties.
      */
-    public static VisorCacheAffinityConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheAffinityConfiguration from(CacheConfiguration ccfg) {
         GridCacheAffinityFunction aff = ccfg.getAffinity();
 
         Integer dfltReplicas = null;

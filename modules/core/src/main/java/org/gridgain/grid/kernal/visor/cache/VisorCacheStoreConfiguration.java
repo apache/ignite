@@ -17,7 +17,7 @@
 
 package org.gridgain.grid.kernal.visor.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -36,16 +36,16 @@ public class VisorCacheStoreConfiguration implements Serializable {
     private String store;
 
     /** Should value bytes be stored. */
-    private boolean valueBytes;
+    private boolean valBytes;
 
     /**
      * @param ccfg Cache configuration.
      * @return Data transfer object for cache store configuration properties.
      */
-    public static VisorCacheStoreConfiguration from(GridCacheConfiguration ccfg) {
+    public static VisorCacheStoreConfiguration from(CacheConfiguration ccfg) {
         VisorCacheStoreConfiguration cfg = new VisorCacheStoreConfiguration();
 
-        cfg.store(compactClass(ccfg.getStore()));
+        cfg.store(compactClass(ccfg.getCacheStoreFactory()));
         cfg.valueBytes(ccfg.isStoreValueBytes());
 
         return cfg;
@@ -73,14 +73,14 @@ public class VisorCacheStoreConfiguration implements Serializable {
      * @return Should value bytes be stored.
      */
     public boolean valueBytes() {
-        return valueBytes;
+        return valBytes;
     }
 
     /**
      * @param valBytes New should value bytes be stored.
      */
     public void valueBytes(boolean valBytes) {
-        valueBytes = valBytes;
+        this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */

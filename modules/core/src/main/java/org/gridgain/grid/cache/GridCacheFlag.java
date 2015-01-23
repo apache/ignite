@@ -18,6 +18,7 @@
 package org.gridgain.grid.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CacheConfiguration;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -60,7 +61,7 @@ public enum GridCacheFlag {
      * automatic cloning of values prior to returning so they can be directly
      * updated.
      *
-     * @see GridCacheConfiguration#getCloner()
+     * @see CacheConfiguration#getCloner()
      */
     CLONE,
 
@@ -69,9 +70,6 @@ public enum GridCacheFlag {
 
     /** Skip swap space for reads and writes. */
     SKIP_SWAP,
-
-    /** Always get data from primary node (never from backup). */
-    GET_PRIMARY,
 
     /** Synchronous commit. */
     SYNC_COMMIT,
@@ -82,7 +80,7 @@ public enum GridCacheFlag {
      * messages will be sent to set the values to {@code null}.
      *
      * @see IgniteTx#isInvalidate()
-     * @see GridCacheConfiguration#isInvalidate()
+     * @see CacheConfiguration#isInvalidate()
      */
     INVALIDATE,
 
