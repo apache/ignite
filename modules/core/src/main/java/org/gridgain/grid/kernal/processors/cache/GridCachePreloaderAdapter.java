@@ -107,7 +107,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
 
     /** {@inheritDoc} */
     @Override public void unwindUndeploys() {
-        cctx.deploy().unwind();
+        cctx.deploy().unwind(cctx);
     }
 
     /** {@inheritDoc} */
