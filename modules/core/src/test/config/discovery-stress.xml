@@ -26,7 +26,7 @@
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+            <bean class="org.apache.ignite.cache.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
                 <property name="distributionMode" value="PARTITIONED_ONLY"/>
                 <property name="preloadMode" value="SYNC"/>
@@ -35,7 +35,7 @@
                 <property name="writeSynchronizationMode" value="FULL_ASYNC"/>
 
                 <property name="evictionPolicy">
-                    <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                    <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
                         <property name="maxSize" value="20000000"/>
                     </bean>
                 </property>

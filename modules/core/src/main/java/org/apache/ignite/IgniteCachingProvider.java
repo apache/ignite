@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -119,7 +119,7 @@ public class IgniteCachingProvider implements CachingProvider {
      * @param cache Cache.
      */
     public CacheManager findManager(IgniteCache<?,?> cache) {
-        Ignite ignite = cache.ignite();
+        Ignite ignite = cache.unwrap(Ignite.class);
 
         synchronized (cacheManagers) {
             for (Map<URI, IgniteCacheManager> map : cacheManagers.values()) {

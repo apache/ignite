@@ -20,18 +20,17 @@ package org.apache.ignite.spi;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.authentication.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -57,17 +56,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** */
-    @IgniteMBeanServerResource
-    private MBeanServer jmx;
-
-    /** */
-    @IgniteHomeResource
-    private String ggHome;
-
-    /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
+    /** Ignite instance */
+    @IgniteInstanceResource
+    protected Ignite ignite;
 
     /** SPI name. */
     private String name;
@@ -116,12 +107,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        return nodeId;
+        return ignite.configuration().getNodeId();
     }
 
     /** {@inheritDoc} */
     @Override public final String getGridGainHome() {
-        return ggHome;
+        return ignite.configuration().getGridGainHome();
     }
 
     /** {@inheritDoc} */
@@ -324,6 +315,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
         throws IgniteSpiException {
+        MBeanServer jmx = ignite.configuration().getMBeanServer();
+
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
 
@@ -346,6 +339,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
         if (spiMBean != null) {
+            MBeanServer jmx = ignite.configuration().getMBeanServer();
+
             assert jmx != null;
 
             try {

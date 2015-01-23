@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Implementation of node load probing based on total job processing time.

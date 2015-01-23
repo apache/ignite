@@ -139,7 +139,7 @@
                                 </copy>
 
                                 <taskdef name="doctask"
-                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+                                    classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
 
                                 <doctask css="dotted" dir="target/site/scaladocs" verify="false">
                                     <include name="**/*.html"/>
@@ -150,7 +150,7 @@
                                         <table style="padding: 0px 10px 10px 10px; width: 100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>GridGain&#153; - Scalar DSL, ver. <strong>${gridgain.version}</strong></nobr>
+                                                <nobr>GridGain&#153; - Scalar DSL, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
                                                 <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
                                             </td>
@@ -181,7 +181,7 @@
                                     <fileset dir="target/site/scaladocs"/>
                                 </replaceregexp>
 
-                                <zip destfile="target/gridgain-scalar-${gridgain.version}-javadoc.jar"
+                                <zip destfile="target/gridgain-scalar-${ignite.version}-javadoc.jar"
                                      basedir="target/site/scaladocs"
                                      encoding="UTF-8"/>
                             </target>

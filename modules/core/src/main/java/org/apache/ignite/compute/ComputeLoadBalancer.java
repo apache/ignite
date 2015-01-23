@@ -19,7 +19,6 @@ package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -64,8 +63,8 @@ import java.util.*;
  * <pre name="code" class="java">
  * public class MyFooBarTask extends GridComputeTaskAdapter&lt;String, String> {
  *     // Inject load balancer.
- *     &#64;GridLoadBalancerResource
- *     GridComputeLoadBalancer balancer;
+ *     &#64;IgniteLoadBalancerResource
+ *     ComputeLoadBalancer balancer;
  *
  *     // Map jobs to grid nodes.
  *     public Map&lt;? extends ComputeJob, GridNode> map(List&lt;GridNode> subgrid, String arg) throws IgniteCheckedException {
@@ -101,7 +100,7 @@ import java.util.*;
  * }
  * </pre>
  */
-public interface ComputeLoadBalancer extends GridMetadataAware {
+public interface ComputeLoadBalancer {
     /**
      * Gets the next balanced node according to the underlying load balancing policy.
      *

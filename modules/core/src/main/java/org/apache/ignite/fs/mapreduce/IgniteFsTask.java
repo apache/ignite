@@ -21,11 +21,10 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -90,7 +89,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
         assert args != null;
 
         IgniteFs ggfs = ignite.fileSystem(args.ggfsName());
-        GridGgfsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
+        IgniteFsProcessorAdapter ggfsProc = ((GridKernal) ignite).context().ggfs();
 
         Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();
 

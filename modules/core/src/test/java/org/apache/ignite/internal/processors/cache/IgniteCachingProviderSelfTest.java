@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.*;
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 
 import javax.cache.*;
 import javax.cache.spi.*;
@@ -36,18 +36,18 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
-        return GridCacheAtomicityMode.TRANSACTIONAL;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -63,10 +63,10 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        GridCacheConfiguration cache1 = cacheConfiguration(null);
+        CacheConfiguration cache1 = cacheConfiguration(null);
         cache1.setName("cache1");
 
-        GridCacheConfiguration cache2 = cacheConfiguration(null);
+        CacheConfiguration cache2 = cacheConfiguration(null);
         cache2.setName("cache2");
 
         cfg.setCacheConfiguration(cacheConfiguration(null), cache1, cache2);
@@ -96,13 +96,13 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
 
         assertEquals(Collections.<String>emptySet(), Sets.newHashSet(cacheMgr.getCacheNames()));
 
-        Cache<Integer, String> cacheA = cacheMgr.createCache("a", new GridCacheConfiguration());
+        Cache<Integer, String> cacheA = cacheMgr.createCache("a", new CacheConfiguration());
 
         cacheA.put(1, "1");
 
         assertEquals("1", cacheA.get(1));
 
-        cacheMgr.createCache("b", new GridCacheConfiguration());
+        cacheMgr.createCache("b", new CacheConfiguration());
 
         assertEquals(Sets.newHashSet("a", "b"), Sets.newHashSet(cacheMgr.getCacheNames()));
 

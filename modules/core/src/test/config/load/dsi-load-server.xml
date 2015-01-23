@@ -37,7 +37,7 @@
 
         <property name="cacheConfiguration">
             <util:list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="REPLICATED_CACHE"/>
                     <property name="cacheMode" value="REPLICATED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -46,7 +46,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
                     <property name="swapEnabled" value="false"/>
                 </bean>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="PARTITIONED_CACHE"/>
                     <property name="cacheMode" value="PARTITIONED"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
@@ -60,7 +60,7 @@
                     <property name="evictNearSynchronized" value="false"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
                             <property name="maxSize" value="5000"/>
                         </bean>
                     </property>
@@ -78,6 +78,6 @@
     </bean>
 
     <util:list id="lifecycleBeans">
-        <bean class="org.gridgain.loadtests.dsi.GridDsiLifecycleBean"/>
+        <bean class="org.apache.ignite.loadtests.dsi.GridDsiLifecycleBean"/>
     </util:list>
 </beans>

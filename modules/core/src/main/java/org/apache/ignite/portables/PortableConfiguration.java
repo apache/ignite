@@ -17,7 +17,7 @@
 
 package org.apache.ignite.portables;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.sql.Timestamp;
 import java.util.*;

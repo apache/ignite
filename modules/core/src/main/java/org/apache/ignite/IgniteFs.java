@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -51,8 +50,8 @@ import java.util.*;
  * <h1 class="header">Integration With Hadoop</h1>
  * In addition to direct file system API, {@code GGFS} can be integrated with {@code Hadoop} by
  * plugging in as {@code Hadoop FileSystem}. Refer to
- * {@code org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem} or
- * {@code org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
+ * {@code org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem} or
+ * {@code org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
@@ -263,6 +262,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      *
      * @throws IgniteCheckedException In case format has failed.
      */
+    @IgniteAsyncSupported
     public void format() throws IgniteCheckedException;
 
     /**
@@ -277,6 +277,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
@@ -297,6 +298,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws IgniteCheckedException;
@@ -313,6 +315,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
@@ -332,6 +335,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws IgniteCheckedException;

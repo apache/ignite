@@ -21,15 +21,15 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.net.*;
 import java.util.*;
@@ -676,12 +676,12 @@ public class GridTcpClientDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      */
     private static class MessageListener implements IgniteBiPredicate<UUID, Object> {
-        @IgniteLocalNodeIdResource
-        private UUID nodeId;
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public boolean apply(UUID uuid, Object msg) {
-            X.println(">>> Received [locNodeId=" + nodeId + ", msg=" + msg + ']');
+            X.println(">>> Received [locNodeId=" + ignite.configuration().getNodeId() + ", msg=" + msg + ']');
 
             msgLatch.countDown();
 

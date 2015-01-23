@@ -17,9 +17,9 @@
 
 package org.apache.ignite.fs;
 
-import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.ggfs.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.fs.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * {@code GGFS} class providing ability to group file's data blocks together on one node.

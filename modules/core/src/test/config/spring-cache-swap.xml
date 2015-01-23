@@ -29,13 +29,13 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+            <bean class="org.apache.ignite.cache.CacheConfiguration">
                 <property name="cacheMode" value="LOCAL"/>
 
                 <property name="swapEnabled" value="true"/>
 
                 <property name="evictionPolicy">
-                    <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                    <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
                         <property name="maxSize" value="10000"/>
                     </bean>
                 </property>

@@ -20,11 +20,10 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
 
 import javax.sql.*;
 import java.net.*;
@@ -335,7 +334,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
         try {
             U.await(initLatch);
         }
-        catch (GridInterruptedException e) {
+        catch (IgniteInterruptedException e) {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
 

@@ -47,7 +47,7 @@
                                 <list>
                                     <bean class="org.apache.ignite.streamer.index.tree.StreamerTreeIndexProvider">
                                         <property name="updater">
-                                            <bean class="org.gridgain.loadtests.streamer.IndexUpdater"/>
+                                            <bean class="org.apache.ignite.loadtests.streamer.IndexUpdater"/>
                                         </property>
                                     </bean>
                                 </list>
@@ -56,7 +56,7 @@
                     </property>
                     <property name="stages">
                         <list>
-                            <bean class="org.gridgain.loadtests.streamer.average.TestStage"/>
+                            <bean class="org.apache.ignite.loadtests.streamer.average.TestStage"/>
                         </list>
                     </property>
                     <property name="maximumConcurrentSessions" value="1000"/>
@@ -69,11 +69,11 @@
     <!--
         Load closures.
     -->
-    <bean class="org.gridgain.loadtests.streamer.GridStreamerLoad">
+    <bean class="org.apache.ignite.loadtests.streamer.GridStreamerLoad">
         <property name="closures">
             <list>
-                <bean class="org.gridgain.loadtests.streamer.EventClosure" />
-                <bean class="org.gridgain.loadtests.streamer.QueryClosure" />
+                <bean class="org.apache.ignite.loadtests.streamer.EventClosure" />
+                <bean class="org.apache.ignite.loadtests.streamer.QueryClosure" />
             </list>
         </property>
     </bean>
