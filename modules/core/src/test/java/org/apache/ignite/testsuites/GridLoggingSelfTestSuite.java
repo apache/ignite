@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.logger.java.*;
+import org.apache.ignite.logger.java.*;
 
 /**
  * Logging self-test suite.
