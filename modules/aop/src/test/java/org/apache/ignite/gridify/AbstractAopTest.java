@@ -38,7 +38,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Abstract AOP test.
  */
 @SuppressWarnings( {"OverlyStrongTypeCast", "JUnitAbstractTestClassNamingConvention", "ProhibitedExceptionDeclared", "IfMayBeConditional"})
-public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
+public abstract class AbstractAopTest extends GridCommonAbstractTest {
     /** */
     private IgniteDeploymentMode depMode = IgniteDeploymentMode.PRIVATE;
 
@@ -338,10 +338,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget)
-                res = ((GridTestAopTarget)targetObj).gridifyDefault("1");
+            if (targetObj instanceof TestAopTarget)
+                res = ((TestAopTarget)targetObj).gridifyDefault("1");
             else
-                res = ((GridTestAopTargetInterface) targetObj).gridifyDefault("1");
+                res = ((TestAopTargetInterface) targetObj).gridifyDefault("1");
 
             assert res == 1 : "Invalid gridifyDefault result: " + res;
         }
@@ -485,10 +485,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget)
-                res = ((GridTestAopTarget) targetObj).gridifyNonDefaultClass("1");
+            if (targetObj instanceof TestAopTarget)
+                res = ((TestAopTarget) targetObj).gridifyNonDefaultClass("1");
             else
-                res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultClass("1");
+                res = ((TestAopTargetInterface) targetObj).gridifyNonDefaultClass("1");
 
             if (res != 10)
                 fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=10]");
@@ -518,10 +518,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget)
-                res = ((GridTestAopTarget) targetObj).gridifyNonDefaultName("2");
+            if (targetObj instanceof TestAopTarget)
+                res = ((TestAopTarget) targetObj).gridifyNonDefaultName("2");
             else
-                res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultName("2");
+                res = ((TestAopTargetInterface) targetObj).gridifyNonDefaultName("2");
 
             if (res != 20)
                 fail("Method gridifyNonDefault returned wrong value [result=" + res + ", expect=2]");
@@ -551,12 +551,12 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
             boolean isE = false;
 
             try {
-                if (targetObj instanceof GridTestAopTarget)
-                    ((GridTestAopTarget) targetObj).gridifyDefaultException("1");
+                if (targetObj instanceof TestAopTarget)
+                    ((TestAopTarget) targetObj).gridifyDefaultException("1");
                 else
-                    ((GridTestAopTargetInterface) targetObj).gridifyDefaultException("1");
+                    ((TestAopTargetInterface) targetObj).gridifyDefaultException("1");
             }
-            catch (GridTestGridifyException e) {
+            catch (TestGridifyException e) {
                 info("@Gridify method gridifyDefaultException(0) returns exception: " + e);
 
                 isE = true;
@@ -565,7 +565,7 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
                 e.printStackTrace();
 
                 fail("@Gridify method gridifyDefaultException(0) returns exception [exception" + e
-                    + ", expect=" + GridTestGridifyException.class.getName() + ']');
+                    + ", expect=" + TestGridifyException.class.getName() + ']');
             }
 
             if (!isE)
@@ -594,10 +594,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget)
-                res = ((GridTestAopTarget)targetObj).gridifyDefaultResource("1");
+            if (targetObj instanceof TestAopTarget)
+                res = ((TestAopTarget)targetObj).gridifyDefaultResource("1");
             else
-                res = ((GridTestAopTargetInterface)targetObj).gridifyDefaultResource("1");
+                res = ((TestAopTargetInterface)targetObj).gridifyDefaultResource("1");
 
             if (res != 1)
                 fail("Method gridifyDefaultResource returned wrong value [result=" + res + ", expect=1]");
@@ -627,10 +627,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget)
-                res = ((GridTestAopTarget) targetObj).gridifyNonDefaultClassResource("3");
+            if (targetObj instanceof TestAopTarget)
+                res = ((TestAopTarget) targetObj).gridifyNonDefaultClassResource("3");
             else
-                res = ((GridTestAopTargetInterface) targetObj).gridifyNonDefaultClassResource("3");
+                res = ((TestAopTargetInterface) targetObj).gridifyNonDefaultClassResource("3");
 
             if (res != 30)
                 fail("Method gridifyNonDefaultClassResource returned wrong value [result=" + res + ", expect=3]");
@@ -660,10 +660,10 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
 
             Object targetObj = target();
 
-            if (targetObj instanceof GridTestAopTarget)
-                res = ((GridTestAopTarget)targetObj).gridifyNonDefaultNameResource("4");
+            if (targetObj instanceof TestAopTarget)
+                res = ((TestAopTarget)targetObj).gridifyNonDefaultNameResource("4");
             else
-                res = ((GridTestAopTargetInterface)targetObj).gridifyNonDefaultNameResource("4");
+                res = ((TestAopTargetInterface)targetObj).gridifyNonDefaultNameResource("4");
 
             if (res != 40)
                 fail("Method gridifyNonDefaultNameResource returned wrong value [result=" + res + ", expect=4]");
@@ -702,9 +702,9 @@ public abstract class GridAbstractAopTest extends GridCommonAbstractTest {
         ClassLoader tstClsLdr = new GridTestClassLoader(
             Collections.singletonMap("org/apache/ignite/gridify/test_resource.properties", "param1=2"),
             getClass().getClassLoader(),
-            GridTestAopTarget.class.getName(), GridTestAopTargetInterface.class.getName());
+            TestAopTarget.class.getName(), TestAopTargetInterface.class.getName());
 
-        return tstClsLdr.loadClass("GridTestAopTarget").newInstance();
+        return tstClsLdr.loadClass("TestAopTarget").newInstance();
     }
 
     /**

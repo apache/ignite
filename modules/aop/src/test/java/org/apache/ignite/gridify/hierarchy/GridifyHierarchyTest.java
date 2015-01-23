@@ -30,7 +30,7 @@ public class GridifyHierarchyTest extends GridCommonAbstractTest {
 
     /** */
     public void noneTestGridifyHierarchyProtected() {
-        GridTarget target = new GridTarget();
+        Target target = new Target();
 
         target.methodA();
     }
@@ -39,7 +39,7 @@ public class GridifyHierarchyTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGridifyHierarchyPrivate() throws Exception {
-        GridTarget target = new GridTarget();
+        Target target = new Target();
 
         target.methodB();
     }

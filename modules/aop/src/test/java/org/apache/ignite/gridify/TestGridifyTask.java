@@ -17,36 +17,31 @@
 
 package org.apache.ignite.gridify;
 
-import org.apache.ignite.compute.gridify.aop.spring.*;
-import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.*;
+import org.apache.ignite.compute.*;
+import org.apache.ignite.compute.gridify.*;
+
+import java.util.*;
 
 /**
- * Spring AOP test.
+ * Test gridify task.
  */
-@GridCommonTest(group="AOP")
-public class GridSpringAopSelfTest extends GridAbstractAopTest {
+@ComputeTaskName(TestGridifyTask.TASK_NAME)
+public class TestGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Object> {
+    /** */
+    public static final String TASK_NAME = "TestGridifyTask";
+
     /** {@inheritDoc} */
-    @Override protected Object target() {
-        return GridifySpringEnhancer.enhance(new GridTestAopTarget());
+    @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {
+        assert arg.getMethodParameters().length == 1;
+
+        return Collections.singletonList(new TestGridifyJob((String)arg.getMethodParameters()[0]));
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
-        return "GridTestAopTargetInterface";
-    }
+    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        assert results.size() == 1;
 
-    /** {@inheritDoc} */
-    @Override protected Object targetWithUserClassLoader() throws Exception {
-        Object res = super.targetWithUserClassLoader();
-
-        ClassLoader cl = Thread.currentThread().getContextClassLoader();
-
-        Thread.currentThread().setContextClassLoader(res.getClass().getClassLoader());
-
-        res = GridifySpringEnhancer.enhance(res);
-
-        Thread.currentThread().setContextClassLoader(cl);
-
-        return res;
+        return results.get(0).getData();
     }
 }

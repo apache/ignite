@@ -20,11 +20,11 @@ package org.apache.ignite.gridify;
 /**
  * Test gridify exception.
  */
-public class GridTestGridifyException extends Exception {
+public class TestGridifyException extends Exception {
     /**
      * @param msg Message.
      */
-    public GridTestGridifyException(String msg) {
+    public TestGridifyException(String msg) {
         super(msg);
     }
 
@@ -32,7 +32,7 @@ public class GridTestGridifyException extends Exception {
      * @param msg Message.
      * @param cause Exception cause.
      */
-    public GridTestGridifyException(String msg, Throwable cause) {
+    public TestGridifyException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

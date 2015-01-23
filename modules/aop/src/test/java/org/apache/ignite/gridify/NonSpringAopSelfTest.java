@@ -44,14 +44,14 @@ import org.apache.ignite.testframework.junits.common.*;
  * 2. Classpath should contains the ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj folder.
  */
 @GridCommonTest(group="AOP")
-public class GridNonSpringAopSelfTest extends GridAbstractAopTest {
+public class NonSpringAopSelfTest extends AbstractAopTest {
     /** {@inheritDoc} */
     @Override protected Object target() {
-        return new GridTestAopTarget();
+        return new TestAopTarget();
     }
 
     /** {@inheritDoc} */
     @Override public String getTestGridName() {
-        return "GridTestAopTarget";
+        return "TestAopTarget";
     }
 }

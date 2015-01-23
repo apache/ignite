@@ -17,37 +17,29 @@
 
 package org.apache.ignite.gridify.hierarchy;
 
-import org.apache.ignite.compute.gridify.*;
-
 /**
- * Target base class.
+ * Target.
  */
-public abstract class GridSuperTarget {
-    /**
-     * @return Always returns "GridSuperTarget.methodA()".
-     */
-    @Gridify(gridName = "GridifyHierarchyTest")
-    protected String methodA() {
-        System.out.println(">>> Called GridSuperTarget.methodA()");
+public class Target extends SuperTarget {
+    /** {@inheritDoc} */
+    @Override protected String methodA() {
+        System.out.println(">>> Called Target.methodA()");
 
-        return "GridSuperTarget.methodA()";
+        String res = super.methodA();
+
+        assert "SuperTarget.methodA()".equals(res) == true :
+            "Unexpected SuperTarget.methodA() apply result [res=" + res + ']';
+
+        return "Target.MethodA()";
     }
 
-    /**
-     * @return "GridSuperTarget.methodC()" string.
-     */
-    protected String methodB() {
-        return methodC();
+    /** {@inheritDoc} */
+    @Override protected String methodB() {
+        String res = super.methodB();
+
+        assert "SuperTarget.methodC()".equals(res) == true:
+            "Unexpected SuperTarget.methodB() apply result [res=" + res + ']';
+
+        return res;
     }
-
-    /**
-     * @return "GridSuperTarget.methodC()" string.
-     */
-    @Gridify(gridName = "GridifyHierarchyTest")
-    private String methodC() {
-        System.out.println(">>> Called GridSuperTarget.methodC()");
-
-        return "GridSuperTarget.methodC()";
-    }
-
 }

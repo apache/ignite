@@ -26,7 +26,7 @@ import java.io.*;
 /**
  * Test gridify job.
  */
-public class GridTestGridifyJob extends ComputeJobAdapter {
+public class TestGridifyJob extends ComputeJobAdapter {
     /** */
     @IgniteLoggerResource
     private IgniteLogger log;
@@ -34,16 +34,16 @@ public class GridTestGridifyJob extends ComputeJobAdapter {
     /**
      * @param arg Argument.
      */
-    public GridTestGridifyJob(String arg) {
+    public TestGridifyJob(String arg) {
         super(arg);
     }
 
     /** {@inheritDoc} */
     @Override public Serializable execute() throws IgniteCheckedException {
         if (log.isInfoEnabled())
-            log.info("Execute GridTestGridifyJob.execute(" + argument(0) + ')');
+            log.info("Execute TestGridifyJob.execute(" + argument(0) + ')');
 
-        GridTestAopTarget target = new GridTestAopTarget();
+        TestAopTarget target = new TestAopTarget();
 
         try {
             if ("1".equals(argument(0)))
@@ -55,7 +55,7 @@ public class GridTestGridifyJob extends ComputeJobAdapter {
             else if ("4".equals(argument(0)))
                 return target.gridifyNonDefaultNameResource("40");
         }
-        catch (GridTestGridifyException e) {
+        catch (TestGridifyException e) {
             throw new RuntimeException("Failed to execute target method.", e);
         }
 

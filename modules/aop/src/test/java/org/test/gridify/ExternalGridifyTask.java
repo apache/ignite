@@ -44,7 +44,7 @@ public class ExternalGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument
             /** {@inheritDoc} */
             @Override public Serializable execute() {
                 if (log.isInfoEnabled())
-                    log.info("Execute GridTestGridifyJob.execute(" + argument(0) + ')');
+                    log.info("Execute TestGridifyJob.execute(" + argument(0) + ')');
 
                 ExternalAopTarget target = new ExternalAopTarget();
 

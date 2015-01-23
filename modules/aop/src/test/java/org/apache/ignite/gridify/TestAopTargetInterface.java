@@ -24,64 +24,64 @@ import java.io.*;
 /**
  * Test AOP target interface.
  */
-public interface GridTestAopTargetInterface extends Serializable {
+public interface TestAopTargetInterface extends Serializable {
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="GridTestAopTargetInterface")
+    @Gridify(gridName="TestAopTargetInterface")
     public int gridifyDefault(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="GridTestAopTargetInterface", taskName = GridTestGridifyTask.TASK_NAME)
+    @Gridify(gridName="TestAopTargetInterface", taskName = TestGridifyTask.TASK_NAME)
     public int gridifyNonDefaultName(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="GridTestAopTargetInterface", taskClass = GridTestGridifyTask.class)
+    @Gridify(gridName="TestAopTargetInterface", taskClass = TestGridifyTask.class)
     public int gridifyNonDefaultClass(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="GridTestAopTargetInterface", taskName = "")
+    @Gridify(gridName="TestAopTargetInterface", taskName = "")
     public int gridifyNoName(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
-     * @throws GridTestGridifyException If failed.
+     * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="GridTestAopTargetInterface")
-    public int gridifyDefaultException(String arg) throws GridTestGridifyException;
+    @Gridify(gridName="TestAopTargetInterface")
+    public int gridifyDefaultException(String arg) throws TestGridifyException;
 
     /**
      * @param arg Argument.
      * @return Result.
-     * @throws GridTestGridifyException If failed.
+     * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="GridTestAopTargetInterface")
-    public int gridifyDefaultResource(String arg) throws GridTestGridifyException;
+    @Gridify(gridName="TestAopTargetInterface")
+    public int gridifyDefaultResource(String arg) throws TestGridifyException;
 
     /**
      * @param arg Argument.
      * @return Result.
-     * @throws GridTestGridifyException If failed.
+     * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="GridTestAopTargetInterface", taskClass = GridTestGridifyTask.class)
-    public int gridifyNonDefaultClassResource(String arg) throws GridTestGridifyException;
+    @Gridify(gridName="TestAopTargetInterface", taskClass = TestGridifyTask.class)
+    public int gridifyNonDefaultClassResource(String arg) throws TestGridifyException;
 
     /**
      * @param arg Argument.
      * @return Result.
-     * @throws GridTestGridifyException If failed.
+     * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="GridTestAopTargetInterface", taskName = GridTestGridifyTask.TASK_NAME)
-    public int gridifyNonDefaultNameResource(String arg) throws GridTestGridifyException;
+    @Gridify(gridName="TestAopTargetInterface", taskName = TestGridifyTask.TASK_NAME)
+    public int gridifyNonDefaultNameResource(String arg) throws TestGridifyException;
 }

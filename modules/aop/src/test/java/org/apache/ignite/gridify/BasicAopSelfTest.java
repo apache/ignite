@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * The main purpose of this test is to check that AOP is properly configured. It should
  * be included in all suites that require AOP.
  */
-public class GridBasicAopSelfTest extends GridCommonAbstractTest {
+public class BasicAopSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */

@@ -36,10 +36,10 @@ public class IgniteAopSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Gridgain AOP Test Suite");
 
         // Test configuration.
-        suite.addTest(new TestSuite(GridBasicAopSelfTest.class));
+        suite.addTest(new TestSuite(BasicAopSelfTest.class));
 
-        suite.addTest(new TestSuite(GridSpringAopSelfTest.class));
-        suite.addTest(new TestSuite(GridNonSpringAopSelfTest.class));
+        suite.addTest(new TestSuite(SpringAopSelfTest.class));
+        suite.addTest(new TestSuite(NonSpringAopSelfTest.class));
         suite.addTest(new TestSuite(GridifySetToXXXSpringAopSelfTest.class));
         suite.addTest(new TestSuite(GridifySetToXXXNonSpringAopSelfTest.class));
         suite.addTest(new TestSuite(ExternalNonSpringAopSelfTest.class));
