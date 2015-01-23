@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.pimps
 
-import org.apache.ignite.cache.Cache
+import org.apache.ignite.cache.GridCache
 
 /**
  * ==Overview==
@@ -38,13 +38,13 @@ import org.apache.ignite.cache.Cache
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
  */
-class ScalarCachePimp[K, V] extends ScalarCacheProjectionPimp[K, V] with Ordered[Cache[K, V]] {
+class ScalarCachePimp[K, V] extends ScalarCacheProjectionPimp[K, V] with Ordered[GridCache[K, V]] {
     /**
      * Compares this cache name to the given cache name.
      *
      * @param that Another cache instance to compare names with.
      */
-    def compare(that: Cache[K, V]): Int = that.name.compareTo(value.name)
+    def compare(that: GridCache[K, V]): Int = that.name.compareTo(value.name)
 }
 
 /**
@@ -56,7 +56,7 @@ object ScalarCachePimp {
      *
      * @param impl Java-side implementation.
      */
-    def apply[K, V](impl: Cache[K, V]) = {
+    def apply[K, V](impl: GridCache[K, V]) = {
         if (impl == null)
             throw new NullPointerException("impl")
 

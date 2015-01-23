@@ -242,7 +242,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method does not participate in any transactions, however, it will
      * peek at transactional value according to the {@link org.apache.ignite.cache.GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link org.apache.ignite.cache.Cache#peek(Object, Collection)} method.
+     * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *
      * @param key Entry key.
      * @return Peeked value.

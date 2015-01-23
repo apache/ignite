@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -112,7 +112,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         cache.loadCache(null, 0);
 
@@ -130,7 +130,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsync() throws Exception {
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         cache.loadCacheAsync(null, 0).get();
 
@@ -148,7 +148,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheFiltered() throws Exception {
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         cache.loadCache(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
@@ -170,7 +170,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCacheAsyncFiltered() throws Exception {
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         cache.loadCacheAsync(new P2<Integer, ValueObject>() {
             @Override public boolean apply(Integer key, ValueObject val) {
@@ -194,7 +194,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testReload() throws Exception {
         STORE_MAP.put(1, new ValueObject(1));
 
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         ValueObject vo = cache.reload(1);
 
@@ -217,7 +217,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
     public void testReloadAsync() throws Exception {
         STORE_MAP.put(1, new ValueObject(1));
 
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         assert cache.reloadAsync(1).get().value() == 1;
 
@@ -238,7 +238,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < PUT_CNT; i++)
             STORE_MAP.put(i, new ValueObject(i));
 
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         Integer[] keys = new Integer[PUT_CNT - 5];
 
@@ -280,7 +280,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < PUT_CNT; i++)
             STORE_MAP.put(i, new ValueObject(i));
 
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         Integer[] keys = new Integer[PUT_CNT - 5];
 
@@ -320,7 +320,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReloadAllFiltered() throws Exception {
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         for (int i = 0; i < PUT_CNT; i++)
             assert cache.putx(i, new ValueObject(i));
@@ -358,7 +358,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReloadAllAsyncFiltered() throws Exception {
-        Cache<Integer, ValueObject> cache = cache();
+        GridCache<Integer, ValueObject> cache = cache();
 
         for (int i = 0; i < PUT_CNT; i++)
             assert cache.putx(i, new ValueObject(i));

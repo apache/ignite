@@ -152,7 +152,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                Cache<Integer, String> cache = txIgniteNode.cache(null);
+                GridCache<Integer, String> cache = txIgniteNode.cache(null);
 
                 assertNotNull(cache);
 
@@ -212,7 +212,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        Cache<Integer, String> cache = ignite.cache(null);
+                        GridCache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 

@@ -43,7 +43,7 @@ import java.util.concurrent.*;
  * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
- * <li>{@link org.apache.ignite.cache.Cache} - functionality for in-memory distributed cache.</li>
+ * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
@@ -217,7 +217,7 @@ public interface Ignite extends AutoCloseable {
      * @see IgniteFsConfiguration#getDataCacheName()
      * @see IgniteFsConfiguration#getMetaCacheName()
      */
-    public <K, V> Cache<K, V> cache(@Nullable String name);
+    public <K, V> GridCache<K, V> cache(@Nullable String name);
 
     /**
      * Gets all configured caches.
@@ -228,7 +228,7 @@ public interface Ignite extends AutoCloseable {
      * @see IgniteFsConfiguration#getMetaCacheName()
      * @return All configured caches.
      */
-    public Collection<Cache<?, ?>> caches();
+    public Collection<GridCache<?, ?>> caches();
 
     /**
      * Gets an instance of {@link IgniteCache} API. {@code IgniteCache} is a fully-compatible

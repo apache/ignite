@@ -61,7 +61,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     protected IgniteFs ggfs;
 
     /** Meta cache. */
-    private Cache<Object, Object> metaCache;
+    private GridCache<Object, Object> metaCache;
 
     /** Meta cache name. */
     private String metaCacheName;
@@ -682,8 +682,8 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(ggfs.info(path), "fileId");
 
-        Cache<IgniteUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
-        Cache<GridGgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
+        GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
+        GridCache<GridGgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
         GridGgfsFileInfo info = metaCache.get(fileId);
 

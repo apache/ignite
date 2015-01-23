@@ -371,8 +371,8 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public <K1, V1> Cache<K1, V1> cache() {
-        return (Cache<K1, V1>)cctx.cache();
+    @Override public <K1, V1> GridCache<K1, V1> cache() {
+        return (GridCache<K1, V1>)cctx.cache();
     }
 
     /** {@inheritDoc} */

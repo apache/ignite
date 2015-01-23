@@ -96,7 +96,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Started grid: " + locNodeId);
 
-                    Cache<String, ?> cache = ignite.cache(null);
+                    GridCache<String, ?> cache = ignite.cache(null);
 
                     info("Creating queue: " + locNodeId);
 
@@ -155,7 +155,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    Cache<Integer, String> cache = ignite.cache(null);
+                    GridCache<Integer, String> cache = ignite.cache(null);
 
                     info("Partition: " + cache.affinity().partition(1));
 

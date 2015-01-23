@@ -196,7 +196,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testReadersUpdate(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
@@ -207,7 +207,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
         // Create readers.
         for (int g = 0; g < GRID_CNT; g++) {
-            Cache<Integer, Integer> c = grid(g).cache(null);
+            GridCache<Integer, Integer> c = grid(g).cache(null);
 
             for (int i = 0; i < 100; i++)
                 assertEquals((Integer)1, c.get(i));
@@ -221,7 +221,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         for (int g = 0; g < GRID_CNT; g++) {
-            Cache<Integer, Integer> c = grid(g).cache(null);
+            GridCache<Integer, Integer> c = grid(g).cache(null);
 
             for (int i = 0; i < 100; i++)
                 assertEquals((Integer)2, c.get(i));

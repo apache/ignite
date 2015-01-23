@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -47,13 +47,13 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private static final AtomicInteger CNT = new AtomicInteger(0);
 
     /** */
-    private Cache<Integer, Integer> cache1;
+    private GridCache<Integer, Integer> cache1;
 
     /** */
-    private Cache<Integer, Integer> cache2;
+    private GridCache<Integer, Integer> cache2;
 
     /** */
-    private Cache<Integer, Integer> cache3;
+    private GridCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {

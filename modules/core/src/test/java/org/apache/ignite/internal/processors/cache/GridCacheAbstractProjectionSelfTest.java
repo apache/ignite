@@ -72,7 +72,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @return Cache instance.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    private Cache<String, TestCloneable> cacheCloneable() {
+    private GridCache<String, TestCloneable> cacheCloneable() {
         return grid(0).cache(null);
     }
 
@@ -164,11 +164,11 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception In case of error.
      */
     public void testTypeProjection() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         cache.putAll(F.asMap("k1", 1 , "k2", 2, "k3", 3));
 
-        Cache<Double, Boolean> anotherCache = grid(0).cache(null);
+        GridCache<Double, Boolean> anotherCache = grid(0).cache(null);
 
         assert anotherCache != null;
 
@@ -809,7 +809,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws IgniteCheckedException In case of error.
      */
     public void testTypedProjection() throws Exception {
-        Cache<Object, Object> cache = grid(0).cache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
 
         cache.putx("1", "test string");
         cache.putx("2", 0);

@@ -46,9 +46,9 @@ public class GridCacheContinuousQueryReplicatedSelfTest extends GridCacheContinu
      * @throws Exception If failed.
      */
     public void testRemoteNodeCallback() throws Exception {
-        Cache<Integer, Integer> cache1 = grid(0).cache(null);
+        GridCache<Integer, Integer> cache1 = grid(0).cache(null);
 
-        Cache<Integer, Integer> cache2 = grid(1).cache(null);
+        GridCache<Integer, Integer> cache2 = grid(1).cache(null);
 
         CacheContinuousQuery<Integer, Integer> qry = cache2.queries().createContinuousQuery();
 

@@ -347,7 +347,7 @@ public class GridCacheLruEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            Cache<Integer, Integer> cache = ignite.cache(null);
+            GridCache<Integer, Integer> cache = ignite.cache(null);
 
             int cnt = 500;
 

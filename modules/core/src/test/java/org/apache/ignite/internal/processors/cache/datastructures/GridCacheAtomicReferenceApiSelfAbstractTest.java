@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -198,7 +198,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
     public void testNonPersistentMode() throws IgniteCheckedException {
         String atomicName = UUID.randomUUID().toString();
 
-        Cache<Object, Object> cache = grid().cache(null);
+        GridCache<Object, Object> cache = grid().cache(null);
 
         assertNotNull(cache);
 

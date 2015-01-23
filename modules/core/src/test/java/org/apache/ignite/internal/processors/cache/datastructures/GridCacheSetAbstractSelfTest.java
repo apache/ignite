@@ -679,7 +679,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    Cache cache = grid(idx).cache(null);
+                    GridCache cache = grid(idx).cache(null);
 
                     CacheSet<Integer> set = cache.dataStructures().set(SET_NAME, collocated, false);
 

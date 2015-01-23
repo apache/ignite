@@ -400,7 +400,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     public void testInvalidateFlag() throws Exception {
         GridEx g0 = grid(0);
 
-        Cache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
+        GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
 
         String key = null;
 

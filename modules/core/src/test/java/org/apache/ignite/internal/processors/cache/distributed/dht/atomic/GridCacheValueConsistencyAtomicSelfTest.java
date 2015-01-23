@@ -92,7 +92,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
             int total = 0;
 
             for (int idx = 0; idx < gridCount(); idx++) {
-                Cache<Integer, Integer> cache = grid(idx).cache(null);
+                GridCache<Integer, Integer> cache = grid(idx).cache(null);
 
                 for (int i = 0; i < keyCnt; i++) {
                     Integer val = cache.peek(i);

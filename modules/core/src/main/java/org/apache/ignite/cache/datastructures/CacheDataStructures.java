@@ -27,7 +27,7 @@ import org.jetbrains.annotations.*;
  * know about the change. Or if you add an element to {@link CacheQueue} on one node,
  * you can poll it on another node.
  * <p>
- * You can get data structures facade by calling {@link org.apache.ignite.cache.Cache#dataStructures()} method.
+ * You can get data structures facade by calling {@link org.apache.ignite.cache.GridCache#dataStructures()} method.
  */
 public interface CacheDataStructures {
     /**

@@ -113,14 +113,14 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         startGrid(gridCount());
 
-        Cache<String, Organization> orgCache = grid(0).cache(null);
+        GridCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        Cache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        GridCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 

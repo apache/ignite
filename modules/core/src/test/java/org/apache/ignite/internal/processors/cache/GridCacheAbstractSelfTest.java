@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -115,7 +115,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                             // Preloading may happen as nodes leave, so we need to wait.
                             new GridAbsPredicateX() {
                                 @Override public boolean applyx() throws IgniteCheckedException {
-                                    Cache<String, Integer> cache = cache(fi);
+                                    GridCache<String, Integer> cache = cache(fi);
 
                                     cache.removeAll();
 
@@ -354,7 +354,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Cache instance casted to work with string and integer types for convenience.
      */
     @SuppressWarnings({"unchecked"})
-    @Override protected Cache<String, Integer> cache(int idx) {
+    @Override protected GridCache<String, Integer> cache(int idx) {
         return grid(idx).cache(null);
     }
 
@@ -362,7 +362,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Default cache instance casted to work with string and integer types for convenience.
      */
     @SuppressWarnings({"unchecked"})
-    @Override protected Cache<String, Integer> cache() {
+    @Override protected GridCache<String, Integer> cache() {
         return cache(0);
     }
 
@@ -404,7 +404,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
      */
-    protected boolean offheapTiered(Cache cache) {
+    protected boolean offheapTiered(GridCache cache) {
         return cache.configuration().getMemoryMode() == OFFHEAP_TIERED;
     }
 
@@ -427,7 +427,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsKey(Cache cache, Object key) throws Exception {
+    protected boolean containsKey(GridCache cache, Object key) throws Exception {
         return offheapTiered(cache) ? containsOffheapKey(cache, key) : cache.containsKey(key);
     }
 
@@ -438,7 +438,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsValue(Cache cache, Object val) throws Exception {
+    protected boolean containsValue(GridCache cache, Object val) throws Exception {
         return offheapTiered(cache) ? containsOffheapValue(cache, val) : cache.containsValue(val);
     }
 
@@ -449,7 +449,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsOffheapKey(Cache cache, Object key) throws Exception {
+    protected boolean containsOffheapKey(GridCache cache, Object key) throws Exception {
         for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
             Map.Entry e = it.next();
 
@@ -467,7 +467,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsOffheapValue(Cache cache, Object val) throws Exception {
+    protected boolean containsOffheapValue(GridCache cache, Object val) throws Exception {
         for (Iterator<Map.Entry> it = cache.offHeapIterator(); it.hasNext();) {
             Map.Entry e = it.next();
 

@@ -87,7 +87,7 @@ import java.util.concurrent.*;
  * @param <K> Key type.
  * @param <V> Value type.
  */
-public interface CacheEntry<K, V> extends Map.Entry<K, V>, Cache.Entry<K, V> {
+public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Entry<K, V> {
     /**
      * Cache projection to which this entry belongs. Note that entry and its
      * parent projections have same flags and filters.

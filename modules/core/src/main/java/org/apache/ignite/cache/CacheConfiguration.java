@@ -1431,7 +1431,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * <p>
      * Default value is {@code 0} which means that repartitioning and preloading will start
      * immediately upon node leaving topology. If {@code -1} is returned, then preloading
-     * will only be started manually by calling {@link Cache#forceRepartition()} method or
+     * will only be started manually by calling {@link GridCache#forceRepartition()} method or
      * from management console.
      *
      * @return Preloading delay, {@code 0} to start preloading immediately, {@code -1} to

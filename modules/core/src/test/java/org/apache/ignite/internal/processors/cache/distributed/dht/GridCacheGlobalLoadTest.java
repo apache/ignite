@@ -27,6 +27,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import org.junit.*;
 
+import javax.cache.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;

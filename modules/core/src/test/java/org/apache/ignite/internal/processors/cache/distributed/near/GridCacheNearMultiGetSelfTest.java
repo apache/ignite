@@ -102,7 +102,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            Cache<Integer, String> c = g.cache(null);
+            GridCache<Integer, String> c = g.cache(null);
 
             c.removeAll();
 
@@ -220,7 +220,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      */
     private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
-        Cache<Integer, String> cache = grid(0).cache(null);
+        GridCache<Integer, String> cache = grid(0).cache(null);
 
         Integer key = 1;
 

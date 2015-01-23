@@ -102,7 +102,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         @Override public Boolean call() throws Exception {
             Ignite ignite = grid();
 
-            Cache cache = ignite.cache(null);
+            GridCache cache = ignite.cache(null);
 
             assert cache != null;
 

@@ -58,7 +58,7 @@ public class VisorCacheCompactTask extends VisorOneNodeTask<Set<String>, Map<Str
         @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) throws IgniteCheckedException {
             final Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
 
-            for(Cache cache : g.cachesx()) {
+            for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
                 if (names.contains(cacheName)) {

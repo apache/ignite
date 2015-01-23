@@ -85,7 +85,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            Cache<String, int[]> c = g.cache(null);
+            GridCache<String, int[]> c = g.cache(null);
 
             assertEquals("Cache is not empty: " + c.entrySet(), 0, c.size());
         }
@@ -131,7 +131,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) throws IgniteCheckedException {
-                    Cache<String, int[]> cache = this.ignite.cache(null);
+                    GridCache<String, int[]> cache = this.ignite.cache(null);
 
                     try (IgniteTx tx = cache.txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");

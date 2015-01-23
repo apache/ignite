@@ -35,7 +35,7 @@ public class GridHibernateGeneralDataRegion extends GridHibernateRegion implemen
      * @param cache Region cache.
      */
     public GridHibernateGeneralDataRegion(GridHibernateRegionFactory factory, String name,
-        Ignite ignite, Cache<Object, Object> cache) {
+        Ignite ignite, GridCache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
 

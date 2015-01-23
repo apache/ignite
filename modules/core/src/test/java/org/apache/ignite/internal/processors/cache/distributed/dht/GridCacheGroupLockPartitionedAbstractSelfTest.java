@@ -74,7 +74,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
     private void checkUpdateEntry(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        Cache<CacheAffinityKey<Integer>, Integer> cache = cache(0);
+        GridCache<CacheAffinityKey<Integer>, Integer> cache = cache(0);
 
         assert cache.isEmpty();
 
@@ -112,7 +112,7 @@ public abstract class GridCacheGroupLockPartitionedAbstractSelfTest extends Grid
 
         final UUID affinityKey = primaryKeyForCache(grid(0));
 
-        final Cache<UUID, String> cache = grid(0).cache(null);
+        final GridCache<UUID, String> cache = grid(0).cache(null);
 
         try (IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affinityKey), PESSIMISTIC, REPEATABLE_READ,
             0, 2)) {

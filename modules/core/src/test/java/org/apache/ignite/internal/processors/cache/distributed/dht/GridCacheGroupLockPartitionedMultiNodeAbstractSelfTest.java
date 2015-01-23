@@ -58,7 +58,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     private void checkNonLocalKey(IgniteTxConcurrency concurrency) throws Exception {
         final UUID key = primaryKeyForCache(grid(1));
 
-        Cache<Object, Object> cache = grid(0).cache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
 
         IgniteTx tx = null;
         try {
@@ -121,7 +121,7 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
 
         grid(0).cache(null).put(affinityKey, "aff");
 
-        Cache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        GridCache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
 
         cache.putAll(F.asMap(
             key1, "val1",

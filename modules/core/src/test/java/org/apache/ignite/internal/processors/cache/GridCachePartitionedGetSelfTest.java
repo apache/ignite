@@ -117,7 +117,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromPrimaryNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            Cache<String, Integer> c = grid(i).cache(null);
+            GridCache<String, Integer> c = grid(i).cache(null);
 
             CacheEntry<String, Integer> e = c.entry(KEY);
 
@@ -138,7 +138,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromBackupNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            Cache<String, Integer> c = grid(i).cache(null);
+            GridCache<String, Integer> c = grid(i).cache(null);
 
             CacheEntry<String, Integer> e = c.entry(KEY);
 
@@ -171,7 +171,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromNearNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            Cache<String, Integer> c = grid(i).cache(null);
+            GridCache<String, Integer> c = grid(i).cache(null);
 
             CacheEntry<String, Integer> e = c.entry(KEY);
 

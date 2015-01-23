@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -638,7 +638,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            final Cache<Integer, Integer> c = g.cache(null);
+            final GridCache<Integer, Integer> c = g.cache(null);
 
             final IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -690,7 +690,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            Cache<Integer, Integer> c = g.cache(null);
+            GridCache<Integer, Integer> c = g.cache(null);
 
             IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -735,7 +735,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_PUT);
 
-            Cache<Integer, Integer> c = g.cache(null);
+            GridCache<Integer, Integer> c = g.cache(null);
 
             assertTrue(c.isEmpty());
 

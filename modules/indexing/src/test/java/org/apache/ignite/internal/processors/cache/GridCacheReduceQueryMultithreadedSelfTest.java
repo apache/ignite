@@ -84,7 +84,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         final int keyCnt = 5000;
         final int logFreq = 500;
 
-        final Cache<String, Integer> c = cache();
+        final GridCache<String, Integer> c = cache();
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 

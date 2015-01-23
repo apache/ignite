@@ -96,7 +96,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 
-        Cache<Integer, String> cache = g1.cache(null);
+        GridCache<Integer, String> cache = g1.cache(null);
 
         cache.put(1, "val1");
         cache.put(2, "val2");

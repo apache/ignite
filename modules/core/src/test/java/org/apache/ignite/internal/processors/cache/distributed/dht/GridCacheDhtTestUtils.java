@@ -92,7 +92,7 @@ public class GridCacheDhtTestUtils {
     /**
      * @param cache Dht cache.
      */
-    static void printAffinityInfo(Cache<?, ?> cache) {
+    static void printAffinityInfo(GridCache<?, ?> cache) {
         CacheConsistentHashAffinityFunction aff =
             (CacheConsistentHashAffinityFunction)cache.configuration().getAffinity();
 

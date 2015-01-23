@@ -110,14 +110,14 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     /**
      * @return For the purpose of this test returns the near-only instance.
      */
-    @Override protected Cache<String, Integer> cache() {
+    @Override protected GridCache<String, Integer> cache() {
         return cache(nearIdx);
     }
 
     /**
      * @return A not near-only cache.
      */
-    protected Cache<String, Integer> fullCache() {
+    protected GridCache<String, Integer> fullCache() {
         return nearIdx == 0 ? cache(1) : cache(0);
     }
 
@@ -135,7 +135,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
-        Cache<String, Integer> nearCache = cache();
+        GridCache<String, Integer> nearCache = cache();
 
         int size = 10;
 
@@ -211,8 +211,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        Cache<String, Integer> nearCache = cache();
-        Cache<String, Integer> primary = fullCache();
+        GridCache<String, Integer> nearCache = cache();
+        GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -295,8 +295,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
     /** {@inheritDoc} */
     @Override public void testClearKeys() throws Exception {
-        Cache<String, Integer> nearCache = cache();
-        Cache<String, Integer> primary = fullCache();
+        GridCache<String, Integer> nearCache = cache();
+        GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -383,8 +383,8 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
                 }
             }, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            Cache<String, Integer> nearCache = cache();
-            Cache<String, Integer> cache = fullCache();
+            GridCache<String, Integer> nearCache = cache();
+            GridCache<String, Integer> cache = fullCache();
 
             String key = primaryKeysForCache(cache, 1).get(0);
 

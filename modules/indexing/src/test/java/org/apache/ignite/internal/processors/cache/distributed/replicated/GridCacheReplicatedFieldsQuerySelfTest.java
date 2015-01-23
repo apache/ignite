@@ -66,7 +66,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             Ignite g = startGrid();
 
-            Cache<Integer, Integer> cache = g.cache(null);
+            GridCache<Integer, Integer> cache = g.cache(null);
 
             CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
                 "0 order by _key");
@@ -121,7 +121,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         CacheQueryFuture<List<?>> fut = null;
 

@@ -153,7 +153,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            Cache<Object, Object> c = grid(i).cache(null);
+            GridCache<Object, Object> c = grid(i).cache(null);
 
             assertEquals(0, c.size());
         }
@@ -182,7 +182,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++) {
-            Cache<Object, Object> c = grid(i).cache(null);
+            GridCache<Object, Object> c = grid(i).cache(null);
 
             c.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
 
@@ -242,7 +242,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final Cache<Integer, String> c = g.cache(null);
+        final GridCache<Integer, String> c = g.cache(null);
 
         assertEquals(0, g.cache(null).size());
         assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
@@ -322,7 +322,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final Cache<Integer, Long> c = g.cache(null);
+        final GridCache<Integer, Long> c = g.cache(null);
 
         assertEquals(0, g.cache(null).size());
         assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
@@ -404,7 +404,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final Cache<Integer, Object> c = g.cache(null);
+        final GridCache<Integer, Object> c = g.cache(null);
 
         assertEquals(0, g.cache(null).size());
         assertEquals(0, c.offHeapEntriesCount());
@@ -487,7 +487,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final Cache<Integer, TestValue> c = g.cache(null);
+        final GridCache<Integer, TestValue> c = g.cache(null);
 
         assertEquals(0, g.cache(null).size());
         assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
@@ -568,7 +568,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        Cache<Integer, Integer> c = g.cache(null);
+        GridCache<Integer, Integer> c = g.cache(null);
 
         for (int i = 0; i < keyCnt; i++) {
             c.putx(i, i);
@@ -636,7 +636,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final Cache<Integer, Integer> c = g.cache(null);
+        final GridCache<Integer, Integer> c = g.cache(null);
 
         for (int i = 0; i < keyCnt; i++) {
             c.putx(i, i);
@@ -699,7 +699,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        Cache<Integer, Integer> c = g.cache(null);
+        GridCache<Integer, Integer> c = g.cache(null);
 
         for (int i = 0; i < keyCnt; i++)
             c.putx(i, i);
@@ -788,7 +788,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        Cache<Integer, Integer> c = g.cache(null);
+        GridCache<Integer, Integer> c = g.cache(null);
 
         for (int i = 0; i < keyCnt; i++)
             c.putx(i, i);

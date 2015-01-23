@@ -224,7 +224,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      *
      */
     private void doWork() {
-        Cache cache = ignite.cache(cacheName);
+        GridCache cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -304,7 +304,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private long getId() throws IgniteCheckedException {
-        Cache<Object, Object> cache = ignite.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -319,7 +319,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void put(Object o, Object cacheKey) throws IgniteCheckedException {
-        Cache<Object, Object> cache = ignite.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 

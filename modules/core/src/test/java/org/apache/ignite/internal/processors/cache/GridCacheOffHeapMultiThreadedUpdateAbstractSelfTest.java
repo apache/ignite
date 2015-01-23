@@ -131,7 +131,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPut(final Integer key) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -177,7 +177,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutxIfAbsent(final Integer key) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -221,7 +221,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutWithFilter(final Integer key) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -265,7 +265,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutGet(final Integer key) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -327,7 +327,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     protected Integer keyForNode(int idx) {
         Integer key0 = null;
 
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < 10_000; i++) {
             if (cache.affinity().isPrimary(grid(idx).localNode(), i)) {

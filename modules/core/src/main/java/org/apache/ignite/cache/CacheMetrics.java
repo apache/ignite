@@ -21,7 +21,7 @@ import java.io.*;
 
 /**
  * Cache metrics used to obtain statistics on cache itself.
- * Use {@link Cache#metrics()} to obtain metrics for a cache.
+ * Use {@link GridCache#metrics()} to obtain metrics for a cache.
  */
 public interface CacheMetrics extends Serializable {
     /**

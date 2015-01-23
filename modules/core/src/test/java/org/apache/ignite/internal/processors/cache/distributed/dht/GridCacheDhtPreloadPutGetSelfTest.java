@@ -194,7 +194,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < ITER_CNT; i++) {
                             info("Iteration # " + i);
 
-                            Cache<Integer, Integer> cache = g2.cache(null);
+                            GridCache<Integer, Integer> cache = g2.cache(null);
 
                             for (int j = 0; j < KEY_CNT; j++) {
                                 CacheEntry<Integer, Integer> entry = cache.entry(j);
@@ -229,7 +229,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
                         Ignite g1 = startGrid(1);
 
-                        Cache<Integer, Integer> cache = g1.cache(null);
+                        GridCache<Integer, Integer> cache = g1.cache(null);
 
                         for (int j = 0; j < KEY_CNT; j++) {
                             cache.put(j, j);

@@ -605,7 +605,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException If cache not found.
      */
     private static GridCacheProjectionEx<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        Cache<Object, Object> cache = ignite.cache(cacheName);
+        GridCache<Object, Object> cache = ignite.cache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(

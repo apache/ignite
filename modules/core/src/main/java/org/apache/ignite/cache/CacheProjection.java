@@ -104,7 +104,7 @@ import java.util.concurrent.*;
  *  for nodes on which given keys reside. All {@code 'gridProjection(..)'} methods are not
  *  transactional and will not enlist keys into ongoing transaction.
  * </li>
- * <li>Method {@link Cache#toMap()} to convert this interface into standard Java {@link ConcurrentMap} interface.
+ * <li>Method {@link GridCache#toMap()} to convert this interface into standard Java {@link ConcurrentMap} interface.
  * </ul>
  * <h1 class="header">Extended Put And Remove Methods</h1>
  * All methods that end with {@code 'x'} provide the same functionality as their sibling
@@ -202,7 +202,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @return Base cache for this projection.
      */
     @SuppressWarnings({"ClassReferencesSubclass"})
-    public <K1, V1> Cache<K1, V1> cache();
+    public <K1, V1> GridCache<K1, V1> cache();
 
     /**
      * Gets cache flags enabled on this projection.
@@ -455,7 +455,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * This method does not participate in any transactions, however, it will
      * peek at transactional value according to the {@link GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link Cache#peek(Object, Collection)} method.
+     * you can use {@link GridCache#peek(Object, Collection)} method.
      *
      * @param key Entry key.
      * @return Peeked value.
@@ -1828,7 +1828,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
 
     /**
      * Gets the number of all entries cached on this node. This method will return the count of
-     * all cache entries and has O(1) complexity on base {@link Cache} projection. It is essentially the
+     * all cache entries and has O(1) complexity on base {@link GridCache} projection. It is essentially the
      * size of cache key set and is semantically identical to {{@code Cache.keySet().size()}.
      * <p>
      * NOTE: this operation is not distributed and returns only the number of entries cached on this node.

@@ -108,7 +108,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
         try {
             int i = 0;
 
-            Cache<Object, Object> cache = grid(0).cache(CACHE_NAME);
+            GridCache<Object, Object> cache = grid(0).cache(CACHE_NAME);
 
             while (!Thread.currentThread().isInterrupted()) {
                 UUID key = UUID.randomUUID();

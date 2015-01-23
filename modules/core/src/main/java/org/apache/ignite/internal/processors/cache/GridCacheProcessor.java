@@ -79,13 +79,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCacheAdapter<?, ?>> caches;
 
     /** Map of proxies. */
-    private final Map<String, Cache<?, ?>> proxies;
+    private final Map<String, GridCache<?, ?>> proxies;
 
     /** Map of proxies. */
     private final Map<String, IgniteCacheProxy<?, ?>> jCacheProxies;
 
     /** Map of public proxies, i.e. proxies which could be returned to the user. */
-    private final Map<String, Cache<?, ?>> publicProxies;
+    private final Map<String, GridCache<?, ?>> publicProxies;
 
     /** Map of preload finish futures grouped by preload order. */
     private final NavigableMap<Integer, IgniteFuture<?>> preloadFuts;
@@ -1592,7 +1592,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Default cache.
      */
-    public <K, V> Cache<K, V> cache() {
+    public <K, V> GridCache<K, V> cache() {
         return cache(null);
     }
 
@@ -1603,17 +1603,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> Cache<K, V> cache(@Nullable String name) {
+    public <K, V> GridCache<K, V> cache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting cache for name: " + name);
 
-        return (Cache<K, V>)proxies.get(name);
+        return (GridCache<K, V>)proxies.get(name);
     }
 
     /**
      * @return All configured cache instances.
      */
-    public Collection<Cache<?, ?>> caches() {
+    public Collection<GridCache<?, ?>> caches() {
         return proxies.values();
     }
 
@@ -1622,7 +1622,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param <V> type of values.
      * @return Default cache.
      */
-    public <K, V> Cache<K, V> publicCache() {
+    public <K, V> GridCache<K, V> publicCache() {
         return publicCache(null);
     }
 
@@ -1642,7 +1642,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      *
      * @return Utility cache.
      */
-    public <K, V> Cache<K, V> utilityCache() {
+    public <K, V> GridCache<K, V> utilityCache() {
         return cache(CU.UTILITY_CACHE_NAME);
     }
 
@@ -1653,14 +1653,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Cache instance for given name.
      */
     @SuppressWarnings("unchecked")
-    public <K, V> Cache<K, V> publicCache(@Nullable String name) {
+    public <K, V> GridCache<K, V> publicCache(@Nullable String name) {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + name);
 
         if (sysCaches.contains(name))
             throw new IllegalStateException("Failed to get cache because it is system cache: " + name);
 
-        Cache<K, V> cache = (Cache<K, V>)publicProxies.get(name);
+        GridCache<K, V> cache = (GridCache<K, V>)publicProxies.get(name);
 
         if (cache == null)
             throw new IllegalArgumentException("Cache is not configured: " + name);
@@ -1707,7 +1707,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @return All configured public cache instances.
      */
-    public Collection<Cache<?, ?>> publicCaches() {
+    public Collection<GridCache<?, ?>> publicCaches() {
         return publicProxies.values();
     }
 

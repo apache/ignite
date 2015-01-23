@@ -131,7 +131,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         started.set(true);
 
-                        Cache<Object, Object> c = g4.cache(null);
+                        GridCache<Object, Object> c = g4.cache(null);
 
                         info(">>>> Checking tx in new grid.");
 
@@ -152,7 +152,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                 assertFalse(started.get());
 
                 // Check we can proceed with transactions.
-                Cache<Object, Object> cache0 = g.cache(null);
+                GridCache<Object, Object> cache0 = g.cache(null);
 
                 info(">>>> Checking tx commit.");
 

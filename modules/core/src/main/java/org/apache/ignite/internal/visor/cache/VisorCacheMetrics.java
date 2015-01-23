@@ -97,7 +97,7 @@ public class VisorCacheMetrics implements Serializable {
      * @param c Cache.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(Cache c) {
+    public static VisorCacheMetrics from(GridCache c) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
 
         CacheMetrics m = c.metrics();

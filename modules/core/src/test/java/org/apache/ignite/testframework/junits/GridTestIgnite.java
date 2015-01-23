@@ -165,12 +165,12 @@ public class GridTestIgnite implements Ignite {
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Cache<K, V> cache(@Nullable String name) {
+    @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Cache<?, ?>> caches() {
+    @Override public Collection<GridCache<?, ?>> caches() {
         return null;
     }
 

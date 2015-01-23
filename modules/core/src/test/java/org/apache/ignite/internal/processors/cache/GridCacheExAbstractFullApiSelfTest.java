@@ -62,7 +62,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
         try {
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            Cache<String, Integer> cache = cache();
+            GridCache<String, Integer> cache = cache();
 
             try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;

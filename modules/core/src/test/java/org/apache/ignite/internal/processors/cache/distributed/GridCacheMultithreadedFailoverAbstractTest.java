@@ -277,7 +277,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                     Ignite ignite = G.ignite(nodeName(0));
 
-                    Cache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+                    GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     int startKey = keysPerThread * idx;
                     int endKey = keysPerThread * (idx + 1);
@@ -500,11 +500,11 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      */
     @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
-        List<Cache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
+        List<GridCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
         for (int i = 0 ; i < dataNodes(); i++) {
-            Cache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
+            GridCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
 
             assert cache != null;
 

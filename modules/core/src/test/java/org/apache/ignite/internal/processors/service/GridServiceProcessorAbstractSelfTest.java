@@ -570,7 +570,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         private Ignite ignite;
 
         /** */
-        private Cache<String, Value> cache;
+        private GridCache<String, Value> cache;
 
         /** Cache key. */
         private String key;

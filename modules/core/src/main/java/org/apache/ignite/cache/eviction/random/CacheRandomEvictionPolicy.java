@@ -80,7 +80,7 @@ public class CacheRandomEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V
         if (!entry.isCached())
             return;
 
-        Cache<K, V> cache = entry.projection().cache();
+        GridCache<K, V> cache = entry.projection().cache();
 
         int size = cache.size();
 

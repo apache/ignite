@@ -209,16 +209,16 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         final int all = cache + offheapSwap;
 
         // put
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<Cache<String, Integer>>() {
-            @Override public void applyx(Cache<String, Integer> c) throws IgniteCheckedException {
+        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
+            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
                 for (int i = 0; i < all; i++)
                     c.put(valueOf(i), i);
             }
         });
 
         //putAll
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<Cache<String, Integer>>() {
-            @Override public void applyx(Cache<String, Integer> c) throws IgniteCheckedException {
+        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
+            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
                 Map<String, Integer> m = new HashMap<>();
 
                 for (int i = 0; i < all; i++)
@@ -237,12 +237,12 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @param x Cache modifier.
      * @throws IgniteCheckedException If failed.
      */
-    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<Cache<String, Integer>> x) throws Exception {
+    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<GridCache<String, Integer>> x) throws Exception {
         ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         startGrid();
 
-        final Cache<String, Integer> c = cache();
+        final GridCache<String, Integer> c = cache();
 
         x.applyx(c);
 

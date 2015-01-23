@@ -58,7 +58,7 @@ public class GridHibernateReadOnlyAccessStrategy extends GridHibernateAccessStra
      * @param ignite Grid.
      * @param cache Cache.
      */
-    public GridHibernateReadOnlyAccessStrategy(Ignite ignite, Cache<Object, Object> cache) {
+    public GridHibernateReadOnlyAccessStrategy(Ignite ignite, GridCache<Object, Object> cache) {
         super(ignite, cache);
     }
 

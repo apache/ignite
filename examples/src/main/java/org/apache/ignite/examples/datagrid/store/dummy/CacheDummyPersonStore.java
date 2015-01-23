@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
@@ -80,7 +80,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);
 
-        Cache<Long, Person> cache = ignite.cache(cacheName);
+        GridCache<Long, Person> cache = ignite.cache(cacheName);
 
         for (int i = 0; i < cnt; i++) {
             // Generate dummy person on the fly.

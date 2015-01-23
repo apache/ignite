@@ -80,7 +80,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testWritesReads() throws Exception {
-        Cache<Integer, Integer> cache0 = grid(0).cache(null);
+        GridCache<Integer, Integer> cache0 = grid(0).cache(null);
 
         int keyCnt = keyCount();
 
@@ -99,7 +99,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
             info("Writes: " + cache0.metrics().writes());
 
             for (int j = 0; j < gridCount(); j++) {
-                Cache<Integer, Integer> cache = grid(j).cache(null);
+                GridCache<Integer, Integer> cache = grid(j).cache(null);
 
                 int cacheWrites = cache.metrics().writes();
 
@@ -138,7 +138,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMisses() throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         // TODO: GG-7578.
         if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
@@ -183,7 +183,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testMissesOnEmptyCache() throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         // TODO: GG-7578.
         if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)

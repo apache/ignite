@@ -58,7 +58,7 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
         @Override protected Void run(Set<String> cacheNames) throws IgniteCheckedException {
             Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-            for(Cache c : g.cachesx()) {
+            for(GridCache c : g.cachesx()) {
                 if (cacheNames.contains(c.name()))
                     futs.add(c.forceRepartition());
             }

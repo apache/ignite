@@ -82,8 +82,8 @@ public class GridCacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testSecondCachePutRemove() throws Exception {
-        Cache<Integer, Integer> data = grid().cache(DATA_CACHE);
-        Cache<Integer, String> cp = grid().cache(CP_CACHE);
+        GridCache<Integer, Integer> data = grid().cache(DATA_CACHE);
+        GridCache<Integer, String> cp = grid().cache(CP_CACHE);
 
         assertTrue(data.putx(1, 1));
         assertTrue(cp.putx(1, "1"));

@@ -152,7 +152,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         IgniteTxIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
-        Cache<Integer, String> cache = cache(idx);
+        GridCache<Integer, String> cache = cache(idx);
 
         IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 

@@ -107,7 +107,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        Cache<String, Integer> c0 = g0.cache(null);
+        GridCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -115,8 +115,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        Cache<String, Integer> c1 = g1.cache(null);
-        Cache<String, Integer> c2 = g2.cache(null);
+        GridCache<String, Integer> c1 = g1.cache(null);
+        GridCache<String, Integer> c2 = g2.cache(null);
 
         for (int i = 0; i < cnt; i++)
             assertNull(c1.peek(Integer.toString(i)));
@@ -184,7 +184,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        Cache<String, Integer> c0 = g0.cache(null);
+        GridCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -192,8 +192,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        Cache<String, Integer> c1 = g1.cache(null);
-        Cache<String, Integer> c2 = g2.cache(null);
+        GridCache<String, Integer> c1 = g1.cache(null);
+        GridCache<String, Integer> c2 = g2.cache(null);
 
         for (int i = 0; i < cnt; i++)
             assertNull(c1.peek(Integer.toString(i)));
@@ -254,7 +254,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
 
         int cnt = KEY_CNT;
 
-        Cache<String, Integer> c0 = g0.cache(null);
+        GridCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -262,8 +262,8 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
         Ignite g1 = startGrid(1);
         Ignite g2 = startGrid(2);
 
-        Cache<String, Integer> c1 = g1.cache(null);
-        Cache<String, Integer> c2 = g2.cache(null);
+        GridCache<String, Integer> c1 = g1.cache(null);
+        GridCache<String, Integer> c2 = g2.cache(null);
 
         GridDhtCacheAdapter<String, Integer> d0 = dht(0);
         GridDhtCacheAdapter<String, Integer> d1 = dht(1);
@@ -395,7 +395,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param c Cache.
      * @param keyCnt Key count.
      */
-    private void checkCache(Cache<String, Integer> c, int keyCnt) {
+    private void checkCache(GridCache<String, Integer> c, int keyCnt) {
         Ignite g = c.gridProjection().ignite();
 
         for (int i = 0; i < keyCnt; i++) {

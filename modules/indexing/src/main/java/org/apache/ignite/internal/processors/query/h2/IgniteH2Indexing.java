@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -1941,7 +1941,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            Cache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
+            GridCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
             GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
 

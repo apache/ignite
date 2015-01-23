@@ -70,7 +70,7 @@ public class GridHibernateCollectionRegion extends GridHibernateTransactionalDat
      * @param dataDesc Region data description.
      */
     public GridHibernateCollectionRegion(GridHibernateRegionFactory factory, String name,
-        Ignite ignite, Cache<Object, Object> cache, CacheDataDescription dataDesc) {
+        Ignite ignite, GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
 

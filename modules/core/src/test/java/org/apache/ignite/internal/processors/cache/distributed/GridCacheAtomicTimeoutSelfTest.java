@@ -113,7 +113,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-        Cache<Object, Object> cache = ignite.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -145,7 +145,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testNearUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        Cache<Object, Object> cache = ignite.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -179,7 +179,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateRequestLost() throws Exception {
         Ignite ignite = grid(0);
 
-        Cache<Object, Object> cache = ignite.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -214,7 +214,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        Cache<Object, Object> cache = ignite.cache(null);
+        GridCache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 

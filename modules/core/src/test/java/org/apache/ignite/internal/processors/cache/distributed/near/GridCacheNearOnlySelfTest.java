@@ -40,14 +40,14 @@ public class GridCacheNearOnlySelfTest extends GridCacheClientModesAbstractSelfT
      * @throws Exception If failed.
      */
     public void testUpdateNearOnlyReader() throws Exception {
-        Cache<Object, Object> dhtCache = dhtCache();
+        GridCache<Object, Object> dhtCache = dhtCache();
 
         final int keyCnt = 100;
 
         for (int i = 0; i < keyCnt; i++)
             dhtCache.put(i, i);
 
-        Cache<Object, Object> nearOnlyCache = nearOnlyCache();
+        GridCache<Object, Object> nearOnlyCache = nearOnlyCache();
 
         for (int i = 0; i < keyCnt; i++) {
             assertNull(nearOnlyCache.peek(i));

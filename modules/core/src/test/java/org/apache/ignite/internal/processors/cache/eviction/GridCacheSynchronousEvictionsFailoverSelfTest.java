@@ -77,7 +77,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testSynchronousEvictions() throws Exception {
-        Cache<String, Integer> cache = cache(0);
+        GridCache<String, Integer> cache = cache(0);
 
         final AtomicBoolean stop = new AtomicBoolean();
 

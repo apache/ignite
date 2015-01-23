@@ -278,7 +278,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
             info("Queue name: " + queueName);
 
-            Cache c = grid(0).cache(null);
+            GridCache c = grid(0).cache(null);
 
             CacheQueue<Integer> queue = c.dataStructures().queue(queueName, QUEUE_CAPACITY, false, true);
 
@@ -372,7 +372,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                 futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        Cache cache = grid(idx).cache(null);
+                        GridCache cache = grid(idx).cache(null);
 
                         CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
 
@@ -387,7 +387,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             for (IgniteFuture fut : futs)
                 fut.get();
 
-            Cache cache = grid(0).cache(null);
+            GridCache cache = grid(0).cache(null);
 
             CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
 
@@ -443,7 +443,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                 putFuts.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        Cache cache = grid(idx).cache(null);
+                        GridCache cache = grid(idx).cache(null);
 
                         CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
 
@@ -461,7 +461,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
 
                     pollFuts.add(GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
-                            Cache cache = grid(idx).cache(null);
+                            GridCache cache = grid(idx).cache(null);
 
                             CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0,
                                 collocated, true);
@@ -487,7 +487,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends GridCommon
             for (IgniteFuture fut : pollFuts)
                 fut.get();
 
-            Cache cache = grid(0).cache(null);
+            GridCache cache = grid(0).cache(null);
 
             CacheQueue<Integer> queue = cache.dataStructures().queue(queueName, 0, collocated, true);
 

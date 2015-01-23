@@ -158,7 +158,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         startGrids(gridCnt);
 
         try {
-            final Cache<Object, Object> cache = grid(0).cache(null);
+            final GridCache<Object, Object> cache = grid(0).cache(null);
 
             final int range = 100_000;
 

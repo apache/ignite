@@ -114,7 +114,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
             cache.context().tm().slowTxWarnTimeout(500);
         }
 
-        Cache<Object, Object> cache1 = g.cache(cacheName);
+        GridCache<Object, Object> cache1 = g.cache(cacheName);
 
         IgniteTx tx = cache1.txStart();
 

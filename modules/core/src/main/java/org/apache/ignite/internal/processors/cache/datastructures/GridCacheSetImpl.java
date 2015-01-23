@@ -51,7 +51,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
     private final GridCacheContext ctx;
 
     /** Cache. */
-    private final Cache<GridCacheSetItemKey, Boolean> cache;
+    private final GridCache<GridCacheSetItemKey, Boolean> cache;
 
     /** Logger. */
     private final IgniteLogger log;

@@ -52,7 +52,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private IgniteFsConfiguration cfg;
 
     /** Metadata cache. */
-    private Cache<Object, Object> metaCache;
+    private GridCache<Object, Object> metaCache;
 
     /** */
     private IgniteFuture<?> metaCacheStartFut;

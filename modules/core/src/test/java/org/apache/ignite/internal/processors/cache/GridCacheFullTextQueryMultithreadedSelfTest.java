@@ -73,7 +73,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int logFreq = 50;
         final String txt = "Value";
 
-        final Cache<Integer, H2TextValue> c = grid(0).cache(null);
+        final GridCache<Integer, H2TextValue> c = grid(0).cache(null);
 
         IgniteFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {

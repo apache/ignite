@@ -148,8 +148,8 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
 
-            Cache<Integer, Object> cache1 = ignite1.cache(null);
-            Cache<Integer, Object> cache2 = ignite2.cache(null);
+            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            GridCache<Integer, Object> cache2 = ignite2.cache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -263,7 +263,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED, EVT_SWAP_SPACE_DATA_EVICTED);
 
-            Cache<Integer, CacheValue> cache = grid(0).cache(null);
+            GridCache<Integer, CacheValue> cache = grid(0).cache(null);
 
             for (int i = 0; i< 20; i++) {
                 cache.put(i, new CacheValue(i));
@@ -323,7 +323,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
-            Cache<Integer, CacheValue> cache = grid(0).cache(null);
+            GridCache<Integer, CacheValue> cache = grid(0).cache(null);
 
             populate(cache);
             evictAll(cache);
@@ -371,7 +371,7 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            Cache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);

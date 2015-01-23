@@ -161,7 +161,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionFiltered() throws Exception {
-        Cache<Integer, Integer> cache = grid().cache(null);
+        GridCache<Integer, Integer> cache = grid().cache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             assert cache.putx(i, i);
@@ -199,7 +199,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFiltered() throws Exception {
-        Cache<Integer, Integer> cache = grid().cache(null);
+        GridCache<Integer, Integer> cache = grid().cache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             assert cache.putx(i, i);

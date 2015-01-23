@@ -130,7 +130,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            Cache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = grid(0).cache(null);
 
             cache.put("key", valCls.newInstance());
 

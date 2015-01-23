@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -102,7 +102,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        Cache<Integer, String> cache = cache();
+        GridCache<Integer, String> cache = cache();
 
         try {
             cache.get(1);

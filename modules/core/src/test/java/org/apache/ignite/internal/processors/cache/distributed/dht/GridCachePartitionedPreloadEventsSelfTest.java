@@ -99,7 +99,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Collection<Integer> keys = new HashSet<>();
 
-        Cache<Integer, String> cache = g1.cache(null);
+        GridCache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             keys.add(i);

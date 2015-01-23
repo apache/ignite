@@ -119,7 +119,7 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQuery() throws IgniteCheckedException {
-        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query which selects salaries based on range.
         CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
@@ -139,7 +139,7 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQueryWithJoin() throws IgniteCheckedException {
-        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query which joins on 2 types to select people for a specific organization.
         CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
@@ -158,7 +158,7 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void textQuery() throws IgniteCheckedException {
-        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
         CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> masters =
@@ -228,7 +228,7 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQueryWithTransformer() throws IgniteCheckedException {
-        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees working for some company.
         CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
@@ -257,7 +257,7 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlFieldsQuery() throws IgniteCheckedException {
-        Cache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
         CacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
@@ -278,7 +278,7 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlFieldsQueryWithJoin() throws IgniteCheckedException {
-        Cache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
         CacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
@@ -300,7 +300,7 @@ public class CacheQueryExample {
      * @throws InterruptedException In case of error.
      */
     private static void initialize() throws IgniteCheckedException, InterruptedException {
-        Cache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Organization projection.
         CacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);

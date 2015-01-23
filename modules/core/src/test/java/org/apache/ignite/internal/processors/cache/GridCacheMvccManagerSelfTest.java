@@ -95,7 +95,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(gridCnt);
 
-            Cache<Integer, Integer> cache = ignite.cache(null);
+            GridCache<Integer, Integer> cache = ignite.cache(null);
 
             IgniteTx tx = cache.txStart();
 

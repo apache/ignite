@@ -99,7 +99,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      */
     protected void checkTransactionalRead(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws IgniteCheckedException {
-        Cache<String, Integer> cache = cache(0);
+        GridCache<String, Integer> cache = cache(0);
 
         cache.clearAll();
 

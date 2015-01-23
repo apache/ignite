@@ -97,7 +97,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             awaitPartitionMapExchange();
 
-            Cache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = grid(0).cache(null);
 
             List<Integer> keys = generateKeys(grid(0).localNode(), cache);
 
@@ -166,7 +166,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
 
             ClusterNode node = grid.localNode();
 
-            Cache<Object, Object> cache = grid.cache(null);
+            GridCache<Object, Object> cache = grid.cache(null);
 
             boolean primary = cache.affinity().isPrimary(node, key);
             boolean backup = cache.affinity().isBackup(node, key);
@@ -184,7 +184,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      * @param cache Cache to get affinity for.
      * @return Collection of keys.
      */
-    private List<Integer> generateKeys(ClusterNode node, Cache<Object, Object> cache) {
+    private List<Integer> generateKeys(ClusterNode node, GridCache<Object, Object> cache) {
         List<Integer> keys = new ArrayList<>(3);
 
         CacheAffinity<Object> aff = cache.affinity();

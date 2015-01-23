@@ -63,7 +63,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param idx Grid index.
      * @return Cache.
      */
-    protected <K, V> Cache<K, V> cache(int idx) {
+    protected <K, V> GridCache<K, V> cache(int idx) {
         return grid(idx).cachex();
     }
 
@@ -80,14 +80,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param name Cache name.
      * @return Cache.
      */
-    protected <K, V> Cache<K, V> cache(int idx, String name) {
+    protected <K, V> GridCache<K, V> cache(int idx, String name) {
         return grid(idx).cachex(name);
     }
 
     /**
      * @return Cache.
      */
-    protected <K, V> Cache<K, V> cache() {
+    protected <K, V> GridCache<K, V> cache() {
         return grid().cachex();
     }
 
@@ -247,7 +247,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         for (Ignite g : G.allGrids()) {
-            for (Cache<?, ?> c : ((GridEx)g).cachesx()) {
+            for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
                 CacheConfiguration cfg = c.configuration();
 
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {

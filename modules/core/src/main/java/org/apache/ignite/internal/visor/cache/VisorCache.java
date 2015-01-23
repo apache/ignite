@@ -33,7 +33,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.cache.Cache}.
+ * Data transfer object for {@link org.apache.ignite.cache.GridCache}.
  */
 public class VisorCache implements Serializable {
     /** */
@@ -97,7 +97,7 @@ public class VisorCache implements Serializable {
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite g, Cache c, int sample) throws IgniteCheckedException {
+    public static VisorCache from(Ignite g, GridCache c, int sample) throws IgniteCheckedException {
         assert g != null;
         assert c != null;
 

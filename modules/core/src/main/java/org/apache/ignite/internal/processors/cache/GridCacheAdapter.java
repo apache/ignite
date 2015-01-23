@@ -71,7 +71,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> implements Cache<K, V>,
+public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -360,8 +360,8 @@ public abstract class GridCacheAdapter<K, V> implements Cache<K, V>,
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public <K1, V1> Cache<K1, V1> cache() {
-        return (Cache<K1, V1>)this;
+    @Override public <K1, V1> GridCache<K1, V1> cache() {
+        return (GridCache<K1, V1>)this;
     }
 
     /** {@inheritDoc} */
@@ -5004,7 +5004,7 @@ public abstract class GridCacheAdapter<K, V> implements Cache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            Cache<Object, Object> cache = ((GridEx) ignite).cachex(cacheName);
+            GridCache<Object, Object> cache = ((GridEx) ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }

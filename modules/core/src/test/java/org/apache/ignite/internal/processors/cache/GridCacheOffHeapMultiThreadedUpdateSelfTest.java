@@ -123,7 +123,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testPutTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -179,7 +179,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testPutWithFilterTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -235,7 +235,7 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
      * @throws Exception If failed.
      */
     private void testPutxIfAbsentTx(final Integer key, final IgniteTxConcurrency txConcurrency) throws Exception {
-        final Cache<Integer, Integer> cache = grid(0).cache(null);
+        final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 

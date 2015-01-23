@@ -125,7 +125,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
             }
         }, IllegalArgumentException.class, null);
 
-        Cache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
+        GridCache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
 
         assertNotNull(cache);
 

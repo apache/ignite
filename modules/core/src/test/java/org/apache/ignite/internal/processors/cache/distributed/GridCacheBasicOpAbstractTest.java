@@ -100,9 +100,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         CacheEventListener lsnr = new CacheEventListener(latch);
 
         try {
-            Cache<String, String> cache1 = ignite1.cache(null);
-            Cache<String, String> cache2 = ignite2.cache(null);
-            Cache<String, String> cache3 = ignite3.cache(null);
+            GridCache<String, String> cache1 = ignite1.cache(null);
+            GridCache<String, String> cache2 = ignite2.cache(null);
+            GridCache<String, String> cache3 = ignite3.cache(null);
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
@@ -175,9 +175,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         CacheEventListener lsnr = new CacheEventListener(latch);
 
         try {
-            Cache<String, String> cache1 = ignite1.cache(null);
-            Cache<String, String> cache2 = ignite2.cache(null);
-            Cache<String, String> cache3 = ignite3.cache(null);
+            GridCache<String, String> cache1 = ignite1.cache(null);
+            GridCache<String, String> cache2 = ignite2.cache(null);
+            GridCache<String, String> cache3 = ignite3.cache(null);
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
@@ -253,9 +253,9 @@ public abstract class GridCacheBasicOpAbstractTest extends GridCommonAbstractTes
         IgnitePredicate<IgniteEvent> lsnr = new CacheEventListener(latch);
 
         try {
-            Cache<String, String> cache1 = ignite1.cache(null);
-            Cache<String, String> cache2 = ignite2.cache(null);
-            Cache<String, String> cache3 = ignite3.cache(null);
+            GridCache<String, String> cache1 = ignite1.cache(null);
+            GridCache<String, String> cache2 = ignite2.cache(null);
+            GridCache<String, String> cache3 = ignite3.cache(null);
 
             ignite1.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);
             ignite2.events().localListen(lsnr, EVT_CACHE_OBJECT_PUT, EVT_CACHE_OBJECT_REMOVED);

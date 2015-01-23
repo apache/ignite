@@ -90,12 +90,12 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
         /** {@inheritDoc} */
         @Override protected Map<String, VisorCacheMetrics>
             run(IgniteBiTuple<Boolean, String> arg) throws IgniteCheckedException {
-            Collection<? extends Cache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
+            Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
 
             if (caches != null) {
                 Map<String, VisorCacheMetrics> res = U.newHashMap(caches.size());
 
-                for (Cache<?, ?> c : caches)
+                for (GridCache<?, ?> c : caches)
                     res.put(c.name(), VisorCacheMetrics.from(c));
 
                 return res;

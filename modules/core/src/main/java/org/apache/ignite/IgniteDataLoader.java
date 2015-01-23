@@ -34,7 +34,7 @@ import java.util.*;
  * the loader.
  * <p>
  * Also note that {@code GridDataLoader} is not the only way to load data into cache.
- * Alternatively you can use {@link org.apache.ignite.cache.Cache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)}
+ * Alternatively you can use {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)}
  * method to load data from underlying data store. You can also use standard
  * cache {@code put(...)} and {@code putAll(...)} operations as well, but they most
  * likely will not perform as well as this class for loading data. And finally,

@@ -85,7 +85,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        Cache<Integer, TestObject> cache = grid(0).cache(null);
+        GridCache<Integer, TestObject> cache = grid(0).cache(null);
 
         assert cache != null;
 

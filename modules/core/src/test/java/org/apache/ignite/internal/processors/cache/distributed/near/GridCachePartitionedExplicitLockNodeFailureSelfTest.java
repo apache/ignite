@@ -96,7 +96,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 
-        Cache<Integer, String> cache = cache(idx);
+        GridCache<Integer, String> cache = cache(idx);
 
         cache.put(key, "val");
 
@@ -105,7 +105,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
         for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
             info("Check grid index: " + checkIdx);
 
-            Cache<Integer, String> checkCache = cache(checkIdx);
+            GridCache<Integer, String> checkCache = cache(checkIdx);
 
             assert !checkCache.lock(key, -1);
 
@@ -137,7 +137,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
                 for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
                     info("Check grid index: " + checkIdx);
 
-                    Cache<Integer, String> checkCache = cache(checkIdx);
+                    GridCache<Integer, String> checkCache = cache(checkIdx);
 
                     CacheEntry e = checkCache.entry(key);
 

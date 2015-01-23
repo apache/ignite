@@ -140,7 +140,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkQuery(Cache cache) throws Exception {
+    private void checkQuery(GridCache cache) throws Exception {
         final int ENTRY_CNT = 500;
 
         for (int i = 0; i < ENTRY_CNT; i++)
@@ -191,7 +191,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings({"unchecked", "IfMayBeConditional"})
-    private void checkProjectionFilter(Cache cache, int expCnt) throws Exception {
+    private void checkProjectionFilter(GridCache cache, int expCnt) throws Exception {
         CacheProjection prj;
 
         if (portableEnabled()) {
@@ -243,7 +243,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @param expCnt Expected entries in query result.
      * @throws Exception If failed.
      */
-    private void testMultithreaded(final Cache cache, final int expCnt) throws Exception {
+    private void testMultithreaded(final GridCache cache, final int expCnt) throws Exception {
         log.info("Starting multithreaded queries.");
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
@@ -287,7 +287,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkQueryPrimitives(Cache cache) throws Exception {
+    private void checkQueryPrimitives(GridCache cache) throws Exception {
         final int ENTRY_CNT = 500;
 
         for (int i = 0; i < ENTRY_CNT; i++)
@@ -343,7 +343,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    private void checkQueryValueByteArray(Cache cache) throws Exception {
+    private void checkQueryValueByteArray(GridCache cache) throws Exception {
         final int ENTRY_CNT = 100;
 
         for (int i = 0; i < ENTRY_CNT; i++)

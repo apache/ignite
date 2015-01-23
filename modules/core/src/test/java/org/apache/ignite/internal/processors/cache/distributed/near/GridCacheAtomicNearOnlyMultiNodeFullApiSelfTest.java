@@ -75,8 +75,8 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        Cache<String, Integer> nearCache = cache();
-        Cache<String, Integer> primary = fullCache();
+        GridCache<String, Integer> nearCache = cache();
+        GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -152,7 +152,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 

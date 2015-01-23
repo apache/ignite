@@ -96,7 +96,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         startGrids(gridCount());
 
         try {
-            Cache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = grid(0).cache(null);
 
             // Find test key.
             int key = testKey();

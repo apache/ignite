@@ -62,7 +62,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Cache<?, ?> cache = cache();
+        GridCache<?, ?> cache = cache();
 
         if (cache != null)
             cache.clearAll();
@@ -107,7 +107,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @throws Exception If test fails. */
     public void testWriteThrough() throws Exception {
-        Cache<Integer, String> cache = cache();
+        GridCache<Integer, String> cache = cache();
 
         Map<Integer, String> map = store.getMap();
 
@@ -172,7 +172,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @throws Exception If test failed. */
     public void testReadThrough() throws Exception {
-        Cache<Integer, String> cache = cache();
+        GridCache<Integer, String> cache = cache();
 
         Map<Integer, String> map = store.getMap();
 
@@ -268,7 +268,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final Cache<Integer, String> cache = cache();
+        final GridCache<Integer, String> cache = cache();
 
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})

@@ -772,7 +772,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     @SuppressWarnings("ConstantConditions")
     public void _testFormat() throws Exception {
         GridKernal grid = (GridKernal)G.ignite("grid");
-        Cache cache = grid.internalCache("dataCache");
+        GridCache cache = grid.internalCache("dataCache");
 
         if (dual)
             create(ggfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));

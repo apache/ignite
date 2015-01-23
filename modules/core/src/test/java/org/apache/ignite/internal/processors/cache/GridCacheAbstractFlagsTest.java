@@ -78,7 +78,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
                 @Override public Object call() throws Exception {
                     int idx = cntr.getAndIncrement() % gridCount();
 
-                    Cache<String, Integer> c = cache(idx);
+                    GridCache<String, Integer> c = cache(idx);
 
                     l.await();
 

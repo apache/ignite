@@ -170,7 +170,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
                 info("Grid size [i=" + i + ", size=" + grid(i).cache(null).size() + ']');
 
             for (int i = 0; i < gridCnt; i++) {
-                Cache<Integer, String> c = grid(i).cache(null);
+                GridCache<Integer, String> c = grid(i).cache(null);
 
                 // Nothing should be unloaded since nodes are backing up each other.
                 assert c.size() == cnt;
@@ -197,7 +197,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             boolean err = false;
 
             for (int i = 0; i < gridCnt; i++) {
-                Cache<Integer, String> c = grid(i).cache(null);
+                GridCache<Integer, String> c = grid(i).cache(null);
 
                 if (c.size() >= cnt)
                     err = true;
@@ -213,7 +213,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
             info("Grid size [i=" + i + ", size=" + grid(i).cache(null).size() + ']');
 
         for (int i = 0; i < gridCnt; i++) {
-            Cache<Integer, String> c = grid(i).cache(null);
+            GridCache<Integer, String> c = grid(i).cache(null);
 
             assert c.size() < cnt;
         }
@@ -265,7 +265,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                     if (evt == LifecycleEventType.AFTER_GRID_START) {
-                        Cache<Integer, String> c = ignite.cache(null);
+                        GridCache<Integer, String> c = ignite.cache(null);
 
                         if (c.putxIfAbsent(-1, "true")) {
                             populate(ignite.<Integer, String>cache(null), cnt);
@@ -301,7 +301,7 @@ public class GridCacheDhtPreloadUnloadSelfTest extends GridCommonAbstractTest {
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void populate(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void populate(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, value(1024));
     }

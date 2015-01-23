@@ -117,7 +117,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final Cache<Integer, Integer> cache = ignite.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             final Random rnd = new Random();
 
@@ -169,7 +169,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final Cache<Integer, Integer> cache = ignite.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             for (int i = 0; i < 100; i++)
                 cache.put(i, i);
@@ -196,7 +196,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final Cache<Integer, Integer> cache = ignite.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             Collection<Integer> keys = new ArrayList<>(100);
 
@@ -229,7 +229,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             Integer affKey = 1;
 
-            Cache<CacheAffinityKey<Object>, Integer> cache = g.cache(null);
+            GridCache<CacheAffinityKey<Object>, Integer> cache = g.cache(null);
 
             IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 5);
 
@@ -275,7 +275,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
 
             Integer affKey = 1;
 
-            Cache<Object, Integer> cache = g.cache(null);
+            GridCache<Object, Integer> cache = g.cache(null);
 
             IgniteTx tx = cache.txStartPartition(cache.affinity().partition(affKey), PESSIMISTIC, REPEATABLE_READ,
                 0, 5);
@@ -320,7 +320,7 @@ public class GridCacheEvictionTouchSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            final Cache<Integer, Integer> cache = ignite.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             for (int i = 0; i < 10000; i++)
                 cache.reload(i);

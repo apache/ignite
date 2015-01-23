@@ -51,13 +51,13 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** Cache on primary node. */
-    private Cache<Integer, Integer> cache1;
+    private GridCache<Integer, Integer> cache1;
 
     /** Cache on near node. */
-    private Cache<Integer, Integer> cache2;
+    private GridCache<Integer, Integer> cache2;
 
     /** Cache on backup node. */
-    private Cache<Integer, Integer> cache3;
+    private GridCache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {

@@ -72,7 +72,7 @@ public class GridCacheBenchmark {
                 X.println("threadCnt=" + THREADS);
                 X.println("testWrite=" + testWrite);
 
-                final Cache<Long, Long> cache = g.cache(CACHE);
+                final GridCache<Long, Long> cache = g.cache(CACHE);
 
                 assert cache != null;
 

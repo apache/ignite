@@ -126,14 +126,14 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         startGrid(gridCount());
 
-        Cache<String, Organization> orgCache = grid(0).cache(null);
+        GridCache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        Cache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        GridCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
@@ -141,20 +141,20 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         assert personCache.putx(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         assert personCache.putx(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        Cache<String, String> strCache = grid(0).cache(null);
+        GridCache<String, String> strCache = grid(0).cache(null);
 
         assert strCache != null;
 
         assert strCache.putx("key", "val");
 
-        Cache<Integer, Integer> intCache = grid(0).cache(null);
+        GridCache<Integer, Integer> intCache = grid(0).cache(null);
 
         assert intCache != null;
 
         for (int i = 0; i < 200; i++)
             assert intCache.putx(i, i);
 
-        Cache<Integer, Integer> namedCache = grid(0).cache(CACHE);
+        GridCache<Integer, Integer> namedCache = grid(0).cache(CACHE);
 
         for (int i = 0; i < 200; i++)
             assert namedCache.putx(i, i);
@@ -761,7 +761,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testNamedCache() throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(CACHE);
+        GridCache<Integer, Integer> cache = grid(0).cache(CACHE);
 
         for (int i = 0; i < 200; i++)
             assert cache.putx(i, i);
@@ -776,7 +776,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void _testNoPrimitives() throws Exception { // TODO
-        Cache<Object, Object> cache = grid(0).cache(CACHE_NO_PRIMITIVES);
+        GridCache<Object, Object> cache = grid(0).cache(CACHE_NO_PRIMITIVES);
 
         assert cache.putx("key", "val");
 
@@ -795,7 +795,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void _testComplexKeys() throws Exception { // TODO
-        Cache<PersonKey, Person> cache = grid(0).cache(CACHE_COMPLEX_KEYS);
+        GridCache<PersonKey, Person> cache = grid(0).cache(CACHE_COMPLEX_KEYS);
 
         UUID id = UUID.randomUUID();
 

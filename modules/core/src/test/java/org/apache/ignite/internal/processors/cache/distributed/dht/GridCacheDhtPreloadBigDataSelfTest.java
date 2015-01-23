@@ -138,7 +138,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                Cache<Integer, String> c = grid(i).cache(null);
+                GridCache<Integer, String> c = grid(i).cache(null);
 
                 if (backups + 1 <= gridCnt)
                     assert c.size() < cnt : "Cache size: " + c.size();
@@ -167,7 +167,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
 
                 @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                     if (evt == LifecycleEventType.AFTER_GRID_START) {
-                        Cache<Integer, byte[]> c = ignite.cache(null);
+                        GridCache<Integer, byte[]> c = ignite.cache(null);
 
                         if (c.putxIfAbsent(-1, new byte[1])) {
                             populate(c, cnt, KBSIZE);
@@ -189,7 +189,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
             Thread.sleep(10000);
 
             for (int i = 0; i < gridCnt; i++) {
-                Cache<Integer, String> c = grid(i).cache(null);
+                GridCache<Integer, String> c = grid(i).cache(null);
 
                 if (backups + 1 <= gridCnt)
                     assert c.size() < cnt;
@@ -208,7 +208,7 @@ public class GridCacheDhtPreloadBigDataSelfTest extends GridCommonAbstractTest {
      * @param kbSize Size in KB.
      * @throws IgniteCheckedException If failed.
      */
-    private void populate(Cache<Integer, byte[]> c, int cnt, int kbSize) throws IgniteCheckedException {
+    private void populate(GridCache<Integer, byte[]> c, int cnt, int kbSize) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, value(kbSize));
     }

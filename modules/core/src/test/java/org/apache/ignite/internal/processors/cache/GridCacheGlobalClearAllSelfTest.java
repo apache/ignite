@@ -29,7 +29,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Test {@link org.apache.ignite.cache.Cache#globalClearAll()} operation in multinode environment with nodes
+ * Test {@link org.apache.ignite.cache.GridCache#globalClearAll()} operation in multinode environment with nodes
  * having caches with different names.
  */
 public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
@@ -147,7 +147,7 @@ public class GridCacheGlobalClearAllSelfTest extends GridCommonAbstractTest {
 
         // Check cache sizes.
         for (int i = 0; i < GRID_CNT - 1; i++) {
-            Cache<Object, Object> cache = grid(i).cache(CACHE_NAME);
+            GridCache<Object, Object> cache = grid(i).cache(CACHE_NAME);
 
             assertEquals("Key set [i=" + i + ", keys=" + cache.keySet() + ']', KEY_CNT, cache.size());
         }

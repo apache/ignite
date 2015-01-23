@@ -126,7 +126,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
         CacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 
-        Cache<Object, Object> cache = grid(0).cache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
 
         for (int i = 0; i < partCnt; i++) {
             assertEquals(i, aff.partition(i));

@@ -57,14 +57,14 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(2);
 
-            Cache<Object, Object> rmtCache = ignite.cache(null);
+            GridCache<Object, Object> rmtCache = ignite.cache(null);
 
             int key = 0;
 
             while (!rmtCache.affinity().isPrimary(grid(1).localNode(), key))
                 key++;
 
-            Cache<Object, Object> locCache = grid(1).cache(null);
+            GridCache<Object, Object> locCache = grid(1).cache(null);
 
             try (IgniteTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putxIfAbsent(key, 0);
@@ -100,7 +100,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite grid = startGrid(0);
 
-            Cache<Object, Object> cache = grid.cache(null);
+            GridCache<Object, Object> cache = grid.cache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, 0);

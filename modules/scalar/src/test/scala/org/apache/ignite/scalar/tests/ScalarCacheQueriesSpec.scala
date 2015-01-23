@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.tests
 
-import org.apache.ignite.cache.Cache
+import org.apache.ignite.cache.GridCache
 import org.apache.ignite.cluster.ClusterNode
 import org.gridgain.scalar._
 import scalar._
@@ -41,7 +41,7 @@ class ScalarCacheQueriesSpec extends FlatSpec with ShouldMatchers with BeforeAnd
     private var n: ClusterNode = null
 
     /** Cache. */
-    private var c: Cache[Int, ObjectValue] = null
+    private var c: GridCache[Int, ObjectValue] = null
 
     /**
      * Start node and put data to cache.

@@ -120,7 +120,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @param cache Cache.
      * @return Affinity.
      */
-    private static CacheAffinity<String> affinity(Cache<String, Integer> cache) {
+    private static CacheAffinity<String> affinity(GridCache<String, Integer> cache) {
         return cache.affinity();
     }
 
@@ -306,7 +306,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                 if (DEBUG)
                                     info("***");
 
-                                Cache<String, Integer> c = pri.cache(null);
+                                GridCache<String, Integer> c = pri.cache(null);
 
                                 Integer oldCntr = c.peek(CNTR_KEY);
 
@@ -403,7 +403,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                                     if (DEBUG)
                                         info("***");
 
-                                    Cache<String, Integer> c = near.cache(null);
+                                    GridCache<String, Integer> c = near.cache(null);
 
                                     Integer oldCntr = c.peek(CNTR_KEY);
 
@@ -488,7 +488,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
             dht(g).context().tm().printMemoryStats();
             near(g).context().tm().printMemoryStats();
 
-            Cache<String, Integer> cache = grid(i).cache(null);
+            GridCache<String, Integer> cache = grid(i).cache(null);
 
             int cntr = nearThreads > 0 && nears.contains(g) ? cache.get(CNTR_KEY) : cache.peek(CNTR_KEY);
 
@@ -576,7 +576,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         for (int i = 0; i < gridCnt; i++) {
             Ignite g = grid(i);
 
-            Cache<String, Integer> cache = grid(i).cache(null);
+            GridCache<String, Integer> cache = grid(i).cache(null);
 
             int cntr = cache.peek(CNTR_KEY);
 
@@ -640,7 +640,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                     if (DEBUG)
                         log.info("***");
 
-                    Cache<String, Integer> c = near.cache(null);
+                    GridCache<String, Integer> c = near.cache(null);
 
                     Integer oldCntr = c.peek(CNTR_KEY);
 
@@ -709,7 +709,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
                     if (DEBUG)
                         log.info("***");
 
-                    Cache<String, Integer> c = pri.cache(null);
+                    GridCache<String, Integer> c = pri.cache(null);
 
                     Integer oldCntr = c.peek(CNTR_KEY);
 

@@ -196,7 +196,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 String qryId = (scan ? VisorQueryUtils.SCAN_QRY_NAME : VisorQueryUtils.SQL_QRY_NAME) + "-" +
                     UUID.randomUUID();
 
-                Cache<Object, Object> c = g.cachex(arg.cacheName());
+                GridCache<Object, Object> c = g.cachex(arg.cacheName());
 
                 if (c == null)
                     return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " +

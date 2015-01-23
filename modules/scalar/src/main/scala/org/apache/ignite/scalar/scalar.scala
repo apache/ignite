@@ -18,7 +18,7 @@
 package org.gridgain.scalar
 
 import java.net.URL
-import org.apache.ignite.cache.Cache
+import org.apache.ignite.cache.GridCache
 import org.apache.ignite.cache.query.{CacheQuerySqlField, CacheQueryTextField}
 import org.apache.ignite.internal.GridProductImpl
 import org.apache.ignite.{IgniteState, IgniteDataLoader, Ignition, Ignite}
@@ -265,7 +265,7 @@ object scalar extends ScalarConversions {
      * this function - otherwise Scala will create `Cache[Nothing, Nothing]`
      * typed instance that cannot be used.
      */
-    @inline def cache$[K, V]: Option[Cache[K, V]] =
+    @inline def cache$[K, V]: Option[GridCache[K, V]] =
         Option(Ignition.ignite.cache[K, V](null))
 
     /**
@@ -273,7 +273,7 @@ object scalar extends ScalarConversions {
      *
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable cacheName: String): Option[Cache[K, V]] =
+    @inline def cache$[K, V](@Nullable cacheName: String): Option[GridCache[K, V]] =
         Option(Ignition.ignite.cache(cacheName))
 
     /**
@@ -282,7 +282,7 @@ object scalar extends ScalarConversions {
      * @param gridName Name of the grid.
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[Cache[K, V]] =
+    @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[GridCache[K, V]] =
         grid$(gridName) match {
             case Some(g) => Option(g.cache(cacheName))
             case None => None

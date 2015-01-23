@@ -109,7 +109,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
      * @throws Exception If failed.
      */
     public void testPutAndRemove() throws Exception {
-        final Cache<Integer, Integer> sndCache0 = grid(0).cache(null);
+        final GridCache<Integer, Integer> sndCache0 = grid(0).cache(null);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -288,7 +288,7 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCacheAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite ignite = grid(i);
 
-            Cache<Integer, Integer> cache = ignite.cache(null);
+            GridCache<Integer, Integer> cache = ignite.cache(null);
 
             for (Map.Entry<Integer, GridTuple<Integer>> expVal : expVals.entrySet()) {
                 Integer val = cache.get(expVal.getKey());

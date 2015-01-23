@@ -22,6 +22,6 @@ import org.apache.ignite.cache.*;
 /**
  * Cache proxy marker interface.
  */
-public interface GridCacheProxy<K, V> extends Cache<K, V>, GridCacheProjectionEx<K, V> {
+public interface GridCacheProxy<K, V> extends GridCache<K, V>, GridCacheProjectionEx<K, V> {
     // No-op.
 }

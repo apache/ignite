@@ -522,7 +522,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAllWithNulls() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> c = new LinkedList<>();
 
@@ -1687,7 +1687,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutAllWithNulls() throws Exception {
-        final Cache<String, Integer> cache = cache();
+        final GridCache<String, Integer> cache = cache();
 
         {
             Map<String, Integer> m = new HashMap<>(2);
@@ -2489,7 +2489,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testRemoveAllWithNulls() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> c = new LinkedList<>();
 
@@ -2705,7 +2705,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testReload() throws Exception {
         String key = "testReload";
 
-        Cache<String, Integer> cache = primaryCache(key);
+        GridCache<String, Integer> cache = primaryCache(key);
 
         assertNull(cache.peek(key));
 
@@ -2728,7 +2728,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testReloadAsync() throws Exception {
         String key = "testReloadAsync";
 
-        Cache<String, Integer> cache = primaryCache(key);
+        GridCache<String, Integer> cache = primaryCache(key);
 
         assertNull(cache.get(key));
 
@@ -2749,7 +2749,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadFiltered() throws Exception {
-        Cache<String, Integer> cache = primaryCache("key");
+        GridCache<String, Integer> cache = primaryCache("key");
 
         assertNull(cache.get("key"));
 
@@ -2769,7 +2769,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAsyncFiltered() throws Exception {
-        Cache<String, Integer> cache = primaryCache("key");
+        GridCache<String, Integer> cache = primaryCache("key");
 
         assertNull(cache.get("key"));
 
@@ -2789,7 +2789,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAll() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 2);
 
@@ -2847,7 +2847,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAllAsync() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 2);
 
@@ -2908,7 +2908,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAllFiltered() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -2955,7 +2955,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAllAsyncFiltered() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3103,7 +3103,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testClear() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3201,7 +3201,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testClearKeys() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3529,7 +3529,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (node == null)
                 throw new IgniteCheckedException("Failed to map key.");
 
-            Cache<String, Integer> cache = G.ignite(node.id()).cache(null);
+            GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
             final CacheEntry<String, Integer> e = cache.entry("key");
 
@@ -3744,7 +3744,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPeek() throws Exception {
-        Cache<String, Integer> cache = primaryCache("key");
+        GridCache<String, Integer> cache = primaryCache("key");
 
         assert cache.peek("key") == null;
 
@@ -3783,7 +3783,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private void checkPeekTxRemove(IgniteTxConcurrency concurrency) throws Exception {
         if (txEnabled()) {
-            Cache<String, Integer> cache = primaryCache("key");
+            GridCache<String, Integer> cache = primaryCache("key");
 
             cache.put("key", 1);
 
@@ -3801,7 +3801,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekRemove() throws Exception {
-        Cache<String, Integer> cache = primaryCache("key");
+        GridCache<String, Integer> cache = primaryCache("key");
 
         cache.put("key", 1);
         cache.remove("key");
@@ -3814,7 +3814,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPeekMode() throws Exception {
         String key = "testPeekMode";
-        Cache<String, Integer> cache = primaryCache(key);
+        GridCache<String, Integer> cache = primaryCache(key);
 
         cache.put(key, 1);
 
@@ -3950,8 +3950,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPeekFiltered() throws Exception {
-        Cache<String, Integer> cache1 = primaryCache("key1");
-        Cache<String, Integer> cache2 = primaryCache("key2");
+        GridCache<String, Integer> cache1 = primaryCache("key1");
+        GridCache<String, Integer> cache2 = primaryCache("key2");
 
         cache1.put("key1", 1);
         cache2.put("key2", 100);
@@ -3976,7 +3976,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testEvict() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         List<String> keys = primaryKeysForCache(cache, 2);
 
@@ -4017,7 +4017,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testEvictExpired() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -4066,7 +4066,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekExpired() throws Exception {
-        Cache<String, Integer> c = cache();
+        GridCache<String, Integer> c = cache();
 
         String key = primaryKeysForCache(c, 1).get(0);
 
@@ -4096,7 +4096,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPeekExpiredTx() throws Exception {
         if (txEnabled()) {
-            Cache<String, Integer> c = cache();
+            GridCache<String, Integer> c = cache();
 
             String key = "1";
             int ttl = 500;
@@ -4149,7 +4149,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-        final Cache<String, Integer> c = cache();
+        final GridCache<String, Integer> c = cache();
 
         final String key = primaryKeysForCache(c, 1).get(0);
 
@@ -4534,7 +4534,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * JUnit.
      */
     public void testCacheProxy() {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         assert cache instanceof GridCacheProxy;
     }
@@ -4545,7 +4545,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testCompactExpired() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         String key = F.first(primaryKeysForCache(cache, 1));
 
@@ -5016,7 +5016,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @return Cache.
      * @throws Exception If failed.
      */
-    protected Cache<String, Integer> primaryCache(String key) throws Exception {
+    protected GridCache<String, Integer> primaryCache(String key) throws Exception {
         ClusterNode node = cache().affinity().mapKeyToNode(key);
 
         if (node == null)
@@ -5024,7 +5024,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         UUID nodeId = node.id();
 
-        Cache<String, Integer> cache = null;
+        GridCache<String, Integer> cache = null;
 
         for (int i = 0; i < gridCount(); i++) {
             if (context(i).localNodeId().equals(nodeId)) {

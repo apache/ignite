@@ -78,14 +78,14 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        Cache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
+        GridCache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
 
         assert cache1 != null;
 
         assert cache1.putx("key1", 1);
         assert cache1.putx("key2", 2);
 
-        Cache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
+        GridCache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
 
         assert cache2 != null;
 

@@ -489,7 +489,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         os.write(chunk((int)ggfsMaxData));
         os.close();
 
-        final Cache<IgniteUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
+        final GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.

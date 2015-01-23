@@ -59,7 +59,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
      */
     public void testIteration()  throws Exception {
         try {
-            final Cache<String, Integer> cache = cache();
+            final GridCache<String, Integer> cache = cache();
 
             final int entryCnt = 1000;
 

@@ -760,7 +760,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     private Collection<Integer> keys() throws Exception {
-        Cache<Integer, Object> cache = cache(0);
+        GridCache<Integer, Object> cache = cache(0);
 
         ArrayList<Integer> keys = new ArrayList<>();
 
@@ -809,7 +809,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
-        Cache<Integer, Object> cache = cache(0);
+        GridCache<Integer, Object> cache = cache(0);
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).cluster().localNode();

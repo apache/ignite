@@ -83,7 +83,7 @@ public class GridCacheGroupLockComparisonTest {
         X.println(">>> Testing putAll");
         X.println(">>>");
 
-        final Cache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final GridCache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
 
         assert cache != null;
 
@@ -138,7 +138,7 @@ public class GridCacheGroupLockComparisonTest {
         X.println(">>> Testing group lock");
         X.println(">>>");
 
-        final Cache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final GridCache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
 
         assert cache != null;
 

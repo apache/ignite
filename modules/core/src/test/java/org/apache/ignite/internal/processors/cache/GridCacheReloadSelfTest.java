@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -164,7 +164,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            Cache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+            GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
                 cache.reload(i);

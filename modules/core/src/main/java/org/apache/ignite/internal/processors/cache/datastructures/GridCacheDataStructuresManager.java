@@ -1206,7 +1206,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     private boolean removeSet0(String name) throws IgniteCheckedException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-        Cache cache = cctx.cache();
+        GridCache cache = cctx.cache();
 
         GridCacheSetHeader hdr = retryRemove(cache, key);
 
@@ -1291,7 +1291,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (set == null)
             return;
 
-        Cache cache = cctx.cache();
+        GridCache cache = cctx.cache();
 
         final int BATCH_SIZE = 100;
 
@@ -1358,7 +1358,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final Cache cache, final Object key) throws IgniteCheckedException {
+    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
         return retry(new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
@@ -1372,7 +1372,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final Cache cache, final Collection<GridCacheSetItemKey> keys)
+    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
         throws IgniteCheckedException {
         retry(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1391,7 +1391,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Previous value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(final Cache cache, final Object key, final T val)
+    @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
         throws IgniteCheckedException {
         return retry(new Callable<T>() {
             @Nullable @Override public T call() throws Exception {

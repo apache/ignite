@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.*;
@@ -109,7 +109,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         assert store.get(1) == 1;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            Cache<Integer, Integer> cache = cache(i);
+            GridCache<Integer, Integer> cache = cache(i);
 
             CacheEntry<Integer, Integer> entry = cache.entry(1);
 

@@ -127,7 +127,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @SuppressWarnings("unchecked")
-    @Override protected Cache<Integer, String> cache(int i) {
+    @Override protected GridCache<Integer, String> cache(int i) {
         return grid(i).cache(null);
     }
 
@@ -173,7 +173,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
-            Cache<Integer, String> cache = cache(gridIdx);
+            GridCache<Integer, String> cache = cache(gridIdx);
 
             IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
@@ -310,7 +310,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
-            Cache<Integer, String> cache = cache(gridIdx);
+            GridCache<Integer, String> cache = cache(gridIdx);
 
             IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
@@ -413,7 +413,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     String v1 = null;
 
                     for (int j = 0; j < gridCount(); j++) {
-                        Cache<Integer, String> cache = cache(j);
+                        GridCache<Integer, String> cache = cache(j);
 
                         IgniteTx tx = cache.tx();
 

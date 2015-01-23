@@ -89,7 +89,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testFilteredPutCheckNear() throws Exception {
         doFilteredPut();
 
-        Cache<Integer, Integer> c = cache();
+        GridCache<Integer, Integer> c = cache();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }
@@ -100,7 +100,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testFilteredPutCheckDht() throws Exception {
         doFilteredPut();
 
-        Cache<Integer, Integer> c =
+        GridCache<Integer, Integer> c =
             ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
@@ -112,7 +112,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testPutAndRollbackCheckNear() throws Exception {
         doPutAndRollback();
 
-        Cache<Integer, Integer> c = cache();
+        GridCache<Integer, Integer> c = cache();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }
@@ -123,7 +123,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testPutAndRollbackCheckDht() throws Exception {
         doPutAndRollback();
 
-        Cache<Integer, Integer> c =
+        GridCache<Integer, Integer> c =
             ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
@@ -133,7 +133,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void doFilteredPut() throws Exception {
-        Cache<Integer, Integer> c = cache();
+        GridCache<Integer, Integer> c = cache();
 
         try (IgniteTx tx = c.txStart()) {
             assert !c.putx(1, 1, F.<Integer, Integer>cacheHasPeekValue());
@@ -150,7 +150,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void doPutAndRollback() throws Exception {
-        Cache<Integer, Integer> c = cache();
+        GridCache<Integer, Integer> c = cache();
 
         try (IgniteTx tx = c.txStart()) {
             assert c.putx(1, 1);

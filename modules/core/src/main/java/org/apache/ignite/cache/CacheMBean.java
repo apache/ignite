@@ -20,7 +20,7 @@ package org.apache.ignite.cache;
 import org.apache.ignite.mbean.*;
 
 /**
- * This interface defines JMX view on {@link Cache}.
+ * This interface defines JMX view on {@link GridCache}.
  */
 @IgniteMBeanDescription("MBean that provides access to cache descriptor.")
 public interface CacheMBean {

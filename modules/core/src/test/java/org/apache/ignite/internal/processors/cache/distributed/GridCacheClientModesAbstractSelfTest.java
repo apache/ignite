@@ -96,7 +96,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testPutFromClientNode() throws Exception {
-        Cache<Object, Object> nearOnly = nearOnlyCache();
+        GridCache<Object, Object> nearOnly = nearOnlyCache();
 
         for (int i = 0; i < 5; i++)
             nearOnly.put(i, i);
@@ -120,12 +120,12 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testGetFromClientNode() throws Exception {
-        Cache<Object, Object> dht = dhtCache();
+        GridCache<Object, Object> dht = dhtCache();
 
         for (int i = 0; i < 10; i++)
             dht.put(i, i);
 
-        Cache<Object, Object> nearOnly = nearOnlyCache();
+        GridCache<Object, Object> nearOnly = nearOnlyCache();
 
         assert dht != nearOnly;
 
@@ -152,7 +152,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
             if (F.eq(g.name(), nearOnlyGridName)) {
                 for (int k = 0; k < 10000; k++) {
-                    Cache<Object, Object> cache = g.cache(null);
+                    GridCache<Object, Object> cache = g.cache(null);
 
                     String key = "key" + k;
 
@@ -167,7 +167,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
                 boolean foundAffinityNode = false;
 
                 for (int k = 0; k < 10000; k++) {
-                    Cache<Object, Object> cache = g.cache(null);
+                    GridCache<Object, Object> cache = g.cache(null);
 
                     String key = "key" + k;
 
@@ -187,7 +187,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @return Near only cache for this test.
      */
-    protected Cache<Object, Object> nearOnlyCache() {
+    protected GridCache<Object, Object> nearOnlyCache() {
         assert nearOnlyGridName != null;
 
         return G.ignite(nearOnlyGridName).cache(null);
@@ -196,7 +196,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
     /**
      * @return DHT cache for this test.
      */
-    protected Cache<Object, Object> dhtCache() {
+    protected GridCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
             if (!nearOnlyGridName.equals(grid(i).name()))
                 return grid(i).cache(null);

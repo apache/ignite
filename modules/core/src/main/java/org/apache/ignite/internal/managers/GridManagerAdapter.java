@@ -504,7 +504,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                     @SuppressWarnings("unchecked")
                     @Nullable @Override public <V> V readValueFromOffheapAndSwap(@Nullable String spaceName,
                         Object key, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-                        Cache<Object, V> cache = ctx.cache().cache(spaceName);
+                        GridCache<Object, V> cache = ctx.cache().cache(spaceName);
 
                         GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
 

@@ -21,7 +21,7 @@ import junit.framework.*;
 import net.sf.json.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
@@ -464,8 +464,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        Cache<String, String> dfltCache = grid().cache(null);
-        Cache<Object, Object> namedCache = grid().cache(CACHE_NAME);
+        GridCache<String, String> dfltCache = grid().cache(null);
+        GridCache<Object, Object> namedCache = grid().cache(CACHE_NAME);
 
         GridClientData dfltData = client.data();
 
@@ -871,14 +871,14 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(datas[0]);
         assertNotNull(datas[1]);
 
-        Cache[] caches = new Cache[] {
+        GridCache[] caches = new GridCache[] {
             grid().cache(null),
             grid().cache(CACHE_NAME)
         };
 
         for (int i = 0; i < datas.length; i++) {
             GridClientData data = datas[i];
-            Cache<String, String> cache = (Cache<String, String>)caches[i];
+            GridCache<String, String> cache = (GridCache<String, String>)caches[i];
 
             assertFalse(data.cas("key", null, null));
             assertTrue(cache.putx("key", "val"));

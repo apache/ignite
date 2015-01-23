@@ -75,7 +75,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testExpiredEntriesPreloading() throws Exception {
-        Cache<String, Integer> cache0 = cache(0);
+        GridCache<String, Integer> cache0 = cache(0);
 
         final int KEYS_NUM = 3;
 

@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
@@ -79,7 +79,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
     private GridCacheProjectionEx<MetaKey, org.springframework.cache.Cache> metaCache;
 
     /** Data cache. */
-    private Cache<DataKey, Object> dataCache;
+    private GridCache<DataKey, Object> dataCache;
 
     /**
      * Sets data cache name.

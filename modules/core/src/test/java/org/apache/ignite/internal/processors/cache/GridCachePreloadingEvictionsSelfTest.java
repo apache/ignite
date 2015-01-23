@@ -100,7 +100,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            Cache<Integer, Object> cache1 = ignite1.cache(null);
+            GridCache<Integer, Object> cache1 = ignite1.cache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);

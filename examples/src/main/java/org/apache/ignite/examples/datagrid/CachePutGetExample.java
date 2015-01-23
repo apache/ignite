@@ -65,7 +65,7 @@ public class CachePutGetExample {
 
         Ignite g = Ignition.ignite();
 
-        final Cache<Integer, String> cache = g.cache(CACHE_NAME);
+        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
         final int keyCnt = 20;
 
@@ -90,7 +90,7 @@ public class CachePutGetExample {
 
         Ignite g = Ignition.ignite();
 
-        final Cache<Integer, String> cache = g.cache(CACHE_NAME);
+        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
         final int keyCnt = 20;
 

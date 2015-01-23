@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.Cache
+import org.apache.ignite.cache.GridCache
 import org.gridgain.scalar.scalar
 import scalar._
 
@@ -43,7 +43,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private val NAME = "partitioned"
 
     /** Type alias. */
-    type Cache = Cache[Int, String]
+    type GridCache = GridCache[Int, String]
 
     /*
      * Note that in case of `LOCAL` configuration,
@@ -65,7 +65,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      *
      * @param c Cache to use.
      */
-    private def visit(c: Cache) {
+    private def visit(c: GridCache) {
         (0 until KEY_CNT).foreach(i =>
             grid$.compute().affinityRun(NAME, i,
                 () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
@@ -77,7 +77,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      *
      * @param c Cache to populate.
      */
-    private def populate(c: Cache) {
+    private def populate(c: GridCache) {
         (0 until KEY_CNT).foreach(i => c += (i -> i.toString))
     }
 }

@@ -152,7 +152,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        Cache<String, String> cache = grid().cache(null);
+        GridCache<String, String> cache = grid().cache(null);
 
         cache.putx("key", "val");
 
@@ -170,7 +170,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         assert inBean != outBean;
 
-        Cache<String, String> cache0 = (Cache<String, String>)outBean.getObjectField();
+        GridCache<String, String> cache0 = (GridCache<String, String>)outBean.getObjectField();
 
         assertNull(cache0.name());
         assertEquals("val", cache0.get("key"));
@@ -182,7 +182,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testNamedCache() throws Exception {
-        Cache<String, String> cache = grid().cache(CACHE_NAME);
+        GridCache<String, String> cache = grid().cache(CACHE_NAME);
 
         cache.putx("key", "val");
 
@@ -200,7 +200,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         assert inBean != outBean;
 
-        Cache<String, String> cache0 = (Cache<String, String>)outBean.getObjectField();
+        GridCache<String, String> cache0 = (GridCache<String, String>)outBean.getObjectField();
 
         assertEquals(CACHE_NAME, cache0.name());
         assertEquals("val", cache0.get("key"));
@@ -833,7 +833,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testAffinity() throws Exception {
-        Cache<String, String> cache = grid().cache(CACHE_NAME);
+        GridCache<String, String> cache = grid().cache(CACHE_NAME);
 
         CacheAffinity<String> affinity = cache.affinity();
 

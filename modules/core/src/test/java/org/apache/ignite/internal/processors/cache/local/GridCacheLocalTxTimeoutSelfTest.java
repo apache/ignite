@@ -132,7 +132,7 @@ public class GridCacheLocalTxTimeoutSelfTest extends GridCommonAbstractTest {
         IgniteTx tx = null;
 
         try {
-            Cache<Integer, String> cache = ignite.cache(null);
+            GridCache<Integer, String> cache = ignite.cache(null);
 
             tx = cache.txStart(concurrency, isolation, 50, 0);
 

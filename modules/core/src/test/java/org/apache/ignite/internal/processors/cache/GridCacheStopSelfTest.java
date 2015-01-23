@@ -131,7 +131,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             final CountDownLatch readyLatch = new CountDownLatch(PUT_THREADS);
 
-            final Cache<Integer, Integer> cache = grid(0).cache(null);
+            final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             assertNotNull(cache);
 

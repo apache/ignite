@@ -49,7 +49,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testWithoutStoreLoad() throws Exception {
-        Cache<Integer, CacheValue> cache = grid(0).cache(null);
+        GridCache<Integer, CacheValue> cache = grid(0).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++)
             cache.put(i, new CacheValue(i));
@@ -65,7 +65,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < ENTRY_CNT; i++)
             putToStore(i, new CacheValue(i));
 
-        Cache<Integer, CacheValue> cache0 = grid(0).cache(null);
+        GridCache<Integer, CacheValue> cache0 = grid(0).cache(null);
 
         cache0.loadCache(null, 0);
 

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.springframework.cache.*;
 import org.springframework.cache.support.*;
 
 import java.io.*;
@@ -68,7 +69,7 @@ class SpringCache implements Cache, Serializable {
     }
 
     /** {@inheritDoc} */
-    @Override public ValueWrapper get(Object key) {
+    @Override public Cache.ValueWrapper get(Object key) {
         try {
             Object val = cache.get(keyFactory.apply(key));
 

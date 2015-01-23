@@ -148,9 +148,9 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     public void _testJtaTwoCaches() throws Exception { // TODO GG-9141
         UserTransaction jtaTx = jotm.getUserTransaction();
 
-        Cache<String, Integer> cache1 = cache();
+        GridCache<String, Integer> cache1 = cache();
 
-        Cache<String, Integer> cache2 = grid(0).cache("cache-2");
+        GridCache<String, Integer> cache2 = grid(0).cache("cache-2");
 
         assertNull(cache1.tx());
         assertNull(cache2.tx());

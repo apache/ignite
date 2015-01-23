@@ -93,7 +93,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                 @Override public Object execute() throws IgniteCheckedException {
                     log.info("Going to put data: " + data.size());
 
-                    Cache<Object, Object> cache = ignite.cache(cacheName);
+                    GridCache<Object, Object> cache = ignite.cache(cacheName);
 
                     assert cache != null;
 
@@ -126,7 +126,7 @@ class GridCacheGroupLockPutTask extends ComputeTaskAdapter<Collection<Integer>, 
                  * @return Grouped map.
                  */
                 private Map<Integer, T2<Integer, Collection<Integer>>> groupData(Iterable<Integer> data) {
-                    Cache<Object, Object> cache = ignite.cache(cacheName);
+                    GridCache<Object, Object> cache = ignite.cache(cacheName);
 
                     Map<Integer, T2<Integer, Collection<Integer>>> res = new HashMap<>();
 

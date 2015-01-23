@@ -54,7 +54,7 @@ public class CacheTransactionExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
-            Cache<Integer, Account> cache = g.cache(CACHE_NAME);
+            GridCache<Integer, Account> cache = g.cache(CACHE_NAME);
 
             // Initialize.
             cache.putx(1, new Account(1, 100));

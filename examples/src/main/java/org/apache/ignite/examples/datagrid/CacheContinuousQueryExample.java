@@ -48,7 +48,7 @@ public class CacheContinuousQueryExample {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");
 
-            Cache<Integer, String> cache = g.cache(CACHE_NAME);
+            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
             cache.globalClearAll(0);

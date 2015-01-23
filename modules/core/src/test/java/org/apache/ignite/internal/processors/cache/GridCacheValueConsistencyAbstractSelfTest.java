@@ -109,7 +109,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemove() throws Exception {
         awaitPartitionMapExchange();
 
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         int keyCnt = 10;
 
@@ -117,7 +117,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             cache.put("key" + i, i);
 
         for (int g = 0; g < gridCount(); g++) {
-            Cache<String, Integer> cache0 = cache(g);
+            GridCache<String, Integer> cache0 = cache(g);
             ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
@@ -148,7 +148,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             assertEquals((Integer)i, cache.remove("key" + i));
 
         for (int g = 0; g < gridCount(); g++) {
-            Cache<String, Integer> cache0 = cache(g);
+            GridCache<String, Integer> cache0 = cache(g);
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
@@ -166,7 +166,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemoveAll() throws Exception {
         awaitPartitionMapExchange();
 
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         int keyCnt = 10;
 
@@ -177,7 +177,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         }
 
         for (int g = 0; g < gridCount(); g++) {
-            Cache<String, Integer> cache0 = cache(g);
+            GridCache<String, Integer> cache0 = cache(g);
             ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
@@ -211,7 +211,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         info(">>>> Starting values check");
 
         for (int g = 0; g < gridCount(); g++) {
-            Cache<String, Integer> cache0 = cache(g);
+            GridCache<String, Integer> cache0 = cache(g);
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
@@ -246,7 +246,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
                     Ignite ignite = grid(g);
 
-                    Cache<Object, Object> cache = ignite.cache(null);
+                    GridCache<Object, Object> cache = ignite.cache(null);
 
                     int k = rnd.nextInt(range);
 
@@ -299,7 +299,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @param g Grid to check.
      */
     private void checkKeySet(Ignite g) {
-        Cache<Object, Object> cache = g.cache(null);
+        GridCache<Object, Object> cache = g.cache(null);
 
         Set<Object> keys = cache.keySet();
 

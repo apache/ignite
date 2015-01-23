@@ -51,7 +51,7 @@ public class MemcacheRestExample {
             System.out.println();
             System.out.println(">>> Memcache REST example started.");
 
-            Cache<String, Object> cache = g.cache(null);
+            GridCache<String, Object> cache = g.cache(null);
 
             client = startMemcachedClient(host, port);
 

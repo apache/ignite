@@ -137,7 +137,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Cache<?, ?>> caches() {
+    @Override public Collection<GridCache<?, ?>> caches() {
         assert g != null;
 
         return g.caches();
@@ -256,7 +256,7 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Cache<K, V> cache(String name) {
+    @Override public <K, V> GridCache<K, V> cache(String name) {
         assert g != null;
 
         return g.cache(name);

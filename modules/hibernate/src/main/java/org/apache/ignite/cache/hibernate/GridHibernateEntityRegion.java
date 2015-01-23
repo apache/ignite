@@ -59,7 +59,7 @@ public class GridHibernateEntityRegion extends GridHibernateTransactionalDataReg
      * @param dataDesc Region data description.
      */
     public GridHibernateEntityRegion(GridHibernateRegionFactory factory, String name, Ignite ignite,
-        Cache<Object, Object> cache, CacheDataDescription dataDesc) {
+        GridCache<Object, Object> cache, CacheDataDescription dataDesc) {
         super(factory, name, ignite, cache, dataDesc);
     }
 

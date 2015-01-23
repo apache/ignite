@@ -114,7 +114,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 Ignite g = grid(i);
 
                 // This node has the partition.
-                Cache<String, Integer> nodeCache = g.cache(null);
+                GridCache<String, Integer> nodeCache = g.cache(null);
 
                 if (offheapTiered(nodeCache))
                     continue;
@@ -156,7 +156,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 Ignite g = grid(i);
 
                 // This node has the partition.
-                Cache<String, Integer> nodeCache = g.cache(null);
+                GridCache<String, Integer> nodeCache = g.cache(null);
 
                 if (offheapTiered(nodeCache))
                     continue;
@@ -190,7 +190,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
      * @throws Exception If failed.
      */
     public void testPartitionEntrySetRemove() throws Exception {
-        Cache<String, Integer> cache = cache(0);
+        GridCache<String, Integer> cache = cache(0);
 
         Map<Integer, Collection<String>> partMap = new HashMap<>();
 
@@ -224,7 +224,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 Ignite g = grid(i);
 
                 // This node has the partition.
-                Cache<String, Integer> nodeCache = g.cache(null);
+                GridCache<String, Integer> nodeCache = g.cache(null);
 
                 if (offheapTiered(nodeCache))
                     continue;

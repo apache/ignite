@@ -19,7 +19,7 @@ package org.apache.ignite.loadtests.swap;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -84,7 +84,7 @@ public class GridSwapEvictAllBenchmark {
             });
 
             try {
-                Cache<Object, Object> cache = g.cache(null);
+                GridCache<Object, Object> cache = g.cache(null);
 
                 assert cache != null;
 
@@ -153,7 +153,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        Cache<Object, Object> cache = G.ignite().cache(null);
+        GridCache<Object, Object> cache = G.ignite().cache(null);
 
         assert cache != null;
 

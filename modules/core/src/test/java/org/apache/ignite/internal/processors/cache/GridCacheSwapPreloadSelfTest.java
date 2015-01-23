@@ -96,7 +96,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            Cache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             // Populate.
             for (int i = 0; i < ENTRY_CNT; i++)
@@ -154,7 +154,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            final Cache<Integer, Integer> cache = grid(0).cache(null);
+            final GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             assertNotNull(cache);
 

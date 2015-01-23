@@ -121,7 +121,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         throws Exception {
         int idGen = 0;
 
-        Cache<Integer, Object> dimCache = ignite.cache("replicated");
+        GridCache<Integer, Object> dimCache = ignite.cache("replicated");
 
         for (int i = 0; i < 2; i++) {
             int id = idGen++;
@@ -138,7 +138,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
         CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
-        Cache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
+        GridCache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
 
         List<DimStore> dimStores = new ArrayList<>(stores.values());
         Collections.sort(dimStores, new Comparator<DimStore>() {

@@ -394,7 +394,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        Cache<Integer, String> mc = mg.cache(null);
+        GridCache<Integer, String> mc = mg.cache(null);
 
         int keyCnt = 10;
 

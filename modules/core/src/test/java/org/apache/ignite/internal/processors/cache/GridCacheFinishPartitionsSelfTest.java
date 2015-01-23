@@ -84,7 +84,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
         String key = "key";
         String val = "value";
 
-        Cache<String, String> cache = grid.cache(null);
+        GridCache<String, String> cache = grid.cache(null);
 
         int keyPart = grid.<String, String>internalCache().context().affinity().partition(key);
 
@@ -127,7 +127,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 if (barrier.await() == 0)
                     start.set(System.currentTimeMillis());
 
-                Cache<String, String> cache = grid(0).cache(null);
+                GridCache<String, String> cache = grid(0).cache(null);
 
                 IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -187,7 +187,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testMvccFinishKeys() throws Exception {
-        Cache<String, Integer> cache = grid(0).cache(null);
+        GridCache<String, Integer> cache = grid(0).cache(null);
 
         try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";

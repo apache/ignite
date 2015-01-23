@@ -70,7 +70,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomEntry() throws Exception {
-        Cache<String, String> cache = grid(0).cache(null);
+        GridCache<String, String> cache = grid(0).cache(null);
 
         for (int i = 0; i < 500; i++)
             cache.put("key" + i, "val" + i);
@@ -88,7 +88,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomEntryMultiThreaded() throws Exception {
-        final Cache<String, String> cache = grid(0).cache(null);
+        final GridCache<String, String> cache = grid(0).cache(null);
 
         final AtomicBoolean done = new AtomicBoolean();
 

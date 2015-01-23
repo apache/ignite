@@ -68,7 +68,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private GridCacheProjectionEx<GridGgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
-    private Cache<Object, Object> dataCache;
+    private GridCache<Object, Object> dataCache;
 
     /** */
     private IgniteFuture<?> dataCacheStartFut;

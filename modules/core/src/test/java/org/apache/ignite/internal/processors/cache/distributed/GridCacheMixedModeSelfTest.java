@@ -64,7 +64,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBasicOps() throws Exception {
-        Cache<Object, Object> cache = grid(0).cache(null);
+        GridCache<Object, Object> cache = grid(0).cache(null);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);

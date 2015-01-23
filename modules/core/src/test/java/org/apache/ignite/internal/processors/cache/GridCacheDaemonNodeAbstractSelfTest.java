@@ -95,7 +95,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            Cache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, i);
@@ -126,7 +126,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            Cache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 30; i++) {
                 try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {

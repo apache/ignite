@@ -118,7 +118,7 @@ public class CachePopularNumbersExample {
 
             @Override public void run() {
                 // Get reference to cache.
-                Cache<Integer, Long> cache = g.cache(CACHE_NAME);
+                GridCache<Integer, Long> cache = g.cache(CACHE_NAME);
 
                 if (qry == null)
                     qry = cache.queries().

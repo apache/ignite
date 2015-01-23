@@ -125,7 +125,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void createRemove(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -183,7 +183,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void incrementAndGet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -216,7 +216,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndIncrement(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -249,7 +249,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void decrementAndGet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -282,7 +282,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndDecrement(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -315,7 +315,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndAdd(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -350,7 +350,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void addAndGet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -385,7 +385,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndSet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -421,7 +421,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void compareAndSet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -463,7 +463,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndSetInTx(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        Cache cache = grid().cache(cacheName);
+        GridCache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());

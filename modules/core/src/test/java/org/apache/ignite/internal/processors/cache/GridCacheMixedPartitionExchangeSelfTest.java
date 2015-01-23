@@ -91,7 +91,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
                         int key = rnd.nextInt(keys);
 
-                        Cache<Integer, Integer> prj = grid(g).cache(null);
+                        GridCache<Integer, Integer> prj = grid(g).cache(null);
 
                         try (IgniteTx tx = prj.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                             Integer val = prj.get(key);

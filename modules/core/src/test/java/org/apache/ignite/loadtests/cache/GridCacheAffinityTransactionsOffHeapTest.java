@@ -59,7 +59,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
         startNodes();
 
         for (int i = 0; i < KEY_CNT; i++) {
-            Cache<Object, Integer> c = cache(i);
+            GridCache<Object, Integer> c = cache(i);
 
             c.putx((long)i, 0);
             c.putx(new UserKey(i, 0), 0);
@@ -71,7 +71,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
         long key = 5;
 
-        Cache<Object, Integer> c = cache(key);
+        GridCache<Object, Integer> c = cache(key);
 
         try (IgniteTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
             Integer val = c.get(key);
@@ -153,7 +153,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      * @param key Key.
      * @return Cache.
      */
-    private static Cache<Object, Integer> cache(long key) {
+    private static GridCache<Object, Integer> cache(long key) {
         UUID id = Ignition.ignite("grid-0").cache(null).affinity().mapKeyToNode(key).id();
 
         return Ignition.ignite(id).cache(null);

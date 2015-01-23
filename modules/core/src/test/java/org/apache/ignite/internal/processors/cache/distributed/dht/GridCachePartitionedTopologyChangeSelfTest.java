@@ -248,7 +248,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            Cache<Integer, Integer> cache = node.cache(null);
+                            GridCache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -317,7 +317,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        Cache<Integer, Integer> cache = g.cache(null);
+                        GridCache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -402,7 +402,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            Cache<Integer, Integer> cache = node.cache(null);
+                            GridCache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -453,7 +453,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        Cache<Integer, Integer> cache = g.cache(null);
+                        GridCache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 

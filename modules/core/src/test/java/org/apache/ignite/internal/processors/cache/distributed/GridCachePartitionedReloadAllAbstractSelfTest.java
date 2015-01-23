@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -56,7 +56,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
     private final Map<Integer, String> map = new ConcurrentHashMap8<>();
 
     /** Collection of caches, one per grid node. */
-    private List<Cache<Integer, String>> caches;
+    private List<GridCache<Integer, String>> caches;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -186,7 +186,7 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
      */
     public void testReloadAll() throws Exception {
         // Fill caches with values.
-        for (Cache<Integer, String> cache : caches) {
+        for (GridCache<Integer, String> cache : caches) {
             Iterable<Integer> keys = primaryKeysForCache(cache, 100);
 
             info("Values [cache=" + caches.indexOf(cache) + ", size=" + F.size(keys.iterator()) +  ", keys=" + keys + "]");
@@ -195,14 +195,14 @@ public abstract class GridCachePartitionedReloadAllAbstractSelfTest extends Grid
                 map.put(key, "val" + key);
         }
 
-        Collection<Cache<Integer, String>> emptyCaches = new ArrayList<>(caches);
+        Collection<GridCache<Integer, String>> emptyCaches = new ArrayList<>(caches);
 
-        for (Cache<Integer, String> cache : caches) {
+        for (GridCache<Integer, String> cache : caches) {
             info("Reloading cache: " + caches.indexOf(cache));
 
             // Check data is reloaded only on the nodes on which reloadAll() has been called.
             if (!nearEnabled()) {
-                for (Cache<Integer, String> eCache : emptyCaches)
+                for (GridCache<Integer, String> eCache : emptyCaches)
                     assertEquals("Non-null values found in cache [cache=" + caches.indexOf(eCache) +
                         ", size=" + eCache.size() + ", size=" + eCache.size() +
                         ", entrySetSize=" + eCache.entrySet().size() + "]",

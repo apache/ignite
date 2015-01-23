@@ -145,7 +145,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 GridKernal grid = (GridKernal)grid(idx);
 
-                Cache<Integer, Integer> cache = grid.cache(null);
+                GridCache<Integer, Integer> cache = grid.cache(null);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -183,7 +183,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 GridEx grid = grid(i);
 
-                Cache<Integer, Integer> cache = grid.cache(null);
+                GridCache<Integer, Integer> cache = grid.cache(null);
 
                 if (cache.affinity().isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {

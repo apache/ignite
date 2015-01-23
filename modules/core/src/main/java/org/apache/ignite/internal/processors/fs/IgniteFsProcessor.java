@@ -319,7 +319,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
             if (dataCache.configuration().isQueryIndexEnabled())
                 throw new IgniteCheckedException("GGFS data cache cannot start with enabled query indexing.");
 
-            Cache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
+            GridCache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
 
             if (metaCache == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for GGFS: " + cfg);

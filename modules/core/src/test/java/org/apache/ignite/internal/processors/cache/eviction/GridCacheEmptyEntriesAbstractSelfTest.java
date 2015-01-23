@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -171,7 +171,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                Cache<String, String> cache = g.cache(null);
+                GridCache<String, String> cache = g.cache(null);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +
@@ -194,7 +194,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
-    private void checkImplicitTx(Cache<String, String> cache) throws Exception {
+    private void checkImplicitTx(GridCache<String, String> cache) throws Exception {
         assertNull(cache.get("key1"));
         assertNull(cache.getAsync("key2").get());
 
@@ -214,7 +214,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
-    private void checkExplicitTx(Cache<String, String> cache) throws Exception {
+    private void checkExplicitTx(GridCache<String, String> cache) throws Exception {
         IgniteTx tx = cache.txStart();
 
         try {
@@ -284,7 +284,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws org.apache.ignite.IgniteInterruptedException If interrupted while sleeping.
      */
     @SuppressWarnings({"ErrorNotRethrown", "TypeMayBeWeakened"})
-    private void checkEmpty(Cache<String, String> cache) throws IgniteInterruptedException {
+    private void checkEmpty(GridCache<String, String> cache) throws IgniteInterruptedException {
         for (int i = 0; i < 3; i++) {
             try {
                 assertTrue(cache.entrySet().toString(), cache.entrySet().isEmpty());

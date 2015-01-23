@@ -84,7 +84,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final Cache<Integer, Person> cache = grid(0).cache(null);
+        final GridCache<Integer, Person> cache = grid(0).cache(null);
 
         for (int i = 0; i < 2000; i++)
             cache.put(i, new Person(i));

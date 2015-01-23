@@ -62,13 +62,13 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     private static Ignite ignite3;
 
     /** Cache1. */
-    private static Cache<CacheKey, CacheValue> cache1;
+    private static GridCache<CacheKey, CacheValue> cache1;
 
     /** Cache2. */
-    private static Cache<CacheKey, CacheValue> cache2;
+    private static GridCache<CacheKey, CacheValue> cache2;
 
     /** Cache3. */
-    private static Cache<CacheKey, CacheValue> cache3;
+    private static GridCache<CacheKey, CacheValue> cache3;
 
     /** Key serialization cnt. */
     private static volatile int keySerCnt;
@@ -112,7 +112,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid("client");
 
-            Cache<Integer, Integer> c = g.cache(null);
+            GridCache<Integer, Integer> c = g.cache(null);
 
             for (int i = 0; i < 10; i++)
                 c.putx(i, i);
@@ -379,7 +379,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        Cache<Integer, Integer> cache = ignite.cache(null);
+        GridCache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 1000; i++)
             assertTrue(cache.putx(i, i));
@@ -424,7 +424,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid();
 
-            Cache<Integer, Integer> cache = g.cache(null);
+            GridCache<Integer, Integer> cache = g.cache(null);
 
             for (int i = 0; i < 1000; i++)
                 assertTrue(cache.putx(i, i));

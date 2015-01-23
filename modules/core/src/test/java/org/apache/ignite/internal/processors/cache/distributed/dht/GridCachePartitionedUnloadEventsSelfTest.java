@@ -75,7 +75,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Collection<Integer> allKeys = new ArrayList<>(100);
 
-        Cache<Integer, String> cache = g1.cache(null);
+        GridCache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             cache.put(i, "val");

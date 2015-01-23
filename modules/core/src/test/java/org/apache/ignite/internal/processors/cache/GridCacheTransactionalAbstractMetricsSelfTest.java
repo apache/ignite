@@ -206,7 +206,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testCommits(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
             IgniteTx tx = cache.txStart(concurrency, isolation);
@@ -246,7 +246,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
      */
     private void testRollbacks(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         boolean put) throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < TX_CNT; i++) {
             IgniteTx tx = cache.txStart(concurrency, isolation);

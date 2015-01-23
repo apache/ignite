@@ -152,8 +152,8 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
      * @throws IgniteCheckedException In case of exception.
      */
     public void testConfiguration() throws IgniteCheckedException {
-        Cache metaCache = getFieldValue(fs, "meta", "metaCache");
-        Cache dataCache = getFieldValue(fs, "data", "dataCache");
+        GridCache metaCache = getFieldValue(fs, "meta", "metaCache");
+        GridCache dataCache = getFieldValue(fs, "data", "dataCache");
 
         assertNotNull(metaCache);
         assertEquals(META_CACHE_NAME, metaCache.name());
@@ -255,7 +255,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             // After this we should have first two block colocated with grid 0 and last block colocated with grid 1.
             IgniteFsFileImpl fileImpl = (IgniteFsFileImpl)fs.info(path);
 
-            Cache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
+            GridCache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
 
             GridGgfsFileInfo fileInfo = (GridGgfsFileInfo)metaCache.get(fileImpl.fileId());
 

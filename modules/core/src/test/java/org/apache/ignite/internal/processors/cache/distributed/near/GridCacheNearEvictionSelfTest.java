@@ -90,7 +90,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCnt);
 
         try {
-            Cache<Integer, String> c = grid(0).cache(null);
+            GridCache<Integer, String> c = grid(0).cache(null);
 
             int cnt = 100;
 
@@ -120,7 +120,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    Cache<Integer, String> c = ignite.cache(null);
+                    GridCache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.putx(i, Integer.toString(i));
@@ -154,7 +154,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    Cache<Integer, String> c = ignite.cache(null);
+                    GridCache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.putx(i, Integer.toString(i));

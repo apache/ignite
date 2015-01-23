@@ -2914,7 +2914,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Cache<K, V> cache(@Nullable String name) {
+    @Override public <K, V> GridCache<K, V> cache(@Nullable String name) {
         guard();
 
         try {
@@ -2950,7 +2950,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Cache<?, ?>> caches() {
+    @Override public Collection<GridCache<?, ?>> caches() {
         guard();
 
         try {
@@ -2981,7 +2981,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Cache<K, V> cachex(@Nullable String name) {
+    @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
         guard();
 
         try {
@@ -2993,7 +2993,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public <K, V> Cache<K, V> cachex() {
+    @Override public <K, V> GridCache<K, V> cachex() {
         guard();
 
         try {
@@ -3005,7 +3005,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Cache<?, ?>> cachesx(IgnitePredicate<? super Cache<?, ?>>[] p) {
+    @Override public Collection<GridCache<?, ?>> cachesx(IgnitePredicate<? super GridCache<?, ?>>[] p) {
         guard();
 
         try {

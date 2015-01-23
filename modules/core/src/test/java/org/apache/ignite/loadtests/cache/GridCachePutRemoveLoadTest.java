@@ -45,7 +45,7 @@ public class GridCachePutRemoveLoadTest {
     private final Arguments args;
 
     /** */
-    private Cache<Object, Object> cache;
+    private GridCache<Object, Object> cache;
 
     /**
      * @param args Arguments.

@@ -109,7 +109,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            Cache<String, String> c = cache();
+            GridCache<String, String> c = cache();
 
             MockEntry e1 = new MockEntry("1", c);
 

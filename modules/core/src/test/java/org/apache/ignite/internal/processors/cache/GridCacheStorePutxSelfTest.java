@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.Cache;
+import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -100,7 +100,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutxShouldNotTriggerLoadWithTx() throws Exception {
-        Cache<Integer, Integer> cache = cache();
+        GridCache<Integer, Integer> cache = cache();
 
         try (IgniteTx tx = cache.txStart()) {
             assertTrue(cache.putx(1, 1));

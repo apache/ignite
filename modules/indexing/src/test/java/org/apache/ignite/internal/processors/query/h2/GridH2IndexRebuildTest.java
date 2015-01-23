@@ -149,8 +149,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
         cache().queries().rebuildAllIndexes().get();
 
-        Cache<Integer, TestValue1> cache1 = grid(0).cache(null);
-        Cache<Integer, TestValue2> cache2 = grid(0).cache(null);
+        GridCache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        GridCache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             cache1.put(i, new TestValue1(i, "val2-" + i, i, i));
@@ -195,8 +195,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     public void testRebuildInterrupted() throws Exception {
         spi.sleepInRebuild = true;
 
-        Cache<Integer, TestValue1> cache1 = grid(0).cache(null);
-        Cache<Integer, TestValue2> cache2 = grid(0).cache(null);
+        GridCache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        GridCache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));

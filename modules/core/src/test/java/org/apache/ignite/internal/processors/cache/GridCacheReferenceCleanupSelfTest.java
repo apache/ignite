@@ -312,7 +312,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    Cache<Integer, TestValue> cache = g.cache(null);
+                    GridCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -353,7 +353,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    Cache<Integer, TestValue> cache = g.cache(null);
+                    GridCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -386,7 +386,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    Cache<Integer, TestValue> cache = g.cache(null);
+                    GridCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -426,7 +426,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    Cache<Integer, TestValue> cache = g.cache(null);
+                    GridCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 
@@ -463,7 +463,7 @@ public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
                 Ignite g = startGrid();
 
                 try {
-                    Cache<Integer, TestValue> cache = g.cache(null);
+                    GridCache<Integer, TestValue> cache = g.cache(null);
 
                     refs.add(new WeakReference<Object>(cacheContext(cache)));
 

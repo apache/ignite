@@ -67,7 +67,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @SuppressWarnings("unchecked")
     public void testInternalKeysPreloading() throws Exception {
         try {
-            Cache<Object, Object> cache = grid(0).cache(null);
+            GridCache<Object, Object> cache = grid(0).cache(null);
 
             for (int i = 0; i < ENTRY_CNT; i++)
                 cache.dataStructures().queue("queue" + i, Integer.MAX_VALUE, false, true);

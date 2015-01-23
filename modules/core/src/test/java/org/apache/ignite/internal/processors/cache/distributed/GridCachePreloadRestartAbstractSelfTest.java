@@ -210,14 +210,14 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @return Affinity.
      */
     @SuppressWarnings({"unchecked"})
-    private CacheAffinityFunction affinity(Cache<Integer, ?> cache) {
+    private CacheAffinityFunction affinity(GridCache<Integer, ?> cache) {
         return cache.configuration().getAffinity();
     }
 
     /**
      * @param c Cache projection.
      */
-    private void affinityBeforeStop(Cache<Integer, String> c) {
+    private void affinityBeforeStop(GridCache<Integer, String> c) {
         for (int key = 0; key < keyCnt; key++) {
             int part = affinity(c).partition(key);
 
@@ -229,7 +229,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
     /**
      * @param c Cache projection.
      */
-    private void affinityAfterStart(Cache<Integer, String> c) {
+    private void affinityAfterStart(GridCache<Integer, String> c) {
         if (DEBUG) {
             for (int key = 0; key < keyCnt; key++) {
                 int part = affinity(c).partition(key);
@@ -249,7 +249,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
         startGrids();
 
         try {
-            Cache<Integer, String> c = grid(idx).cache(CACHE_NAME);
+            GridCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
@@ -286,7 +286,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @param attempt Attempt.
      * @throws Exception If failed.
      */
-    private void checkGet(Cache<Integer, String> c, int attempt) throws Exception {
+    private void checkGet(GridCache<Integer, String> c, int attempt) throws Exception {
         for (int i = 0; i < keyCnt; i++) {
             String v = c.get(i);
 
@@ -312,7 +312,7 @@ public abstract class GridCachePreloadRestartAbstractSelfTest extends GridCommon
      * @param key Key.
      * @param attempt Attempt.
      */
-    private void printFailureDetails(Cache<Integer, String> c, int key, int attempt) {
+    private void printFailureDetails(GridCache<Integer, String> c, int key, int attempt) {
         error("*** Failure details ***");
         error("Key: " + key);
         error("Partition: " + c.configuration().getAffinity().partition(key));

@@ -517,7 +517,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param affinity Affinity block locations to check.
      */
     private void checkAffinity(int blockSize, GridGgfsFileInfo info, Iterable<IgniteFsBlockLocation> affinity) {
-        Cache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
+        GridCache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
         for (IgniteFsBlockLocation loc : affinity) {
             info("Going to check GGFS block location: " + loc);

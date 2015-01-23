@@ -564,7 +564,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        Cache<Object, Object> cache = workerNode.cache(CACHE_NAME);
+        GridCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.

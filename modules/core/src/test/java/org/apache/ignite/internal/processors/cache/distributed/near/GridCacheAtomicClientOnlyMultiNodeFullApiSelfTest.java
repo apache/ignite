@@ -70,7 +70,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         int size = 10;
 
@@ -101,8 +101,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        Cache<String, Integer> nearCache = cache();
-        Cache<String, Integer> primary = fullCache();
+        GridCache<String, Integer> nearCache = cache();
+        GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -174,8 +174,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testClearKeys() throws Exception {
-        Cache<String, Integer> nearCache = cache();
-        Cache<String, Integer> primary = fullCache();
+        GridCache<String, Integer> nearCache = cache();
+        GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -224,7 +224,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -331,7 +331,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testPeekExpired() throws Exception {
-        Cache<String, Integer> c = cache();
+        GridCache<String, Integer> c = cache();
 
         String key = primaryKeysForCache(c, 1).get(0);
 
@@ -355,7 +355,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testEvict() throws Exception {
-        Cache<String, Integer> cache = cache();
+        GridCache<String, Integer> cache = cache();
 
         List<String> keys = primaryKeysForCache(cache, 2);
 

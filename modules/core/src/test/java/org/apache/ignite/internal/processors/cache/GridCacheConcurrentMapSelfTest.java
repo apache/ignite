@@ -74,7 +74,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRehash() throws Exception {
-        Cache<Integer, String> c = grid().cache(null);
+        GridCache<Integer, String> c = grid().cache(null);
 
         int cnt = 100 * 1024;
 
@@ -105,7 +105,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRehashRandom() throws Exception {
-        Cache<Integer, String> c = grid().cache(null);
+        GridCache<Integer, String> c = grid().cache(null);
 
         int cnt = 100 * 1024;
 
@@ -153,7 +153,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                Cache<Integer, String> c = grid().cache(null);
+                GridCache<Integer, String> c = grid().cache(null);
 
                 int tid = tidGen.getAndIncrement();
 
@@ -249,7 +249,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
         multithreaded(new Callable<Object>() {
             @SuppressWarnings("UnusedAssignment")
             @Override public Object call() throws Exception {
-                Cache<Integer, String> c = grid().cache(null);
+                GridCache<Integer, String> c = grid().cache(null);
 
                 int tid = tidGen.getAndIncrement();
 
@@ -336,7 +336,7 @@ public class GridCacheConcurrentMapSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
     public void testEmptyWeakIterator() throws Exception {
-        final Cache<Integer, String> c = grid().cache(null);
+        final GridCache<Integer, String> c = grid().cache(null);
 
         for (int i = 0; i < 100; i++) {
             multithreaded(new Callable<Object>() {

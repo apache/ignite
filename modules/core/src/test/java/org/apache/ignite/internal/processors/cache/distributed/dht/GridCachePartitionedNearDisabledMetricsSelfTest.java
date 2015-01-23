@@ -76,7 +76,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void _testGettingRemovedKey() throws Exception {
-        Cache<Integer, Integer> cache = grid(0).cache(null);
+        GridCache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(0, 0);
 

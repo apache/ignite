@@ -172,7 +172,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         try {
             Ignite ignite1 = startGrid(0);
 
-            Cache<Integer, String> cache1 = ignite1.cache(null);
+            GridCache<Integer, String> cache1 = ignite1.cache(null);
 
             int keyCnt = 10;
 
@@ -193,7 +193,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                Cache<Integer, String> c = g.cache(null);
+                GridCache<Integer, String> c = g.cache(null);
 
                 for (int i = 0; i < keyCnt; i++)
                     assertNull(c.peek(i));
@@ -217,7 +217,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                 // Check all nodes.
                 for (Ignite gg : ignites) {
-                    Cache<Integer, String> c = gg.cache(null);
+                    GridCache<Integer, String> c = gg.cache(null);
 
                     for (int i = 0; i < keyCnt; i++)
                         assertNull(c.peek(i));
@@ -271,7 +271,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }

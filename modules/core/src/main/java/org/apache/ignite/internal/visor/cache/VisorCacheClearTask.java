@@ -60,7 +60,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<Strin
         @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> arg) throws IgniteCheckedException {
             Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
 
-            for(Cache cache : g.cachesx()) {
+            for(GridCache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
                 if (arg.contains(cacheName)) {

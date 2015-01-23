@@ -97,7 +97,7 @@ public class GridCacheLocalFullApiSelfTest extends GridCacheAbstractFullApiSelfT
         if (!txEnabled() || portableEnabled())
             return;
 
-        final Cache<String, Integer> myCache = cache();
+        final GridCache<String, Integer> myCache = cache();
 
         final AtomicLong cntr = new AtomicLong();
 

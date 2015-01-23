@@ -294,7 +294,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             info("Key: " + key);
 
-            Cache<Object, Object> cache = g0.cache(null);
+            GridCache<Object, Object> cache = g0.cache(null);
 
             assert cache != null;
 
@@ -438,7 +438,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             }
             while (!g1.cluster().mapKeyToNode(null, affKey).id().equals(g1.cluster().localNode().id()));
 
-            Cache<Object, Object> cache = g1.cache(null);
+            GridCache<Object, Object> cache = g1.cache(null);
 
             try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, 1)) {
                 cache.put(new CacheAffinityKey<>("key1", affKey), "val1");

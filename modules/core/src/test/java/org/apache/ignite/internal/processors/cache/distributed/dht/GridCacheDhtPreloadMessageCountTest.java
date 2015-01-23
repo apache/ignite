@@ -96,7 +96,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         int cnt = KEY_CNT;
 
-        Cache<String, Integer> c0 = g0.cache(null);
+        GridCache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -106,8 +106,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         U.sleep(1000);
 
-        Cache<String, Integer> c1 = g1.cache(null);
-        Cache<String, Integer> c2 = g2.cache(null);
+        GridCache<String, Integer> c1 = g1.cache(null);
+        GridCache<String, Integer> c2 = g2.cache(null);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)g0.configuration().getCommunicationSpi();
         TestCommunicationSpi spi1 = (TestCommunicationSpi)g1.configuration().getCommunicationSpi();
@@ -126,7 +126,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
      * @param c Cache.
      * @param keyCnt Key count.
      */
-    private void checkCache(Cache<String, Integer> c, int keyCnt) {
+    private void checkCache(GridCache<String, Integer> c, int keyCnt) {
         Ignite g = c.gridProjection().ignite();
 
         for (int i = 0; i < keyCnt; i++) {

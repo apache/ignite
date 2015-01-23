@@ -167,7 +167,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
         Ignite g = startGrid(0);
 
-        final Cache<Integer, Integer> cache = g.cache(null);
+        final GridCache<Integer, Integer> cache = g.cache(null);
 
         for (int i = 1; i < 20; i++) {
             cache.putx(i * gridCnt, i * gridCnt);
@@ -183,7 +183,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             Ignite ignite = grid(0);
 
-            final Cache<Integer, Integer> cache = ignite.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             // Put 1 entry to primary node.
             cache.putx(0, 0);

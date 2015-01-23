@@ -124,7 +124,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutFromPrimary() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         int key = 0;
 
@@ -152,7 +152,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutFromBackup() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         int key = 0;
 
@@ -180,7 +180,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutFromNear() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         int key = 0;
 
@@ -208,7 +208,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutIfAbsentFromPrimary() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         int key = 0;
 
@@ -236,7 +236,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutIfAbsentFromBackup() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         int key = 0;
 
@@ -264,7 +264,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutIfAbsentFromNear() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         int key = 0;
 
@@ -292,7 +292,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testPutAll() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         Map<Integer, String> map = new HashMap<>(10);
 
@@ -308,7 +308,7 @@ public class GridCachePartitionedBasicStoreMultiNodeSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testMultipleOperations() throws Exception {
-        Cache<Integer, String> cache = cache(0);
+        GridCache<Integer, String> cache = cache(0);
 
         try (IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, "val");

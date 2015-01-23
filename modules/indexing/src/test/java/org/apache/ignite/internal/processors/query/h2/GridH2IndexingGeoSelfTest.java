@@ -57,7 +57,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeo() throws Exception {
-        Cache<Integer, EnemyCamp> cache = grid(0).cache(null);
+        GridCache<Integer, EnemyCamp> cache = grid(0).cache(null);
 
         WKTReader r = new WKTReader();
 
@@ -113,9 +113,9 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeoMultithreaded() throws Exception {
-        final Cache<Integer, EnemyCamp> cache1 = grid(0).cache(null);
-        final Cache<Integer, EnemyCamp> cache2 = grid(1).cache(null);
-        final Cache<Integer, EnemyCamp> cache3 = grid(2).cache(null);
+        final GridCache<Integer, EnemyCamp> cache1 = grid(0).cache(null);
+        final GridCache<Integer, EnemyCamp> cache2 = grid(1).cache(null);
+        final GridCache<Integer, EnemyCamp> cache3 = grid(2).cache(null);
 
         final String[] points = new String[CNT];
 
@@ -146,7 +146,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                 while (!stop.get()) {
                     int cacheIdx = rnd.nextInt(0, 3);
 
-                    Cache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                    GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
                     int idx = rnd.nextInt(CNT);
                     int x = rnd.nextInt(1, 100);
@@ -171,7 +171,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                     try {
                         int cacheIdx = rnd.nextInt(0, 3);
 
-                        Cache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                        GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
                         CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(
                             EnemyCamp.class, "coords && ?");

@@ -135,7 +135,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cache Cache.
      * @return Affinity.
      */
-    private CacheAffinity<Integer> affinity(Cache<Integer, ?> cache) {
+    private CacheAffinity<Integer> affinity(GridCache<Integer, ?> cache) {
         return cache.affinity();
     }
 
@@ -143,7 +143,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param c Cache.
      * @return {@code True} if synchronoous preloading.
      */
-    private boolean isSync(Cache<?, ?> c) {
+    private boolean isSync(GridCache<?, ?> c) {
         return c.configuration().getPreloadMode() == SYNC;
     }
 
@@ -188,7 +188,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         try {
             Ignite g1 = startGrid(0);
 
-            Cache<Integer, String> c1 = g1.cache(null);
+            GridCache<Integer, String> c1 = g1.cache(null);
 
             putKeys(c1, keyCnt);
             checkKeys(c1, keyCnt);
@@ -199,7 +199,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                Cache<Integer, String> c = g.cache(null);
+                GridCache<Integer, String> c = g.cache(null);
 
                 checkKeys(c, keyCnt);
             }
@@ -240,7 +240,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }
@@ -250,7 +250,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void checkKeys(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void checkKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
         CacheAffinity<Integer> aff = affinity(c);
 
         boolean sync = isSync(c);

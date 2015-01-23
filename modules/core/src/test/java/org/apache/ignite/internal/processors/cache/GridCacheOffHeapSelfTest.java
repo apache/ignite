@@ -109,8 +109,8 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
 
-            Cache<Integer, Object> cache1 = ignite1.cache(null);
-            Cache<Integer, Object> cache2 = ignite2.cache(null);
+            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            GridCache<Integer, Object> cache2 = ignite2.cache(null);
 
             Object v1 = new CacheValue(1);
 
@@ -223,7 +223,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_TO_OFFHEAP, EVT_CACHE_OBJECT_FROM_OFFHEAP);
 
-            Cache<Integer, CacheValue> cache = grid(0).cache(null);
+            GridCache<Integer, CacheValue> cache = grid(0).cache(null);
 
             populate(cache);
             evictAll(cache);
@@ -286,7 +286,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
 
             grid(0);
 
-            Cache<Integer, Integer> cache = grid(0).cache(null);
+            GridCache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 100; i++) {
                 info("Putting: " + i);
@@ -359,7 +359,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @throws Exception In case of error.
      */
-    private void evictAll(Cache<Integer, CacheValue> cache) throws Exception {
+    private void evictAll(GridCache<Integer, CacheValue> cache) throws Exception {
         resetCounters();
 
         assertEquals(ENTRY_CNT, cache.size());

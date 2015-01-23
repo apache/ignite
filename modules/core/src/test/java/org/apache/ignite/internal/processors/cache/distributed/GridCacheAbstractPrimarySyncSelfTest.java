@@ -89,7 +89,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                Cache<Integer, Integer> cache = grid(j).cache(null);
+                GridCache<Integer, Integer> cache = grid(j).cache(null);
 
                 if (cache.entry(i).primary()) {
                     try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {

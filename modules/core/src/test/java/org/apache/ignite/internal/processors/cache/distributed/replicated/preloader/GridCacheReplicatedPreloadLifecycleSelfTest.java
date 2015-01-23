@@ -85,8 +85,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                 switch (evt) {
                     case AFTER_GRID_START: {
-                        Cache<Object, MyValue> c1 = ignite.cache("one");
-                        Cache<Object, MyValue> c2 = ignite.cache("two");
+                        GridCache<Object, MyValue> c1 = ignite.cache("one");
+                        GridCache<Object, MyValue> c2 = ignite.cache("two");
 
                         if (!ignite.name().contains("Test0")) {
                             if (!quiet) {
@@ -148,8 +148,8 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                Cache<String, MyValue> c1 = grid(j).cache("one");
-                Cache<String, MyValue> c2 = grid(j).cache("two");
+                GridCache<String, MyValue> c1 = grid(j).cache("one");
+                GridCache<String, MyValue> c2 = grid(j).cache("two");
 
                 int size1 = c1.size();
                 int size2 = c2.size();
@@ -178,7 +178,7 @@ public class GridCacheReplicatedPreloadLifecycleSelfTest extends GridCachePreloa
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                Cache<Object, MyValue> c2 = grid(j).cache("two");
+                GridCache<Object, MyValue> c2 = grid(j).cache("two");
 
                 CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 

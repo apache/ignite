@@ -83,7 +83,7 @@ public class GridCacheMissingCommitVersionSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testMissingCommitVersion() throws Exception {
-        final Cache<Integer, Integer> cache = cache();
+        final GridCache<Integer, Integer> cache = cache();
 
         final int KEYS_PER_THREAD = 10_000;
 

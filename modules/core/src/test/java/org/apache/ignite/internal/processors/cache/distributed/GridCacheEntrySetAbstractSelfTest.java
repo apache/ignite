@@ -71,7 +71,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
                     log.info("Use cache " + idx);
 
-                    Cache<Object, Object> cache = grid(idx).cache(null);
+                    GridCache<Object, Object> cache = grid(idx).cache(null);
 
                     for (int i = 0; i < 100; i++)
                         putAndCheckEntrySet(cache);
@@ -89,7 +89,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
      * @param cache Cache.
      * @throws Exception If failed.
      */
-    private void putAndCheckEntrySet(Cache<Object, Object> cache) throws Exception {
+    private void putAndCheckEntrySet(GridCache<Object, Object> cache) throws Exception {
         try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer total = (Integer) cache.get(TX_KEY);
 

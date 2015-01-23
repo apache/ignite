@@ -58,7 +58,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     private static Ignite[] ignites;
 
     /** Regular caches. */
-    private static Cache<Integer, String>[] caches;
+    private static GridCache<Integer, String>[] caches;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -93,7 +93,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
     @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         ignites = new Ignite[GRID_CNT];
-        caches = new Cache[GRID_CNT];
+        caches = new GridCache[GRID_CNT];
 
         for (int i = 0; i < GRID_CNT; i++) {
             ignites[i] = startGrid(i);
@@ -116,7 +116,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testOptimisticTransaction() throws Exception {
-        for (Cache<Integer, String> cache : caches) {
+        for (GridCache<Integer, String> cache : caches) {
             IgniteTx tx = cache.txStart(OPTIMISTIC, REPEATABLE_READ);
 
             try {
@@ -128,7 +128,7 @@ public class GridCacheColocatedOptimisticTransactionSelfTest extends GridCommonA
                 tx.close();
             }
 
-            for (Cache<Integer, String> cacheInner : caches) {
+            for (GridCache<Integer, String> cacheInner : caches) {
                 tx = cacheInner.txStart(OPTIMISTIC, REPEATABLE_READ);
 
                 try {

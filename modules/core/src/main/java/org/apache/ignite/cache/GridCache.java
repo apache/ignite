@@ -59,7 +59,7 @@ import java.util.*;
  * @param <K> Cache key type.
  * @param <V> Cache value type.
  */
-public interface Cache<K, V> extends CacheProjection<K, V> {
+public interface GridCache<K, V> extends CacheProjection<K, V> {
     /**
      * Gets configuration bean for this cache.
      *

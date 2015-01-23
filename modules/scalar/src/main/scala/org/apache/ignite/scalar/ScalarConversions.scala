@@ -18,7 +18,7 @@
 package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
-import org.apache.ignite.cache.{CacheEntry, Cache, CacheProjection}
+import org.apache.ignite.cache.{CacheEntry, GridCache, CacheProjection}
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.compute.ComputeJob
 import org.apache.ignite.lang._
@@ -397,7 +397,7 @@ trait ScalarConversions {
      *
      * @param impl Grid cache to convert.
      */
-    implicit def toScalarCache[K, V](impl: Cache[K, V]): ScalarCachePimp[K, V] =
+    implicit def toScalarCache[K, V](impl: GridCache[K, V]): ScalarCachePimp[K, V] =
         ScalarCachePimp[K, V](impl)
 
     /**

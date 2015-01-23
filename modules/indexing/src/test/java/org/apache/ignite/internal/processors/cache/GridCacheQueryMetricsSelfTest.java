@@ -85,7 +85,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testAccumulativeMetrics() throws Exception {
-        Cache<String, Integer> cache = cache(0);
+        GridCache<String, Integer> cache = cache(0);
 
         CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
             .projection(grid(0));
@@ -127,7 +127,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testSingleQueryMetrics() throws Exception {
-        Cache<String, Integer> cache = cache(0);
+        GridCache<String, Integer> cache = cache(0);
 
         CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
             .projection(grid(0));

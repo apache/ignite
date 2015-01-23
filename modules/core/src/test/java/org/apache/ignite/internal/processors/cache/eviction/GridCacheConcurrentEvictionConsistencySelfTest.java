@@ -172,7 +172,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         try {
             Ignite ignite = startGrid(1);
 
-            final Cache<Integer, Integer> cache = ignite.cache(null);
+            final GridCache<Integer, Integer> cache = ignite.cache(null);
 
             long start = System.currentTimeMillis();
 

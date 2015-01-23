@@ -127,7 +127,7 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Local iterator examples.");
 
-        Cache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
+        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Iterate over whole cache.
         for (CacheEntry<Integer, String> e : cache)
