@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Test for Java hash codes calculations - SHOULD BE PORTED to other languages.
  */
-public class GridClientJavaHasherSelfTest extends GridCommonAbstractTest {
+public class ClientJavaHasherSelfTest extends GridCommonAbstractTest {
     /**
      * Validate known Java hash codes.
      */

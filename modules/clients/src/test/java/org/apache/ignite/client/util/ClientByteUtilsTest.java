@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.util.GridClientByteUtils.*;
 /**
  * Test case for client's byte convertion utility.
  */
-public class GridClientByteUtilsTest extends GridCommonAbstractTest {
+public class ClientByteUtilsTest extends GridCommonAbstractTest {
     /**
      * Test UUID conversions from string to binary and back.
      *
