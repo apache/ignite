@@ -209,8 +209,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @return Cache affinity.
      */
-    public <K> GridCacheAffinityProxy<K> affinityProxy(String cacheName) {
-        return new GridCacheAffinityProxy(cacheName);
+    public <K> CacheAffinityProxy<K> affinityProxy(String cacheName) {
+        return new CacheAffinityProxy(cacheName);
     }
 
     /**
@@ -536,30 +536,36 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /**
      * Grid cache affinity.
      */
-    private class GridCacheAffinityProxy<K> implements CacheAffinity<K> {
+    private class CacheAffinityProxy<K> implements CacheAffinity<K> {
+        /** */
         private final String cacheName;
 
         /**
          * @param cacheName Cache name.
          */
-        public GridCacheAffinityProxy(String cacheName) {
+        public CacheAffinityProxy(String cacheName) {
             this.cacheName = cacheName;
         }
 
         /** {@inheritDoc} */
         @Override public int partitions() {
+            ctx.gateway().readLock();
+
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion()).affFunc.partitions();
+                return affinityCache(cacheName, topologyVersion()).affFunc.partitions();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public int partition(K key) {
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion()).affFunc.partition(key);
+                return affinityCache(cacheName, topologyVersion()).affFunc.partition(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -624,7 +630,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             try {
                 Collection<Integer> parts = new HashSet<>();
 
-                AffinityInfo affInfo= GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion());
+                AffinityInfo affInfo = affinityCache(cacheName, topologyVersion());
 
                 for (int partsCnt = affInfo.affFunc.partitions(), part = 0; part < partsCnt; part++) {
                     for (ClusterNode affNode : affInfo.assignment.get(part)) {
@@ -723,7 +729,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @return Topology version.
          */
         private long topologyVersion() {
-            return GridAffinityProcessor.this.ctx.discovery().topologyVersion();
+            return ctx.discovery().topologyVersion();
         }
     }
 }
