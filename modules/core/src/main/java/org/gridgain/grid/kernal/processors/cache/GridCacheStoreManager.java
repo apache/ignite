@@ -23,7 +23,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.*;
@@ -751,7 +750,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         finally {
             sesHolder.set(null);
 
-            ((GridMetadataAware)tx).removeMeta(SES_ATTR);
+            tx.removeMeta(SES_ATTR);
         }
     }
 
@@ -778,12 +777,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         SessionData ses;
 
         if (tx != null) {
-            ses = ((GridMetadataAware)tx).meta(SES_ATTR);
+            ses = tx.meta(SES_ATTR);
 
             if (ses == null) {
                 ses = new SessionData(tx, cctx.name());
 
-                ((GridMetadataAware)tx).addMeta(SES_ATTR, ses);
+                tx.addMeta(SES_ATTR, ses);
             }
         }
         else

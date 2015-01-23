@@ -68,26 +68,26 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
 
             ClassLoader ldr = getExternalClassLoader();
 
-            Class<? extends ComputeTask<Object, int[]>> taskCls =
-                (Class<? extends ComputeTask<Object, int[]>>)ldr.loadClass(TASK_NAME);
+            Class<? extends ComputeTask<Object, Integer>> taskCls =
+                (Class<? extends ComputeTask<Object, Integer>>)ldr.loadClass(TASK_NAME);
 
-            int[] res1 = ignite1.compute().execute(taskCls, Collections.singletonList(ignite2.cluster().localNode().id()));
+            Integer res1 = ignite1.compute().
+                execute(taskCls, Collections.singletonList(ignite2.cluster().localNode().id()));
 
-            info("Result1: " + Arrays.toString(res1));
+            info("Result1: " + res1);
 
             assert res1 != null;
 
             ignite1.compute().localDeployTask(taskCls, taskCls.getClassLoader());
 
-            int[] res2 = (int[]) ignite1.compute().execute(taskCls.getName(),
+            Integer res2 = (Integer)ignite1.compute().execute(taskCls.getName(),
                 Collections.singletonList(ignite2.cluster().localNode().id()));
 
-            info("Result2: " + Arrays.toString(res2));
+            info("Result2: " + res2);
 
             assert res2 != null;
 
-            assert res1[0] == res2[0];
-            assert res1[1] == res2[1];
+            assert res1.equals(res2);
         }
         finally {
             stopGrid(2);
@@ -111,10 +111,10 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
             ClassLoader ldr1 = getExternalClassLoader();
             ClassLoader ldr2 = getExternalClassLoader();
 
-            Class<? extends ComputeTask<Object, int[]>> taskCls1 =
-                (Class<? extends ComputeTask<Object, int[]>>)ldr1.loadClass(TASK_NAME);
-            Class<? extends ComputeTask<Object, int[]>> taskCls2 =
-                (Class<? extends ComputeTask<Object, int[]>>)ldr2.loadClass(TASK_NAME);
+            Class<? extends ComputeTask<Object, Integer>> taskCls1 =
+                (Class<? extends ComputeTask<Object, Integer>>)ldr1.loadClass(TASK_NAME);
+            Class<? extends ComputeTask<Object, Integer>> taskCls2 =
+                (Class<? extends ComputeTask<Object, Integer>>)ldr2.loadClass(TASK_NAME);
 
             // Check that different instances used.
             assert taskCls1.getClassLoader() != taskCls2.getClassLoader();
@@ -134,20 +134,19 @@ public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
 
             ignite2.compute().localDeployTask(taskCls1, taskCls1.getClassLoader());
 
-            int[] res1 = ignite1.compute().execute(taskCls1, Collections.singletonList(ignite2.cluster().localNode().id()));
+            Integer res1 = ignite1.compute().execute(taskCls1, Collections.singletonList(ignite2.cluster().localNode().id()));
 
             assert res1 != null;
 
-            info("Result1: " + Arrays.toString(res1));
+            info("Result1: " + res1);
 
-            int[] res2 = ignite1.compute().execute(taskCls2, Collections.singletonList(ignite2.cluster().localNode().id()));
+            Integer res2 = ignite1.compute().execute(taskCls2, Collections.singletonList(ignite2.cluster().localNode().id()));
 
             assert res2 != null;
 
-            info("Result2: " + Arrays.toString(res2));
+            info("Result2: " + res2);
 
-            assert res1[0] != res2[0];
-            assert res1[1] != res2[1];
+            assert !res1.equals(res2);
 
 //            Thread.sleep(P2P_TIMEOUT * 2);
 //

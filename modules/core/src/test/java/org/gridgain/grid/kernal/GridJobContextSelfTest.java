@@ -64,12 +64,14 @@ public class GridJobContextSelfTest extends GridCommonAbstractTest {
                     @IgniteJobContextResource
                     private ComputeJobContext jobCtx;
 
-                    /** */
-                    @IgniteLocalNodeIdResource
-                    private UUID locNodeId;
+                    /** Ignite instance. */
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
                     /** {@inheritDoc} */
                     @Override public Serializable execute() {
+                        UUID locNodeId = ignite.configuration().getNodeId();
+
                         jobCtx.setAttribute("nodeId", locNodeId);
                         jobCtx.setAttribute("jobId", jobCtx.getJobId());
 

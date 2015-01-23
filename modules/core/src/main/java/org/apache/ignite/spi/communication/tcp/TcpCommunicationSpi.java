@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -628,14 +627,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Node ID. */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
-
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
-
     /** Local IP address. */
     private String locAddr;
 
@@ -652,7 +643,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int shmemPort = DFLT_SHMEM_PORT;
 
     /** Grid name. */
-    @IgniteNameResource
     private String gridName;
 
     /** Allocate direct buffer or heap buffer. */
@@ -886,11 +876,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteAddressResolverResource
     public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Injects resources.
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    protected void injectResources(Ignite ignite) {
+        if (ignite != null) {
+            setAddressResolver(ignite.configuration().getAddressResolver());
+            setLocalAddress(ignite.configuration().getLocalHost());
+            gridName = ignite.name();
+        }
     }
 
     /**
@@ -911,7 +914,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *      IP address.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
@@ -1362,7 +1364,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-        nodeIdMsg = new NodeIdMessage(locNodeId);
+        nodeIdMsg = new NodeIdMessage(ignite.configuration().getNodeId());
 
         assertParameter(locPort > 1023, "locPort > 1023");
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
@@ -1621,7 +1623,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(log, locNodeId, gridName);
+                GridIpcSharedMemoryServerEndpoint srv =
+                    new GridIpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
 
                 srv.setPort(port);
 
@@ -1760,6 +1763,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         if (log.isTraceEnabled())
             log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
+
+        UUID locNodeId = ignite.configuration().getNodeId();
 
         if (node.id().equals(locNodeId))
             notifyListener(locNodeId, msg, NOOP);
@@ -2256,7 +2261,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ch.write(ByteBuffer.wrap(U.GG_HEADER));
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(locNodeId,
+                        HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -3020,7 +3025,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 out.flush();
 
                 if (log.isDebugEnabled())
-                    log.debug("Sent local node ID [locNodeId=" + locNodeId + ", rmtNodeId=" + rmtNodeId + ']');
+                    log.debug("Sent local node ID [locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId="
+                        + rmtNodeId + ']');
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to perform handshake.", e);

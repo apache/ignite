@@ -30,7 +30,7 @@ import org.jetbrains.annotations.*;
  * Cache interceptor is configured via {@link CacheConfiguration#getInterceptor()}
  * configuration property.
  * <p>
- * Any grid resource from {@code org.gridgain.grid.resources} package can be injected
+ * Any grid resource from {@code org.apache.ignite.resources} package can be injected
  * into implementation of this interface.
  */
 public interface GridCacheInterceptor<K, V> {

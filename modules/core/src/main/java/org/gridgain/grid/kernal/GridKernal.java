@@ -2441,14 +2441,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** {@inheritDoc} */
     @Override public IgniteLogger log() {
-        guard();
-
-        try {
-            return log;
-        }
-        finally {
-            unguard();
-        }
+        return log;
     }
 
     /** {@inheritDoc} */

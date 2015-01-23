@@ -74,7 +74,7 @@ import static org.gridgain.grid.kernal.processors.task.GridTaskThreadContextKey.
  * Adapter for different cache implementations.
  */
 @SuppressWarnings("unchecked")
-public abstract class GridCacheAdapter<K, V> extends GridMetadataAwareAdapter implements GridCache<K, V>,
+public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     GridCacheProjectionEx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

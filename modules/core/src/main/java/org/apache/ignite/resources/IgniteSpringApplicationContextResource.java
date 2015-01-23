@@ -31,14 +31,13 @@ import java.lang.annotation.*;
  * <li>{@link org.apache.ignite.compute.ComputeJob}</li>
  * <li>{@link org.apache.ignite.spi.IgniteSpi}</li>
  * <li>{@link org.apache.ignite.lifecycle.LifecycleBean}</li>
- * <li>{@link IgniteUserResource @GridUserResource}</li>
  * </ul>
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;GridSpringApplicationContextResource
+ *      &#64;IgniteSpringApplicationContextResource
  *      private ApplicationContext springCtx;
  *      ...
  *  }
@@ -49,7 +48,7 @@ import java.lang.annotation.*;
  *     ...
  *     private ApplicationContext springCtx;
  *     ...
- *     &#64;GridSpringApplicationContextResource
+ *     &#64;IgniteSpringApplicationContextResource
  *     public void setApplicationContext(MBeanServer springCtx) {
  *          this.springCtx = springCtx;
  *     }

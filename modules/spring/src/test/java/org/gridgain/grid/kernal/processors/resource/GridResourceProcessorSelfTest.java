@@ -334,11 +334,13 @@ public class GridResourceProcessorSelfTest extends GridCommonAbstractTest {
 
                 /** Runnable object nested inside callable. */
                 private Runnable run = new IgniteRunnable() {
-                    @IgniteHomeResource
-                    private String ggHomeDir;
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
                     @Override public void run() {
-                        assert ggHomeDir != null;
+                        assert ignite != null;
+                        assert ignite.configuration() != null;
+                        assert ignite.configuration().getGridGainHome() != null;
                     }
                 };
 

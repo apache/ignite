@@ -254,7 +254,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         }
 
         locNode = new TcpDiscoveryNode(
-            locNodeId,
+            ignite.configuration().getNodeId(),
             addrs.get1(),
             addrs.get2(),
             0,
@@ -294,7 +294,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             leaveLatch = new CountDownLatch(1);
 
             try {
-                TcpDiscoveryNodeLeftMessage msg = new TcpDiscoveryNodeLeftMessage(locNodeId);
+                TcpDiscoveryNodeLeftMessage msg = new TcpDiscoveryNodeLeftMessage(ignite.configuration().getNodeId());
 
                 msg.client(true);
 
@@ -343,7 +343,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
     /** {@inheritDoc} */
     @Nullable @Override public ClusterNode getNode(UUID nodeId) {
-        if (locNodeId.equals(nodeId))
+        if (ignite.configuration().getNodeId().equals(nodeId))
             return locNode;
 
         TcpDiscoveryNode node = rmtNodes.get(nodeId);
@@ -355,7 +355,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
     @Override public boolean pingNode(UUID nodeId) {
         assert nodeId != null;
 
-        if (nodeId.equals(locNodeId))
+        if (nodeId.equals(ignite.configuration().getNodeId()))
             return true;
 
         TcpDiscoveryNode node = rmtNodes.get(nodeId);
@@ -421,7 +421,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                         locNode.clientRouterNodeId(rmtNodeId);
 
                         TcpDiscoveryAbstractMessage msg = recon ?
-                            new TcpDiscoveryClientReconnectMessage(locNodeId, rmtNodeId, lastMsgId) :
+                            new TcpDiscoveryClientReconnectMessage(ignite.configuration().getNodeId(), rmtNodeId,
+                                lastMsgId) :
                             new TcpDiscoveryJoinRequestMessage(locNode, null);
 
                         msg.client(true);
@@ -540,7 +541,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
         Socket sock = openSocket(addr);
 
-        TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
+        TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(ignite.configuration().getNodeId());
 
         req.client(true);
 
@@ -551,7 +552,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         UUID nodeId = res.creatorNodeId();
 
         assert nodeId != null;
-        assert !locNodeId.equals(nodeId);
+        assert !ignite.configuration().getNodeId().equals(nodeId);
 
         return F.t(sock, nodeId);
     }
@@ -560,7 +561,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
      * FOR TEST PURPOSE ONLY!
      */
     void simulateNodeFailure() {
-        U.warn(log, "Simulating client node failure: " + locNodeId);
+        U.warn(log, "Simulating client node failure: " + ignite.configuration().getNodeId());
 
         U.closeQuiet(sock);
 
@@ -584,7 +585,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         /**
          */
         protected DisconnectHandler() {
-            super(gridName, "tcp-client-disco-disconnect-hnd", log);
+            super(ignite.name(), "tcp-client-disco-disconnect-hnd", log);
         }
 
         /** {@inheritDoc} */
@@ -637,7 +638,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
         /**
          */
         protected HeartbeatSender() {
-            super(gridName, "tcp-client-disco-heartbeat-sender", log);
+            super(ignite.name(), "tcp-client-disco-heartbeat-sender", log);
         }
 
         /** {@inheritDoc} */
@@ -655,7 +656,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                 while (!isInterrupted()) {
                     U.sleep(hbFreq);
 
-                    TcpDiscoveryHeartbeatMessage msg = new TcpDiscoveryHeartbeatMessage(locNodeId);
+                    TcpDiscoveryHeartbeatMessage msg =
+                        new TcpDiscoveryHeartbeatMessage(ignite.configuration().getNodeId());
 
                     msg.client(true);
 
@@ -684,7 +686,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param msgWrk Message worker.
          */
         protected SocketReader(UUID nodeId, MessageWorker msgWrk) {
-            super(gridName, "tcp-client-disco-sock-reader", log);
+            super(ignite.name(), "tcp-client-disco-sock-reader", log);
 
             assert nodeId != null;
             assert msgWrk != null;
@@ -751,8 +753,8 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
-                            U.error(log, "Failed to read message [sock=" + sock0 + ", locNodeId=" + locNodeId +
-                                ", rmtNodeId=" + nodeId + ']', e);
+                            U.error(log, "Failed to read message [sock=" + sock0 + ", " +
+                                "locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ']', e);
 
                         IOException ioEx = X.cause(e, IOException.class);
 
@@ -766,15 +768,15 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                                 "(make sure same versions of all classes are available on all nodes) " +
                                 "[rmtNodeId=" + nodeId + ", err=" + clsNotFoundEx.getMessage() + ']');
                         else
-                            LT.error(log, e, "Failed to read message [sock=" + sock0 + ", locNodeId=" + locNodeId +
-                                ", rmtNodeId=" + nodeId + ']');
+                            LT.error(log, e, "Failed to read message [sock=" + sock0 + ", locNodeId=" +
+                                ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ']');
                     }
                 }
             }
             catch (IOException e) {
                 if (log.isDebugEnabled())
-                    U.error(log, "Connection failed [sock=" + sock0 + ", locNodeId=" + locNodeId +
-                        ", rmtNodeId=" + nodeId + ']', e);
+                    U.error(log, "Connection failed [sock=" + sock0 + ", locNodeId=" +
+                        ignite.configuration().getNodeId() + ", rmtNodeId=" + nodeId + ']', e);
             }
             finally {
                 U.closeQuiet(sock0);
@@ -869,7 +871,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
             UUID newNodeId = node.id();
 
-            if (locNodeId.equals(newNodeId)) {
+            if (ignite.configuration().getNodeId().equals(newNodeId)) {
                 if (joinLatch.getCount() > 0) {
                     Collection<TcpDiscoveryNode> top = msg.topology();
 
@@ -925,7 +927,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             if (leaveLatch != null)
                 return;
 
-            if (locNodeId.equals(msg.nodeId())) {
+            if (ignite.configuration().getNodeId().equals(msg.nodeId())) {
                 if (joinLatch.getCount() > 0) {
                     long topVer = msg.topologyVersion();
 
@@ -978,7 +980,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param msg Message.
          */
         private void processNodeLeftMessage(TcpDiscoveryNodeLeftMessage msg) {
-            if (locNodeId.equals(msg.creatorNodeId())) {
+            if (ignite.configuration().getNodeId().equals(msg.creatorNodeId())) {
                 if (log.isDebugEnabled())
                     log.debug("Received node left message for local node: " + msg);
 
@@ -1023,7 +1025,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             if (leaveLatch != null)
                 return;
 
-            if (!locNodeId.equals(msg.creatorNodeId())) {
+            if (!ignite.configuration().getNodeId().equals(msg.creatorNodeId())) {
                 TcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
 
                 if (node == null) {
@@ -1055,12 +1057,12 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             if (leaveLatch != null)
                 return;
 
-            if (locNodeId.equals(msg.creatorNodeId())) {
+            if (ignite.configuration().getNodeId().equals(msg.creatorNodeId())) {
                 if (msg.senderNodeId() == null) {
                     Socket sock0 = sock;
 
                     if (sock0 != null) {
-                        msg.setMetrics(locNodeId, metricsProvider.getMetrics());
+                        msg.setMetrics(ignite.configuration().getNodeId(), metricsProvider.getMetrics());
 
                         try {
                             writeToSocket(sock0, msg);
@@ -1109,7 +1111,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             if (leaveLatch != null)
                 return;
 
-            if (locNodeId.equals(msg.creatorNodeId())) {
+            if (ignite.configuration().getNodeId().equals(msg.creatorNodeId())) {
                 if (msg.success()) {
                     pending = true;
 
@@ -1150,7 +1152,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
             assert nodeId != null;
             assert metrics != null;
 
-            TcpDiscoveryNode node = nodeId.equals(locNodeId) ? locNode : rmtNodes.get(nodeId);
+            TcpDiscoveryNode node = nodeId.equals(ignite.configuration().getNodeId()) ? locNode : rmtNodes.get(nodeId);
 
             if (node != null && node.visible()) {
                 node.setMetrics(metrics);

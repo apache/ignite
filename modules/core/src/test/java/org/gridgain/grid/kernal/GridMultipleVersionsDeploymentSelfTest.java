@@ -234,15 +234,21 @@ public class GridMultipleVersionsDeploymentSelfTest extends GridCommonAbstractTe
     @SuppressWarnings({"PublicInnerClass"})
     @ComputeTaskName(value="GridDeploymentTestTask")
     public static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
-        /** */
-        @IgniteLocalNodeIdResource
-        private UUID locNodeId;
+        /** Ignite instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
             Map<ComputeJobAdapter, ClusterNode> map = new HashMap<>(subgrid.size());
 
             boolean ignoreLocNode = false;
+
+            assert ignite != null;
+
+            UUID locNodeId = ignite.configuration().getNodeId();
+
+            assert locNodeId != null;
 
             if (subgrid.size() == 1)
                 assert subgrid.get(0).id().equals(locNodeId) : "Wrong node id.";
