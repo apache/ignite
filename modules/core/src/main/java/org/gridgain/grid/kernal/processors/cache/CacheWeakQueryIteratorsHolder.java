@@ -18,9 +18,9 @@
 package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
 import java.lang.ref.*;
@@ -34,7 +34,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
     private final ReferenceQueue<WeakQueryFutureIterator> refQueue = new ReferenceQueue<>();
 
     /** Iterators futures. */
-    private final Map<WeakReference<WeakQueryFutureIterator>, GridCacheQueryFuture<V>> futs =
+    private final Map<WeakReference<WeakQueryFutureIterator>, CacheQueryFuture<V>> futs =
         new ConcurrentHashMap8<>();
 
     /** Logger. */
@@ -53,10 +53,10 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * @param <T> Type for the iterator.
      * @return Iterator over the cache.
      */
-    public <T> WeakQueryFutureIterator iterator(GridCacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
+    public <T> WeakQueryFutureIterator iterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
         WeakQueryFutureIterator it = new WeakQueryFutureIterator(fut, convert);
 
-        GridCacheQueryFuture<V> old = futs.put(it.weakReference(), fut);
+        CacheQueryFuture<V> old = futs.put(it.weakReference(), fut);
 
         assert old == null;
 
@@ -83,7 +83,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
             try {
                 WeakReference<WeakQueryFutureIterator> weakRef = (WeakReference<WeakQueryFutureIterator>)itRef;
 
-                GridCacheQueryFuture<?> fut = futs.remove(weakRef);
+                CacheQueryFuture<?> fut = futs.remove(weakRef);
 
                 if (fut != null)
                     fut.cancel();
@@ -98,7 +98,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
      * Cancel all cache queries.
      */
     public void clearQueries(){
-        for (GridCacheQueryFuture<?> fut : futs.values()) {
+        for (CacheQueryFuture<?> fut : futs.values()) {
             try {
                 fut.cancel();
             }
@@ -112,13 +112,13 @@ public class CacheWeakQueryIteratorsHolder<V> {
 
 
     /**
-     * Iterator based of {@link GridCacheQueryFuture}.
+     * Iterator based of {@link CacheQueryFuture}.
      *
      * @param <T> Type for iterator.
      */
     public class WeakQueryFutureIterator<T> extends GridCloseableIteratorAdapter<T> {
         /** Query future. */
-        private final GridCacheQueryFuture<V> fut;
+        private final CacheQueryFuture<V> fut;
 
         /** Weak reference. */
         private final WeakReference<WeakQueryFutureIterator<T>> weakRef;
@@ -137,7 +137,7 @@ public class CacheWeakQueryIteratorsHolder<V> {
         /**
          * @param fut GridCacheQueryFuture to iterate.
          */
-        WeakQueryFutureIterator(GridCacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
+        WeakQueryFutureIterator(CacheQueryFuture<V> fut, CacheIteratorConverter<T, V> convert) {
             this.fut = fut;
 
             this.weakRef = new WeakReference<>(this, refQueue);
