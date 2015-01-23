@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.lang.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.*;
 import org.gridgain.grid.thread.*;
 import org.gridgain.grid.util.*;

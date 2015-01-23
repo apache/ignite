@@ -22,7 +22,7 @@ import org.apache.ignite.testsuites.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.communication.*;
-import org.gridgain.grid.p2p.*;
+import org.apache.ignite.p2p.*;
 
 /**
  * Compute grid test suite.

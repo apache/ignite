@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.managers.deployment.*;
-import org.gridgain.grid.p2p.*;
+import org.apache.ignite.p2p.*;
 
 /**
  * P2P test suite.

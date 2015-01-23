@@ -19,8 +19,8 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.gridgain.grid.lang.*;
-import org.gridgain.grid.lang.utils.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.lang.utils.*;
 import org.gridgain.grid.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.future.nio.*;

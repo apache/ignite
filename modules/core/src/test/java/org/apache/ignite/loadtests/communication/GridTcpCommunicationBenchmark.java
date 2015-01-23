@@ -18,8 +18,8 @@
 package org.apache.ignite.loadtests.communication;
 //
 //import org.gridgain.grid.*;
-//import org.gridgain.grid.lang.*;
-//import org.gridgain.grid.lang.utils.*;
+//import org.apache.ignite.lang.*;
+//import org.apache.ignite.lang.utils.*;
 //import org.gridgain.grid.spi.*;
 //import org.gridgain.grid.spi.communication.*;
 //import org.gridgain.grid.spi.communication.tcp.*;

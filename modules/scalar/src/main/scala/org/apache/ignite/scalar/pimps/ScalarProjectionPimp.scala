@@ -586,7 +586,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * by the configured marshaller. For example, JDK marshaller will require that implementations would
      * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
      * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * `org.gridgain.grid.lang` package are serializable and can be freely used in the distributed
+     * `org.apache.ignite.lang` package are serializable and can be freely used in the distributed
      * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.
@@ -623,14 +623,14 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * implements `Callable` interface. Note also that class `GridFunc` and typedefs provide rich
      * APIs and functionality for closures and predicates based processing in GridGain. While Java interfaces
      * `Runnable` and `Callable` allow for lowest common denominator for APIs - it is advisable
-     * to use richer Functional Programming support provided by GridGain available in `org.gridgain.grid.lang`
+     * to use richer Functional Programming support provided by GridGain available in `org.apache.ignite.lang`
      * package.
      *
      * Notice that `Runnable` and `Callable` implementations must support serialization as required
      * by the configured marshaller. For example, JDK marshaller will require that implementations would
      * be serializable. Other marshallers, e.g. JBoss marshaller, may not have this limitation. Please consult
      * with specific marshaller implementation for the details. Note that all closures and predicates in
-     * `org.gridgain.grid.lang` package are serializable and can be freely used in the distributed
+     * `org.apache.ignite.lang` package are serializable and can be freely used in the distributed
      * context with all marshallers currently shipped with GridGain.
      *
      * @param cacheName Name of the cache to use for affinity co-location.

@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.compute.gridify.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.p2p.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -64,7 +63,7 @@ public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
             startGrid(2);
 
             GridTestClassLoader tstClsLdr = new GridTestClassLoader(
-                Collections.singletonMap("org/gridgain/grid/p2p/p2p.properties", "resource=loaded"),
+                Collections.singletonMap("org/apache/ignite/p2p/p2p.properties", "resource=loaded"),
                 getClass().getClassLoader(),
                 GridP2PTestTask.class.getName(), GridP2PTestJob.class.getName()
             );
@@ -91,8 +90,8 @@ public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
      * @param res Result.
      * @return The same value as parameter has.
      */
-    @Gridify(taskName = "org.gridgain.grid.p2p.GridP2PTestTask",
-        gridName="org.gridgain.grid.p2p.GridP2PGridifySelfTest1")
+    @Gridify(taskName = "org.apache.ignite.p2p.GridP2PTestTask",
+        gridName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public int executeGridify(int res) {
         return res;
     }
@@ -128,9 +127,9 @@ public class GridP2PGridifySelfTest extends GridCommonAbstractTest {
      * @param res Result.
      * @return The same value as parameter has.
      */
-    @Gridify(gridName="org.gridgain.grid.p2p.GridP2PGridifySelfTest1")
+    @Gridify(gridName="org.apache.ignite.p2p.GridP2PGridifySelfTest1")
     public Integer executeGridifyResource(int res) {
-        String path = "org/gridgain/grid/p2p/p2p.properties";
+        String path = "org/apache/ignite/p2p/p2p.properties";
 
         GridTestClassLoader tstClsLdr = new GridTestClassLoader(
             GridP2PTestTask.class.getName(),

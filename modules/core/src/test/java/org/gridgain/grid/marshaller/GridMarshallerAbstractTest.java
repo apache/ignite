@@ -40,7 +40,7 @@ import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.service.*;
-import org.gridgain.grid.p2p.*;
+import org.apache.ignite.p2p.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -427,7 +427,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      */
     public void testExternalClassesMarshalling() throws Exception {
         ClassLoader tstClsLdr = new GridTestClassLoader(
-            Collections.singletonMap("org/gridgain/grid/p2p/p2p.properties", "resource=loaded"),
+            Collections.singletonMap("org/apache/ignite/p2p/p2p.properties", "resource=loaded"),
             getClass().getClassLoader(),
             GridP2PTestTask.class.getName(), GridP2PTestJob.class.getName()
             );
