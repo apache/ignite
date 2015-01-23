@@ -30,7 +30,7 @@ import java.util.*;
  * Use {@code modules/core/src/test/config/benchmark/spring-cache-client-benchmark-*.xml}
  * configurations for servers.
  */
-public class GridClientCacheBenchmark {
+public class ClientCacheBenchmark {
     /** Number of keys, used in PUT/GET operations. */
     private static final int KEY_COUNT = 1000;
 
@@ -62,7 +62,7 @@ public class GridClientCacheBenchmark {
      * @param threadCnt Number of submitting threads.
      * @param iterationCnt Number of operations per thread.
      */
-    public GridClientCacheBenchmark(int threadCnt, int iterationCnt) {
+    public ClientCacheBenchmark(int threadCnt, int iterationCnt) {
         this.threadCnt = threadCnt;
         this.iterationCnt = iterationCnt;
 
@@ -207,7 +207,7 @@ public class GridClientCacheBenchmark {
 
             if (args.length == 0) {
                 for (int i = 1; i <= 16; i *= 2) {
-                    GridClientCacheBenchmark benchmark = new GridClientCacheBenchmark(i, 10000);
+                    ClientCacheBenchmark benchmark = new ClientCacheBenchmark(i, 10000);
 
                     benchmark.run(false);
 
@@ -215,7 +215,7 @@ public class GridClientCacheBenchmark {
                 }
 
                 for (int i = 1; i <= 64; i *= 2) {
-                    GridClientCacheBenchmark benchmark = new GridClientCacheBenchmark(i, 10000);
+                    ClientCacheBenchmark benchmark = new ClientCacheBenchmark(i, 10000);
 
                     benchmark.run(true);
 
@@ -226,10 +226,10 @@ public class GridClientCacheBenchmark {
                 int nThreads = Integer.parseInt(args[0]);
                 String outputFileName = (args.length >= 2 ? args[1] : null);
 
-                GridClientCacheBenchmark benchmark = null;
+                ClientCacheBenchmark benchmark = null;
 
                 for (int i = 0; i < 2; i++) {
-                    benchmark = new GridClientCacheBenchmark(nThreads, 10000);
+                    benchmark = new ClientCacheBenchmark(nThreads, 10000);
 
                     benchmark.run(true);
                 }

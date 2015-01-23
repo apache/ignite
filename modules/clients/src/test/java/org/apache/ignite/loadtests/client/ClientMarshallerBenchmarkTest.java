@@ -33,13 +33,13 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 /**
  * Tests basic performance of marshallers.
  */
-public class GridClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
+public class ClientMarshallerBenchmarkTest extends GridCommonAbstractTest {
     /** Marshallers to test. */
     private GridClientMarshaller[] marshallers;
 
     /**
      */
-    public GridClientMarshallerBenchmarkTest() {
+    public ClientMarshallerBenchmarkTest() {
         marshallers = new GridClientMarshaller[] {
             new GridClientJdkMarshaller(),
             new GridClientOptimizedMarshaller()

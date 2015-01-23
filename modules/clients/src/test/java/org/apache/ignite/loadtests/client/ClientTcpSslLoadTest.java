@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 /**
  * Makes a long run to ensure stability and absence of memory leaks.
  */
-public class GridClientTcpSslLoadTest extends GridClientTcpSslMultiThreadedSelfTest {
+public class ClientTcpSslLoadTest extends GridClientTcpSslMultiThreadedSelfTest {
     /** Test duration. */
     private static final long TEST_RUN_TIME = 8 * 60 * 60 * 1000;
 
