@@ -32,50 +32,50 @@
         <src.dir>src/main/java</src.dir>
     </properties>
 
-    <groupId>org.gridgain</groupId>
-    <artifactId>gridgain-examples</artifactId>
+    <groupId>org.apache.ignite</groupId>
+    <artifactId>ignite-examples</artifactId>
     <version>${ignite.version}</version>
 
     <dependencies>
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-core</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hibernate</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-hibernate</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-scalar</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-scalar</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-spring</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-spring</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-log4j</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-indexing</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-schedule</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schedule</artifactId>
             <version>${ignite.version}</version>
         </dependency>
 
