@@ -146,14 +146,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
      * @return Previously contained value regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
-     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
      */
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
@@ -223,11 +223,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * participating in any locks or transactions).
      * <p>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
@@ -257,11 +257,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method is not transactional.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP}, {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
      * @throws CacheException If promote failed.
-     * @throws org.apache.ignite.cache.CacheFlagException If flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
@@ -270,7 +270,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * is not currently locked, and is not participating in a transaction.
      * <p>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
@@ -278,7 +278,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * remote caches or from underlying persistent storage.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to clear.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}

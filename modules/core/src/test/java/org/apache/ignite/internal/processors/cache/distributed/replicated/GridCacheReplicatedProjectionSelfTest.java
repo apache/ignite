@@ -21,7 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Projection tests for replicated cache.

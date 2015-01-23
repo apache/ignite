@@ -41,7 +41,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -1332,7 +1332,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 catch (ClusterGroupEmptyException e) {
                     throw new IgniteException(e);
                 }
-                catch (IgniteTxRollbackException | GridCachePartialUpdateException | ClusterTopologyException e) {
+                catch (IgniteTxRollbackException | CachePartialUpdateCheckedException | ClusterTopologyException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

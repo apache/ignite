@@ -69,7 +69,7 @@ import java.util.*;
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
  *  {@link CacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.cache.CacheFlag#SYNC_COMMIT}.
+ *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.internal.processors.cache.CacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link IgniteTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic

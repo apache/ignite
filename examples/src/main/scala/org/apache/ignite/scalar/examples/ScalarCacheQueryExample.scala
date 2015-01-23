@@ -17,8 +17,9 @@
 
 package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.cache.{CacheMode, CacheFlag, CacheProjection}
+import org.apache.ignite.cache.{CacheMode, CacheProjection}
 import org.apache.ignite.cache.affinity.CacheAffinityKey
+import org.apache.ignite.internal.processors.cache.CacheFlag
 import org.gridgain.scalar._
 import scalar._
 import org.apache.ignite.Ignite

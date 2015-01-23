@@ -22,6 +22,6 @@ import java.io.*;
 /**
  * Test user resource.
  */
-public class GridTestUserResource implements Serializable {
+public class TestUserResource implements Serializable {
     // No-op.
 }

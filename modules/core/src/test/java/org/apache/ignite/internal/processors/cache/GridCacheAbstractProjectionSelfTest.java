@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
@@ -693,7 +693,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     }
 
     /**
-     * Tests {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP} flag on multiple nodes.
+     * Tests {@link CacheFlag#SKIP_SWAP} flag on multiple nodes.
      *
      * @throws Exception If error occurs.
      */

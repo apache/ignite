@@ -61,7 +61,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -1239,7 +1239,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Clones cached object depending on whether or not {@link org.apache.ignite.cache.CacheFlag#CLONE} flag
+     * Clones cached object depending on whether or not {@link CacheFlag#CLONE} flag
      * is set thread locally.
      *
      * @param obj Object to clone.
