@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.logger.jcl;
+package org.apache.ignite.logger.jcl;
 
 import junit.framework.*;
 import org.apache.commons.logging.*;

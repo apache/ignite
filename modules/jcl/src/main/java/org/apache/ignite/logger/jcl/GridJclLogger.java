@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.logger.jcl;
+package org.apache.ignite.logger.jcl;
 
 import org.apache.commons.logging.*;
 import org.apache.ignite.*;
@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.jcl.GridJclLogger"&gt;
+ *          &lt;bean class="org.apache.ignite.logger.jcl.GridJclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
  *                      &lt;constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/&gt;
@@ -46,7 +46,7 @@ import org.jetbrains.annotations.*;
  * <pre name="code" class="xml">
  *      ...
  *      &lt;property name="gridLogger"&gt;
- *          &lt;bean class="org.gridgain.grid.logger.jcl.GridJclLogger"/&gt;
+ *          &lt;bean class="org.apache.ignite.logger.jcl.GridJclLogger"/&gt;
  *      &lt;/property&gt;
  *      ...
  * </pre>

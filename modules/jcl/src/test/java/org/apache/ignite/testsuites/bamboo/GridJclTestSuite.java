@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
-import org.gridgain.grid.logger.jcl.*;
+import org.apache.ignite.logger.jcl.*;
 
 /**
  * Commons logging test.
