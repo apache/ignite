@@ -449,7 +449,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             Collections.singleton(key),
             null,
             null,
-                expiryPerCall(),
+            expiryPerCall(),
             false,
             false,
             ctx.equalsPeekArray(val),
@@ -482,7 +482,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         Map<K, V> m = getAllInternal(Collections.singleton(key),
-                filter != null ? new IgnitePredicate[]{filter} : null,
+            filter != null ? new IgnitePredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
             ctx.hasFlag(CLONE),
@@ -502,7 +502,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllInternal(keys,
-                filter != null ? new IgnitePredicate[]{filter} : null,
+            filter != null ? new IgnitePredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
             ctx.hasFlag(CLONE),

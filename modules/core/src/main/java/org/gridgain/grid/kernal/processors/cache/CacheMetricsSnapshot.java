@@ -172,6 +172,166 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         return txRollbacks;
     }
 
+    @Override
+    public String name() {
+        return null;
+    }
+
+    @Override
+    public String metricsFormatted() {
+        return null;
+    }
+
+    @Override
+    public long getOverflowSize() {
+        return 0;
+    }
+
+    @Override
+    public long getOffHeapEntriesCount() {
+        return 0;
+    }
+
+    @Override
+    public long getOffHeapAllocatedSize() {
+        return 0;
+    }
+
+    @Override
+    public int getSize() {
+        return 0;
+    }
+
+    @Override
+    public int getKeySize() {
+        return 0;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return false;
+    }
+
+    @Override
+    public int getDhtEvictQueueCurrentSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxThreadMapSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxXidMapSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxCommitQueueSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxPrepareQueueSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxStartVersionCountsSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxCommittedVersionsSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxRolledbackVersionsSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtThreadMapSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtXidMapSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtCommitQueueSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtPrepareQueueSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtStartVersionCountsSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtCommittedVersionsSize() {
+        return 0;
+    }
+
+    @Override
+    public int getTxDhtRolledbackVersionsSize() {
+        return 0;
+    }
+
+    @Override
+    public boolean isWriteBehindEnabled() {
+        return false;
+    }
+
+    @Override
+    public int getWriteBehindFlushSize() {
+        return 0;
+    }
+
+    @Override
+    public int getWriteBehindFlushThreadCount() {
+        return 0;
+    }
+
+    @Override
+    public long getWriteBehindFlushFrequency() {
+        return 0;
+    }
+
+    @Override
+    public int getWriteBehindStoreBatchSize() {
+        return 0;
+    }
+
+    @Override
+    public int getWriteBehindTotalCriticalOverflowCount() {
+        return 0;
+    }
+
+    @Override
+    public int getWriteBehindCriticalOverflowCount() {
+        return 0;
+    }
+
+    @Override
+    public int getWriteBehindErrorRetryCount() {
+        return 0;
+    }
+
+    @Override
+    public int getWriteBehindBufferSize() {
+        return 0;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(reads);
