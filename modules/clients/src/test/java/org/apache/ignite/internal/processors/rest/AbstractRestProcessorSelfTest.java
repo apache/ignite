@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Abstract class for REST protocols tests.
  */
-abstract class GridAbstractRestProcessorSelfTest extends GridCommonAbstractTest {
+abstract class AbstractRestProcessorSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

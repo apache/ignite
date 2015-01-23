@@ -48,12 +48,12 @@ import java.util.*;
  * <li>http://localhost:8080/gridgain?cmd=res&id=XXXX</li>
  * </ul>
  */
-public class GridRestProcessorTest extends GridCommonAbstractTest {
+public class RestProcessorTest extends GridCommonAbstractTest {
     /** Counter */
     private static int cntr;
 
     /** */
-    public GridRestProcessorTest() {
+    public RestProcessorTest() {
         super(/*start grid*/false);
     }
 

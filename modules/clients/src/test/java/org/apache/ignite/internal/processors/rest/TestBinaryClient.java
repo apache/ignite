@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.rest.client.message.GridClie
 /**
  * Test client.
  */
-final class GridTestBinaryClient {
+final class TestBinaryClient {
     /** Logger. */
     private final IgniteLogger log = new IgniteJavaLogger();
 
@@ -74,7 +74,7 @@ final class GridTestBinaryClient {
      * @param port Port number.
      * @throws IgniteCheckedException In case of error.
      */
-    GridTestBinaryClient(String host, int port) throws IgniteCheckedException {
+    TestBinaryClient(String host, int port) throws IgniteCheckedException {
         assert host != null;
         assert port > 0;
 

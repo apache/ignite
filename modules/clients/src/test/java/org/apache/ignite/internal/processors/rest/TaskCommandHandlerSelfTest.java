@@ -43,7 +43,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Test for {@code GridTaskCommandHandler}
  */
-public class GridTaskCommandHandlerSelfTest extends GridCommonAbstractTest {
+public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

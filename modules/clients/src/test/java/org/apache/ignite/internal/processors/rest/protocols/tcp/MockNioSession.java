@@ -26,7 +26,7 @@ import java.net.*;
 /**
  * Mock nio session with disabled functionality for testing parser.
  */
-public class GridMockNioSession extends GridMetadataAwareAdapter implements GridNioSession {
+public class MockNioSession extends GridMetadataAwareAdapter implements GridNioSession {
     /** Local address */
     private InetSocketAddress locAddr = new InetSocketAddress(0);
 
@@ -36,7 +36,7 @@ public class GridMockNioSession extends GridMetadataAwareAdapter implements Grid
     /**
      * Creates empty mock session.
      */
-    public GridMockNioSession() {
+    public MockNioSession() {
         // No-op.
     }
 
@@ -46,7 +46,7 @@ public class GridMockNioSession extends GridMetadataAwareAdapter implements Grid
      * @param locAddr Local address.
      * @param rmtAddr Remote address.
      */
-    public GridMockNioSession(InetSocketAddress locAddr, InetSocketAddress rmtAddr) {
+    public MockNioSession(InetSocketAddress locAddr, InetSocketAddress rmtAddr) {
         this();
 
         this.locAddr = locAddr;

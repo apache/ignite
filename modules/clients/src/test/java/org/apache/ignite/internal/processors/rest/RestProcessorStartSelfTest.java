@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 /**
  *
  */
-public class GridRestProcessorStartSelfTest extends GridCommonAbstractTest {
+public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

@@ -32,7 +32,7 @@ import static org.junit.Assert.*;
 /**
  * Tests for TCP binary protocol.
  */
-public class GridClientMemcachedProtocolSelfTest extends GridAbstractRestProcessorSelfTest {
+public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 1;
 

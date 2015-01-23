@@ -30,7 +30,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * Tests for Jetty REST protocol.
  */
 @SuppressWarnings("unchecked")
-abstract class GridJettyRestProcessorAbstractSelfTest extends GridAbstractRestProcessorSelfTest {
+abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 3;
 

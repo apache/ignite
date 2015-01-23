@@ -44,7 +44,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * TCP protocol test.
  */
 @SuppressWarnings("unchecked")
-public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
+public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -58,7 +58,7 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
     private static final int PORT = 11212;
 
     /** */
-    private GridTestBinaryClient client;
+    private TestBinaryClient client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -127,8 +127,8 @@ public class GridRestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      * @return Client.
      * @throws IgniteCheckedException In case of error.
      */
-    private GridTestBinaryClient client() throws IgniteCheckedException {
-        return new GridTestBinaryClient(HOST, PORT);
+    private TestBinaryClient client() throws IgniteCheckedException {
+        return new TestBinaryClient(HOST, PORT);
     }
 
     /**

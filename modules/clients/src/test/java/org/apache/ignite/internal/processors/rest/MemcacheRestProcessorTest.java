@@ -26,7 +26,7 @@ import java.util.*;
 
 /**
  */
-public class GridMemcacheRestProcessorTest extends GridCommonAbstractTest {
+public class MemcacheRestProcessorTest extends GridCommonAbstractTest {
     /** Client. */
     private MemcachedClientIF client;
 

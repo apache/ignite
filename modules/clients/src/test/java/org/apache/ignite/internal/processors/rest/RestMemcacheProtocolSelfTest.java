@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * TCP protocol test.
  */
 @SuppressWarnings("unchecked")
-public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
+public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -50,7 +50,7 @@ public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     private static final int PORT = 11212;
 
     /** */
-    private GridTestMemcacheClient client;
+    private TestMemcacheClient client;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -119,8 +119,8 @@ public class GridRestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
      * @return Client.
      * @throws IgniteCheckedException In case of error.
      */
-    private GridTestMemcacheClient client() throws IgniteCheckedException {
-        return new GridTestMemcacheClient(HOST, PORT);
+    private TestMemcacheClient client() throws IgniteCheckedException {
+        return new TestMemcacheClient(HOST, PORT);
     }
 
     /**

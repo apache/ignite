@@ -39,28 +39,28 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
 
         // Parser standalone test.
-        suite.addTest(new TestSuite(GridTcpRestParserSelfTest.class));
+        suite.addTest(new TestSuite(TcpRestParserSelfTest.class));
 
         // Test memcache protocol with custom test client.
-        suite.addTest(new TestSuite(GridRestMemcacheProtocolSelfTest.class));
+        suite.addTest(new TestSuite(RestMemcacheProtocolSelfTest.class));
 
         // Test custom binary protocol with test client.
-        suite.addTest(new TestSuite(GridRestBinaryProtocolSelfTest.class));
+        suite.addTest(new TestSuite(RestBinaryProtocolSelfTest.class));
 
         // Test jetty rest processor
-        suite.addTest(new TestSuite(GridJettyRestProcessorSignedSelfTest.class));
-        suite.addTest(new TestSuite(GridJettyRestProcessorUnsignedSelfTest.class));
+        suite.addTest(new TestSuite(JettyRestProcessorSignedSelfTest.class));
+        suite.addTest(new TestSuite(JettyRestProcessorUnsignedSelfTest.class));
 
         // Test TCP rest processor with original memcache client.
-        suite.addTest(new TestSuite(GridClientMemcachedProtocolSelfTest.class));
+        suite.addTest(new TestSuite(ClientMemcachedProtocolSelfTest.class));
 
-        suite.addTest(new TestSuite(GridRestProcessorStartSelfTest.class));
+        suite.addTest(new TestSuite(RestProcessorStartSelfTest.class));
 
         // Test cache flag conversion.
         suite.addTest(new TestSuite(GridClientCacheFlagsCodecTest.class));
 
         // Test multi-start.
-        suite.addTest(new TestSuite(GridRestProcessorMultiStartSelfTest.class));
+        suite.addTest(new TestSuite(RestProcessorMultiStartSelfTest.class));
 
         // Test clients.
         suite.addTest(new TestSuite(GridClientDataImplSelfTest.class));
@@ -89,7 +89,7 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridClientReconnectionSelfTest.class));
 
         // Rest task command handler test.
-        suite.addTest(new TestSuite(GridTaskCommandHandlerSelfTest.class));
+        suite.addTest(new TestSuite(TaskCommandHandlerSelfTest.class));
 
         // Default cache only test.
         suite.addTest(new TestSuite(GridClientDefaultCacheSelfTest.class));

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.rest;
 /**
  *
  */
-public class GridJettyRestProcessorUnsignedSelfTest extends GridJettyRestProcessorAbstractSelfTest {
+public class JettyRestProcessorUnsignedSelfTest extends JettyRestProcessorAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected int restPort() {
         return 8091;

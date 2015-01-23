@@ -27,7 +27,7 @@ import java.security.*;
 /**
  *
  */
-public class GridJettyRestProcessorSignedSelfTest extends GridJettyRestProcessorAbstractSelfTest {
+public class JettyRestProcessorSignedSelfTest extends JettyRestProcessorAbstractSelfTest {
     /** */
     protected static final String REST_SECRET_KEY = "secret-key";
 

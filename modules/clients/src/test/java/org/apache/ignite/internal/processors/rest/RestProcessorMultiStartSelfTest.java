@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Rest processor test.
  */
-public class GridRestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
+public class RestProcessorMultiStartSelfTest extends GridCommonAbstractTest {
     /** */
     private static final int GRID_CNT = 3;
 

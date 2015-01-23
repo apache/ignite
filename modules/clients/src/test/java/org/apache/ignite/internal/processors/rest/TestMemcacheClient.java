@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Test client.
  */
-final class GridTestMemcacheClient {
+final class TestMemcacheClient {
     /** Header length. */
     private static final short HDR_LEN = 24;
 
@@ -93,7 +93,7 @@ final class GridTestMemcacheClient {
      * @param port Port number.
      * @throws IgniteCheckedException In case of error.
      */
-    GridTestMemcacheClient(String host, int port) throws IgniteCheckedException {
+    TestMemcacheClient(String host, int port) throws IgniteCheckedException {
         assert host != null;
         assert port > 0;
 

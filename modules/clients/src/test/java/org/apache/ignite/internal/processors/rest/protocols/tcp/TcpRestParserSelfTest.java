@@ -40,7 +40,7 @@ import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.*;
  * This class tests that parser confirms memcache extended specification.
  */
 @SuppressWarnings("TypeMayBeWeakened")
-public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
+public class TcpRestParserSelfTest extends GridCommonAbstractTest {
     /** Marshaller. */
     private GridClientMarshaller marshaller = new GridClientOptimizedMarshaller();
 
@@ -54,7 +54,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimplePacketParsing() throws Exception {
-        GridNioSession ses = new GridMockNioSession();
+        GridNioSession ses = new MockNioSession();
 
         GridTcpRestParser parser = new GridTcpRestParser();
 
@@ -89,7 +89,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncorrectPackets() throws Exception {
-        final GridNioSession ses = new GridMockNioSession();
+        final GridNioSession ses = new MockNioSession();
 
         final GridTcpRestParser parser = new GridTcpRestParser();
 
@@ -147,7 +147,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
         ByteBuffer raw = clientRequestPacket(req);
 
-        GridNioSession ses = new GridMockNioSession();
+        GridNioSession ses = new MockNioSession();
 
         ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
@@ -174,8 +174,8 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMixedParsing() throws Exception {
-        GridNioSession ses1 = new GridMockNioSession();
-        GridNioSession ses2 = new GridMockNioSession();
+        GridNioSession ses1 = new MockNioSession();
+        GridNioSession ses2 = new MockNioSession();
 
         ses1.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
         ses2.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
@@ -262,7 +262,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
             tmp.flip();
 
-            GridNioSession ses = new GridMockNioSession();
+            GridNioSession ses = new MockNioSession();
 
             ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
@@ -304,7 +304,7 @@ public class GridTcpRestParserSelfTest extends GridCommonAbstractTest {
 
             ByteBuffer[] split = split(tmp, splitPos);
 
-            GridNioSession ses = new GridMockNioSession();
+            GridNioSession ses = new MockNioSession();
 
             ses.addMeta(MARSHALLER.ordinal(), new GridClientOptimizedMarshaller());
 
