@@ -97,10 +97,10 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTestSuite(GridClientFutureAdapterSelfTest.class);
         suite.addTestSuite(GridClientPartitionAffinitySelfTest.class);
         suite.addTestSuite(GridClientPropertiesConfigurationSelfTest.class);
-        suite.addTestSuite(GridClientConsistentHashSelfTest.class);
-        suite.addTestSuite(GridClientJavaHasherSelfTest.class);
+        suite.addTestSuite(ClientConsistentHashSelfTest.class);
+        suite.addTestSuite(ClientJavaHasherSelfTest.class);
 
-        suite.addTestSuite(GridClientByteUtilsTest.class);
+        suite.addTestSuite(ClientByteUtilsTest.class);
 
         suite.addTest(new TestSuite(GridClientTopologyCacheSelfTest.class));
 

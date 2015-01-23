@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Test for consistent hash management class.
  */
-public class GridClientConsistentHashSelfTest extends GridCommonAbstractTest {
+public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
     /** Replicas count. */
     private static final int REPLICAS = 512;
 

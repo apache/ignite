@@ -36,7 +36,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 /**
  * Tests for security subject ID in task events.
  */
-public class GridTaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
+public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Collection<IgniteTaskEvent> evts = new ArrayList<>();
 
