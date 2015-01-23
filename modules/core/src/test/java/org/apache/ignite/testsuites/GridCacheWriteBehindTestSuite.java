@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
 /**
  * Test suite that contains all tests for {@link GridCacheWriteBehindStore}.

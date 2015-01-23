@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 

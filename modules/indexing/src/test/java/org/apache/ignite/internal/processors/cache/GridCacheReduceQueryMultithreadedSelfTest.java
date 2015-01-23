@@ -23,7 +23,6 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.util.*;
 import java.util.concurrent.*;

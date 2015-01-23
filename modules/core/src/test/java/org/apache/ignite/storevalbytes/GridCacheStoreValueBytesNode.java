@@ -20,7 +20,7 @@ package org.apache.ignite.storevalbytes;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;

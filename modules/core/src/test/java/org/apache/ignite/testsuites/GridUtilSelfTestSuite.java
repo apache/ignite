@@ -18,10 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.util.*;
 import org.apache.ignite.util.mbeans.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.thread.*;

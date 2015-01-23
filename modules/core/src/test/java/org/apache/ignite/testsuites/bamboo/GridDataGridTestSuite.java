@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.expiry.*;
 import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.testsuites.*;
 import org.apache.ignite.cache.store.jdbc.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;

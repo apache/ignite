@@ -21,7 +21,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
 import static org.apache.ignite.cache.GridCacheMode.*;
 

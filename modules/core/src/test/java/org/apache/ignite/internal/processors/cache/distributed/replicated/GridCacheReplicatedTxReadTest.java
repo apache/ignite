@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.GridCacheMode;
-import org.gridgain.grid.kernal.processors.cache.GridCacheAbstractTxReadTest;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractTxReadTest;
 
 /**
  * Checks transactional reads for local cache.

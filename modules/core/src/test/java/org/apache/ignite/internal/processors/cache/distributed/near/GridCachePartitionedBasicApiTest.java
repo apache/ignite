@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;

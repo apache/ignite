@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.GridCacheMode;
-import org.gridgain.grid.kernal.processors.cache.GridCacheAbstractFlagsTest;
+import org.apache.ignite.internal.processors.cache.GridCacheAbstractFlagsTest;
 
 import java.text.*;
 import java.util.*;

@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.util.*;
 import java.util.concurrent.*;

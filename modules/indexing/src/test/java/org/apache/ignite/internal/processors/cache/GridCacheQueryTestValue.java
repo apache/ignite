@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 
 import java.io.*;
 
