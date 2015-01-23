@@ -18,7 +18,6 @@
 package org.apache.ignite.visor.commands.ping
 
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.ping.VisorPingCommand._
 
 /**

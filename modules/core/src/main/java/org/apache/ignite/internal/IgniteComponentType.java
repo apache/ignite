@@ -25,68 +25,68 @@ import java.lang.reflect.*;
 /**
  * Component type.
  */
-public enum GridComponentType {
+public enum IgniteComponentType {
     /** GGFS. */
     GGFS(
-        "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsProcessor",
-        "org.gridgain.grid.kernal.processors.ggfs.GridGgfsProcessor",
-        "gridgain-hadoop"
+        "org.apache.ignite.internal.processors.fs.IgniteFsNoopProcessor",
+        "org.apache.ignite.internal.processors.fs.IgniteFsProcessor",
+        "ignite-hadoop"
     ),
 
     /** Hadoop. */
     HADOOP(
-        "org.apache.ignite.internal.processors.hadoop.GridHadoopNoopProcessor",
-        "org.apache.ignite.internal.processors.hadoop.GridHadoopProcessor",
-        "gridgain-hadoop"
+        "org.apache.ignite.internal.processors.hadoop.IgniteHadoopNoopProcessor",
+        "org.apache.ignite.internal.processors.hadoop.IgniteHadoopProcessor",
+        "ignite-hadoop"
     ),
 
     /** GGFS helper component. */
     GGFS_HELPER(
         "org.gridgain.grid.kernal.processors.ggfs.GridNoopGgfsHelper",
         "org.gridgain.grid.kernal.processors.ggfs.GridGgfsHelperImpl",
-        "gridgain-hadoop"
+        "ignite-hadoop"
     ),
 
     /** Spring XML parsing. */
     SPRING(
         null,
         "org.apache.ignite.internal.processors.spring.GridSpringProcessorImpl",
-        "gridgain-spring"
+        "ignite-spring"
     ),
 
     /** Indexing. */
     INDEXING(
         null,
         "org.apache.ignite.internal.processors.query.h2.GridH2Indexing",
-        "gridgain-indexing"
+        "ignite-indexing"
     ),
 
     /** Nodes starting using SSH. */
     SSH(
         null,
         "org.apache.ignite.internal.util.nodestart.GridSshProcessorImpl",
-        "gridgain-ssh"
+        "ignite-ssh"
     ),
 
     /** Email sending. */
     EMAIL(
         "org.apache.ignite.internal.processors.email.GridNoopEmailProcessor",
         "org.apache.ignite.internal.processors.email.GridEmailProcessor",
-        "gridgain-email"
+        "ignite-email"
     ),
 
     /** Integration of cache transactions with JTA. */
     JTA(
         "org.apache.ignite.internal.processors.cache.jta.GridCacheNoopJtaManager",
         "org.apache.ignite.internal.processors.cache.jta.GridCacheJtaManager",
-        "gridgain-jta"
+        "ignite-jta"
     ),
 
     /** Cron-based scheduling, see {@link org.apache.ignite.IgniteScheduler}. */
     SCHEDULE(
         "org.apache.ignite.internal.processors.schedule.GridNoopScheduleProcessor",
         "org.apache.ignite.internal.processors.schedule.GridScheduleProcessor",
-        "gridgain-schedule"
+        "ignite-schedule"
     );
 
     /** No-op class name. */
@@ -105,7 +105,7 @@ public enum GridComponentType {
      * @param clsName Class name.
      * @param module Module name.
      */
-    GridComponentType(String noOpClsName, String clsName, String module) {
+    IgniteComponentType(String noOpClsName, String clsName, String module) {
         this.noOpClsName = noOpClsName;
         this.clsName = clsName;
         this.module = module;

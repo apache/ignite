@@ -27,7 +27,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 import org.jetbrains.annotations.Nullable
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 
 import scala.collection.JavaConversions._

@@ -20,7 +20,6 @@ package org.apache.ignite.visor.commands.events
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.events.VisorEventsCommand._
 
 /**

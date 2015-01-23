@@ -24,7 +24,6 @@ import org.apache.ignite.cluster.ClusterGroupEmptyException
 import java.util.{HashSet => JavaHashSet}
 
 import org.apache.ignite.visor.{VisorTag, visor}
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.VisorConsoleCommand
 import visor._
 

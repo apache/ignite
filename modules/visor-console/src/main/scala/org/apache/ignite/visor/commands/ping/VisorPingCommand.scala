@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.ClusterNode
 import java.util.concurrent._
 
 import org.apache.ignite.visor.{VisorTag, visor}
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 

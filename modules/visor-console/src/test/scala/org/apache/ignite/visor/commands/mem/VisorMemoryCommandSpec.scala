@@ -20,8 +20,6 @@ package org.apache.ignite.visor.commands.mem
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
-import org.gridgain.visor._
-
 /**
  * Unit test for memory commands.
  */

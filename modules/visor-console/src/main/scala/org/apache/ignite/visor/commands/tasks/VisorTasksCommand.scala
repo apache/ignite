@@ -32,7 +32,6 @@ import org.apache.ignite.lang.IgniteUuid
 import java.util.UUID
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor.visor._
 

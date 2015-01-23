@@ -47,9 +47,9 @@ import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
 
 /**
- * Fully operational GGFS processor.
+ * Fully operational Ignite file system processor.
  */
-public class GridGgfsProcessor extends GridGgfsProcessorAdapter {
+public class GridGgfsProcessor extends IgniteFsProcessorAdapter {
     /** Null GGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
 

@@ -30,7 +30,6 @@ import org.jetbrains.annotations._
 import java.lang.{Boolean => JavaBoolean}
 import java.util.UUID
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._

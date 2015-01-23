@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
  */
 public class GridHadoopImpl implements GridHadoop {
     /** Hadoop processor. */
-    private final GridHadoopProcessor proc;
+    private final IgniteHadoopProcessor proc;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -38,7 +38,7 @@ public class GridHadoopImpl implements GridHadoop {
      *
      * @param proc Hadoop processor.
      */
-    GridHadoopImpl(GridHadoopProcessor proc) {
+    GridHadoopImpl(IgniteHadoopProcessor proc) {
         this.proc = proc;
     }
 

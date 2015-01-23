@@ -22,7 +22,6 @@ import org.apache.ignite.cache.affinity.GridCacheAffinityKey
 import org.gridgain.scalar._
 import scalar._
 import org.apache.ignite._
-import org.gridgain.grid.cache._
 import GridCacheMode._
 import java.util._
 

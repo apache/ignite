@@ -26,7 +26,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
 import java.util.regex.Pattern
 
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.alert.VisorAlertCommand._
 
 /**

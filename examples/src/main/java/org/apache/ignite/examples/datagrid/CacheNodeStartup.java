@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 
 /**
  * Starts up an empty node with example cache configuration.

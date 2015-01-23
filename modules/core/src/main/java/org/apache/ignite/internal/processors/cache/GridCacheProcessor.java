@@ -64,7 +64,7 @@ import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
@@ -582,7 +582,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        if (GridComponentType.HADOOP.inClassPath())
+        if (IgniteComponentType.HADOOP.inClassPath())
             sysCaches.add(CU.SYS_CACHE_HADOOP_MR);
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);

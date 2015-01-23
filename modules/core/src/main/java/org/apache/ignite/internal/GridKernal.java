@@ -94,7 +94,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.internal.GridKernalState.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
 import static org.apache.ignite.internal.processors.license.GridLicenseSubsystem.*;
@@ -748,8 +748,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             startProcessor(ctx, (GridProcessor)GGFS.create(ctx, F.isEmpty(cfg.getGgfsConfiguration())), attrs);
             startProcessor(ctx, new GridContinuousProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
-                GridComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                GridComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
+                IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
+                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
 
             // Start plugins.
@@ -2672,7 +2672,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         guard();
 
         try {
-            GridSshProcessor sshProcessor = GridComponentType.SSH.create(false);
+            GridSshProcessor sshProcessor = IgniteComponentType.SSH.create(false);
 
             Map<String, Collection<GridRemoteStartSpecification>> specsMap = specifications(hosts, dflts);
 

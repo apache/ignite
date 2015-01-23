@@ -21,7 +21,6 @@ import org.apache.ignite.Ignition
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.disco.VisorDiscoveryCommand._
 
 /**

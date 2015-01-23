@@ -18,9 +18,9 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.p2p.*;
 import org.apache.ignite.testsuites.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.p2p.*;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.spi.deployment.uri.scanners.file.*;
 import org.apache.ignite.spi.deployment.uri.scanners.http.*;

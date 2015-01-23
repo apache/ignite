@@ -47,11 +47,11 @@ public class GridScheduleProcessor extends GridScheduleProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public SchedulerFuture<?> schedule(final Runnable c, String pattern) {
+    @Override public SchedulerFuture<?> schedule(final Runnable c, String ptrn) {
         assert c != null;
-        assert pattern != null;
+        assert ptrn != null;
 
-        ScheduleFutureImpl<Object> fut = new ScheduleFutureImpl<>(sched, ctx, pattern);
+        ScheduleFutureImpl<Object> fut = new ScheduleFutureImpl<>(sched, ctx, ptrn);
 
         fut.schedule(new IgniteCallable<Object>() {
             @Nullable @Override public Object call() {

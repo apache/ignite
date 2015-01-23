@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.streaming;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
 
 /**
  * Starts up node with example streamer configuration.

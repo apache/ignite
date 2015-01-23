@@ -26,7 +26,6 @@ import org.apache.ignite.cluster.ClusterNode
 import java.util.{Collections, UUID}
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.VisorConsoleCommand
 import visor.visor._
 

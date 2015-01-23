@@ -29,7 +29,6 @@ import java.util.UUID
 import java.util.concurrent.atomic._
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor.visor._
 

@@ -74,7 +74,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 
 /**
  * Implementation of kernal context.
@@ -215,7 +215,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringInclude
-    private GridGgfsProcessorAdapter ggfsProc;
+    private IgniteFsProcessorAdapter ggfsProc;
 
     /** */
     @GridToStringInclude
@@ -243,7 +243,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridHadoopProcessorAdapter hadoopProc;
+    private IgniteHadoopProcessorAdapter hadoopProc;
 
     /** */
     @GridToStringExclude
@@ -430,8 +430,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             restProc = (GridRestProcessor)comp;
         else if (comp instanceof GridDataLoaderProcessor)
             dataLdrProc = (GridDataLoaderProcessor)comp;
-        else if (comp instanceof GridGgfsProcessorAdapter)
-            ggfsProc = (GridGgfsProcessorAdapter)comp;
+        else if (comp instanceof IgniteFsProcessorAdapter)
+            ggfsProc = (IgniteFsProcessorAdapter)comp;
         else if (comp instanceof GridOffHeapProcessor)
             offheapProc = (GridOffHeapProcessor)comp;
         else if (comp instanceof GridLicenseProcessor)
@@ -440,8 +440,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             streamProc = (GridStreamProcessor)comp;
         else if (comp instanceof GridContinuousProcessor)
             contProc = (GridContinuousProcessor)comp;
-        else if (comp instanceof GridHadoopProcessorAdapter)
-            hadoopProc = (GridHadoopProcessorAdapter)comp;
+        else if (comp instanceof IgniteHadoopProcessorAdapter)
+            hadoopProc = (IgniteHadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
         else if (comp instanceof GridInteropProcessor)
@@ -667,7 +667,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridGgfsProcessorAdapter ggfs() {
+    @Override public IgniteFsProcessorAdapter ggfs() {
         return ggfsProc;
     }
 
@@ -682,7 +682,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridHadoopProcessorAdapter hadoop() {
+    @Override public IgniteHadoopProcessorAdapter hadoop() {
         return hadoopProc;
     }
 

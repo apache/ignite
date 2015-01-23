@@ -17,10 +17,8 @@
 
 package org.apache.ignite.visor.commands.help
 
-import org.apache.ignite.visor.visor
+import org.apache.ignite.visor._
 import org.scalatest._
-
-import org.gridgain.visor._
 
 /**
  * Unit test for 'help' command.

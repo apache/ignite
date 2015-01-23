@@ -27,7 +27,6 @@ import org.scalatest._
 
 import java.util
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.tasks.VisorTasksCommand._
 
 import scala.collection.JavaConversions._

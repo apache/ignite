@@ -30,7 +30,6 @@ import org.apache.ignite.lang.IgnitePredicate
 import java.net.{InetAddress, UnknownHostException}
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor.visor._
 

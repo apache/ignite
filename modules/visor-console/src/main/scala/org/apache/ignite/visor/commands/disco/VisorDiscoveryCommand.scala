@@ -29,7 +29,6 @@ import org.apache.ignite.events.IgniteEventType
 import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.visor.{VisorTag, visor}
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 

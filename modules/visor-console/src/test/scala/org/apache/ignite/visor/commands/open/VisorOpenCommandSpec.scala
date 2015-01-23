@@ -20,8 +20,6 @@ package org.apache.ignite.visor.commands.open
 import org.apache.ignite.IgniteCheckedException
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
-import org.gridgain.visor._
-
 /**
  * Unit test for 'open' command.
  */

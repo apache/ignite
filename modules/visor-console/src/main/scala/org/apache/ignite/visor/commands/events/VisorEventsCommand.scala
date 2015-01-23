@@ -30,7 +30,6 @@ import org.apache.ignite.events.IgniteEventType._
 import java.util.UUID
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands._
 import visor.visor._
 

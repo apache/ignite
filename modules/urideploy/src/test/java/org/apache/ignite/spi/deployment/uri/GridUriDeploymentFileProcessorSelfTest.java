@@ -17,8 +17,8 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
+import org.apache.ignite.util.antgar.*;
 import org.apache.tools.ant.*;
-import org.gridgain.grid.util.antgar.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.config.*;
 import org.apache.ignite.testframework.junits.spi.*;

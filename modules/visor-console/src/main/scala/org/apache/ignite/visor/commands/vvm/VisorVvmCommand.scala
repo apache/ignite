@@ -31,7 +31,6 @@ import org.jetbrains.annotations.Nullable
 import java.io.File
 import java.net._
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.VisorConsoleCommand
 import visor._
 

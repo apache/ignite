@@ -29,7 +29,7 @@ import java.net.*;
 import java.util.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**

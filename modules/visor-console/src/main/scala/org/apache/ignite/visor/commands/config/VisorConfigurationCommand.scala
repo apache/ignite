@@ -28,7 +28,6 @@ import org.apache.ignite.lang.IgniteBiTuple
 import java.lang.System._
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor.visor._

@@ -26,11 +26,11 @@ import org.apache.ignite.hadoop.*;
 /**
  * Hadoop processor.
  */
-public abstract class GridHadoopProcessorAdapter extends GridProcessorAdapter {
+public abstract class IgniteHadoopProcessorAdapter extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    protected GridHadoopProcessorAdapter(GridKernalContext ctx) {
+    protected IgniteHadoopProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

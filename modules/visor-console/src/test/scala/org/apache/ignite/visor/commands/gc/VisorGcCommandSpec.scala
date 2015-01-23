@@ -20,7 +20,6 @@ package org.apache.ignite.visor.commands.gc
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.gc.VisorGcCommand._
 import org.apache.ignite.visor.commands.top.VisorTopologyCommand._
 

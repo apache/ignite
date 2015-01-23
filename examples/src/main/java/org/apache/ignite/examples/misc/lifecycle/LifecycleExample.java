@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 
 import static org.apache.ignite.lifecycle.LifecycleEventType.*;
 

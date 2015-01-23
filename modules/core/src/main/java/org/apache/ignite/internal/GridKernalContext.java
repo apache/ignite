@@ -285,7 +285,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return File system processor.
      */
-    public GridGgfsProcessorAdapter ggfs();
+    public IgniteFsProcessorAdapter ggfs();
 
     /**
      * Gets GGFS utils processor.
@@ -313,7 +313,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Hadoop processor.
      */
-    public GridHadoopProcessorAdapter hadoop();
+    public IgniteHadoopProcessorAdapter hadoop();
 
     /**
      * Gets utility cache pool.

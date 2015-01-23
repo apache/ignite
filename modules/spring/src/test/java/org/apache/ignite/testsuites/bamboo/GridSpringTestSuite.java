@@ -22,7 +22,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.p2p.*;
 import org.apache.ignite.spring.*;
 import org.apache.ignite.testsuites.*;
-import org.gridgain.grid.cache.spring.*;
 
 /**
  * Spring tests.

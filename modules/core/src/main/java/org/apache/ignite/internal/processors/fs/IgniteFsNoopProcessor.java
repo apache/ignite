@@ -29,15 +29,15 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * Nop GGFS processor implementation.
+ * Nop Ignite file system processor implementation.
  */
-public class GridNoopGgfsProcessor extends GridGgfsProcessorAdapter {
+public class IgniteFsNoopProcessor extends IgniteFsProcessorAdapter {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    public GridNoopGgfsProcessor(GridKernalContext ctx) {
+    public IgniteFsNoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

@@ -29,15 +29,15 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- * GGFS processor adapter.
+ * Ignite file system processor adapter.
  */
-public abstract class GridGgfsProcessorAdapter extends GridProcessorAdapter {
+public abstract class IgniteFsProcessorAdapter extends GridProcessorAdapter {
     /**
      * Constructor.
      *
      * @param ctx Kernal context.
      */
-    protected GridGgfsProcessorAdapter(GridKernalContext ctx) {
+    protected IgniteFsProcessorAdapter(GridKernalContext ctx) {
         super(ctx);
     }
 

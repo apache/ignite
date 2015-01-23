@@ -86,7 +86,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCachePreloadMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
-import static org.apache.ignite.internal.GridComponentType.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
 /**
@@ -1852,7 +1852,7 @@ public class GridGainEx {
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
-            boolean hasHadoop = GridComponentType.HADOOP.inClassPath();
+            boolean hasHadoop = IgniteComponentType.HADOOP.inClassPath();
 
             CacheConfiguration[] copies;
 

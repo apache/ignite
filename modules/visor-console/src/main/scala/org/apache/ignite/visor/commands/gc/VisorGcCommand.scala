@@ -26,7 +26,6 @@ import java.lang.{Boolean => JavaBoolean}
 import java.util.{UUID, HashSet => JavaHashSet}
 
 import org.apache.ignite.visor.VisorTag
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor.visor._
 

@@ -30,7 +30,6 @@ import org.jetbrains.annotations._
 
 import java.util.UUID
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.{VisorConsoleCommand, VisorTextTable}
 import visor._
 

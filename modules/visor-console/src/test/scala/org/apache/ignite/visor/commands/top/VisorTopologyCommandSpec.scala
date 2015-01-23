@@ -18,7 +18,6 @@
 package org.apache.ignite.visor.commands.top
 
 import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.top.VisorTopologyCommand._
 
 /**

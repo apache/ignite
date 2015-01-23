@@ -26,11 +26,11 @@ import org.apache.ignite.internal.util.future.*;
 /**
  * Hadoop processor.
  */
-public class GridHadoopNoopProcessor extends GridHadoopProcessorAdapter {
+public class IgniteHadoopNoopProcessor extends IgniteHadoopProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridHadoopNoopProcessor(GridKernalContext ctx) {
+    public IgniteHadoopNoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 

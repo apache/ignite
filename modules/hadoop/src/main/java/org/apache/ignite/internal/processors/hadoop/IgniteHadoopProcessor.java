@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.processors.hadoop.GridHadoopClassLoader
 /**
  * Hadoop processor.
  */
-public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
+public class IgniteHadoopProcessor extends IgniteHadoopProcessorAdapter {
     /** Job ID counter. */
     private final AtomicInteger idCtr = new AtomicInteger();
 
@@ -52,7 +52,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridHadoopProcessor(GridKernalContext ctx) {
+    public IgniteHadoopProcessor(GridKernalContext ctx) {
         super(ctx);
     }
 
@@ -104,7 +104,7 @@ public class GridHadoopProcessor extends GridHadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridHadoopProcessor.class, this);
+        return S.toString(IgniteHadoopProcessor.class, this);
     }
 
     /** {@inheritDoc} */

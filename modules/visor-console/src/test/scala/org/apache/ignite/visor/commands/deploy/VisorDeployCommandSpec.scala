@@ -20,7 +20,6 @@ package org.apache.ignite.visor.commands.deploy
 import org.apache.ignite.visor.visor
 import org.scalatest._
 
-import org.gridgain.visor._
 import org.apache.ignite.visor.commands.deploy.VisorDeployCommand._
 
 /**
