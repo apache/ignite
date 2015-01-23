@@ -17,12 +17,12 @@
 
 package org.apache.ignite.spi.failover.jobstealing;
 
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.spi.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.failover.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import java.util.*;
 
 /**

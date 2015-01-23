@@ -18,7 +18,7 @@
 package org.apache.ignite.events;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * In-memory database (cache) preloading event. Preload event happens every time there is a change

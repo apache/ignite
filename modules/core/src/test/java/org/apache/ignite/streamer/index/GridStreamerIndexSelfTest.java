@@ -22,17 +22,16 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.streamer.index.StreamerIndexPolicy.*;
-import static org.gridgain.testframework.GridTestUtils.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * Tests for Streamer window index.
@@ -320,7 +319,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                                 U.sleep(50);
                         }
                     }
-                    catch (GridInterruptedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         // No-op.
                     }
                 }

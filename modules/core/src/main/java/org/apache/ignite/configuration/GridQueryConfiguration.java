@@ -17,8 +17,7 @@
 
 package org.apache.ignite.configuration;
 
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -124,7 +123,7 @@ public class GridQueryConfiguration {
     }
 
     /**
-     * Sets classes with methods annotated by {@link GridCacheQuerySqlFunction}
+     * Sets classes with methods annotated by {@link org.apache.ignite.cache.query.CacheQuerySqlFunction}
      * to be used as user-defined functions from SQL queries.
      *
      * @param idxCustomFuncClss List of classes.

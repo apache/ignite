@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -51,8 +50,8 @@ import java.util.*;
  * <h1 class="header">Integration With Hadoop</h1>
  * In addition to direct file system API, {@code GGFS} can be integrated with {@code Hadoop} by
  * plugging in as {@code Hadoop FileSystem}. Refer to
- * {@code org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem} or
- * {@code org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
+ * {@code org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem} or
+ * {@code org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */

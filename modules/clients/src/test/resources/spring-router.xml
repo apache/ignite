@@ -63,7 +63,7 @@
     </bean>
 
     <!-- Configuration of Tcp router. -->
-    <bean id="tcp.router.cfg" class="org.gridgain.client.router.GridTcpRouterConfiguration">
+    <bean id="tcp.router.cfg" class="org.apache.ignite.client.router.GridTcpRouterConfiguration">
 
         <property name="logger" ref="router.log" />
 
