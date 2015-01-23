@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tools.javadoc;
+package org.apache.ignite.tools.javadoc;
 
 import com.sun.tools.doclets.*;
 import com.sun.javadoc.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tools;
+package org.apache.ignite.tools;
 
 import org.apache.tools.ant.*;
 import org.gridgain.grid.util.antgar.*;

@@ -18,7 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.gridgain.grid.tools.*;
+import org.apache.ignite.tools.*;
 
 /**
  * Tools self-test suite.

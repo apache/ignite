@@ -15,25 +15,24 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal;
-
-import junit.framework.*;
+package org.apache.ignite.tools.ant.beautifier;
 
 /**
- * Start nodes tests.
+ * Lexical token type.
  */
-public class GridStartStopRestartTestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Start Nodes Test Suite");
+enum GridJavadocTokenType {
+    /** HTML instruction.  */
+    TOKEN_INSTR,
 
-        suite.addTestSuite(GridNodeStartUtilsSelfTest.class);
+    /** HTML comment. */
+    TOKEN_COMM,
 
-        suite.addTestSuite(GridProjectionStartStopRestartSelfTest.class);
+    /** HTML open tag. */
+    TOKEN_OPEN_TAG,
 
-        return suite;
-    }
+    /** HTML close tag. */
+    TOKEN_CLOSE_TAG,
+
+    /** HTML text. */
+    TOKEN_TEXT
 }

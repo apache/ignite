@@ -592,7 +592,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -791,7 +791,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -1005,7 +1005,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -1127,7 +1127,7 @@
                                         <!-- todo IGNITE-40 Uncomment javadoc checking. -->
 
                                         <!--<taskdef name="doctask"-->
-                                                 <!--classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>-->
+                                                 <!--classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>-->
 
                                         <!--<doctask css="dotted" dir="target/javadoc/core">-->
                                             <!--<include name="**/*.html"/>-->

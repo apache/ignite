@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tools.ant.beautifier;
+package org.apache.ignite.tools.ant.beautifier;
 
 /**
  * Lexical token.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.tools.marshaller.optimized;
+package org.apache.ignite.tools.marshaller.optimized;
 
 import java.io.*;
 import java.lang.reflect.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.util.antgar;
+package org.apache.ignite.util.antgar;
 
 import org.apache.tools.ant.*;
 import org.apache.tools.ant.taskdefs.*;
