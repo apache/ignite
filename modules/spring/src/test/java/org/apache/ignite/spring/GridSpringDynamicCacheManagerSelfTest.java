@@ -208,7 +208,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
      * @throws Exception In case of error.
      */
     private Object key(String cacheName, int key) throws Exception {
-        Class<?> cls = Class.forName(GridSpringDynamicCacheManager.class.getName() + "$DataKey");
+        Class<?> cls = Class.forName(SpringDynamicCacheManager.class.getName() + "$DataKey");
 
         Constructor<?> cons = cls.getDeclaredConstructor(String.class, Object.class);
 

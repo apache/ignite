@@ -930,7 +930,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * Mocked Grid.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class MockGrid extends GridSpringBean implements GridEx {
+    private static class MockGrid extends IgniteSpringBean implements GridEx {
         /** {@inheritDoc} */
         @Override public IgniteFs ggfsx(String name) {
             assert F.eq("ggfs", name);

@@ -129,7 +129,7 @@ import java.util.*;
  * GridGain distribution, and all these nodes will participate
  * in caching data.
  */
-public class GridSpringCacheManager implements CacheManager, InitializingBean {
+public class SpringCacheManager implements CacheManager, InitializingBean {
     /** Grid configuration file path. */
     private String cfgPath;
 
@@ -221,7 +221,7 @@ public class GridSpringCacheManager implements CacheManager, InitializingBean {
         assert grid != null;
 
         try {
-            return new GridSpringCache(name, grid, grid.cache(name), null);
+            return new SpringCache(name, grid, grid.cache(name), null);
         }
         catch (IllegalArgumentException ignored) {
             return null;

@@ -72,7 +72,7 @@ import java.util.concurrent.*;
  * </pre>
  * <p>
  */
-public class GridSpringBean implements Ignite, DisposableBean, InitializingBean,
+public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -119,7 +119,7 @@ public class GridSpringBean implements Ignite, DisposableBean, InitializingBean,
         if (cfg == null)
             cfg = new IgniteConfiguration();
 
-        g = GridGainSpring.start(cfg, appCtx);
+        g = IgniteSpring.start(cfg, appCtx);
     }
 
     /** {@inheritDoc} */
@@ -325,7 +325,7 @@ public class GridSpringBean implements Ignite, DisposableBean, InitializingBean,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridSpringBean.class, this);
+        return S.toString(IgniteSpringBean.class, this);
     }
 
     /** {@inheritDoc} */

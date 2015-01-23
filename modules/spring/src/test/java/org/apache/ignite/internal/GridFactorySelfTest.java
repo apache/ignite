@@ -154,7 +154,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         cfg.setRestEnabled(false);
 
-        try (Ignite g = GridGainSpring.start(cfg, new GenericApplicationContext())) {
+        try (Ignite g = IgniteSpring.start(cfg, new GenericApplicationContext())) {
             bean1.checkState(gridName, true);
             bean2.checkState(gridName, true);
         }

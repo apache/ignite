@@ -29,7 +29,7 @@
     <description>Main Spring file for grid configuration.</description>
 
     <!-- Example of bean definition with given configuration. -->
-    <bean id="mySpringBean" class="org.apache.ignite.GridSpringBean">
+    <bean id="mySpringBean" class="org.apache.ignite.IgniteSpringBean">
         <property name="configuration">
             <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
                 <!-- Set to local host address just for examples. -->

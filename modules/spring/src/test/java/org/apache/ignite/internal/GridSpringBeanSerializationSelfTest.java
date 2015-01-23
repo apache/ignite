@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 /**
- * Test for {@link GridSpringBean} serialization.
+ * Test for {@link org.apache.ignite.IgniteSpringBean} serialization.
  */
 public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -41,11 +41,11 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     private static final String ATTR_KEY = "checkAttr";
 
     /** Bean. */
-    private GridSpringBean bean;
+    private IgniteSpringBean bean;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        bean = new GridSpringBean();
+        bean = new IgniteSpringBean();
 
         bean.setConfiguration(config());
 
@@ -82,7 +82,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
     public void testSerialization() throws Exception {
         assert bean != null;
 
-        GridSpringBean bean0 = MARSHALLER.unmarshal(MARSHALLER.marshal(bean), null);
+        IgniteSpringBean bean0 = MARSHALLER.unmarshal(MARSHALLER.marshal(bean), null);
 
         assert bean0 != null;
         assert bean0.log() != null;

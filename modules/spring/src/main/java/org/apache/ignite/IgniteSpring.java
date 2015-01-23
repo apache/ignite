@@ -31,9 +31,9 @@ import java.net.*;
  * annotation.
  * <p>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
- * For more information refer to {@link GridSpringBean} documentation.
+ * For more information refer to {@link IgniteSpringBean} documentation.
  */
-public class GridGainSpring {
+public class IgniteSpring {
     /**
      * Starts grid with default configuration. By default this method will
      * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}

@@ -31,7 +31,7 @@
     <!--
         Cache manager.
     -->
-    <bean id="cacheManager" class="org.apache.ignite.cache.spring.GridSpringDynamicCacheManager">
+    <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringDynamicCacheManager">
         <property name="gridName" value="testGrid"/>
         <property name="dataCacheName" value="data"/>
     </bean>

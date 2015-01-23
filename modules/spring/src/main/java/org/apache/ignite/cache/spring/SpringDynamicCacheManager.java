@@ -32,7 +32,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Extension of {@link GridSpringCacheManager} that adds an option to
+ * Extension of {@link SpringCacheManager} that adds an option to
  * emulate dynamic cache creation for you Spring-based applications.
  * <p>
  * All the data will be actually cached in one GridGain cache. It's
@@ -45,8 +45,8 @@ import java.util.*;
  * GridGain configuration. Cache projection will be created only
  * cache with provided name doesn't exist.
  * <h1 class="header">Configuration</h1>
- * {@link GridSpringDynamicCacheManager} inherits all configuration
- * properties from {@link GridSpringCacheManager} (see it's JavaDoc
+ * {@link SpringDynamicCacheManager} inherits all configuration
+ * properties from {@link SpringCacheManager} (see it's JavaDoc
  * for more information on how to enable GridGain-based caching in
  * a Spring application).
  * <p>
@@ -70,9 +70,9 @@ import java.util.*;
  * &lt;/beans&gt;
  * </pre>
  *
- * @see GridSpringCacheManager
+ * @see SpringCacheManager
  */
-public class GridSpringDynamicCacheManager extends GridSpringCacheManager {
+public class SpringDynamicCacheManager extends SpringCacheManager {
     /** Data cache name. */
     private String dataCacheName;
 
@@ -121,7 +121,7 @@ public class GridSpringDynamicCacheManager extends GridSpringCacheManager {
             cache = metaCache.get(key);
 
             if (cache == null) {
-                cache = new GridSpringCache(name, grid, dataCache.projection(new ProjectionFilter(name)),
+                cache = new SpringCache(name, grid, dataCache.projection(new ProjectionFilter(name)),
                     new IgniteClosure<Object, Object>() {
                         @Override public Object apply(Object o) {
                             return new DataKey(name, o);

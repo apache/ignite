@@ -29,7 +29,7 @@ import java.io.*;
 /**
  * Spring cache implementation.
  */
-class GridSpringCache implements Cache, Serializable {
+class SpringCache implements Cache, Serializable {
     /** */
     private String name;
 
@@ -48,8 +48,8 @@ class GridSpringCache implements Cache, Serializable {
      * @param cache Cache.
      * @param keyFactory Key factory.
      */
-    GridSpringCache(String name, Ignite ignite, GridCacheProjection<?, ?> cache,
-        IgniteClosure<Object, Object> keyFactory) {
+    SpringCache(String name, Ignite ignite, GridCacheProjection<?, ?> cache,
+                IgniteClosure<Object, Object> keyFactory) {
         assert cache != null;
 
         this.name = name;
