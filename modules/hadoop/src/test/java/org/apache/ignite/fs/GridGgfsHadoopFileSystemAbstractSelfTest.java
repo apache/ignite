@@ -24,13 +24,12 @@ import org.apache.hadoop.fs.permission.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.*;
-import org.gridgain.grid.ggfs.hadoop.v1.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.apache.ignite.fs.hadoop.v1.*;
+import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -2350,9 +2349,9 @@ public abstract class GridGgfsHadoopFileSystemAbstractSelfTest extends GridGgfsC
         Configuration cfg = new Configuration();
 
         cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
-        cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl",
-            org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+            org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
 
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 

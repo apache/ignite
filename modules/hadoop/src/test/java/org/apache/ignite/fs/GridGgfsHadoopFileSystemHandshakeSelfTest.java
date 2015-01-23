@@ -23,7 +23,6 @@ import org.apache.hadoop.fs.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -42,7 +41,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.kernal.ggfs.hadoop.GridGgfsHadoopUtils.*;
+import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
 import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
 
 /**
@@ -298,9 +297,9 @@ public class GridGgfsHadoopFileSystemHandshakeSelfTest extends GridGgfsCommonAbs
         Configuration cfg = new Configuration();
 
         cfg.set("fs.defaultFS", "ggfs://" + authority + "/");
-        cfg.set("fs.ggfs.impl", org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
+        cfg.set("fs.ggfs.impl", org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem.class.getName());
         cfg.set("fs.AbstractFileSystem.ggfs.impl",
-            org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
+            org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem.class.getName());
 
         cfg.setBoolean("fs.ggfs.impl.disable.cache", true);
 

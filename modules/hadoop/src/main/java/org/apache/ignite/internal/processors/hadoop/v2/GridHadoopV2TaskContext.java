@@ -40,7 +40,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.fs.hadoop.GridGgfsHadoopParameters.*;
 import static org.apache.ignite.internal.processors.hadoop.GridHadoopUtils.*;
 
 /**

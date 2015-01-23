@@ -22,9 +22,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.gridgain.grid.ggfs.hadoop.v1.*;
+import org.apache.ignite.fs.hadoop.v1.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -39,7 +38,7 @@ import java.nio.file.*;
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.gridgain.grid.ggfs.hadoop.GridGgfsHadoopParameters.*;
+import static org.apache.ignite.fs.hadoop.GridGgfsHadoopParameters.*;
 
 /**
  * Ensures that sampling is really turned on/off.

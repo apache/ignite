@@ -637,7 +637,7 @@
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.gridgain.grid.ggfs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -839,7 +839,7 @@
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.apache.ignite.hadoop</packages>
+                                            <packages>org.gridgain.grid.ggfs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>

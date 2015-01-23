@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.processors.fs.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;

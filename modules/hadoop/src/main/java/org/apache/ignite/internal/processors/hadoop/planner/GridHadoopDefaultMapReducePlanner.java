@@ -24,7 +24,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.hadoop.*;
-import org.gridgain.grid.kernal.ggfs.hadoop.*;
+import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
