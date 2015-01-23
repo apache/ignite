@@ -25,7 +25,6 @@ import org.apache.ignite.product.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.hadoop.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.lang.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -74,7 +73,7 @@ import java.util.concurrent.*;
  * </pre>
  * <p>
  */
-public class GridSpringBean extends GridMetadataAwareAdapter implements Ignite, DisposableBean, InitializingBean,
+public class GridSpringBean implements Ignite, DisposableBean, InitializingBean,
     ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;

@@ -20,7 +20,6 @@ package org.gridgain.grid.kernal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
@@ -32,7 +31,7 @@ import java.util.*;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteTxEx<K, V> extends GridMetadataAware, IgniteTx, GridTimeoutObject {
+public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     /**
      *
      */

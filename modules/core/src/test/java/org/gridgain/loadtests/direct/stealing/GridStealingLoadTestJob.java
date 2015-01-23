@@ -33,9 +33,9 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** */
     @IgniteJobContextResource
@@ -43,6 +43,8 @@ public class GridStealingLoadTestJob extends ComputeJobAdapter {
 
     /** {@inheritDoc} */
     @Override public Serializable execute() throws IgniteCheckedException {
+        UUID nodeId = ignite.configuration().getNodeId();
+
         if (log.isDebugEnabled())
             log.debug("Executing job on node [nodeId=" + nodeId + ", jobId=" + ctx.getJobId() + ']');
 

@@ -38,7 +38,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
     /** Enterprise edition flag. */
     public static final boolean ENT;
 
-    /** GridGain version. */
+    /** Ignite version. */
     public static final String VER;
 
     /** Build timestamp in seconds. */
@@ -53,7 +53,7 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
     /** Release date. */
     public static final String RELEASE_DATE;
 
-    /** GridGain version as numeric array (generated from {@link #VER}). */
+    /** Ignite version as numeric array (generated from {@link #VER}). */
     public static final byte[] VER_BYTES;
 
     /** Compound version. */
@@ -86,10 +86,10 @@ public class GridProductImpl implements IgniteProduct, Externalizable {
 
         ENT = ent0;
 
-        VER = GridProperties.get("gridgain.version");
-        BUILD_TSTAMP = Long.valueOf(GridProperties.get("gridgain.build"));
-        REV_HASH = GridProperties.get("gridgain.revision");
-        RELEASE_DATE = GridProperties.get("gridgain.rel.date");
+        VER = GridProperties.get("ignite.version");
+        BUILD_TSTAMP = Long.valueOf(GridProperties.get("ignite.build"));
+        REV_HASH = GridProperties.get("ignite.revision");
+        RELEASE_DATE = GridProperties.get("ignite.rel.date");
 
         VER_BYTES = U.intToBytes(VER.hashCode());
 

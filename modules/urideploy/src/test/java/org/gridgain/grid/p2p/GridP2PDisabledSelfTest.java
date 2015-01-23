@@ -146,10 +146,9 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
                     Ignite ignite1 = startGrid(1);
                     Ignite ignite2 = startGrid(2);
 
-                    int[] res = ignite1.compute().<UUID, int[]>execute(TASK_NAME, ignite2.cluster().localNode().id());
+                    Integer res = ignite1.compute().<UUID, Integer>execute(TASK_NAME, ignite2.cluster().localNode().id());
 
                     assert res != null;
-                    assert res.length == 2;
                 }
                 finally {
                     stopGrid(1);

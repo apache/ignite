@@ -45,7 +45,7 @@ import static java.net.URLEncoder.*;
  */
 class GridUpdateNotifier {
     /** Access URL to be used to access latest version data. */
-    private static final String UPD_STATUS_PARAMS = GridProperties.get("gridgain.update.status.params");
+    private static final String UPD_STATUS_PARAMS = GridProperties.get("ignite.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.
@@ -90,7 +90,7 @@ class GridUpdateNotifier {
      * Creates new notifier with default values.
      *
      * @param gridName gridName
-     * @param ver Compound GridGain version.
+     * @param ver Compound Ignite version.
      * @param site Site.
      * @param reportOnlyNew Whether or not to report only new version.
      * @param gw Kernal gateway.
