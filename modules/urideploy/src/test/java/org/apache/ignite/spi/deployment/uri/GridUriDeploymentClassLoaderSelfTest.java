@@ -47,7 +47,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
         ClassLoader ldr = getGarClassLoader();
 
         // Get resource from GAR file
-        URL rsrcUrl = ldr.getResource("org/gridgain/test/test.properties");
+        URL rsrcUrl = ldr.getResource("org/apache/ignite/test/test.properties");
 
         assert rsrcUrl != null;
     }

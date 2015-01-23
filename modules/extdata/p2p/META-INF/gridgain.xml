@@ -33,7 +33,7 @@
         tasks found inside GAR will be deployed.
     -->
     <util:list id="tasks">
-        <value>org.apache.ignite.tests.p2p.GridP2PTestTaskExternalPath1</value>
+        <value>org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1</value>
         <value>org.apache.ignite.tests.p2p.GridP2PTestTaskExternalPath2</value>
         <value>org.apache.ignite.tests.p2p.GridSingleSplitTestTask</value>
     </util:list>

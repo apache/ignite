@@ -37,7 +37,7 @@ import java.util.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
     /** Task name. */
-    private static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** External class loader. */
     private static ClassLoader extLdr;
