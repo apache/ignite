@@ -29,8 +29,6 @@ import org.gridgain.grid.kernal.managers.eventstorage.*;
 import org.gridgain.grid.kernal.processors.timeout.*;
 import org.gridgain.grid.util.*;
 import org.gridgain.grid.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
-
 import java.util.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -91,7 +89,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     }
 
                     for (IsolatedDeployment dep : rmv)
-                        dep.recordUndeployed(nodeId);
+                        dep.recordUndeployed();
                 }
             }
         };
@@ -122,7 +120,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         for (IsolatedDeployment dep : cp)
-            dep.recordUndeployed(null);
+            dep.recordUndeployed();
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -150,7 +148,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         for (IsolatedDeployment dep : rmv)
-            dep.recordUndeployed(null);
+            dep.recordUndeployed();
 
         if (log.isDebugEnabled())
             log.debug("Registered deployment discovery listener: " + discoLsnr);
@@ -351,7 +349,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     }
 
                     if (rmv)
-                        dep.recordUndeployed(null);
+                        dep.recordUndeployed();
                 }
             });
         }
@@ -384,7 +382,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         for (IsolatedDeployment dep : undeployed)
-            dep.recordUndeployed(null);
+            dep.recordUndeployed();
     }
 
     /** {@inheritDoc} */
@@ -462,10 +460,8 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
         /**
          * Called to record all undeployed classes..
-         *
-         * @param leftNodeId Left node ID.
          */
-        void recordUndeployed(@Nullable UUID leftNodeId) {
+        void recordUndeployed() {
             assert !Thread.holdsLock(mux);
 
             GridEventStorageManager evts = ctx.event();
