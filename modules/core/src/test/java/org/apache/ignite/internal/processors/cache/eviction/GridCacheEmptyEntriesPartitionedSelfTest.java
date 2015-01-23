@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.eviction;
+package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 
 /**
- *
+ * Test allow empty entries flag on partitioned cache.
  */
-public class GridCacheEmptyEntriesLocalSelfTest extends GridCacheEmptyEntriesAbstractSelfTest {
+public class GridCacheEmptyEntriesPartitionedSelfTest extends GridCacheEmptyEntriesAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected Ignite startGrids() throws Exception {
-        return startGrid();
+        return startGridsMultiThreaded(3);
     }
 
     /** {@inheritDoc} */
     @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.LOCAL;
+        return GridCacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */

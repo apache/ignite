@@ -15,37 +15,35 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.eviction.fifo;
+package org.apache.ignite.internal.processors.cache.eviction.lru;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.eviction.fifo.*;
-import org.gridgain.grid.kernal.processors.cache.eviction.*;
+import org.apache.ignite.cache.eviction.lru.*;
+import org.apache.ignite.internal.processors.cache.eviction.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheMode.*;
-
 /**
- * FIFO Eviction test.
+ * LRU Eviction test.
  */
-@SuppressWarnings({"TypeMayBeWeakened"})
-public class GridCacheFifoEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<GridCacheFifoEvictionPolicy<String, String>> {
+@SuppressWarnings( {"TypeMayBeWeakened"})
+public class GridCacheLruEvictionPolicySelfTest extends
+    GridCacheEvictionAbstractTest<GridCacheLruEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
     public void testPolicy() throws Exception {
-        try {
-            startGrid();
+        startGrid();
 
+        try {
             MockEntry e1 = new MockEntry("1", "1");
             MockEntry e2 = new MockEntry("2", "2");
             MockEntry e3 = new MockEntry("3", "3");
             MockEntry e4 = new MockEntry("4", "4");
             MockEntry e5 = new MockEntry("5", "5");
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+            GridCacheLruEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(3);
 
@@ -102,7 +100,9 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             p.onEntryAccessed(false, e5);
 
-            check(p.queue(), e4, e5, e1);
+            assertEquals(3, p.getCurrentSize());
+
+            check(p.queue(), e4, e1, e5);
 
             assert !e1.isEvicted();
             assert !e4.isEvicted();
@@ -122,7 +122,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             assertEquals(3, p.getCurrentSize());
 
-            check(p.queue(), e4, e5, e1);
+            check(p.queue(), e4, e1, e5);
 
             assert !e1.isEvicted();
             assert !e4.isEvicted();
@@ -152,7 +152,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
             info(p);
         }
         finally {
-            stopAllGrids();
+            stopGrid();
         }
     }
 
@@ -160,10 +160,10 @@ public class GridCacheFifoEvictionPolicySelfTest extends
      * @throws Exception If failed.
      */
     public void testMemory() throws Exception {
-        try {
-            startGrid();
+        startGrid();
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+        try {
+            GridCacheLruEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -179,7 +179,56 @@ public class GridCacheFifoEvictionPolicySelfTest extends
             assertEquals(max, p.getCurrentSize());
         }
         finally {
-            stopAllGrids();
+            stopGrid();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMiddleAccess() throws Exception {
+        startGrid();
+
+        try {
+            GridCacheLruEvictionPolicy<String, String> p = policy();
+
+            int max = 8;
+
+            p.setMaxSize(max);
+
+            MockEntry entry1 = new MockEntry("1", "1");
+            MockEntry entry2 = new MockEntry("2", "2");
+            MockEntry entry3 = new MockEntry("3", "3");
+
+            p.onEntryAccessed(false, entry1);
+            p.onEntryAccessed(false, entry2);
+            p.onEntryAccessed(false, entry3);
+
+            MockEntry[] freqUsed = new MockEntry[] {
+                new MockEntry("4", "4"),
+                new MockEntry("5", "5"),
+                new MockEntry("6", "6"),
+                new MockEntry("7", "7"),
+                new MockEntry("8", "7")
+            };
+
+            for (MockEntry e : freqUsed)
+                p.onEntryAccessed(false, e);
+
+            for (MockEntry e : freqUsed)
+                assert !e.isEvicted();
+
+            int cnt = 1001;
+
+            for (int i = 0; i < cnt; i++)
+                p.onEntryAccessed(false, entry(freqUsed, i % freqUsed.length));
+
+            info(p);
+
+            assertEquals(max, p.getCurrentSize());
+        }
+        finally {
+            stopGrid();
         }
     }
 
@@ -187,10 +236,10 @@ public class GridCacheFifoEvictionPolicySelfTest extends
      * @throws Exception If failed.
      */
     public void testRandom() throws Exception {
-        try {
-            startGrid();
+        startGrid();
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+        try {
+            GridCacheLruEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -200,34 +249,32 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             int keys = 31;
 
-            MockEntry[] fifos = new MockEntry[keys];
+            MockEntry[] lrus = new MockEntry[keys];
 
-            for (int i = 0; i < fifos.length; i++)
-                fifos[i] = new MockEntry(Integer.toString(i));
+            for (int i = 0; i < lrus.length; i++)
+                lrus[i] = new MockEntry(Integer.toString(i));
 
-            int runs = 5000000;
+            int runs = 500000;
 
             for (int i = 0; i < runs; i++) {
                 boolean rmv = rand.nextBoolean();
 
-                int j = rand.nextInt(fifos.length);
+                int j = rand.nextInt(lrus.length);
 
-                MockEntry e = entry(fifos, j);
+                MockEntry e = entry(lrus, j);
 
                 if (rmv)
-                    fifos[j] = new MockEntry(Integer.toString(j));
+                    lrus[j] = new MockEntry(Integer.toString(j));
 
                 p.onEntryAccessed(rmv, e);
             }
 
             info(p);
 
-            int curSize = p.getCurrentSize();
-
-            assert curSize <= max : "curSize <= max [curSize=" + curSize + ", max=" + max + ']';
+            assert p.getCurrentSize() <= max;
         }
         finally {
-            stopAllGrids();
+            stopGrid();
         }
     }
 
@@ -254,7 +301,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             e5.setValue("val");
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+            GridCacheLruEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -293,7 +340,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        mode = LOCAL;
+        mode = GridCacheMode.LOCAL;
         syncCommit = true;
         plcMax = 100;
 
@@ -356,13 +403,12 @@ public class GridCacheFifoEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheFifoEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new GridCacheFifoEvictionPolicy<>(plcMax);
+    @Override protected GridCacheLruEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new GridCacheLruEvictionPolicy<>(plcMax);
     }
 
-    /** {@inheritDoc} */
-    @Override protected GridCacheFifoEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new GridCacheFifoEvictionPolicy<>(nearMax);
+    @Override protected GridCacheLruEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new GridCacheLruEvictionPolicy<>(nearMax);
     }
 
     /** {@inheritDoc} */

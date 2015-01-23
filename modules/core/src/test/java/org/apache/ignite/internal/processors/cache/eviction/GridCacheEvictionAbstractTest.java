@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.eviction;
+package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;

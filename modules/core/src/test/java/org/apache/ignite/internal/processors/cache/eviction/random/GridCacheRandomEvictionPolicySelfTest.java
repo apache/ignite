@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache.eviction.random;
+package org.apache.ignite.internal.processors.cache.eviction.random;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.random.*;
-import org.gridgain.grid.kernal.processors.cache.eviction.*;
+import org.apache.ignite.internal.processors.cache.eviction.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

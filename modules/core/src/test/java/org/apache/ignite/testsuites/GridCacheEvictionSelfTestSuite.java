@@ -20,10 +20,10 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
-import org.gridgain.grid.kernal.processors.cache.eviction.*;
-import org.gridgain.grid.kernal.processors.cache.eviction.fifo.*;
-import org.gridgain.grid.kernal.processors.cache.eviction.lru.*;
-import org.gridgain.grid.kernal.processors.cache.eviction.random.*;
+import org.apache.ignite.internal.processors.cache.eviction.*;
+import org.apache.ignite.internal.processors.cache.eviction.fifo.*;
+import org.apache.ignite.internal.processors.cache.eviction.lru.*;
+import org.apache.ignite.internal.processors.cache.eviction.random.*;
 
 /**
  * Test suite for cache eviction.
