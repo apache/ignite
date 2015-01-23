@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.store;
+package org.apache.ignite.cache.store;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;

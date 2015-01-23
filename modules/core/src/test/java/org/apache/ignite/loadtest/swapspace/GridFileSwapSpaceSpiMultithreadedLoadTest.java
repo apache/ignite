@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.loadtest.swapspace;
+package org.apache.ignite.loadtest.swapspace;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;

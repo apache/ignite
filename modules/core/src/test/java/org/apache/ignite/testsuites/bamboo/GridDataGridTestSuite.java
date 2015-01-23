@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.cache.affinity.fair.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
@@ -26,8 +28,6 @@ import org.apache.ignite.internal.processors.cache.integration.*;
 import org.apache.ignite.testsuites.*;
 import org.gridgain.grid.*;
 import org.apache.ignite.cache.store.jdbc.*;
-import org.gridgain.grid.cache.affinity.fair.*;
-import org.gridgain.grid.cache.store.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.*;

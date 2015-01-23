@@ -20,7 +20,7 @@ package org.apache.ignite.testsuites.bamboo;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.fs.split.*;
-import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.fs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.ipc.*;
 

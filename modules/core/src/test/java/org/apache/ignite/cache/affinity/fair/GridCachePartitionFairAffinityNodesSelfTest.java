@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.cache.affinity.fair;
+package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.fair.*;

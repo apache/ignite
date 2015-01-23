@@ -100,7 +100,7 @@ public class GridCacheHibernateBlobStoreSelfTest extends
      * @throws Exception If failed.
      */
     public void testConfigurationByResource() throws Exception {
-        store.setHibernateConfigurationPath("/org/gridgain/grid/cache/store/hibernate/hibernate.cfg.xml");
+        store.setHibernateConfigurationPath("/org/apache/ignite/cache/store/hibernate/hibernate.cfg.xml");
 
         // Store will be implicitly initialized.
         store.load("key");

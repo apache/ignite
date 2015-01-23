@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.loadtest;
+package org.apache.ignite.loadtest;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;

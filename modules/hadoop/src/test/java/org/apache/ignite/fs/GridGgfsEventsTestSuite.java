@@ -20,7 +20,7 @@ package org.apache.ignite.fs;
 import junit.framework.*;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.ggfs.*;
+import org.gridgain.grid.fs.*;
 import org.apache.ignite.internal.fs.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;

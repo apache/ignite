@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.ggfs;
+package org.gridgain.grid.fs;
 
 import java.io.*;
 

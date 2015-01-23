@@ -20,7 +20,7 @@ package org.apache.ignite.loadtests.direct.stealing;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.loadtest.*;
+import org.apache.ignite.loadtest.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;

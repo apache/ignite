@@ -22,7 +22,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.logger.log4j.*;
 import org.apache.log4j.*;
-import org.gridgain.grid.loadtest.*;
+import org.apache.ignite.loadtest.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.internal.util.typedef.*;
