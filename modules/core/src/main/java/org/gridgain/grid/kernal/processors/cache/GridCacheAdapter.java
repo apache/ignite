@@ -1379,7 +1379,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllAsync(Collections.singletonList(key), /*force primary*/true, /*skip tx*/false, null, null,
-            taskName, true).chain(new CX1<IgniteFuture<Map<K, V>>, V>() {
+                taskName, true).chain(new CX1<IgniteFuture<Map<K, V>>, V>() {
             @Override public V applyx(IgniteFuture<Map<K, V>> e) throws IgniteCheckedException {
                 return e.get().get(key);
             }
@@ -2234,12 +2234,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return syncOp(new SyncOp<EntryProcessorResult<T>>(true) {
             @Nullable @Override public EntryProcessorResult<T> op(IgniteTxLocalAdapter<K, V> tx)
-                throws IgniteCheckedException {
+                    throws IgniteCheckedException {
                 Map<? extends K, EntryProcessor<K, V, Object>> invokeMap =
                     Collections.singletonMap(key, (EntryProcessor<K, V, Object>)entryProcessor);
 
                 IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut =
-                    tx.invokeAsync(ctx, invokeMap, args);
+                        tx.invokeAsync(ctx, invokeMap, args);
 
                 Map<K, EntryProcessorResult<T>> resMap = fut.get().value();
 
@@ -2313,7 +2313,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, EntryProcessorResult<T>>() {
             @Override public EntryProcessorResult<T> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
-                throws IgniteCheckedException {
+                    throws IgniteCheckedException {
                 GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
 
                 Map<K, EntryProcessorResult<T>> resMap = ret.value();
@@ -2421,7 +2421,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         return syncOp(new SyncOp<Map<K, EntryProcessorResult<T>>>(map.size() == 1) {
             @Nullable @Override public Map<K, EntryProcessorResult<T>> op(IgniteTxLocalAdapter tx)
-                throws IgniteCheckedException {
+                    throws IgniteCheckedException {
                 IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut = tx.invokeAsync(ctx, map, args);
 
                 return fut.get().value();
@@ -2661,7 +2661,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     ctx.deploy().registerClass(oldVal);
 
                 return tx.putAllAsync(ctx, F.t(key, newVal), false, null, -1, ctx.equalsPeekArray(oldVal)).get()
-                    .success();
+                        .success();
             }
 
             @Override public String toString() {
@@ -2804,7 +2804,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             @Override public IgniteFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
                 // TODO should we invoke interceptor here?
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true, filter)
-                    .chain((IgniteClosure<IgniteFuture<GridCacheReturn<V>>, V>) RET2VAL);
+                        .chain((IgniteClosure<IgniteFuture<GridCacheReturn<V>>, V>) RET2VAL);
             }
 
             @Override public String toString() {
@@ -2940,7 +2940,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     ctx.deploy().registerClass(val);
 
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true,
-                    ctx.vararg(F.<K, V>cacheContainsPeek(val))).get();
+                        ctx.vararg(F.<K, V>cacheContainsPeek(val))).get();
             }
 
             @Override public String toString() {
@@ -3035,7 +3035,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
 
                 return tx.removeAllAsync(ctx, Collections.singletonList(key), null, true,
-                    ctx.vararg(F.<K, V>cacheContainsPeek(val)));
+                        ctx.vararg(F.<K, V>cacheContainsPeek(val)));
             }
 
             @Override public String toString() {
@@ -3096,7 +3096,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     key0 = (K)ctx.marshalToPortable(key);
 
                 return tx.removeAllAsync(ctx, Collections.singletonList(key0), null, false,
-                    ctx.vararg(F.<K, V>cacheContainsPeek(val))).get().success();
+                        ctx.vararg(F.<K, V>cacheContainsPeek(val))).get().success();
             }
 
             @Override public String toString() {
@@ -3140,7 +3140,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
 
                 return tx.removeAllAsync(ctx, Collections.singletonList(key0), null, false,
-                    ctx.vararg(F.<K, V>cacheContainsPeek(val))).chain(
+                        ctx.vararg(F.<K, V>cacheContainsPeek(val))).chain(
                     (IgniteClosure<IgniteFuture<GridCacheReturn<V>>, Boolean>)RET2FLAG);
             }
 
@@ -3340,7 +3340,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public IgniteTx txStartPartition(int partId, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException, IgniteCheckedException {
         return ctx.kernalContext().cache().transactions().txStartPartition(name(), partId, concurrency, isolation,
-            timeout, txSize);
+                timeout, txSize);
     }
 
     /** {@inheritDoc} */
@@ -3619,9 +3619,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
+     * @param prj Projection.
      * @return Distributed ignite cache iterator.
      */
-    public Iterator<Cache.Entry<K, V>> igniteIterator() {
+    public Iterator<Cache.Entry<K, V>> igniteIterator(final GridCacheProjectionImpl<K, V> prj) {
         GridCacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
                 .keepAll(false)
                 .execute();
@@ -3632,11 +3633,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
+                GridCacheProjectionImpl<K, V> prev = ctx.gate().enter(prj);
+
                 try {
                     GridCacheAdapter.this.removex(item.getKey());
                 }
                 catch (IgniteCheckedException e) {
                     throw new CacheException(e);
+                }
+                finally {
+                    ctx.gate().leave(prev);
                 }
             }
         });
