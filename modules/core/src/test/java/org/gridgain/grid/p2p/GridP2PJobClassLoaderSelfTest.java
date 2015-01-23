@@ -20,8 +20,6 @@ package org.gridgain.grid.p2p;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.resources.*;
-import org.gridgain.grid.*;
 import org.gridgain.testframework.junits.common.*;
 
 import java.io.*;
@@ -58,7 +56,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrid(1);
 
-            ignite.compute().execute(UserResourceTask.class, null);
+            ignite.compute().execute(Task.class, null);
         }
         finally {
             stopGrid(1);
@@ -111,11 +109,7 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
     /**
      * Task that will always fail due to non-transient resource injection.
      */
-    public static class UserResourceTask extends ComputeTaskSplitAdapter<Object, Object> {
-        /** */
-        @IgniteUserResource
-        private transient UserResource rsrcTask;
-
+    public static class Task extends ComputeTaskSplitAdapter<Object, Object> {
         /**
          * ClassLoader loaded task.
          */
@@ -123,22 +117,14 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
-            assert rsrcTask != null;
-
             assert gridSize == 1;
 
             ldr = getClass().getClassLoader();
 
             return Collections.singletonList(new ComputeJobAdapter() {
-                    /** User resource */
-                    @IgniteUserResource
-                    private transient UserResource rsrcJob;
-
                     /** {@inheritDoc} */
                     @SuppressWarnings({"ObjectEquality"})
                     public Serializable execute() throws IgniteCheckedException {
-                        assert rsrcJob == rsrcTask;
-
                         assert getClass().getClassLoader() == ldr;
 
                         return null;
@@ -148,8 +134,6 @@ public class GridP2PJobClassLoaderSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-            assert rsrcTask != null;
-
             // Nothing to reduce.
             return null;
         }

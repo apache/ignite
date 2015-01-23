@@ -76,19 +76,19 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
 
             Class task1 = urlClsLdr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
 
-            int[] res1 = (int[]) ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
             stopGrid(1);
 
             Thread.sleep(1000);
 
             // Task will be deployed after stop node1
-            int[] res2 = (int[]) ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
+            Integer res2 = (Integer)ignite3.compute().execute(task1, ignite2.cluster().localNode().id());
 
             if (isExpectUndeploy)
-                assert isNotSame(res1, res2);
+                assert !res1.equals(res2);
             else
-                assert Arrays.equals(res1, res2);
+                assert res1.equals(res2);
         }
         finally {
             stopGrid(1);
@@ -117,18 +117,5 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
         depMode = IgniteDeploymentMode.SHARED;
 
         processTest(true);
-    }
-
-    /**
-     * Return true if and only if all elements of array are different.
-     *
-     * @param m1 array 1.
-     * @param m2 array 2.
-     * @return true if all elements of array are different.
-     */
-    private boolean isNotSame(int[] m1, int[] m2) {
-        assert m1.length == m2.length;
-        assert m1.length == 2;
-        return m1[0] != m2[0] && m1[1] != m2[1];
     }
 }

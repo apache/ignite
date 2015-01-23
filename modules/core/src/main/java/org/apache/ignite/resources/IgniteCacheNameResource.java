@@ -17,20 +17,22 @@
 
 package org.apache.ignite.resources;
 
+import org.apache.ignite.cache.*;
+
 import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of grid cache name.
- * Grid cache name is provided to cache via {@link org.apache.ignite.cache.CacheConfiguration#getName()} method.
+ * Grid cache name is provided to cache via {@link CacheConfiguration#getName()} method.
  * <p>
- * Cache name can be injected into components provided in the {@link org.apache.ignite.cache.CacheConfiguration},
+ * Cache name can be injected into components provided in the {@link CacheConfiguration},
  * if {@link IgniteCacheNameResource} annotation is used in another classes it is no-op.
  * <p>
  * Here is how injection would typically happen:
  * <pre name="code" class="java">
  * public class MyCacheStore implements GridCacheStore {
  *      ...
- *      &#64;GridCacheNameResource
+ *      &#64;IgniteCacheNameResource
  *      private String cacheName;
  *      ...
  *  }
@@ -41,7 +43,7 @@ import java.lang.annotation.*;
  *     ...
  *     private String cacheName;
  *     ...
- *     &#64;GridCacheNameResource
+ *     &#64;IgniteCacheNameResource
  *     public void setCacheName(String cacheName) {
  *          this.cacheName = cacheName;
  *     }
@@ -49,7 +51,7 @@ import java.lang.annotation.*;
  * }
  * </pre>
  * <p>
- * See {@link org.apache.ignite.cache.CacheConfiguration#getName()} for cache configuration details.
+ * See {@link CacheConfiguration#getName()} for cache configuration details.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

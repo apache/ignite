@@ -163,6 +163,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
 
     /**
      * @param cacheCtx  Cache context.
+     * @param readThrough Read through flag.
      * @param async if {@code True}, then loading will happen in a separate thread.
      * @param keys Keys.
      * @param c Closure.

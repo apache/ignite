@@ -29,7 +29,7 @@ import java.lang.annotation.*;
  *      ...
  *      // Inject single instance of 'myService'. If there is
  *      // more than one, first deployed instance will be picked.
- *      &#64;GridServiceResource(serviceName = "myService", proxyInterface = MyService.class)
+ *      &#64;IgniteServiceResource(serviceName = "myService", proxyInterface = MyService.class)
  *      private MyService svc;
  *      ...
  *  }
@@ -41,7 +41,7 @@ import java.lang.annotation.*;
  *     private MyService svc;
  *     ...
  *      // Inject all locally deployed instances of 'myService'.
- *     &#64;GridServiceResource(serviceName = "myService")
+ *     &#64;IgniteServiceResource(serviceName = "myService")
  *     public void setMyService(MyService svc) {
  *          this.svc = svc;
  *     }

@@ -132,13 +132,9 @@ public class GridH2Indexing implements GridQueryIndexing {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Node ID. */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
-
-    /** */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marshaller;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** */
     private GridUnsafeMemory offheap;
@@ -399,7 +395,8 @@ public class GridH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void remove(@Nullable String spaceName, Object key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
-            log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ']');
+            log.debug("Removing key from cache query index [locId=" + ignite.configuration().getNodeId() +
+                ", key=" + key + ']');
 
         localSpi.set(this);
 
@@ -1195,11 +1192,11 @@ public class GridH2Indexing implements GridQueryIndexing {
     protected JavaObjectSerializer h2Serializer() {
         return new JavaObjectSerializer() {
             @Override public byte[] serialize(Object obj) throws Exception {
-                return marshaller.marshal(obj);
+                return ignite.configuration().getMarshaller().marshal(obj);
             }
 
             @Override public Object deserialize(byte[] bytes) throws Exception {
-                return marshaller.unmarshal(bytes, null);
+                return ignite.configuration().getMarshaller().unmarshal(bytes, null);
             }
         };
     }
@@ -1637,7 +1634,8 @@ public class GridH2Indexing implements GridQueryIndexing {
 
             if (type().valueClass() == String.class) {
                 try {
-                    luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
+                    luceneIdx = new GridLuceneIndex(ignite.configuration().getMarshaller(),
+                        offheap, spaceName, type, true);
                 }
                 catch (IgniteCheckedException e1) {
                     throw new IgniteException(e1);
@@ -1650,7 +1648,8 @@ public class GridH2Indexing implements GridQueryIndexing {
 
                 if (idx.type() == FULLTEXT) {
                     try {
-                        luceneIdx = new GridLuceneIndex(marshaller, offheap, spaceName, type, true);
+                        luceneIdx = new GridLuceneIndex(ignite.configuration().getMarshaller(),
+                            offheap, spaceName, type, true);
                     }
                     catch (IgniteCheckedException e1) {
                         throw new IgniteException(e1);

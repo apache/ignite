@@ -17,7 +17,6 @@
 
 package org.gridgain.grid.util.lang;
 
-import org.gridgain.grid.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.gridgain.grid.util.*;
@@ -28,12 +27,12 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Convenient adapter for {@link GridMetadataAware}.
+ * Convenient adapter for working with metadata.
  * <h2 class="header">Thread Safety</h2>
  * This class provides necessary synchronization for thread-safe access.
  */
 @SuppressWarnings( {"SynchronizeOnNonFinalField"})
-public class GridMetadataAwareAdapter implements GridMetadataAware {
+public class GridMetadataAwareAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -80,8 +79,12 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
             return false;
     }
 
-    /** {@inheritDoc} */
-    @Override public void copyMeta(GridMetadataAware from) {
+    /**
+     * Copies all metadata from another instance.
+     *
+     * @param from Metadata aware instance to copy metadata from.
+     */
+    public void copyMeta(GridMetadataAwareAdapter from) {
         A.notNull(from, "from");
 
         synchronized (mux) {
@@ -93,8 +96,12 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void copyMeta(Map<String, ?> data) {
+    /**
+     * Copies all metadata from given map.
+     *
+     * @param data Map to copy metadata from.
+     */
+    public void copyMeta(Map<String, ?> data) {
         A.notNull(data, "data");
 
         synchronized (mux) {
@@ -104,9 +111,17 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Adds a new metadata.
+     *
+     * @param name Metadata name.
+     * @param val Metadata value.
+     * @param <V> Type of the value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V addMeta(String name, V val) {
+    @Nullable public <V> V addMeta(String name, V val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (mux) {
@@ -116,9 +131,15 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets metadata by name.
+     *
+     * @param name Metadata name.
+     * @param <V> Type of the value.
+     * @return Metadata value or {@code null}.
+     */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V meta(String name) {
+    @Nullable public <V> V meta(String name) {
         A.notNull(name, "name");
 
         synchronized (mux) {
@@ -126,10 +147,15 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Removes metadata by name.
+     *
+     * @param name Name of the metadata to remove.
+     * @param <V> Type of the value.
+     * @return Value of removed metadata or {@code null}.
+     */
     @SuppressWarnings({"unchecked"})
-    @Nullable
-    @Override public <V> V removeMeta(String name) {
+    @Nullable public <V> V removeMeta(String name) {
         A.notNull(name, "name");
 
         synchronized (mux) {
@@ -145,9 +171,16 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Removes metadata only if its current value is equal to {@code val} passed in.
+     *
+     * @param name Name of metadata attribute.
+     * @param val Value to compare.
+     * @param <V> Value type.
+     * @return {@code True} if value was removed, {@code false} otherwise.
+     */
     @SuppressWarnings({"unchecked"})
-    @Override public <V> boolean removeMeta(String name, V val) {
+    public <V> boolean removeMeta(String name, V val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (mux) {
@@ -166,9 +199,14 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets all metadata in this entry.
+     *
+     * @param <V> Type of the value.
+     * @return All metadata in this entry.
+     */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public <V> Map<String, V> allMeta() {
+    public <V> Map<String, V> allMeta() {
         synchronized (mux) {
             if (data == null)
                 return Collections.emptyMap();
@@ -182,13 +220,23 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean hasMeta(String name) {
+    /**
+     * Tests whether or not given metadata is set.
+     *
+     * @param name Name of the metadata to test.
+     * @return Whether or not given metadata is set.
+     */
+    public boolean hasMeta(String name) {
         return meta(name) != null;
     }
 
-    /** {@inheritDoc} */
-    @Override public <V> boolean hasMeta(String name, V val) {
+    /**
+     * Tests whether or not given metadata is set.
+     *
+     * @param name Name of the metadata to test.
+     * @return Whether or not given metadata is set.
+     */
+    public <V> boolean hasMeta(String name, V val) {
         A.notNull(name, "name");
 
         Object v = meta(name);
@@ -196,9 +244,16 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         return v != null && v.equals(val);
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param name Metadata name.
+     * @param val Value to add if it's not attached already.
+     * @param <V> Type of the value.
+     * @return {@code null} if new value was put, or current value if put didn't happen.
+     */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V putMetaIfAbsent(String name, V val) {
+    @Nullable public <V> V putMetaIfAbsent(String name, V val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (mux) {
@@ -211,9 +266,19 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param name Metadata name.
+     * @param c Factory closure to produce value to add if it's not attached already.
+     *      Not that unlike {@link #addMeta(String, Object)} method the factory closure will
+     *      not be called unless the value is required and therefore value will only be created
+     *      when it is actually needed.
+     * @param <V> Type of the value.
+     * @return {@code null} if new value was put, or current value if put didn't happen.
+     */
     @SuppressWarnings({"unchecked", "ClassReferencesSubclass"})
-    @Nullable @Override public <V> V putMetaIfAbsent(String name, Callable<V> c) {
+    @Nullable public <V> V putMetaIfAbsent(String name, Callable<V> c) {
         A.notNull(name, "name", c, "c");
 
         synchronized (mux) {
@@ -231,9 +296,18 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Adds given metadata value only if it was absent. Unlike
+     * {@link #putMetaIfAbsent(String, Callable)}, this method always returns
+     * the latest value and never previous one.
+     *
+     * @param name Metadata name.
+     * @param val Value to add if it's not attached already.
+     * @param <V> Type of the value.
+     * @return The value of the metadata after execution of this method.
+     */
     @SuppressWarnings({"unchecked"})
-    @Override public <V> V addMetaIfAbsent(String name, V val) {
+    public <V> V addMetaIfAbsent(String name, V val) {
         A.notNull(name, "name", val, "val");
 
         synchronized (mux) {
@@ -246,9 +320,20 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Adds given metadata value only if it was absent.
+     *
+     * @param name Metadata name.
+     * @param c Factory closure to produce value to add if it's not attached already.
+     *      Not that unlike {@link #addMeta(String, Object)} method the factory closure will
+     *      not be called unless the value is required and therefore value will only be created
+     *      when it is actually needed. If {@code null} and metadata value is missing - {@code null}
+     *      will be returned from this method.
+     * @param <V> Type of the value.
+     * @return The value of the metadata after execution of this method.
+     */
     @SuppressWarnings({"unchecked"})
-    @Nullable @Override public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
+    @Nullable public <V> V addMetaIfAbsent(String name, @Nullable Callable<V> c) {
         A.notNull(name, "name", c, "c");
 
         synchronized (mux) {
@@ -266,9 +351,17 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
         }
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Replaces given metadata with new {@code newVal} value only if its current value
+     * is equal to {@code curVal}. Otherwise, it is no-op.
+     *
+     * @param name Name of the metadata.
+     * @param curVal Current value to check.
+     * @param newVal New value.
+     * @return {@code true} if replacement occurred, {@code false} otherwise.
+     */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Override public <V> boolean replaceMeta(String name, V curVal, V newVal) {
+    public <V> boolean replaceMeta(String name, V curVal, V newVal) {
         A.notNull(name, "name", newVal, "newVal", curVal, "curVal");
 
         synchronized (mux) {
@@ -325,7 +418,7 @@ public class GridMetadataAwareAdapter implements GridMetadataAware {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "OverriddenMethodCallDuringObjectConstruction"})
-    @Override public Object clone() {
+    public Object clone() {
         try {
             GridMetadataAwareAdapter clone = (GridMetadataAwareAdapter)super.clone();
 

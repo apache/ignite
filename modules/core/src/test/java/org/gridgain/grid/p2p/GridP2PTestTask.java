@@ -37,9 +37,9 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
@@ -56,6 +56,8 @@ public class GridP2PTestTask extends ComputeTaskAdapter<Object, Integer> {
             assert false : "Failed to map task (unknown argument type) [type=" + arg.getClass() + ", val=" + arg + ']';
 
         Map<ComputeJob, ClusterNode> map = new HashMap<>(subgrid.size());
+
+        UUID nodeId = ignite != null ? ignite.configuration().getNodeId() : null;
 
         for (ClusterNode node : subgrid)
             if (!node.id().equals(nodeId))

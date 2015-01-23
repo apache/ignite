@@ -48,6 +48,20 @@ class GridCacheLoaderWriterStore<K, V> extends CacheStore<K, V> implements Lifec
         this.writer = writer;
     }
 
+    /**
+     * @return Cache loader.
+     */
+    CacheLoader<K, V> loader() {
+        return ldr;
+    }
+
+    /**
+     * @return Cache writer.
+     */
+    CacheWriter<K, V> writer() {
+        return writer;
+    }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (ldr instanceof LifecycleAware)

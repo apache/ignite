@@ -17,6 +17,7 @@
 
 package org.gridgain.grid.cache.affinity.fair;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -31,7 +32,7 @@ import java.util.*;
  * Fair affinity function which tries to ensure that all nodes get equal number of partitions with
  * minimum amount of reassignments between existing nodes.
  * <p>
- * Cache affinity can be configured for individual caches via {@link org.apache.ignite.cache.CacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
 @GridCacheCentralizedAffinityFunction
 public class GridCachePartitionFairAffinity implements GridCacheAffinityFunction {

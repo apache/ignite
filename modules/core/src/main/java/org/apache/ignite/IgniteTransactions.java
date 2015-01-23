@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.*;
@@ -28,7 +29,7 @@ import org.jetbrains.annotations.*;
 public interface IgniteTransactions {
     /**
      * Starts transaction with default isolation, concurrency, timeout, and invalidation policy.
-     * All defaults are set in {@link org.apache.ignite.cache.CacheConfiguration} at startup.
+     * All defaults are set in {@link CacheConfiguration} at startup.
      *
      * @return New transaction
      * @throws IllegalStateException If transaction is already started by this thread.

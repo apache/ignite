@@ -521,6 +521,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * @param keys Keys to get
+     * @param readThrough Read through flag.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
@@ -552,6 +553,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param reader Reader node ID.
      * @param msgId Message ID.
      * @param keys Keys to get.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param topVer Topology version.
      * @param subjId Subject ID.

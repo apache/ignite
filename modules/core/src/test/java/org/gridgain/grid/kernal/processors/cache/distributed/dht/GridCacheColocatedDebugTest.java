@@ -406,20 +406,17 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             CacheLock lock = g0.jcache(null).lock(key);
 
-            lock.enableAsync().lock();
-
-            IgniteFuture<Boolean> lockFut = lock.enableAsync().future();
+            assert !lock.tryLock();
 
             assert g0.cache(null).isLocked(key);
-            assert !lockFut.isDone() : "Key can not be locked by current thread.";
             assert !g0.cache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
 
             unlockLatch.countDown();
             unlockFut.get();
 
-            assert lockFut.get();
+            assert lock.tryLock();
 
-            g0.cache(null).unlock(key);
+            lock.unlock();
         }
         finally {
             stopAllGrids();

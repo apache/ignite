@@ -23,7 +23,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
 import org.gridgain.grid.kernal.*;
 import org.gridgain.grid.kernal.processors.interop.*;
 import org.gridgain.grid.util.*;
@@ -37,14 +36,15 @@ import javax.cache.integration.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-
 /**
  * Store manager.
  */
 public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
     private static final String SES_ATTR = "STORE_SES";
+
+    /** */
+    private static final String SES_FIELD_NAME = "ses";
 
     /** */
     private final CacheStore<K, Object> store;
@@ -95,7 +95,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (!sesHolders.containsKey(cfgStore)) {
                     sesHolder0 = new ThreadLocal<>();
 
-                    Field sesField = CacheStore.class.getDeclaredField("ses");
+                    Field sesField = CacheStore.class.getDeclaredField(SES_FIELD_NAME);
 
                     sesField.setAccessible(true);
 
@@ -244,7 +244,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @return Loaded value, possibly <tt>null</tt>.
      * @throws IgniteCheckedException If data loading failed.
      */
-    @Nullable public Object loadFromStore(@Nullable IgniteTx tx, K key, boolean convert) throws IgniteCheckedException {
+    @Nullable private Object loadFromStore(@Nullable IgniteTx tx,
+        K key,
+        boolean convert)
+        throws IgniteCheckedException {
         if (store != null) {
             if (key instanceof GridCacheInternal)
                 // Never load internal keys from store as they are never persisted.
@@ -312,16 +315,17 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /**
      * @param tx Cache transaction.
      * @param keys Cache keys.
-     * @param vis Closer to cache loaded elements.
+     * @param vis Closure to apply for loaded elements.
      * @throws IgniteCheckedException If data loading failed.
      */
     public void localStoreLoadAll(@Nullable IgniteTx tx,
         Collection<? extends K> keys,
-        final GridInClosure3<K, V, GridCacheVersion> vis) throws IgniteCheckedException {
+        final GridInClosure3<K, V, GridCacheVersion> vis)
+        throws IgniteCheckedException {
         assert store != null;
         assert locStore;
 
-        loadAllFromStore(null, keys, null, vis);
+        loadAllFromStore(tx, keys, null, vis);
     }
 
     /**
@@ -361,7 +365,8 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     private void loadAllFromStore(@Nullable IgniteTx tx,
         Collection<? extends K> keys,
         final @Nullable IgniteBiInClosure<K, V> vis,
-        final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis) throws IgniteCheckedException {
+        final @Nullable GridInClosure3<K, V, GridCacheVersion> verVis)
+        throws IgniteCheckedException {
         assert vis != null ^ verVis != null;
         assert verVis == null || locStore;
 
@@ -482,11 +487,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                     }
                 }, args);
             }
-            catch (Exception e) {
-                throw U.cast(e);
-            }
-            catch (AssertionError e) {
+            catch (CacheLoaderException e) {
                 throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheLoaderException(e));
             }
 
             if (log.isDebugEnabled())
@@ -534,8 +539,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (ClassCastException e) {
                 handleClassCastException(e);
             }
-            catch (Exception e) {
+            catch (CacheWriterException e) {
                 throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheWriterException(e));
             }
             finally {
                 sesHolder.set(null);
@@ -570,29 +578,10 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         }
         else {
             if (store != null) {
-                Map<K, IgniteBiTuple<V, GridCacheVersion>> map0;
-
-                if (convertPortable) {
-                    map0 = U.newHashMap(map.size());
-
-                    for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet()) {
-                        IgniteBiTuple<V, GridCacheVersion> t = e.getValue();
-
-                        map0.put((K)cctx.unwrapPortableIfNeeded(e.getKey(), false),
-                            F.t((V)cctx.unwrapPortableIfNeeded(t.get1(), false), t.get2()));
-                    }
-                }
-                else
-                    map0 = map;
+                EntriesView entries = new EntriesView(map);
 
                 if (log.isDebugEnabled())
-                    log.debug("Storing values in cache store [map=" + map0 + ']');
-
-                // TODO IGNITE-42.
-                Collection<Cache.Entry<? extends K, ?>> entries = new ArrayList<>(map.size());
-
-                for (Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e : map.entrySet())
-                    entries.add(new CacheEntryImpl<>(e.getKey(), locStore ? e.getValue() : e.getValue().get1()));
+                    log.debug("Storing values in cache store [entries=" + entries + ']');
 
                 initSession(tx);
 
@@ -612,6 +601,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         throw new CacheStorePartialUpdateException(keys, e);
                     }
 
+                    if (!(e instanceof CacheWriterException))
+                        e = new CacheWriterException(e);
+
                     throw new IgniteCheckedException(e);
                 }
                 finally {
@@ -619,7 +611,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 }
 
                 if (log.isDebugEnabled())
-                    log.debug("Stored value in cache store [map=" + map0 + ']');
+                    log.debug("Stored value in cache store [entries=" + entries + ']');
 
                 return true;
             }
@@ -654,8 +646,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             catch (ClassCastException e) {
                 handleClassCastException(e);
             }
-            catch (Exception e) {
+            catch (CacheWriterException e) {
                 throw new IgniteCheckedException(e);
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException(new CacheWriterException(e));
             }
             finally {
                 sesHolder.set(null);
@@ -706,6 +701,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 if (!keys0.isEmpty())
                     throw new CacheStorePartialUpdateException(keys0, e);
 
+                if (!(e instanceof CacheWriterException))
+                    e = new CacheWriterException(e);
+
                 throw new IgniteCheckedException(e);
             }
             finally {
@@ -752,7 +750,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         finally {
             sesHolder.set(null);
 
-            ((GridMetadataAware)tx).removeMeta(SES_ATTR);
+            tx.removeMeta(SES_ATTR);
         }
     }
 
@@ -779,12 +777,12 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
         SessionData ses;
 
         if (tx != null) {
-            ses = ((GridMetadataAware)tx).meta(SES_ATTR);
+            ses = tx.meta(SES_ATTR);
 
             if (ses == null) {
                 ses = new SessionData(tx, cctx.name());
 
-                ((GridMetadataAware)tx).addMeta(SES_ATTR, ses);
+                tx.addMeta(SES_ATTR, ses);
             }
         }
         else
@@ -874,6 +872,246 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.cacheName() : null;
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("unchecked")
+    private class EntriesView extends AbstractCollection<Cache.Entry<? extends K, ?>> {
+        /** */
+        private final Map<K, IgniteBiTuple<V, GridCacheVersion>> map;
+
+        /** */
+        private Set<K> rmvd;
+
+        /** */
+        private boolean cleared;
+
+        /**
+         * @param map Map.
+         */
+        private EntriesView(Map<K, IgniteBiTuple<V, GridCacheVersion>> map) {
+            assert map != null;
+
+            this.map = map;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            return cleared ? 0 : (map.size() - (rmvd != null ? rmvd.size() : 0));
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return cleared || !iterator().hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean contains(Object o) {
+            if (cleared || !(o instanceof Cache.Entry))
+                return false;
+
+            Cache.Entry<? extends K, ?> e = (Cache.Entry<? extends K, ?>)o;
+
+            return map.containsKey(e.getKey());
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<Cache.Entry<? extends K, ?>> iterator() {
+            if (cleared)
+                return F.emptyIterator();
+
+            final Iterator<Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>>> it0 = map.entrySet().iterator();
+
+            return new Iterator<Cache.Entry<? extends K, ?>>() {
+                /** */
+                private Cache.Entry<? extends K, ?> cur;
+
+                /** */
+                private Cache.Entry<? extends K, ?> next;
+
+                /**
+                 *
+                 */
+                {
+                    checkNext();
+                }
+
+                /**
+                 *
+                 */
+                private void checkNext() {
+                    while (it0.hasNext()) {
+                        Map.Entry<K, IgniteBiTuple<V, GridCacheVersion>> e = it0.next();
+
+                        K k = e.getKey();
+
+                        if (rmvd != null && rmvd.contains(k))
+                            continue;
+
+                        Object v = locStore ? e.getValue() : e.getValue().get1();
+
+                        if (convertPortable) {
+                            k = (K)cctx.unwrapPortableIfNeeded(k, false);
+                            v = cctx.unwrapPortableIfNeeded(v, false);
+                        }
+
+                        next = new CacheEntryImpl<>(k, v);
+
+                        break;
+                    }
+                }
+
+                @Override public boolean hasNext() {
+                    return next != null;
+                }
+
+                @Override public Cache.Entry<? extends K, ?> next() {
+                    if (next == null)
+                        throw new NoSuchElementException();
+
+                    cur = next;
+
+                    next = null;
+
+                    checkNext();
+
+                    return cur;
+                }
+
+                @Override public void remove() {
+                    if (cur == null)
+                        throw new IllegalStateException();
+
+                    addRemoved(cur);
+
+                    cur = null;
+                }
+            };
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean add(Cache.Entry<? extends K, ?> entry) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addAll(Collection<? extends Cache.Entry<? extends K, ?>> col) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(Object o) {
+            if (cleared || !(o instanceof Cache.Entry))
+                return false;
+
+            Cache.Entry<? extends K, ?> e = (Cache.Entry<? extends K, ?>)o;
+
+            if (rmvd != null && rmvd.contains(e.getKey()))
+                return false;
+
+            if (mapContains(e)) {
+                addRemoved(e);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsAll(Collection<?> col) {
+            if (cleared)
+                return false;
+
+            for (Object o : col) {
+                if (contains(o))
+                    return false;
+            }
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removeAll(Collection<?> col) {
+            if (cleared)
+                return false;
+
+            boolean modified = false;
+
+            for (Object o : col) {
+                 if (remove(o))
+                     modified = true;
+            }
+
+            return modified;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean retainAll(Collection<?> col) {
+            if (cleared)
+                return false;
+
+            boolean modified = false;
+
+            for (Cache.Entry<? extends K, ?> e : this) {
+                if (!col.contains(e)) {
+                    addRemoved(e);
+
+                    modified = true;
+                }
+            }
+
+            return modified;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear() {
+            cleared = true;
+        }
+
+        /**
+         * @param e Entry.
+         */
+        private void addRemoved(Cache.Entry<? extends K, ?> e) {
+            if (rmvd == null)
+                rmvd = new HashSet<>();
+
+            rmvd.add(e.getKey());
+        }
+
+        /**
+         * @param e Entry.
+         * @return {@code True} if original map contains entry.
+         */
+        private boolean mapContains(Cache.Entry<? extends K, ?> e) {
+            K key = (K)(convertPortable ? cctx.marshalToPortable(e.getKey()) : e.getKey());
+
+            return map.containsKey(key);
+
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            Iterator<Cache.Entry<? extends K, ?>> it = iterator();
+
+            if (!it.hasNext())
+                return "[]";
+
+            SB sb = new SB("[");
+
+            while (true) {
+                Cache.Entry<? extends K, ?> e = it.next();
+
+                sb.a(e.toString());
+
+                if (!it.hasNext())
+                    return sb.a(']').toString();
+
+                sb.a(", ");
+            }
         }
     }
 }

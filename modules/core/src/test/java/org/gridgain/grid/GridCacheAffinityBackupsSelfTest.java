@@ -39,6 +39,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     /** Affinity function. */
     private GridCacheAffinityFunction func;
 
+    /** */
     private int nodesCnt = 5;
 
     /** {@inheritDoc} */

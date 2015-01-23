@@ -18,6 +18,7 @@
 package org.gridgain.grid.cache.affinity.consistenthash;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -55,7 +56,7 @@ import java.util.concurrent.atomic.*;
  * </li>
  * </ul>
  * <p>
- * Cache affinity can be configured for individual caches via {@link org.apache.ignite.cache.CacheConfiguration#getAffinity()} method.
+ * Cache affinity can be configured for individual caches via {@link CacheConfiguration#getAffinity()} method.
  */
 public class GridCacheConsistentHashAffinityFunction implements GridCacheAffinityFunction {
     /** */

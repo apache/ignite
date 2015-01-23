@@ -184,8 +184,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         subjId = ctx.subjectIdPerCall(subjId, prj);
 
         return loadAsync(keys,
-            false,
             true,
+            false,
             forcePrimary,
             topVer,
             subjId,
@@ -226,6 +226,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
     /**
      * @param keys Keys to load.
+     * @param readThrough Read through flag.
      * @param reload Reload flag.
      * @param forcePrimary Force get from primary node flag.
      * @param topVer Topology version.

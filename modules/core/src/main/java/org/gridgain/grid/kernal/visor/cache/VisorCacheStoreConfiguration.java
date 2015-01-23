@@ -36,7 +36,7 @@ public class VisorCacheStoreConfiguration implements Serializable {
     private String store;
 
     /** Should value bytes be stored. */
-    private boolean valueBytes;
+    private boolean valBytes;
 
     /**
      * @param ccfg Cache configuration.
@@ -73,14 +73,14 @@ public class VisorCacheStoreConfiguration implements Serializable {
      * @return Should value bytes be stored.
      */
     public boolean valueBytes() {
-        return valueBytes;
+        return valBytes;
     }
 
     /**
      * @param valBytes New should value bytes be stored.
      */
     public void valueBytes(boolean valBytes) {
-        valueBytes = valBytes;
+        this.valBytes = valBytes;
     }
 
     /** {@inheritDoc} */

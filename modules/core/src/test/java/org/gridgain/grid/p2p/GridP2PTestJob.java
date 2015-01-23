@@ -37,9 +37,10 @@ public class GridP2PTestJob extends ComputeJobAdapter {
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Injected grid. */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
+
 
     /**
      * @param arg is argument of GridP2PTestJob.
@@ -57,7 +58,7 @@ public class GridP2PTestJob extends ComputeJobAdapter {
         if (log.isInfoEnabled())
             log.info("Executing job loaded by class loader: " + ldr.getClass().getName());
 
-        if (argument(0) != null && locNodeId.equals(taskSes.getTaskNodeId())) {
+        if (argument(0) != null && ignite.configuration().getNodeId().equals(taskSes.getTaskNodeId())) {
             log.error("Remote job is executed on local node.");
 
             return -1;

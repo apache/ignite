@@ -18,8 +18,11 @@
 package org.apache.ignite.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.gridgain.grid.cache.*;
+
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -66,7 +69,7 @@ import java.util.*;
  *  all nodes reply {@code 'OK'} (i.e. {@code Phase 1} completes successfully), a one-way' {@code 'COMMIT'}
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
- *  {@link org.apache.ignite.cache.CacheConfiguration#setWriteSynchronizationMode}
+ *  {@link CacheConfiguration#setWriteSynchronizationMode}
  *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
@@ -243,4 +246,33 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void rollback() throws IgniteCheckedException;
+
+    /**
+     * Removes metadata by name.
+     *
+     * @param name Name of the metadata to remove.
+     * @param <V> Type of the value.
+     * @return Value of removed metadata or {@code null}.
+     */
+    @Nullable public <V> V removeMeta(String name);
+
+    /**
+     * Gets metadata by name.
+     *
+     * @param name Metadata name.
+     * @param <V> Type of the value.
+     * @return Metadata value or {@code null}.
+     */
+    @Nullable public <V> V meta(String name);
+
+    /**
+     * Adds a new metadata.
+     *
+     * @param name Metadata name.
+     * @param val Metadata value.
+     * @param <V> Type of the value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
+    @Nullable public <V> V addMeta(String name, V val);
 }

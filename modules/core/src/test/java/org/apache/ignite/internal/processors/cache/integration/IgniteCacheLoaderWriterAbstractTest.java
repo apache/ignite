@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lifecycle.*;
+import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
 import javax.cache.*;
@@ -221,9 +223,32 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    class TestLoader implements CacheLoader<Object, Object> {
+    class TestLoader implements CacheLoader<Object, Object>, LifecycleAware {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private boolean startCalled;
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteCheckedException {
+            startCalled = true;
+
+            assertNotNull(ignite);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() throws IgniteCheckedException {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public Object load(Object key) {
+            assertTrue(startCalled);
+
+            assertNotNull(ignite);
+
             log.info("Load: " + key);
 
             ldrCallCnt.incrementAndGet();
@@ -233,6 +258,10 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public Map<Object, Object> loadAll(Iterable<?> keys) {
+            assertTrue(startCalled);
+
+            assertNotNull(ignite);
+
             log.info("LoadAll: " + keys);
 
             ldrCallCnt.incrementAndGet();
@@ -253,9 +282,32 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
     /**
      *
      */
-    class TestWriter implements CacheWriter<Integer, Integer> {
+    class TestWriter implements CacheWriter<Integer, Integer>, LifecycleAware {
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** */
+        private boolean startCalled;
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteCheckedException {
+            startCalled = true;
+
+            assertNotNull(ignite);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() throws IgniteCheckedException {
+            // No-op.
+        }
+
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+            assertTrue(startCalled);
+
+            assertNotNull(ignite);
+
             log.info("Write: " + e);
 
             writerCallCnt.incrementAndGet();
@@ -265,16 +317,35 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) {
+            assertTrue(startCalled);
+
+            assertNotNull(ignite);
+
             log.info("WriteAll: " + entries);
 
             writerCallCnt.incrementAndGet();
 
-            for (Cache.Entry<? extends Integer, ? extends Integer> e : entries)
+            Iterator<Cache.Entry<? extends Integer, ? extends Integer>> it = entries.iterator();
+
+            while (it.hasNext()) {
+                Cache.Entry<? extends Integer, ? extends Integer> e = it.next();
+
                 storeMap.put(e.getKey(), e.getValue());
+
+                it.remove();
+            }
+
+            assertTrue(entries.isEmpty());
+
+            assertEquals(0, entries.size());
         }
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
+            assertTrue(startCalled);
+
+            assertNotNull(ignite);
+
             log.info("Delete: " + key);
 
             writerCallCnt.incrementAndGet();
@@ -284,12 +355,23 @@ public abstract class IgniteCacheLoaderWriterAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public void deleteAll(Collection<?> keys) {
+            assertTrue(startCalled);
+
+            assertNotNull(ignite);
+
             log.info("DeleteAll: " + keys);
 
             writerCallCnt.incrementAndGet();
 
-            for (Object key : keys)
+            Iterator<?> it = keys.iterator();
+
+            while (it.hasNext()) {
+                Object key = it.next();
+
                 storeMap.remove(key);
+
+                it.remove();
+            }
         }
     }
 }

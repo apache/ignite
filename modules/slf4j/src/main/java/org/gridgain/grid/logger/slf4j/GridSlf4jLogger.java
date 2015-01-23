@@ -18,7 +18,6 @@
 package org.gridgain.grid.logger.slf4j;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.lang.*;
 import org.jetbrains.annotations.*;
 import org.slf4j.*;
 
@@ -37,7 +36,7 @@ import org.slf4j.*;
  * logger in your task/job code. See {@link org.apache.ignite.resources.IgniteLoggerResource} annotation about logger
  * injection.
  */
-public class GridSlf4jLogger extends GridMetadataAwareAdapter implements IgniteLogger {
+public class GridSlf4jLogger implements IgniteLogger {
     /** */
     private static final long serialVersionUID = 0L;
 

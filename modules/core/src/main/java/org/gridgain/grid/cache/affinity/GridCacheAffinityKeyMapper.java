@@ -17,6 +17,8 @@
 
 package org.gridgain.grid.cache.affinity;
 
+import org.apache.ignite.cache.*;
+
 import java.io.*;
 
 /**
@@ -35,7 +37,7 @@ import java.io.*;
  * than the cache key itself, whenever needed.
  * <p>
  * A custom (other than default) affinity mapper can be provided
- * via {@link org.apache.ignite.cache.CacheConfiguration#getAffinityMapper()} configuration property.
+ * via {@link CacheConfiguration#getAffinityMapper()} configuration property.
  * <p>
  * For more information on affinity mapping and examples refer to {@link GridCacheAffinityFunction} and
  * {@link GridCacheAffinityKeyMapped @GridCacheAffinityKeyMapped} documentation.

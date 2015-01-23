@@ -79,16 +79,11 @@ import java.util.*;
  * of any topology changes, including node crashes.
  * <h1 class="header">Resource Injection</h1>
  * All distributed services can be injected with
- * grid resources. Both, field and method based injections are supported. The following grid
+ * ignite resources. Both, field and method based injections are supported. The following ignite
  * resources can be injected:
  * <ul>
  * <li>{@link IgniteInstanceResource}</li>
  * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteHomeResource}</li>
- * <li>{@link IgniteExecutorServiceResource}</li>
- * <li>{@link IgniteLocalNodeIdResource}</li>
- * <li>{@link IgniteMBeanServerResource}</li>
- * <li>{@link IgniteMarshallerResource}</li>
  * <li>{@link IgniteSpringApplicationContextResource}</li>
  * <li>{@link IgniteSpringResource}</li>
  * </ul>
@@ -99,9 +94,9 @@ import java.util.*;
  * // Simple service implementation.
  * public class MyGridService implements GridService {
  *      ...
- *      // Example of grid resource injection. All resources are optional.
+ *      // Example of ignite resource injection. All resources are optional.
  *      // You should inject resources only as needed.
- *      &#64;GridInstanceResource
+ *      &#64;IgniteInstanceResource
  *      private Grid grid;
  *      ...
  *      &#64;Override public void cancel(GridServiceContext ctx) {
@@ -152,6 +147,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws IgniteCheckedException If failed to deploy service.
      */
+    @IgniteAsyncSupported
     public void deployClusterSingleton(String name, ManagedService svc) throws IgniteCheckedException;
 
     /**
@@ -169,6 +165,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @throws IgniteCheckedException If failed to deploy service.
      */
+    @IgniteAsyncSupported
     public void deployNodeSingleton(String name, ManagedService svc) throws IgniteCheckedException;
 
     /**
@@ -204,7 +201,11 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param affKey Affinity cache key.
      * @throws IgniteCheckedException If failed to deploy service.
      */
-    public void deployKeyAffinitySingleton(String name, ManagedService svc, @Nullable String cacheName, Object affKey)
+    @IgniteAsyncSupported
+    public void deployKeyAffinitySingleton(String name,
+        ManagedService svc,
+        @Nullable String cacheName,
+        Object affKey)
         throws IgniteCheckedException;
 
     /**
@@ -239,7 +240,12 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
      * @throws IgniteCheckedException If failed to deploy service.
      */
-    public void deployMultiple(String name, ManagedService svc, int totalCnt, int maxPerNodeCnt) throws IgniteCheckedException;
+    @IgniteAsyncSupported
+    public void deployMultiple(String name,
+        ManagedService svc,
+        int totalCnt,
+        int maxPerNodeCnt)
+        throws IgniteCheckedException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -279,6 +285,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param cfg Service configuration.
      * @throws IgniteCheckedException If failed to deploy service.
      */
+    @IgniteAsyncSupported
     public void deploy(ManagedServiceConfiguration cfg) throws IgniteCheckedException;
 
     /**
@@ -294,6 +301,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param name Name of service to cancel.
      * @throws IgniteCheckedException If failed to cancel service.
      */
+    @IgniteAsyncSupported
     public void cancel(String name) throws IgniteCheckedException;
 
     /**
@@ -306,6 +314,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @throws IgniteCheckedException If failed to cancel services.
      */
+    @IgniteAsyncSupported
     public void cancelAll() throws IgniteCheckedException;
 
     /**

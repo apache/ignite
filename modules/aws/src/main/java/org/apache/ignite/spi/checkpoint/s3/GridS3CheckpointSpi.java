@@ -22,7 +22,6 @@ import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.*;
 import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.gridgain.grid.*;
@@ -107,9 +106,9 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
+    /** Ignite instance. */
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Task that takes care about outdated files. */
     private GridS3TimeoutWorker timeoutWrk;
@@ -139,10 +138,6 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
     /** AWS Credentials. */
     @GridToStringExclude
     private AWSCredentials cred;
-
-    @IgniteNameResource
-    /** Grid name. */
-    private String gridName;
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -463,7 +458,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
             InputStream in = obj.getObjectContent();
 
             try {
-                return marsh.unmarshal(in, U.gridClassLoader());
+                return ignite.configuration().getMarshaller().unmarshal(in, U.gridClassLoader());
             }
             finally {
                 U.closeQuiet(in);
@@ -491,7 +486,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
         if (log.isDebugEnabled())
             log.debug("Writing data to S3 [bucket=" + bucketName + ", key=" + data.getKey() + ']');
 
-        byte[] buf = marsh.marshal(data);
+        byte[] buf = ignite.configuration().getMarshaller().marshal(data);
 
         ObjectMetadata meta = new ObjectMetadata();
 
@@ -567,7 +562,7 @@ public class GridS3CheckpointSpi extends IgniteSpiAdapter implements CheckpointS
          * Constructor.
          */
         GridS3TimeoutWorker() {
-            super(gridName, "grid-s3-checkpoint-worker", log);
+            super(ignite.name(), "grid-s3-checkpoint-worker", log);
         }
 
         /** {@inheritDoc} */

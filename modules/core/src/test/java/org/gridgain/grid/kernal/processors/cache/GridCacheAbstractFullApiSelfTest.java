@@ -800,21 +800,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkTransform(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        List<String> keys = Arrays.asList("key1", "key2", "key3");
-
-        String key1 = keys.get(0);
-        String key2 = keys.get(1);
-        String key3 = keys.get(2);
-
-        cache.put(key2, 1);
-        cache.put(key3, 3);
+        cache.put("key2", 1);
+        cache.put("key3", 3);
 
         IgniteTx tx = txEnabled() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
-            assertEquals("null", cache.invoke(key1, INCR_PROCESSOR));
-            assertEquals("1", cache.invoke(key2, INCR_PROCESSOR));
-            assertEquals("3", cache.invoke(key3, RMV_PROCESSOR));
+            assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
+            assertEquals("1", cache.invoke("key2", INCR_PROCESSOR));
+            assertEquals("3", cache.invoke("key3", RMV_PROCESSOR));
 
             if (tx != null)
                 tx.commit();
@@ -829,27 +823,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.close();
         }
 
-        assertEquals((Integer)1, cache.get(key1));
-        assertEquals((Integer)2, cache.get(key2));
-        assertNull(cache.get(key3));
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertNull(cache.get("key3"));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull("Failed for cache: " + i, cache(i).peek(key3));
+            assertNull("Failed for cache: " + i, cache(i).peek("key3"));
 
-        cache.remove(key1);
-        cache.put(key2, 1);
-        cache.put(key3, 3);
+        cache.remove("key1");
+        cache.put("key2", 1);
+        cache.put("key3", 3);
 
-        assertEquals("null", cache.invoke(key1, INCR_PROCESSOR));
-        assertEquals("1", cache.invoke(key2, INCR_PROCESSOR));
-        assertEquals("3", cache.invoke(key3, RMV_PROCESSOR));
+        assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
+        assertEquals("1", cache.invoke("key2", INCR_PROCESSOR));
+        assertEquals("3", cache.invoke("key3", RMV_PROCESSOR));
 
-        assertEquals((Integer)1, cache.get(key1));
-        assertEquals((Integer)2, cache.get(key2));
-        assertNull(cache.get(key3));
+        assertEquals((Integer)1, cache.get("key1"));
+        assertEquals((Integer)2, cache.get("key2"));
+        assertNull(cache.get("key3"));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull(cache(i).peek(key3));
+            assertNull(cache(i).peek("key3"));
     }
 
     /**
@@ -3361,8 +3355,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert !lock.isLocked();
 
-            lock.enableAsync().lock();
-            lock.enableAsync().future().get();
+            lock.lock();
 
             assert lock.isLocked();
 
@@ -3476,8 +3469,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert !cache.isLocked("key");
 
-            lock.enableAsync().tryLock(1000, MILLISECONDS);
-            lock.enableAsync().future().get();
+            lock.tryLock(1000, MILLISECONDS);
 
             assert cache.isLocked("key");
             assert cache.isLockedByThread("key");
@@ -3488,23 +3480,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    lock.enableAsync().tryLock(1000, MILLISECONDS);
-
-                    IgniteFuture<Boolean> f = lock.enableAsync().future();
-
-                    try {
-                        f.get(100);
-
-                        fail();
-                    } catch (IgniteFutureTimeoutException ex) {
-                        info("Caught expected exception: " + ex);
-                    }
+                    assert !lock.tryLock();
 
                     latch.countDown();
 
                     try {
-                        assert f.get();
-                    } finally {
+                        assert lock.tryLock(2000, MILLISECONDS);
+                    }
+                    finally {
                         lock.unlock();
                     }
 

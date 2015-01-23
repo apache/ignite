@@ -32,8 +32,8 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *      ...
- *      &#64;GridJobContextResource
- *      private GridComputeJobContext jobCtx;
+ *      &#64;IgniteJobContextResource
+ *      private ComputeJobContext jobCtx;
  *      ...
  *  }
  * </pre>
@@ -41,10 +41,10 @@ import java.lang.annotation.*;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     private GridComputeJobContext jobCtx;
+ *     private ComputeJobContext jobCtx;
  *     ...
- *     &#64;GridJobContextResource
- *     public void setJobContext(GridComputeJobContext jobCtx) {
+ *     &#64;IgniteJobContextResource
+ *     public void setJobContext(ComputeJobContext jobCtx) {
  *          this.jobCtx = jobCtx;
  *     }
  *     ...

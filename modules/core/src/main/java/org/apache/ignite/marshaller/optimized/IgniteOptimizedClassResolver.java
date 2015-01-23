@@ -269,7 +269,7 @@ class IgniteOptimizedClassResolver {
                 }
                 catch (ArrayIndexOutOfBoundsException e) {
                     throw new ClassNotFoundException("Failed to find optimized class ID " +
-                        "(is same GridGain version running on all nodes?): " + ggId, e);
+                        "(is same Ignite version running on all nodes?): " + ggId, e);
                 }
 
                 name = ggT.get1();

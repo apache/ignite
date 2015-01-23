@@ -18,8 +18,9 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.portables.PortableObject;
 import org.apache.ignite.spi.indexing.*;
 import org.gridgain.grid.cache.*;
@@ -33,7 +34,6 @@ import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
-import javax.cache.integration.*;
 import java.util.*;
 
 /**
@@ -160,6 +160,9 @@ public class CacheConfiguration extends MutableConfiguration {
     /** Default maximum number of query iterators that can be stored. */
     public static final int DFLT_MAX_QUERY_ITERATOR_CNT = 1024;
 
+    /** Default value for load previous value flag. */
+    public static final boolean DFLT_LOAD_PREV_VAL = false;
+
     /** Default continuous query buffers queue size. */
     @SuppressWarnings("UnusedDeclaration")
     @Deprecated
@@ -172,6 +175,9 @@ public class CacheConfiguration extends MutableConfiguration {
     @SuppressWarnings("UnusedDeclaration")
     @Deprecated
     public static final int DFLT_CONT_QUERY_MAX_BUF_SIZE = 1024;
+
+    /** Default value for 'readFromBackup' flag. */
+    public static final boolean DFLT_READ_FROM_BACKUP = true;
 
     /** Cache name. */
     private String name;
@@ -240,7 +246,7 @@ public class CacheConfiguration extends MutableConfiguration {
     private Factory storeFactory;
 
     /** */
-    private boolean loadPrevVal;
+    private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
 
     /** Node group resolver. */
     private GridCacheAffinityFunction aff;
@@ -335,6 +341,12 @@ public class CacheConfiguration extends MutableConfiguration {
     /** Query configuration. */
     private GridCacheQueryConfiguration qryCfg;
 
+    /**
+     * Flag indicating whether data can be read from backup.
+     * If {@code false} always get data from primary node (never from backup).
+     */
+    private boolean readFromBackup = DFLT_READ_FROM_BACKUP;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -404,6 +416,7 @@ public class CacheConfiguration extends MutableConfiguration {
         preloadThrottle = cc.getPreloadThrottle();
         qryCfg = cc.getQueryConfiguration();
         qryIdxEnabled = cc.isQueryIndexEnabled();
+        readFromBackup = cc.isReadFromBackup();
         seqReserveSize = cc.getAtomicSequenceReserveSize();
         startSize = cc.getStartSize();
         storeFactory = cc.getCacheStoreFactory();
@@ -794,14 +807,41 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * @return
+     * Gets flag indicating whether value should be loaded from store if it is not in the cache
+     * for following cache operations:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     *
+     * @return Load previous value flag.
      */
     public boolean isLoadPreviousValue() {
         return loadPrevVal;
     }
 
     /**
-     * @param loadPrevVal
+     * Sets flag indicating whether value should be loaded from store if it is not in the cache
+     * for following cache operations:
+     * <ul>
+     *     <li>{@link IgniteCache#putIfAbsent(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#replace(Object, Object, Object)}</li>
+     *     <li>{@link IgniteCache#remove(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPut(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndRemove(Object)}</li>
+     *     <li>{@link IgniteCache#getAndReplace(Object, Object)}</li>
+     *     <li>{@link IgniteCache#getAndPutIfAbsent(Object, Object)}</li>
+     *</ul>
+     * When not set, default value is {@link #DFLT_LOAD_PREV_VAL}.
+     *
+     * @param loadPrevVal Load previous value flag.
      */
     public void setLoadPreviousValue(boolean loadPrevVal) {
         this.loadPrevVal = loadPrevVal;
@@ -1732,6 +1772,28 @@ public class CacheConfiguration extends MutableConfiguration {
      */
     public void setQueryConfiguration(GridCacheQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * Gets flag indicating whether data can be read from backup.
+     * If {@code false} always get data from primary node (never from backup).
+     * <p>
+     * Default value is defined by {@link #DFLT_READ_FROM_BACKUP}.
+     *
+     * @return {@code true} if data can be read from backup node or {@code false} if data always
+     *      should be read from primary node and never from backup.
+     */
+    public boolean isReadFromBackup() {
+        return readFromBackup;
+    }
+
+    /**
+     * Sets read from backup flag.
+     *
+     * @param readFromBackup {@code true} to allow reads from backups.
+     */
+    public void setReadFromBackup(boolean readFromBackup) {
+        this.readFromBackup = readFromBackup;
     }
 
     /** {@inheritDoc} */
