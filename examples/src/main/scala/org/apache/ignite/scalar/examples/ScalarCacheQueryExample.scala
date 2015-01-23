@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.cache.{CacheMode, CacheFlag, CacheProjection}
 import org.apache.ignite.cache.affinity.CacheAffinityKey
 import org.gridgain.scalar._
 import scalar._
-import org.apache.ignite._
+import org.apache.ignite.Ignite
 import CacheMode._
 import java.util._
 

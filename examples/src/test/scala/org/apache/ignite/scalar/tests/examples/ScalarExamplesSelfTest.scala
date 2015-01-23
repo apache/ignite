@@ -17,6 +17,7 @@
 
 package org.apache.ignite.scalar.tests.examples
 
+import org.apache.ignite.scalar.examples.{ScalarCacheQueryExample, ScalarCacheAffinitySimpleExample}
 import org.gridgain.scalar.examples._
 import org.gridgain.scalar.scalar
 import org.scalatest.junit.JUnitSuiteLike

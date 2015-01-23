@@ -43,7 +43,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private val NAME = "partitioned"
 
     /** Type alias. */
-    type GridCache = GridCache[Int, String]
+    type Cache = GridCache[Int, String]
 
     /*
      * Note that in case of `LOCAL` configuration,
@@ -65,7 +65,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      *
      * @param c Cache to use.
      */
-    private def visit(c: GridCache) {
+    private def visit(c: Cache) {
         (0 until KEY_CNT).foreach(i =>
             grid$.compute().affinityRun(NAME, i,
                 () => println("Co-located [key= " + i + ", value=" + c.peek(i) + ']'))
@@ -77,7 +77,7 @@ object ScalarCacheAffinitySimpleExample extends App {
      *
      * @param c Cache to populate.
      */
-    private def populate(c: GridCache) {
+    private def populate(c: Cache) {
         (0 until KEY_CNT).foreach(i => c += (i -> i.toString))
     }
 }
