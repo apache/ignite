@@ -116,7 +116,7 @@
                                       todir="${basedir}/target/classes/lib"/>
 
                                 <taskdef name="gar"
-                                    classname="org.gridgain.grid.util.antgar.GridDeploymentGarAntTask"/>
+                                    classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
 
                                 <gar destfile="${basedir}/deploy/uri.gar"
                                      basedir="${basedir}/target/classes"/>

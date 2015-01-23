@@ -21,7 +21,6 @@ import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 
 import javax.cache.*;
 import javax.cache.spi.*;
@@ -37,18 +36,18 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
-        return GridCacheAtomicityMode.TRANSACTIONAL;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */

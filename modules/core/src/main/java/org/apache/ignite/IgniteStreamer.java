@@ -18,7 +18,6 @@
 package org.apache.ignite;
 
 import org.apache.ignite.streamer.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.integration.*;
@@ -132,7 +131,7 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
     /**
      * Loads all values from underlying persistent storage. Note that keys are not
      * passed, so it is up to implementation to figure out what to load. This method
-     * is called whenever {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)}
+     * is called whenever {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)}
      * method is invoked which is usually to preload the cache from persistent storage.
      * <p>
      * This method is optional, and cache implementation does not depend on this
@@ -145,7 +144,7 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
      *
      * @param clo Closure for loaded values.
      * @param args Arguments passes into
-     *      {@link GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
+     *      {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method.
      * @throws CacheLoaderException If loading failed.
      */
     public abstract void loadCache(IgniteBiInClosure<K, V> clo, @Nullable Object... args) throws CacheLoaderException;

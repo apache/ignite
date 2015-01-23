@@ -22,7 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 /**
  * Tests for "noop" realization of {@link org.apache.ignite.spi.swapspace.SwapSpaceSpi}.

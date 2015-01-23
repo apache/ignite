@@ -17,16 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.expiry;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.cache.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicWriteOrderMode.*;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 
 /**
  *
  */
 public class IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest extends IgniteCacheAtomicExpiryPolicyTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return PRIMARY;
     }
 }

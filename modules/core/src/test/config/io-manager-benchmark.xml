@@ -39,7 +39,7 @@
 
                 <property name="classNames">
                     <list>
-                        <value>org.gridgain.loadtests.communication.GridTestMessage</value>
+                        <value>org.apache.ignite.loadtests.communication.GridTestMessage</value>
                     </list>
                 </property>
             </bean>

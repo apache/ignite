@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.multicast;
 
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.gridgain.testframework.*;
+import org.apache.ignite.testframework.*;
 
 import java.net.*;
 import java.util.*;

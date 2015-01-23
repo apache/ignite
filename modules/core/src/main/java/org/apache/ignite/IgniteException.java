@@ -17,10 +17,10 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import static org.gridgain.grid.util.GridUtils.*;
+import static org.apache.ignite.internal.util.GridUtils.*;
 
 /**
  * General grid exception. This exception is used to indicate any error condition

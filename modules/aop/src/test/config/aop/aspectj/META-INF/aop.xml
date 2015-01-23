@@ -162,9 +162,9 @@
 
     <aspects>
         <!-- Declare @Gridify aspect to the weaver. -->
-        <aspect name="org.gridgain.grid.compute.gridify.aop.aspectj.GridifyAspectJAspect"/>
-        <aspect name="org.gridgain.grid.compute.gridify.aop.aspectj.GridifySetToValueAspectJAspect"/>
-        <aspect name="org.gridgain.grid.compute.gridify.aop.aspectj.GridifySetToSetAspectJAspect"/>
+        <aspect name="org.apache.ignite.compute.gridify.aop.aspectj.GridifyAspectJAspect"/>
+        <aspect name="org.apache.ignite.compute.gridify.aop.aspectj.GridifySetToValueAspectJAspect"/>
+        <aspect name="org.apache.ignite.compute.gridify.aop.aspectj.GridifySetToSetAspectJAspect"/>
 
         <!-- Declare folder to search for aspects. -->
         <include within="org.gridgain.grid.compute.gridify.aop.aspectj.*"/>
