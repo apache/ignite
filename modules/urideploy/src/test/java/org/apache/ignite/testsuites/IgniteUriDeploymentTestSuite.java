@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.*;
@@ -28,13 +28,13 @@ import org.apache.ignite.spi.deployment.uri.scanners.http.*;
 /**
  * Tests against {@link GridUriDeploymentSpi}.
  */
-public class GridUriDeploymentTestSuite {
+public class IgniteUriDeploymentTestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("GridUriDeploymentSpi Test Suite");
+        TestSuite suite = new TestSuite("URI Deployment Spi Test Suite");
 
         suite.addTest(new TestSuite(GridUriDeploymentConfigSelfTest.class));
         suite.addTest(new TestSuite(GridUriDeploymentSimpleSelfTest.class));
@@ -49,7 +49,7 @@ public class GridUriDeploymentTestSuite {
         suite.addTest(new TestSuite(GridHttpDeploymentSelfTest.class));
 
         // GAR Ant task tests.
-        suite.addTest(GridToolsSelfTestSuite.suite());
+        suite.addTest(IgniteToolsSelfTestSuite.suite());
 
         suite.addTestSuite(GridTaskUriDeploymentDeadlockSelfTest.class);
         suite.addTest(new TestSuite(GridP2PDisabledSelfTest.class));

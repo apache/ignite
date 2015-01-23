@@ -20,7 +20,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.s3;
 import com.amazonaws.auth.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testsuites.bamboo.*;
+import org.apache.ignite.testsuites.*;
 
 import java.net.*;
 import java.util.*;
@@ -47,8 +47,8 @@ public class GridTcpDiscoveryS3IpFinderSelfTest
 
         assert finder.isShared() : "Ip finder should be shared by default.";
 
-        finder.setAwsCredentials(new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey()));
+        finder.setAwsCredentials(new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
+            IgniteS3TestSuite.getSecretKey()));
 
         // Bucket name should be unique for the host to parallel test run on one bucket.
         finder.setBucketName("ip-finder-test-bucket-" + InetAddress.getLocalHost().getAddress()[3]);

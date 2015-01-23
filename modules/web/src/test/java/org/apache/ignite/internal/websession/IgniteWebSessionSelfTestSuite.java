@@ -23,7 +23,7 @@ import junit.framework.*;
  * Test suite for web sessions caching functionality.
  */
 @SuppressWarnings("PublicInnerClass")
-public class GridWebSessionSelfTestSuite extends TestSuite {
+public class IgniteWebSessionSelfTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

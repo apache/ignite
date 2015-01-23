@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.commons.compress.archivers.tar.*;
@@ -40,7 +40,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
 /**
  * Test suite for Hadoop Map Reduce engine.
  */
-public class GridHadoopTestSuite extends TestSuite {
+public class IgniteHadoopTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -51,7 +51,7 @@ public class GridHadoopTestSuite extends TestSuite {
 
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        TestSuite suite = new TestSuite("Gridgain Hadoop MR Test Suite");
+        TestSuite suite = new TestSuite("Ignite Hadoop MR Test Suite");
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalPrimarySelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopFileSystemLoopbackExternalSecondarySelfTest.class.getName())));
@@ -76,7 +76,7 @@ public class GridHadoopTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopDualSyncSelfTest.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoopDualAsyncSelfTest.class.getName())));
 
-        suite.addTest(GridGgfsEventsTestSuite.suiteNoarchOnly());
+        suite.addTest(IgniteFsEventsTestSuite.suiteNoarchOnly());
 
         suite.addTest(new TestSuite(ldr.loadClass(GridHadoopFileSystemsTest.class.getName())));
 

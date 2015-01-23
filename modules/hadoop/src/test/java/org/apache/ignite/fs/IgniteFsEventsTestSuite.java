@@ -34,7 +34,7 @@ import static org.apache.ignite.fs.IgniteFsMode.*;
  * Test suite for GGFS event tests.
  */
 @SuppressWarnings("PublicInnerClass")
-public class GridGgfsEventsTestSuite extends TestSuite {
+public class IgniteFsEventsTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -42,7 +42,7 @@ public class GridGgfsEventsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
 
-        TestSuite suite = new TestSuite("Gridgain GGFS Events Test Suite");
+        TestSuite suite = new TestSuite("Ignite FS Events Test Suite");
 
         suite.addTest(new TestSuite(ldr.loadClass(ShmemPrivate.class.getName())));
         suite.addTest(new TestSuite(ldr.loadClass(ShmemDualSync.class.getName())));

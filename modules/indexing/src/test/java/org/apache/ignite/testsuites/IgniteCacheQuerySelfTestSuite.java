@@ -30,13 +30,13 @@ import org.apache.ignite.internal.processors.cache.query.reducefields.*;
 /**
  * Test suite for cache queries.
  */
-public class GridCacheQuerySelfTestSuite extends TestSuite {
+public class IgniteCacheQuerySelfTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Cache Queries Test Suite");
+        TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite");
 
         // Queries tests.
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);

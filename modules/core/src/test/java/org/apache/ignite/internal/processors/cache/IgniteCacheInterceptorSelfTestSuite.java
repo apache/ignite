@@ -22,13 +22,13 @@ import junit.framework.*;
 /**
  * Cache interceptor suite.
  */
-public class GridCacheInterceptorSelfTestSuite extends TestSuite {
+public class IgniteCacheInterceptorSelfTestSuite extends TestSuite {
     /**
      * @return Cache API test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain CacheInterceptor Test Suite");
+        TestSuite suite = new TestSuite("CacheInterceptor Test Suite");
 
         suite.addTestSuite(GridCacheInterceptorLocalSelfTest.class);
         suite.addTestSuite(GridCacheInterceptorLocalWithStoreSelfTest.class);

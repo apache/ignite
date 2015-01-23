@@ -28,14 +28,14 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  * <p>
  * Contains only Spring gridify examples tests.
  */
-public class GridExamplesSelfTestSuite extends TestSuite {
+public class IgniteExamplesSelfTestSuite extends TestSuite {
     /**
      * @return Suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
         System.setProperty(GG_OVERRIDE_MCAST_GRP,
-            GridTestUtils.getNextMulticastGroup(GridExamplesSelfTestSuite.class));
+            GridTestUtils.getNextMulticastGroup(IgniteExamplesSelfTestSuite.class));
 
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 

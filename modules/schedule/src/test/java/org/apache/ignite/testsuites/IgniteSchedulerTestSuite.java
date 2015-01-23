@@ -15,26 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.schedule.*;
 
 /**
- * JTA integration tests.
+ * Scheduler tests.
  */
-public class GridJtaTestSuite extends TestSuite {
+public class IgniteSchedulerTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("JTA Integration Test Suite");
+        TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
 
-        suite.addTestSuite(GridCacheJtaSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedJtaSelfTest.class);
-        suite.addTestSuite(GridTmLookupLifecycleAwareSelfTest.class);
-        suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
+        suite.addTestSuite(GridScheduleSelfTest.class);
 
         return suite;
     }

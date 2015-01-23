@@ -15,23 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.jdbc.suite;
 
 import junit.framework.*;
-import org.apache.ignite.internal.processors.schedule.*;
+import org.apache.ignite.jdbc.*;
 
 /**
- * Scheduler tests.
+ * JDBC driver test suite.
  */
-public class GridSchedulerTestSuite extends TestSuite {
+public class IgniteJdbcDriverTestSuite extends TestSuite {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @return JDBC Driver Test Suite.
+     * @throws Exception In case of error.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Grid Scheduler Test Suite");
+        TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
-        suite.addTestSuite(GridScheduleSelfTest.class);
+        suite.addTest(new TestSuite(GridJdbcConnectionSelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcStatementSelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcPreparedStatementSelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcResultSetSelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcComplexQuerySelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcMetadataSelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcEmptyCacheSelfTest.class));
+        suite.addTest(new TestSuite(GridJdbcLocalCachesSelfTest.class));
 
         return suite;
     }

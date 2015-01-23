@@ -29,12 +29,12 @@ import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 /**
  * Test suite includes all test that concern REST processors.
  */
-public class GridClientTestSuite extends TestSuite {
+public class IgniteClientTestSuite extends TestSuite {
     /**
      * @return Suite that contains all tests for REST.
      */
     public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Gridgain Clients Test Suite");
+        TestSuite suite = new TestSuite("Ignite Clients Test Suite");
 
         suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
 

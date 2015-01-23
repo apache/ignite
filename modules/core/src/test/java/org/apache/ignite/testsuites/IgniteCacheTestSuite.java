@@ -324,7 +324,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTest(IgniteCacheTxRecoverySelfTestSuite.suite());
 
         // Cache interceptor tests.
-        suite.addTest(GridCacheInterceptorSelfTestSuite.suite());
+        suite.addTest(IgniteCacheInterceptorSelfTestSuite.suite());
 
         // Multi node update.
         suite.addTestSuite(GridCacheMultinodeUpdateSelfTest.class);

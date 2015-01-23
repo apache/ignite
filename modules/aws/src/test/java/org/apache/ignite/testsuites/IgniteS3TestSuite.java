@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.spi.checkpoint.s3.*;
@@ -24,7 +24,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.*;
 /**
  * S3 integration tests.
  */
-public class GridS3TestSuite extends TestSuite {
+public class IgniteS3TestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.

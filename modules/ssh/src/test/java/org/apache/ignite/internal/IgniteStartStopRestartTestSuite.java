@@ -15,26 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.client.router.testsuites;
+package org.apache.ignite.internal;
 
 import junit.framework.*;
-import org.apache.ignite.client.router.*;
 
 /**
- * Test suite for router tests.
+ * Start nodes tests.
  */
-public class GridRouterTestSuite extends TestSuite {
+public class IgniteStartStopRestartTestSuite {
     /**
-     * @return Suite that contains all router tests.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() {
-        TestSuite suite = new TestSuite("Gridgain Router Test Suite");
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Start Nodes Test Suite");
 
-        suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
-        suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
-        suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
-//        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
+        suite.addTestSuite(GridNodeStartUtilsSelfTest.class);
+
+        suite.addTestSuite(GridProjectionStartStopRestartSelfTest.class);
 
         return suite;
     }

@@ -18,23 +18,20 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.logger.jcl.*;
 
 /**
- * Gridgain resource injection test Suite.
+ * Commons logging test.
  */
-@SuppressWarnings({"ProhibitedExceptionDeclared"})
-public class GridResourceSelfTestSuite extends TestSuite {
+public class IgniteJclTestSuite extends TestSuite {
     /**
-     * @return Resource injection test suite.
-     * @throws Exception If failed.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Resource Injection Test Suite");
+        TestSuite suite = new TestSuite("Commons Logging Test Suite");
 
-        suite.addTest(new TestSuite(GridResourceProcessorSelfTest.class));
-        suite.addTest(new TestSuite(GridLoggerInjectionSelfTest.class));
-        suite.addTest(new TestSuite(GridServiceInjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridJclLoggerTest.class));
 
         return suite;
     }

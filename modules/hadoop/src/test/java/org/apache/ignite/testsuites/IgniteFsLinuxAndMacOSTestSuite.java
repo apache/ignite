@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 
-import static org.apache.ignite.testsuites.bamboo.GridHadoopTestSuite.*;
+import static org.apache.ignite.testsuites.IgniteHadoopTestSuite.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.
  * Contains tests which works on Linux and Mac OS platform only.
  */
-public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
+public class IgniteFsLinuxAndMacOSTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -56,7 +56,7 @@ public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsHadoop20FileSystemShmemPrimarySelfTest.class.getName())));
 
-        suite.addTest(GridGgfsEventsTestSuite.suite());
+        suite.addTest(IgniteFsEventsTestSuite.suite());
 
         return suite;
     }

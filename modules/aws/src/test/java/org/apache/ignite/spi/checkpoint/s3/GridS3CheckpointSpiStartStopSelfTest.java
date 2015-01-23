@@ -19,7 +19,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 
 import com.amazonaws.auth.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.testsuites.bamboo.*;
+import org.apache.ignite.testsuites.*;
 import org.apache.ignite.testframework.junits.spi.*;
 
 /**
@@ -29,8 +29,8 @@ import org.apache.ignite.testframework.junits.spi.*;
 public class GridS3CheckpointSpiStartStopSelfTest extends GridSpiStartStopAbstractTest<GridS3CheckpointSpi> {
     /** {@inheritDoc} */
     @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
+            IgniteS3TestSuite.getSecretKey());
 
         spi.setAwsCredentials(cred);
 

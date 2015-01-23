@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.*;
@@ -26,7 +26,7 @@ import org.apache.ignite.testsuites.*;
 /**
  * Spring tests.
  */
-public class GridSpringTestSuite extends TestSuite {
+public class IgniteSpringTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -37,7 +37,7 @@ public class GridSpringTestSuite extends TestSuite {
         suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
         suite.addTestSuite(GridFactorySelfTest.class);
 
-        suite.addTest(GridResourceSelfTestSuite.suite());
+        suite.addTest(IgniteResourceSelfTestSuite.suite());
 
         // Tests moved to this suite since they require Spring functionality.
         suite.addTest(new TestSuite(GridP2PUserVersionChangeSelfTest.class));

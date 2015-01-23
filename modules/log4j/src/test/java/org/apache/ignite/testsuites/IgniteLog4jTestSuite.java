@@ -15,30 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.jdbc.suite;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.jdbc.*;
+import org.apache.ignite.logger.log4j.*;
 
 /**
- * JDBC driver test suite.
+ * Log4j logging tests.
  */
-public class GridJdbcDriverTestSuite extends TestSuite {
+public class IgniteLog4jTestSuite extends TestSuite {
     /**
-     * @return JDBC Driver Test Suite.
-     * @throws Exception In case of error.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain JDBC Driver Test Suite");
+        TestSuite suite = new TestSuite("Log4j Logging Test Suite");
 
-        suite.addTest(new TestSuite(GridJdbcConnectionSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcStatementSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcPreparedStatementSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcResultSetSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcComplexQuerySelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcMetadataSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcEmptyCacheSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcLocalCachesSelfTest.class));
+        suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
+        suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
+        suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
 
         return suite;
     }

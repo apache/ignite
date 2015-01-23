@@ -24,7 +24,7 @@ import com.amazonaws.services.s3.model.*;
 import org.apache.ignite.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.checkpoint.*;
-import org.apache.ignite.testsuites.bamboo.*;
+import org.apache.ignite.testsuites.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
@@ -42,8 +42,8 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
 
     /** {@inheritDoc} */
     @Override protected void spiConfigure(GridS3CheckpointSpi spi) throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
+            IgniteS3TestSuite.getSecretKey());
 
         spi.setAwsCredentials(cred);
 
@@ -56,8 +56,8 @@ public class GridS3CheckpointSpiSelfTest extends GridSpiAbstractTest<GridS3Check
      * @throws Exception If error.
      */
     @Override protected void afterSpiStopped() throws Exception {
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
+            IgniteS3TestSuite.getSecretKey());
 
         AmazonS3 s3 = new AmazonS3Client(cred);
 

@@ -20,7 +20,7 @@ package org.apache.ignite.spi.checkpoint.s3;
 import com.amazonaws.auth.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
-import org.apache.ignite.testsuites.bamboo.*;
+import org.apache.ignite.testsuites.*;
 
 /**
  * Checkpoint manager test using {@link GridS3CheckpointSpi}.
@@ -34,8 +34,8 @@ public class GridS3CheckpointManagerSelfTest extends GridCheckpointManagerAbstra
 
         GridS3CheckpointSpi spi = new GridS3CheckpointSpi();
 
-        AWSCredentials cred = new BasicAWSCredentials(GridS3TestSuite.getAccessKey(),
-            GridS3TestSuite.getSecretKey());
+        AWSCredentials cred = new BasicAWSCredentials(IgniteS3TestSuite.getAccessKey(),
+            IgniteS3TestSuite.getSecretKey());
 
         spi.setAwsCredentials(cred);
 

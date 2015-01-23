@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.logger.jcl.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 /**
- * Commons logging test.
+ * JTA integration tests.
  */
-public class GridJclTestSuite extends TestSuite {
+public class IgniteJtaTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Commons Logging Test Suite");
+        TestSuite suite = new TestSuite("JTA Integration Test Suite");
 
-        suite.addTest(new TestSuite(GridJclLoggerTest.class));
+        suite.addTestSuite(GridCacheJtaSelfTest.class);
+        suite.addTestSuite(GridCacheReplicatedJtaSelfTest.class);
+        suite.addTestSuite(GridTmLookupLifecycleAwareSelfTest.class);
+        suite.addTestSuite(GridCacheJtaConfigurationValidationSelfTest.class);
 
         return suite;
     }

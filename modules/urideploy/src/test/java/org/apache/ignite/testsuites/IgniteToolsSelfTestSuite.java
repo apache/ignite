@@ -15,25 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.logger.log4j.*;
+import org.apache.ignite.tools.*;
 
 /**
- * Log4j logging tests.
+ * Tools self-test suite.
  */
-public class GridLog4jTestSuite extends TestSuite {
+public class IgniteToolsSelfTestSuite extends TestSuite {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @return Grid ant tasks tests suite.
+     * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Log4j Logging Test Suite");
+        TestSuite suite = new TestSuite("Ignite Ant Tasks Test Suite");
 
-        suite.addTest(new TestSuite(GridLog4jInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jNotInitializedTest.class));
-        suite.addTest(new TestSuite(GridLog4jCorrectFileNameTest.class));
+        suite.addTest(new TestSuite(GridToolsSelfTest.class));
 
         return suite;
     }

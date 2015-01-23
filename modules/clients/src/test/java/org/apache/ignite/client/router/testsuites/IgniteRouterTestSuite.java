@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.client.router.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.tools.*;
+import org.apache.ignite.client.router.*;
 
 /**
- * Tools self-test suite.
+ * Test suite for router tests.
  */
-public class GridToolsSelfTestSuite extends TestSuite {
+public class IgniteRouterTestSuite extends TestSuite {
     /**
-     * @return Grid ant tasks tests suite.
-     * @throws Exception If failed.
+     * @return Suite that contains all router tests.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Gridgain Ant Tasks Test Suite");
+    public static TestSuite suite() {
+        TestSuite suite = new TestSuite("Ignite Router Test Suite");
 
-        suite.addTest(new TestSuite(GridToolsSelfTest.class));
+        suite.addTest(new TestSuite(GridRouterFactorySelfTest.class));
+        suite.addTest(new TestSuite(GridTcpRouterSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpSslRouterSelfTest.class));
+        suite.addTest(new TestSuite(GridTcpRouterMultiNodeSelfTest.class));
+//        suite.addTest(new TestSuite(GridClientFailedInitSelfTest.class));
 
         return suite;
     }

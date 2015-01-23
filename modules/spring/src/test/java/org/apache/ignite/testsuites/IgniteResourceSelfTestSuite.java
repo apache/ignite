@@ -15,24 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.resource.*;
 
 /**
- * Start nodes tests.
+ * Gridgain resource injection test Suite.
  */
-public class GridStartStopRestartTestSuite {
+@SuppressWarnings({"ProhibitedExceptionDeclared"})
+public class IgniteResourceSelfTestSuite extends TestSuite {
     /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
+     * @return Resource injection test suite.
+     * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Start Nodes Test Suite");
+        TestSuite suite = new TestSuite("Ignite Resource Injection Test Suite");
 
-        suite.addTestSuite(GridNodeStartUtilsSelfTest.class);
-
-        suite.addTestSuite(GridProjectionStartStopRestartSelfTest.class);
+        suite.addTest(new TestSuite(GridResourceProcessorSelfTest.class));
+        suite.addTest(new TestSuite(GridLoggerInjectionSelfTest.class));
+        suite.addTest(new TestSuite(GridServiceInjectionSelfTest.class));
 
         return suite;
     }

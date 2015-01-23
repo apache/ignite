@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites.bamboo;
+package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.query.h2.opt.*;
 /**
  * H2 indexing SPI tests.
  */
-public class GridH2IndexingSpiTestSuite extends TestSuite {
+public class IgniteH2IndexingSpiTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
