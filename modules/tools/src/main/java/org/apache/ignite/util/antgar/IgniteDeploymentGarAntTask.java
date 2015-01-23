@@ -36,7 +36,7 @@ import java.io.*;
  * </li>
  * </ul>
  */
-public class GridDeploymentGarAntTask extends Zip {
+public class IgniteDeploymentGarAntTask extends Zip {
     /** GAR descriptor name. Its value is {@code gridgain.xml}. */
     public static final String DESC_NAME = "gridgain.xml";
 
@@ -55,7 +55,7 @@ public class GridDeploymentGarAntTask extends Zip {
     /**
      * Creates ant task with default values.
      */
-    public GridDeploymentGarAntTask() {
+    public IgniteDeploymentGarAntTask() {
         archiveType = "gar";
         emptyBehavior = "create";
     }

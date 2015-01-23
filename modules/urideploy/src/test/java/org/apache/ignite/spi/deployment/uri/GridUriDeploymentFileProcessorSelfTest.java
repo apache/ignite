@@ -104,7 +104,7 @@ public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbs
 
         File garFile = new File(baseDirName + File.separator + garFileName);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 

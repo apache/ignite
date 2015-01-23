@@ -60,7 +60,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
@@ -142,7 +142,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
@@ -192,7 +192,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
@@ -236,7 +236,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
@@ -281,7 +281,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
@@ -324,7 +324,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
@@ -368,7 +368,7 @@ public class GridToolsSelfTest extends GridCommonAbstractTest {
         // Copy files to basedir
         U.copy(new File(srcDirName), new File(baseDirName), true);
 
-        GridDeploymentGarAntTask garTask = new GridDeploymentGarAntTask();
+        IgniteDeploymentGarAntTask garTask = new IgniteDeploymentGarAntTask();
 
         Project garProject = new Project();
 
