@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -37,7 +36,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Shared context.
@@ -417,7 +416,7 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param flags Flags to turn on.
-     * @throws org.apache.ignite.cache.CacheFlagException If given flags are conflicting with given transaction.
+     * @throws CacheFlagException If given flags are conflicting with given transaction.
      */
     public void checkTxFlags(@Nullable Collection<CacheFlag> flags) throws CacheFlagException {
         IgniteTxEx tx = tm().userTxx();

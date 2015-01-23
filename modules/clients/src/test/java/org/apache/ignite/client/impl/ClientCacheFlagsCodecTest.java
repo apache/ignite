@@ -18,9 +18,9 @@
 package org.apache.ignite.client.impl;
 
 import junit.framework.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.client.impl.connection.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.rest.handlers.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 
