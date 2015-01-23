@@ -17,281 +17,258 @@
 
 package org.gridgain.grid.kernal.processors.cache;
 
-import org.apache.ignite.*;
 import org.gridgain.grid.cache.*;
 
 /**
  * Management bean that provides access to {@link GridCache}.
  */
 class CacheMxBeanImpl implements IgniteCacheMxBean {
-    /** Cache context. */
-    private GridCacheContext<?, ?> cctx;
-
-    /** DHT context. */
-    private GridCacheContext<?, ?> dhtCtx;
-
-    /** Write-behind store, if configured. */
-    private GridCacheWriteBehindStore store;
+    /** Cache. */
+    private GridCacheAdapter<?, ?> cache;
 
     /**
      * Creates MBean;
      *
-     * @param cctx Cache context.
+     * @param cache Cache.
      */
-    CacheMxBeanImpl(GridCacheContext<?, ?> cctx) {
-        assert cctx != null;
+    CacheMxBeanImpl(GridCacheAdapter<?, ?> cache) {
+        assert cache != null;
 
-        this.cctx = cctx;
-
-        if (cctx.isNear())
-            dhtCtx = cctx.near().dht().context();
-
-        if (cctx.store().store() instanceof GridCacheWriteBehindStore)
-            store = (GridCacheWriteBehindStore)cctx.store().store();
+        this.cache = cache;
     }
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cctx.name();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String metricsFormatted() {
-        return String.valueOf(cctx.cache().metrics());
+        return cache.metrics0().name();
     }
 
     /** {@inheritDoc} */
     @Override public long getOverflowSize() {
-        try {
-            return cctx.cache().overflowSize();
-        }
-        catch (IgniteCheckedException ignored) {
-            return -1;
-        }
+        return cache.metrics0().getOverflowSize();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapEntriesCount() {
-        return cctx.cache().offHeapEntriesCount();
+        return cache.metrics0().getOffHeapEntriesCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getOffHeapAllocatedSize() {
-        return cctx.cache().offHeapAllocatedSize();
+        return cache.metrics0().getOffHeapAllocatedSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getSize() {
-        return cctx.cache().size();
+        return cache.metrics0().getSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getKeySize() {
-        return cctx.cache().size();
+        return cache.metrics0().getKeySize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return cctx.cache().isEmpty();
+        return cache.metrics0().isEmpty();
     }
 
     /** {@inheritDoc} */
     @Override public int getDhtEvictQueueCurrentSize() {
-        return cctx.isNear() ? dhtCtx.evicts().evictQueueSize() : cctx.evicts().evictQueueSize();
+        return cache.metrics0().getDhtEvictQueueCurrentSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxCommitQueueSize() {
-        return cctx.tm().commitQueueSize();
+        return cache.metrics0().getTxCommitQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxThreadMapSize() {
-        return cctx.tm().threadMapSize();
+        return cache.metrics0().getTxThreadMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxXidMapSize() {
-        return cctx.tm().idMapSize();
+        return cache.metrics0().getTxXidMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxPrepareQueueSize() {
-        return cctx.tm().prepareQueueSize();
+        return cache.metrics0().getTxPrepareQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxStartVersionCountsSize() {
-        return cctx.tm().startVersionCountsSize();
+        return cache.metrics0().getTxStartVersionCountsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxCommittedVersionsSize() {
-        return cctx.tm().committedVersionsSize();
+        return cache.metrics0().getTxCommittedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxRolledbackVersionsSize() {
-        return cctx.tm().rolledbackVersionsSize();
+        return cache.metrics0().getTxRolledbackVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtThreadMapSize() {
-        return cctx.isNear() ? dhtCtx.tm().threadMapSize() : -1;
+        return cache.metrics0().getTxDhtThreadMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtXidMapSize() {
-        return cctx.isNear() ? dhtCtx.tm().idMapSize() : -1;
+        return cache.metrics0().getTxDhtXidMapSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommitQueueSize() {
-        return cctx.isNear() ? dhtCtx.tm().commitQueueSize() : -1;
+        return cache.metrics0().getTxDhtCommitQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtPrepareQueueSize() {
-        return cctx.isNear() ? dhtCtx.tm().prepareQueueSize() : -1;
+        return cache.metrics0().getTxDhtPrepareQueueSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtStartVersionCountsSize() {
-        return cctx.isNear() ? dhtCtx.tm().startVersionCountsSize() : -1;
+        return cache.metrics0().getTxDhtStartVersionCountsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtCommittedVersionsSize() {
-        return cctx.isNear() ? dhtCtx.tm().committedVersionsSize() : -1;
+        return cache.metrics0().getTxDhtCommittedVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getTxDhtRolledbackVersionsSize() {
-        return cctx.isNear() ? dhtCtx.tm().rolledbackVersionsSize() : -1;
+        return cache.metrics0().getTxDhtRolledbackVersionsSize();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isWriteBehindEnabled() {
-        return store != null;
+        return cache.metrics0().isWriteBehindEnabled();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindFlushSize() {
-        return store != null ? store.getWriteBehindFlushSize() : -1;
+        return cache.metrics0().getWriteBehindFlushSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindFlushThreadCount() {
-        return store != null ? store.getWriteBehindFlushThreadCount() : -1;
+        return cache.metrics0().getWriteBehindFlushThreadCount();
     }
 
     /** {@inheritDoc} */
     @Override public long getWriteBehindFlushFrequency() {
-        return store != null ? store.getWriteBehindFlushFrequency() : -1;
+        return cache.metrics0().getWriteBehindFlushFrequency();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindStoreBatchSize() {
-        return store != null ? store.getWriteBehindStoreBatchSize() : -1;
+        return cache.metrics0().getWriteBehindStoreBatchSize();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindTotalCriticalOverflowCount() {
-        return store != null ? store.getWriteBehindTotalCriticalOverflowCount() : -1;
+        return cache.metrics0().getWriteBehindTotalCriticalOverflowCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindCriticalOverflowCount() {
-        return store != null ? store.getWriteBehindCriticalOverflowCount() : -1;
+        return cache.metrics0().getWriteBehindCriticalOverflowCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindErrorRetryCount() {
-        return store != null ? store.getWriteBehindErrorRetryCount() : -1;
+        return cache.metrics0().getWriteBehindErrorRetryCount();
     }
 
     /** {@inheritDoc} */
     @Override public int getWriteBehindBufferSize() {
-        return store != null ? store.getWriteBehindBufferSize() : -1;
+        return cache.metrics0().getWriteBehindBufferSize();
     }
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        cctx.cache().metrics0().clear();
+        cache.metrics0().clear();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheHits() {
-        return cctx.cache().metrics0().getCacheHits();
+        return cache.metrics0().getCacheHits();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheHitPercentage() {
-        return cctx.cache().metrics0().getCacheHitPercentage();
+        return cache.metrics0().getCacheHitPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheMisses() {
-        return cctx.cache().metrics0().getCacheMisses();
+        return cache.metrics0().getCacheMisses();
     }
 
     /** {@inheritDoc} */
     @Override public float getCacheMissPercentage() {
-        return cctx.cache().metrics0().getCacheMissPercentage();
+        return cache.metrics0().getCacheMissPercentage();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheGets() {
-        return cctx.cache().metrics0().getCacheGets();
+        return cache.metrics0().getCacheGets();
     }
 
     /** {@inheritDoc} */
     @Override public long getCachePuts() {
-        return cctx.cache().metrics0().getCachePuts();
+        return cache.metrics0().getCachePuts();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheRemovals() {
-        return cctx.cache().metrics0().getCacheRemovals();
+        return cache.metrics0().getCacheRemovals();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheEvictions() {
-        return cctx.cache().metrics0().getCacheEvictions();
+        return cache.metrics0().getCacheEvictions();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageGetTime() {
-        return cctx.cache().metrics0().getAverageGetTime();
+        return cache.metrics0().getAverageGetTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAveragePutTime() {
-        return cctx.cache().metrics0().getAveragePutTime();
+        return cache.metrics0().getAveragePutTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageRemoveTime() {
-        return cctx.cache().metrics0().getAverageRemoveTime();
+        return cache.metrics0().getAverageRemoveTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxCommitTime() {
-        return cctx.cache().metrics0().getAverageTxCommitTime();
+        return cache.metrics0().getAverageTxCommitTime();
     }
 
     /** {@inheritDoc} */
     @Override public float getAverageTxRollbackTime() {
-        return cctx.cache().metrics0().getAverageTxRollbackTime();
+        return cache.metrics0().getAverageTxRollbackTime();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxCommits() {
-        return cctx.cache().metrics0().getCacheTxCommits();
+        return cache.metrics0().getCacheTxCommits();
     }
 
     /** {@inheritDoc} */
     @Override public long getCacheTxRollbacks() {
-        return cctx.cache().metrics0().getCacheTxRollbacks();
+        return cache.metrics0().getCacheTxRollbacks();
     }
 }

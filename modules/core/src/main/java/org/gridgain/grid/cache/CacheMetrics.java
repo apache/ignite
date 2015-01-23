@@ -145,13 +145,6 @@ public interface CacheMetrics {
     public String name();
 
     /**
-     * Gets metrics (statistics) for this cache.
-     *
-     * @return Cache metrics.
-     */
-    public String metricsFormatted();
-
-    /**
      * Gets number of entries that was swapped to disk.
      *
      * @return Number of entries that was swapped to disk.

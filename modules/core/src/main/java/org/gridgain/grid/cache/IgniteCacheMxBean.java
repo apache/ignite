@@ -95,10 +95,6 @@ public interface IgniteCacheMxBean extends CacheStatisticsMXBean, CacheMetrics {
     public String name();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Formatted cache metrics.")
-    public String metricsFormatted();
-
-    /** {@inheritDoc} */
     @IgniteMBeanDescription("Number of entries that was swapped to disk.")
     public long getOverflowSize();
 
