@@ -33,6 +33,7 @@ import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
 import org.gridgain.grid.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.hadoop.*;
 import org.gridgain.grid.kernal.managers.*;
 import org.gridgain.grid.kernal.managers.checkpoint.*;
@@ -3225,6 +3226,19 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
         Ignition.stop(gridName, true);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache affinity.
+     */
+    @Override public <K> GridCacheAffinity<K> affinity(String cacheName) {
+        GridCacheAdapter<K, ?> cache = ctx.cache().internalCache(cacheName);
+
+        if (cache != null)
+            return cache.affinity();
+
+        return ctx.affinity().affinityProxy(cacheName);
     }
 
     /**

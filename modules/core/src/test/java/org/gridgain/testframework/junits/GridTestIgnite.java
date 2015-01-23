@@ -17,6 +17,7 @@ import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.hadoop.*;
 import org.jetbrains.annotations.*;
 
@@ -221,4 +222,9 @@ public class GridTestIgnite implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {}
+
+    /** {@inheritDoc} */
+    @Override public <K> GridCacheAffinity<K> affinity(String cacheName) {
+        return null;
+    }
 }

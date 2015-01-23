@@ -23,6 +23,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
 import org.gridgain.grid.cache.*;
+import org.gridgain.grid.cache.affinity.*;
 import org.gridgain.grid.hadoop.*;
 import org.apache.ignite.plugin.security.*;
 import org.gridgain.grid.util.typedef.*;
@@ -322,6 +323,11 @@ public class GridSpringBean implements Ignite, DisposableBean, InitializingBean,
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
         g.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K> GridCacheAffinity<K> affinity(String cacheName) {
+        return g.affinity(cacheName);
     }
 
     /** {@inheritDoc} */
