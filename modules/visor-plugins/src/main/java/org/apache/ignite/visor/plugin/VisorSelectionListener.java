@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.visor.plugin;
+package org.apache.ignite.visor.plugin;
 
 import java.util.*;
 

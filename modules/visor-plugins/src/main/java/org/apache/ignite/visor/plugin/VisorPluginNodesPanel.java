@@ -15,12 +15,34 @@
  * limitations under the License.
  */
 
-package org.gridgain.visor.plugin;
+package org.apache.ignite.visor.plugin;
+
+import java.util.*;
 
 /**
- * Standard Visor panel with log entries.
+ * Standart Visor panel with nodes.
  *
  * This panel will be created by {@link VisorPluginComponentsFactory}.
  */
-public interface VisorPluginLogPanel extends VisorPluginComponent {
+public interface VisorPluginNodesPanel extends VisorPluginComponent {
+    /**
+     * Add selection listener.
+     *
+     * @param listener Table selection listener.
+     */
+    public void addSelectionListener(VisorSelectionListener<UUID> listener);
+
+    /**
+     * Remove selection listener.
+     *
+     * @param listener Table selection listener.
+     */
+    public void removeSelectionListener(VisorSelectionListener<UUID> listener);
+
+    /**
+     * Get selected elements.
+     *
+     * @return selected elements.
+     */
+    public Collection<UUID> selected();
 }

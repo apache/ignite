@@ -15,49 +15,61 @@
  * limitations under the License.
  */
 
-package org.gridgain.visor.plugin;
+package org.apache.ignite.visor.plugin;
 
-import javax.swing.*;
+import ro.fortsoft.pf4j.*;
 
 /**
- * Abstract base class for Visor pluggable tabs.
+ * Abstract base class for Visor plugin extension point.
  */
-public abstract class VisorPluggableTab extends VisorExtensionPoint {
+public abstract class VisorExtensionPoint implements ExtensionPoint {
+    /** */
+    private final VisorPluginModel model;
+
     /**
      * @param model Visor model.
      */
-    protected VisorPluggableTab(VisorPluginModel model) {
-        super(model);
+    protected VisorExtensionPoint(VisorPluginModel model) {
+        this.model = model;
     }
 
     /**
-     * Tab and menu icon 16x16 px.
-     *
-     * @return Plugin icon.
+     * @return Visor model.
      */
-    public abstract ImageIcon icon();
+    public VisorPluginModel model() {
+        return model;
+    }
 
     /**
-     * Tab tooltip.
-     *
-     * @return Tooltip.
+     * @return Plugin name.
      */
-    public abstract String tooltip();
+    public abstract String name();
 
     /**
-     * Construct content of pluggable tab.
-     *
-     * @param componentsFactory Factory for creating ready UI blocks, like nodes panel and charts.
-     * @param dfltTabBtn Panel with standart tab buttons.
-     *
-     * @return Pluggable tab content.
+     * Will be executed on Visor model changed.
      */
-    public abstract JPanel createPanel(VisorPluginComponentsFactory componentsFactory, JPanel dfltTabBtn);
+    public void onModelChanged() {
+        // No-op.
+    }
 
     /**
-     * Will be executed on tab close.
+     * Will be executed on Visor events changed.
      */
-    public void onClosed() {
+    public void onEventsChanged() {
+        // No-op.
+    }
+
+    /**
+     * Will be executed on Visor connect to grid.
+     */
+    public void onConnected() {
+        // No-op.
+    }
+
+    /**
+     * Will be executed on Visor disconnect from grid.
+     */
+    public void onDisconnected() {
         // No-op.
     }
 }

@@ -15,61 +15,49 @@
  * limitations under the License.
  */
 
-package org.gridgain.visor.plugin;
+package org.apache.ignite.visor.plugin;
 
-import ro.fortsoft.pf4j.*;
+import javax.swing.*;
 
 /**
- * Abstract base class for Visor plugin extension point.
+ * Abstract base class for Visor pluggable tabs.
  */
-public abstract class VisorExtensionPoint implements ExtensionPoint {
-    /** */
-    private final VisorPluginModel model;
-
+public abstract class VisorPluggableTab extends VisorExtensionPoint {
     /**
      * @param model Visor model.
      */
-    protected VisorExtensionPoint(VisorPluginModel model) {
-        this.model = model;
+    protected VisorPluggableTab(VisorPluginModel model) {
+        super(model);
     }
 
     /**
-     * @return Visor model.
+     * Tab and menu icon 16x16 px.
+     *
+     * @return Plugin icon.
      */
-    public VisorPluginModel model() {
-        return model;
-    }
+    public abstract ImageIcon icon();
 
     /**
-     * @return Plugin name.
+     * Tab tooltip.
+     *
+     * @return Tooltip.
      */
-    public abstract String name();
+    public abstract String tooltip();
 
     /**
-     * Will be executed on Visor model changed.
+     * Construct content of pluggable tab.
+     *
+     * @param componentsFactory Factory for creating ready UI blocks, like nodes panel and charts.
+     * @param dfltTabBtn Panel with standart tab buttons.
+     *
+     * @return Pluggable tab content.
      */
-    public void onModelChanged() {
-        // No-op.
-    }
+    public abstract JPanel createPanel(VisorPluginComponentsFactory componentsFactory, JPanel dfltTabBtn);
 
     /**
-     * Will be executed on Visor events changed.
+     * Will be executed on tab close.
      */
-    public void onEventsChanged() {
-        // No-op.
-    }
-
-    /**
-     * Will be executed on Visor connect to grid.
-     */
-    public void onConnected() {
-        // No-op.
-    }
-
-    /**
-     * Will be executed on Visor disconnect from grid.
-     */
-    public void onDisconnected() {
+    public void onClosed() {
         // No-op.
     }
 }

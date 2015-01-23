@@ -15,39 +15,31 @@
  * limitations under the License.
  */
 
-package org.gridgain.visor.plugin;
+package org.apache.ignite.visor.plugin;
 
-import java.util.*;
+import ro.fortsoft.pf4j.*;
 
 /**
- * Listener for grid node topology changes.
+ * Base class for Visor plugins.
  */
-public interface VisorTopologyListener {
-    /**
-     * Action that should be done on node join.
-     *
-     * @param nid ID of node that join topology.
-     */
-    public void onNodeJoin(UUID nid);
+public abstract class VisorPlugin extends Plugin {
+    /** {@inheritDoc} */
+    public VisorPlugin(PluginWrapper wrapper) {
+        super(wrapper);
+    }
 
     /**
-     * Action that should be done on node left.
-     *
-     * @param nid ID of node that left topology.
+     * @return Plugin name.
      */
-    public void onNodeLeft(UUID nid);
+    public abstract String name();
 
-    /**
-     * Action that should be done on node failed.
-     *
-     * @param nid ID of failed node.
-     */
-    public void onNodeFailed(UUID nid);
+    /** {@inheritDoc} */
+    @Override public void start() throws PluginException {
+        log.info("Plugin Started: " + name());
+    }
 
-    /**
-     * Action that should be done on node segmented.
-     *
-     * @param nid ID of segmented node.
-     */
-    public void onNodeSegmented(UUID nid);
+    /** {@inheritDoc} */
+    @Override public void stop() throws PluginException {
+        log.info("Plugin stopped: " + name());
+    }
 }
