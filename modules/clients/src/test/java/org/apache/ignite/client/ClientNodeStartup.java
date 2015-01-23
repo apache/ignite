@@ -29,20 +29,20 @@ import org.apache.ignite.internal.util.typedef.internal.*;
  * configurations for each node. Otherwise, this example would not work.
  * <p>
  * After this example has been started you can use pre-defined endpoints and task names in your
- * client-server interactions to work with the node over secured protocols (binary over SSL or https).
+ * client-server interactions to work with the node over un-secure protocols (binary or http).
  * <p>
  * Usually you cannot start secured and unsecured nodes in one grid, so started together
  * secured and unsecured nodes belong to different grids.
  * <p>
  * Available endponts:
  * <ul>
- *     <li>127.0.0.1:10443 - TCP SSL-protected endpoint.</li>
- *     <li>127.0.0.1:11443 - HTTP SSL-protected endpoint.</li>
+ *     <li>127.0.0.1:10080 - TCP unsecured endpoint.</li>
+ *     <li>127.0.0.1:11080 - HTTP unsecured endpoint.</li>
  * </ul>
  * <p>
  * Required credentials for remote client authentication: "s3cret".
  */
-public class GridClientSslNodeStartup {
+public class ClientNodeStartup {
     /**
      * Starts up two nodes with specified cache configuration on pre-defined endpoints.
      *
@@ -50,9 +50,7 @@ public class GridClientSslNodeStartup {
      * @throws IgniteCheckedException In case of any exception.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        System.setProperty("CLIENTS_MODULE_PATH", U.resolveGridGainPath("modules/clients").getAbsolutePath());
-
-        try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-ssl-node.xml")) {
+        try (Ignite g = G.start("modules/clients/src/test/resources/spring-server-node.xml")) {
             U.sleep(Long.MAX_VALUE);
         }
     }

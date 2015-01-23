@@ -25,22 +25,22 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.nio.channels.*;
 import java.util.*;
 
-import static org.apache.ignite.client.GridClientTestRestServer.*;
+import static org.apache.ignite.client.ClientTestRestServer.*;
 
 /**
  *
  */
-public class GridClientReconnectionSelfTest extends GridCommonAbstractTest {
+public class ClientReconnectionSelfTest extends GridCommonAbstractTest {
     /** */
     public static final String HOST = "127.0.0.1";
 
     /** */
-    private GridClientTestRestServer[] srvs = new GridClientTestRestServer[SERVERS_CNT];
+    private ClientTestRestServer[] srvs = new ClientTestRestServer[SERVERS_CNT];
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < srvs.length; i++) {
-            GridClientTestRestServer srv = srvs[i];
+            ClientTestRestServer srv = srvs[i];
 
             if (srv != null)
                 srv.stop();
@@ -223,8 +223,8 @@ public class GridClientReconnectionSelfTest extends GridCommonAbstractTest {
      * @return Server instance.
      * @throws IgniteCheckedException If failed.
      */
-    private GridClientTestRestServer runServer(int idx, boolean  failOnConnect) throws IgniteCheckedException {
-        GridClientTestRestServer srv = new GridClientTestRestServer(FIRST_SERVER_PORT + idx, failOnConnect, log());
+    private ClientTestRestServer runServer(int idx, boolean  failOnConnect) throws IgniteCheckedException {
+        ClientTestRestServer srv = new ClientTestRestServer(FIRST_SERVER_PORT + idx, failOnConnect, log());
 
         srv.start();
 

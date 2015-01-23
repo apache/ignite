@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Task used to test portable affinity key.
  */
-public class GridClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Object, Boolean> {
+public class ClientTestPortableAffinityKeyTask extends ComputeTaskAdapter<Object, Boolean> {
     /** */
     @IgniteInstanceResource
     private Ignite ignite;

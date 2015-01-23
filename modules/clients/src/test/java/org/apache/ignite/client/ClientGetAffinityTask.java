@@ -18,44 +18,40 @@
 package org.apache.ignite.client;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
- * Test task, that sleeps for 10 seconds in split and returns
- * the length of an argument.
+ * Get affinity for task argument.
  */
-public class GridSleepTestTask extends ComputeTaskSplitAdapter<String, Integer> {
-    /** {@inheritDoc} */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, String arg)
-        throws IgniteCheckedException {
-        return Collections.singleton(new ComputeJobAdapter(arg) {
-            @Override public Object execute() {
-                try {
-                    Thread.sleep(10000);
-
-                    String val = argument(0);
-
-                    return val == null ? 0 : val.length();
-                }
-                catch (InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
-    }
+public class ClientGetAffinityTask extends TaskSingleJobSplitAdapter<String, Integer> {
+    /** Grid. */
+    @IgniteInstanceResource
+    private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-        int sum = 0;
+    @Override protected Object executeJob(int gridSize, String arg) throws IgniteCheckedException {
+        A.notNull(arg, "task argument");
 
-        for (ComputeJobResult res : results)
-            sum += res.<Integer>getData();
+        String[] split = arg.split(":", 2);
 
-        return sum;
+        A.ensure(split.length == 2, "Task argument should have format 'cacheName:affinityKey'.");
+
+        String cacheName = split[0];
+        String affKey = split[1];
+
+        if ("null".equals(cacheName))
+            cacheName = null;
+
+        ClusterNode node = ignite.cluster().mapKeyToNode(cacheName, affKey);
+
+        return node.id().toString();
     }
 
     /** {@inheritDoc} */

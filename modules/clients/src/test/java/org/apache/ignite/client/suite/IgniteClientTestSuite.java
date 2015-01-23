@@ -79,20 +79,20 @@ public class IgniteClientTestSuite extends TestSuite {
         suite.addTest(new TestSuite(ClientPreferDirectSelfTest.class));
 
         // Test client with many nodes and in multithreaded scenarios
-        suite.addTest(new TestSuite(GridClientTcpMultiThreadedSelfTest.class));
-        suite.addTest(new TestSuite(GridClientTcpSslMultiThreadedSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpMultiThreadedSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSslMultiThreadedSelfTest.class));
 
         // Test client authentication.
-        suite.addTest(new TestSuite(GridClientTcpSslAuthenticationSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpSslAuthenticationSelfTest.class));
 
         suite.addTest(new TestSuite(ClientTcpConnectivitySelfTest.class));
-        suite.addTest(new TestSuite(GridClientReconnectionSelfTest.class));
+        suite.addTest(new TestSuite(ClientReconnectionSelfTest.class));
 
         // Rest task command handler test.
         suite.addTest(new TestSuite(TaskCommandHandlerSelfTest.class));
 
         // Default cache only test.
-        suite.addTest(new TestSuite(GridClientDefaultCacheSelfTest.class));
+        suite.addTest(new TestSuite(ClientDefaultCacheSelfTest.class));
 
         suite.addTestSuite(ClientFutureAdapterSelfTest.class);
         suite.addTestSuite(ClientPartitionAffinitySelfTest.class);
@@ -102,7 +102,7 @@ public class IgniteClientTestSuite extends TestSuite {
 
         suite.addTestSuite(ClientByteUtilsTest.class);
 
-        suite.addTest(new TestSuite(GridClientTopologyCacheSelfTest.class));
+        suite.addTest(new TestSuite(ClientTopologyCacheSelfTest.class));
 
         // Router tests.
         suite.addTest(new TestSuite(TcpRouterSelfTest.class));
@@ -111,7 +111,7 @@ public class IgniteClientTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(ClientFailedInitSelfTest.class));
 
-        suite.addTest(new TestSuite(GridClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
+        suite.addTest(new TestSuite(ClientTcpTaskExecutionAfterTopologyRestartSelfTest.class));
 
         return suite;
     }

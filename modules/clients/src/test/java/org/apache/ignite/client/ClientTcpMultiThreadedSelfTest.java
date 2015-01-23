@@ -17,37 +17,29 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.*;
-import org.apache.ignite.portables.*;
-
-import java.util.*;
+import org.apache.ignite.client.ssl.*;
 
 /**
- * Task where argument and result are {@link GridClientTestPortable}.
+ * Runs multi-threaded tests on tcp binary protocol (ssl is disabled).
  */
-public class GridClientPortableArgumentTask extends GridTaskSingleJobSplitAdapter {
+public class ClientTcpMultiThreadedSelfTest extends ClientAbstractMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
-        Collection args = (Collection)arg;
+    @Override protected GridClientProtocol protocol() {
+        return GridClientProtocol.TCP;
+    }
 
-        Iterator<Object> it = args.iterator();
+    /** {@inheritDoc} */
+    @Override protected String serverAddress() {
+        return HOST + ":" + REST_TCP_PORT_BASE;
+    }
 
-        assert args.size() == 2 : args.size();
+    /** {@inheritDoc} */
+    @Override protected boolean useSsl() {
+        return false;
+    }
 
-        boolean expPortable = (Boolean)it.next();
-
-        GridClientTestPortable p;
-
-        if (expPortable) {
-            PortableObject obj = (PortableObject)it.next();
-
-            p = obj.deserialize();
-        }
-        else
-            p = (GridClientTestPortable)it.next();
-
-        assert p != null;
-
-        return new GridClientTestPortable(p.i + 1, true);
+    /** {@inheritDoc} */
+    @Override protected GridSslContextFactory sslContextFactory() {
+        return null;
     }
 }

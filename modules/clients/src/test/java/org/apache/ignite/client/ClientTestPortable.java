@@ -27,7 +27,7 @@ import java.util.*;
  * Test portable object.
  */
 @SuppressWarnings("PublicField")
-public class GridClientTestPortable implements PortableMarshalAware, Serializable {
+public class ClientTestPortable implements PortableMarshalAware, Serializable {
     /** */
     public byte b;
 
@@ -191,20 +191,20 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
     public Map<Integer, String> mapRaw;
 
     /** */
-    public GridClientTestPortable portable1;
+    public ClientTestPortable portable1;
 
     /** */
-    public GridClientTestPortable portable2;
+    public ClientTestPortable portable2;
 
     /** */
-    public GridClientTestPortable portableRaw1;
+    public ClientTestPortable portableRaw1;
 
     /** */
-    public GridClientTestPortable portableRaw2;
+    public ClientTestPortable portableRaw2;
 
     /**
      */
-    public GridClientTestPortable() {
+    public ClientTestPortable() {
         // No-op.
     }
 
@@ -212,7 +212,7 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
      * @param val Value.
      * @param createInner If {@code true} creates nested object.
      */
-    public GridClientTestPortable(int val, boolean createInner) {
+    public ClientTestPortable(int val, boolean createInner) {
         b = (byte)val;
         bRaw = (byte)(val + 1);
 
@@ -302,10 +302,10 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
         mapRaw.put(2, strRaw + "1");
 
         if (createInner) {
-            portable1 = new GridClientTestPortable(val + 1, false);
+            portable1 = new ClientTestPortable(val + 1, false);
             portable2 = portable1;
 
-            portableRaw1 = new GridClientTestPortable(val + 2, false);
+            portableRaw1 = new ClientTestPortable(val + 2, false);
             portableRaw2 = portableRaw1;
         }
     }
@@ -404,8 +404,8 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
         objArr = reader.readObjectArray("_objArr");
         col = reader.readCollection("_col");
         map = reader.readMap("_map");
-        portable1 = (GridClientTestPortable)reader.readObject("_portable1");
-        portable2 = (GridClientTestPortable)reader.readObject("_portable2");
+        portable1 = (ClientTestPortable)reader.readObject("_portable1");
+        portable2 = (ClientTestPortable)reader.readObject("_portable2");
 
         PortableRawReader raw = reader.rawReader();
 
@@ -436,8 +436,8 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
         objArrRaw = raw.readObjectArray();
         colRaw = raw.readCollection();
         mapRaw = raw.readMap();
-        portableRaw1 = (GridClientTestPortable)raw.readObject();
-        portableRaw2 = (GridClientTestPortable)raw.readObject();
+        portableRaw1 = (ClientTestPortable)raw.readObject();
+        portableRaw2 = (ClientTestPortable)raw.readObject();
     }
 
     /**
@@ -485,6 +485,6 @@ public class GridClientTestPortable implements PortableMarshalAware, Serializabl
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridClientTestPortable.class, this);
+        return S.toString(ClientTestPortable.class, this);
     }
 }

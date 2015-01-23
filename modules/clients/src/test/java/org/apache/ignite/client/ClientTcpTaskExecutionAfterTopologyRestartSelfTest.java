@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Ensures
  */
-public class GridClientTcpTaskExecutionAfterTopologyRestartSelfTest extends GridCommonAbstractTest {
+public class ClientTcpTaskExecutionAfterTopologyRestartSelfTest extends GridCommonAbstractTest {
     /** Port. */
     private static final int PORT = 11211;
 
@@ -64,12 +64,12 @@ public class GridClientTcpTaskExecutionAfterTopologyRestartSelfTest extends Grid
 
         GridClient cli = GridClientFactory.start(cfg);
 
-        cli.compute().execute(GridClientTcpTask.class.getName(), Collections.singletonList("arg"));
+        cli.compute().execute(ClientTcpTask.class.getName(), Collections.singletonList("arg"));
 
         stopAllGrids();
 
         startGrid();
 
-        cli.compute().execute(GridClientTcpTask.class.getName(), Collections.singletonList("arg"));
+        cli.compute().execute(ClientTcpTask.class.getName(), Collections.singletonList("arg"));
     }
 }

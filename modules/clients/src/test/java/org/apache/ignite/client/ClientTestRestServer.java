@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
 /**
  *
  */
-public class GridClientTestRestServer {
+public class ClientTestRestServer {
     /** */
     public static final int FIRST_SERVER_PORT = 11000;
 
@@ -92,7 +92,7 @@ public class GridClientTestRestServer {
      * @param failOnConnect If {@code true} than server will close connection immediately after connect.
      * @param log Log.
      */
-    public GridClientTestRestServer(int port, boolean failOnConnect, IgniteLogger log) {
+    public ClientTestRestServer(int port, boolean failOnConnect, IgniteLogger log) {
         this.port = port;
         this.failOnConnect = failOnConnect;
         this.log = log;

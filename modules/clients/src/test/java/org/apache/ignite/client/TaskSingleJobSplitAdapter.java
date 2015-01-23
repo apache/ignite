@@ -29,9 +29,9 @@ import java.util.*;
  * @param <T> Type of the task execution argument.
  * @param <R> Type of the task result returning from {@link org.apache.ignite.compute.ComputeTask#reduce(List)} method.
  */
-public abstract class GridTaskSingleJobSplitAdapter<T, R> extends ComputeTaskSplitAdapter<T, R> {
+public abstract class TaskSingleJobSplitAdapter<T, R> extends ComputeTaskSplitAdapter<T, R> {
     /** Empty constructor. */
-    protected GridTaskSingleJobSplitAdapter() {
+    protected TaskSingleJobSplitAdapter() {
         // No-op.
     }
 

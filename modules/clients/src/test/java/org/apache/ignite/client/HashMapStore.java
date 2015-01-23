@@ -17,29 +17,37 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.cache.store.*;
+import org.apache.ignite.lang.*;
+
+import javax.cache.*;
+import java.util.*;
 
 /**
- * Runs multi-threaded tests on tcp binary protocol (ssl is disabled).
+ * Simple HashMap based cache store emulation.
  */
-public class GridClientTcpMultiThreadedSelfTest extends GridClientAbstractMultiThreadedSelfTest {
+public class HashMapStore extends CacheStoreAdapter {
+    /** Map for cache store. */
+    private final Map<Object, Object> map = new HashMap<>();
+
     /** {@inheritDoc} */
-    @Override protected GridClientProtocol protocol() {
-        return GridClientProtocol.TCP;
+    @Override public void loadCache(IgniteBiInClosure c, Object... args) {
+        for (Map.Entry e : map.entrySet())
+            c.apply(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override protected String serverAddress() {
-        return HOST + ":" + REST_TCP_PORT_BASE;
+    @Override public Object load(Object key) {
+        return map.get(key);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean useSsl() {
-        return false;
+    @Override public void write(Cache.Entry e) {
+        map.put(e.getKey(), e.getValue());
     }
 
     /** {@inheritDoc} */
-    @Override protected GridSslContextFactory sslContextFactory() {
-        return null;
+    @Override public void delete(Object key) {
+        map.remove(key);
     }
 }

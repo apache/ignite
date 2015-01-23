@@ -17,7 +17,6 @@
 
 package org.apache.ignite.client;
 
-import net.sf.json.*;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 
@@ -28,25 +27,40 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 /**
  * Test task summarizes length of all strings in the arguments list.
  * <p>
- * The argument of the task is JSON-serialized array of objects to calculate string length sum of.
+ * The argument of the task is a collection of objects to calculate string length sum of.
  */
-public class GridClientHttpTask extends ComputeTaskSplitAdapter<String, Integer> {
-    /** Task delegate. */
-    private final GridClientTcpTask delegate = new GridClientTcpTask();
-
+public class ClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
-        JSON json = JSONSerializer.toJSON(arg);
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
+        throws IgniteCheckedException {
+        Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
-        List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
+        if (list != null)
+            for (final Object val : list)
+                jobs.add(new ComputeJobAdapter() {
+                    @Override public Object execute() {
+                        try {
+                            Thread.sleep(5);
+                        }
+                        catch (InterruptedException ignored) {
+                            Thread.currentThread().interrupt();
+                        }
 
-        //noinspection unchecked
-        return delegate.split(gridSize, list);
+                        return val == null ? 0 : val.toString().length();
+                    }
+                });
+
+        return jobs;
     }
 
     /** {@inheritDoc} */
     @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
-        return delegate.reduce(results);
+        int sum = 0;
+
+        for (ComputeJobResult res : results)
+            sum += res.<Integer>getData();
+
+        return sum;
     }
 
     /** {@inheritDoc} */

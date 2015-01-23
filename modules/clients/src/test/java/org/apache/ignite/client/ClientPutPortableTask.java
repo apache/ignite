@@ -24,7 +24,7 @@ import org.apache.ignite.resources.*;
 /**
  * Task creates portable object and puts it in cache.
  */
-public class GridClientPutPortableTask extends GridTaskSingleJobSplitAdapter {
+public class ClientPutPortableTask extends TaskSingleJobSplitAdapter {
     /** */
     @IgniteInstanceResource
     private Ignite ignite;
@@ -35,7 +35,7 @@ public class GridClientPutPortableTask extends GridTaskSingleJobSplitAdapter {
 
         GridCache<Object, Object> cache = ignite.cache(cacheName);
 
-        GridClientTestPortable p = new GridClientTestPortable(100, true);
+        ClientTestPortable p = new ClientTestPortable(100, true);
 
         cache.put(1, p);
 

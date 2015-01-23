@@ -17,41 +17,36 @@
 
 package org.apache.ignite.client;
 
+import net.sf.json.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.util.*;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
- * Get affinity for task argument.
+ * Test task summarizes length of all strings in the arguments list.
+ * <p>
+ * The argument of the task is JSON-serialized array of objects to calculate string length sum of.
  */
-public class GridClientGetAffinityTask extends GridTaskSingleJobSplitAdapter<String, Integer> {
-    /** Grid. */
-    @IgniteInstanceResource
-    private transient Ignite ignite;
+public class ClientHttpTask extends ComputeTaskSplitAdapter<String, Integer> {
+    /** Task delegate. */
+    private final ClientTcpTask delegate = new ClientTcpTask();
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String arg) throws IgniteCheckedException {
-        A.notNull(arg, "task argument");
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        JSON json = JSONSerializer.toJSON(arg);
 
-        String[] split = arg.split(":", 2);
+        List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
 
-        A.ensure(split.length == 2, "Task argument should have format 'cacheName:affinityKey'.");
+        //noinspection unchecked
+        return delegate.split(gridSize, list);
+    }
 
-        String cacheName = split[0];
-        String affKey = split[1];
-
-        if ("null".equals(cacheName))
-            cacheName = null;
-
-        ClusterNode node = ignite.cluster().mapKeyToNode(cacheName, affKey);
-
-        return node.id().toString();
+    /** {@inheritDoc} */
+    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        return delegate.reduce(results);
     }
 
     /** {@inheritDoc} */

@@ -17,37 +17,37 @@
 
 package org.apache.ignite.client;
 
-import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.*;
+import org.apache.ignite.portables.*;
 
-import javax.cache.*;
 import java.util.*;
 
 /**
- * Simple HashMap based cache store emulation.
+ * Task where argument and result are {@link ClientTestPortable}.
  */
-public class GridHashMapStore extends CacheStoreAdapter {
-    /** Map for cache store. */
-    private final Map<Object, Object> map = new HashMap<>();
-
+public class ClientPortableArgumentTask extends TaskSingleJobSplitAdapter {
     /** {@inheritDoc} */
-    @Override public void loadCache(IgniteBiInClosure c, Object... args) {
-        for (Map.Entry e : map.entrySet())
-            c.apply(e.getKey(), e.getValue());
-    }
+    @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
+        Collection args = (Collection)arg;
 
-    /** {@inheritDoc} */
-    @Override public Object load(Object key) {
-        return map.get(key);
-    }
+        Iterator<Object> it = args.iterator();
 
-    /** {@inheritDoc} */
-    @Override public void write(Cache.Entry e) {
-        map.put(e.getKey(), e.getValue());
-    }
+        assert args.size() == 2 : args.size();
 
-    /** {@inheritDoc} */
-    @Override public void delete(Object key) {
-        map.remove(key);
+        boolean expPortable = (Boolean)it.next();
+
+        ClientTestPortable p;
+
+        if (expPortable) {
+            PortableObject obj = (PortableObject)it.next();
+
+            p = obj.deserialize();
+        }
+        else
+            p = (ClientTestPortable)it.next();
+
+        assert p != null;
+
+        return new ClientTestPortable(p.i + 1, true);
     }
 }

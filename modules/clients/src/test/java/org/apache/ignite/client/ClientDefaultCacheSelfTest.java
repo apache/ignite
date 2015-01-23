@@ -33,7 +33,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Tests that client is able to connect to a grid with only default cache enabled.
  */
-public class GridClientDefaultCacheSelfTest extends GridCommonAbstractTest {
+public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
     /** Path to jetty config configured with SSL. */
     private static final String REST_JETTY_CFG = "modules/clients/src/test/resources/jetty/rest-jetty.xml";
 

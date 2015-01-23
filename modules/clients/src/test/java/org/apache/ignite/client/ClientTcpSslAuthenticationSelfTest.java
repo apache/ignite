@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Tests
  */
-public class GridClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
+public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     /** REST TCP port. */
     private static final int REST_TCP_PORT = 12121;
 

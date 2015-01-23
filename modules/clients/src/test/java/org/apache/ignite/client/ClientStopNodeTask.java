@@ -33,7 +33,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  *     <li>node type (see start nodes task).</li>
  * </ul>
  */
-public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer> {
+public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** */
     @IgniteLoggerResource
     private transient IgniteLogger log;
@@ -98,7 +98,7 @@ public class GridClientStopNodeTask extends ComputeTaskSplitAdapter<String, Inte
         @Override public Object execute() {
             log.info(">>> Stop node [nodeId=" + ignite.cluster().localNode().id() + ", name='" + ignite.name() + "']");
 
-            String prefix = GridClientStartNodeTask.getConfig(gridType).getGridName() + " (";
+            String prefix = ClientStartNodeTask.getConfig(gridType).getGridName() + " (";
 
             if (!ignite.name().startsWith(prefix)) {
                 int stoppedCnt = 0;

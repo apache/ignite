@@ -40,7 +40,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  *     <li>http+ssl</li>
  * </ul>
  */
-public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<String, Integer> {
+public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integer> {
     /**
      * Available node's configurations.
      */
@@ -125,7 +125,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
             changeTopology(g, 1, 4, nodeType);
 
             // Stop node by id = 0
-            g.compute().execute(GridClientStopNodeTask.class, g.cluster().localNode().id().toString());
+            g.compute().execute(ClientStopNodeTask.class, g.cluster().localNode().id().toString());
 
             // Wait for node stops.
             //U.sleep(1000);
@@ -155,7 +155,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
         // Start nodes in parallel.
         while (add-- > 0) {
-            comp.execute(GridClientStartNodeTask.class, type);
+            comp.execute(ClientStartNodeTask.class, type);
 
             tasks.add(comp.future());
         }
@@ -165,7 +165,7 @@ public class GridClientStartNodeTask extends GridTaskSingleJobSplitAdapter<Strin
 
         // Stop nodes in sequence.
         while (rmv-- > 0)
-            parent.compute().execute(GridClientStopNodeTask.class, type);
+            parent.compute().execute(ClientStopNodeTask.class, type);
 
         // Wait for node stops.
         //U.sleep(1000);

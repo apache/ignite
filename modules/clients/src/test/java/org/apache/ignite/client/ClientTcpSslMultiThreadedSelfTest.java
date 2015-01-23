@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.*;
 /**
  * Runs multithreaded tests for client over tcp binary protocol with ssl enabled.
  */
-public class GridClientTcpSslMultiThreadedSelfTest extends GridClientAbstractMultiThreadedSelfTest {
+public class ClientTcpSslMultiThreadedSelfTest extends ClientAbstractMultiThreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected GridClientProtocol protocol() {
         return GridClientProtocol.TCP;

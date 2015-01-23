@@ -52,7 +52,7 @@ import static org.apache.ignite.testframework.GridTestUtils.*;
 /**
  *
  */
-public abstract class GridClientAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
+public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

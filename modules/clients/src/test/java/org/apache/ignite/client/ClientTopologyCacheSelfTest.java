@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Tests topology caching.
  */
-public class GridClientTopologyCacheSelfTest extends GridCommonAbstractTest {
+public class ClientTopologyCacheSelfTest extends GridCommonAbstractTest {
     static {
         // Override default port.
         System.setProperty(GG_JETTY_PORT, Integer.toString(8081));

@@ -25,18 +25,17 @@ import java.util.*;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 
 /**
- * Test task summarizes length of all strings in the arguments list.
+ * Test task calculate length of the string passed in the argument.
  * <p>
- * The argument of the task is a collection of objects to calculate string length sum of.
+ * The argument of the task is a simple string to calculate length of.
  */
-public class GridClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
+public class ClientStringLengthTask extends ComputeTaskSplitAdapter<String, Integer> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-        throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
         Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
-        if (list != null)
-            for (final Object val : list)
+        if (arg != null)
+            for (final Object val : arg.split(""))
                 jobs.add(new ComputeJobAdapter() {
                     @Override public Object execute() {
                         try {
@@ -64,7 +63,8 @@ public class GridClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Int
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
+        throws IgniteCheckedException {
         if (res.getException() != null)
             return FAILOVER;
 

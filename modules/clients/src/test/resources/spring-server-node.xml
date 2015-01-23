@@ -80,7 +80,7 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.apache.ignite.client.GridClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
                             <property name="className" value="org.apache.ignite.client.model.GridPortablePerson"/>
@@ -219,7 +219,7 @@
                     <property name="queryIndexEnabled" value="false"/>
 
                     <property name="store">
-                        <bean class="org.apache.ignite.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.HashMapStore"/>
                     </property>
                 </bean>
 
@@ -254,7 +254,7 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.apache.ignite.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.HashMapStore"/>
                     </property>
                 </bean>
             </list>
