@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.testsuites
+package org.apache.ignite.scalar.testsuites
 
 import org.apache.ignite.IgniteSystemProperties
+import org.apache.ignite.scalar.tests.examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
 import org.scalatest._
-import org.gridgain.scalar.tests._
-import examples.{ScalarExamplesMultiNodeSelfTest, ScalarExamplesSelfTest}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import IgniteSystemProperties._

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.tests.examples
+package org.apache.ignite.scalar.tests.examples
 
 import org.gridgain.scalar.examples._
 import org.gridgain.scalar.scalar

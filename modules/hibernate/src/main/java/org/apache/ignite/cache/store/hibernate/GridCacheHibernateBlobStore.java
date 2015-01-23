@@ -161,7 +161,8 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private static final String ATTR_SES = "HIBERNATE_STORE_SESSION";
 
     /** Name of Hibarname mapping resource. */
-    private static final String MAPPING_RESOURCE = "org/gridgain/grid/cache/store/hibernate/GridCacheHibernateBlobStoreEntry.hbm.xml";
+    private static final String MAPPING_RESOURCE =
+        "org/apache/ignite/cache/store/hibernate/GridCacheHibernateBlobStoreEntry.hbm.xml";
 
     /** Init guard. */
     @GridToStringExclude

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.testsuites
+package org.apache.ignite.scalar.testsuites
 
 import org.scalatest._
 import org.gridgain.scalar.tests._
