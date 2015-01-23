@@ -224,15 +224,15 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertNull(near.localPeek(1));
             assertNull(dht().peek(1));
 
-            assertTrue(near.isLocked(1));
-            assertTrue(near.isLockedByThread(1));
+            assertTrue(near.isLocalLocked(1, false));
+            assertTrue(near.isLocalLocked(1, true));
         }
         finally {
             near.lock(1).unlock();
         }
 
-        assertFalse(near.isLocked(1));
-        assertFalse(near.isLockedByThread(1));
+        assertFalse(near.isLocalLocked(1, false));
+        assertFalse(near.isLocalLocked(1, true));
     }
 
     /** @throws Exception If failed. */
@@ -247,8 +247,8 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("1", near.localPeek(1));
             assertEquals("1", dht().peek(1));
 
-            assertTrue(near.isLocked(1));
-            assertTrue(near.isLockedByThread(1));
+            assertTrue(near.isLocalLocked(1, false));
+            assertTrue(near.isLocalLocked(1, true));
 
             near.lock(1).lock(); // Reentry.
 
@@ -259,22 +259,22 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
                 assertNull(near.localPeek(1));
                 assertNull(dht().peek(1));
 
-                assertTrue(near.isLocked(1));
-                assertTrue(near.isLockedByThread(1));
+                assertTrue(near.isLocalLocked(1, false));
+                assertTrue(near.isLocalLocked(1, true));
             }
             finally {
                 near.lock(1).unlock();
             }
 
-            assertTrue(near.isLocked(1));
-            assertTrue(near.isLockedByThread(1));
+            assertTrue(near.isLocalLocked(1, false));
+            assertTrue(near.isLocalLocked(1, true));
         }
         finally {
             near.lock(1).unlock();
         }
 
-        assertFalse(near.isLocked(1));
-        assertFalse(near.isLockedByThread(1));
+        assertFalse(near.isLocalLocked(1, false));
+        assertFalse(near.isLocalLocked(1, true));
     }
 
     /** @throws Exception If failed. */

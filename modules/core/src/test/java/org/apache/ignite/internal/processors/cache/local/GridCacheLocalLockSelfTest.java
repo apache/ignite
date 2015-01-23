@@ -80,13 +80,13 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
     public void testLockReentry() throws IgniteCheckedException {
         IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        assert !cache.isLocked(1);
-        assert !cache.isLockedByThread(1);
+        assert !cache.isLocalLocked(1, false);
+        assert !cache.isLocalLocked(1, true);
 
         cache.lock(1).lock();
 
-        assert cache.isLocked(1);
-        assert cache.isLockedByThread(1);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(1, true);
 
         try {
             assert cache.get(1) == null;
@@ -96,8 +96,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
             // Reentry.
             cache.lock(1).lock();
 
-            assert cache.isLocked(1);
-            assert cache.isLockedByThread(1);
+            assert cache.isLocalLocked(1, false);
+            assert cache.isLocalLocked(1, true);
 
             try {
                 assert "1".equals(cache.getAndRemove(1));
@@ -106,15 +106,15 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                 cache.lock(1).unlock();
             }
 
-            assert cache.isLocked(1);
-            assert cache.isLockedByThread(1);
+            assert cache.isLocalLocked(1, false);
+            assert cache.isLocalLocked(1, true);
         }
         finally {
             cache.lock(1).unlock();
         }
 
-        assert !cache.isLocked(1);
-        assert !cache.isLockedByThread(1);
+        assert !cache.isLocalLocked(1, false);
+        assert !cache.isLocalLocked(1, true);
     }
 
     /**
@@ -137,8 +137,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                 info("After lock for key 1");
 
                 try {
-                    assert cache.isLocked(1);
-                    assert cache.isLockedByThread(1);
+                    assert cache.isLocalLocked(1, false);
+                    assert cache.isLocalLocked(1, true);
 
                     latch1.countDown();
 
@@ -175,8 +175,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 assert !cache.lock(1).tryLock();
 
-                assert cache.isLocked(1);
-                assert !cache.isLockedByThread(1);
+                assert cache.isLocalLocked(1, false);
+                assert !cache.isLocalLocked(1, true);
 
                 info("Tried to lock cache for key1");
 
@@ -188,8 +188,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 assert cache.lock(1).tryLock();
 
-                assert cache.isLocked(1);
-                assert cache.isLockedByThread(1);
+                assert cache.isLocalLocked(1, false);
+                assert cache.isLocalLocked(1, true);
 
                 try {
                     info("Locked cache for key 1");
@@ -202,8 +202,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                     info("Removed value for key 1");
 
-                    assert cache.isLocked(1);
-                    assert cache.isLockedByThread(1);
+                    assert cache.isLocalLocked(1, false);
+                    assert cache.isLocalLocked(1, true);
 
                     info("Checked that cache is locked for key 1");
                 }
@@ -213,8 +213,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Unlocked cache for key 1");
                 }
 
-                assert !cache.isLocked(1);
-                assert !cache.isLockedByThread(1);
+                assert !cache.isLocalLocked(1, false);
+                assert !cache.isLocalLocked(1, true);
 
                 return null;
             }
@@ -229,8 +229,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         t1.checkError();
         t2.checkError();
 
-        assert !cache.isLockedByThread(1);
-        assert !cache.isLocked(1);
+        assert !cache.isLocalLocked(1, true);
+        assert !cache.isLocalLocked(1, false);
     }
 
     /**
@@ -248,8 +248,8 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                 info("Locked cache key: 1");
 
                 try {
-                    assert cache.isLockedByThread(1);
-                    assert cache.isLocked(1);
+                    assert cache.isLocalLocked(1, true);
+                    assert cache.isLocalLocked(1, false);
 
                     info("Verified that cache key is locked: 1");
 
@@ -309,7 +309,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         t1.checkError();
         t2.checkError();
 
-        assert !cache.isLockedByThread(1);
-        assert !cache.isLocked(1);
+        assert !cache.isLocalLocked(1, true);
+        assert !cache.isLocalLocked(1, false);
     }
 }

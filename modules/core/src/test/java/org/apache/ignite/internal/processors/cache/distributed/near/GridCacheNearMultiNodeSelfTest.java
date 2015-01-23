@@ -760,8 +760,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals(val, near.localPeek(key));
             assertEquals(val, dht(primaryGrid(key)).peek(key));
 
-            assertTrue(near.isLocked(key));
-            assertTrue(near.isLockedByThread(key));
+            assertTrue(near.isLocalLocked(key, false));
+            assertTrue(near.isLocalLocked(key, true));
 
             near.lock(key).lock(); // Reentry.
 
@@ -772,15 +772,15 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertNull(near.localPeek(key));
                 assertNull(dht(primaryGrid(key)).peek(key));
 
-                assertTrue(near.isLocked(key));
-                assertTrue(near.isLockedByThread(key));
+                assertTrue(near.isLocalLocked(key, false));
+                assertTrue(near.isLocalLocked(key, true));
             }
             finally {
                 near.lock(key).unlock();
             }
 
-            assertTrue(near.isLocked(key));
-            assertTrue(near.isLockedByThread(key));
+            assertTrue(near.isLocalLocked(key, false));
+            assertTrue(near.isLocalLocked(key, true));
         }
         catch (Throwable t) {
             error("Test failed.", t);
@@ -792,7 +792,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         assertFalse(near(0).isLockedNearOnly(key));
-        assertFalse(near.isLockedByThread(key));
+        assertFalse(near.isLocalLocked(key, true));
     }
 
     /** @throws Exception If failed. */

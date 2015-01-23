@@ -30,7 +30,7 @@ import java.util.concurrent.locks.*;
 /**
  *
  */
-class CacheLockImpl<K> implements CacheLock {
+class CacheLockImpl<K> implements Lock {
     /** */
     private final GridCacheProjectionEx<K, ?> delegate;
 
@@ -44,26 +44,6 @@ class CacheLockImpl<K> implements CacheLock {
     CacheLockImpl(GridCacheProjectionEx<K, ?> delegate, Collection<? extends K> keys) {
         this.delegate = delegate;
         this.keys = keys;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLocked() {
-        for (K key : keys) {
-            if (!delegate.isLocked(key))
-                return false;
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLockedByThread() {
-        for (K key : keys) {
-            if (!delegate.isLockedByThread(key))
-                return false;
-        }
-
-        return true;
     }
 
     /** {@inheritDoc} */

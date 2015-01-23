@@ -88,11 +88,11 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         assert lock.tryLock();
 
-        assert cache.isLocked(1);
+        assert cache.isLocalLocked(1, false);
 
         lock.unlock();
 
-        assert !cache.isLocked(1);
+        assert !cache.isLocalLocked(1, false);
     }
 
     /**
@@ -106,20 +106,20 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         lock.lock();
 
         try {
-            assert cache.isLockedByThread(1);
+            assert cache.isLocalLocked(1, true);
 
             lock.lock();
 
             lock.unlock();
 
-            assert cache.isLockedByThread(1);
+            assert cache.isLocalLocked(1, true);
         }
         finally {
             lock.unlock();
         }
 
-        assert !cache.isLockedByThread(1);
-        assert !cache.isLocked(1);
+        assert !cache.isLocalLocked(1, true);
+        assert !cache.isLocalLocked(1, false);
     }
 
     /**
@@ -133,33 +133,33 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         lock.lock();
 
-        assert cache.isLocked(1);
-        assert cache.isLockedByThread(1);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(1, true);
 
         lock.lock();
 
-        assert cache.isLocked(1);
-        assert cache.isLockedByThread(1);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(1, true);
 
         lock.lock();
 
-        assert cache.isLocked(1);
-        assert cache.isLockedByThread(1);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(1, true);
 
         lock.unlock();
 
-        assert cache.isLocked(1);
-        assert cache.isLockedByThread(1);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(1, true);
 
         lock.unlock();
 
-        assert cache.isLocked(1);
-        assert cache.isLockedByThread(1);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(1, true);
 
         lock.unlock();
 
-        assert !cache.isLocked(1);
-        assert !cache.isLockedByThread(1);
+        assert !cache.isLocalLocked(1, false);
+        assert !cache.isLocalLocked(1, true);
     }
 
     /**
@@ -174,12 +174,12 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
-                assertFalse(cache.lock(1).isLockedByThread());
+                assertFalse(cache.isLocalLocked(1, true));
 
                 cache.lock(1).lock();
 
                 try {
-                    assertTrue(cache.lock(1).isLockedByThread());
+                    assertTrue(cache.isLocalLocked(1, true));
                 }
                 finally {
                     cache.lock(1).unlock();
@@ -235,8 +235,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         cache.lock(2).unlock();
 
-        assertFalse(cache.lock(1).isLocked());
-        assertFalse(cache.lock(2).isLocked());
+        assertFalse(cache.isLocalLocked(1, false));
+        assertFalse(cache.isLocalLocked(2, false));
 
         assertTrue(isOk.get());
     }
@@ -256,13 +256,13 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             assert cache.getAndPut(key, "1") == null;
             assert "1".equals(cache.get(key));
 
-            assert cache.isLocked(key);
-            assert cache.isLockedByThread(key);
+            assert cache.isLocalLocked(key, false);
+            assert cache.isLocalLocked(key, true);
 
             cache.lock(key).lock();
 
-            assert cache.isLocked(key);
-            assert cache.isLockedByThread(key);
+            assert cache.isLocalLocked(key, false);
+            assert cache.isLocalLocked(key, true);
 
             try {
                 assert "1".equals(cache.getAndRemove(key));
@@ -271,14 +271,14 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                 cache.lock(key).unlock();
             }
 
-            assert cache.isLocked(key);
-            assert cache.isLockedByThread(key);
+            assert cache.isLocalLocked(key, false);
+            assert cache.isLocalLocked(key, true);
         }
         finally {
             cache.lock(key).unlock();
 
-            assert !cache.isLocked(key);
-            assert !cache.isLockedByThread(key);
+            assert !cache.isLocalLocked(key, false);
+            assert !cache.isLocalLocked(key, true);
         }
     }
 
@@ -302,8 +302,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                 info("After lock for key 1");
 
                 try {
-                    assert cache.isLocked(1);
-                    assert cache.isLockedByThread(1);
+                    assert cache.isLocalLocked(1, false);
+                    assert cache.isLocalLocked(1, true);
 
                     l1.countDown();
 
@@ -347,10 +347,10 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
                 assert !cache.lock(1).tryLock();
 
-                if (!cache.isLocked(1))
+                if (!cache.isLocalLocked(1, false))
                     throw new IllegalArgumentException();
 
-                assert !cache.isLockedByThread(1);
+                assert !cache.isLocalLocked(1, true);
 
                 info("Tried to lock cache for key1");
 
@@ -365,8 +365,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                 try {
                     info("Locked cache for key 1");
 
-                    assert cache.isLocked(1);
-                    assert cache.isLockedByThread(1);
+                    assert cache.isLocalLocked(1, false);
+                    assert cache.isLocalLocked(1, true);
 
                     info("Checked that cache is locked for key 1");
                 }
@@ -376,8 +376,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                     info("Unlocked cache for key 1");
                 }
 
-                assert !cache.isLocked(1);
-                assert !cache.isLockedByThread(1);
+                assert !cache.isLocalLocked(1, false);
+                assert !cache.isLocalLocked(1, true);
 
                 return null;
             }
@@ -392,7 +392,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         t1.checkError();
         t2.checkError();
 
-        assert !cache.isLocked(1);
+        assert !cache.isLocalLocked(1, false);
     }
 
     /**
@@ -485,7 +485,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             info("Stop latch wait 1");
 
             assert cache.containsKey(key);
-            assert cache.isLockedByThread(key);
+            assert cache.isLocalLocked(key, true);
 
             latch = new CountDownLatch(2);
 
@@ -501,7 +501,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             info("Stop latch wait 2");
 
             assert cache.containsKey(key);
-            assert cache.isLockedByThread(key);
+            assert cache.isLocalLocked(key, true);
 
             latch = new CountDownLatch(1);
 
@@ -515,7 +515,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             info("Stop latch wait 3");
 
-            assert cache.isLocked(key);
+            assert cache.isLocalLocked(key, false);
         }
         finally {
             cache.lock(key).unlock();
@@ -524,7 +524,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         }
 
         // Entry should be evicted since allowEmptyEntries is false.
-        assert !cache.isLocked(key);
+        assert !cache.isLocalLocked(key, false);
     }
 
     /**
@@ -539,23 +539,23 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         cache.lockAll(keys).lock();
 
-        assert cache.isLocked(1);
-        assert cache.isLocked(2);
-        assert cache.isLocked(3);
+        assert cache.isLocalLocked(1, false);
+        assert cache.isLocalLocked(2, false);
+        assert cache.isLocalLocked(3, false);
 
-        assert cache.isLockedByThread(1);
-        assert cache.isLockedByThread(2);
-        assert cache.isLockedByThread(3);
+        assert cache.isLocalLocked(1, true);
+        assert cache.isLocalLocked(2, true);
+        assert cache.isLocalLocked(3, true);
 
         cache.lockAll(keys).unlock();
 
-        assert !cache.isLocked(1);
-        assert !cache.isLocked(2);
-        assert !cache.isLocked(3);
+        assert !cache.isLocalLocked(1, false);
+        assert !cache.isLocalLocked(2, false);
+        assert !cache.isLocalLocked(3, false);
 
-        assert !cache.isLockedByThread(1);
-        assert !cache.isLockedByThread(2);
-        assert !cache.isLockedByThread(3);
+        assert !cache.isLocalLocked(1, true);
+        assert !cache.isLocalLocked(2, true);
+        assert !cache.isLocalLocked(3, true);
     }
 
     /**

@@ -181,8 +181,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         info("After lock for key: " + k);
 
         try {
-            assert cache1.isLocked(k);
-            assert cache1.isLockedByThread(k);
+            assert cache1.isLocalLocked(k, false);
+            assert cache1.isLocalLocked(k, true);
 
             // Put to cache.
             cache1.put(k, v);
@@ -196,7 +196,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         }
 
         assert !locked(k, 1);
-        assert !cache1.isLockedByThread(k);
+        assert !cache1.isLocalLocked(k, true);
     }
 
     /**
@@ -218,8 +218,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 info("After lock for key: " + kv);
 
                 try {
-                    assert cache1.isLocked(kv);
-                    assert cache1.isLockedByThread(kv);
+                    assert cache1.isLocalLocked(kv, false);
+                    assert cache1.isLocalLocked(kv, true);
 
                     l1.countDown();
 
@@ -239,7 +239,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                 l2.await();
 
-                assert !cache1.isLockedByThread(kv);
+                assert !cache1.isLocalLocked(kv, true);
                 assert !locked(kv, 1);
 
                 return null;
@@ -268,7 +268,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 }
 
                 assert !locked(kv, 2);
-                assert !cache2.isLockedByThread(kv);
+                assert !cache2.isLocalLocked(kv, true);
 
                 Thread.sleep(1000);
 
@@ -302,8 +302,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 info("Locked cache key: 1");
 
                 try {
-                    assert cache1.isLocked(1);
-                    assert cache1.isLockedByThread(1);
+                    assert cache1.isLocalLocked(1, false);
+                    assert cache1.isLocalLocked(1, true);
 
                     info("Verified that cache key is locked: 1");
 
@@ -329,7 +329,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 l2.await();
 
                 assert !locked(1, 1);
-                assert !cache1.isLockedByThread(1);
+                assert !cache1.isLocalLocked(1, true);
 
                 return null;
             }
@@ -396,8 +396,8 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                     try {
                         for (Integer key : keys) {
-                            assert cache1.isLocked(key);
-                            assert cache1.isLockedByThread(key);
+                            assert cache1.isLocalLocked(key, false);
+                            assert cache1.isLocalLocked(key, true);
                         }
 
                         l1.countDown();
@@ -446,7 +446,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                         // The keys should still be locked.
                         for (Integer key : keys)
-                            assert cache1.isLocked(key);
+                            assert cache1.isLocalLocked(key, false);
                     }
                     finally {
                         l2.countDown();

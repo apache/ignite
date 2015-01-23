@@ -533,11 +533,11 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         c.lock(key).lock();
 
-        assertTrue(c.isLocked(key));
+        assertTrue(c.isLocalLocked(key, false));
 
         c.lock(key).unlock();
 
-        assertFalse(c.isLocked(key));
+        assertFalse(c.isLocalLocked(key, false));
 
         assertNull(c.localPeek(key));
 

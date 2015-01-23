@@ -130,8 +130,8 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                 info("After lock for key: " + kv);
 
                 try {
-                    assert cache1.isLocked(kv);
-                    assert cache1.isLockedByThread(kv);
+                    assert cache1.isLocalLocked(kv, false);
+                    assert cache1.isLocalLocked(kv, true);
 
                     l1.countDown();
 
@@ -149,7 +149,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     info("Unlocked key in thread 1: " + kv);
                 }
 
-                assert !cache1.isLockedByThread(kv);
+                assert !cache1.isLocalLocked(kv, true);
 
                 return null;
             }
@@ -175,7 +175,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     info("Unlocked key in thread 2: " + kv);
                 }
 
-                assert !cache2.isLockedByThread(kv);
+                assert !cache2.isLocalLocked(kv, true);
 
                 return null;
             }
