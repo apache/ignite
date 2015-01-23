@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
  * Result set test.
  */
 @SuppressWarnings("FloatingPointEquality")
-public class GridJdbcResultSetSelfTest extends GridCommonAbstractTest {
+public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
 /**
  * Metadata tests.
  */
-public class GridJdbcMetadataSelfTest extends GridCommonAbstractTest {
+public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 

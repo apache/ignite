@@ -31,14 +31,14 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite JDBC Driver Test Suite");
 
-        suite.addTest(new TestSuite(GridJdbcConnectionSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcStatementSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcPreparedStatementSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcResultSetSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcComplexQuerySelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcMetadataSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcEmptyCacheSelfTest.class));
-        suite.addTest(new TestSuite(GridJdbcLocalCachesSelfTest.class));
+        suite.addTest(new TestSuite(JdbcConnectionSelfTest.class));
+        suite.addTest(new TestSuite(JdbcStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcPreparedStatementSelfTest.class));
+        suite.addTest(new TestSuite(JdbcResultSetSelfTest.class));
+        suite.addTest(new TestSuite(JdbcComplexQuerySelfTest.class));
+        suite.addTest(new TestSuite(JdbcMetadataSelfTest.class));
+        suite.addTest(new TestSuite(JdbcEmptyCacheSelfTest.class));
+        suite.addTest(new TestSuite(JdbcLocalCachesSelfTest.class));
 
         return suite;
     }

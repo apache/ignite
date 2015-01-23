@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 /**
  * Connection test.
  */
-public class GridJdbcConnectionSelfTest extends GridCommonAbstractTest {
+public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
