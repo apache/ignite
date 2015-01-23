@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.configuration.*;
@@ -186,6 +187,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** Cache weak query iterator holder. */
+    private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -300,6 +304,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (expiryPlc instanceof EternalExpiryPolicy)
             expiryPlc = null;
+
+        itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
 
     /**
@@ -834,6 +840,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public GridCacheContinuousQueryManager<K, V> continuousQueries() {
         return contQryMgr;
+    }
+
+    /**
+     * @return Iterators Holder.
+     */
+    public CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder() {
+        return itHolder;
     }
 
     /**
