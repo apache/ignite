@@ -5092,14 +5092,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Map<String, Integer> entries = new HashMap<>();
 
-        try (IgniteDataLoader<String, Integer> dataLoader = ignite(0).dataLoader(null)) {
-            dataLoader.isolated(true);
+        for (int i = 0; i < SIZE; ++i) {
+            cache.put(Integer.toString(i), i);
 
-            for (int i = 0; i < SIZE; ++i) {
-                dataLoader.addData(Integer.toString(i), i);
-
-                entries.put(Integer.toString(i), i);
-            }
+            entries.put(Integer.toString(i), i);
         }
 
         checkIteratorHasNext();
