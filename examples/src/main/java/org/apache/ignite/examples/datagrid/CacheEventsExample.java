@@ -51,7 +51,7 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            final Cache<Integer, String> cache = g.cache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
             cache.globalClearAll(0);

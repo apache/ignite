@@ -29,7 +29,7 @@ import java.sql.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.jdbc.IgniteJdbcDriver.*;
 
 /**
@@ -55,7 +55,7 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
         cache.setCacheMode(LOCAL);
         cache.setWriteSynchronizationMode(FULL_SYNC);
 
-        GridCacheQueryConfiguration qryCfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
 
         qryCfg.setIndexPrimitiveKey(true);
 
@@ -78,14 +78,14 @@ public class JdbcLocalCachesSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(2);
 
-        GridCache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
+        Cache<Object, Object> cache1 = grid(0).cache(CACHE_NAME);
 
         assert cache1 != null;
 
         assert cache1.putx("key1", 1);
         assert cache1.putx("key2", 2);
 
-        GridCache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
+        Cache<Object, Object> cache2 = grid(1).cache(CACHE_NAME);
 
         assert cache2 != null;
 

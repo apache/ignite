@@ -55,7 +55,7 @@ public class CacheCountDownLatchExample {
             final String latchName = UUID.randomUUID().toString();
 
             // Initialize count down latch in grid.
-            GridCacheCountDownLatch latch = g.cache(CACHE_NAME).dataStructures().
+            CacheCountDownLatch latch = g.cache(CACHE_NAME).dataStructures().
                 countDownLatch(latchName, INITIAL_COUNT, false, true);
 
             System.out.println("Latch initial value: " + latch.count());
@@ -97,7 +97,7 @@ public class CacheCountDownLatchExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheCountDownLatch latch = Ignition.ignite().cache(cacheName).dataStructures().
+                CacheCountDownLatch latch = Ignition.ignite().cache(cacheName).dataStructures().
                     countDownLatch(latchName, 1, false, true);
 
                 int newCnt = latch.countDown();

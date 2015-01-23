@@ -34,7 +34,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Partitioned affinity test.
@@ -89,13 +89,13 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
     /**
      * @return Affinity function for test.
      */
-    protected abstract GridCacheAffinityFunction affinityFunction();
+    protected abstract CacheAffinityFunction affinityFunction();
 
     /**
      * @param ignite Grid.
      * @return Affinity.
      */
-    static GridCacheAffinity<Object> affinity(Ignite ignite) {
+    static CacheAffinity<Object> affinity(Ignite ignite) {
         return ignite.cache(null).affinity();
     }
 
@@ -104,7 +104,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(GridCacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -124,7 +124,7 @@ public abstract class GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest 
             for (int i = 0; i < grids; i++) {
                 final Ignite g = grid(i);
 
-                GridCacheAffinity<Object> aff = affinity(g);
+                CacheAffinity<Object> aff = affinity(g);
 
                 List<TcpDiscoveryNode> top = new ArrayList<>();
 

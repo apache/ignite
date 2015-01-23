@@ -31,7 +31,7 @@ import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
- * {@link org.apache.ignite.cache.datastructures.GridCacheQueue} implementation using transactional cache.
+ * {@link org.apache.ignite.cache.datastructures.CacheQueue} implementation using transactional cache.
  */
 public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** */

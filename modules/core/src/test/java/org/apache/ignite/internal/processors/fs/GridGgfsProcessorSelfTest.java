@@ -61,7 +61,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
     protected IgniteFs ggfs;
 
     /** Meta cache. */
-    private GridCache<Object, Object> metaCache;
+    private Cache<Object, Object> metaCache;
 
     /** Meta cache name. */
     private String metaCacheName;
@@ -131,13 +131,13 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         }
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setQueryIndexEnabled(false);
 
@@ -411,7 +411,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
         ggfs.delete(path("/"), false);
         assertEquals(Collections.<IgniteFsPath>emptyList(), ggfs.listPaths(path("/")));
 
-        for (GridCacheEntry<Object, Object> e : metaCache)
+        for (CacheEntry<Object, Object> e : metaCache)
             info("Entry in cache [key=" + e.getKey() + ", val=" + e.getValue() + ']');
     }
 
@@ -682,8 +682,8 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
         IgniteUuid fileId = U.field(ggfs.info(path), "fileId");
 
-        GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
-        GridCache<GridGgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
+        Cache<IgniteUuid, GridGgfsFileInfo> metaCache = grid(0).cachex(META_CACHE_NAME);
+        Cache<GridGgfsBlockKey, byte[]> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
         GridGgfsFileInfo info = metaCache.get(fileId);
 

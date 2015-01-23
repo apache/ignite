@@ -33,7 +33,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -61,7 +61,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(GRID_CNT - 1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
@@ -96,7 +96,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         info("Primary node for key [id=" + node.id() + ", order=" + node.order() + ", key=" + key + ']');
 
-        GridCache<Integer, String> cache = cache(idx);
+        Cache<Integer, String> cache = cache(idx);
 
         cache.put(key, "val");
 
@@ -105,11 +105,11 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
         for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
             info("Check grid index: " + checkIdx);
 
-            GridCache<Integer, String> checkCache = cache(checkIdx);
+            Cache<Integer, String> checkCache = cache(checkIdx);
 
             assert !checkCache.lock(key, -1);
 
-            GridCacheEntry e = checkCache.entry(key);
+            CacheEntry e = checkCache.entry(key);
 
             assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
         }
@@ -137,9 +137,9 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
                 for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
                     info("Check grid index: " + checkIdx);
 
-                    GridCache<Integer, String> checkCache = cache(checkIdx);
+                    Cache<Integer, String> checkCache = cache(checkIdx);
 
-                    GridCacheEntry e = checkCache.entry(key);
+                    CacheEntry e = checkCache.entry(key);
 
                     info("Checking entry: " + e);
 

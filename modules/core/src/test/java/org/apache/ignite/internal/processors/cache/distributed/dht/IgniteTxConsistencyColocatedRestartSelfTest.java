@@ -30,7 +30,7 @@ public class IgniteTxConsistencyColocatedRestartSelfTest extends IgniteTxConsist
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode partitionDistributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode partitionDistributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 }

@@ -21,7 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests private cache interface on partitioned cache with near enabled.
@@ -33,7 +33,7 @@ public class GridCacheExNearFullApiSelfTest extends GridCacheExAbstractFullApiSe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 }

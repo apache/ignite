@@ -45,9 +45,9 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     }
 
     /** Write closure. */
-    private final CIX1<GridCacheProjection<Integer, Integer>> writeClos =
-        new CIX1<GridCacheProjection<Integer, Integer>>() {
-        @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
+    private final CIX1<CacheProjection<Integer, Integer>> writeClos =
+        new CIX1<CacheProjection<Integer, Integer>>() {
+        @Override public void applyx(CacheProjection<Integer, Integer> cache)
             throws IgniteCheckedException {
             for (int i = 0; i < operationsPerTx; i++) {
                 int kv = RAND.nextInt(KEY_RANGE);
@@ -63,9 +63,9 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     };
 
     /** Read closure. */
-    private final CIX1<GridCacheProjection<Integer, Integer>> readClos =
-        new CIX1<GridCacheProjection<Integer, Integer>>() {
-        @Override public void applyx(GridCacheProjection<Integer, Integer> cache)
+    private final CIX1<CacheProjection<Integer, Integer>> readClos =
+        new CIX1<CacheProjection<Integer, Integer>>() {
+        @Override public void applyx(CacheProjection<Integer, Integer> cache)
             throws IgniteCheckedException {
             for (int i = 0; i < operationsPerTx; i++) {
                 int k = RAND.nextInt(KEY_RANGE);
@@ -102,7 +102,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
     private void memoryTest() {
         Ignite ignite = G.ignite();
 
-        final GridCache<Integer, byte[]> cache = ignite.cache(null);
+        final Cache<Integer, byte[]> cache = ignite.cache(null);
 
         assert cache != null;
 

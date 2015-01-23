@@ -31,7 +31,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -95,7 +95,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            Cache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, i);
@@ -126,7 +126,7 @@ public abstract class GridCacheDaemonNodeAbstractSelfTest extends GridCommonAbst
 
             startGrid(4);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            Cache<Integer, Integer> cache = grid(0).cache(null);
 
             for (int i = 0; i < 30; i++) {
                 try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {

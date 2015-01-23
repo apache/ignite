@@ -43,7 +43,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Cache set implementation.
  */
-public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCacheSet<T> {
+public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheSet<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -51,7 +51,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private final GridCacheContext ctx;
 
     /** Cache. */
-    private final GridCache<GridCacheSetItemKey, Boolean> cache;
+    private final Cache<GridCacheSetItemKey, Boolean> cache;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -75,7 +75,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     private final ReferenceQueue<SetIterator<?>> itRefQueue = new ReferenceQueue<>();
 
     /** Iterators futures. */
-    private final Map<WeakReference<SetIterator<?>>, GridCacheQueryFuture<?>> itFuts = new ConcurrentHashMap8<>();
+    private final Map<WeakReference<SetIterator<?>>, CacheQueryFuture<?>> itFuts = new ConcurrentHashMap8<>();
 
     /**
      * @param ctx Cache context.
@@ -123,7 +123,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
                 return set != null ? set.size() : 0;
             }
 
-            GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
@@ -341,14 +341,14 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<T> iterator0() {
         try {
-            GridCacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
+            CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null, null,
                 new GridSetQueryPredicate<>(id, collocated), false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
             qry.projection(ctx.grid().forNodes(nodes));
 
-            GridCacheQueryFuture<T> fut = qry.execute();
+            CacheQueryFuture<T> fut = qry.execute();
 
             SetIterator<T> it = new SetIterator<>(fut);
 
@@ -444,7 +444,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         this.rmvd = rmvd;
 
         if (rmvd) {
-            for (GridCacheQueryFuture<?> fut : itFuts.values()) {
+            for (CacheQueryFuture<?> fut : itFuts.values()) {
                 try {
                     fut.cancel();
                 }
@@ -458,11 +458,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
     }
 
     /**
-     * Throws {@link GridCacheDataStructureRemovedRuntimeException} if set was removed.
+     * Throws {@link org.apache.ignite.cache.datastructures.CacheDataStructureRemovedRuntimeException} if set was removed.
      */
     private void checkRemoved() {
         if (rmvd)
-            throw new GridCacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + this);
+            throw new CacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + this);
     }
 
     /**
@@ -473,7 +473,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
             try {
                 WeakReference<SetIterator<?>> weakRef = (WeakReference<SetIterator<?>>)itRef;
 
-                GridCacheQueryFuture<?> fut = itFuts.remove(weakRef);
+                CacheQueryFuture<?> fut = itFuts.remove(weakRef);
 
                 if (fut != null)
                     fut.cancel();
@@ -528,7 +528,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         private static final long serialVersionUID = -1460570789166994846L;
 
         /** Query future. */
-        private final GridCacheQueryFuture<T> fut;
+        private final CacheQueryFuture<T> fut;
 
         /** Init flag. */
         private boolean init;
@@ -545,7 +545,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         /**
          * @param fut Query future.
          */
-        private SetIterator(GridCacheQueryFuture<T> fut) {
+        private SetIterator(CacheQueryFuture<T> fut) {
             this.fut = fut;
 
             weakRef = new WeakReference<SetIterator<?>>(this, itRefQueue);
@@ -701,7 +701,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements GridCa
         /**
          * @return Item affinity key.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public Object affinityKey() {
             return setName;
         }

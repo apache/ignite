@@ -29,8 +29,8 @@ import java.util.*;
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
  * {@gglink org.gridgain.grid.cache.jta.GridCacheTmLookup}
- * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.GridCacheProjection} API
- * via any of the {@code 'GridCacheProjection.txStart(..)'} methods.
+ * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.CacheProjection} API
+ * via any of the {@code 'CacheProjection.txStart(..)'} methods.
  * <p>
  * Cache transactions support the following isolation levels:
  * <ul>
@@ -69,7 +69,7 @@ import java.util.*;
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
  *  {@link CacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.cache.GridCacheFlag#SYNC_COMMIT}.
+ *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.cache.CacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link IgniteTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic
@@ -98,7 +98,7 @@ import java.util.*;
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = GridGain.grid().cache();
+ * Cache&lt;String, Integer&gt; cache = GridGain.grid().cache();
  *
  * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.

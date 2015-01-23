@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Result set test.
@@ -85,7 +85,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<Integer, TestObject> cache = grid(0).cache(null);
+        Cache<Integer, TestObject> cache = grid(0).cache(null);
 
         assert cache != null;
 
@@ -528,75 +528,75 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int id;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Boolean boolVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Byte byteVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Short shortVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Integer intVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Long longVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Float floatVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Double doubleVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private BigDecimal bigVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private String strVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private byte[] arrVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Date dateVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Time timeVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private Timestamp tsVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private URL urlVal;
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private TestObjectField f1 = new TestObjectField(100, "AAAA");
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private TestObjectField f2 = new TestObjectField(500, "BBBB");
 
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private TestObjectField f3;
 
         /**

@@ -72,7 +72,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
             cache.put(key, i);
         }
 
-        GridCacheConsistentHashAffinityFunction aff = (GridCacheConsistentHashAffinityFunction)cache.configuration().getAffinity();
+        CacheConsistentHashAffinityFunction aff = (CacheConsistentHashAffinityFunction)cache.configuration().getAffinity();
 
         for (int i = 0 ; i < aff.getPartitions(); i++)
             String.valueOf(cache.entrySet(i));
@@ -114,17 +114,17 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 Ignite g = grid(i);
 
                 // This node has the partition.
-                GridCache<String, Integer> nodeCache = g.cache(null);
+                Cache<String, Integer> nodeCache = g.cache(null);
 
                 if (offheapTiered(nodeCache))
                     continue;
 
-                Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                Set<CacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     Collection<String> cp = new LinkedList<>(vals);
 
-                    for (GridCacheEntry<String, Integer> e : partEntrySet) {
+                    for (CacheEntry<String, Integer> e : partEntrySet) {
                         String eKey = e.getKey();
 
                         assertTrue("Got unexpected key:" + eKey, cp.contains(eKey));
@@ -156,20 +156,20 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 Ignite g = grid(i);
 
                 // This node has the partition.
-                GridCache<String, Integer> nodeCache = g.cache(null);
+                Cache<String, Integer> nodeCache = g.cache(null);
 
                 if (offheapTiered(nodeCache))
                     continue;
 
                 // First node with this partition will remove first key from partition.
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
-                    Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                    Set<CacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
-                    Iterator<GridCacheEntry<String, Integer>> it = partEntrySet.iterator();
+                    Iterator<CacheEntry<String, Integer>> it = partEntrySet.iterator();
 
                     assertTrue(it.hasNext());
 
-                    GridCacheEntry<String, Integer> next = it.next();
+                    CacheEntry<String, Integer> next = it.next();
 
                     deleted.add(next.getKey());
 
@@ -190,7 +190,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
      * @throws Exception If failed.
      */
     public void testPartitionEntrySetRemove() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        Cache<String, Integer> cache = cache(0);
 
         Map<Integer, Collection<String>> partMap = new HashMap<>();
 
@@ -224,12 +224,12 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
                 Ignite g = grid(i);
 
                 // This node has the partition.
-                GridCache<String, Integer> nodeCache = g.cache(null);
+                Cache<String, Integer> nodeCache = g.cache(null);
 
                 if (offheapTiered(nodeCache))
                     continue;
 
-                Set<GridCacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
+                Set<CacheEntry<String, Integer>> partEntrySet = nodeCache.entrySet(part);
 
                 if (nodeCache.affinity().isPrimaryOrBackup(g.cluster().localNode(), key)) {
                     assertTrue(partEntrySet.contains(nodeCache.entry(key)));

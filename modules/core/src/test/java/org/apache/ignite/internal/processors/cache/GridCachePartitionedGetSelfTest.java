@@ -33,9 +33,9 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridTopic.*;
 
 /**
@@ -117,9 +117,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromPrimaryNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<String, Integer> c = grid(i).cache(null);
+            Cache<String, Integer> c = grid(i).cache(null);
 
-            GridCacheEntry<String, Integer> e = c.entry(KEY);
+            CacheEntry<String, Integer> e = c.entry(KEY);
 
             if (e.primary()) {
                 info("Primary node: " + grid(i).localNode().id());
@@ -138,9 +138,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromBackupNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<String, Integer> c = grid(i).cache(null);
+            Cache<String, Integer> c = grid(i).cache(null);
 
-            GridCacheEntry<String, Integer> e = c.entry(KEY);
+            CacheEntry<String, Integer> e = c.entry(KEY);
 
             if (e.backup()) {
                 info("Backup node: " + grid(i).localNode().id());
@@ -171,9 +171,9 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
      */
     public void testGetFromNearNode() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<String, Integer> c = grid(i).cache(null);
+            Cache<String, Integer> c = grid(i).cache(null);
 
-            GridCacheEntry<String, Integer> e = c.entry(KEY);
+            CacheEntry<String, Integer> e = c.entry(KEY);
 
             if (!e.primary() && !e.backup()) {
                 info("Near node: " + grid(i).localNode().id());
@@ -221,7 +221,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCacheEntry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
+            CacheEntry<String, Integer> e = g.<String, Integer>cache(null).entry(KEY);
 
             if (e.primary()) {
                 info("Primary node: " + g.cluster().localNode().id());

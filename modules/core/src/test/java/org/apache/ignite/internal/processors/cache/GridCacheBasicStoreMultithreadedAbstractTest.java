@@ -18,18 +18,18 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Basic store test.
@@ -47,7 +47,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCache<?, ?> cache = cache();
+        Cache<?, ?> cache = cache();
 
         if (cache != null)
             cache.clearAll();
@@ -99,7 +99,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
             }
 
             /** {@inheritDoc} */
-            @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+            @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends Integer> e) {
                 assert false;
             }
 
@@ -111,7 +111,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
 
         startGrid();
 
-        final GridCache<Integer, Integer> cache = cache();
+        final Cache<Integer, Integer> cache = cache();
 
         int threads = 2;
 

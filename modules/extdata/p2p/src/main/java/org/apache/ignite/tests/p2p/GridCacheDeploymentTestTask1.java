@@ -46,7 +46,7 @@ public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode
                     X.println("Executing GridCacheDeploymentTestTask1 job on node " +
                         ignite.cluster().localNode().id());
 
-                    GridCache<String, GridCacheDeploymentTestValue> cache = ignite.cache(null);
+                    Cache<String, GridCacheDeploymentTestValue> cache = ignite.cache(null);
 
                     for (int i = 0; i < PUT_CNT; i++)
                         cache.putx("1" + i, new GridCacheDeploymentTestValue());

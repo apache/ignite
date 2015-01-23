@@ -37,7 +37,7 @@ import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
 
 /**
@@ -63,7 +63,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
     private int backups = DFLT_BACKUPS;
 
     /** Preload mode. */
-    private GridCachePreloadMode preloadMode = ASYNC;
+    private CachePreloadMode preloadMode = ASYNC;
 
     /** */
     private int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -97,9 +97,9 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             cacheCfg.setCacheMode(PARTITIONED);
             cacheCfg.setPreloadBatchSize(preloadBatchSize);
-            cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+            cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
             cacheCfg.setPreloadMode(preloadMode);
-            cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, partitions));
+            cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
             cacheCfg.setBackups(backups);
             cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -135,7 +135,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cache Cache.
      * @return Affinity.
      */
-    private GridCacheAffinity<Integer> affinity(GridCache<Integer, ?> cache) {
+    private CacheAffinity<Integer> affinity(Cache<Integer, ?> cache) {
         return cache.affinity();
     }
 
@@ -143,7 +143,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param c Cache.
      * @return {@code True} if synchronoous preloading.
      */
-    private boolean isSync(GridCache<?, ?> c) {
+    private boolean isSync(Cache<?, ?> c) {
         return c.configuration().getPreloadMode() == SYNC;
     }
 
@@ -188,7 +188,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
         try {
             Ignite g1 = startGrid(0);
 
-            GridCache<Integer, String> c1 = g1.cache(null);
+            Cache<Integer, String> c1 = g1.cache(null);
 
             putKeys(c1, keyCnt);
             checkKeys(c1, keyCnt);
@@ -199,7 +199,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                GridCache<Integer, String> c = g.cache(null);
+                Cache<Integer, String> c = g.cache(null);
 
                 checkKeys(c, keyCnt);
             }
@@ -219,7 +219,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             for (IgniteFuture<?> fut : exchMgr.exchangeFutures())
                 fut.get();
 
-            GridCacheAffinity<Integer> aff = affinity(c1);
+            CacheAffinity<Integer> aff = affinity(c1);
 
             for (int i = 0; i < keyCnt; i++) {
                 if (aff.mapPartitionToPrimaryAndBackups(aff.partition(i)).contains(g1.cluster().localNode())) {
@@ -240,7 +240,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void putKeys(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }
@@ -250,8 +250,8 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void checkKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
-        GridCacheAffinity<Integer> aff = affinity(c);
+    private void checkKeys(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
+        CacheAffinity<Integer> aff = affinity(c);
 
         boolean sync = isSync(c);
 

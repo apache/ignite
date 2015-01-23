@@ -92,7 +92,7 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
         cfg.setName(META_CACHE_NAME);
 
         cfg.setCacheMode(REPLICATED);
-        cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -112,8 +112,8 @@ public class GridGgfsFragmentizerAbstractSelfTest extends GridGgfsCommonAbstract
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(0);
         cfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(GGFS_GROUP_SIZE));
-        cfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
-        cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setQueryIndexEnabled(false);
         cfg.setAtomicityMode(TRANSACTIONAL);
 

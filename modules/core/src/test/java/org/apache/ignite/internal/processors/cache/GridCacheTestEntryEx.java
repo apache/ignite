@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -116,7 +115,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheEntry<K, V> evictWrap() {
+    @Nullable @Override public CacheEntry<K, V> evictWrap() {
         return null;
     }
 
@@ -337,12 +336,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public GridCacheEntry<K, V> wrap(boolean prjAware) {
+    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
         assert false; return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
+    @Override public CacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         assert false; return null;
     }
 
@@ -368,20 +367,20 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public boolean invalidate(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Override public boolean invalidate(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert false; return false;
     }
 
     /** @inheritDoc */
-    @Override public boolean compact(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Override public boolean compact(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert false;  return false;
     }
 
     /** @inheritDoc */
     @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         assert false; return false;
     }
 
@@ -413,20 +412,20 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         return val;
     }
 
     /** @inheritDoc */
-    @Override public V innerReload(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public V innerReload(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return val;
     }
 
     /** @inheritDoc */
     @Override public GridCacheUpdateTxResult<V> innerSet(@Nullable IgniteTxEx<K, V> tx, UUID evtNodeId, UUID affNodeId,
         @Nullable V val, @Nullable byte[] valBytes, boolean writeThrough, boolean retval, long ttl,
-        boolean evt, boolean metrics, long topVer, IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType,
+        boolean evt, boolean metrics, long topVer, IgnitePredicate<CacheEntry<K, V>>[] filter, GridDrType drType,
         long drExpireTime, @Nullable GridCacheVersion drVer, UUID subjId, String taskName) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult<>(true, rawPut(val, ttl));
@@ -442,7 +441,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean intercept,
         UUID subjId,
         String taskName)
@@ -466,7 +465,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         boolean metrics,
         boolean primary,
         boolean checkVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
         long drExpireTime,
@@ -490,7 +489,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** @inheritDoc */
     @Override public GridCacheUpdateTxResult<V> innerRemove(@Nullable IgniteTxEx<K, V> tx, UUID evtNodeId,
         UUID affNodeId, boolean writeThrough, boolean retval, boolean evt, boolean metrics, long topVer,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
+        IgnitePredicate<CacheEntry<K, V>>[] filter, GridDrType drType, @Nullable GridCacheVersion drVer, UUID subjId,
         String taskName)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         obsoleteVer = ver;
@@ -504,7 +503,7 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
 
     /** @inheritDoc */
     @Override public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
 
@@ -586,26 +585,26 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
-    @Override public V peek(GridCachePeekMode mode, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public V peek(GridCachePeekMode mode, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return val;
     }
 
     /** @inheritDoc */
     @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx)
+        IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         return F.t(val);
     }
 
     /** @inheritDoc */
-    @Override public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Override public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         return val;
     }
 
     /** @inheritDoc */
     @Override public V peekFailFast(GridCachePeekMode mode,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<CacheEntry<K, V>>[] filter) {
         assert false; return null;
     }
 

@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 
 /**
- * Management bean that provides access to {@link org.apache.ignite.cache.GridCache}.
+ * Management bean that provides access to {@link org.apache.ignite.cache.Cache}.
  */
-class GridCacheMBeanAdapter implements GridCacheMBean {
+class GridCacheMBeanAdapter implements CacheMBean {
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
 

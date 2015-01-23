@@ -950,18 +950,18 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridCache<K, V> cachex(@Nullable String name) {
+        @Nullable @Override public <K, V> Cache<K, V> cachex(@Nullable String name) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public <K, V> GridCache<K, V> cachex() {
+        @Nullable @Override public <K, V> Cache<K, V> cachex() {
             return null;
         }
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p) {
+        @Override public Collection<Cache<?, ?>> cachesx(@Nullable IgnitePredicate<? super Cache<?, ?>>... p) {
             return null;
         }
 

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
@@ -285,7 +286,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
         info("Test transaction [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        Cache<Integer, Integer> cache = grid(0).cache(null);
 
         if (putBefore) {
             store.forceFail(false);
@@ -546,7 +547,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
      * @return Key.
      */
     private Integer keyForNode(ClusterNode node, int type) {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        Cache<Integer, Integer> cache = grid(0).cache(null);
 
         if (cache.configuration().getCacheMode() == LOCAL)
             return ++lastKey;
@@ -625,13 +626,13 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<?, ?> entry) {
+        @Override public void write(javax.cache.Cache.Entry<?, ?> entry) {
             if (fail)
                 throw new CacheWriterException("Store exception");
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<?, ?>> entries) {
+        @Override public void writeAll(Collection<javax.cache.Cache.Entry<?, ?>> entries) {
             if (fail)
                 throw new CacheWriterException("Store exception");
         }

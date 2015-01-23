@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.cache.GridCacheProjection
+import org.apache.ignite.cache.CacheProjection
 import org.gridgain.scalar.scalar
 import org.gridgain.scalar.scalar._
 import scala.collection.JavaConversions._
@@ -100,8 +100,8 @@ object ScalarSnowflakeSchemaExample {
         val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
         val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
-        val stores: GridCacheProjection[Int, DimStore] = dimCache.viewByType(classOf[Int], classOf[DimStore])
-        val prods: GridCacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
+        val stores: CacheProjection[Int, DimStore] = dimCache.viewByType(classOf[Int], classOf[DimStore])
+        val prods: CacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
 
         for (i <- 1 to 100) {
             val store: DimStore = rand(stores.values)
@@ -137,7 +137,7 @@ object ScalarSnowflakeSchemaExample {
         val dimCache = grid$.cache[Int, Object](REPL_CACHE_NAME)
         val factCache = grid$.cache[Int, FactPurchase](PART_CACHE_NAME)
 
-        val prods: GridCacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
+        val prods: CacheProjection[Int, DimProduct] = dimCache.viewByType(classOf[Int], classOf[DimProduct])
 
         val p1: DimProduct = rand(prods.values)
         val p2: DimProduct = rand(prods.values)

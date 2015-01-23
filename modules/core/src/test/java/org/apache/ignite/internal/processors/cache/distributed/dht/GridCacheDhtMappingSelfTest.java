@@ -29,8 +29,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests dht mapping.
@@ -49,7 +49,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -78,7 +78,7 @@ public class GridCacheDhtMappingSelfTest extends GridCommonAbstractTest {
 
         startGridsMultiThreaded(nodeCnt);
 
-        GridCache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
+        Cache<Integer, Integer> cache = grid(nodeCnt - 1).cache(null);
 
         int kv = 1;
 

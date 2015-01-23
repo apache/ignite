@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.integration;
 import org.apache.ignite.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -43,7 +43,7 @@ public class IgniteCacheTxLocalNoWriteThroughTest extends IgniteCacheNoWriteThro
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 }

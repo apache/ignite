@@ -29,8 +29,8 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for custom cache projection (with filters and flags).
@@ -58,7 +58,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         cfg.setCacheMode(cacheMode());
         cfg.setWriteSynchronizationMode(FULL_SYNC);
-        cfg.setPreloadMode(GridCachePreloadMode.SYNC);
+        cfg.setPreloadMode(CachePreloadMode.SYNC);
 
         return cfg;
     }
@@ -72,7 +72,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @return Cache instance.
      */
     @SuppressWarnings({"TypeMayBeWeakened"})
-    private GridCache<String, TestCloneable> cacheCloneable() {
+    private Cache<String, TestCloneable> cacheCloneable() {
         return grid(0).cache(null);
     }
 
@@ -118,8 +118,8 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     };
 
     /** */
-    private IgnitePredicate<GridCacheEntry<String, Integer>> entryFilter = new P1<GridCacheEntry<String, Integer>>() {
-        @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+    private IgnitePredicate<CacheEntry<String, Integer>> entryFilter = new P1<CacheEntry<String, Integer>>() {
+        @Override public boolean apply(CacheEntry<String, Integer> e) {
             Integer val = e.peek();
 
             // Let's assume that null values will be passed through, otherwise we won't be able
@@ -157,24 +157,24 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception If check failed.
      */
     private void assertFlagException(Runnable r) throws Exception {
-        assertException(GridCacheFlagException.class, r);
+        assertException(CacheFlagException.class, r);
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testTypeProjection() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         cache.putAll(F.asMap("k1", 1 , "k2", 2, "k3", 3));
 
-        GridCache<Double, Boolean> anotherCache = grid(0).cache(null);
+        Cache<Double, Boolean> anotherCache = grid(0).cache(null);
 
         assert anotherCache != null;
 
         anotherCache.put(3.14, true);
 
-        GridCacheProjection<String, Integer> prj = cache.projection(String.class, Integer.class);
+        CacheProjection<String, Integer> prj = cache.projection(String.class, Integer.class);
 
         List<String> keys = F.asList("k1", "k2", "k3");
 
@@ -186,7 +186,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception In case of error.
      */
     public void testSize() throws Exception {
-        GridCacheProjection<String, Integer> prj = cache().projection(kvFilter);
+        CacheProjection<String, Integer> prj = cache().projection(kvFilter);
 
         assert prj.cache() != null;
 
@@ -226,22 +226,22 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assert cache().containsKey("k");
         assert !cache().containsKey("wrongKey");
 
-        GridCacheProjection<String, Integer> prj = cache().projection(kvFilter);
+        CacheProjection<String, Integer> prj = cache().projection(kvFilter);
 
         assert prj.containsKey("key");
         assert !prj.containsKey("k");
         assert !prj.containsKey("wrongKey");
 
-        assert prj.projection(F.<GridCacheEntry<String, Integer>>alwaysTrue()).containsKey("key");
-        assert !prj.projection(F.<GridCacheEntry<String, Integer>>alwaysFalse()).containsKey("key");
-        assert !prj.projection(F.<GridCacheEntry<String, Integer>>alwaysFalse()).containsKey("k");
+        assert prj.projection(F.<CacheEntry<String, Integer>>alwaysTrue()).containsKey("key");
+        assert !prj.projection(F.<CacheEntry<String, Integer>>alwaysFalse()).containsKey("key");
+        assert !prj.projection(F.<CacheEntry<String, Integer>>alwaysFalse()).containsKey("k");
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testPut() throws Exception {
-        final GridCacheProjection<String, Integer> prj = cache().projection(kvFilter);
+        final CacheProjection<String, Integer> prj = cache().projection(kvFilter);
 
         prj.put("key", 1);
         prj.put("k", 2);
@@ -266,9 +266,9 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception In case of error.
      */
     public void testLocalFlag() throws Exception {
-        GridCacheProjection<String, Integer> prj = cache().projection(entryFilter);
+        CacheProjection<String, Integer> prj = cache().projection(entryFilter);
 
-        final GridCacheProjection<String, Integer> locPrj = prj.flagsOn(LOCAL);
+        final CacheProjection<String, Integer> locPrj = prj.flagsOn(LOCAL);
 
         prj.put("key", 1);
 
@@ -357,14 +357,14 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception In case of error.
      */
     public void testEntryLocalFlag() throws Exception {
-        GridCacheProjection<String, Integer> prj = cache().projection(entryFilter);
+        CacheProjection<String, Integer> prj = cache().projection(entryFilter);
 
-        GridCacheProjection<String, Integer> loc = prj.flagsOn(LOCAL);
+        CacheProjection<String, Integer> loc = prj.flagsOn(LOCAL);
 
         prj.put("key", 1);
 
-        GridCacheEntry<String, Integer> prjEntry = prj.entry("key");
-        final GridCacheEntry<String, Integer> locEntry = loc.entry("key");
+        CacheEntry<String, Integer> prjEntry = prj.entry("key");
+        final CacheEntry<String, Integer> locEntry = loc.entry("key");
 
         assert prjEntry != null;
         assert locEntry != null;
@@ -432,9 +432,9 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws Exception In case of error.
      */
     public void testReadFlag() throws Exception {
-        GridCacheProjection<String, Integer> prj = cache().projection(entryFilter);
+        CacheProjection<String, Integer> prj = cache().projection(entryFilter);
 
-        final GridCacheProjection<String, Integer> readPrj = prj.flagsOn(READ);
+        final CacheProjection<String, Integer> readPrj = prj.flagsOn(READ);
 
         prj.put("key", 1);
 
@@ -533,7 +533,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      */
     @SuppressWarnings({"UnnecessaryFinalOnLocalVariable"})
     public void testCloneFlag() throws Exception {
-        GridCacheProjection<String, TestCloneable> prj = cacheCloneable().flagsOn(CLONE);
+        CacheProjection<String, TestCloneable> prj = cacheCloneable().flagsOn(CLONE);
 
         final TestCloneable val = new TestCloneable("val");
 
@@ -564,13 +564,13 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         checkClone(vals.iterator().next(), val);
 
-        Set<GridCacheEntry<String, TestCloneable>> entries = prj.entrySet();
+        Set<CacheEntry<String, TestCloneable>> entries = prj.entrySet();
 
         assertEquals(1, entries.size());
 
         checkClone(entries.iterator().next().getValue(), val);
 
-        GridCacheEntry<String, TestCloneable> entry = prj.entry("key");
+        CacheEntry<String, TestCloneable> entry = prj.entry("key");
 
         assert entry != null;
 
@@ -586,7 +586,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         GridCacheProxyImpl<String, Integer> prj = (GridCacheProxyImpl<String, Integer>)cache().
             flagsOn(CLONE, INVALIDATE);
 
-        GridCacheEntry<String, Integer> entry = prj.entry("key");
+        CacheEntry<String, Integer> entry = prj.entry("key");
 
         assert entry != null;
 
@@ -657,7 +657,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
         assertFalse(cache().containsKey("key"));
         assertNull(cache().get("key"));
 
-        GridCacheProjection<String, Integer> prj = cache().flagsOn(SKIP_SWAP, SKIP_STORE);
+        CacheProjection<String, Integer> prj = cache().flagsOn(SKIP_SWAP, SKIP_STORE);
 
         prj.put("key", 1);
 
@@ -681,7 +681,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         cache().evict("key");
 
-        GridCacheProjection<String, Integer> prj = cache().flagsOn(SKIP_SWAP, SKIP_STORE);
+        CacheProjection<String, Integer> prj = cache().flagsOn(SKIP_SWAP, SKIP_STORE);
 
         assertNull(prj.get("key"));
 
@@ -693,7 +693,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     }
 
     /**
-     * Tests {@link GridCacheFlag#SKIP_SWAP} flag on multiple nodes.
+     * Tests {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP} flag on multiple nodes.
      *
      * @throws Exception If error occurs.
      */
@@ -719,7 +719,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
             }
 
             // Set SKIP_SWAP flag.
-            GridCacheProjection<Object, Object> cachePrj = grid(0).cache(null).flagsOn(SKIP_SWAP, SKIP_STORE);
+            CacheProjection<Object, Object> cachePrj = grid(0).cache(null).flagsOn(SKIP_SWAP, SKIP_STORE);
 
             // Put new values.
             for (int i = 1; i <= nEntries; i++)
@@ -745,19 +745,19 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         IgniteTx tx = cache().txStart();
 
-        GridCacheProjection<String, Integer> typePrj = cache().projection(String.class, Integer.class);
+        CacheProjection<String, Integer> typePrj = cache().projection(String.class, Integer.class);
 
         typePrj.put("key", 1);
         typePrj.put("k", 2);
 
-        GridCacheProjection<String, Integer> kvFilterPrj = cache().projection(kvFilter);
+        CacheProjection<String, Integer> kvFilterPrj = cache().projection(kvFilter);
 
         Integer one = 1;
 
         assertEquals(one, kvFilterPrj.get("key"));
         assert kvFilterPrj.get("k") == null;
 
-        GridCacheProjection<String, Integer> entryFilterPrj = cache().projection(entryFilter);
+        CacheProjection<String, Integer> entryFilterPrj = cache().projection(entryFilter);
 
         assertEquals(one, entryFilterPrj.get("key"));
         assert entryFilterPrj.get("k") == null;
@@ -809,18 +809,18 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
      * @throws IgniteCheckedException In case of error.
      */
     public void testTypedProjection() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        Cache<Object, Object> cache = grid(0).cache(null);
 
         cache.putx("1", "test string");
         cache.putx("2", 0);
 
-        final GridCacheProjection<String, String> prj = cache.projection(String.class, String.class);
+        final CacheProjection<String, String> prj = cache.projection(String.class, String.class);
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        prj.removeAll(new P1<GridCacheEntry<String, String>>() {
+        prj.removeAll(new P1<CacheEntry<String, String>>() {
             @Override
-            public boolean apply(GridCacheEntry<String, String> e) {
+            public boolean apply(CacheEntry<String, String> e) {
                 info(" --> " + e.peek().getClass());
 
                 latch.countDown();

@@ -28,9 +28,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Multithreaded update test with off heap enabled.
@@ -131,7 +131,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPut(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final Cache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -177,7 +177,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutxIfAbsent(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final Cache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -221,7 +221,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutWithFilter(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final Cache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -265,7 +265,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
      * @throws Exception If failed.
      */
     private void testPutGet(final Integer key) throws Exception {
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final Cache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(key, 0);
 
@@ -327,7 +327,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     protected Integer keyForNode(int idx) {
         Integer key0 = null;
 
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        Cache<Integer, Integer> cache = grid(0).cache(null);
 
         for (int i = 0; i < 10_000; i++) {
             if (cache.affinity().isPrimary(grid(idx).localNode(), i)) {
@@ -374,9 +374,9 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     /**
      *
      */
-    protected static class TestFilter implements IgnitePredicate<GridCacheEntry<Integer, Integer>> {
+    protected static class TestFilter implements IgnitePredicate<CacheEntry<Integer, Integer>> {
         /** {@inheritDoc} */
-        @Override public boolean apply(GridCacheEntry<Integer, Integer> e) {
+        @Override public boolean apply(CacheEntry<Integer, Integer> e) {
             if (e == null) {
                 failed = true;
 

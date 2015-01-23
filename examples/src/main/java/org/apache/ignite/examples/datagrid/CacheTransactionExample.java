@@ -23,7 +23,7 @@ import org.apache.ignite.transactions.*;
 
 import java.io.*;
 
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -54,7 +54,7 @@ public class CacheTransactionExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
-            GridCache<Integer, Account> cache = g.cache(CACHE_NAME);
+            Cache<Integer, Account> cache = g.cache(CACHE_NAME);
 
             // Initialize.
             cache.putx(1, new Account(1, 100));
@@ -87,7 +87,7 @@ public class CacheTransactionExample {
      */
     private static void deposit(int acctId, double amount) throws IgniteCheckedException {
         // Clone every object we get from cache, so we can freely update it.
-        GridCacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
+        CacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
 
         try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Account acct = cache.get(acctId);

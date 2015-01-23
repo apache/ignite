@@ -23,7 +23,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests {@link GridCacheInterceptor}.
+ * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public class GridCacheInterceptorReplicatedSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */

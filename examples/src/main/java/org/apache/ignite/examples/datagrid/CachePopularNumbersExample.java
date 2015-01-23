@@ -114,11 +114,11 @@ public class CachePopularNumbersExample {
      */
     private static TimerTask scheduleQuery(final Ignite g, Timer timer, final int cnt) {
         TimerTask task = new TimerTask() {
-            private GridCacheQuery<List<?>> qry;
+            private CacheQuery<List<?>> qry;
 
             @Override public void run() {
                 // Get reference to cache.
-                GridCache<Integer, Long> cache = g.cache(CACHE_NAME);
+                Cache<Integer, Long> cache = g.cache(CACHE_NAME);
 
                 if (qry == null)
                     qry = cache.queries().

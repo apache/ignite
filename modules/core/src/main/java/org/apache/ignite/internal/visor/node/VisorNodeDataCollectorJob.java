@@ -99,7 +99,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
         try {
             IgniteConfiguration cfg = g.configuration();
 
-            for (GridCache cache : g.cachesx()) {
+            for (Cache cache : g.cachesx()) {
                 String cacheName = cache.name();
 
                 if (arg.systemCaches() || !(isSystemCache(cacheName) || isGgfsCache(cfg, cacheName))) {

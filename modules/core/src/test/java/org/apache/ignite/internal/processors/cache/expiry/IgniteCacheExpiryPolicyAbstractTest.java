@@ -38,7 +38,7 @@ import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -760,7 +760,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      * @throws Exception If failed.
      */
     private Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        Cache<Integer, Object> cache = cache(0);
 
         ArrayList<Integer> keys = new ArrayList<>();
 
@@ -809,7 +809,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
             }
         }, 3000);
 
-        GridCache<Integer, Object> cache = cache(0);
+        Cache<Integer, Object> cache = cache(0);
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = grid(i).cluster().localNode();

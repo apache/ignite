@@ -78,8 +78,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
 
         assert g1.cluster().nodes().size() > 1 : "This test needs at least two grid nodes started.";
 
-        GridCache<Object, Object> cache1 = g1.cache(null);
-        GridCache<Object, Object> cache2 = g2.cache(null);
+        Cache<Object, Object> cache1 = g1.cache(null);
+        Cache<Object, Object> cache2 = g2.cache(null);
 
         try {
             ClassLoader ldr = new GridTestClassLoader(

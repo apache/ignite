@@ -202,7 +202,7 @@ public class GridCacheSwapLoadTest {
 
         return GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> cache = g.cache(null);
+                Cache<Integer, Integer> cache = g.cache(null);
 
                 assert cache != null;
 
@@ -234,7 +234,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    GridCache<Integer, Integer> cache = g.cache(null);
+                    Cache<Integer, Integer> cache = g.cache(null);
 
                     assert cache != null;
 
@@ -268,7 +268,7 @@ public class GridCacheSwapLoadTest {
                 @Nullable @Override public Object call() throws Exception {
                     getRemoveStartedLatch.await();
 
-                    GridCache<Integer, Integer> cache = g.cache(null);
+                    Cache<Integer, Integer> cache = g.cache(null);
 
                     assert cache != null;
 

@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.swap;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -32,7 +33,6 @@ import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -74,7 +74,7 @@ public class GridSwapEvictAllBenchmark {
                         c.apply((long)i, String.valueOf(i));
                 }
 
-                @Override public void write(Cache.Entry<? extends Long, ? extends String> e) {
+                @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends String> e) {
                     assert false;
                 }
 
@@ -84,7 +84,7 @@ public class GridSwapEvictAllBenchmark {
             });
 
             try {
-                GridCache<Object, Object> cache = g.cache(null);
+                Cache<Object, Object> cache = g.cache(null);
 
                 assert cache != null;
 
@@ -153,7 +153,7 @@ public class GridSwapEvictAllBenchmark {
 
         long start = System.currentTimeMillis();
 
-        GridCache<Object, Object> cache = G.ignite().cache(null);
+        Cache<Object, Object> cache = G.ignite().cache(null);
 
         assert cache != null;
 
@@ -266,7 +266,7 @@ public class GridSwapEvictAllBenchmark {
 
         ccfg.setSwapEnabled(true);
         ccfg.setEvictSynchronized(false);
-        ccfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
+        ccfg.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_PLC_SIZE));
 
         if (store != null) {
             ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));

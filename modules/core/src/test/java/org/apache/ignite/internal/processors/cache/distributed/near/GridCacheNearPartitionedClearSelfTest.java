@@ -33,9 +33,9 @@ import javax.cache.configuration.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test clear operation in NEAR_PARTITIONED transactional cache.
@@ -104,7 +104,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testClear() throws Exception {
-        GridCache cache = cacheForIndex(0);
+        Cache cache = cacheForIndex(0);
 
         int key = primaryKey0(grid(0), cache);
 
@@ -112,7 +112,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         cache.clear(key);
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache cache0 = cacheForIndex(i);
+            Cache cache0 = cacheForIndex(i);
 
             cache0.removeAll();
 
@@ -132,7 +132,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @return Primary key.
      * @throws Exception If failed.
      */
-    private int primaryKey0(Ignite ignite, GridCache cache) throws Exception {
+    private int primaryKey0(Ignite ignite, Cache cache) throws Exception {
         ClusterNode locNode = ignite.cluster().localNode();
 
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
@@ -149,7 +149,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
      * @param idx Index.
      * @return Cache.
      */
-    private GridCache cacheForIndex(int idx) {
+    private Cache cacheForIndex(int idx) {
         return grid(idx).cache(CACHE_NAME);
     }
 }

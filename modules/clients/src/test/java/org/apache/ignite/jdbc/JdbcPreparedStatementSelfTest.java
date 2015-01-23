@@ -33,7 +33,7 @@ import java.util.Date;
 
 import static java.sql.Types.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Prepared statement test.
@@ -78,7 +78,7 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<Integer, TestObject> cache = grid(0).cache(null);
+        Cache<Integer, TestObject> cache = grid(0).cache(null);
 
         assert cache != null;
 
@@ -657,63 +657,63 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestObject implements Serializable {
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final int id;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Boolean boolVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Byte byteVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Short shortVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Integer intVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Long longVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Float floatVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Double doubleVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private BigDecimal bigVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String strVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private byte[] arrVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Date dateVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Time timeVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Timestamp tsVal;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private URL urlVal;
 
         /**

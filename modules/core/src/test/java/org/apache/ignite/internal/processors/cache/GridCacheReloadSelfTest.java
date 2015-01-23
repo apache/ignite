@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -26,15 +27,14 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Checks that GridCacheProjection.reload() operations are performed correctly.
+ * Checks that CacheProjection.reload() operations are performed correctly.
  */
 public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
     /** Maximum allowed number of cache entries. */
@@ -77,7 +77,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setName(CACHE_NAME);
         cacheCfg.setCacheMode(cacheMode);
-        cacheCfg.setEvictionPolicy(new GridCacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
+        cacheCfg.setEvictionPolicy(new CacheLruEvictionPolicy(MAX_CACHE_ENTRIES));
         cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
 
         final CacheStore store = new CacheStoreAdapter<Integer, Integer>() {
@@ -85,7 +85,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
                 return key;
             }
 
-            @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+            @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends Integer> e) {
                 //No-op.
             }
 
@@ -164,7 +164,7 @@ public class GridCacheReloadSelfTest extends GridCommonAbstractTest {
         Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+            Cache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
             for (int i = 0; i < N_ENTRIES; i++)
                 cache.reload(i);

@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheConfiguration.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -75,7 +75,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
     private static volatile int idx = -1;
 
     /** Preload mode. */
-    protected GridCachePreloadMode preloadMode = ASYNC;
+    protected CachePreloadMode preloadMode = ASYNC;
 
     /** */
     protected int preloadBatchSize = DFLT_BATCH_SIZE;
@@ -162,7 +162,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
         startGrids();
 
         try {
-            GridCache<Integer, String> c = grid(idx).cache(CACHE_NAME);
+            Cache<Integer, String> c = grid(idx).cache(CACHE_NAME);
 
             for (int j = 0; j < retries; j++) {
                 for (int i = 0; i < keyCnt; i++)
@@ -195,7 +195,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param attempt Attempt.
      * @throws Exception If failed.
      */
-    private void checkGet(GridCache<Integer, String> c, int attempt) throws Exception {
+    private void checkGet(Cache<Integer, String> c, int attempt) throws Exception {
         for (int i = 0; i < keyCnt; i++) {
             String v = c.get(i);
 
@@ -495,7 +495,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             info("Starting put thread...");
 
-                            GridCache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
+                            Cache<Integer, String> cache = grid(gridIdx).cache(CACHE_NAME);
 
                             while (System.currentTimeMillis() < endTime && err.get() == null) {
                                 int key = RAND.nextInt(keyCnt);
@@ -615,7 +615,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                            Cache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -765,7 +765,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
 
                             UUID locNodeId = ignite.cluster().localNode().id();
 
-                            GridCache<Integer, String> cache = ignite.cache(CACHE_NAME);
+                            Cache<Integer, String> cache = ignite.cache(CACHE_NAME);
 
                             List<Integer> keys = new ArrayList<>(txKeys);
 
@@ -876,7 +876,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
      * @param key Key.
      * @param attempt Attempt.
      */
-    private void printFailureDetails(GridCache<Integer, String> c, int key, int attempt) {
+    private void printFailureDetails(Cache<Integer, String> c, int key, int attempt) {
         error("*** Failure details ***");
         error("Key: " + key);
         error("Partition: " + c.configuration().getAffinity().partition(key));

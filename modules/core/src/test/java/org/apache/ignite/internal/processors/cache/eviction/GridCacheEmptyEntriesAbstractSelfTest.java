@@ -19,11 +19,12 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.cache.eviction.GridCacheEvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.GridCacheFifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.CacheEvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -45,10 +45,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private GridCacheEvictionPolicy<?, ?> plc;
+    private CacheEvictionPolicy<?, ?> plc;
 
     /** */
-    private GridCacheEvictionPolicy<?, ?> nearPlc;
+    private CacheEvictionPolicy<?, ?> nearPlc;
 
     /** Test store. */
     private CacheStore<String, String> testStore;
@@ -77,8 +77,8 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
         cc.setSwapEnabled(false);
 
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
         cc.setEvictionPolicy(plc);
         cc.setNearEvictionPolicy(nearPlc);
@@ -124,8 +124,8 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws Exception If failed.
      */
     public void testFifo() throws Exception {
-        plc = new GridCacheFifoEvictionPolicy(50);
-        nearPlc = new GridCacheFifoEvictionPolicy(50);
+        plc = new CacheFifoEvictionPolicy(50);
+        nearPlc = new CacheFifoEvictionPolicy(50);
 
         checkPolicy();
     }
@@ -145,7 +145,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
                 return null;
             }
 
-            @Override public void write(Cache.Entry<? extends String, ? extends String> e) {
+            @Override public void write(javax.cache.Cache.Entry<? extends String, ? extends String> e) {
                 // No-op.
             }
 
@@ -171,7 +171,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
 
                 Ignite g = startGrids();
 
-                GridCache<String, String> cache = g.cache(null);
+                Cache<String, String> cache = g.cache(null);
 
                 try {
                     info(">>> Checking policy [txConcurrency=" + txConcurrency + ", txIsolation=" + txIsolation +
@@ -194,7 +194,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
-    private void checkImplicitTx(GridCache<String, String> cache) throws Exception {
+    private void checkImplicitTx(Cache<String, String> cache) throws Exception {
         assertNull(cache.get("key1"));
         assertNull(cache.getAsync("key2").get());
 
@@ -214,7 +214,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @param cache Cache to test.
      * @throws Exception If failed.
      */
-    private void checkExplicitTx(GridCache<String, String> cache) throws Exception {
+    private void checkExplicitTx(Cache<String, String> cache) throws Exception {
         IgniteTx tx = cache.txStart();
 
         try {
@@ -284,7 +284,7 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * @throws org.apache.ignite.IgniteInterruptedException If interrupted while sleeping.
      */
     @SuppressWarnings({"ErrorNotRethrown", "TypeMayBeWeakened"})
-    private void checkEmpty(GridCache<String, String> cache) throws IgniteInterruptedException {
+    private void checkEmpty(Cache<String, String> cache) throws IgniteInterruptedException {
         for (int i = 0; i < 3; i++) {
             try {
                 assertTrue(cache.entrySet().toString(), cache.entrySet().isEmpty());

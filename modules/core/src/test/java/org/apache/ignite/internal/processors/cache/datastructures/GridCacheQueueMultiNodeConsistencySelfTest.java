@@ -89,7 +89,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     public void testIteratorIfNoPreloadingAndBackupDisabled() throws Exception {
         cc.setBackups(0);
         cc.setPreloadPartitionedDelay(-1);
-        cc.setPreloadMode(GridCachePreloadMode.NONE);
+        cc.setPreloadMode(CachePreloadMode.NONE);
 
         checkCacheQueue();
     }
@@ -100,7 +100,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     public void testIteratorIfNoPreloadingAndBackupDisabledAndRepartitionForced() throws Exception {
         cc.setBackups(0);
         cc.setPreloadPartitionedDelay(-1);
-        cc.setPreloadMode(GridCachePreloadMode.NONE);
+        cc.setPreloadMode(CachePreloadMode.NONE);
 
         forceRepartition = true;
 
@@ -112,7 +112,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      */
     public void testIteratorIfPreloadingIsSyncAndBackupDisabled() throws Exception {
         cc.setBackups(0);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
 
         checkCacheQueue();
     }
@@ -122,7 +122,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      */
     public void testIteratorIfPreloadingIsAsyncAndBackupDisabled() throws Exception {
         cc.setBackups(0);
-        cc.setPreloadMode(GridCachePreloadMode.ASYNC);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
 
         checkCacheQueue();
     }
@@ -133,7 +133,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     public void testIteratorIfPreloadingIsSyncAndPartitionedDelayAndBackupDisabled() throws Exception {
         cc.setBackups(0);
         cc.setPreloadPartitionedDelay(PRELOAD_DELAY);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
 
         checkCacheQueue();
     }
@@ -144,7 +144,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
     public void testIteratorIfPreloadingIsAsyncAndPartitionedDelayAndBackupDisabled() throws Exception {
         cc.setBackups(0);
         cc.setPreloadPartitionedDelay(PRELOAD_DELAY);
-        cc.setPreloadMode(GridCachePreloadMode.ASYNC);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
 
         checkCacheQueue();
     }
@@ -154,7 +154,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      */
     public void testIteratorIfPreloadingIsSyncAndBackupEnabled() throws Exception {
         cc.setBackups(1);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
 
         checkCacheQueue();
     }
@@ -164,7 +164,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      */
     public void testIteratorIfPreloadingIsAsyncAndBackupEnabled() throws Exception {
         cc.setBackups(1);
-        cc.setPreloadMode(GridCachePreloadMode.ASYNC);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
 
         checkCacheQueue();
     }
@@ -174,7 +174,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      */
     public void testIteratorIfPreloadingIsSyncAndBackupEnabledAndOneNodeIsKilled() throws Exception {
         cc.setBackups(1);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
 
         stopRandomGrid = true;
 
@@ -186,7 +186,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
      */
     public void testIteratorIfPreloadingIsAsyncAndBackupEnabledAndOneNodeIsKilled() throws Exception {
         cc.setBackups(1);
-        cc.setPreloadMode(GridCachePreloadMode.ASYNC);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
 
         stopRandomGrid = true;
 
@@ -204,7 +204,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
         final String queueName = UUID.randomUUID().toString();
 
-        GridCacheQueue<Integer> queue0 = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+        CacheQueue<Integer> queue0 = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
             false, true);
 
         assertTrue(queue0.isEmpty());
@@ -223,7 +223,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
         Ignite newIgnite = startGrid(GRID_CNT + 1);
 
         // Intentionally commented code cause in this way inconsistent queue problem doesn't appear.
-        // GridCacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
+        // CacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
         // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
 
         Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new IgniteCallable<Collection<Integer>>() {
@@ -236,7 +236,7 @@ public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstra
 
                 grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
 
-                GridCacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+                CacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
                     false, true);
 
                 grid.log().info("Queue size " + locQueue.size());

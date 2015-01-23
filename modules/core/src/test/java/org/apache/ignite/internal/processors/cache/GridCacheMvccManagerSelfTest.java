@@ -60,7 +60,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(mode);
-        cfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cfg.setAtomicityMode(TRANSACTIONAL);
 
         return cfg;
@@ -95,7 +95,7 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(gridCnt);
 
-            GridCache<Integer, Integer> cache = ignite.cache(null);
+            Cache<Integer, Integer> cache = ignite.cache(null);
 
             IgniteTx tx = cache.txStart();
 

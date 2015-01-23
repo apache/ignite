@@ -64,7 +64,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     private long topVer;
 
     /** Write synchronization mode. */
-    private GridCacheWriteSynchronizationMode syncMode;
+    private CacheWriteSynchronizationMode syncMode;
 
     /** Update operation. */
     private GridCacheOperation op;
@@ -115,7 +115,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** Filter. */
     @GridDirectTransient
-    private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Filter bytes. */
     private byte[][] filterBytes;
@@ -168,13 +168,13 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         long topVer,
-        GridCacheWriteSynchronizationMode syncMode,
+        CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         boolean retval,
         boolean forceTransformBackups,
         @Nullable ExpiryPolicy expiryPlc,
         @Nullable Object[] invokeArgs,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
@@ -263,7 +263,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Cache write synchronization mode.
      */
-    public GridCacheWriteSynchronizationMode writeSynchronizationMode() {
+    public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
@@ -284,7 +284,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
     /**
      * @return Filter.
      */
-    @Nullable public IgnitePredicate<GridCacheEntry<K, V>>[] filter() {
+    @Nullable public IgnitePredicate<CacheEntry<K, V>>[] filter() {
         return filter;
     }
 
@@ -1031,7 +1031,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
                 byte syncMode0 = commState.getByte();
 
-                syncMode = GridCacheWriteSynchronizationMode.fromOrdinal(syncMode0);
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncMode0);
 
                 commState.idx++;
 

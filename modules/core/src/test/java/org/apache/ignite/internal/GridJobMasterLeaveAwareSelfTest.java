@@ -442,7 +442,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).enableAsync();
 
-                GridCacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
+                CacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
 
                 ClusterNode node = F.first(prj.nodes());
 
@@ -461,7 +461,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) throws IgniteCheckedException {
                 IgniteCompute comp = compute(prj).enableAsync();
 
-                GridCacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
+                CacheAffinity<Object> aff = prj.ignite().cache(null).affinity();
 
                 ClusterNode node = F.first(prj.nodes());
 
@@ -477,7 +477,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
      * @param node Node.
      * @return Finds some cache key for which given node is primary.
      */
-    private Object keyForNode(GridCacheAffinity<Object> aff, ClusterNode node) {
+    private Object keyForNode(CacheAffinity<Object> aff, ClusterNode node) {
         assertNotNull(node);
 
         Object key = null;

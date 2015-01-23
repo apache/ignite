@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for cache query metrics.
@@ -68,7 +68,7 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(CACHE_MODE);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -85,15 +85,15 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testAccumulativeMetrics() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        Cache<String, Integer> cache = cache(0);
 
-        GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
+        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
             .projection(grid(0));
 
         // Execute query.
         qry.execute().get();
 
-        GridCacheQueryMetrics m = cache.queries().metrics();
+        CacheQueryMetrics m = cache.queries().metrics();
 
         assert m != null;
 
@@ -127,15 +127,15 @@ public class GridCacheQueryMetricsSelfTest extends GridCommonAbstractTest {
      * @throws Exception In case of error.
      */
     public void testSingleQueryMetrics() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        Cache<String, Integer> cache = cache(0);
 
-        GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
+        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0")
             .projection(grid(0));
 
         // Execute.
         qry.execute().get();
 
-        GridCacheQueryMetrics m = qry.metrics();
+        CacheQueryMetrics m = qry.metrics();
 
         info("Metrics: " + m);
 

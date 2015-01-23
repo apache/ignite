@@ -76,7 +76,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
             keys = new T3[LOAD_CNT];
             wrappers = new GridByteArrayWrapper[LOAD_CNT];
 
-            GridCacheAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
+            CacheAffinityFunction aff = new CacheConsistentHashAffinityFunction();
 
             Random rnd = new Random();
 

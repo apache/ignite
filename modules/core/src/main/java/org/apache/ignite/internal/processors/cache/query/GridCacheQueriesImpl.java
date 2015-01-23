@@ -32,7 +32,7 @@ import java.util.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
- * {@link GridCacheQueries} implementation.
+ * {@link org.apache.ignite.cache.query.CacheQueries} implementation.
  */
 public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Externalizable {
     /** */
@@ -63,7 +63,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
+    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
         A.notNull(cls, "cls");
         A.notNull(clause, "clause");
 
@@ -78,7 +78,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
+    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
         A.notNull("clsName", clsName);
         A.notNull("clause", clause);
 
@@ -93,7 +93,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
+    @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         A.notNull(qry, "qry");
 
         return new GridCacheQueryAdapter<>(ctx,
@@ -107,7 +107,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
+    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
         A.notNull(cls, "cls");
         A.notNull(search, "search");
 
@@ -122,7 +122,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
+    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
         A.notNull("clsName", clsName);
         A.notNull("search", search);
 
@@ -138,7 +138,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
+    @Override public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
         return new GridCacheQueryAdapter<>(ctx,
             SCAN,
             filter(),
@@ -154,7 +154,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      *
      * @return Query.
      */
-    public <R> GridCacheQuery<R> createSpiQuery() {
+    public <R> CacheQuery<R> createSpiQuery() {
         return new GridCacheQueryAdapter<>(ctx,
             SPI,
             filter(),
@@ -166,7 +166,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
+    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
         return ctx.continuousQueries().createQuery(prj == null ? null : prj.predicate());
     }
 
@@ -190,7 +190,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryMetrics metrics() {
+    @Override public CacheQueryMetrics metrics() {
         return ctx.queries().metrics();
     }
 
@@ -205,7 +205,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
+    @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         assert qry != null;
 
         return new GridCacheQueryAdapter<>(ctx,
@@ -222,7 +222,7 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
      * @return Optional projection filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private IgnitePredicate<GridCacheEntry<Object, Object>> filter() {
+    @Nullable private IgnitePredicate<CacheEntry<Object, Object>> filter() {
         return prj == null ? null : ((GridCacheProjectionImpl<Object, Object>)prj).predicate();
     }
 

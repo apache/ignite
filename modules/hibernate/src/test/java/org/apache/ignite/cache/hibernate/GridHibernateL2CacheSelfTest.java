@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -41,7 +42,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.cache.hibernate.GridHibernateRegionFactory.*;
 import static org.hibernate.cfg.Environment.*;
 
@@ -422,7 +423,7 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1);
 
-        cfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 10));
+        cfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
 
         return cfg;
     }
@@ -444,7 +445,7 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setBackups(1);
 
-        cfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 10));
+        cfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
 
         return cfg;
     }
@@ -1916,7 +1917,7 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         sesFactory2 = null;
 
-        for (GridCache<?, ?> cache : grid(0).caches())
+        for (Cache<?, ?> cache : grid(0).caches())
             cache.globalClearAll();
     }
 }

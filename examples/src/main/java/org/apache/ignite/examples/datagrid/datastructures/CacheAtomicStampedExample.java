@@ -58,7 +58,7 @@ public final class CacheAtomicStampedExample {
             String stamp = UUID.randomUUID().toString();
 
             // Initialize atomic stamped in cache.
-            GridCacheAtomicStamped<String, String> stamped = g.cache(CACHE_NAME).dataStructures().
+            CacheAtomicStamped<String, String> stamped = g.cache(CACHE_NAME).dataStructures().
                 atomicStamped(stampedName, val, stamp, true);
 
             System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
@@ -119,7 +119,7 @@ public final class CacheAtomicStampedExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheAtomicStamped<String, String> stamped = Ignition.ignite().cache(cacheName).dataStructures().
+                CacheAtomicStamped<String, String> stamped = Ignition.ignite().cache(cacheName).dataStructures().
                     atomicStamped(stampedName, null, null, true);
 
                 System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');

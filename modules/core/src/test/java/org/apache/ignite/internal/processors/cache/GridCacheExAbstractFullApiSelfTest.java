@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.*;
 
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -41,7 +41,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
@@ -62,7 +62,7 @@ public abstract class GridCacheExAbstractFullApiSelfTest extends GridCacheAbstra
         try {
             grid(0).events().localListen(lsnr, EVT_CACHE_OBJECT_LOCKED, EVT_CACHE_OBJECT_UNLOCKED);
 
-            GridCache<String, Integer> cache = cache();
+            Cache<String, Integer> cache = cache();
 
             try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 int key = 0;

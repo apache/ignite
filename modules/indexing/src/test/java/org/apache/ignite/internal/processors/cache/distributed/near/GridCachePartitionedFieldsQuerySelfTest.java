@@ -25,7 +25,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -40,7 +40,7 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
     /**
      * @return Distribution.
      */
-    protected GridCacheDistributionMode distributionMode() {
+    protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 
@@ -62,12 +62,12 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
      * @throws Exception If failed.
      */
     public void testIncludeBackups() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
             "select _KEY, name, age from Person");
 
         qry.includeBackups(true);
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         List<List<?>> res = new ArrayList<>(fut.get());
 
@@ -86,17 +86,17 @@ public class GridCachePartitionedFieldsQuerySelfTest extends GridCacheAbstractFi
             assertEquals("Row size", 3, row.size());
 
             if (cnt == 0 || cnt == 1) {
-                assertEquals("Key", new GridCacheAffinityKey<>("p1", "o1"), row.get(0));
+                assertEquals("Key", new CacheAffinityKey<>("p1", "o1"), row.get(0));
                 assertEquals("Name", "John White", row.get(1));
                 assertEquals("Age", 25, row.get(2));
             }
             else if (cnt == 2 || cnt == 3) {
-                assertEquals("Key", new GridCacheAffinityKey<>("p2", "o1"), row.get(0));
+                assertEquals("Key", new CacheAffinityKey<>("p2", "o1"), row.get(0));
                 assertEquals("Name", "Joe Black", row.get(1));
                 assertEquals("Age", 35, row.get(2));
             }
             else if (cnt == 4 || cnt == 5) {
-                assertEquals("Key", new GridCacheAffinityKey<>("p3", "o2"), row.get(0));
+                assertEquals("Key", new CacheAffinityKey<>("p3", "o2"), row.get(0));
                 assertEquals("Name", "Mike Green", row.get(1));
                 assertEquals("Age", 40, row.get(2));
             }

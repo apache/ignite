@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Multithreaded reduce query tests with lots of data.
@@ -73,7 +73,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
         final int logFreq = 50;
         final String txt = "Value";
 
-        final GridCache<Integer, H2TextValue> c = grid(0).cache(null);
+        final Cache<Integer, H2TextValue> c = grid(0).cache(null);
 
         IgniteFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
@@ -89,7 +89,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
             }, 1);
 
         // Create query.
-        final GridCacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.queries().createFullTextQuery(
+        final CacheQuery<Map.Entry<Integer, H2TextValue>> qry = c.queries().createFullTextQuery(
             H2TextValue.class, txt);
 
         qry.enableDedup(false);
@@ -131,7 +131,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
      */
     private static class H2TextValue {
         /** */
-        @GridCacheQueryTextField
+        @CacheQueryTextField
         private final String val;
 
         /**

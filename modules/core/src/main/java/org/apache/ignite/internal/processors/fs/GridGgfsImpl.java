@@ -115,7 +115,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     private Object topic;
 
     /** Eviction policy (if set). */
-    private GridCacheGgfsPerBlockLruEvictionPolicy evictPlc;
+    private CacheGgfsPerBlockLruEvictionPolicy evictPlc;
 
     /**
      * Creates GGFS instance with given context.
@@ -197,10 +197,10 @@ public final class GridGgfsImpl implements GridGgfsEx {
 
         for (CacheConfiguration cacheCfg : ggfsCtx.kernalContext().config().getCacheConfiguration()) {
             if (F.eq(dataCacheName, cacheCfg.getName())) {
-                GridCacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
+                CacheEvictionPolicy evictPlc = cacheCfg.getEvictionPolicy();
 
-                if (evictPlc != null & evictPlc instanceof GridCacheGgfsPerBlockLruEvictionPolicy)
-                    this.evictPlc = (GridCacheGgfsPerBlockLruEvictionPolicy)evictPlc;
+                if (evictPlc != null & evictPlc instanceof CacheGgfsPerBlockLruEvictionPolicy)
+                    this.evictPlc = (CacheGgfsPerBlockLruEvictionPolicy)evictPlc;
 
                 break;
             }

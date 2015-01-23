@@ -53,7 +53,7 @@ public final class CacheAffinityExample {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
-            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            Cache<Integer, String> cache = g.cache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
             cache.globalClearAll(0);
@@ -78,7 +78,7 @@ public final class CacheAffinityExample {
     private static void visitUsingAffinityRun() throws IgniteCheckedException {
         Ignite g = Ignition.ignite();
 
-        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+        final Cache<Integer, String> cache = g.cache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             final int key = i;
@@ -123,7 +123,7 @@ public final class CacheAffinityExample {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
                 g.compute(g.cluster().forNode(node)).run(new IgniteRunnable() {
                     @Override public void run() {
-                        GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+                        Cache<Integer, String> cache = g.cache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'
                         // as we are co-located with node that has a given key.

@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public class GridCachePartitionedNearOnlyNoPrimaryFullApiSelfTest
     extends GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.NEAR_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.NEAR_ONLY;
     }
 }

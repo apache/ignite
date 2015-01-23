@@ -127,7 +127,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
      * @return Cache.
      */
     @SuppressWarnings("unchecked")
-    @Override protected GridCache<Integer, String> cache(int i) {
+    @Override protected Cache<Integer, String> cache(int i) {
         return grid(i).cache(null);
     }
 
@@ -173,7 +173,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
-            GridCache<Integer, String> cache = cache(gridIdx);
+            Cache<Integer, String> cache = cache(gridIdx);
 
             IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
@@ -185,7 +185,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                     assert key >= prevKey : "key: " + key + ", prevKey: " + prevKey;
 
                     if (isTestDebug()) {
-                        GridCacheAffinityFunction aff = cache.configuration().getAffinity();
+                        CacheAffinityFunction aff = cache.configuration().getAffinity();
 
                         int part = aff.partition(key);
 
@@ -310,14 +310,14 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             debug("Checking commit on grid: " + ignite.cluster().localNode().id());
 
         for (int i = 0; i < iterations(); i++) {
-            GridCache<Integer, String> cache = cache(gridIdx);
+            Cache<Integer, String> cache = cache(gridIdx);
 
             IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 
             try {
                 for (Integer key : getKeys()) {
                     if (isTestDebug()) {
-                        GridCacheAffinityFunction aff = cache.configuration().getAffinity();
+                        CacheAffinityFunction aff = cache.configuration().getAffinity();
 
                         int part = aff.partition(key);
 
@@ -408,12 +408,12 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         for (int i = 1; i <= maxKeyValue(); i++) {
             for (int k = 0; k < 3; k++) {
                 try {
-                    GridCacheEntry<Integer, String> e1 = null;
+                    CacheEntry<Integer, String> e1 = null;
 
                     String v1 = null;
 
                     for (int j = 0; j < gridCount(); j++) {
-                        GridCache<Integer, String> cache = cache(j);
+                        Cache<Integer, String> cache = cache(j);
 
                         IgniteTx tx = cache.tx();
 
@@ -425,7 +425,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                             v1 = e1.get();
                         }
                         else {
-                            GridCacheEntry<Integer, String> e2 = cache.entry(i);
+                            CacheEntry<Integer, String> e2 = cache.entry(i);
 
                             String v2 = e2.get();
 
@@ -456,7 +456,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
             for (int k = 0; k < 3; k++) {
                 try {
                     for (int j = 0; j < gridCount(); j++) {
-                        GridCacheProjection<Integer, String> cache = cache(j);
+                        CacheProjection<Integer, String> cache = cache(j);
 
                         cache.removeAll();
 

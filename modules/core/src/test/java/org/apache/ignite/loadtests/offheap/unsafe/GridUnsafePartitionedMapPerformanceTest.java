@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.offheap.*;
 public class GridUnsafePartitionedMapPerformanceTest extends GridOffHeapPartitionedMapPerformanceAbstractTest {
     /** {@inheritDoc} */
     @Override protected GridOffHeapPartitionedMap newMap() {
-        return GridOffHeapMapFactory.unsafePartitionedMap(GridCacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT,
+        return GridOffHeapMapFactory.unsafePartitionedMap(CacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT,
             Runtime.getRuntime().availableProcessors(), load, LOAD_CNT, mem, lruStripes, null);
     }
 }

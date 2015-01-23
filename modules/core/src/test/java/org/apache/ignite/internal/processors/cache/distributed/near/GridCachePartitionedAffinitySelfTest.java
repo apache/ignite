@@ -38,12 +38,12 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction.*;
+import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Partitioned affinity test.
@@ -68,7 +68,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(BACKUPS);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
@@ -99,7 +99,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param ignite Grid.
      * @return Affinity.
      */
-    static GridCacheAffinity<Object> affinity(Ignite ignite) {
+    static CacheAffinity<Object> affinity(Ignite ignite) {
         return ignite.cache(null).affinity();
     }
 
@@ -108,18 +108,18 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(GridCacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
     /** Test predefined affinity - must be ported to all clients. */
     @SuppressWarnings("UnaryPlus")
     public void testPredefined() throws IgniteCheckedException {
-        GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
+        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
 
         getTestResources().inject(aff);
 
-        aff.setHashIdResolver(new GridCacheAffinityNodeIdHashResolver());
+        aff.setHashIdResolver(new CacheAffinityNodeIdHashResolver());
 
         List<ClusterNode> nodes = new ArrayList<>();
 
@@ -218,11 +218,11 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
     @SuppressWarnings("UnaryPlus")
     public void testPredefinedHashIdResolver() throws IgniteCheckedException {
         // Use Md5 hasher for this test.
-        GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
+        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
 
         getTestResources().inject(aff);
 
-        aff.setHashIdResolver(new GridCacheAffinityNodeHashResolver() {
+        aff.setHashIdResolver(new CacheAffinityNodeHashResolver() {
             @Override public Object resolve(ClusterNode node) {
                 return node.attribute(DFLT_REPLICA_COUNT_ATTR_NAME);
             }
@@ -364,7 +364,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
         X.println(">>>");
         X.println(">>> Printing affinity for node: " + g.name());
 
-        GridCacheAffinity<Object> aff = affinity(g);
+        CacheAffinity<Object> aff = affinity(g);
 
         for (int i = 0; i < keyCnt; i++) {
             Collection<? extends ClusterNode> affNodes = nodes(aff, i);
@@ -394,7 +394,7 @@ public class GridCachePartitionedAffinitySelfTest extends GridCommonAbstractTest
 
         Ignite mg = grid(0);
 
-        GridCache<Integer, String> mc = mg.cache(null);
+        Cache<Integer, String> mc = mg.cache(null);
 
         int keyCnt = 10;
 

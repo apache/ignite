@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Continuous queries tests for atomic cache.
@@ -32,7 +32,7 @@ public class GridCacheContinuousQueryAtomicSelfTest extends GridCacheContinuousQ
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 

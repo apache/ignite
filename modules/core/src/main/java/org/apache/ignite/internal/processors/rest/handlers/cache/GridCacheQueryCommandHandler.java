@@ -279,9 +279,9 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
         @Override public GridRestResponse call() throws Exception {
             long qryId = qryIdGen.getAndIncrement();
 
-            GridCacheQueries<Object,Object> queries = g.cache(req.cacheName()).queries();
+            CacheQueries<Object,Object> queries = g.cache(req.cacheName()).queries();
 
-            GridCacheQuery<?> qry;
+            CacheQuery<?> qry;
 
             switch (req.type()) {
                 case SQL:

@@ -48,7 +48,7 @@ public class GridDsiResponse implements Serializable {
      * @return Cache key.
      */
     public Object getCacheKey(String terminalId){
-        //return new GridCacheAffinityKey<String>("RESPONSE:" + id.toString(), terminalId);
+        //return new CacheAffinityKey<String>("RESPONSE:" + id.toString(), terminalId);
         return new ResponseKey(id, terminalId);
     }
 
@@ -62,7 +62,7 @@ public class GridDsiResponse implements Serializable {
 
         /** */
         @SuppressWarnings("UnusedDeclaration")
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private String terminalId;
 
         /**

@@ -121,7 +121,7 @@ public class VisorQueryUtils {
      * @return Fetched rows and last processed element.
      */
     public static IgniteBiTuple<List<Object[]>, Map.Entry<Object, Object>> fetchScanQueryRows(
-        GridCacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize)
+        CacheQueryFuture<Map.Entry<Object, Object>> fut, Map.Entry<Object, Object> savedNext, int pageSize)
         throws IgniteCheckedException {
         List<Object[]> rows = new ArrayList<>();
 
@@ -171,7 +171,7 @@ public class VisorQueryUtils {
      * @param pageSize Number of rows to fetch.
      * @return Fetched rows and last processed element.
      */
-    public static IgniteBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(GridCacheQueryFuture<List<?>> fut,
+    public static IgniteBiTuple<List<Object[]>, List<?>> fetchSqlQueryRows(CacheQueryFuture<List<?>> fut,
         List<?> savedNext, int pageSize) throws IgniteCheckedException {
         List<Object[]> rows = new ArrayList<>();
 

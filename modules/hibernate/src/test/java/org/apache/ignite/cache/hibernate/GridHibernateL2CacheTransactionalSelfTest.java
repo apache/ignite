@@ -38,7 +38,7 @@ import java.util.*;
 
 /**
  *
- * Tests Hibernate L2 cache with TRANSACTIONAL access mode (Hibernate and GridCache are configured
+ * Tests Hibernate L2 cache with TRANSACTIONAL access mode (Hibernate and Cache are configured
  * to used the same TransactionManager).
  */
 public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2CacheSelfTest {
@@ -92,7 +92,7 @@ public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2Ca
 
         cfg.setTransactionManagerLookupClassName(TestTmLookup.class.getName());
 
-        cfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
         return cfg;
     }

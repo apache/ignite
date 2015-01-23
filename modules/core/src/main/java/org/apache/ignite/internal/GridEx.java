@@ -48,17 +48,17 @@ public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @param name Cache name.
      * @return Cache instance for given name or <tt>null</tt> if one does not exist.
      */
-    @Nullable public <K, V> GridCache<K, V> cachex(@Nullable String name);
+    @Nullable public <K, V> Cache<K, V> cachex(@Nullable String name);
 
     /**
      * Gets default cache instance if one is configured or <tt>null</tt> otherwise returning even non-public caches.
-     * The {@link GridCache#name()} method on default instance returns <tt>null</tt>.
+     * The {@link org.apache.ignite.cache.Cache#name()} method on default instance returns <tt>null</tt>.
      *
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Default cache instance.
      */
-    @Nullable public <K, V> GridCache<K, V> cachex();
+    @Nullable public <K, V> Cache<K, V> cachex();
 
     /**
      * Gets configured cache instance that satisfy all provided predicates including non-public caches. If no
@@ -67,7 +67,7 @@ public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @param p Predicates. If none provided - all configured caches will be returned.
      * @return Configured cache instances that satisfy all provided predicates.
      */
-    public Collection<GridCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super GridCache<?, ?>>... p);
+    public Collection<Cache<?, ?>> cachesx(@Nullable IgnitePredicate<? super Cache<?, ?>>... p);
 
     /**
      * Checks if the event type is user-recordable.

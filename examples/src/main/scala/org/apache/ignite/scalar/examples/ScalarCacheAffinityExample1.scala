@@ -17,8 +17,8 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.cache.GridCacheName
-import org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapped
+import org.apache.ignite.cache.CacheName
+import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
 import org.gridgain.scalar.scalar
 import scalar._
 import org.apache.ignite._
@@ -27,7 +27,7 @@ import java.util.concurrent.Callable
 
 /**
  * Example of how to collocate computations and data in GridGain using
- * `GridCacheAffinityKeyMapped` annotation as opposed to direct API calls. This
+ * `CacheAffinityKeyMapped` annotation as opposed to direct API calls. This
  * example will first populate cache on some node where cache is available, and then
  * will send jobs to the nodes where keys reside and print out values for those
  * keys.
@@ -65,10 +65,10 @@ object ScalarCacheAffinityExample1 {
             keys.foreach(key => {
                 val res = grid$.call$(
                     new Callable[String] {
-                        @GridCacheAffinityKeyMapped
+                        @CacheAffinityKeyMapped
                         def affinityKey(): String = key
 
-                        @GridCacheName
+                        @CacheName
                         def cacheName(): String = NAME
 
                         @Nullable def call: String = {

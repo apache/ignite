@@ -28,7 +28,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest {
     /** Distribution mode. */
-    private GridCacheDistributionMode distroMode;
+    private CacheDistributionMode distroMode;
 
     /** Atomicity mode. */
     private CacheAtomicityMode atomicityMode;
@@ -127,11 +127,11 @@ public class GridCacheReturnValueTransferSelfTest extends GridCommonAbstractTest
 
             writeOrderMode = order;
 
-            distroMode = GridCacheDistributionMode.PARTITIONED_ONLY;
+            distroMode = CacheDistributionMode.PARTITIONED_ONLY;
 
             startGrids(2);
 
-            distroMode = GridCacheDistributionMode.CLIENT_ONLY;
+            distroMode = CacheDistributionMode.CLIENT_ONLY;
 
             startGrid(2);
 

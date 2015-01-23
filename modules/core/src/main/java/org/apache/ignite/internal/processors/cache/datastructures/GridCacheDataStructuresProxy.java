@@ -27,12 +27,12 @@ import java.io.*;
 /**
  * Data structures proxy object.
  */
-public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructures, Externalizable {
+public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Delegate object. */
-    private GridCacheDataStructures delegate;
+    private CacheDataStructures delegate;
 
     /** Cache gateway. */
     private GridCacheGateway<K, V> gate;
@@ -51,7 +51,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
      * @param cctx Cache context.
      * @param delegate Delegate object.
      */
-    public GridCacheDataStructuresProxy(GridCacheContext<K, V> cctx, GridCacheDataStructures delegate) {
+    public GridCacheDataStructuresProxy(GridCacheContext<K, V> cctx, CacheDataStructures delegate) {
         this.delegate = delegate;
         this.cctx = cctx;
 
@@ -59,7 +59,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheAtomicSequence atomicSequence(String name, long initVal, boolean create)
+    @Override public CacheAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -84,7 +84,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
+    @Override public CacheAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -108,7 +108,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridCacheAtomicReference<T> atomicReference(String name, T initVal, boolean create)
+    @Override public <T> CacheAtomicReference<T> atomicReference(String name, T initVal, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -133,7 +133,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public <T, S> GridCacheAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
+    @Override public <T, S> CacheAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
         boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -158,7 +158,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Override public <T> GridCacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
+    @Override public <T> CacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -195,7 +195,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> GridCacheSet<T> set(String name, boolean collocated, boolean create)
+    @Nullable @Override public <T> CacheSet<T> set(String name, boolean collocated, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -220,7 +220,7 @@ public class GridCacheDataStructuresProxy<K, V> implements GridCacheDataStructur
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridCacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
+    @Nullable @Override public CacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 

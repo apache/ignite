@@ -123,15 +123,15 @@ abstract class GridCacheAbstractLoadTest {
      * @param writeClos Write closure.
      * @param readClos ReadClosure.
      */
-    protected void loadTest(final CIX1<GridCacheProjection<Integer, Integer>> writeClos,
-        final CIX1<GridCacheProjection<Integer, Integer>> readClos) {
+    protected void loadTest(final CIX1<CacheProjection<Integer, Integer>> writeClos,
+        final CIX1<CacheProjection<Integer, Integer>> readClos) {
         info("Read threads: " + readThreads());
         info("Write threads: " + writeThreads());
         info("Test duration (ms): " + testDuration);
 
         Ignite ignite = G.ignite();
 
-        final GridCache<Integer, Integer> cache = ignite.cache(null);
+        final Cache<Integer, Integer> cache = ignite.cache(null);
 
         assert cache != null;
 

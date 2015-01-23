@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -62,7 +62,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
         return cacheCfg;
     }
@@ -75,7 +75,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Collection<Integer> allKeys = new ArrayList<>(100);
 
-        GridCache<Integer, String> cache = g1.cache(null);
+        Cache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             cache.put(i, "val");

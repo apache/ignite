@@ -18,7 +18,7 @@
 package org.apache.ignite.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
@@ -26,7 +26,6 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -55,7 +54,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(Cache.Entry<? extends Long, ? extends Person> entry) {
+    @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends Person> entry) {
         IgniteTx tx = transaction();
 
         Long key = entry.getKey();
@@ -81,7 +80,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);
 
-        GridCache<Long, Person> cache = ignite.cache(cacheName);
+        Cache<Long, Person> cache = ignite.cache(cacheName);
 
         for (int i = 0; i < cnt; i++) {
             // Generate dummy person on the fly.

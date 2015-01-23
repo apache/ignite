@@ -39,18 +39,18 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Base map. */
-    private final Map<K, GridCacheEntry<K, V>> map;
+    private final Map<K, CacheEntry<K, V>> map;
 
     /**
      * @param ctx Cache context.
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheValueCollection(GridCacheContext<K, V> ctx, Collection<? extends GridCacheEntry<K, V>> c,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    public GridCacheValueCollection(GridCacheContext<K, V> ctx, Collection<? extends CacheEntry<K, V>> c,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         map = new HashMap<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -58,7 +58,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
         this.ctx = ctx;
         this.filter = filter;
 
-        for (GridCacheEntry<K, V> e : c) {
+        for (CacheEntry<K, V> e : c) {
             if (e != null)
                 map.put(e.getKey(), e);
         }
@@ -129,8 +129,8 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
 
         boolean rmv = false;
 
-        for (Iterator<GridCacheEntry<K, V>> it = map.values().iterator(); it.hasNext();) {
-            GridCacheEntry<K, V> e = it.next();
+        for (Iterator<CacheEntry<K, V>> it = map.values().iterator(); it.hasNext();) {
+            CacheEntry<K, V> e = it.next();
 
             if (F.isAll(e, filter) && F.eq(o, e.getValue())) {
                 it.remove();
@@ -158,7 +158,7 @@ public class GridCacheValueCollection<K, V> extends GridSerializableCollection<V
     @Override public boolean contains(Object o) {
         A.notNull(o, "o");
 
-        for (GridCacheEntry<K, V> e : map.values())
+        for (CacheEntry<K, V> e : map.values())
             if (F.isAll(e, filter) && F.eq(e.getValue(), o))
                 return true;
 

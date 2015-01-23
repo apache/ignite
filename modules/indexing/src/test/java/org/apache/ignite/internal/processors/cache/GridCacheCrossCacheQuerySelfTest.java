@@ -31,8 +31,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests cross cache queries.
@@ -86,7 +86,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         cc.setName(name);
         cc.setCacheMode(mode);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setPreloadMode(SYNC);
         cc.setSwapEnabled(true);
         cc.setEvictNearSynchronized(false);
@@ -98,9 +98,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testOnProjection() throws Exception {
-        GridCacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
-            new IgnitePredicate<GridCacheEntry<Integer, FactPurchase>>() {
-                @Override public boolean apply(GridCacheEntry<Integer, FactPurchase> e) {
+        CacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
+            new IgnitePredicate<CacheEntry<Integer, FactPurchase>>() {
+                @Override public boolean apply(CacheEntry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
                 }
             });
@@ -117,11 +117,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      * @return Result.
      */
-    private List<Map.Entry<Integer, FactPurchase>> body(GridCacheProjection<Integer, FactPurchase> prj)
+    private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
         throws Exception {
         int idGen = 0;
 
-        GridCache<Integer, Object> dimCache = ignite.cache("replicated");
+        Cache<Integer, Object> dimCache = ignite.cache("replicated");
 
         for (int i = 0; i < 2; i++) {
             int id = idGen++;
@@ -135,10 +135,10 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             dimCache.put(id, new DimProduct(id, "Product" + id));
         }
 
-        GridCacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
-        GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
+        CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
+        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
-        GridCache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
+        Cache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
 
         List<DimStore> dimStores = new ArrayList<>(stores.values());
         Collections.sort(dimStores, new Comparator<DimStore>() {
@@ -164,7 +164,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             factCache.put(id, new FactPurchase(id, prod.getId(), store.getId()));
         }
 
-        GridCacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ? factCache : prj).queries().createSqlQuery(
+        CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ? factCache : prj).queries().createSqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
@@ -213,7 +213,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimProduct {
         /** Primary key. */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private int id;
 
         /** Product name. */
@@ -255,11 +255,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimStore {
         /** Primary key. */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private int id;
 
         /** Store name. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String name;
 
         /**
@@ -298,15 +298,15 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class FactPurchase {
         /** Primary key. */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private int id;
 
         /** Foreign key to store at which purchase occurred. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int storeId;
 
         /** Foreign key to purchased product. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int productId;
 
         /**

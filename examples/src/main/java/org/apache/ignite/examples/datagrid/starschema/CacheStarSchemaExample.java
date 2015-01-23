@@ -92,7 +92,7 @@ public class CacheStarSchemaExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void populateDimensions() throws IgniteCheckedException {
-        GridCache<Integer, Object> cache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
+        Cache<Integer, Object> cache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
 
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
@@ -115,11 +115,11 @@ public class CacheStarSchemaExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void populateFacts() throws IgniteCheckedException {
-        GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
-        GridCache<Integer, Object> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
+        Cache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
+        Cache<Integer, Object> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
-        GridCacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
-        GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
+        CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
+        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
         for (int i = 0; i < 100; i++) {
             int id = idGen++;
@@ -139,13 +139,13 @@ public class CacheStarSchemaExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void queryStorePurchases() throws IgniteCheckedException {
-        GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
+        Cache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
         // All purchases for store1.
         // ========================
 
         // Create cross cache query to get all purchases made at store1.
-        GridCacheQuery<Map.Entry<Integer, FactPurchase>> storePurchases = factCache.queries().createSqlQuery(
+        CacheQuery<Map.Entry<Integer, FactPurchase>> storePurchases = factCache.queries().createSqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase " +
                 "where DimStore.id=FactPurchase.storeId and DimStore.name=?");
@@ -163,10 +163,10 @@ public class CacheStarSchemaExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void queryProductPurchases() throws IgniteCheckedException {
-        GridCache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
-        GridCache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
+        Cache<Integer, Object> dimCache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
+        Cache<Integer, FactPurchase> factCache = Ignition.ignite().cache(PARTITIONED_CACHE_NAME);
 
-        GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
+        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
         // All purchases for certain product made at store2.
         // =================================================
@@ -179,7 +179,7 @@ public class CacheStarSchemaExample {
 
         // Create cross cache query to get all purchases made at store2
         // for specified products.
-        GridCacheQuery<Map.Entry<Integer, FactPurchase>> prodPurchases = factCache.queries().createSqlQuery(
+        CacheQuery<Map.Entry<Integer, FactPurchase>> prodPurchases = factCache.queries().createSqlQuery(
             FactPurchase.class,
             "from \"replicated\".DimStore, \"replicated\".DimProduct, \"partitioned\".FactPurchase " +
                 "where DimStore.id=FactPurchase.storeId and DimProduct.id=FactPurchase.productId " +

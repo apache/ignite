@@ -32,8 +32,8 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -67,7 +67,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cc.setPreloadMode(NONE);
 
@@ -102,7 +102,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCache<Integer, String> c = g.cache(null);
+            Cache<Integer, String> c = g.cache(null);
 
             c.removeAll();
 
@@ -220,7 +220,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
      */
     private void checkDoubleGet(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation, boolean put)
         throws Exception {
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(null);
 
         Integer key = 1;
 
@@ -235,7 +235,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             if (isTestDebug()) {
                 info("Started transaction.");
 
-                GridCacheAffinity<Integer> aff = cache.affinity();
+                CacheAffinity<Integer> aff = cache.affinity();
 
                 int part = aff.partition(key);
 

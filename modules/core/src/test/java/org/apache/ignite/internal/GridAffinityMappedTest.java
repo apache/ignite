@@ -34,7 +34,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests affinity mapping when {@link org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapper} is used.
+ * Tests affinity mapping when {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} is used.
  */
 public class GridAffinityMappedTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
@@ -150,7 +150,7 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     /**
      * Mock affinity mapper implementation that substitutes values other than 0 and 1 with 0.
      */
-    private static class MockCacheAffinityKeyMapper implements GridCacheAffinityKeyMapper {
+    private static class MockCacheAffinityKeyMapper implements CacheAffinityKeyMapper {
         /** {@inheritDoc} */
         @Override public Object affinityKey(Object key) {
             return key instanceof Integer ? 1 == (Integer)key ? key : 0 : key;

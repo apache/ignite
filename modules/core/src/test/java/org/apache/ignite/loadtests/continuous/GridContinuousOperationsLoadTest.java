@@ -39,7 +39,7 @@ import static org.apache.ignite.testframework.GridLoadTestUtils.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
- * Load test for {@link org.apache.ignite.cache.query.GridCacheContinuousQuery}.
+ * Load test for {@link org.apache.ignite.cache.query.CacheContinuousQuery}.
  */
 public class GridContinuousOperationsLoadTest {
     /**
@@ -78,7 +78,7 @@ public class GridContinuousOperationsLoadTest {
         dumpProperties(System.out);
 
         try (Ignite ignite = Ignition.start(cfgPath)) {
-            final GridCache<Object, Object> cache = ignite.cache(cacheName);
+            final Cache<Object, Object> cache = ignite.cache(cacheName);
 
             if (cache == null)
                 throw new IgniteCheckedException("Cache is not configured: " + cacheName);
@@ -96,7 +96,7 @@ public class GridContinuousOperationsLoadTest {
 
             for (int i = 0; i < parallelCnt; i++) {
                 if (useQry) {
-                    GridCacheContinuousQuery<Object, Object> qry = cache.queries().createContinuousQuery();
+                    CacheContinuousQuery<Object, Object> qry = cache.queries().createContinuousQuery();
 
                     qry.callback(new PX2<UUID, Collection<Map.Entry<Object, Object>>>() {
                         @Override public boolean applyx(UUID uuid, Collection<Map.Entry<Object, Object>> entries)

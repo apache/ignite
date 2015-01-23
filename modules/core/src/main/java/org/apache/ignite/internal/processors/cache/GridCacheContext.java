@@ -61,10 +61,10 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Cache context.
@@ -142,19 +142,19 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheAdapter<K, V> cache;
 
     /** No-value filter array. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] noValArr;
+    private IgnitePredicate<CacheEntry<K, V>>[] noValArr;
 
     /** Has-value filter array. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] hasValArr;
+    private IgnitePredicate<CacheEntry<K, V>>[] hasValArr;
 
     /** No-peek-value filter array. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] noPeekArr;
+    private IgnitePredicate<CacheEntry<K, V>>[] noPeekArr;
 
     /** Has-peek-value filter array. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] hasPeekArr;
+    private IgnitePredicate<CacheEntry<K, V>>[] hasPeekArr;
 
     /** No-op filter array. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] trueArr;
+    private IgnitePredicate<CacheEntry<K, V>>[] trueArr;
 
     /** Cached local rich node. */
     private ClusterNode locNode;
@@ -166,13 +166,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     private ThreadLocal<GridCacheProjectionImpl<K, V>> prjPerCall = new ThreadLocal<>();
 
     /** Thread local forced flags that affect any projection in the same thread. */
-    private ThreadLocal<GridCacheFlag[]> forcedFlags = new ThreadLocal<>();
+    private ThreadLocal<CacheFlag[]> forcedFlags = new ThreadLocal<>();
 
     /** Constant array to avoid recreation. */
-    private static final GridCacheFlag[] FLAG_LOCAL_READ = new GridCacheFlag[]{LOCAL, READ};
+    private static final CacheFlag[] FLAG_LOCAL_READ = new CacheFlag[]{LOCAL, READ};
 
     /** Local flag array. */
-    private static final GridCacheFlag[] FLAG_LOCAL = new GridCacheFlag[]{LOCAL};
+    private static final CacheFlag[] FLAG_LOCAL = new CacheFlag[]{LOCAL};
 
     /** Cache name. */
     private String cacheName;
@@ -901,28 +901,28 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>>[] noGetArray() {
+    public IgnitePredicate<CacheEntry<K, V>>[] noGetArray() {
         return noValArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>>[] hasGetArray() {
+    public IgnitePredicate<CacheEntry<K, V>>[] hasGetArray() {
         return hasValArr;
     }
 
     /**
      * @return No get-value filter.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>>[] noPeekArray() {
+    public IgnitePredicate<CacheEntry<K, V>>[] noPeekArray() {
         return noPeekArr;
     }
 
     /**
      * @return Has get-value filer.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>>[] hasPeekArray() {
+    public IgnitePredicate<CacheEntry<K, V>>[] hasPeekArray() {
         return hasPeekArr;
     }
 
@@ -931,7 +931,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Predicate array that checks for value.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<GridCacheEntry<K, V>>[] equalsPeekArray(V val) {
+    public IgnitePredicate<CacheEntry<K, V>>[] equalsPeekArray(V val) {
         assert val != null;
 
         return new IgnitePredicate[]{F.cacheContainsPeek(val)};
@@ -940,14 +940,14 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Empty filter.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>> truex() {
+    public IgnitePredicate<CacheEntry<K, V>> truex() {
         return F.alwaysTrue();
     }
 
     /**
      * @return No-op array.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>>[] trueArray() {
+    public IgnitePredicate<CacheEntry<K, V>>[] trueArray() {
         return trueArr;
     }
 
@@ -963,7 +963,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Array containing single predicate.
      */
     @SuppressWarnings({"unchecked"})
-    public IgnitePredicate<GridCacheEntry<K, V>>[] vararg(IgnitePredicate<GridCacheEntry<K, V>> p) {
+    public IgnitePredicate<CacheEntry<K, V>>[] vararg(IgnitePredicate<CacheEntry<K, V>> p) {
         return p == null ? CU.<K, V>empty() : new IgnitePredicate[]{p};
     }
 
@@ -977,7 +977,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     @SuppressWarnings({"ErrorNotRethrown"})
     public <K1, V1> boolean isAll(GridCacheEntryEx<K1, V1> e,
-        @Nullable IgnitePredicate<GridCacheEntry<K1, V1>>[] p) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K1, V1>>[] p) throws IgniteCheckedException {
         return F.isEmpty(p) || isAll(e.wrap(false), p);
     }
 
@@ -996,7 +996,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             return true;
 
         // We should allow only local read-only operations within filter checking.
-        GridCacheFlag[] oldFlags = forceFlags(FLAG_LOCAL_READ);
+        CacheFlag[] oldFlags = forceFlags(FLAG_LOCAL_READ);
 
         try {
             boolean pass = F.isAll(e, p);
@@ -1020,7 +1020,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @return Previously forced flags.
      */
-    @Nullable public GridCacheFlag[] forceLocal() {
+    @Nullable public CacheFlag[] forceLocal() {
         return forceFlags(FLAG_LOCAL);
     }
 
@@ -1029,7 +1029,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @return Forced flags that were set prior to method call.
      */
-    @Nullable public GridCacheFlag[] forceLocalRead() {
+    @Nullable public CacheFlag[] forceLocalRead() {
         return forceFlags(FLAG_LOCAL_READ);
     }
 
@@ -1040,8 +1040,8 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param flags Flags to force.
      * @return Forced flags that were set prior to method call.
      */
-    @Nullable public GridCacheFlag[] forceFlags(@Nullable GridCacheFlag[] flags) {
-        GridCacheFlag[] oldFlags = forcedFlags.get();
+    @Nullable public CacheFlag[] forceFlags(@Nullable CacheFlag[] flags) {
+        CacheFlag[] oldFlags = forcedFlags.get();
 
         forcedFlags.set(F.isEmpty(flags) ? null : flags);
 
@@ -1053,7 +1053,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      *
      * @return Forced flags.
      */
-    public GridCacheFlag[] forcedFlags() {
+    public CacheFlag[] forcedFlags() {
         return forcedFlags.get();
     }
 
@@ -1069,7 +1069,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (obj == null)
             return obj;
 
-        GridCacheCloner c = cacheCfg.getCloner();
+        CacheCloner c = cacheCfg.getCloner();
 
         if (c != null)
             return c.cloneValue(obj);
@@ -1133,7 +1133,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param flag Flag to check.
      * @return {@code true} if the given flag is set.
      */
-    public boolean hasFlag(GridCacheFlag flag) {
+    public boolean hasFlag(CacheFlag flag) {
         assert flag != null;
 
         if (nearContext())
@@ -1141,7 +1141,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheProjectionImpl<K, V> prj = prjPerCall.get();
 
-        GridCacheFlag[] forced = forcedFlags.get();
+        CacheFlag[] forced = forcedFlags.get();
 
         return (prj != null && prj.flags().contains(flag)) || (forced != null && U.containsObjectArray(forced, flag));
     }
@@ -1152,7 +1152,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param flags Flags to check.
      * @return {@code true} if any of the given flags is set.
      */
-    public boolean hasAnyFlags(GridCacheFlag[] flags) {
+    public boolean hasAnyFlags(CacheFlag[] flags) {
         assert !F.isEmpty(flags);
 
         if (nearContext())
@@ -1163,7 +1163,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (prj == null && F.isEmpty(forcedFlags.get()))
             return false;
 
-        for (GridCacheFlag f : flags)
+        for (CacheFlag f : flags)
             if (hasFlag(f))
                 return true;
 
@@ -1176,7 +1176,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param flags Flags to check.
      * @return {@code true} if any of the given flags is set.
      */
-    public boolean hasAnyFlags(Collection<GridCacheFlag> flags) {
+    public boolean hasAnyFlags(Collection<CacheFlag> flags) {
         assert !F.isEmpty(flags);
 
         if (nearContext())
@@ -1187,7 +1187,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (prj == null && F.isEmpty(forcedFlags.get()))
             return false;
 
-        for (GridCacheFlag f : flags)
+        for (CacheFlag f : flags)
             if (hasFlag(f))
                 return true;
 
@@ -1204,11 +1204,11 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param flag Flag to check.
      */
-    public void denyOnFlag(GridCacheFlag flag) {
+    public void denyOnFlag(CacheFlag flag) {
         assert flag != null;
 
         if (hasFlag(flag))
-            throw new GridCacheFlagException(flag);
+            throw new CacheFlagException(flag);
     }
 
     /**
@@ -1221,25 +1221,25 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @param flags Flags.
      */
-    public void denyOnFlags(GridCacheFlag[] flags) {
+    public void denyOnFlags(CacheFlag[] flags) {
         assert !F.isEmpty(flags);
 
         if (hasAnyFlags(flags))
-            throw new GridCacheFlagException(flags);
+            throw new CacheFlagException(flags);
     }
 
     /**
      * @param flags Flags.
      */
-    public void denyOnFlags(Collection<GridCacheFlag> flags) {
+    public void denyOnFlags(Collection<CacheFlag> flags) {
         assert !F.isEmpty(flags);
 
         if (hasAnyFlags(flags))
-            throw new GridCacheFlagException(flags);
+            throw new CacheFlagException(flags);
     }
 
     /**
-     * Clones cached object depending on whether or not {@link GridCacheFlag#CLONE} flag
+     * Clones cached object depending on whether or not {@link org.apache.ignite.cache.CacheFlag#CLONE} flag
      * is set thread locally.
      *
      * @param obj Object to clone.
@@ -1302,7 +1302,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
 
         // Get flags in the same thread.
-        final GridCacheFlag[] flags = forcedFlags();
+        final CacheFlag[] flags = forcedFlags();
 
         if (prj == null && F.isEmpty(flags))
             return r;
@@ -1313,7 +1313,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                 projectionPerCall(prj);
 
-                GridCacheFlag[] oldFlags = forceFlags(flags);
+                CacheFlag[] oldFlags = forceFlags(flags);
 
                 try {
                     r.run();
@@ -1344,7 +1344,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         final GridCacheProjectionImpl<K, V> prj = projectionPerCall();
 
         // Get flags in the same thread.
-        final GridCacheFlag[] flags = forcedFlags();
+        final CacheFlag[] flags = forcedFlags();
 
         if (prj == null && F.isEmpty(flags))
             return r;
@@ -1355,7 +1355,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
                 projectionPerCall(prj);
 
-                GridCacheFlag[] oldFlags = forceFlags(flags);
+                CacheFlag[] oldFlags = forceFlags(flags);
 
                 try {
                     return r.call();
@@ -1553,13 +1553,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @param interceptorRes Result of {@link org.apache.ignite.cache.GridCacheInterceptor#onBeforeRemove} callback.
+     * @param interceptorRes Result of {@link org.apache.ignite.cache.CacheInterceptor#onBeforeRemove} callback.
      * @return {@code True} if interceptor cancels remove.
      */
     public boolean cancelRemove(@Nullable IgniteBiTuple<Boolean, ?> interceptorRes) {
         if (interceptorRes != null) {
             if (interceptorRes.get1() == null) {
-                U.warn(log, "GridCacheInterceptor must not return null as cancellation flag value from " +
+                U.warn(log, "CacheInterceptor must not return null as cancellation flag value from " +
                     "'onBeforeRemove' method.");
 
                 return false;
@@ -1568,7 +1568,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 return interceptorRes.get1();
         }
         else {
-            U.warn(log, "GridCacheInterceptor must not return null from 'onBeforeRemove' method.");
+            U.warn(log, "CacheInterceptor must not return null from 'onBeforeRemove' method.");
 
             return false;
         }

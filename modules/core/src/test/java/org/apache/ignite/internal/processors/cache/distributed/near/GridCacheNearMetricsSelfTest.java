@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Cache metrics test.
@@ -32,7 +32,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     private static final int KEY_CNT = 50;
 
     /** {@inheritDoc} */
-    @Override protected GridCacheWriteSynchronizationMode writeSynchronization() {
+    @Override protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_SYNC;
     }
 
@@ -89,7 +89,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testPrimaryPut() throws Exception {
         Ignite g0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = g0.cache(null);
+        Cache<Integer, Integer> cache0 = g0.cache(null);
 
         int key;
 
@@ -142,7 +142,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testBackupPut() throws Exception {
         Ignite g0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = g0.cache(null);
+        Cache<Integer, Integer> cache0 = g0.cache(null);
 
         int key;
 
@@ -195,7 +195,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testNearPut() throws Exception {
         Ignite g0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = g0.cache(null);
+        Cache<Integer, Integer> cache0 = g0.cache(null);
 
         int key;
 
@@ -245,7 +245,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testPrimaryRead() throws Exception {
         Ignite g0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = g0.cache(null);
+        Cache<Integer, Integer> cache0 = g0.cache(null);
 
         int key;
 
@@ -299,7 +299,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testBackupRead() throws Exception {
         Ignite g0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = g0.cache(null);
+        Cache<Integer, Integer> cache0 = g0.cache(null);
 
         int key;
 
@@ -348,7 +348,7 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
     public void testNearRead() throws Exception {
         Ignite g0 = grid(0);
 
-        GridCache<Integer, Integer> cache0 = g0.cache(null);
+        Cache<Integer, Integer> cache0 = g0.cache(null);
 
         int key;
 

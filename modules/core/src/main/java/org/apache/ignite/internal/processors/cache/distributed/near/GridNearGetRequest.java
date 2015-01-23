@@ -72,7 +72,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
     /** Filters. */
     @GridDirectTransient
-    private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Subject ID. */
     @GridDirectVersion(1)
@@ -115,7 +115,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         boolean readThrough,
         boolean reload,
         long topVer,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash,
         long accessTtl
@@ -205,7 +205,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /**
      * @return Filters.
      */
-    public IgnitePredicate<GridCacheEntry<K, V>>[] filter() {
+    public IgnitePredicate<CacheEntry<K, V>>[] filter() {
         return filter;
     }
 

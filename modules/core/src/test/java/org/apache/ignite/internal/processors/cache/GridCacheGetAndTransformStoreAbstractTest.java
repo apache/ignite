@@ -33,9 +33,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Basic get and transform store test.
@@ -102,7 +102,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
     /**
      * @return Distribution mode.
      */
-    protected GridCacheDistributionMode distributionMode() {
+    protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 

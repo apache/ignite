@@ -36,8 +36,8 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  *
@@ -56,7 +56,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
     private final AtomicInteger idxGen = new AtomicInteger();
 
     /** */
-    private GridCachePreloadMode mode = SYNC;
+    private CachePreloadMode mode = SYNC;
 
     /** */
     private boolean offheap;
@@ -82,7 +82,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         repCacheCfg.setName("replicated");
         repCacheCfg.setCacheMode(REPLICATED);
         repCacheCfg.setPreloadMode(mode);
-        repCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        repCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         repCacheCfg.setQueryIndexEnabled(false);
         repCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -97,7 +97,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
         partCacheCfg.setCacheMode(PARTITIONED);
         partCacheCfg.setPreloadMode(mode);
         partCacheCfg.setAffinity(new GridCacheModuloAffinityFunction(11, 1));
-        partCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        partCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         partCacheCfg.setEvictNearSynchronized(false);
         partCacheCfg.setQueryIndexEnabled(false);
         partCacheCfg.setAtomicityMode(TRANSACTIONAL);
@@ -206,8 +206,8 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
             Ignite ignite1 = startGrid(1);
             GridKernal grid2 = (GridKernal)startGrid(2);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(cacheName);
-            GridCache<Integer, Object> cache2 = grid2.cache(cacheName);
+            Cache<Integer, Object> cache1 = ignite1.cache(cacheName);
+            Cache<Integer, Object> cache2 = grid2.cache(cacheName);
 
             Object v1 = valCls.newInstance();
 
@@ -286,7 +286,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If thread was interrupted.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheEmpty(GridCacheProjection<Integer, Object> cache, long timeout)
+    private boolean waitCacheEmpty(CacheProjection<Integer, Object> cache, long timeout)
         throws InterruptedException {
         assert cache != null;
         assert timeout >= 0;

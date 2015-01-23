@@ -133,13 +133,13 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(CFG_GRP_SIZE));
         }
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setQueryIndexEnabled(false);
 
@@ -152,8 +152,8 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
      * @throws IgniteCheckedException In case of exception.
      */
     public void testConfiguration() throws IgniteCheckedException {
-        GridCache metaCache = getFieldValue(fs, "meta", "metaCache");
-        GridCache dataCache = getFieldValue(fs, "data", "dataCache");
+        Cache metaCache = getFieldValue(fs, "meta", "metaCache");
+        Cache dataCache = getFieldValue(fs, "data", "dataCache");
 
         assertNotNull(metaCache);
         assertEquals(META_CACHE_NAME, metaCache.name());
@@ -255,7 +255,7 @@ public class GridGgfsStreamsSelfTest extends GridGgfsCommonAbstractTest {
             // After this we should have first two block colocated with grid 0 and last block colocated with grid 1.
             IgniteFsFileImpl fileImpl = (IgniteFsFileImpl)fs.info(path);
 
-            GridCache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
+            Cache<Object, Object> metaCache = grid(0).cachex(META_CACHE_NAME);
 
             GridGgfsFileInfo fileInfo = (GridGgfsFileInfo)metaCache.get(fileImpl.fileId());
 

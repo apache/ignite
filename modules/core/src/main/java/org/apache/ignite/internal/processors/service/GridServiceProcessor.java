@@ -31,7 +31,7 @@ import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.cache.query.GridCacheContinuousQueryEntry;
+import org.apache.ignite.cache.query.CacheContinuousQueryEntry;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -361,7 +361,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 "different configuration) [deployed=" + dep.configuration() + ", new=" + cfg + ']'));
                         }
                         else {
-                            for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
+                            for (CacheEntry<Object, Object> e : cache.entrySetx()) {
                                 if (e.getKey() instanceof GridServiceAssignmentsKey) {
                                     GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
@@ -453,7 +453,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteFuture<?> cancelAll() {
         Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
-        for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
+        for (CacheEntry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -472,7 +472,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public Collection<ManagedServiceDescriptor> deployedServices() {
         Collection<ManagedServiceDescriptor> descs = new ArrayList<>();
 
-        for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
+        for (CacheEntry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
                 continue;
 
@@ -481,7 +481,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ManagedServiceDescriptorImpl desc = new ManagedServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagsOn(GridCacheFlag.GET_PRIMARY).
+                GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagsOn(CacheFlag.GET_PRIMARY).
                     get(new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {
@@ -916,14 +916,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Service deployment listener.
      */
     private class DeploymentListener
-        implements IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
+        implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<GridCacheContinuousQueryEntry<Object, Object>> deps) {
+            final Collection<CacheContinuousQueryEntry<Object, Object>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
                     for (Entry<Object, Object> e : deps) {
@@ -1073,7 +1073,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 ctx.cache().context().deploy().ignoreOwnership(true);
 
                             try {
-                                for (GridCacheEntry<Object, Object> e : cache.entrySetx()) {
+                                for (CacheEntry<Object, Object> e : cache.entrySetx()) {
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
                                         continue;
 
@@ -1106,7 +1106,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         // Clean up zombie assignments.
-                        for (GridCacheEntry<Object, Object> e : cache.primaryEntrySetx()) {
+                        for (CacheEntry<Object, Object> e : cache.primaryEntrySetx()) {
                             if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                                 continue;
 
@@ -1194,14 +1194,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * Assignment listener.
      */
     private class AssignmentListener
-        implements IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Object, Object>>> {
+        implements IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Object, Object>>> {
         /** Serial version ID. */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
         @Override public boolean apply(
             UUID nodeId,
-            final Collection<GridCacheContinuousQueryEntry<Object, Object>> assignCol) {
+            final Collection<CacheContinuousQueryEntry<Object, Object>> assignCol) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
                     for (Entry<Object, Object> e : assignCol) {

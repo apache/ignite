@@ -50,13 +50,13 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
     private static Ignite ignite3;
 
     /** Cache 1. */
-    private static GridCache<Integer, String> cache1;
+    private static Cache<Integer, String> cache1;
 
     /** Cache 2. */
-    private static GridCache<Integer, String> cache2;
+    private static Cache<Integer, String> cache2;
 
     /** Cache 3. */
-    private static GridCache<Integer, String> cache3;
+    private static Cache<Integer, String> cache3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -182,7 +182,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         for (Ignite ignite : ignites)
             addListener(ignite, lsnr);
 
-        GridCache<Integer, String> cache1 = ignites[0].cache(null);
+        Cache<Integer, String> cache1 = ignites[0].cache(null);
 
         for (int i = 1; i <= cnt; i++)
             cache1.put(i, "val" + i);
@@ -197,7 +197,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         latch.await(10, SECONDS);
 
         for (Ignite ignite : ignites) {
-            GridCache<Integer, String> cache = ignite.cache(null);
+            Cache<Integer, String> cache = ignite.cache(null);
 
             if (cache == cache1)
                 continue;

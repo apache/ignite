@@ -41,8 +41,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test GridDhtInvalidPartitionException handling in ATOMIC cache during restarts.
@@ -59,7 +59,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     private CacheAtomicWriteOrderMode writeOrder;
 
     /** Write sync. */
-    private GridCacheWriteSynchronizationMode writeSync;
+    private CacheWriteSynchronizationMode writeSync;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -148,7 +148,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
      * @param writeSync Write synchronization mode to check.
      * @throws Exception If failed.
      */
-    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder, GridCacheWriteSynchronizationMode writeSync)
+    private void checkRestarts(CacheAtomicWriteOrderMode writeOrder, CacheWriteSynchronizationMode writeSync)
         throws Exception {
         this.writeOrder = writeOrder;
         this.writeSync = writeSync;
@@ -158,7 +158,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         startGrids(gridCnt);
 
         try {
-            final GridCache<Object, Object> cache = grid(0).cache(null);
+            final Cache<Object, Object> cache = grid(0).cache(null);
 
             final int range = 100_000;
 

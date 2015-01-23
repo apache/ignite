@@ -152,7 +152,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testDefaultCache() throws Exception {
-        GridCache<String, String> cache = grid().cache(null);
+        Cache<String, String> cache = grid().cache(null);
 
         cache.putx("key", "val");
 
@@ -170,7 +170,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         assert inBean != outBean;
 
-        GridCache<String, String> cache0 = (GridCache<String, String>)outBean.getObjectField();
+        Cache<String, String> cache0 = (Cache<String, String>)outBean.getObjectField();
 
         assertNull(cache0.name());
         assertEquals("val", cache0.get("key"));
@@ -182,7 +182,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testNamedCache() throws Exception {
-        GridCache<String, String> cache = grid().cache(CACHE_NAME);
+        Cache<String, String> cache = grid().cache(CACHE_NAME);
 
         cache.putx("key", "val");
 
@@ -200,7 +200,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
 
         assert inBean != outBean;
 
-        GridCache<String, String> cache0 = (GridCache<String, String>)outBean.getObjectField();
+        Cache<String, String> cache0 = (Cache<String, String>)outBean.getObjectField();
 
         assertEquals(CACHE_NAME, cache0.name());
         assertEquals("val", cache0.get("key"));
@@ -803,9 +803,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testDataStructures() throws Exception {
-        GridCacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
+        CacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
 
-        GridCacheAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
+        CacheAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
 
         assert atomicLong != null;
 
@@ -833,9 +833,9 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testAffinity() throws Exception {
-        GridCache<String, String> cache = grid().cache(CACHE_NAME);
+        Cache<String, String> cache = grid().cache(CACHE_NAME);
 
-        GridCacheAffinity<String> affinity = cache.affinity();
+        CacheAffinity<String> affinity = cache.affinity();
 
         cache.putx("tst", "test");
 

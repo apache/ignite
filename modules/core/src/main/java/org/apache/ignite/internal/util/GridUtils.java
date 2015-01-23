@@ -1196,17 +1196,17 @@ public abstract class GridUtils {
      * @throws ClassNotFoundException If class not found.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
+    @Nullable public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] readEntryFilterArray(ObjectInput in)
         throws IOException, ClassNotFoundException {
         int len = in.readInt();
 
-        IgnitePredicate<GridCacheEntry<K, V>>[] arr = null;
+        IgnitePredicate<CacheEntry<K, V>>[] arr = null;
 
         if (len > 0) {
             arr = new IgnitePredicate[len];
 
             for (int i = 0; i < len; i++)
-                arr[i] = (IgnitePredicate<GridCacheEntry<K, V>>)in.readObject();
+                arr[i] = (IgnitePredicate<CacheEntry<K, V>>)in.readObject();
         }
 
         return arr;
@@ -7253,7 +7253,7 @@ public abstract class GridUtils {
      * @param cacheName Cache to check.
      * @return Cache distribution mode or {@code null} if cache is not found.
      */
-    @Nullable public static GridCacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
+    @Nullable public static CacheDistributionMode distributionMode(ClusterNode n, String cacheName) {
         GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
 
         if (caches != null)

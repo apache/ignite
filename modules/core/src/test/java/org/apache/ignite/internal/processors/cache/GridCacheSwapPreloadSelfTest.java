@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Test for cache swap preloading.
@@ -61,7 +61,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(cacheMode);
         cacheCfg.setPreloadMode(SYNC);
@@ -96,7 +96,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            GridCache<Integer, Integer> cache = grid(0).cache(null);
+            Cache<Integer, Integer> cache = grid(0).cache(null);
 
             // Populate.
             for (int i = 0; i < ENTRY_CNT; i++)
@@ -154,7 +154,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
         try {
             startGrid(0);
 
-            final GridCache<Integer, Integer> cache = grid(0).cache(null);
+            final Cache<Integer, Integer> cache = grid(0).cache(null);
 
             assertNotNull(cache);
 

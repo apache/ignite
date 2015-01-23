@@ -285,7 +285,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         GridCacheContext<K, V> cacheCtx,
         boolean failFast,
         K key,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter
+        IgnitePredicate<CacheEntry<K, V>>[] filter
     ) throws GridCacheFilterFailedException {
         IgniteTxEntry<K, V> e = txMap == null ? null : txMap.get(cacheCtx.txKey(key));
 
@@ -1049,7 +1049,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Map<K, GridCacheVersion> missed,
         int keysCnt,
         boolean deserializePortable,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
@@ -1323,7 +1323,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final Map<K, GridCacheVersion> missedMap,
         @Nullable final Collection<K> redos,
         final boolean deserializePortable,
-        final IgnitePredicate<GridCacheEntry<K, V>>[] filter
+        final IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
         assert redos != null || pessimistic();
 
@@ -1507,7 +1507,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         final boolean deserializePortable,
-        final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        final IgnitePredicate<CacheEntry<K, V>>[] filter) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -1760,7 +1760,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter
+        IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
         return (IgniteFuture<GridCacheReturn<V>>)putAllAsync0(cacheCtx,
             map,
@@ -1821,7 +1821,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      */
     private boolean filter(GridCacheEntryEx<K, V> cached,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return pessimistic() || cached.context().isAll(cached, filter);
     }
 
@@ -1856,7 +1856,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable Object[] invokeArgs,
         boolean retval,
         boolean lockOnly,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         final GridCacheReturn<V> ret,
         Collection<K> enlisted,
         @Nullable Map<? extends K, GridCacheDrInfo<V>> drPutMap,
@@ -2254,7 +2254,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean retval,
         boolean read,
         long accessTtl,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean computeInvoke
     ) throws IgniteCheckedException {
         for (K k : keys) {
@@ -2429,7 +2429,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable final Map<? extends K, GridCacheDrInfo<V>> drMap,
         final boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
-        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter) {
         assert filter == null || invokeMap == null;
 
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_PUT);
@@ -2639,7 +2639,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean retval,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter
+        IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
         return removeAllAsync0(cacheCtx, keys, null, cached, retval, filter);
     }
@@ -2659,7 +2659,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         @Nullable Map<? extends  K, GridCacheVersion> drMap,
         @Nullable GridCacheEntryEx<K, V> cached,
         final boolean retval,
-        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter) {
         cacheCtx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
         final Collection<? extends K> keys0;
@@ -3047,7 +3047,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Object[] invokeArgs,
         GridCacheEntryEx<K, V> entry,
         @Nullable ExpiryPolicy expiryPlc,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean filtersSet,
         long drTtl,
         long drExpireTime,

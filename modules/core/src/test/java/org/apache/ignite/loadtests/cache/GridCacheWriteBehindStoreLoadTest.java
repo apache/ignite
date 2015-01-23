@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -27,12 +28,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Basic store test.
@@ -61,7 +61,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry e) {
+        @Override public void write(javax.cache.Cache.Entry e) {
             // No-op.
         }
 
@@ -80,7 +80,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCache<?, ?> cache = cache();
+        Cache<?, ?> cache = cache();
 
         if (cache != null)
             cache.clearAll();
@@ -151,7 +151,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     private void loadCache() throws Exception {
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final GridCache<Long, String> cache = cache();
+        final Cache<Long, String> cache = cache();
 
         final AtomicLong keyCntr = new AtomicLong();
 

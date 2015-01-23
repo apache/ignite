@@ -38,18 +38,18 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     private final GridCacheContext<K, V> ctx;
 
     /** Filter. */
-    private final IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Base map. */
-    private final Map<K, GridCacheEntry<K, V>> map;
+    private final Map<K, CacheEntry<K, V>> map;
 
     /**
      * @param ctx Cache context.
      * @param c Entry collection.
      * @param filter Filter.
      */
-    public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends GridCacheEntry<K, V>> c,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    public GridCacheKeySet(GridCacheContext<K, V> ctx, Collection<? extends CacheEntry<K, V>> c,
+        IgnitePredicate<CacheEntry<K, V>>[] filter) {
         map = new HashMap<>(c.size(), 1.0f);
 
         assert ctx != null;
@@ -57,7 +57,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
         this.ctx = ctx;
         this.filter = filter == null ? CU.<K, V>empty() : filter;
 
-        for (GridCacheEntry<K, V> e : c) {
+        for (CacheEntry<K, V> e : c) {
             if (e != null)
                 map.put(e.getKey(), e);
         }
@@ -78,7 +78,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     /** {@inheritDoc} */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override public boolean remove(Object o) {
-        GridCacheEntry<K, V> e = map.get(o);
+        CacheEntry<K, V> e = map.get(o);
 
         if (e == null || !F.isAll(e, filter))
             return false;
@@ -103,7 +103,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
     /** {@inheritDoc} */
     @SuppressWarnings({"SuspiciousMethodCalls"})
     @Override public boolean contains(Object o) {
-        GridCacheEntry<K, V> e = map.get(o);
+        CacheEntry<K, V> e = map.get(o);
 
         return e != null && F.isAll(e, filter);
     }

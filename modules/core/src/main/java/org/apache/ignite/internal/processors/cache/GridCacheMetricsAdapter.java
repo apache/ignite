@@ -27,7 +27,7 @@ import java.io.*;
 /**
  * Adapter for cache metrics.
  */
-public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable {
+public class GridCacheMetricsAdapter implements CacheMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -78,7 +78,7 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
     /**
      * @param m Metrics to copy from.
      */
-    public GridCacheMetricsAdapter(GridCacheMetrics m) {
+    public GridCacheMetricsAdapter(CacheMetrics m) {
         createTime = m.createTime();
         readTime = m.readTime();
         writeTime = m.writeTime();
@@ -214,7 +214,7 @@ public class GridCacheMetricsAdapter implements GridCacheMetrics, Externalizable
      * @param m Metrics to copy from.
      * @return Copy of given metrics.
      */
-    @Nullable public static GridCacheMetricsAdapter copyOf(@Nullable GridCacheMetrics m) {
+    @Nullable public static GridCacheMetricsAdapter copyOf(@Nullable CacheMetrics m) {
         if (m == null)
             return null;
 

@@ -52,7 +52,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private IgniteFsConfiguration cfg;
 
     /** Metadata cache. */
-    private GridCache<Object, Object> metaCache;
+    private Cache<Object, Object> metaCache;
 
     /** */
     private IgniteFuture<?> metaCacheStartFut;
@@ -2540,7 +2540,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return {@code True} if value was stored in cache, {@code false} otherwise.
      * @throws IgniteCheckedException If operation failed.
      */
-    private <K, V> boolean putx(GridCacheProjection<K, V> cache, K key, IgniteClosure<V, V> c) throws IgniteCheckedException {
+    private <K, V> boolean putx(CacheProjection<K, V> cache, K key, IgniteClosure<V, V> c) throws IgniteCheckedException {
         assert validTxState(true);
 
         V oldVal = cache.get(key);

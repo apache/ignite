@@ -28,7 +28,7 @@ import java.io.*;
 
 import static org.apache.ignite.cache.CacheConfiguration.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Cache attributes.
@@ -70,16 +70,16 @@ public class GridCacheAttributes implements Externalizable {
     private boolean storeValBytes;
 
     /** Cache preload mode. */
-    private GridCachePreloadMode preloadMode;
+    private CachePreloadMode preloadMode;
 
     /** Partitioned cache mode. */
-    private GridCacheDistributionMode partDistro;
+    private CacheDistributionMode partDistro;
 
     /** Preload batch size. */
     private int preloadBatchSize;
 
     /** Synchronization mode. */
-    private GridCacheWriteSynchronizationMode writeSyncMode;
+    private CacheWriteSynchronizationMode writeSyncMode;
 
     /** Flag indicating whether GridGain should use swap storage by default. */
     protected boolean swapEnabled;
@@ -195,11 +195,11 @@ public class GridCacheAttributes implements Externalizable {
 
         affKeyBackups = cfg.getBackups();
 
-        GridCacheAffinityFunction aff = cfg.getAffinity();
+        CacheAffinityFunction aff = cfg.getAffinity();
 
         if (aff != null) {
-            if (aff instanceof GridCacheConsistentHashAffinityFunction) {
-                GridCacheConsistentHashAffinityFunction aff0 = (GridCacheConsistentHashAffinityFunction) aff;
+            if (aff instanceof CacheConsistentHashAffinityFunction) {
+                CacheConsistentHashAffinityFunction aff0 = (CacheConsistentHashAffinityFunction) aff;
 
                 affInclNeighbors = aff0.isExcludeNeighbors();
                 affReplicas = aff0.getDefaultReplicas();
@@ -270,7 +270,7 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @return Preload mode.
      */
-    public GridCachePreloadMode cachePreloadMode() {
+    public CachePreloadMode cachePreloadMode() {
         return preloadMode;
     }
 
@@ -411,7 +411,7 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @return Partitioned cache mode.
      */
-    public GridCacheDistributionMode partitionedTaxonomy() {
+    public CacheDistributionMode partitionedTaxonomy() {
         return partDistro;
     }
 
@@ -446,7 +446,7 @@ public class GridCacheAttributes implements Externalizable {
     /**
      * @return Synchronization mode.
      */
-    public GridCacheWriteSynchronizationMode writeSynchronization() {
+    public CacheWriteSynchronizationMode writeSynchronization() {
         return writeSyncMode;
     }
 
@@ -585,9 +585,9 @@ public class GridCacheAttributes implements Externalizable {
         indexingSpiName = U.readString(in);
         loadPrevVal = in.readBoolean();
         name = U.readString(in);
-        partDistro = GridCacheDistributionMode.fromOrdinal(U.readEnumOrdinal0(in));
+        partDistro = CacheDistributionMode.fromOrdinal(U.readEnumOrdinal0(in));
         preloadBatchSize = in.readInt();
-        preloadMode = GridCachePreloadMode.fromOrdinal(U.readEnumOrdinal0(in));
+        preloadMode = CachePreloadMode.fromOrdinal(U.readEnumOrdinal0(in));
         qryIdxEnabled = in.readBoolean();
         readThrough = in.readBoolean();
         seqReserveSize = in.readInt();
@@ -599,7 +599,7 @@ public class GridCacheAttributes implements Externalizable {
         writeBehindFlushFreq = in.readLong();
         writeBehindFlushSize = in.readInt();
         writeBehindFlushThreadCnt = in.readInt();
-        writeSyncMode = GridCacheWriteSynchronizationMode.fromOrdinal(U.readEnumOrdinal0(in));
+        writeSyncMode = CacheWriteSynchronizationMode.fromOrdinal(U.readEnumOrdinal0(in));
         writeThrough = in.readBoolean();
 
         affClsName = U.readString(in);

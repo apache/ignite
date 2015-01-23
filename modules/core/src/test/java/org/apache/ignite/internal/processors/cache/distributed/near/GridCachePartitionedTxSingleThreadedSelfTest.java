@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests for partitioned cache transactions.
@@ -50,12 +50,12 @@ public class GridCachePartitionedTxSingleThreadedSelfTest extends IgniteTxSingle
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
+        cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setEvictionPolicy(null);
 
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_ASYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
         cc.setPreloadMode(NONE);
 

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
@@ -43,7 +43,7 @@ public class GridCacheNearTxPessimisticOriginatingNodeFailureSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 }

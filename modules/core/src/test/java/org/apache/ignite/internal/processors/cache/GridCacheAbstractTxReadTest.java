@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests value read inside transaction.
@@ -99,7 +99,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
      */
     protected void checkTransactionalRead(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation)
         throws IgniteCheckedException {
-        GridCache<String, Integer> cache = cache(0);
+        Cache<String, Integer> cache = cache(0);
 
         cache.clearAll();
 

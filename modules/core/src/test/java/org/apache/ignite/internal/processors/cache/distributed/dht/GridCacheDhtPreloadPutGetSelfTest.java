@@ -33,8 +33,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -57,7 +57,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Preload mode. */
-    private GridCachePreloadMode preloadMode;
+    private CachePreloadMode preloadMode;
 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -194,10 +194,10 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         for (int i = 0; i < ITER_CNT; i++) {
                             info("Iteration # " + i);
 
-                            GridCache<Integer, Integer> cache = g2.cache(null);
+                            Cache<Integer, Integer> cache = g2.cache(null);
 
                             for (int j = 0; j < KEY_CNT; j++) {
-                                GridCacheEntry<Integer, Integer> entry = cache.entry(j);
+                                CacheEntry<Integer, Integer> entry = cache.entry(j);
 
                                 assert entry != null;
 
@@ -229,7 +229,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
                         Ignite g1 = startGrid(1);
 
-                        GridCache<Integer, Integer> cache = g1.cache(null);
+                        Cache<Integer, Integer> cache = g1.cache(null);
 
                         for (int j = 0; j < KEY_CNT; j++) {
                             cache.put(j, j);
@@ -241,7 +241,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                         done.set(true);
 
                         for (int j = 0; j < KEY_CNT; j++) {
-                            GridCacheEntry<Integer, Integer> entry = cache.entry(j);
+                            CacheEntry<Integer, Integer> entry = cache.entry(j);
 
                             assert entry != null;
 

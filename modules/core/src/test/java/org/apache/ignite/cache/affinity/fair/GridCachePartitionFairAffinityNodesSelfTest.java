@@ -101,9 +101,9 @@ public class GridCachePartitionFairAffinityNodesSelfTest extends GridCommonAbstr
 
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
-        cfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        cfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
-        cfg.setAffinity(new GridCachePartitionFairAffinity(parts));
+        cfg.setAffinity(new CachePartitionFairAffinity(parts));
 
         return cfg;
     }

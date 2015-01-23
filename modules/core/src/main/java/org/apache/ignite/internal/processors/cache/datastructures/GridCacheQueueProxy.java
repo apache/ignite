@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 /**
  * Cache queue proxy.
  */
-public class GridCacheQueueProxy<T> implements GridCacheQueue<T>, Externalizable {
+public class GridCacheQueueProxy<T> implements CacheQueue<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Predicate for query over {@link org.apache.ignite.cache.datastructures.GridCacheSet} items.
+ * Predicate for query over {@link org.apache.ignite.cache.datastructures.CacheSet} items.
  */
 public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Externalizable {
     /** */

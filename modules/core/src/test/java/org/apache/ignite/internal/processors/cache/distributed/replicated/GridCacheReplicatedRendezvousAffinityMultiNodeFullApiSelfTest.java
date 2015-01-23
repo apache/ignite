@@ -21,14 +21,14 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 
 /**
- * Multi-node tests for replicated cache with {@link org.apache.ignite.cache.affinity.rendezvous.GridCacheRendezvousAffinityFunction}.
+ * Multi-node tests for replicated cache with {@link org.apache.ignite.cache.affinity.rendezvous.CacheRendezvousAffinityFunction}.
  */
 public class GridCacheReplicatedRendezvousAffinityMultiNodeFullApiSelfTest extends GridCacheReplicatedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
-        cfg.setAffinity(new GridCacheRendezvousAffinityFunction());
+        cfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         return cfg;
     }

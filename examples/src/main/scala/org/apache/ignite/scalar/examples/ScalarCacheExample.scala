@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.cache.GridCacheEntry
+import org.apache.ignite.cache.CacheEntry
 import org.apache.ignite.events.{IgniteEventType, IgniteEvent}
 import org.apache.ignite.lang.IgnitePredicate
 import org.gridgain.scalar.scalar
@@ -73,7 +73,7 @@ object ScalarCacheExample extends App {
         // Put one more value.
         c += (3.toString -> 11)
 
-        val gt10 = (e: GridCacheEntry[String, Int]) => e.peek() > 10
+        val gt10 = (e: CacheEntry[String, Int]) => e.peek() > 10
 
         // These should pass the predicate.
         // Note that the predicate checks current state of entry, not the new value.

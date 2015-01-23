@@ -67,7 +67,7 @@ public class VisorCacheEvictionConfiguration implements Serializable {
     public static VisorCacheEvictionConfiguration from(CacheConfiguration ccfg) {
         VisorCacheEvictionConfiguration cfg = new VisorCacheEvictionConfiguration();
 
-        final GridCacheEvictionPolicy plc = ccfg.getEvictionPolicy();
+        final CacheEvictionPolicy plc = ccfg.getEvictionPolicy();
 
         cfg.policy(compactClass(plc));
         cfg.policyMaxSize(evictionPolicyMaxSize(plc));

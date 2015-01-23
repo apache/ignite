@@ -41,9 +41,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -132,7 +132,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
             dataCfg.setBackups(0);
         }
 
-        dataCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        dataCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCfg.setPreloadMode(SYNC);
         dataCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         dataCfg.setQueryIndexEnabled(false);
@@ -143,7 +143,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         metaCfg.setName(META_CACHE_NAME);
         metaCfg.setCacheMode(REPLICATED);
 
-        metaCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        metaCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCfg.setPreloadMode(SYNC);
         metaCfg.setQueryIndexEnabled(false);
         metaCfg.setAtomicityMode(TRANSACTIONAL);
@@ -489,7 +489,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
         os.write(chunk((int)ggfsMaxData));
         os.close();
 
-        final GridCache<IgniteUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
+        final Cache<IgniteUuid, GridGgfsFileInfo> metaCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getMetaCacheName());
 
         // Start a transaction in a separate thread which will lock file ID.

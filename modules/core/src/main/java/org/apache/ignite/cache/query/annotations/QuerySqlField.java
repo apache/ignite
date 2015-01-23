@@ -21,8 +21,8 @@ import java.lang.annotation.*;
 
 /**
  * Annotates fields for SQL queries. All fields that will be involved in SQL clauses must have
- * this annotation. For more information about cache queries see {@link org.apache.ignite.cache.query.GridCacheQuery} documentation.
- * @see org.apache.ignite.cache.query.GridCacheQuery
+ * this annotation. For more information about cache queries see {@link org.apache.ignite.cache.query.CacheQuery} documentation.
+ * @see org.apache.ignite.cache.query.CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

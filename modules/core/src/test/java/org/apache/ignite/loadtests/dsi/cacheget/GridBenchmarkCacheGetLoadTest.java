@@ -51,13 +51,13 @@ public class GridBenchmarkCacheGetLoadTest {
     public static void main(String[] args) throws Exception {
         Ignition.start("modules/core/src/test/config/load/dsi-49-server-production.xml");
 
-        GridCache<Long, Long> cache = Ignition.ignite("dsi").cache("PARTITIONED_CACHE");
+        Cache<Long, Long> cache = Ignition.ignite("dsi").cache("PARTITIONED_CACHE");
 
         stats();
 
         boolean usePrj = true;
 
-        GridCacheProjection<Long, Long> cachePrj = cache.projection(Long.class, Long.class);
+        CacheProjection<Long, Long> cachePrj = cache.projection(Long.class, Long.class);
 
         for (int i = 0; i < 5000000; i++) {
             long t0 = System.currentTimeMillis();

@@ -112,7 +112,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
         if (prj == null) {
             synchronized (mux) {
                 if ((prj = jobMetaPrj) == null) {
-                    GridCacheProjection<Object, Object> sysCache = ctx.kernalContext().cache()
+                    CacheProjection<Object, Object> sysCache = ctx.kernalContext().cache()
                         .cache(CU.SYS_CACHE_HADOOP_MR);
 
                     assert sysCache != null;
@@ -169,7 +169,7 @@ public class GridHadoopJobTracker extends GridHadoopComponent {
     @Override public void onKernalStart() throws IgniteCheckedException {
         super.onKernalStart();
 
-        GridCacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
+        CacheContinuousQuery<GridHadoopJobId, GridHadoopJobMetadata> qry = jobMetaCache().queries().createContinuousQuery();
 
         qry.callback(new IgniteBiPredicate<UUID,
                             Collection<Map.Entry<GridHadoopJobId, GridHadoopJobMetadata>>>() {

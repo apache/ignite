@@ -40,8 +40,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheFlag.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -111,10 +111,10 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private long topVer;
 
     /** Optional filter. */
-    private final IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private final IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Write synchronization mode. */
-    private final GridCacheWriteSynchronizationMode syncMode;
+    private final CacheWriteSynchronizationMode syncMode;
 
     /** If this future mapped to single node. */
     private volatile Boolean single;
@@ -182,7 +182,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     public GridNearAtomicUpdateFuture(
         GridCacheContext<K, V> cctx,
         GridDhtAtomicCache<K, V> cache,
-        GridCacheWriteSynchronizationMode syncMode,
+        CacheWriteSynchronizationMode syncMode,
         GridCacheOperation op,
         Collection<? extends K> keys,
         @Nullable Collection<?> vals,
@@ -193,7 +193,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         final boolean rawRetval,
         @Nullable GridCacheEntryEx<K, V> cached,
         @Nullable ExpiryPolicy expiryPlc,
-        final IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        final IgnitePredicate<CacheEntry<K, V>>[] filter,
         UUID subjId,
         int taskNameHash
     ) {

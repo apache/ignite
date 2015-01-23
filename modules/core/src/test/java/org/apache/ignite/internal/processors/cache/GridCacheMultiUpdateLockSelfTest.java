@@ -35,11 +35,11 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests multi-update locks.
@@ -131,7 +131,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
 
                         started.set(true);
 
-                        GridCache<Object, Object> c = g4.cache(null);
+                        Cache<Object, Object> c = g4.cache(null);
 
                         info(">>>> Checking tx in new grid.");
 
@@ -152,7 +152,7 @@ public class GridCacheMultiUpdateLockSelfTest extends GridCommonAbstractTest {
                 assertFalse(started.get());
 
                 // Check we can proceed with transactions.
-                GridCache<Object, Object> cache0 = g.cache(null);
+                Cache<Object, Object> cache0 = g.cache(null);
 
                 info(">>>> Checking tx commit.");
 

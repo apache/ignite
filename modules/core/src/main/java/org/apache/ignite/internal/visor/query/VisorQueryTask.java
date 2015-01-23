@@ -121,7 +121,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         private static final long serialVersionUID = 0L;
 
         /** Future with query results. */
-        private final GridCacheQueryFuture<R> fut;
+        private final CacheQueryFuture<R> fut;
 
         /** Next record from future. */
         private final R next;
@@ -134,7 +134,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
          * @param next Next value.
          * @param accessed {@code true} if query was accessed before remove timeout expired.
          */
-        public VisorFutureResultSetHolder(GridCacheQueryFuture<R> fut, R next, Boolean accessed) {
+        public VisorFutureResultSetHolder(CacheQueryFuture<R> fut, R next, Boolean accessed) {
             this.fut = fut;
             this.next = next;
             this.accessed = accessed;
@@ -143,7 +143,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         /**
          * @return Future with query results.
          */
-        public GridCacheQueryFuture<R> future() {
+        public CacheQueryFuture<R> future() {
             return fut;
         }
 
@@ -196,16 +196,16 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                 String qryId = (scan ? VisorQueryUtils.SCAN_QRY_NAME : VisorQueryUtils.SQL_QRY_NAME) + "-" +
                     UUID.randomUUID();
 
-                GridCache<Object, Object> c = g.cachex(arg.cacheName());
+                Cache<Object, Object> c = g.cachex(arg.cacheName());
 
                 if (c == null)
                     return new IgniteBiTuple<>(new IgniteCheckedException("Cache not found: " +
                         escapeName(arg.cacheName())), null);
 
-                GridCacheProjection<Object, Object> cp = c.keepPortable();
+                CacheProjection<Object, Object> cp = c.keepPortable();
 
                 if (scan) {
-                    GridCacheQueryFuture<Map.Entry<Object, Object>> fut = cp.queries().createScanQuery(null)
+                    CacheQueryFuture<Map.Entry<Object, Object>> fut = cp.queries().createScanQuery(null)
                         .pageSize(arg.pageSize())
                         .projection(g.forNodeIds(arg.proj()))
                         .execute();
@@ -230,7 +230,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
                         VisorQueryUtils.SCAN_COL_NAMES, rows.get1(), next != null, duration));
                 }
                 else {
-                    GridCacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)cp.queries())
+                    CacheQueryFuture<List<?>> fut = ((GridCacheQueriesEx<?, ?>)cp.queries())
                         .createSqlFieldsQuery(arg.queryTxt(), true)
                         .pageSize(arg.pageSize())
                         .projection(g.forNodeIds(arg.proj()))

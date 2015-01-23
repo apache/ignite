@@ -115,7 +115,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         if (offHeapValues()) {
             ccfg.setQueryIndexEnabled(false);
-            ccfg.setMemoryMode(GridCacheMemoryMode.OFFHEAP_VALUES);
+            ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
             ccfg.setOffHeapMaxMemory(0);
         }
 
@@ -258,8 +258,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 100);
 
-        checkProjectionContainsKey(true, "key1", F.<GridCacheEntry<String, Integer>>alwaysTrue());
-        checkProjectionContainsKey(false, "key1", F.<GridCacheEntry<String, Integer>>alwaysFalse());
+        checkProjectionContainsKey(true, "key1", F.<CacheEntry<String, Integer>>alwaysTrue());
+        checkProjectionContainsKey(false, "key1", F.<CacheEntry<String, Integer>>alwaysFalse());
         checkProjectionContainsKey(false, "key1", gte100);
         checkProjectionContainsKey(true, "key2", gte100);
     }
@@ -306,8 +306,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 100);
 
-        checkProjectionContainsValue(true, 1, F.<GridCacheEntry<String, Integer>>alwaysTrue());
-        checkProjectionContainsValue(false, 1, F.<GridCacheEntry<String, Integer>>alwaysFalse());
+        checkProjectionContainsValue(true, 1, F.<CacheEntry<String, Integer>>alwaysTrue());
+        checkProjectionContainsValue(false, 1, F.<CacheEntry<String, Integer>>alwaysFalse());
         checkProjectionContainsValue(false, 1, gte100);
         checkProjectionContainsValue(true, 100, gte100);
     }
@@ -349,8 +349,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testForAll() throws Exception {
-        assert cache().forAll(F.<GridCacheEntry<String, Integer>>alwaysTrue());
-        assert cache().isEmpty() || !cache().forAll(F.<GridCacheEntry<String, Integer>>alwaysFalse());
+        assert cache().forAll(F.<CacheEntry<String, Integer>>alwaysTrue());
+        assert cache().isEmpty() || !cache().forAll(F.<CacheEntry<String, Integer>>alwaysFalse());
 
         cache().put("key1", 100);
         cache().put("key2", 101);
@@ -522,7 +522,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAllWithNulls() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> c = new LinkedList<>();
 
@@ -1512,8 +1512,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
 
         try {
-            cache().put("key1", 101, F.<GridCacheEntry<String, Integer>>alwaysFalse());
-            cache().put("key1", 101, F.<GridCacheEntry<String, Integer>>alwaysTrue());
+            cache().put("key1", 101, F.<CacheEntry<String, Integer>>alwaysFalse());
+            cache().put("key1", 101, F.<CacheEntry<String, Integer>>alwaysTrue());
 
             // Check inside transaction.
             assertEquals((Integer)101, cache().get("key1"));
@@ -1550,11 +1550,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteTx tx = txEnabled() ? cache().txStart(concurrency, isolation) : null;
 
         try {
-            assertEquals((Integer)100, cache().put("key1", 101, F.<GridCacheEntry<String, Integer>>alwaysTrue()));
+            assertEquals((Integer)100, cache().put("key1", 101, F.<CacheEntry<String, Integer>>alwaysTrue()));
 
             assertEquals((Integer)101, cache().get("key1"));
 
-            cache().put("key1", 102, F.<GridCacheEntry<String, Integer>>alwaysFalse());
+            cache().put("key1", 102, F.<CacheEntry<String, Integer>>alwaysFalse());
 
             // Check inside transaction.
             assertEquals((Integer)101, cache().get("key1"));
@@ -1687,7 +1687,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutAllWithNulls() throws Exception {
-        final GridCache<String, Integer> cache = cache();
+        final Cache<String, Integer> cache = cache();
 
         {
             Map<String, Integer> m = new HashMap<>(2);
@@ -2489,7 +2489,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testRemoveAllWithNulls() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> c = new LinkedList<>();
 
@@ -2705,7 +2705,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testReload() throws Exception {
         String key = "testReload";
 
-        GridCache<String, Integer> cache = primaryCache(key);
+        Cache<String, Integer> cache = primaryCache(key);
 
         assertNull(cache.peek(key));
 
@@ -2728,7 +2728,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testReloadAsync() throws Exception {
         String key = "testReloadAsync";
 
-        GridCache<String, Integer> cache = primaryCache(key);
+        Cache<String, Integer> cache = primaryCache(key);
 
         assertNull(cache.get(key));
 
@@ -2749,7 +2749,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadFiltered() throws Exception {
-        GridCache<String, Integer> cache = primaryCache("key");
+        Cache<String, Integer> cache = primaryCache("key");
 
         assertNull(cache.get("key"));
 
@@ -2769,7 +2769,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAsyncFiltered() throws Exception {
-        GridCache<String, Integer> cache = primaryCache("key");
+        Cache<String, Integer> cache = primaryCache("key");
 
         assertNull(cache.get("key"));
 
@@ -2789,7 +2789,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAll() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 2);
 
@@ -2847,7 +2847,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAllAsync() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 2);
 
@@ -2908,7 +2908,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAllFiltered() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -2955,7 +2955,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testReloadAllAsyncFiltered() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3004,16 +3004,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testRemoveAfterClear() throws Exception {
         GridEx grid = grid(0);
 
-        GridCacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
+        CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
 
-        if (distroMode == GridCacheDistributionMode.NEAR_ONLY || distroMode == GridCacheDistributionMode.CLIENT_ONLY) {
+        if (distroMode == CacheDistributionMode.NEAR_ONLY || distroMode == CacheDistributionMode.CLIENT_ONLY) {
             if (gridCount() < 2)
                 return;
 
             grid = grid(1);
         }
 
-        GridCacheProjection<Integer, Integer> cache = grid.cache(null)
+        CacheProjection<Integer, Integer> cache = grid.cache(null)
             .projection(Integer.class, Integer.class);
 
         int key = 0;
@@ -3052,16 +3052,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testRemoveFilteredAfterClear() throws Exception {
         GridEx grid = grid(0);
 
-        GridCacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
+        CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
 
-        if (distroMode == GridCacheDistributionMode.NEAR_ONLY || distroMode == GridCacheDistributionMode.CLIENT_ONLY) {
+        if (distroMode == CacheDistributionMode.NEAR_ONLY || distroMode == CacheDistributionMode.CLIENT_ONLY) {
             if (gridCount() < 2)
                 return;
 
             grid = grid(1);
         }
 
-        GridCacheProjection<Integer, Integer> cache = grid.cache(null);
+        CacheProjection<Integer, Integer> cache = grid.cache(null);
 
         List<Integer> keys = new ArrayList<>();
 
@@ -3087,8 +3087,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int g = 0; g < gridCount(); g++) {
             Ignite grid0 = grid(g);
 
-            grid0.cache(null).removeAll(new IgnitePredicate<GridCacheEntry<Object,Object>>() {
-                @Override public boolean apply(GridCacheEntry<Object, Object> e) {
+            grid0.cache(null).removeAll(new IgnitePredicate<CacheEntry<Object,Object>>() {
+                @Override public boolean apply(CacheEntry<Object, Object> e) {
                     Object val = e.peek();
 
                     return val instanceof Integer && (Integer)val > 0;
@@ -3103,7 +3103,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testClear() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3201,7 +3201,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testClearKeys() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3274,14 +3274,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key2", 2);
         cache().put("key3", 3);
 
-        Collection<GridCacheEntry<String, Integer>> entries = new HashSet<>();
+        Collection<CacheEntry<String, Integer>> entries = new HashSet<>();
 
         for (int i = 0; i < gridCount(); i++)
             entries.addAll(cache(i).entrySet());
 
         assertEquals(3, entries.size());
 
-        for (GridCacheEntry<String, Integer> entry : entries)
+        for (CacheEntry<String, Integer> entry : entries)
             assert "key1".equals(entry.getKey()) || "key2".equals(entry.getKey()) ||
                 "key3".equals(entry.getKey());
     }
@@ -3378,7 +3378,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             cache().put("key", 1);
 
-            GridCacheEntry<String, Integer> e = cache().entry("key");
+            CacheEntry<String, Integer> e = cache().entry("key");
 
             assert e != null;
 
@@ -3434,7 +3434,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             cache().put("key", 1);
 
-            final GridCacheEntry<String, Integer> e = cache().entry("key");
+            final CacheEntry<String, Integer> e = cache().entry("key");
 
             assert e != null;
 
@@ -3529,9 +3529,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (node == null)
                 throw new IgniteCheckedException("Failed to map key.");
 
-            GridCache<String, Integer> cache = G.ignite(node.id()).cache(null);
+            Cache<String, Integer> cache = G.ignite(node.id()).cache(null);
 
-            final GridCacheEntry<String, Integer> e = cache.entry("key");
+            final CacheEntry<String, Integer> e = cache.entry("key");
 
             info("Entry [e=" + e + ", primary=" + e.primary() + ", backup=" + e.backup() + ']');
 
@@ -3610,8 +3610,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assert !cache(i).entry("key2").isLocked();
             }
 
-            cache().projection(F.<GridCacheEntry<String, Integer>>alwaysFalse()).entry("key1").lock(0);
-            cache().projection(F.<GridCacheEntry<String, Integer>>alwaysTrue()).entry("key2").lock(0);
+            cache().projection(F.<CacheEntry<String, Integer>>alwaysFalse()).entry("key1").lock(0);
+            cache().projection(F.<CacheEntry<String, Integer>>alwaysTrue()).entry("key2").lock(0);
 
             boolean passed = false;
 
@@ -3624,7 +3624,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert passed;
 
-            cache().unlockAll(F.asList("key1", "key2"), F.<GridCacheEntry<String, Integer>>alwaysTrue());
+            cache().unlockAll(F.asList("key1", "key2"), F.<CacheEntry<String, Integer>>alwaysTrue());
 
             for (int i = 0; i < 100; i++) {
                 boolean sleep = false;
@@ -3659,8 +3659,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache().put("key1", 1);
             cache().put("key2", 100);
 
-            GridCacheEntry<String, Integer> e1 = cache().entry("key1");
-            GridCacheEntry<String, Integer> e2 = cache().entry("key2");
+            CacheEntry<String, Integer> e1 = cache().entry("key1");
+            CacheEntry<String, Integer> e2 = cache().entry("key2");
 
             assert e1 != null;
             assert e2 != null;
@@ -3674,8 +3674,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert e1.isLocked();
             assert e2.isLocked();
 
-            e1.unlock(F.<GridCacheEntry<String, Integer>>alwaysFalse());
-            e2.unlock(F.<GridCacheEntry<String, Integer>>alwaysTrue());
+            e1.unlock(F.<CacheEntry<String, Integer>>alwaysFalse());
+            e2.unlock(F.<CacheEntry<String, Integer>>alwaysTrue());
 
             for (int i = 0; i < 100; i++)
                 if (e2.isLocked())
@@ -3686,7 +3686,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert e1.isLocked();
             assert !e2.isLocked();
 
-            cache().unlockAll(F.asList("key1", "key2"), F.<GridCacheEntry<String, Integer>>alwaysTrue());
+            cache().unlockAll(F.asList("key1", "key2"), F.<CacheEntry<String, Integer>>alwaysTrue());
         }
     }
 
@@ -3744,7 +3744,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPeek() throws Exception {
-        GridCache<String, Integer> cache = primaryCache("key");
+        Cache<String, Integer> cache = primaryCache("key");
 
         assert cache.peek("key") == null;
 
@@ -3783,7 +3783,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private void checkPeekTxRemove(IgniteTxConcurrency concurrency) throws Exception {
         if (txEnabled()) {
-            GridCache<String, Integer> cache = primaryCache("key");
+            Cache<String, Integer> cache = primaryCache("key");
 
             cache.put("key", 1);
 
@@ -3801,7 +3801,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekRemove() throws Exception {
-        GridCache<String, Integer> cache = primaryCache("key");
+        Cache<String, Integer> cache = primaryCache("key");
 
         cache.put("key", 1);
         cache.remove("key");
@@ -3814,11 +3814,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPeekMode() throws Exception {
         String key = "testPeekMode";
-        GridCache<String, Integer> cache = primaryCache(key);
+        Cache<String, Integer> cache = primaryCache(key);
 
         cache.put(key, 1);
 
-        GridCacheEntry<String, Integer> entry = cache.entry(key);
+        CacheEntry<String, Integer> entry = cache.entry(key);
 
         assert entry.primary();
 
@@ -3846,7 +3846,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert entry.peek(F.asList(SMART)) == 1;
 
-        GridCacheEntry<String, Integer> ew = cache.entry("wrongKey");
+        CacheEntry<String, Integer> ew = cache.entry("wrongKey");
 
         assert cache.peek("wrongKey", F.asList(TX, GLOBAL, SWAP, DB)) == null;
 
@@ -3950,8 +3950,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPeekFiltered() throws Exception {
-        GridCache<String, Integer> cache1 = primaryCache("key1");
-        GridCache<String, Integer> cache2 = primaryCache("key2");
+        Cache<String, Integer> cache1 = primaryCache("key1");
+        Cache<String, Integer> cache2 = primaryCache("key2");
 
         cache1.put("key1", 1);
         cache2.put("key2", 100);
@@ -3976,7 +3976,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testEvict() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         List<String> keys = primaryKeysForCache(cache, 2);
 
@@ -4017,7 +4017,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testEvictExpired() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -4025,7 +4025,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals((Integer)1, cache.get(key));
 
-        GridCacheEntry<String, Integer> entry = cache.entry(key);
+        CacheEntry<String, Integer> entry = cache.entry(key);
 
         assert entry != null;
 
@@ -4066,7 +4066,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekExpired() throws Exception {
-        GridCache<String, Integer> c = cache();
+        Cache<String, Integer> c = cache();
 
         String key = primaryKeysForCache(c, 1).get(0);
 
@@ -4096,7 +4096,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPeekExpiredTx() throws Exception {
         if (txEnabled()) {
-            GridCache<String, Integer> c = cache();
+            Cache<String, Integer> c = cache();
 
             String key = "1";
             int ttl = 500;
@@ -4149,14 +4149,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final ExpiryPolicy expiry = new TouchedExpiryPolicy(new Duration(MILLISECONDS, ttl));
 
-        final GridCache<String, Integer> c = cache();
+        final Cache<String, Integer> c = cache();
 
         final String key = primaryKeysForCache(c, 1).get(0);
 
         if (oldEntry)
             c.put(key, 1);
 
-        GridCacheEntry<String, Integer> entry = c.entry(key);
+        CacheEntry<String, Integer> entry = c.entry(key);
 
         assert entry != null;
 
@@ -4194,7 +4194,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         long[] expireTimes = new long[gridCount()];
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -4219,7 +4219,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -4244,7 +4244,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -4273,7 +4273,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         log.info("Put 4 done");
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheEntry<String, Integer> curEntry = cache(i).entry(key);
+            CacheEntry<String, Integer> curEntry = cache(i).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
                 assertEquals(ttl, curEntry.timeToLive());
@@ -4534,7 +4534,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * JUnit.
      */
     public void testCacheProxy() {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         assert cache instanceof GridCacheProxy;
     }
@@ -4545,7 +4545,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testCompactExpired() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         String key = F.first(primaryKeysForCache(cache, 1));
 
@@ -4636,25 +4636,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             final int cnt = 10;
 
-            CU.inTx(cache(), concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
+            CU.inTx(cache(), concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> cache) throws IgniteCheckedException {
+                public void applyx(CacheProjection<String, Integer> cache) throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.putx("key" + i, i));
                 }
             });
 
-            CU.inTx(cache(), concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
+            CU.inTx(cache(), concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> cache) throws IgniteCheckedException {
+                public void applyx(CacheProjection<String, Integer> cache) throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertEquals(new Integer(i), cache.get("key" + i));
                 }
             });
 
-            CU.inTx(cache(), concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
+            CU.inTx(cache(), concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
                 @Override
-                public void applyx(GridCacheProjection<String, Integer> cache) throws IgniteCheckedException {
+                public void applyx(CacheProjection<String, Integer> cache) throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertTrue(cache.removex("key" + i));
                 }
@@ -4772,8 +4772,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(3, primKeys.size());
         assertTrue(primKeys.containsAll(keys));
 
-        primKeys = cache(0).projection(new P1<GridCacheEntry<String, Integer>>() {
-            @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+        primKeys = cache(0).projection(new P1<CacheEntry<String, Integer>>() {
+            @Override public boolean apply(CacheEntry<String, Integer> e) {
                 return !e.getKey().equals(keys.get(0));
             }
         }).primaryKeySet();
@@ -4790,8 +4790,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals(3, primVals.size());
         assertTrue(primVals.containsAll(F.asList(0, 1, 2)));
 
-        primVals = cache(0).projection(new P1<GridCacheEntry<String, Integer>>() {
-            @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+        primVals = cache(0).projection(new P1<CacheEntry<String, Integer>>() {
+            @Override public boolean apply(CacheEntry<String, Integer> e) {
                 return !e.getKey().equals(keys.get(0));
             }
         }).primaryValues();
@@ -4803,12 +4803,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Entry set checks.
         // -----------------
 
-        Set<GridCacheEntry<String, Integer>> primEntries = cache(0).primaryEntrySet();
+        Set<CacheEntry<String, Integer>> primEntries = cache(0).primaryEntrySet();
 
         assertEquals(3, primEntries.size());
 
-        primEntries = cache(0).projection(new P1<GridCacheEntry<String, Integer>>() {
-            @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+        primEntries = cache(0).projection(new P1<CacheEntry<String, Integer>>() {
+            @Override public boolean apply(CacheEntry<String, Integer> e) {
                 return !e.getKey().equals(keys.get(0));
             }
         }).primaryEntrySet();
@@ -4899,12 +4899,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param filters Filters.
      * @return Projection.
      */
-    private GridCacheProjection<String, Integer> projection(GridCacheProjection<String, Integer> cache,
-        @Nullable IgnitePredicate<GridCacheEntry<String, Integer>>... filters) {
-        GridCacheProjection<String, Integer> res = cache;
+    private CacheProjection<String, Integer> projection(CacheProjection<String, Integer> cache,
+        @Nullable IgnitePredicate<CacheEntry<String, Integer>>... filters) {
+        CacheProjection<String, Integer> res = cache;
 
         if (filters != null) {
-            for (IgnitePredicate<GridCacheEntry<String, Integer>> filter : filters)
+            for (IgnitePredicate<CacheEntry<String, Integer>> filter : filters)
                 res = res.projection(filter);
         }
 
@@ -4940,7 +4940,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkProjectionContainsKey(boolean exp, String key,
-        IgnitePredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+        IgnitePredicate<CacheEntry<String, Integer>>... f) throws Exception {
         if (nearEnabled())
             assertEquals(exp, projection(cache(), f).containsKey(key));
         else {
@@ -4990,7 +4990,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkProjectionContainsValue(boolean exp, Integer val,
-        IgnitePredicate<GridCacheEntry<String, Integer>>... f) throws Exception {
+        IgnitePredicate<CacheEntry<String, Integer>>... f) throws Exception {
         if (nearEnabled())
             assertEquals(exp, projection(cache(), f).containsValue(val));
         else {
@@ -5016,7 +5016,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @return Cache.
      * @throws Exception If failed.
      */
-    protected GridCache<String, Integer> primaryCache(String key) throws Exception {
+    protected Cache<String, Integer> primaryCache(String key) throws Exception {
         ClusterNode node = cache().affinity().mapKeyToNode(key);
 
         if (node == null)
@@ -5024,7 +5024,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         UUID nodeId = node.id();
 
-        GridCache<String, Integer> cache = null;
+        Cache<String, Integer> cache = null;
 
         for (int i = 0; i < gridCount(); i++) {
             if (context(i).localNodeId().equals(nodeId)) {
@@ -5045,7 +5045,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<String> primaryKeysForCache(GridCacheProjection<String, Integer> cache, int cnt)
+    protected List<String> primaryKeysForCache(CacheProjection<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
         return primaryKeysForCache(cache, cnt, 1);
     }
@@ -5057,7 +5057,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<String> primaryKeysForCache(GridCacheProjection<String, Integer> cache, int cnt, int startFrom)
+    protected List<String> primaryKeysForCache(CacheProjection<String, Integer> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         List<String> found = new ArrayList<>(cnt);
 
@@ -5083,7 +5083,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
-        GridCacheProjection<String, Integer> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<String, Integer> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return primaryKeysForCache(prj, cnt);
     }

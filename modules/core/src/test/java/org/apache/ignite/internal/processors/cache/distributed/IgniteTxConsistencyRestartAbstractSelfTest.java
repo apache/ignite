@@ -31,10 +31,10 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.IgniteTxIsolation.REPEATABLE_READ;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -91,7 +91,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
     /**
      * @return Partition distribution mode for PARTITIONED cache.
      */
-    protected abstract GridCacheDistributionMode partitionDistributionMode();
+    protected abstract CacheDistributionMode partitionDistributionMode();
 
     /**
      * @throws Exception If failed.
@@ -145,7 +145,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             try {
                 GridKernal grid = (GridKernal)grid(idx);
 
-                GridCache<Integer, Integer> cache = grid.cache(null);
+                Cache<Integer, Integer> cache = grid.cache(null);
 
                 List<Integer> keys = new ArrayList<>();
 
@@ -183,7 +183,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             for (int i = 0; i < GRID_CNT; i++) {
                 GridEx grid = grid(i);
 
-                GridCache<Integer, Integer> cache = grid.cache(null);
+                Cache<Integer, Integer> cache = grid.cache(null);
 
                 if (cache.affinity().isPrimaryOrBackup(grid.localNode(), k)) {
                     if (val == null) {

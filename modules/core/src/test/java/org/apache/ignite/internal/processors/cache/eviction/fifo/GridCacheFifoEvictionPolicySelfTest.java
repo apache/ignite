@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 @SuppressWarnings({"TypeMayBeWeakened"})
 public class GridCacheFifoEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<GridCacheFifoEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<CacheFifoEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -45,7 +45,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
             MockEntry e4 = new MockEntry("4", "4");
             MockEntry e5 = new MockEntry("5", "5");
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+            CacheFifoEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(3);
 
@@ -163,7 +163,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+            CacheFifoEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -190,7 +190,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+            CacheFifoEvictionPolicy<String, String> p = policy();
 
             int max = 10;
 
@@ -254,7 +254,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
 
             e5.setValue("val");
 
-            GridCacheFifoEvictionPolicy<String, String> p = policy();
+            CacheFifoEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -300,7 +300,7 @@ public class GridCacheFifoEvictionPolicySelfTest extends
         Ignite ignite = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = ignite.cache(null);
+            Cache<Integer, Integer> cache = ignite.cache(null);
 
             int cnt = 500;
 
@@ -356,19 +356,19 @@ public class GridCacheFifoEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheFifoEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new GridCacheFifoEvictionPolicy<>(plcMax);
+    @Override protected CacheFifoEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new CacheFifoEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheFifoEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new GridCacheFifoEvictionPolicy<>(nearMax);
+    @Override protected CacheFifoEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new CacheFifoEvictionPolicy<>(nearMax);
     }
 
     /** {@inheritDoc} */
     @Override protected void checkNearPolicies(int endNearPlcSize) {
         for (int i = 0; i < gridCnt; i++)
-            for (GridCacheEntry<String, String> e : nearPolicy(i).queue())
+            for (CacheEntry<String, String> e : nearPolicy(i).queue())
                 assert !e.isCached() : "Invalid near policy size: " + nearPolicy(i).queue();
     }
 

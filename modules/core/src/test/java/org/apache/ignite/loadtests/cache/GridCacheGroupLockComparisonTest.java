@@ -83,7 +83,7 @@ public class GridCacheGroupLockComparisonTest {
         X.println(">>> Testing putAll");
         X.println(">>>");
 
-        final GridCache<GridCacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final Cache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
 
         assert cache != null;
 
@@ -96,7 +96,7 @@ public class GridCacheGroupLockComparisonTest {
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 while (true) {
-                    Map<GridCacheAffinityKey<Long>, Long> vals =
+                    Map<CacheAffinityKey<Long>, Long> vals =
                         new HashMap<>(BATCH_SIZE);
 
                     long start = cntr.getAndAdd(BATCH_SIZE);
@@ -105,7 +105,7 @@ public class GridCacheGroupLockComparisonTest {
                         break;
 
                     for (long i = start; i < start + BATCH_SIZE; i++)
-                        vals.put(new GridCacheAffinityKey<>(i % 100000, start), i);
+                        vals.put(new CacheAffinityKey<>(i % 100000, start), i);
 
                     cache.putAll(vals);
 
@@ -138,7 +138,7 @@ public class GridCacheGroupLockComparisonTest {
         X.println(">>> Testing group lock");
         X.println(">>>");
 
-        final GridCache<GridCacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
+        final Cache<CacheAffinityKey<Long>, Long> cache = ignite.cache(CACHE);
 
         assert cache != null;
 
@@ -174,7 +174,7 @@ public class GridCacheGroupLockComparisonTest {
 
                     try (IgniteTx tx = cache.txStartAffinity(affKey, PESSIMISTIC, REPEATABLE_READ, 0, BATCH_SIZE)) {
                         for (long i = 0; i < BATCH_SIZE; i++) {
-                            cache.put(new GridCacheAffinityKey<>((key % rangeCnt) + base, affKey), i);
+                            cache.put(new CacheAffinityKey<>((key % rangeCnt) + base, affKey), i);
 
                             key++;
                         }

@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public class GridCacheValueConsistencyTransactionalNearEnabledSelfTest
     extends GridCacheValueConsistencyTransactionalSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.NEAR_PARTITIONED;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.NEAR_PARTITIONED;
     }
 }

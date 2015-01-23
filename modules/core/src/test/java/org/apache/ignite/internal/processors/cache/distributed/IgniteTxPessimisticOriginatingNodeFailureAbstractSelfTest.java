@@ -175,7 +175,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                GridCache<Integer, String> cache = originatingNodeGrid.cache(null);
+                Cache<Integer, String> cache = originatingNodeGrid.cache(null);
 
                 assertNotNull(cache);
 
@@ -251,7 +251,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        Cache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 
@@ -305,7 +305,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCache<Integer, String> cache = grid(0).cache(null);
+        Cache<Integer, String> cache = grid(0).cache(null);
 
         info("Failing node ID: " + grid(1).localNode().id());
 
@@ -382,7 +382,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
                     private Ignite ignite;
 
                     @Override public Void call() throws Exception {
-                        GridCache<Integer, String> cache = ignite.cache(null);
+                        Cache<Integer, String> cache = ignite.cache(null);
 
                         assertNotNull(cache);
 

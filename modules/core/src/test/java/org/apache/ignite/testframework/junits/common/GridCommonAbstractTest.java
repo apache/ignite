@@ -41,7 +41,7 @@ import java.util.*;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Super class for all common tests.
@@ -63,7 +63,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param idx Grid index.
      * @return Cache.
      */
-    protected <K, V> GridCache<K, V> cache(int idx) {
+    protected <K, V> Cache<K, V> cache(int idx) {
         return grid(idx).cachex();
     }
 
@@ -80,14 +80,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param name Cache name.
      * @return Cache.
      */
-    protected <K, V> GridCache<K, V> cache(int idx, String name) {
+    protected <K, V> Cache<K, V> cache(int idx, String name) {
         return grid(idx).cachex(name);
     }
 
     /**
      * @return Cache.
      */
-    protected <K, V> GridCache<K, V> cache() {
+    protected <K, V> Cache<K, V> cache() {
         return grid().cachex();
     }
 
@@ -109,7 +109,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return DHT cache.
      */
-    protected static <K, V> GridDhtCacheAdapter<K, V> dht(GridCacheProjection<K,V> cache) {
+    protected static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K,V> cache) {
         return nearEnabled(cache) ? near(cache).dht() :
             ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().dht();
     }
@@ -151,7 +151,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return {@code True} if near cache is enabled.
      */
-    protected static <K, V> boolean nearEnabled(GridCacheProjection<K,V> cache) {
+    protected static <K, V> boolean nearEnabled(CacheProjection<K,V> cache) {
         CacheConfiguration cfg = ((GridKernal)cache.gridProjection().ignite()).
             <K, V>internalCache(cache.name()).context().config();
 
@@ -162,7 +162,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Near cache.
      */
-    protected static <K, V> GridNearCacheAdapter<K, V> near(GridCacheProjection<K,V> cache) {
+    protected static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K,V> cache) {
         return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().near();
     }
 
@@ -170,7 +170,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cache Cache.
      * @return Colocated cache.
      */
-    protected static <K, V> GridDhtColocatedCache<K, V> colocated(GridCacheProjection<K,V> cache) {
+    protected static <K, V> GridDhtColocatedCache<K, V> colocated(CacheProjection<K,V> cache) {
         return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().colocated();
     }
 
@@ -247,11 +247,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         for (Ignite g : G.allGrids()) {
-            for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
+            for (Cache<?, ?> c : ((GridEx)g).cachesx()) {
                 CacheConfiguration cfg = c.configuration();
 
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {
-                    GridCacheAffinityFunction aff = cfg.getAffinity();
+                    CacheAffinityFunction aff = cfg.getAffinity();
 
                     GridDhtCacheAdapter<?, ?> dht = dht(c);
 
@@ -301,7 +301,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Key for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected Integer primaryKey(GridCacheProjection<?, ?> cache)
+    protected Integer primaryKey(CacheProjection<?, ?> cache)
         throws IgniteCheckedException {
         return primaryKeys(cache, 1, 1).get(0);
     }
@@ -312,7 +312,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> primaryKeys(GridCacheProjection<?, ?> cache, int cnt)
+    protected List<Integer> primaryKeys(CacheProjection<?, ?> cache, int cnt)
         throws IgniteCheckedException {
         return primaryKeys(cache, cnt, 1);
     }
@@ -324,7 +324,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> primaryKeys(GridCacheProjection<?, ?> cache, int cnt, int startFrom)
+    protected List<Integer> primaryKeys(CacheProjection<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         assert cnt > 0 : cnt;
 
@@ -332,7 +332,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
 
-        GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
+        CacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
@@ -353,7 +353,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Key for which given cache is backup.
      * @throws IgniteCheckedException If failed.
      */
-    protected Integer backupKey(GridCacheProjection<?, ?> cache)
+    protected Integer backupKey(CacheProjection<?, ?> cache)
         throws IgniteCheckedException {
         return backupKeys(cache, 1, 1).get(0);
     }
@@ -364,7 +364,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is backup.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> backupKeys(GridCacheProjection<?, ?> cache, int cnt)
+    protected List<Integer> backupKeys(CacheProjection<?, ?> cache, int cnt)
         throws IgniteCheckedException {
         return backupKeys(cache, cnt, 1);
     }
@@ -376,7 +376,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is backup.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> backupKeys(GridCacheProjection<?, ?> cache, int cnt, int startFrom)
+    protected List<Integer> backupKeys(CacheProjection<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         assert cnt > 0 : cnt;
 
@@ -384,7 +384,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
 
-        GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
+        CacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
@@ -405,7 +405,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    protected Integer nearKey(GridCacheProjection<?, ?> cache)
+    protected Integer nearKey(CacheProjection<?, ?> cache)
         throws IgniteCheckedException {
         return nearKeys(cache, 1, 1).get(0);
     }
@@ -416,7 +416,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> nearKeys(GridCacheProjection<?, ?> cache, int cnt)
+    protected List<Integer> nearKeys(CacheProjection<?, ?> cache, int cnt)
         throws IgniteCheckedException {
         return nearKeys(cache, cnt, 1);
     }
@@ -428,7 +428,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is neither primary nor backup.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<Integer> nearKeys(GridCacheProjection<?, ?> cache, int cnt, int startFrom)
+    protected List<Integer> nearKeys(CacheProjection<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
         assert cnt > 0 : cnt;
 
@@ -436,7 +436,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         ClusterNode locNode = cache.gridProjection().ignite().cluster().localNode();
 
-        GridCacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
+        CacheAffinity<Integer> aff = cache.<Integer, Object>cache().affinity();
 
         for (int i = startFrom; i < startFrom + 100_000; i++) {
             Integer key = i;
@@ -461,7 +461,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
-        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return primaryKeys(prj, cnt, startFrom);
     }
@@ -475,7 +475,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
-        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return backupKeys(prj, cnt, startFrom);
     }
@@ -489,7 +489,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
-        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return nearKeys(prj, cnt, startFrom);
     }
@@ -514,7 +514,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected Integer primaryKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
-        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return primaryKey(prj);
     }
@@ -526,7 +526,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected Integer backupKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
-        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return backupKey(prj);
     }
@@ -538,7 +538,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected Integer nearKey(IgniteCache<?, ?> cache)
         throws IgniteCheckedException {
-        GridCacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
+        CacheProjection<?, ?> prj = GridTestUtils.getFieldValue(cache, "delegate");
 
         return nearKey(prj);
     }

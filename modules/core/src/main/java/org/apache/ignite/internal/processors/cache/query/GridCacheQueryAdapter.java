@@ -30,18 +30,18 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
 /**
  * Query adapter.
  */
-public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
+public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final GridCacheContext<?, ?> cctx;
 
     /** */
-    private final IgnitePredicate<GridCacheEntry<Object, Object>> prjPred;
+    private final IgnitePredicate<CacheEntry<Object, Object>> prjPred;
 
     /** */
     private final GridCacheQueryType type;
@@ -103,7 +103,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
-        @Nullable IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
+        @Nullable IgnitePredicate<CacheEntry<Object, Object>> prjPred,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<Object, Object> filter,
@@ -153,7 +153,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @param taskHash Task hash.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
-        IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
+        IgnitePredicate<CacheEntry<Object, Object>> prjPred,
         GridCacheQueryType type,
         IgniteLogger log,
         int pageSize,
@@ -191,7 +191,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     /**
      * @return cache projection filter.
      */
-    @Nullable public IgnitePredicate<GridCacheEntry<Object, Object>> projectionFilter() {
+    @Nullable public IgnitePredicate<CacheEntry<Object, Object>> projectionFilter() {
         return prjPred;
     }
 
@@ -261,7 +261,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> pageSize(int pageSize) {
+    @Override public CacheQuery<T> pageSize(int pageSize) {
         A.ensure(pageSize > 0, "pageSize > 0");
 
         this.pageSize = pageSize;
@@ -277,7 +277,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> timeout(long timeout) {
+    @Override public CacheQuery<T> timeout(long timeout) {
         A.ensure(timeout >= 0, "timeout >= 0");
 
         this.timeout = timeout;
@@ -293,7 +293,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> keepAll(boolean keepAll) {
+    @Override public CacheQuery<T> keepAll(boolean keepAll) {
         this.keepAll = keepAll;
 
         return this;
@@ -307,7 +307,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> includeBackups(boolean incBackups) {
+    @Override public CacheQuery<T> includeBackups(boolean incBackups) {
         this.incBackups = incBackups;
 
         return this;
@@ -321,7 +321,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> enableDedup(boolean dedup) {
+    @Override public CacheQuery<T> enableDedup(boolean dedup) {
         this.dedup = dedup;
 
         return this;
@@ -335,7 +335,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<T> projection(ClusterGroup prj) {
+    @Override public CacheQuery<T> projection(ClusterGroup prj) {
         this.prj = prj;
 
         return this;
@@ -384,21 +384,21 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryFuture<T> execute(@Nullable Object... args) {
+    @Override public CacheQueryFuture<T> execute(@Nullable Object... args) {
         return execute(null, null, args);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
+    @Override public <R> CacheQueryFuture<R> execute(IgniteReducer<T, R> rmtReducer, @Nullable Object... args) {
         return execute(rmtReducer, null, args);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
+    @Override public <R> CacheQueryFuture<R> execute(IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
         return execute(null, rmtTransform, args);
     }
 
-    @Override public GridCacheQueryMetrics metrics() {
+    @Override public CacheQueryMetrics metrics() {
         return metrics.copy();
     }
 
@@ -413,7 +413,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
      * @return Future.
      */
     @SuppressWarnings("IfMayBeConditional")
-    private <R> GridCacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
+    private <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
         @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
         Collection<ClusterNode> nodes = nodes();
 
@@ -445,10 +445,10 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 
         if (type == SQL_FIELDS || type == SPI)
-            return (GridCacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
+            return (CacheQueryFuture<R>)(loc ? qryMgr.queryFieldsLocal(bean) :
                 qryMgr.queryFieldsDistributed(bean, nodes));
         else
-            return (GridCacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
+            return (CacheQueryFuture<R>)(loc ? qryMgr.queryLocal(bean) : qryMgr.queryDistributed(bean, nodes));
     }
 
     /**
@@ -469,7 +469,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
                 if (prj != null)
                     return nodes(cctx, prj);
 
-                GridCacheDistributionMode mode = cctx.config().getDistributionMode();
+                CacheDistributionMode mode = cctx.config().getDistributionMode();
 
                 return mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED ?
                     Collections.singletonList(cctx.localNode()) :
@@ -493,7 +493,7 @@ public class GridCacheQueryAdapter<T> implements GridCacheQuery<T> {
 
         return F.view(CU.allNodes(cctx), new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
-                GridCacheDistributionMode mode = U.distributionMode(n, cctx.name());
+                CacheDistributionMode mode = U.distributionMode(n, cctx.name());
 
                 return (mode == PARTITIONED_ONLY || mode == NEAR_PARTITIONED) &&
                     (prj == null || prj.node(n.id()) != null);

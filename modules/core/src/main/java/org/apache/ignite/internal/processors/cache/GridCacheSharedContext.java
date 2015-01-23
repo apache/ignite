@@ -37,7 +37,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 
 /**
  * Shared context.
@@ -417,9 +417,9 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @param flags Flags to turn on.
-     * @throws GridCacheFlagException If given flags are conflicting with given transaction.
+     * @throws org.apache.ignite.cache.CacheFlagException If given flags are conflicting with given transaction.
      */
-    public void checkTxFlags(@Nullable Collection<GridCacheFlag> flags) throws GridCacheFlagException {
+    public void checkTxFlags(@Nullable Collection<CacheFlag> flags) throws CacheFlagException {
         IgniteTxEx tx = tm().userTxx();
 
         if (tx == null || F.isEmpty(flags))
@@ -428,10 +428,10 @@ public class GridCacheSharedContext<K, V> {
         assert flags != null;
 
         if (flags.contains(INVALIDATE) && !tx.isInvalidate())
-            throw new GridCacheFlagException(INVALIDATE);
+            throw new CacheFlagException(INVALIDATE);
 
         if (flags.contains(SYNC_COMMIT) && !tx.syncCommit())
-            throw new GridCacheFlagException(SYNC_COMMIT);
+            throw new CacheFlagException(SYNC_COMMIT);
     }
 
     /**

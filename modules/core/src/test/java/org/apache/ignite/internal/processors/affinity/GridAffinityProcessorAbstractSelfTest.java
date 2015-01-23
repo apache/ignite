@@ -79,7 +79,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
      *
      * @return Affinity function.
      */
-    protected abstract GridCacheAffinityFunction affinityFunction();
+    protected abstract CacheAffinityFunction affinityFunction();
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ConstantConditions"})
@@ -125,7 +125,7 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
             }
         }, IllegalArgumentException.class, null);
 
-        GridCache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
+        Cache<Integer, Integer> cache = grid2.cache(CACHE_NAME);
 
         assertNotNull(cache);
 

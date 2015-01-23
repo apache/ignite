@@ -32,7 +32,7 @@ class GridCacheQueryInfo {
     private boolean loc;
 
     /** */
-    private IgnitePredicate<GridCacheEntry<Object, Object>> prjPred;
+    private IgnitePredicate<CacheEntry<Object, Object>> prjPred;
 
     /** */
     private IgniteClosure<Object, Object> trans;
@@ -76,7 +76,7 @@ class GridCacheQueryInfo {
      */
     GridCacheQueryInfo(
         boolean loc,
-        IgnitePredicate<GridCacheEntry<Object, Object>> prjPred,
+        IgnitePredicate<CacheEntry<Object, Object>> prjPred,
         IgniteClosure<Object, Object> trans,
         IgniteReducer<Object, Object> rdc,
         GridCacheQueryAdapter<?> qry,
@@ -124,7 +124,7 @@ class GridCacheQueryInfo {
     /**
      * @return Projection predicate.
      */
-    IgnitePredicate<GridCacheEntry<Object, Object>> projectionPredicate() {
+    IgnitePredicate<CacheEntry<Object, Object>> projectionPredicate() {
         return prjPred;
     }
 

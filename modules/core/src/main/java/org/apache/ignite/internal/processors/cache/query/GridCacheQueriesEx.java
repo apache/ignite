@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Extended queries interface.
  */
-public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
+public interface GridCacheQueriesEx<K, V> extends CacheQueries<K, V> {
     /**
      * Gets SQL metadata.
      *
@@ -41,12 +41,12 @@ public interface GridCacheQueriesEx<K, V> extends GridCacheQueries<K, V> {
      * @param incMeta Whether to include results metadata.
      * @return Created query.
      */
-    public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
+    public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta);
 
     /**
      * Creates SPI query.
      *
      * @return Query.
      */
-    public <R> GridCacheQuery<R> createSpiQuery();
+    public <R> CacheQuery<R> createSpiQuery();
 }

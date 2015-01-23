@@ -45,7 +45,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
         cfg.setCacheMode(CacheMode.PARTITIONED);
 
         if (F.eq(gridName, getTestGridName(0)))
-            cfg.setDistributionMode(GridCacheDistributionMode.NEAR_ONLY);
+            cfg.setDistributionMode(CacheDistributionMode.NEAR_ONLY);
 
         return cfg;
     }
@@ -64,7 +64,7 @@ public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBasicOps() throws Exception {
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        Cache<Object, Object> cache = grid(0).cache(null);
 
         for (int i = 0; i < 1000; i++)
             cache.put(i, i);

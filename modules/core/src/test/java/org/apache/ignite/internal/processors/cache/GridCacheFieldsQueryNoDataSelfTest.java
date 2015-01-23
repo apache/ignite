@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for local query on partitioned cache without data.
@@ -72,7 +72,7 @@ public class GridCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        GridCacheQuery<List<?>> qry = grid().cache(null).queries().createSqlFieldsQuery("select _VAL from Integer");
+        CacheQuery<List<?>> qry = grid().cache(null).queries().createSqlFieldsQuery("select _VAL from Integer");
 
         Collection<List<?>> res = qry.execute().get();
 

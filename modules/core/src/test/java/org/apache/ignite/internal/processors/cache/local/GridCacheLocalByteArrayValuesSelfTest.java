@@ -29,9 +29,9 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -43,10 +43,10 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     private static Ignite ignite;
 
     /** Regular cache. */
-    private static GridCache<Integer, Object> cache;
+    private static Cache<Integer, Object> cache;
 
     /** Offheap cache. */
-    private static GridCache<Integer, Object> cacheOffheap;
+    private static Cache<Integer, Object> cacheOffheap;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -208,7 +208,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
+    private void testTransaction(Cache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed(cache, concurrency, key, val, null, null);
     }
@@ -224,7 +224,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed(GridCache<Integer, Object> cache, IgniteTxConcurrency concurrency,
+    private void testTransactionMixed(Cache<Integer, Object> cache, IgniteTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
 
         IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);

@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
-import org.springframework.cache.*;
 import org.springframework.cache.support.*;
 
 import java.io.*;
@@ -37,7 +36,7 @@ class SpringCache implements Cache, Serializable {
     private Ignite ignite;
 
     /** */
-    private GridCacheProjection<Object, Object> cache;
+    private CacheProjection<Object, Object> cache;
 
     /** */
     private IgniteClosure<Object, Object> keyFactory;
@@ -48,13 +47,13 @@ class SpringCache implements Cache, Serializable {
      * @param cache Cache.
      * @param keyFactory Key factory.
      */
-    SpringCache(String name, Ignite ignite, GridCacheProjection<?, ?> cache,
+    SpringCache(String name, Ignite ignite, CacheProjection<?, ?> cache,
                 IgniteClosure<Object, Object> keyFactory) {
         assert cache != null;
 
         this.name = name;
         this.ignite = ignite;
-        this.cache = (GridCacheProjection<Object, Object>)cache;
+        this.cache = (CacheProjection<Object, Object>)cache;
         this.keyFactory = keyFactory != null ? keyFactory : F.identity();
     }
 
@@ -151,7 +150,7 @@ class SpringCache implements Cache, Serializable {
         private static final long serialVersionUID = 0L;
 
         /** Cache projection. */
-        private GridCacheProjection<Object, Object> cache;
+        private CacheProjection<Object, Object> cache;
 
         /**
          * For {@link Externalizable}.
@@ -163,7 +162,7 @@ class SpringCache implements Cache, Serializable {
         /**
          * @param cache Cache projection.
          */
-        private ClearClosure(GridCacheProjection<Object, Object> cache) {
+        private ClearClosure(CacheProjection<Object, Object> cache) {
             this.cache = cache;
         }
 
@@ -179,7 +178,7 @@ class SpringCache implements Cache, Serializable {
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cache = (GridCacheProjection<Object, Object>)in.readObject();
+            cache = (CacheProjection<Object, Object>)in.readObject();
         }
     }
 }

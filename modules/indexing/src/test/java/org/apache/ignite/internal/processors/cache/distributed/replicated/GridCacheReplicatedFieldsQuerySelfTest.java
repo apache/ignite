@@ -66,9 +66,9 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> cache = g.cache(null);
+            Cache<Integer, Integer> cache = g.cache(null);
 
-            GridCacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
+            CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery("select _key from Integer where _key >= " +
                 "0 order by _key");
 
             q.pageSize(50);
@@ -77,7 +77,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
             q = q.projection(prj);
 
-            GridCacheQueryFuture<List<?>> fut = q.execute();
+            CacheQueryFuture<List<?>> fut = q.execute();
 
             assertEquals(0, fut.next().get(0));
 
@@ -121,17 +121,17 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        Cache<Integer, Integer> cache = grid(0).cache(null);
 
-        GridCacheQueryFuture<List<?>> fut = null;
+        CacheQueryFuture<List<?>> fut = null;
 
         for (int i = 0; i < cache.configuration().getMaximumQueryIteratorCount() + 1; i++) {
-            GridCacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
+            CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
                 "select _key from Integer where _key >= 0 order by _key").projection(grid(0));
 
             q.pageSize(50);
 
-            GridCacheQueryFuture<List<?>> f = q.execute();
+            CacheQueryFuture<List<?>> f = q.execute();
 
             assertEquals(0, f.next().get(0));
 
@@ -139,7 +139,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
                 fut = f;
         }
 
-        final GridCacheQueryFuture<List<?>> fut0 = fut;
+        final CacheQueryFuture<List<?>> fut0 = fut;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {

@@ -40,10 +40,10 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        ccfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setOffHeapMaxMemory(0);
-        ccfg.setMemoryMode(GridCacheMemoryMode.OFFHEAP_TIERED);
+        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
 
         cfg.setCacheConfiguration(ccfg);
 
@@ -57,14 +57,14 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGrids(2);
 
-            GridCache<Object, Object> rmtCache = ignite.cache(null);
+            Cache<Object, Object> rmtCache = ignite.cache(null);
 
             int key = 0;
 
             while (!rmtCache.affinity().isPrimary(grid(1).localNode(), key))
                 key++;
 
-            GridCache<Object, Object> locCache = grid(1).cache(null);
+            Cache<Object, Object> locCache = grid(1).cache(null);
 
             try (IgniteTx tx = locCache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 locCache.putxIfAbsent(key, 0);
@@ -100,7 +100,7 @@ public class GridCacheOffheapUpdateSelfTest extends GridCommonAbstractTest {
         try {
             Ignite grid = startGrid(0);
 
-            GridCache<Object, Object> cache = grid.cache(null);
+            Cache<Object, Object> cache = grid.cache(null);
 
             for (int i = 0; i < 30; i++)
                 cache.put(i, 0);

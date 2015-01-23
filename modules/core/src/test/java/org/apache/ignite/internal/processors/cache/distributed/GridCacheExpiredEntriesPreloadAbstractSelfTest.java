@@ -30,7 +30,7 @@ import javax.cache.expiry.*;
 import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -75,7 +75,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testExpiredEntriesPreloading() throws Exception {
-        GridCache<String, Integer> cache0 = cache(0);
+        Cache<String, Integer> cache0 = cache(0);
 
         final int KEYS_NUM = 3;
 

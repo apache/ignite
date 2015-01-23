@@ -21,9 +21,9 @@ import org.jetbrains.annotations.*;
 
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
- * {@code 'GridCacheProjection.peek(..)'} and {@code GridCacheEntry.peek(..)} methods,
- * such as {@link org.apache.ignite.cache.GridCacheProjection#peek(Object, java.util.Collection)},
- * {@link org.apache.ignite.cache.GridCacheEntry#peek()}, and others.
+ * {@code 'CacheProjection.peek(..)'} and {@code CacheEntry.peek(..)} methods,
+ * such as {@link CacheProjection#peek(Object, java.util.Collection)},
+ * {@link CacheEntry#peek()}, and others.
  * <p>
  * The following modes are supported:
  * <ul>

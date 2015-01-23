@@ -29,10 +29,10 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * LRU near eviction tests (GG-8884).
@@ -61,7 +61,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setDistributionMode(NEAR_PARTITIONED);
         cc.setPreloadMode(SYNC);
-        cc.setNearEvictionPolicy(new GridCacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
         cc.setQueryIndexEnabled(true);
         cc.setBackups(0);
@@ -120,7 +120,7 @@ public class GridCacheLruNearEvictionPolicySelfTest extends GridCommonAbstractTe
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
+                Cache<Integer, String> cache = grid(rand.nextInt(GRID_COUNT)).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Cache queue test with changing topology.
@@ -104,7 +104,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(0);
 
-                    GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
+                    CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
                         true, true);
 
                     for (int i = 0; i < QUEUE_CAP * 2; i++) {
@@ -144,7 +144,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 
-                    GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().
+                    CacheQueue<Integer> queue = ignite.cache(null).dataStructures().
                         queue(queueName, Integer.MAX_VALUE, true, true);
 
                     int cnt = 0;
@@ -192,8 +192,8 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void startAdditionalNodes(int cnt, String queueName) throws Exception {
-        GridCacheAffinityFunction aff = cache(0).configuration().getAffinity();
-        GridCacheAffinityKeyMapper mapper = cache(0).configuration().getAffinityMapper();
+        CacheAffinityFunction aff = cache(0).configuration().getAffinity();
+        CacheAffinityKeyMapper mapper = cache(0).configuration().getAffinityMapper();
 
         assertNotNull(aff);
         assertNotNull(mapper);
@@ -245,7 +245,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
      * @param nodes Topology nodes.
      * @return Affinity nodes for partition.
      */
-    private Collection<ClusterNode> nodes(GridCacheAffinityFunction aff, int part, Collection<ClusterNode> nodes) {
+    private Collection<ClusterNode> nodes(CacheAffinityFunction aff, int part, Collection<ClusterNode> nodes) {
         List<List<ClusterNode>> assignment = aff.assignPartitions(
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(nodes), null, null, 1, BACKUP_CNT));
 

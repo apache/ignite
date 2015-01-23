@@ -35,8 +35,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests messages being sent between nodes in ATOMIC mode.
@@ -49,7 +49,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
     private int idx;
 
     /** Partition distribution mode. */
-    private GridCacheDistributionMode partDistMode;
+    private CacheDistributionMode partDistMode;
 
     /** Write sync mode. */
     private CacheAtomicWriteOrderMode writeOrderMode;
@@ -119,7 +119,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @param orderMode Write ordering mode.
      * @throws Exception If failed.
      */
-    protected void checkMessages(GridCacheDistributionMode distMode,
+    protected void checkMessages(CacheDistributionMode distMode,
         CacheAtomicWriteOrderMode orderMode) throws Exception {
 
         partDistMode = distMode;

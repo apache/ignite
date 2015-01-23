@@ -32,7 +32,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -301,7 +301,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param cnt Entry count.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(GridCacheProjection<String, Integer> cache, int cnt) throws Exception {
+    private void put(CacheProjection<String, Integer> cache, int cnt) throws Exception {
         try {
             for (int i = 0; i < cnt; i++)
                 assertTrue("Failed to put key: 'key" + i + "'",  cache.putx("key" + i, i));
@@ -320,13 +320,13 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(GridCacheProjection<String, Integer> cache, final int cnt,
+    private void put(CacheProjection<String, Integer> cache, final int cnt,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
-            CU.inTx(cache, concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
-                @Override public void applyx(GridCacheProjection<String, Integer> cache)
+            CU.inTx(cache, concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
+                @Override public void applyx(CacheProjection<String, Integer> cache)
                     throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         assertTrue("Failed to put key: 'key" + i + "'", cache.putx("key" + i, i));
@@ -347,7 +347,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param cnt Entry count.
      * @throws IgniteCheckedException If failed.
      */
-    private void remove(GridCacheProjection<String, Integer> cache, int cnt) throws Exception {
+    private void remove(CacheProjection<String, Integer> cache, int cnt) throws Exception {
         try {
             for (int i = 0; i < cnt; i++)
                 cache.removex("key" + i);
@@ -366,13 +366,13 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void remove(GridCacheProjection<String, Integer> cache, final int cnt,
+    private void remove(CacheProjection<String, Integer> cache, final int cnt,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 
-            CU.inTx(cache, concurrency, isolation, new CIX1<GridCacheProjection<String, Integer>>() {
-                @Override public void applyx(GridCacheProjection<String, Integer> cache)
+            CU.inTx(cache, concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
+                @Override public void applyx(CacheProjection<String, Integer> cache)
                     throws IgniteCheckedException {
                     for (int i = 0; i < cnt; i++)
                         cache.removex("key" + i);
@@ -393,7 +393,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param expSize Minimum expected cache size.
      * @throws IgniteCheckedException If failed.
      */
-    private void check(GridCacheProjection<String,Integer> cache, int expSize) throws IgniteCheckedException {
+    private void check(CacheProjection<String,Integer> cache, int expSize) throws IgniteCheckedException {
         int size;
 
         if (cacheMode() == PARTITIONED) {
@@ -425,7 +425,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param g Grid.
      * @return Cache.
      */
-    private GridCacheProjection<String,Integer> cache(Ignite g) {
+    private CacheProjection<String,Integer> cache(Ignite g) {
         return g.cache(null);
     }
 }

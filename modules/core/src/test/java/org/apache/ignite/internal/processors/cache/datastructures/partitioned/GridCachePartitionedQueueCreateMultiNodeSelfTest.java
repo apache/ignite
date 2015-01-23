@@ -35,10 +35,10 @@ import java.util.concurrent.atomic.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -96,11 +96,11 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Started grid: " + locNodeId);
 
-                    GridCache<String, ?> cache = ignite.cache(null);
+                    Cache<String, ?> cache = ignite.cache(null);
 
                     info("Creating queue: " + locNodeId);
 
-                    GridCacheQueue<String> q = cache.dataStructures().queue("queue", 1, true, true);
+                    CacheQueue<String> q = cache.dataStructures().queue("queue", 1, true, true);
 
                     assert q != null;
 
@@ -155,7 +155,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
                     // If output presents, test passes with greater probability.
                     // info("Start puts.");
 
-                    GridCache<Integer, String> cache = ignite.cache(null);
+                    Cache<Integer, String> cache = ignite.cache(null);
 
                     info("Partition: " + cache.affinity().partition(1));
 

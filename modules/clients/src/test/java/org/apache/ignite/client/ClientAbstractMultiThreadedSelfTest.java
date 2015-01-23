@@ -44,9 +44,9 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
@@ -509,7 +509,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
                 ((GridKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
                 "aff");
 
-            GridCacheAffinityFunction aff = getFieldValue(affCache, "aff");
+            CacheAffinityFunction aff = getFieldValue(affCache, "aff");
 
             info("Affinity [nodeId=" + g.cluster().localNode().id() + ", affinity=" + aff + "]");
         }

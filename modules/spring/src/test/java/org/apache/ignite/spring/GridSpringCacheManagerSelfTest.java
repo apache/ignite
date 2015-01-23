@@ -98,7 +98,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, svc.called());
 
-        GridCache<Integer, String> c = grid().cache(CACHE_NAME);
+        Cache<Integer, String> c = grid().cache(CACHE_NAME);
 
         assertEquals(3, c.size());
 
@@ -117,7 +117,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, svc.called());
 
-        GridCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
+        Cache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
         assertEquals(3, c.size());
 
@@ -129,7 +129,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleKeyPut() throws Exception {
-        GridCache<Integer, String> c = grid().cache(CACHE_NAME);
+        Cache<Integer, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i + "odd", svc.simpleKeyPut(i));
@@ -150,7 +150,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testComplexKeyPut() throws Exception {
-        GridCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
+        Cache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++) {
             assertEquals("value" + i + "suffix" + i + "odd", svc.complexKeyPut(i, "suffix" + i));
@@ -171,7 +171,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleKeyEvict() throws Exception {
-        GridCache<Integer, String> c = grid().cache(CACHE_NAME);
+        Cache<Integer, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++)
             c.putx(i, "value" + i);
@@ -195,7 +195,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testComplexKeyEvict() throws Exception {
-        GridCache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
+        Cache<GridSpringCacheTestKey, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++)
             c.putx(new GridSpringCacheTestKey(i, "suffix" + i), "value" + i);
@@ -219,7 +219,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEvictAll() throws Exception {
-        GridCache<Integer, String> c = grid().cache(CACHE_NAME);
+        Cache<Integer, String> c = grid().cache(CACHE_NAME);
 
         for (int i = 0; i < 3; i++)
             c.putx(i, "value" + i);

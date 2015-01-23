@@ -41,7 +41,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -62,7 +62,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     private static final long RETRY_DELAY = 1;
 
     /** Cache contains only {@code GridCacheInternal,GridCacheInternal}. */
-    private GridCacheProjection<GridCacheInternal, GridCacheInternal> dsView;
+    private CacheProjection<GridCacheInternal, GridCacheInternal> dsView;
 
     /** Internal storage of all dataStructures items (sequence, queue , atomic long etc.). */
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
@@ -77,22 +77,22 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     private final AtomicBoolean queueQryGuard = new AtomicBoolean();
 
     /** Cache contains only {@code GridCacheAtomicValue}. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
 
     /** Cache contains only {@code GridCacheCountDownLatchValue}. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheCountDownLatchValue> cntDownLatchView;
+    private CacheProjection<GridCacheInternalKey, GridCacheCountDownLatchValue> cntDownLatchView;
 
     /** Cache contains only {@code GridCacheAtomicReferenceValue}. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue> atomicRefView;
 
     /** Cache contains only {@code GridCacheAtomicStampedValue}. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicStampedValue> atomicStampedView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicStampedValue> atomicStampedView;
 
     /** Cache contains only entry {@code GridCacheSequenceValue}.  */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache contains only entry {@code GridCacheQueueHeader}.  */
-    private GridCacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
+    private CacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -181,7 +181,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Sequence.
      * @throws IgniteCheckedException If loading failed.
      */
-    public final GridCacheAtomicSequence sequence(final String name, final long initVal,
+    public final CacheAtomicSequence sequence(final String name, final long initVal,
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
@@ -191,14 +191,14 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         try {
             // Check type of structure received by key from local cache.
-            GridCacheAtomicSequence val = cast(dsMap.get(key), GridCacheAtomicSequence.class);
+            CacheAtomicSequence val = cast(dsMap.get(key), CacheAtomicSequence.class);
 
             if (val != null)
                 return val;
 
-            return CU.outTx(new Callable<GridCacheAtomicSequence>() {
+            return CU.outTx(new Callable<CacheAtomicSequence>() {
                 @Override
-                public GridCacheAtomicSequence call() throws Exception {
+                public CacheAtomicSequence call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
                             GridCacheAtomicSequenceValue.class);
@@ -299,7 +299,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Atomic long.
      * @throws IgniteCheckedException If loading failed.
      */
-    public final GridCacheAtomicLong atomicLong(final String name, final long initVal,
+    public final CacheAtomicLong atomicLong(final String name, final long initVal,
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
@@ -309,14 +309,14 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         try {
             // Check type of structure received by key from local cache.
-            GridCacheAtomicLong atomicLong = cast(dsMap.get(key), GridCacheAtomicLong.class);
+            CacheAtomicLong atomicLong = cast(dsMap.get(key), CacheAtomicLong.class);
 
             if (atomicLong != null)
                 return atomicLong;
 
-            return CU.outTx(new Callable<GridCacheAtomicLong>() {
+            return CU.outTx(new Callable<CacheAtomicLong>() {
                 @Override
-                public GridCacheAtomicLong call() throws Exception {
+                public CacheAtomicLong call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
@@ -395,7 +395,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws IgniteCheckedException If loading failed.
      */
     @SuppressWarnings("unchecked")
-    public final <T> GridCacheAtomicReference<T> atomicReference(final String name, final T initVal,
+    public final <T> CacheAtomicReference<T> atomicReference(final String name, final T initVal,
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
@@ -405,14 +405,14 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         try {
             // Check type of structure received by key from local cache.
-            GridCacheAtomicReference atomicRef = cast(dsMap.get(key), GridCacheAtomicReference.class);
+            CacheAtomicReference atomicRef = cast(dsMap.get(key), CacheAtomicReference.class);
 
             if (atomicRef != null)
                 return atomicRef;
 
-            return CU.outTx(new Callable<GridCacheAtomicReference<T>>() {
+            return CU.outTx(new Callable<CacheAtomicReference<T>>() {
                 @Override
-                public GridCacheAtomicReference<T> call() throws Exception {
+                public CacheAtomicReference<T> call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicReferenceValue val = cast(dsView.get(key),
                             GridCacheAtomicReferenceValue.class);
@@ -494,7 +494,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws IgniteCheckedException If loading failed.
      */
     @SuppressWarnings("unchecked")
-    public final <T, S> GridCacheAtomicStamped<T, S> atomicStamped(final String name, final T initVal,
+    public final <T, S> CacheAtomicStamped<T, S> atomicStamped(final String name, final T initVal,
         final S initStamp, final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
@@ -504,14 +504,14 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         try {
             // Check type of structure received by key from local cache.
-            GridCacheAtomicStamped atomicStamped = cast(dsMap.get(key), GridCacheAtomicStamped.class);
+            CacheAtomicStamped atomicStamped = cast(dsMap.get(key), CacheAtomicStamped.class);
 
             if (atomicStamped != null)
                 return atomicStamped;
 
-            return CU.outTx(new Callable<GridCacheAtomicStamped<T, S>>() {
+            return CU.outTx(new Callable<CacheAtomicStamped<T, S>>() {
                 @Override
-                public GridCacheAtomicStamped<T, S> call() throws Exception {
+                public CacheAtomicStamped<T, S> call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicStampedValue val = cast(dsView.get(key),
                             GridCacheAtomicStampedValue.class);
@@ -590,7 +590,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Instance of queue.
      * @throws IgniteCheckedException If failed.
      */
-    public final <T> GridCacheQueue<T> queue(final String name, final int cap, boolean colloc,
+    public final <T> CacheQueue<T> queue(final String name, final int cap, boolean colloc,
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
@@ -602,8 +602,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (cctx.atomic())
             return queue0(name, cap, collocMode, create);
 
-        return CU.outTx(new Callable<GridCacheQueue<T>>() {
-            @Override public GridCacheQueue<T> call() throws Exception {
+        return CU.outTx(new Callable<CacheQueue<T>>() {
+            @Override public CacheQueue<T> call() throws Exception {
                 return queue0(name, cap, collocMode, create);
             }
         }, cctx);
@@ -620,7 +620,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-    private <T> GridCacheQueue<T> queue0(final String name, final int cap, boolean colloc, final boolean create)
+    private <T> CacheQueue<T> queue0(final String name, final int cap, boolean colloc, final boolean create)
         throws IgniteCheckedException {
         GridCacheQueueHeaderKey key = new GridCacheQueueHeaderKey(name);
 
@@ -773,7 +773,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *      {@code create} is false.
      * @throws IgniteCheckedException If operation failed.
      */
-    public GridCacheCountDownLatch countDownLatch(final String name, final int cnt, final boolean autoDel,
+    public CacheCountDownLatch countDownLatch(final String name, final int cnt, final boolean autoDel,
         final boolean create) throws IgniteCheckedException {
         A.ensure(cnt >= 0, "count can not be negative");
 
@@ -785,13 +785,13 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
         try {
             // Check type of structure received by key from local cache.
-            GridCacheCountDownLatch latch = cast(dsMap.get(key), GridCacheCountDownLatch.class);
+            CacheCountDownLatch latch = cast(dsMap.get(key), CacheCountDownLatch.class);
 
             if (latch != null)
                 return latch;
 
-            return CU.outTx(new Callable<GridCacheCountDownLatch>() {
-                    @Override public GridCacheCountDownLatch call() throws Exception {
+            return CU.outTx(new Callable<CacheCountDownLatch>() {
+                    @Override public CacheCountDownLatch call() throws Exception {
                         try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheCountDownLatchValue val = cast(dsView.get(key),
                                 GridCacheCountDownLatchValue.class);
@@ -975,7 +975,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         }
                         else if (latch != null) {
                             U.error(log, "Failed to cast object " +
-                                "[expected=" + GridCacheCountDownLatch.class.getSimpleName() +
+                                "[expected=" + CacheCountDownLatch.class.getSimpleName() +
                                 ", actual=" + latch.getClass() + ", value=" + latch + ']');
                         }
                     }
@@ -1017,18 +1017,18 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
 
     /**
-     * @return {@code True} if {@link GridCacheQueue} can be used with current cache configuration.
+     * @return {@code True} if {@link org.apache.ignite.cache.datastructures.CacheQueue} can be used with current cache configuration.
      */
     private boolean supportsQueue() {
         return !(cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK);
     }
 
     /**
-     * @throws IgniteCheckedException If {@link GridCacheQueue} can not be used with current cache configuration.
+     * @throws IgniteCheckedException If {@link org.apache.ignite.cache.datastructures.CacheQueue} can not be used with current cache configuration.
      */
     private void checkSupportsQueue() throws IgniteCheckedException {
         if (cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK)
-            throw new IgniteCheckedException("GridCacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
+            throw new IgniteCheckedException("CacheQueue can not be used with ATOMIC cache with CLOCK write order mode" +
                 " (change write order mode to PRIMARY in configuration)");
     }
 
@@ -1054,7 +1054,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> GridCacheSet<T> set(final String name, boolean collocated, final boolean create)
+    @Nullable public <T> CacheSet<T> set(final String name, boolean collocated, final boolean create)
         throws IgniteCheckedException {
         waitInitialization();
 
@@ -1064,8 +1064,8 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (cctx.atomic())
             return set0(name, collocMode, create);
 
-        return CU.outTx(new Callable<GridCacheSet<T>>() {
-            @Nullable @Override public GridCacheSet<T> call() throws Exception {
+        return CU.outTx(new Callable<CacheSet<T>>() {
+            @Nullable @Override public CacheSet<T> call() throws Exception {
                 return set0(name, collocMode, create);
             }
         }, cctx);
@@ -1163,7 +1163,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> GridCacheSet<T> set0(String name, boolean collocated, boolean create) throws IgniteCheckedException {
+    @Nullable private <T> CacheSet<T> set0(String name, boolean collocated, boolean create) throws IgniteCheckedException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -1206,7 +1206,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
     private boolean removeSet0(String name) throws IgniteCheckedException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-        GridCache cache = cctx.cache();
+        Cache cache = cctx.cache();
 
         GridCacheSetHeader hdr = retryRemove(cache, key);
 
@@ -1291,7 +1291,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         if (set == null)
             return;
 
-        GridCache cache = cctx.cache();
+        Cache cache = cctx.cache();
 
         final int BATCH_SIZE = 100;
 
@@ -1358,7 +1358,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Removed value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
+    @Nullable private <T> T retryRemove(final Cache cache, final Object key) throws IgniteCheckedException {
         return retry(new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
@@ -1372,7 +1372,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
+    private void retryRemoveAll(final Cache cache, final Collection<GridCacheSetItemKey> keys)
         throws IgniteCheckedException {
         retry(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -1391,7 +1391,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      * @return Previous value.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
+    @Nullable private <T> T retryPutIfAbsent(final Cache cache, final Object key, final T val)
         throws IgniteCheckedException {
         return retry(new Callable<T>() {
             @Nullable @Override public T call() throws Exception {

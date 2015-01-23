@@ -20,14 +20,14 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Near only self test.
  */
 public class GridCacheNearOnlySelfTest extends GridCacheClientModesAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 
@@ -40,14 +40,14 @@ public class GridCacheNearOnlySelfTest extends GridCacheClientModesAbstractSelfT
      * @throws Exception If failed.
      */
     public void testUpdateNearOnlyReader() throws Exception {
-        GridCache<Object, Object> dhtCache = dhtCache();
+        Cache<Object, Object> dhtCache = dhtCache();
 
         final int keyCnt = 100;
 
         for (int i = 0; i < keyCnt; i++)
             dhtCache.put(i, i);
 
-        GridCache<Object, Object> nearOnlyCache = nearOnlyCache();
+        Cache<Object, Object> nearOnlyCache = nearOnlyCache();
 
         for (int i = 0; i < keyCnt; i++) {
             assertNull(nearOnlyCache.peek(i));

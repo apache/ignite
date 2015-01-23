@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Affinity API tests.
@@ -59,14 +59,14 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
     /**
      * @return Affinity.
      */
-    private GridCacheAffinityFunction affinity() {
+    private CacheAffinityFunction affinity() {
         return ((GridKernal)grid(0)).internalCache().configuration().getAffinity();
     }
 
     /**
      * @return Affinity mapper.
      */
-    private GridCacheAffinityKeyMapper affinityMapper() {
+    private CacheAffinityKeyMapper affinityMapper() {
         return ((GridKernal)grid(0)).internalCache().configuration().getAffinityMapper();
     }
 
@@ -96,7 +96,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testPrimaryPartitionsOneNode() throws Exception {
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
@@ -138,7 +138,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         assert !F.isEmpty(parts);
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
@@ -168,7 +168,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         assert !F.isEmpty(parts);
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
@@ -201,7 +201,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         assert !F.isEmpty(parts);
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
         List<List<ClusterNode>> assignment = affinity().assignPartitions(ctx);
@@ -223,10 +223,10 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
     public void testMapPartitionToNode() throws Exception {
         int part = RND.nextInt(affinity().partitions());
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
-        GridCacheAffinityFunction aff = affinity();
+        CacheAffinityFunction aff = affinity();
 
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
@@ -241,10 +241,10 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
     public void testMapPartitionsToNode() throws Exception {
         Map<Integer, ClusterNode> map = cache().affinity().mapPartitionsToNodes(F.asList(0, 1, 5, 19, 12));
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
-        GridCacheAffinityFunction aff = affinity();
+        CacheAffinityFunction aff = affinity();
 
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
@@ -260,10 +260,10 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
     public void testMapPartitionsToNodeArray() throws Exception {
         Map<Integer, ClusterNode> map = cache().affinity().mapPartitionsToNodes(F.asList(0, 1, 5, 19, 12));
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
-        GridCacheAffinityFunction aff = affinity();
+        CacheAffinityFunction aff = affinity();
 
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
@@ -284,10 +284,10 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
 
         Map<Integer, ClusterNode> map = cache().affinity().mapPartitionsToNodes(parts);
 
-        GridCacheAffinityFunctionContext ctx =
+        CacheAffinityFunctionContext ctx =
             new GridCacheAffinityFunctionContextImpl(new ArrayList<>(grid(0).nodes()), null, null, 1, 1);
 
-        GridCacheAffinityFunction aff = affinity();
+        CacheAffinityFunction aff = affinity();
 
         List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
@@ -312,7 +312,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
      * @param key Affinity key.
      * @return Affinity nodes.
      */
-    private Iterable<ClusterNode> nodes(List<List<ClusterNode>> assignment, GridCacheAffinityFunction aff, Object key) {
+    private Iterable<ClusterNode> nodes(List<List<ClusterNode>> assignment, CacheAffinityFunction aff, Object key) {
         return assignment.get(aff.partition(key));
     }
 
@@ -330,7 +330,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
         for (int kv = 0; kv < keyCnt; kv++) {
             String key = String.valueOf(kv);
 
-            GridCacheEntry<String, Integer> entry = cache().entry(key);
+            CacheEntry<String, Integer> entry = cache().entry(key);
 
             assert entry != null;
 
@@ -342,7 +342,7 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testPartitionWithAffinityMapper() throws Exception {
-        GridCacheAffinityKey<Integer> key = new GridCacheAffinityKey<>(1, 2);
+        CacheAffinityKey<Integer> key = new CacheAffinityKey<>(1, 2);
 
         int expPart = affinity().partition(affinityMapper().affinityKey(key));
 

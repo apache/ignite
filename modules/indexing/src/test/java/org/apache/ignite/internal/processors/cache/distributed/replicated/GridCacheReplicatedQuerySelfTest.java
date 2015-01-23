@@ -62,13 +62,13 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     private static Ignite ignite3;
 
     /** Cache1. */
-    private static GridCache<CacheKey, CacheValue> cache1;
+    private static Cache<CacheKey, CacheValue> cache1;
 
     /** Cache2. */
-    private static GridCache<CacheKey, CacheValue> cache2;
+    private static Cache<CacheKey, CacheValue> cache2;
 
     /** Cache3. */
-    private static GridCache<CacheKey, CacheValue> cache3;
+    private static Cache<CacheKey, CacheValue> cache3;
 
     /** Key serialization cnt. */
     private static volatile int keySerCnt;
@@ -112,7 +112,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid("client");
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            Cache<Integer, Integer> c = g.cache(null);
 
             for (int i = 0; i < 10; i++)
                 c.putx(i, i);
@@ -158,7 +158,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         assertEquals(keyCnt, cache2.size());
         assertEquals(keyCnt, cache3.size());
 
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry = cache1.queries().createSqlQuery(CacheValue.class,
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> qry = cache1.queries().createSqlQuery(CacheValue.class,
             "select * from CacheValue").projection(ignite.cluster());
 
         qry.pageSize(10);
@@ -246,7 +246,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
         latch.await();
 
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry = cache1.queries().createSqlQuery(
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> qry = cache1.queries().createSqlQuery(
             CacheValue.class, "val > 1 and val < 4").projection(ignite.cluster());
 
         qry.enableDedup(false);
@@ -305,7 +305,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         for (int i = 1; i <= keyCnt; i++)
             cache1.put(new CacheKey(i), new CacheValue(String.valueOf(i)));
 
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> rdcQry =
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> rdcQry =
             cache1.queries().createSqlQuery(CacheValue.class, "val > 1 and val < 4");
 
         rdcQry.keepAll(true);
@@ -331,7 +331,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         assert !reduceIter.hasNext();
 
         // Tests reduce query where remote reducer returns null.
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> rdcQry1 =
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> rdcQry1 =
             cache1.queries().createSqlQuery(CacheValue.class, "val > 1 and val < 4");
 
         rdcQry1.keepAll(true);
@@ -363,12 +363,12 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             cache1.put(new CacheKey(i), new CacheValue(String.valueOf(i)));
 
         // Create query with key filter.
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry =
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> qry =
             cache1.queries().createSqlQuery(CacheValue.class, "val > 0").projection(ignite.cluster());
 
         qry.keepAll(true);
 
-        GridCacheQueryFuture<Map.Entry<CacheKey, CacheValue>> fut = qry.execute();
+        CacheQueryFuture<Map.Entry<CacheKey, CacheValue>> fut = qry.execute();
 
         assertEquals(keyCnt * 3, fut.get().size());
 
@@ -379,21 +379,21 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @throws Exception If failed.
      */
     public void testLostIterator() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 1000; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQueryFuture<Map.Entry<Integer, Integer>> fut = null;
+        CacheQueryFuture<Map.Entry<Integer, Integer>> fut = null;
 
         for (int i = 0; i < cache.configuration().getMaximumQueryIteratorCount() + 1; i++) {
-            GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
+            CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
                 "_key >= 0 order by _key").projection(ignite.cluster());
 
             q.pageSize(200);
             q.enableDedup(true);
 
-            GridCacheQueryFuture<Map.Entry<Integer, Integer>> f = q.execute();
+            CacheQueryFuture<Map.Entry<Integer, Integer>> f = q.execute();
 
             assertEquals(0, (int)f.next().getKey());
 
@@ -401,7 +401,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
                 fut = f;
         }
 
-        final GridCacheQueryFuture<Map.Entry<Integer, Integer>> fut0 = fut;
+        final CacheQueryFuture<Map.Entry<Integer, Integer>> fut0 = fut;
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -424,19 +424,19 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
         try {
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> cache = g.cache(null);
+            Cache<Integer, Integer> cache = g.cache(null);
 
             for (int i = 0; i < 1000; i++)
                 assertTrue(cache.putx(i, i));
 
-            GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
+            CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
                 "_key >= 0 order by _key").projection(ignite.cluster());
 
             q.pageSize(50);
 
             q.projection(g.cluster().forNodes(Arrays.asList(g.cluster().localNode(), grid(0).localNode())));
 
-            GridCacheQueryFuture<Map.Entry<Integer, Integer>> fut = q.execute();
+            CacheQueryFuture<Map.Entry<Integer, Integer>> fut = q.execute();
 
             assertEquals(0, (int)fut.next().getKey());
 
@@ -494,11 +494,11 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @param cache Cache.
      * @throws Exception If check failed.
      */
-    private void checkQueryResults(Ignite ignite, GridCacheProjection<CacheKey, CacheValue> cache) throws Exception {
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> qry =
+    private void checkQueryResults(Ignite ignite, CacheProjection<CacheKey, CacheValue> cache) throws Exception {
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> qry =
             cache.queries().createSqlQuery(CacheValue.class, "val > 1 and val < 4");
 
-        GridCacheQuery<Map.Entry<CacheKey, CacheValue>> q = qry.projection(ignite.cluster().forLocal());
+        CacheQuery<Map.Entry<CacheKey, CacheValue>> q = qry.projection(ignite.cluster().forLocal());
 
         Iterator<Map.Entry<CacheKey, CacheValue>> iter = q.execute().get().iterator();
 
@@ -613,7 +613,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      */
     private static class CacheValue implements Externalizable {
         /** Value. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String val;
 
         /**

@@ -2719,7 +2719,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(1);
 
         try {
-            GridCache<String, String> cache = g.cache(null);
+            Cache<String, String> cache = g.cache(null);
 
             cache.put("k1", "v1");
             cache.put("k2", "v2");
@@ -2741,7 +2741,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(1);
 
         try {
-            GridCache<String, String> cache = g.cache(null);
+            Cache<String, String> cache = g.cache(null);
 
             cache.put("k1", "v1");
 
@@ -2778,7 +2778,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(1);
 
         try {
-            GridCache<String, String> cache = g.cache(null);
+            Cache<String, String> cache = g.cache(null);
 
             cache.put("k1", "v1");
             cache.put("k2", "v2");
@@ -2809,7 +2809,7 @@ public class GridFuncSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(1);
 
         try {
-            GridCache<String, String> cache = g.cache(null);
+            Cache<String, String> cache = g.cache(null);
 
             cache.put("k1", "v1");
             cache.put("k2", "v2");

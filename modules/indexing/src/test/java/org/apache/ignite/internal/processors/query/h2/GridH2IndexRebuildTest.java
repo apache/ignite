@@ -92,19 +92,19 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue1 {
         /** */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private long val1;
 
         /** */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private String val2;
 
         /** */
-        @GridCacheQuerySqlField(groups = "group1")
+        @CacheQuerySqlField(groups = "group1")
         private int val3;
 
         /** */
-        @GridCacheQuerySqlField(groups = "group1")
+        @CacheQuerySqlField(groups = "group1")
         private int val4;
 
         /**
@@ -123,11 +123,11 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class TestValue2 {
         /** */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private long val1;
 
         /** */
-        @GridCacheQueryTextField
+        @CacheQueryTextField
         private String val2;
 
         /**
@@ -149,27 +149,27 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
 
         cache().queries().rebuildAllIndexes().get();
 
-        GridCache<Integer, TestValue1> cache1 = grid(0).cache(null);
-        GridCache<Integer, TestValue2> cache2 = grid(0).cache(null);
+        Cache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        Cache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++) {
             cache1.put(i, new TestValue1(i, "val2-" + i, i, i));
             cache2.put(ENTRY_CNT * 2 + i, new TestValue2(i, "val2-" + i));
         }
 
-        GridCacheQuery<Map.Entry<Integer, TestValue1>> qry1 =
+        CacheQuery<Map.Entry<Integer, TestValue1>> qry1 =
             cache1.queries().createSqlQuery(TestValue1.class, "val1 = 9000");
 
-        GridCacheQuery<Map.Entry<Integer, TestValue1>> qry2 =
+        CacheQuery<Map.Entry<Integer, TestValue1>> qry2 =
             cache1.queries().createSqlQuery(TestValue1.class, "val2 = 'val2-9000'");
 
-        GridCacheQuery<Map.Entry<Integer, TestValue1>> qry3 =
+        CacheQuery<Map.Entry<Integer, TestValue1>> qry3 =
             cache1.queries().createSqlQuery(TestValue1.class, "val3 = 9000 and val4 = 9000");
 
-        GridCacheQuery<Map.Entry<Integer, TestValue2>> qry4 =
+        CacheQuery<Map.Entry<Integer, TestValue2>> qry4 =
             cache2.queries().createSqlQuery(TestValue2.class, "val1 = 9000");
 
-        GridCacheQuery<Map.Entry<Integer, TestValue2>> qry5 =
+        CacheQuery<Map.Entry<Integer, TestValue2>> qry5 =
             cache2.queries().createFullTextQuery(TestValue2.class, "val2 = 'val2-9000'");
 
         checkQueryReturnsOneEntry(qry1, qry2, qry3, qry4, qry5);
@@ -195,8 +195,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     public void testRebuildInterrupted() throws Exception {
         spi.sleepInRebuild = true;
 
-        GridCache<Integer, TestValue1> cache1 = grid(0).cache(null);
-        GridCache<Integer, TestValue2> cache2 = grid(0).cache(null);
+        Cache<Integer, TestValue1> cache1 = grid(0).cache(null);
+        Cache<Integer, TestValue2> cache2 = grid(0).cache(null);
 
         cache1.put(0, new TestValue1(0, "val0", 0 ,0));
         cache2.put(1, new TestValue2(0, "val0"));
@@ -242,8 +242,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     /**
      * @throws Exception if failed.
      */
-    private void checkQueryReturnsOneEntry(GridCacheQuery<?>... qrys) throws Exception {
-        for (GridCacheQuery<?> qry : qrys)
+    private void checkQueryReturnsOneEntry(CacheQuery<?>... qrys) throws Exception {
+        for (CacheQuery<?> qry : qrys)
             assertEquals(1, qry.execute().get().size());
     }
 }

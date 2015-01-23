@@ -43,7 +43,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.processors.dr.GridDrType.*;
@@ -618,7 +618,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable protected V readThrough(@Nullable IgniteTxEx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
+        IgnitePredicate<CacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.store().loadFromStore(tx, key);
     }
 
@@ -634,7 +634,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
@@ -667,7 +667,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         // Disable read-through if there is no store.
@@ -933,7 +933,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    @Nullable @Override public final V innerReload(IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Nullable @Override public final V innerReload(IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         cctx.denyOnFlag(READ);
 
@@ -1046,7 +1046,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drExpireTime,
         @Nullable GridCacheVersion explicitVer,
@@ -1197,7 +1197,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean evt,
         boolean metrics,
         long topVer,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         GridDrType drType,
         @Nullable GridCacheVersion explicitVer,
         @Nullable UUID subjId,
@@ -1395,7 +1395,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         @Nullable ExpiryPolicy expiryPlc,
         boolean evt,
         boolean metrics,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean intercept,
         @Nullable UUID subjId,
         String taskName
@@ -1634,7 +1634,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean metrics,
         boolean primary,
         boolean verCheck,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         GridDrType drType,
         long drTtl,
         long drExpireTime,
@@ -2141,7 +2141,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Override public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         cctx.denyOnFlag(READ);
 
         boolean ret;
@@ -2386,7 +2386,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean invalidate(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Override public boolean invalidate(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         if (F.isEmptyOrNulls(filter)) {
             synchronized (this) {
@@ -2426,7 +2426,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean compact(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Override public boolean compact(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         // For optimistic checking.
         GridCacheVersion startVer;
@@ -2524,7 +2524,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @return {@code True} if values should be stored off-heap.
      */
     protected boolean isOffHeapValuesOnly() {
-        return cctx.config().getMemoryMode() == GridCacheMemoryMode.OFFHEAP_VALUES;
+        return cctx.config().getMemoryMode() == CacheMemoryMode.OFFHEAP_VALUES;
     }
 
     /**
@@ -2601,7 +2601,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V peek(GridCachePeekMode mode, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Nullable @Override public V peek(GridCachePeekMode mode, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         try {
             GridTuple<V> peek = peek0(false, mode, filter, cctx.tm().localTxx());
@@ -2619,7 +2619,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Override public V peek(Collection<GridCachePeekMode> modes, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         assert modes != null;
 
@@ -2645,7 +2645,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
     /** {@inheritDoc} */
     @Nullable @Override public V peekFailFast(GridCachePeekMode mode,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException {
         try {
             GridTuple<V> peek = peek0(true, mode, filter, cctx.tm().localTxx());
@@ -2669,7 +2669,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable @Override public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -2781,7 +2781,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridCacheEntryRemovedException If entry got removed.
      * @throws IgniteCheckedException If unexpected cache failure occurred.
      */
-    @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+    @Nullable private GridTuple<V> peekTxThenGlobal(boolean failFast, IgnitePredicate<CacheEntry<K, V>>[] filter,
         IgniteTxEx<K, V> tx) throws GridCacheFilterFailedException, GridCacheEntryRemovedException, IgniteCheckedException {
         GridTuple<V> peek = peekTx(failFast, filter, tx);
 
@@ -2802,7 +2802,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @Nullable private GridTuple<V> peekTx(boolean failFast,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteTxEx<K, V> tx) throws GridCacheFilterFailedException {
         return tx == null ? null : tx.peek(cctx, failFast, key, filter);
     }
@@ -2818,7 +2818,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable private GridTuple<V> peekGlobal(boolean failFast, long topVer,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+        IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
         if (!valid(topVer))
             return null;
@@ -2867,7 +2867,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable private GridTuple<V> peekSwap(boolean failFast, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Nullable private GridTuple<V> peekSwap(boolean failFast, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws IgniteCheckedException, GridCacheFilterFailedException {
         if (!cctx.isAll(wrap(false), filter))
             return F.t((V)CU.failed(failFast));
@@ -2890,7 +2890,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @throws GridCacheFilterFailedException If filter failed.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable private V peekDb(boolean failFast, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    @Nullable private V peekDb(boolean failFast, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws IgniteCheckedException, GridCacheFilterFailedException {
         if (!cctx.isAll(wrap(false), filter))
             return CU.failed(failFast);
@@ -3586,7 +3586,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param prjAware {@code true} if entry should inherit projection properties.
      * @return Wrapped entry.
      */
-    @Override public GridCacheEntry<K, V> wrap(boolean prjAware) {
+    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
         GridCacheProjectionImpl<K, V> prjPerCall = null;
 
         if (prjAware)
@@ -3596,18 +3596,18 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
+    @Override public CacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> evictWrap() {
+    @Override public CacheEntry<K, V> evictWrap() {
         return new GridCacheEvictionEntry<>(this);
     }
 
     /** {@inheritDoc} */
     @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         boolean marked = false;
 
         try {
@@ -3774,7 +3774,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param filter Entry filter.
      * @return {@code True} if entry is visitable.
      */
-    public boolean visitable(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    public boolean visitable(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         try {
             if (obsoleteOrDeleted() || (filter != CU.<K, V>empty() && !cctx.isAll(wrap(false), filter)))
                 return false;

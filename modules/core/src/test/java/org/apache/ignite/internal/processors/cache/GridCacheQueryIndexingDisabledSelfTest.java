@@ -91,7 +91,7 @@ public class GridCacheQueryIndexingDisabledSelfTest extends GridCacheAbstractSel
      * @throws IgniteCheckedException If failed.
      */
     public void testScanQuery() throws IgniteCheckedException {
-        GridCacheQuery<Map.Entry<String, Integer>> qry = cache().queries().createScanQuery(null);
+        CacheQuery<Map.Entry<String, Integer>> qry = cache().queries().createScanQuery(null);
 
         qry.execute().get();
     }

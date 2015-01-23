@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 
 /**
  * Loads data from persistent store at cache startup by calling
- * {@link org.apache.ignite.cache.GridCache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method on
+ * {@link org.apache.ignite.cache.Cache#loadCache(org.apache.ignite.lang.IgniteBiPredicate, long, Object...)} method on
  * all nodes.
  * <p>
  * Remote nodes should always be started using {@link CacheNodeWithStoreStartup}.
@@ -51,7 +51,7 @@ public class CacheStoreLoadDataExample {
             System.out.println();
             System.out.println(">>> Cache store load data example started.");
 
-            final GridCache<String, Integer> cache = g.cache(null);
+            final Cache<String, Integer> cache = g.cache(null);
 
             // Clean up caches on all nodes before run.
             cache.globalClearAll(0);

@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction.*;
+import static org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction.*;
 
 /**
  * Client's partitioned affinity tests.
@@ -285,11 +285,11 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
 
         aff.setHashIdResolver(HASH_ID_RSLVR);
 
-        GridCacheConsistentHashAffinityFunction srvAff = new GridCacheConsistentHashAffinityFunction();
+        CacheConsistentHashAffinityFunction srvAff = new CacheConsistentHashAffinityFunction();
 
         getTestResources().inject(srvAff);
 
-        srvAff.setHashIdResolver(new GridCacheAffinityNodeIdHashResolver());
+        srvAff.setHashIdResolver(new CacheAffinityNodeIdHashResolver());
 
         // Define keys to test affinity for.
         Collection<String> keys = new ArrayList<>(
@@ -339,12 +339,12 @@ public class ClientPartitionAffinitySelfTest extends GridCommonAbstractTest {
      * @param nodes Client topology.
      * @param srvNodes Server topology.
      */
-    private void assertSameAffinity(Object key, GridClientDataAffinity aff, GridCacheAffinityFunction srvAff,
+    private void assertSameAffinity(Object key, GridClientDataAffinity aff, CacheAffinityFunction srvAff,
         Collection<? extends GridClientNode> nodes, Collection<ClusterNode> srvNodes) {
         GridClientNode node = aff.node(key, nodes);
         int part = srvAff.partition(key);
 
-        GridCacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes),
+        CacheAffinityFunctionContext ctx = new GridCacheAffinityFunctionContextImpl(new ArrayList<>(srvNodes),
             null, null, 1, 0);
 
         ClusterNode srvNode = F.first(srvAff.assignPartitions(ctx).get(part));

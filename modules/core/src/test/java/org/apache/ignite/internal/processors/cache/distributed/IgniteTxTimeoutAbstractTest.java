@@ -64,7 +64,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
      * @param i Grid index.
      * @return Cache.
      */
-    @Override protected <K, V> GridCache<K, V> cache(int i) {
+    @Override protected <K, V> Cache<K, V> cache(int i) {
         return IGNITEs.get(i).cache(null);
     }
 
@@ -120,7 +120,7 @@ public class IgniteTxTimeoutAbstractTest extends GridCommonAbstractTest {
 
         int idx = RAND.nextInt(GRID_COUNT);
 
-        GridCache<Integer, String> cache = cache(idx);
+        Cache<Integer, String> cache = cache(idx);
 
         IgniteTx tx = cache.txStart(concurrency, isolation, TIMEOUT, 0);
 

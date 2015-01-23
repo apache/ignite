@@ -43,7 +43,7 @@ public class GridCacheReduceFieldsQueryPartitionedSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testIncludeBackups() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select age from Person");
 
         qry.includeBackups(true);
 

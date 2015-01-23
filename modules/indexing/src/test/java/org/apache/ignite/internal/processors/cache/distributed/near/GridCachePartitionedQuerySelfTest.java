@@ -54,7 +54,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        Cache<UUID, Person> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -63,7 +63,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         assertEquals(4, cache0.size());
 
-        GridCacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
+        CacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
             "salary < 2000").projection(grid(0).forLocal());
 
         // Include backup entries.
@@ -94,7 +94,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         Ignite ignite0 = grid(0);
 
-        GridCache<UUID, Person> cache0 = ignite0.cache(null);
+        Cache<UUID, Person> cache0 = ignite0.cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -104,7 +104,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         assertEquals(4, cache0.size());
 
         // Fields query
-        GridCacheQuery<List<?>> qry = cache0.queries().createSqlFieldsQuery("select name from Person where salary > ?").
+        CacheQuery<List<?>> qry = cache0.queries().createSqlFieldsQuery("select name from Person where salary > ?").
             projection(ignite0.cluster());
 
         Collection<List<?>> res = qry.execute(1600).get();
@@ -133,7 +133,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        Cache<UUID, Person> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -144,7 +144,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         assert grid(0).nodes().size() == gridCount();
 
-        GridCacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
+        CacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
             "salary < 2000");
 
         // Include backup entries and disable de-duplication.
@@ -195,7 +195,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        Cache<UUID, Person> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -204,7 +204,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
 
         // Retry several times.
         for (int i = 0; i < 10; i++) {
-            GridCacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
+            CacheQuery<Map.Entry<UUID, Person>> qry = cache0.queries().createSqlQuery(Person.class,
                 "salary < 2000");
 
             // Include backup entries and disable de-duplication.
@@ -235,7 +235,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      */
     @SuppressWarnings("FloatingPointEquality")
     public void testScanReduceQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        Cache<UUID, Person> c = ignite.cache(null);
 
         Person p1 = new Person("Bob White", 1000);
         Person p2 = new Person("Tom White", 2000);
@@ -245,7 +245,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         c.put(p2.id(), p2);
         c.put(p3.id(), p3);
 
-        GridCacheQuery<Map.Entry<UUID, Person>> q = c.queries().createScanQuery(new P2<UUID, Person>() {
+        CacheQuery<Map.Entry<UUID, Person>> q = c.queries().createScanQuery(new P2<UUID, Person>() {
             @Override public boolean apply(UUID k, Person p) {
                 return p.salary() < 20000;
             }
@@ -293,7 +293,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      */
     @SuppressWarnings("FloatingPointEquality")
     public void testSqlReduceQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        Cache<UUID, Person> c = ignite.cache(null);
 
         Person p1 = new Person("Bob White", 1000);
         Person p2 = new Person("Tom White", 2000);
@@ -303,7 +303,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         c.put(p2.id(), p2);
         c.put(p3.id(), p3);
 
-        GridCacheQuery<Map.Entry<UUID, Person>> q = c.queries().createSqlQuery(Person.class, "salary < 20000");
+        CacheQuery<Map.Entry<UUID, Person>> q = c.queries().createSqlQuery(Person.class, "salary < 20000");
 
         R1<IgnitePair<Integer>, Double> locRdc = new R1<IgnitePair<Integer>, Double>() {
             private double sum;
@@ -347,7 +347,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      */
     @SuppressWarnings("FloatingPointEquality")
     public void testLuceneReduceQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        Cache<UUID, Person> c = ignite.cache(null);
 
         Person p1 = new Person("Bob White", 1000);
         Person p2 = new Person("Tom White", 2000);
@@ -357,7 +357,7 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         c.put(p2.id(), p2);
         c.put(p3.id(), p3);
 
-        GridCacheQuery<Map.Entry<UUID, Person>> q = c.queries().createFullTextQuery(Person.class, "White");
+        CacheQuery<Map.Entry<UUID, Person>> q = c.queries().createFullTextQuery(Person.class, "White");
 
         R1<IgnitePair<Integer>, Double> locRdc = new R1<IgnitePair<Integer>, Double>() {
             private double sum;
@@ -422,9 +422,9 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
         for (int i = 0; i < gridCount(); i++)
             assertEquals(i == 1 ? 2 : 3, grid(i).cache(null).primarySize());
 
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
 
         q.pageSize(2);
         q.includeBackups(false);
@@ -439,12 +439,12 @@ public class GridCachePartitionedQuerySelfTest extends GridCacheAbstractQuerySel
      * @throws Exception If failed.
      */
     public void testReduceWithPagination() throws Exception {
-        GridCache<Integer, Integer> c = grid(0).cache(null);
+        Cache<Integer, Integer> c = grid(0).cache(null);
 
         for (int i = 0; i < 50; i++)
             assertTrue(c.putx(i, 10));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = c.queries().createSqlQuery(Integer.class, "_key >= 0");
+        CacheQuery<Map.Entry<Integer, Integer>> q = c.queries().createSqlQuery(Integer.class, "_key >= 0");
 
         q.pageSize(10);
 

@@ -35,15 +35,15 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Base class for eviction tests.
  */
-public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionPolicy<?, ?>>
+public abstract class GridCacheEvictionAbstractTest<T extends CacheEvictionPolicy<?, ?>>
     extends GridCommonAbstractTest {
     /** IP finder. */
     protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -73,7 +73,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
     protected int gridCnt = 2;
 
     /** */
-    protected GridCacheEvictionFilter<?, ?> filter;
+    protected CacheEvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -138,12 +138,12 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
      * @param prefix Prefix.
      * @param p Policy.
      */
-    protected void info(String prefix, GridCacheEvictionPolicy<?, ?> p) {
+    protected void info(String prefix, CacheEvictionPolicy<?, ?> p) {
         info(prefix + ": " + p.toString());
     }
 
     /** @param p Policy. */
-    protected void info(GridCacheEvictionPolicy<?, ?> p) {
+    protected void info(CacheEvictionPolicy<?, ?> p) {
         info(p.toString());
     }
 
@@ -151,7 +151,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<GridCacheEntry<String, String>> c1, MockEntry... c2) {
+    protected void check(Collection<CacheEntry<String, String>> c1, MockEntry... c2) {
         check(c1, F.asList(c2));
     }
 
@@ -183,7 +183,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
      * @param c1 Policy collection.
      * @param c2 Expected list.
      */
-    protected void check(Collection<GridCacheEntry<String, String>> c1, List<MockEntry> c2) {
+    protected void check(Collection<CacheEntry<String, String>> c1, List<MockEntry> c2) {
         assert c1.size() == c2.size() : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
 
         assert c1.containsAll(c2) : "Mismatch [actual=" + string(c1) + ", expected=" + string(c2) + ']';
@@ -191,7 +191,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
         int i = 0;
 
         // Check order.
-        for (GridCacheEntry<String, String> e : c1)
+        for (CacheEntry<String, String> e : c1)
             assertEquals(e, c2.get(i++));
     }
 
@@ -199,9 +199,9 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
      * @param c Collection.
      * @return String.
      */
-    protected String string(Iterable<? extends GridCacheEntry> c) {
-        return "[" + F.fold(c, "", new C2<GridCacheEntry, String, String>() {
-            @Override public String apply(GridCacheEntry e, String b) {
+    protected String string(Iterable<? extends CacheEntry> c) {
+        return "[" + F.fold(c, "", new C2<CacheEntry, String, String>() {
+            @Override public String apply(CacheEntry e, String b) {
                 return b.isEmpty() ? e.getKey().toString() : b + ", " + e.getKey();
             }
         }) + "]]";
@@ -295,7 +295,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
             int cnt = 500;
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                Cache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
 
                 int key = rand.nextInt(100);
                 String val = Integer.toString(key);
@@ -346,7 +346,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
                     int cnt = 100;
 
                     for (int i = 0; i < cnt && !Thread.currentThread().isInterrupted(); i++) {
-                        GridCache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
+                        Cache<Integer, String> cache = grid(rand.nextInt(2)).cache(null);
 
                         int key = rand.nextInt(1000);
                         String val = Integer.toString(key);
@@ -407,7 +407,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
     @SuppressWarnings({"PublicConstructorInNonPublicClass"})
     protected static class MockEntry extends GridCacheMockEntry<String, String> {
         /** */
-        private final GridCacheProjection<String, String> parent;
+        private final CacheProjection<String, String> parent;
 
         /** Entry value. */
         private String val;
@@ -434,7 +434,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
          * @param key Key.
          * @param parent Parent.
          */
-        public MockEntry(String key, @Nullable GridCacheProjection<String, String> parent) {
+        public MockEntry(String key, @Nullable CacheProjection<String, String> parent) {
             super(key);
 
             this.parent = parent;
@@ -455,7 +455,7 @@ public abstract class GridCacheEvictionAbstractTest<T extends GridCacheEvictionP
         }
 
         /** {@inheritDoc} */
-        @Override public GridCacheProjection<String, String> projection() {
+        @Override public CacheProjection<String, String> projection() {
             return parent;
         }
     }

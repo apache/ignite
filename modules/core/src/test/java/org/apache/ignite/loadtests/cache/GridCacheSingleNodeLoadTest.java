@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  */
@@ -77,7 +77,7 @@ public class GridCacheSingleNodeLoadTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                GridCache<Integer, Student> cache = G.ignite().cache(null);
+                Cache<Integer, Student> cache = G.ignite().cache(null);
 
                 assert cache != null;
 
@@ -130,8 +130,8 @@ public class GridCacheSingleNodeLoadTest {
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setNearEvictionPolicy(new GridCacheLruEvictionPolicy(10000));
-        cc.setEvictionPolicy(new GridCacheLruEvictionPolicy(300000));
+        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(10000));
+        cc.setEvictionPolicy(new CacheLruEvictionPolicy(300000));
         cc.setSwapEnabled(false);
         cc.setDistributionMode(PARTITIONED_ONLY);
 

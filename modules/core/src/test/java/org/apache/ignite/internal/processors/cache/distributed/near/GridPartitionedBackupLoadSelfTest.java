@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.*;
@@ -26,14 +27,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test that persistent store is not used when loading invalidated entry from backup node.
@@ -109,9 +109,9 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         assert store.get(1) == 1;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<Integer, Integer> cache = cache(i);
+            Cache<Integer, Integer> cache = cache(i);
 
-            GridCacheEntry<Integer, Integer> entry = cache.entry(1);
+            CacheEntry<Integer, Integer> entry = cache.entry(1);
 
             if (entry.backup()) {
                 assert entry.peek() == 1;
@@ -145,7 +145,7 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends Integer> e) {
             map.put(e.getKey(), e.getValue());
         }
 

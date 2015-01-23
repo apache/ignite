@@ -37,7 +37,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for partitioned cache automatic eviction.
@@ -79,8 +79,8 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
-        cc.setNearEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
+        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
+        cc.setNearEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_CACHE_SIZE));
         cc.setSwapEnabled(false);
 
         // We set 1 backup explicitly.
@@ -169,7 +169,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
         GridDhtCacheAdapter<String, Integer> dht0 = dht(cache(0));
         GridDhtCacheAdapter<String, Integer> dht1 = dht(cache(1));
 
-        GridCacheAffinity<String> aff = dht0.affinity();
+        CacheAffinity<String> aff = dht0.affinity();
 
         TouchedExpiryPolicy plc = new TouchedExpiryPolicy(new Duration(MILLISECONDS, 10));
 

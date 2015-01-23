@@ -65,7 +65,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private GridCacheInternalKey key;
 
     /** Sequence projection. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
     /** Cache context. */
     private volatile GridCacheContext ctx;
@@ -112,7 +112,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param upBound Upper bound.
      */
     public GridCacheAtomicSequenceImpl(String name, GridCacheInternalKey key,
-        GridCacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
+        CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
         GridCacheContext ctx, long locVal, long upBound) {
         assert key != null;
         assert seqView != null;
@@ -365,7 +365,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new GridCacheDataStructureRemovedException("Sequence was removed from cache: " + name);
+            throw new CacheDataStructureRemovedException("Sequence was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

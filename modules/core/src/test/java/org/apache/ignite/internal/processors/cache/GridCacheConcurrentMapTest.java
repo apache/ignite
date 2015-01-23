@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Grid cache concurrent hash map self test.
@@ -70,13 +70,13 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomEntry() throws Exception {
-        GridCache<String, String> cache = grid(0).cache(null);
+        Cache<String, String> cache = grid(0).cache(null);
 
         for (int i = 0; i < 500; i++)
             cache.put("key" + i, "val" + i);
 
         for (int i = 0; i < 20; i++) {
-            GridCacheEntry<String, String> entry = cache.randomEntry();
+            CacheEntry<String, String> entry = cache.randomEntry();
 
             assert entry != null;
 
@@ -88,7 +88,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomEntryMultiThreaded() throws Exception {
-        final GridCache<String, String> cache = grid(0).cache(null);
+        final Cache<String, String> cache = grid(0).cache(null);
 
         final AtomicBoolean done = new AtomicBoolean();
 
@@ -116,7 +116,7 @@ public class GridCacheConcurrentMapTest extends GridCommonAbstractTest {
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (!done.get()) {
-                        GridCacheEntry<String, String> entry = cache.randomEntry();
+                        CacheEntry<String, String> entry = cache.randomEntry();
 
                         info("Random entry key: " + (entry != null ? entry.getKey() : "N/A"));
                     }

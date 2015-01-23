@@ -364,7 +364,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link GridCacheAffinityFunction} and {@link org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapper} from remote node.
+     * Requests {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} and {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param n Node from which affinity is requested.
@@ -376,8 +376,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
             .callAsyncNoFailover(BALANCE, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
 
-        GridCacheAffinityFunction f = (GridCacheAffinityFunction)unmarshall(ctx, n.id(), t.get1());
-        GridCacheAffinityKeyMapper m = (GridCacheAffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
+        CacheAffinityFunction f = (CacheAffinityFunction)unmarshall(ctx, n.id(), t.get1());
+        CacheAffinityKeyMapper m = (CacheAffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
 
         assert m != null;
 
@@ -458,10 +458,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private static class AffinityInfo {
         /** Affinity function. */
-        private GridCacheAffinityFunction affFunc;
+        private CacheAffinityFunction affFunc;
 
         /** Mapper */
-        private GridCacheAffinityKeyMapper mapper;
+        private CacheAffinityKeyMapper mapper;
 
         /** Assignment. */
         private GridAffinityAssignment assignment;
@@ -475,7 +475,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @param assignment Partition assignment.
          * @param portableEnabled Portable enabled flag.
          */
-        private AffinityInfo(GridCacheAffinityFunction affFunc, GridCacheAffinityKeyMapper mapper,
+        private AffinityInfo(CacheAffinityFunction affFunc, CacheAffinityKeyMapper mapper,
             GridAffinityAssignment assignment, boolean portableEnabled) {
             this.affFunc = affFunc;
             this.mapper = mapper;

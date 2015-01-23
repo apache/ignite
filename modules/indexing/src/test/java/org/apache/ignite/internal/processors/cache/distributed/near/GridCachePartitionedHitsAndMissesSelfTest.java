@@ -32,9 +32,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import javax.cache.processor.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for issue GG-3997 Total Hits and Misses display wrong value for in-memory database.
@@ -91,7 +91,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setPreloadPartitionedDelay(-1);
         cfg.setBackups(1);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -120,7 +120,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             long misses = 0;
 
             for (int i = 0; i < GRID_CNT; i++) {
-                GridCacheMetrics m = grid(i).cache(null).metrics();
+                CacheMetrics m = grid(i).cache(null).metrics();
 
                 hits += m.hits();
                 misses += m.misses();

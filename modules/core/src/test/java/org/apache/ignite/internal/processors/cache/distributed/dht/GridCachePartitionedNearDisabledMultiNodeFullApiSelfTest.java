@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Multi node test for disabled near cache.
@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 public class GridCachePartitionedNearDisabledMultiNodeFullApiSelfTest
     extends GridCachePartitionedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 }

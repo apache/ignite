@@ -127,34 +127,34 @@ public class CacheApiExample {
         System.out.println();
         System.out.println(">>> Local iterator examples.");
 
-        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Iterate over whole cache.
-        for (GridCacheEntry<Integer, String> e : cache)
+        for (CacheEntry<Integer, String> e : cache)
             System.out.println("Basic cache iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
         // Iterate over cache projection for all keys below 5.
-        GridCacheProjection<Integer, String> keysBelow5 = cache.projection(
-            new IgnitePredicate<GridCacheEntry<Integer, String>>() {
-                @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+        CacheProjection<Integer, String> keysBelow5 = cache.projection(
+            new IgnitePredicate<CacheEntry<Integer, String>>() {
+                @Override public boolean apply(CacheEntry<Integer, String> e) {
                     return e.getKey() < 5;
                 }
             }
         );
 
-        for (GridCacheEntry<Integer, String> e : keysBelow5)
+        for (CacheEntry<Integer, String> e : keysBelow5)
             System.out.println("Cache projection iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
         // Iterate over each element using 'forEach' construct.
-        cache.forEach(new IgniteInClosure<GridCacheEntry<Integer, String>>() {
-            @Override public void apply(GridCacheEntry<Integer, String> e) {
+        cache.forEach(new IgniteInClosure<CacheEntry<Integer, String>>() {
+            @Override public void apply(CacheEntry<Integer, String> e) {
                 System.out.println("forEach iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
             }
         });
 
         // Search cache for element with value "1" using 'forAll' construct.
-        cache.forAll(new IgnitePredicate<GridCacheEntry<Integer, String>>() {
-            @Override public boolean apply(GridCacheEntry<Integer, String> e) {
+        cache.forAll(new IgnitePredicate<CacheEntry<Integer, String>>() {
+            @Override public boolean apply(CacheEntry<Integer, String> e) {
                 String v = e.peek();
 
                 if ("1".equals(v)) {

@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Internal projection interface.
  */
-public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
+public interface GridCacheProjectionEx<K, V> extends CacheProjection<K, V> {
     /**
      * Creates projection for specified subject ID.
      *
@@ -47,21 +47,21 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      *
      * @return Filter on which this projection is based on.
      */
-    @Nullable public IgnitePredicate<GridCacheEntry<K, V>> predicate();
+    @Nullable public IgnitePredicate<CacheEntry<K, V>> predicate();
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
-     * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param ttl Optional time-to-live. If negative, leaves ttl value unchanged.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public V put(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -74,41 +74,41 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Put operation future.
      */
     public IgniteFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
-     * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param ttl Optional time-to-live. If negative, leaves ttl value unchanged.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
     public boolean putx(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
      * @param key Key.
      * @param val Value.
-     * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param ttl Optional time-to-live. If negative, leave ttl value unchanged.
      * @param filter Optional filter.
      * @return Putx operation future.
      */
     public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * Store DR data.
      *
      * @param drMap DR map.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public void putAllDr(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
 
@@ -118,7 +118,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param drMap DR map.
      * @return Future.
      * @throws IgniteCheckedException If put operation failed.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public IgniteFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap) throws IgniteCheckedException;
 
@@ -126,13 +126,13 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public V remove(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
@@ -143,14 +143,14 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Put operation future.
      */
     public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * Removes DR data.
      *
      * @param drMap DR map.
      * @throws IgniteCheckedException If remove failed.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public void removeAllDr(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
 
@@ -160,7 +160,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param drMap DR map.
      * @return Future.
      * @throws IgniteCheckedException If remove failed.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public IgniteFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException;
 
@@ -168,24 +168,24 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Previous value.
      * @throws IgniteCheckedException If failed.
      */
     public boolean removex(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Internal method that is called from {@link GridCacheEntryImpl}.
      *
      * @param key Key to remove.
-     * @param entry Cached entry. If not provided, equivalent to {GridCacheProjection#put}.
+     * @param entry Cached entry. If not provided, equivalent to {CacheProjection#put}.
      * @param filter Optional filter.
      * @return Putx operation future.
      */
     public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter);
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * Asynchronously stores given key-value pair in cache only if only if the previous value is equal to the
@@ -200,7 +200,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     * {@link org.apache.ignite.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.cache.CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param oldVal Old value to match.
@@ -208,7 +208,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Future for the replace operation. The future will return object containing actual old value and success
      *      flag.
      * @throws NullPointerException If either key or value are {@code null}.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal);
 
@@ -225,7 +225,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     * {@link org.apache.ignite.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.cache.CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param oldVal Old value to match.
@@ -233,7 +233,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @return Object containing actual old value and success flag.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws IgniteCheckedException If replace operation failed.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException;
 
@@ -247,14 +247,14 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     * {@link org.apache.ignite.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.cache.CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param val Value to match against currently cached value.
      * @return Object containing actual old value and success flag.
      * @throws NullPointerException if the key or value is {@code null}.
      * @throws IgniteCheckedException If remove failed.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException;
 
@@ -271,14 +271,14 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link GridCacheFlag#LOCAL}, {@link GridCacheFlag#READ}.
+     * {@link org.apache.ignite.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.cache.CacheFlag#READ}.
      *
      * @param key Key whose mapping is to be removed from cache.
      * @param val Value to match against currently cached value.
      * @return Future for the remove operation. The future will return object containing actual old value and success
      *      flag.
      * @throws NullPointerException if the key or value is {@code null}.
-     * @throws GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
      */
     public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val);
 
@@ -291,7 +291,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public V get(K key, @Nullable GridCacheEntryEx<K, V> entry, boolean deserializePortable,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
 
     /**
      * Gets value from cache. Will go to primary node even if this is a backup.
@@ -370,7 +370,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<GridCacheEntry<K, V>> entrySetx(IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public Set<CacheEntry<K, V>> entrySetx(IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * Gets set of primary entries containing internal entries.
@@ -378,7 +378,7 @@ public interface GridCacheProjectionEx<K, V> extends GridCacheProjection<K, V> {
      * @param filter Optional filter.
      * @return Primary entry set.
      */
-    public Set<GridCacheEntry<K, V>> primaryEntrySetx(IgnitePredicate<GridCacheEntry<K, V>>... filter);
+    public Set<CacheEntry<K, V>> primaryEntrySetx(IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
      * @return {@link ExpiryPolicy} associated with this projection.

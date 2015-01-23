@@ -25,10 +25,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Attribute validation self test.
@@ -84,7 +84,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setPreloadMode(ASYNC);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction());
+        dfltCacheCfg.setAffinity(new CacheConsistentHashAffinityFunction());
 
         // Non-default cache configuration.
         CacheConfiguration namedCacheCfg = defaultCacheConfiguration();
@@ -93,7 +93,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setPreloadMode(ASYNC);
         namedCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         namedCacheCfg.setName(NON_DFLT_CACHE_NAME);
-        namedCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction());
+        namedCacheCfg.setAffinity(new CacheConsistentHashAffinityFunction());
 
         // Modify cache config according to test parameters.
         if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
@@ -101,7 +101,7 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
         else if (gridName.contains(WRONG_AFFINITY_GRID_NAME)) {
-            dfltCacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction() {
+            dfltCacheCfg.setAffinity(new CacheConsistentHashAffinityFunction() {
                 // No-op. Just to have another class name.
             });
         }

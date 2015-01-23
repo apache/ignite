@@ -37,7 +37,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Unit tests for dht entry.
@@ -62,9 +62,9 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 10));
+        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 10));
         cacheCfg.setBackups(0);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
@@ -100,7 +100,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"SizeReplaceableByIsEmpty"})
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            near(grid(i)).removeAll(F.<GridCacheEntry<Integer, String>>alwaysTrue());
+            near(grid(i)).removeAll(F.<CacheEntry<Integer, String>>alwaysTrue());
 
             assertEquals("Near cache size is not zero for grid: " + i, 0, near(grid(i)).size());
             assertEquals("DHT cache size is not zero for grid: " + i, 0, dht(grid(i)).size());
@@ -121,7 +121,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private GridCacheProjection<Integer, String> near(Ignite g) {
+    private CacheProjection<Integer, String> near(Ignite g) {
         return g.cache(null);
     }
 
@@ -151,8 +151,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        GridCacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        GridCacheProjection<Integer, String> near1 = near(grid(other.id()));
+        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
+        CacheProjection<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -196,8 +196,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        GridCacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        GridCacheProjection<Integer, String> near1 = near(grid(other.id()));
+        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
+        CacheProjection<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -242,8 +242,8 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode primary = t.get1();
         ClusterNode other = t.get2();
 
-        GridCacheProjection<Integer, String> near0 = near(grid(primary.id()));
-        GridCacheProjection<Integer, String> near1 = near(grid(other.id()));
+        CacheProjection<Integer, String> near0 = near(grid(primary.id()));
+        CacheProjection<Integer, String> near1 = near(grid(other.id()));
 
         assert near0 != near1;
 
@@ -291,7 +291,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      * @return For the given key pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(Integer key) {
-        GridCacheAffinity<Integer> aff = grid(0).<Integer, Object>cache(null).affinity();
+        CacheAffinity<Integer> aff = grid(0).<Integer, Object>cache(null).affinity();
 
         int part = aff.partition(key);
 

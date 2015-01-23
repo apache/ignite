@@ -26,11 +26,11 @@ import java.util.*;
  */
 public class GridTestEntity {
     /** */
-    @GridCacheQuerySqlField(index = true)
+    @CacheQuerySqlField(index = true)
     private final String name;
 
     /** */
-    @GridCacheQuerySqlField(index = false)
+    @CacheQuerySqlField(index = false)
     private final Date date;
 
     /**

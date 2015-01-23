@@ -1249,7 +1249,7 @@ public abstract class GridGgfsDualAbstractSelfTest extends GridGgfsAbstractSelfT
 
         GridGgfsBlockKey key = new GridGgfsBlockKey(info.id(), info.affinityKey(), info.evictExclude(), 2);
 
-        GridCache<GridGgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
+        Cache<GridGgfsBlockKey, byte[]> dataCache = ggfs.context().kernalContext().cache().cache(
             ggfs.configuration().getDataCacheName());
 
         for (int i = 0; i < 10; i++) {

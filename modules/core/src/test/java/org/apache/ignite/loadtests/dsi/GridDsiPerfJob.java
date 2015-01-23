@@ -59,7 +59,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     private Ignite ignite;
 
     /** */
-    @GridCacheName
+    @CacheName
     private String cacheName = "PARTITIONED_CACHE";
 
     /**
@@ -79,7 +79,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
     /**
      * @return Terminal ID.
      */
-    @GridCacheAffinityKeyMapped
+    @CacheAffinityKeyMapped
     @Nullable public String terminalId() {
         GridDsiMessage msg = message();
 
@@ -224,7 +224,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      *
      */
     private void doWork() {
-        GridCache cache = ignite.cache(cacheName);
+        Cache cache = ignite.cache(cacheName);
 
         assert cache != null;
 
@@ -304,11 +304,11 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private long getId() throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        Cache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 
-        GridCacheAtomicSequence seq = cache.dataStructures().atomicSequence("ID", 0, true);
+        CacheAtomicSequence seq = cache.dataStructures().atomicSequence("ID", 0, true);
 
         return seq.incrementAndGet();
     }
@@ -319,11 +319,11 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void put(Object o, Object cacheKey) throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        Cache<Object, Object> cache = ignite.cache(cacheName);
 
         assert cache != null;
 
-        GridCacheEntry<Object, Object> entry = cache.entry(cacheKey);
+        CacheEntry<Object, Object> entry = cache.entry(cacheKey);
 
         if (entry != null)
             entry.setx(o);

@@ -55,7 +55,7 @@ public final class CacheAtomicLongExample {
             String atomicName = UUID.randomUUID().toString();
 
             // Initialize atomic long in grid.
-            final GridCacheAtomicLong atomicLong = g.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
+            final CacheAtomicLong atomicLong = g.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
 
             System.out.println();
             System.out.println("Atomic long initial value : " + atomicLong.get() + '.');

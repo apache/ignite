@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Cache affinity function context implementation. Simple bean that holds all required fields.
  */
-public class GridCacheAffinityFunctionContextImpl implements GridCacheAffinityFunctionContext {
+public class GridCacheAffinityFunctionContextImpl implements CacheAffinityFunctionContext {
     /** Topology snapshot. */
     private List<ClusterNode> topSnapshot;
 

@@ -61,7 +61,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private GridCacheInternalKey key;
 
     /** Atomic reference projection. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -95,7 +95,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      */
     public GridCacheAtomicReferenceImpl(String name,
         GridCacheInternalKey key,
-        GridCacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
+        CacheProjection<GridCacheInternalKey, GridCacheAtomicReferenceValue<T>> atomicView,
         GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
@@ -275,7 +275,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new GridCacheDataStructureRemovedException("Atomic reference was removed from cache: " + name);
+            throw new CacheDataStructureRemovedException("Atomic reference was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

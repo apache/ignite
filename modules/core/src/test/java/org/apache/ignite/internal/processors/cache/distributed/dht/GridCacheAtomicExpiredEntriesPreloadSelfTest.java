@@ -22,7 +22,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests preloading of expired entries.
@@ -39,7 +39,7 @@ public class GridCacheAtomicExpiredEntriesPreloadSelfTest extends GridCacheExpir
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 }

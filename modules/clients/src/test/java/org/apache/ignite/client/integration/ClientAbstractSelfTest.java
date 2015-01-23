@@ -21,6 +21,7 @@ import junit.framework.*;
 import net.sf.json.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.compute.*;
@@ -37,7 +38,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.io.*;
 import java.util.*;
@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
@@ -464,8 +464,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        GridCache<String, String> dfltCache = grid().cache(null);
-        GridCache<Object, Object> namedCache = grid().cache(CACHE_NAME);
+        Cache<String, String> dfltCache = grid().cache(null);
+        Cache<Object, Object> namedCache = grid().cache(CACHE_NAME);
 
         GridClientData dfltData = client.data();
 
@@ -871,14 +871,14 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertNotNull(datas[0]);
         assertNotNull(datas[1]);
 
-        GridCache[] caches = new GridCache[] {
+        Cache[] caches = new Cache[] {
             grid().cache(null),
             grid().cache(CACHE_NAME)
         };
 
         for (int i = 0; i < datas.length; i++) {
             GridClientData data = datas[i];
-            GridCache<String, String> cache = (GridCache<String, String>)caches[i];
+            Cache<String, String> cache = (Cache<String, String>)caches[i];
 
             assertFalse(data.cas("key", null, null));
             assertTrue(cache.putx("key", "val"));
@@ -962,7 +962,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         GridClientDataMetrics m = dfltData.metrics();
 
-        GridCacheMetrics metrics = grid().cache(null).metrics();
+        CacheMetrics metrics = grid().cache(null).metrics();
 
         assertNotNull(m);
         assertEquals(metrics.reads(), m.reads());
@@ -1093,10 +1093,10 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         assertEquals(grid().localNode().id(), node.nodeId());
         assertEquals(4, node.caches().size());
 
-        Integer replica = grid().localNode().attribute(GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
+        Integer replica = grid().localNode().attribute(CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT_ATTR_NAME);
 
         if (replica == null)
-            replica = GridCacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT;
+            replica = CacheConsistentHashAffinityFunction.DFLT_REPLICA_COUNT;
 
         assertEquals((int)replica, node.replicaCount());
 
@@ -1586,7 +1586,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
             map.put(e.getKey(), e.getValue());
         }
 

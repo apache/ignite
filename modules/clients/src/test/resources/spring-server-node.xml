@@ -142,7 +142,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="affinity">
-                        <bean class="org.apache.ignite.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
                             <constructor-arg value="1"/>
                         </bean>
                     </property>
@@ -153,10 +153,10 @@
                     <property name="queryIndexEnabled" value="true"/>
 
                     <property name="queryConfiguration">
-                        <bean class="org.apache.ignite.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <property name="typeMetadata">
                                 <list>
-                                    <bean class="org.apache.ignite.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -174,7 +174,7 @@
                                             </list>
                                         </property>
                                     </bean>
-                                    <bean class="org.apache.ignite.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridImplicitPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -187,7 +187,7 @@
                                             </map>
                                         </property>
                                     </bean>
-                                    <bean class="org.apache.ignite.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridNoDefPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>

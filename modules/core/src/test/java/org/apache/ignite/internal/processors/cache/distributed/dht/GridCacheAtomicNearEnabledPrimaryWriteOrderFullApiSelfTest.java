@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests atomic cache with near cache enabled.
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 public class GridCacheAtomicNearEnabledPrimaryWriteOrderFullApiSelfTest
     extends GridCacheAtomicPrimaryWriteOrderFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 }

@@ -61,7 +61,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
     private GridCacheInternalKey key;
 
     /** Atomic long projection. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -218,7 +218,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      * @param ctx CacheContext.
      */
     public GridCacheAtomicLongImpl(String name, GridCacheInternalKey key,
-        GridCacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
+        CacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
         assert ctx != null;
@@ -307,7 +307,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new GridCacheDataStructureRemovedException("Atomic long was removed from cache: " + name);
+            throw new CacheDataStructureRemovedException("Atomic long was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

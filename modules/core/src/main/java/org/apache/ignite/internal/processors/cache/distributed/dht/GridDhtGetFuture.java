@@ -78,7 +78,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
+    private IgnitePredicate<CacheEntry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -129,7 +129,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean reload,
         @Nullable IgniteTxLocalEx<K, V> tx,
         long topVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,

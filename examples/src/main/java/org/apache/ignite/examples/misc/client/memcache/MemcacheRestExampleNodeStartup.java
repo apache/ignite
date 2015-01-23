@@ -29,8 +29,8 @@ import java.util.*;
 
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Starts up an empty node with cache configuration that contains default cache.
@@ -75,7 +75,7 @@ public class MemcacheRestExampleNodeStartup {
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheQueryConfiguration qryCfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qryCfg = new CacheQueryConfiguration();
 
         qryCfg.setIndexPrimitiveKey(true);
         qryCfg.setIndexFixedTyping(false);

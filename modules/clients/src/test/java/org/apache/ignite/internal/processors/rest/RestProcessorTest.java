@@ -135,7 +135,7 @@ public class RestProcessorTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void populateCache() throws IgniteCheckedException {
-        GridCache<String, Object> cache = G.ignite().cache(null);
+        Cache<String, Object> cache = G.ignite().cache(null);
 
         cache.put("int", intValue());
         cache.put("string", "cacheString");

@@ -33,10 +33,10 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests entries distribution between primary-backup-near caches according to nodes count in grid.
@@ -90,7 +90,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
         startGridsMultiThreaded(gridCnt);
 
         try {
-            GridCache<Integer, String> c = grid(0).cache(null);
+            Cache<Integer, String> c = grid(0).cache(null);
 
             int cnt = 100;
 
@@ -120,7 +120,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    GridCache<Integer, String> c = ignite.cache(null);
+                    Cache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.putx(i, Integer.toString(i));
@@ -154,7 +154,7 @@ public class GridCacheNearEvictionSelfTest extends GridCommonAbstractTest {
                 private Ignite ignite;
 
                 @Override public Object call() throws Exception {
-                    GridCache<Integer, String> c = ignite.cache(null);
+                    Cache<Integer, String> c = ignite.cache(null);
 
                     for (int i = 0; i < cnt; i++)
                         c.putx(i, Integer.toString(i));

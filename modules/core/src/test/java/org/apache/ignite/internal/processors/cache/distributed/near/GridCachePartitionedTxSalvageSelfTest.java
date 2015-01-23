@@ -77,9 +77,9 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 18));
+        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 18));
         cc.setBackups(1);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
 
         c.setCacheConfiguration(cc);
 
@@ -198,7 +198,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                GridCache<Object, Object> c = cache(0);
+                Cache<Object, Object> c = cache(0);
 
                 try {
                     IgniteTx tx = c.txStart(mode, REPEATABLE_READ);

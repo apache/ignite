@@ -35,9 +35,9 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
- * Common code for {@link GridCacheQueue} implementation.
+ * Common code for {@link org.apache.ignite.cache.datastructures.CacheQueue} implementation.
  */
-public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> implements GridCacheQueue<T> {
+public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> implements CacheQueue<T> {
     /** Value returned by closure updating queue header indicating that queue was removed. */
     protected static final long QUEUE_REMOVED_IDX = Long.MIN_VALUE;
 
@@ -407,7 +407,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks result of closure modifying queue header, throws {@link org.apache.ignite.cache.datastructures.GridCacheDataStructureRemovedRuntimeException}
+     * Checks result of closure modifying queue header, throws {@link org.apache.ignite.cache.datastructures.CacheDataStructureRemovedRuntimeException}
      * if queue was removed.
      *
      * @param idx Result of closure execution.
@@ -418,7 +418,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * Checks queue state, throws {@link org.apache.ignite.cache.datastructures.GridCacheDataStructureRemovedRuntimeException} if queue was removed.
+     * Checks queue state, throws {@link org.apache.ignite.cache.datastructures.CacheDataStructureRemovedRuntimeException} if queue was removed.
      *
      * @param hdr Queue hdr.
      */
@@ -430,7 +430,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * Marks queue as removed.
      *
-     * @param throw0 If {@code true} then throws {@link org.apache.ignite.cache.datastructures.GridCacheDataStructureRemovedRuntimeException}.
+     * @param throw0 If {@code true} then throws {@link org.apache.ignite.cache.datastructures.CacheDataStructureRemovedRuntimeException}.
      */
     void onRemoved(boolean throw0) {
         rmvd = true;
@@ -438,7 +438,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         releaseSemaphores();
 
         if (throw0)
-            throw new GridCacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
+            throw new CacheDataStructureRemovedRuntimeException("Queue has been removed from cache: " + this);
     }
 
     /**
@@ -636,7 +636,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         /**
          * @return Item affinity key.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public Object affinityKey() {
             return queueName();
         }

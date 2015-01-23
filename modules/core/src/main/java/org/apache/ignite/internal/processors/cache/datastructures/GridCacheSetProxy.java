@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 /**
  * Cache set proxy.
  */
-public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
+public class GridCacheSetProxy<T> implements CacheSet<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -486,7 +486,7 @@ public class GridCacheSetProxy<T> implements GridCacheSet<T>, Externalizable {
      */
     private void enterBusy() {
         if (!busyLock.enterBusy())
-            throw new GridCacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + delegate);
+            throw new CacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + delegate);
     }
 
     /**

@@ -117,13 +117,13 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(DATA_BLOCK_GROUP_CNT));
         }
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setQueryIndexEnabled(false);
 
@@ -517,7 +517,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
      * @param affinity Affinity block locations to check.
      */
     private void checkAffinity(int blockSize, GridGgfsFileInfo info, Iterable<IgniteFsBlockLocation> affinity) {
-        GridCache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
+        Cache<Object, Object> dataCache = grid(0).cachex(DATA_CACHE_NAME);
 
         for (IgniteFsBlockLocation loc : affinity) {
             info("Going to check GGFS block location: " + loc);

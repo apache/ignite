@@ -29,7 +29,7 @@ import java.util.*;
 import static org.apache.ignite.client.GridClientCacheFlag.*;
 
 /**
- * Tests conversions between GridClientCacheFlag and GridCacheFlag.
+ * Tests conversions between GridClientCacheFlag and CacheFlag.
  */
 public class ClientCacheFlagsCodecTest extends TestCase {
     /**
@@ -44,7 +44,7 @@ public class ClientCacheFlagsCodecTest extends TestCase {
 
             assertTrue(bits != 0);
 
-            GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
+            CacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
             assertEquals(1, out.length);
 
             assertEquals(f.name(), out[0].name());
@@ -72,11 +72,11 @@ public class ClientCacheFlagsCodecTest extends TestCase {
 
         int bits = GridClientConnection.encodeCacheFlags(flagSet);
 
-        GridCacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
+        CacheFlag[] out = GridCacheCommandHandler.parseCacheFlags(bits);
 
         assertEquals(flagSet.contains(KEEP_PORTABLES) ? flagSet.size() - 1 : flagSet.size(), out.length);
 
-        for (GridCacheFlag f : out) {
+        for (CacheFlag f : out) {
             assertTrue(flagSet.contains(GridClientCacheFlag.valueOf(f.name())));
         }
     }

@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests for fields queries.
@@ -37,7 +37,7 @@ public class GridCacheAtomicFieldsQuerySelfTest extends GridCachePartitionedFiel
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
@@ -50,7 +50,7 @@ public class GridCacheAtomicFieldsQuerySelfTest extends GridCachePartitionedFiel
      *
      */
     public void testUnsupportedOperations() {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
             "update Person set name = ?");
 
         try {

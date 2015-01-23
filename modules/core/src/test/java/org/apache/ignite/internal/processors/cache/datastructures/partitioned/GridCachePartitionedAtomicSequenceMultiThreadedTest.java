@@ -31,7 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -67,7 +67,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
 
         dfltCacheCfg.setCacheMode(PARTITIONED);
         dfltCacheCfg.setBackups(1);
-        dfltCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        dfltCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dfltCacheCfg.setAtomicSequenceReserveSize(10);
         dfltCacheCfg.setAtomicityMode(TRANSACTIONAL);
         dfltCacheCfg.setDistributionMode(NEAR_PARTITIONED);
@@ -168,10 +168,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.incrementAndGet();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -184,10 +184,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.incrementAndGet();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -200,10 +200,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.getAndIncrement();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -216,10 +216,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.getAndIncrement();
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -232,10 +232,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.addAndGet(5);
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -248,10 +248,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.getAndAdd(5);
             }
         }, seq, ITERATION_NUM, THREAD_NUM);
@@ -264,10 +264,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.incrementAndGet();
                 t.getAndIncrement();
                 t.incrementAndGet();
@@ -285,10 +285,10 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
         // Random sequence names.
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
-        runSequenceClosure(new GridInUnsafeClosure<GridCacheAtomicSequence>() {
-            @Override public void apply(GridCacheAtomicSequence t) throws IgniteCheckedException {
+        runSequenceClosure(new GridInUnsafeClosure<CacheAtomicSequence>() {
+            @Override public void apply(CacheAtomicSequence t) throws IgniteCheckedException {
                 t.getAndAdd(2);
                 t.addAndGet(3);
                 t.addAndGet(5);
@@ -308,8 +308,8 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
      * @param threadCnt Thread count.
      * @throws Exception If failed.
      */
-    protected void runSequenceClosure(final GridInUnsafeClosure<GridCacheAtomicSequence> c,
-        final GridCacheAtomicSequence seq, final int cnt, final int threadCnt) throws Exception {
+    protected void runSequenceClosure(final GridInUnsafeClosure<CacheAtomicSequence> c,
+        final CacheAtomicSequence seq, final int cnt, final int threadCnt) throws Exception {
         multithreaded(new Runnable() {
             @Override public void run() {
                 try {
@@ -331,7 +331,7 @@ public class GridCachePartitionedAtomicSequenceMultiThreadedTest extends GridCom
     private void checkUpdate(boolean updated) throws Exception {
         String seqName = UUID.randomUUID().toString();
 
-        final GridCacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
+        final CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(seqName, 0L, true);
 
         long curVal = 0;
 

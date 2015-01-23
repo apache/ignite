@@ -48,7 +48,7 @@ import java.util.concurrent.locks.Lock;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.*;
@@ -62,10 +62,10 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private static final Unsafe unsafe = GridUnsafe.unsafe();
 
     /** Eviction policy. */
-    private GridCacheEvictionPolicy<K, V> plc;
+    private CacheEvictionPolicy<K, V> plc;
 
     /** Eviction filter. */
-    private GridCacheEvictionFilter<K, V> filter;
+    private CacheEvictionFilter<K, V> filter;
 
     /** Eviction buffer. */
     private final ConcurrentLinkedDeque8<EvictionInfo> bufEvictQ = new ConcurrentLinkedDeque8<>();
@@ -104,7 +104,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
     private boolean plcEnabled;
 
     /** */
-    private GridCacheMemoryMode memoryMode;
+    private CacheMemoryMode memoryMode;
 
     /** Backup entries worker. */
     private BackupWorker backupWorker;
@@ -647,7 +647,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @throws IgniteCheckedException If failed to evict entry.
      */
     private boolean evict0(GridCacheAdapter<K, V> cache, GridCacheEntryEx<K, V> entry, GridCacheVersion obsoleteVer,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, boolean explicit) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, boolean explicit) throws IgniteCheckedException {
         assert cache != null;
         assert entry != null;
         assert obsoleteVer != null;
@@ -843,7 +843,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @throws IgniteCheckedException In case of error.
      */
     public boolean evict(@Nullable GridCacheEntryEx<K, V> entry, @Nullable GridCacheVersion obsoleteVer,
-        boolean explicit, @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        boolean explicit, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (entry == null)
             return true;
 
@@ -976,7 +976,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param filter Filter.
      * @throws GridCacheEntryRemovedException If entry got removed.
      */
-    private void enqueue(GridCacheEntryEx<K, V> entry, IgnitePredicate<GridCacheEntry<K, V>>[] filter)
+    private void enqueue(GridCacheEntryEx<K, V> entry, IgnitePredicate<CacheEntry<K, V>>[] filter)
         throws GridCacheEntryRemovedException {
         Node<EvictionInfo> node = entry.meta(meta);
 
@@ -1221,11 +1221,11 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
      * @param info Eviction info.
      * @return Version aware filter.
      */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] versionFilter(final EvictionInfo info) {
+    private IgnitePredicate<CacheEntry<K, V>>[] versionFilter(final EvictionInfo info) {
         // If version has changed since we started the whole process
         // then we should not evict entry.
-        return cctx.vararg(new P1<GridCacheEntry<K, V>>() {
-            @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return cctx.vararg(new P1<CacheEntry<K, V>>() {
+            @Override public boolean apply(CacheEntry<K, V> e) {
                 GridCacheVersion ver = (GridCacheVersion)e.version();
 
                 return info.version().equals(ver) && F.isAll(info.filter());
@@ -1446,7 +1446,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         private GridCacheVersion ver;
 
         /** Filter to pass before entry will be evicted. */
-        private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+        private IgnitePredicate<CacheEntry<K, V>>[] filter;
 
         /**
          * @param entry Entry.
@@ -1454,7 +1454,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
          * @param filter Filter.
          */
         EvictionInfo(GridCacheEntryEx<K, V> entry, GridCacheVersion ver,
-            IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+            IgnitePredicate<CacheEntry<K, V>>[] filter) {
             assert entry != null;
             assert ver != null;
 
@@ -1480,7 +1480,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         /**
          * @return Filter.
          */
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter() {
+        IgnitePredicate<CacheEntry<K, V>>[] filter() {
             return filter;
         }
 

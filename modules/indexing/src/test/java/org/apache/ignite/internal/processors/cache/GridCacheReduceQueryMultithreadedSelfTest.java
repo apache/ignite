@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Multithreaded reduce query tests with lots of data.
@@ -68,7 +68,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         cfg.setBackups(1);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -84,7 +84,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         final int keyCnt = 5000;
         final int logFreq = 500;
 
-        final GridCache<String, Integer> c = cache();
+        final Cache<String, Integer> c = cache();
 
         final CountDownLatch startLatch = new CountDownLatch(1);
 
@@ -104,7 +104,7 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
         }, 1);
 
         // Create query.
-        final GridCacheQuery<Map.Entry<String, Integer>> sumQry =
+        final CacheQuery<Map.Entry<String, Integer>> sumQry =
             c.queries().createSqlQuery(Integer.class, "_val > 0").timeout(TEST_TIMEOUT);
 
         final R1<Map.Entry<String, Integer>, Integer> rmtRdc = new R1<Map.Entry<String, Integer>, Integer>() {

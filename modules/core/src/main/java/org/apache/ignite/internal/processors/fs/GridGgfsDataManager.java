@@ -68,7 +68,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
     private GridCacheProjectionEx<GridGgfsBlockKey, byte[]> dataCachePrj;
 
     /** Data cache. */
-    private GridCache<Object, Object> dataCache;
+    private Cache<Object, Object> dataCache;
 
     /** */
     private IgniteFuture<?> dataCacheStartFut;
@@ -163,7 +163,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
         assert dataCachePrj != null;
 
-        GridCacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
+        CacheAffinityKeyMapper mapper = ggfsCtx.kernalContext().cache()
             .internalCache(ggfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgniteFsGroupDataBlocksKeyMapper ?
@@ -391,7 +391,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         final GridGgfsBlockKey key = blockKey(blockIdx, fileInfo);
 
         if (log.isDebugEnabled()) {
-            GridCacheEntry<GridGgfsBlockKey, byte[]> entry = dataCachePrj.entry(key);
+            CacheEntry<GridGgfsBlockKey, byte[]> entry = dataCachePrj.entry(key);
 
             assert entry != null;
 

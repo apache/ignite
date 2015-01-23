@@ -26,11 +26,11 @@ import java.io.*;
  */
 public class TestObject implements Serializable {
     /** ID. */
-    @GridCacheQuerySqlField(unique = true)
+    @CacheQuerySqlField(unique = true)
     private int id;
 
     /** Text. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private String txt;
 
     /**

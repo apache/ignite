@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.replicated.prelo
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
  * Tests for replicated cache {@link GridReplicatedPreloader preloader}.

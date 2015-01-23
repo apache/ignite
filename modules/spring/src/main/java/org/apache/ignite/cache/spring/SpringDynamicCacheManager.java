@@ -18,14 +18,13 @@
 package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.springframework.cache.*;
 import org.springframework.cache.annotation.*;
 
 import java.io.*;
@@ -77,10 +76,10 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
     private String dataCacheName;
 
     /** Meta cache. */
-    private GridCacheProjectionEx<MetaKey, Cache> metaCache;
+    private GridCacheProjectionEx<MetaKey, org.springframework.cache.Cache> metaCache;
 
     /** Data cache. */
-    private GridCache<DataKey, Object> dataCache;
+    private Cache<DataKey, Object> dataCache;
 
     /**
      * Sets data cache name.
@@ -104,13 +103,13 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
     @Override public void afterPropertiesSet() throws Exception {
         super.afterPropertiesSet();
 
-        metaCache = ((GridEx)grid).utilityCache(MetaKey.class, Cache.class);
+        metaCache = ((GridEx)grid).utilityCache(MetaKey.class, org.springframework.cache.Cache.class);
         dataCache = grid.cache(dataCacheName);
     }
 
     /** {@inheritDoc} */
-    @Override public Cache getCache(final String name) {
-        Cache cache = super.getCache(name);
+    @Override public org.springframework.cache.Cache getCache(final String name) {
+        org.springframework.cache.Cache cache = super.getCache(name);
 
         if (cache != null)
             return cache;
@@ -128,7 +127,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
                         }
                     });
 
-                Cache old = metaCache.putIfAbsent(key, cache);
+                org.springframework.cache.Cache old = metaCache.putIfAbsent(key, cache);
 
                 if (old != null)
                     cache = old;
@@ -150,8 +149,8 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
         });
 
         return F.concat(false, names, F.transform(metaCache.entrySetx(),
-            new IgniteClosure<Map.Entry<MetaKey, Cache>, String>() {
-                @Override public String apply(Map.Entry<MetaKey, Cache> e) {
+            new IgniteClosure<Map.Entry<MetaKey, org.springframework.cache.Cache>, String>() {
+                @Override public String apply(Map.Entry<MetaKey, org.springframework.cache.Cache> e) {
                     return e.getKey().name;
                 }
             }));

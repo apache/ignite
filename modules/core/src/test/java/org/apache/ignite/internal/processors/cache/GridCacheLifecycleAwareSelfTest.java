@@ -32,12 +32,11 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -48,7 +47,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private GridCacheDistributionMode distroMode;
+    private CacheDistributionMode distroMode;
 
     /** */
     private boolean writeBehind;
@@ -120,7 +119,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestAffinityFunction extends TestLifecycleAware implements GridCacheAffinityFunction {
+    private static class TestAffinityFunction extends TestLifecycleAware implements CacheAffinityFunction {
         /**
          */
         TestAffinityFunction() {
@@ -143,7 +142,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+        @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
             List<List<ClusterNode>> res = new ArrayList<>();
 
             res.add(nodes(0, affCtx.currentTopologySnapshot()));
@@ -164,7 +163,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestEvictionPolicy extends TestLifecycleAware implements GridCacheEvictionPolicy {
+    private static class TestEvictionPolicy extends TestLifecycleAware implements CacheEvictionPolicy {
         /**
          */
         TestEvictionPolicy() {
@@ -172,14 +171,14 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, GridCacheEntry entry) {
+        @Override public void onEntryAccessed(boolean rmv, CacheEntry entry) {
             // No-op.
         }
     }
 
     /**
      */
-    private static class TestEvictionFilter extends TestLifecycleAware implements GridCacheEvictionFilter {
+    private static class TestEvictionFilter extends TestLifecycleAware implements CacheEvictionFilter {
         /**
          */
         TestEvictionFilter() {
@@ -187,14 +186,14 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         }
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(GridCacheEntry entry) {
+        @Override public boolean evictAllowed(CacheEntry entry) {
             return false;
         }
     }
 
     /**
      */
-    private static class TestCloner extends TestLifecycleAware implements GridCacheCloner {
+    private static class TestCloner extends TestLifecycleAware implements CacheCloner {
         /**
          */
         TestCloner() {
@@ -209,7 +208,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestAffinityKeyMapper extends TestLifecycleAware implements GridCacheAffinityKeyMapper {
+    private static class TestAffinityKeyMapper extends TestLifecycleAware implements CacheAffinityKeyMapper {
         /**
          */
         TestAffinityKeyMapper() {
@@ -229,7 +228,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
 
     /**
      */
-    private static class TestInterceptor extends TestLifecycleAware implements GridCacheInterceptor {
+    private static class TestInterceptor extends TestLifecycleAware implements CacheInterceptor {
         /**
          */
         private TestInterceptor() {
@@ -340,7 +339,7 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
     @Override public void testLifecycleAware() throws Exception {
-        for (GridCacheDistributionMode mode : new GridCacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
+        for (CacheDistributionMode mode : new CacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
             distroMode = mode;
 
             writeBehind = false;

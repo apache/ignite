@@ -842,7 +842,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Cache context.
      */
-    public static <K, V> GridCacheContext<K, V> cacheContext(GridCacheProjection<K, V> cache) {
+    public static <K, V> GridCacheContext<K, V> cacheContext(CacheProjection<K, V> cache) {
         return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
     }
 
@@ -850,7 +850,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Near cache.
      */
-    public static <K, V> GridNearCacheAdapter<K, V> near(GridCacheProjection<K, V> cache) {
+    public static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K, V> cache) {
         return cacheContext(cache).near();
     }
 
@@ -858,7 +858,7 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return DHT cache.
      */
-    public static <K, V> GridDhtCacheAdapter<K, V> dht(GridCacheProjection<K, V> cache) {
+    public static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K, V> cache) {
         return near(cache).dht();
     }
 
@@ -866,8 +866,8 @@ public final class GridTestUtils {
      * @param cache Cache.
      * @return Affinity.
      */
-    static <K, V> GridCacheConsistentHashAffinityFunction affinity(GridCacheProjection<K, V> cache) {
-        return (GridCacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
+    static <K, V> CacheConsistentHashAffinityFunction affinity(CacheProjection<K, V> cache) {
+        return (CacheConsistentHashAffinityFunction)cache.cache().configuration().getAffinity();
     }
 
     /**
@@ -880,7 +880,7 @@ public final class GridTestUtils {
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
-            GridCache<K, V> cache = ((GridEx)g).cachex(cacheName);
+            Cache<K, V> cache = ((GridEx)g).cachex(cacheName);
 
             GridDhtPartitionTopology<?, ?> top = dht(cache).topology();
 

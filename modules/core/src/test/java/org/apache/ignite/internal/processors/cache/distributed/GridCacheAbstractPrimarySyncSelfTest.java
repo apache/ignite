@@ -27,10 +27,10 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test ensuring that PRIMARY_SYNC mode works correctly.
@@ -81,7 +81,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     /**
      * @return Distribution mode.
      */
-    protected abstract GridCacheDistributionMode distributionMode();
+    protected abstract CacheDistributionMode distributionMode();
 
     /**
      * @throws Exception If failed.
@@ -89,7 +89,7 @@ public abstract class GridCacheAbstractPrimarySyncSelfTest extends GridCommonAbs
     public void testPrimarySync() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
             for (int j = 0; j < GRID_CNT; j++) {
-                GridCache<Integer, Integer> cache = grid(j).cache(null);
+                Cache<Integer, Integer> cache = grid(j).cache(null);
 
                 if (cache.entry(i).primary()) {
                     try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {

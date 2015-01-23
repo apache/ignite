@@ -30,7 +30,7 @@ import java.io.*;
 import java.sql.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Statement test.
@@ -78,7 +78,7 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<String, Person> cache = grid(0).cache(null);
+        Cache<String, Person> cache = grid(0).cache(null);
 
         assert cache != null;
 
@@ -251,19 +251,19 @@ public class JdbcStatementSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** ID. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int id;
 
         /** First name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String firstName;
 
         /** Last name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String lastName;
 
         /** Age. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int age;
 
         /**

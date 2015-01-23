@@ -180,7 +180,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             assert pageSize != null;
             assert maxRows != null;
 
-            GridTuple4<GridCacheQueryFuture<List<?>>, Integer, Boolean, Collection<String>> t = null;
+            GridTuple4<CacheQueryFuture<List<?>>, Integer, Boolean, Collection<String>> t = null;
 
             Collection<String> tbls = null;
             Collection<String> cols;
@@ -192,9 +192,9 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 assert args != null;
                 assert futId == null;
 
-                GridCache<?, ?> cache = ((GridEx) ignite).cachex(cacheName);
+                Cache<?, ?> cache = ((GridEx) ignite).cachex(cacheName);
 
-                GridCacheQuery<List<?>> qry =
+                CacheQuery<List<?>> qry =
                     ((GridCacheQueriesEx<?, ?>)cache.queries()).createSqlFieldsQuery(sql, true);
 
                 qry.pageSize(pageSize);
@@ -204,7 +204,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 if (cache.configuration().getCacheMode() != PARTITIONED)
                     qry = qry.projection(ignite.cluster().forLocal());
 
-                GridCacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
+                CacheQueryFuture<List<?>> fut = qry.execute(args.toArray());
 
                 Collection<GridQueryFieldMetadata> meta = ((GridCacheQueryMetadataAware)fut).metadata().get();
 
@@ -243,7 +243,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             assert futId != null;
 
             if (t == null)
-                t = ignite.cluster().<UUID, GridTuple4<GridCacheQueryFuture<List<?>>, Integer, Boolean,
+                t = ignite.cluster().<UUID, GridTuple4<CacheQueryFuture<List<?>>, Integer, Boolean,
                     Collection<String>>>nodeLocalMap().get(futId);
 
             assert t != null;
@@ -252,7 +252,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
 
             Collection<List<Object>> fields = new LinkedList<>();
 
-            GridCacheQueryFuture<List<?>> fut = t.get1();
+            CacheQueryFuture<List<?>> fut = t.get1();
 
             int pageCnt = 0;
             int totalCnt = t.get2();
@@ -289,8 +289,8 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         private void scheduleRemoval(final UUID id) {
             SCHEDULER.schedule(new CAX() {
                 @Override public void applyx() {
-                    GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean> t =
-                        ignite.cluster().<UUID, GridTuple3<GridCacheQueryFuture<List<?>>, Integer, Boolean>>nodeLocalMap().get(id);
+                    GridTuple3<CacheQueryFuture<List<?>>, Integer, Boolean> t =
+                        ignite.cluster().<UUID, GridTuple3<CacheQueryFuture<List<?>>, Integer, Boolean>>nodeLocalMap().get(id);
 
                     if (t != null) {
                         // If future was accessed since last scheduling,

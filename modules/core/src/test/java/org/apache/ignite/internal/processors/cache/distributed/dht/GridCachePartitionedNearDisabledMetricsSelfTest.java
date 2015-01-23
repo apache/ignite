@@ -22,10 +22,10 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Metrics test for partitioned cache with disabled near cache.
@@ -76,7 +76,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
      * @throws Exception If failed.
      */
     public void _testGettingRemovedKey() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        Cache<Integer, Integer> cache = grid(0).cache(null);
 
         cache.put(0, 0);
 
@@ -103,7 +103,7 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         long misses = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            GridCacheMetrics m = grid(i).cache(null).metrics();
+            CacheMetrics m = grid(i).cache(null).metrics();
 
             writes += m.writes();
             reads += m.reads();

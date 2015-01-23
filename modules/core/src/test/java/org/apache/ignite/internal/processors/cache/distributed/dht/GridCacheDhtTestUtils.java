@@ -48,7 +48,7 @@ public class GridCacheDhtTestUtils {
      * @param cache Cache.
      * @return Dht cache.
      */
-    static <K, V> GridDhtCacheAdapter<K, V> dht(GridCacheProjection<K, V> cache) {
+    static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K, V> cache) {
         return ((GridNearCacheAdapter<K, V>)cache.<K, V>cache()).dht();
     }
 
@@ -59,7 +59,7 @@ public class GridCacheDhtTestUtils {
      */
     @SuppressWarnings({"UnusedAssignment", "unchecked"})
     static void prepareKeys(GridDhtCache<Integer, String> dht, int keyCnt) throws IgniteCheckedException {
-        GridCacheAffinityFunction aff = dht.context().config().getAffinity();
+        CacheAffinityFunction aff = dht.context().config().getAffinity();
 
         GridCacheConcurrentMap<Integer, String> cacheMap;
 
@@ -92,9 +92,9 @@ public class GridCacheDhtTestUtils {
     /**
      * @param cache Dht cache.
      */
-    static void printAffinityInfo(GridCache<?, ?> cache) {
-        GridCacheConsistentHashAffinityFunction aff =
-            (GridCacheConsistentHashAffinityFunction)cache.configuration().getAffinity();
+    static void printAffinityInfo(Cache<?, ?> cache) {
+        CacheConsistentHashAffinityFunction aff =
+            (CacheConsistentHashAffinityFunction)cache.configuration().getAffinity();
 
         System.out.println("Affinity info.");
         System.out.println("----------------------------------");
@@ -107,7 +107,7 @@ public class GridCacheDhtTestUtils {
      * @param idx Cache index
      */
     static void printDhtTopology(GridDhtCache<Integer, String> dht, int idx) {
-        final GridCacheAffinity<Integer> aff = dht.affinity();
+        final CacheAffinity<Integer> aff = dht.affinity();
 
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();
@@ -177,7 +177,7 @@ public class GridCacheDhtTestUtils {
 
         log.info("Checking balanced state of cache #" + idx);
 
-        GridCacheAffinity<Integer> aff = dht.affinity();
+        CacheAffinity<Integer> aff = dht.affinity();
 
         Ignite ignite = dht.context().grid();
         ClusterNode locNode = ignite.cluster().localNode();

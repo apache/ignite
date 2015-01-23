@@ -33,7 +33,7 @@ import java.util.*;
 
 import static java.sql.Types.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Metadata tests.
@@ -72,20 +72,20 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        Cache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<GridCacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        Cache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        personCache.put(new GridCacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        personCache.put(new GridCacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        personCache.put(new GridCacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
         Class.forName("org.apache.ignite.jdbc.IgniteJdbcDriver");
     }
@@ -284,15 +284,15 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int age;
 
         /** Organization ID. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int orgId;
 
         /**
@@ -317,11 +317,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int id;
 
         /** Name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String name;
 
         /**

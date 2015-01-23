@@ -33,7 +33,7 @@ public class ClientPutPortableTask extends TaskSingleJobSplitAdapter {
     @Override protected Object executeJob(int gridSize, Object arg) throws IgniteCheckedException {
         String cacheName = (String)arg;
 
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
+        Cache<Object, Object> cache = ignite.cache(cacheName);
 
         ClientTestPortable p = new ClientTestPortable(100, true);
 

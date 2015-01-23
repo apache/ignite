@@ -63,7 +63,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private GridCacheInternalKey key;
 
     /** Atomic stamped projection. */
-    private GridCacheProjection<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
+    private CacheProjection<GridCacheInternalKey, GridCacheAtomicStampedValue<T, S>> atomicView;
 
     /** Cache context. */
     private GridCacheContext ctx;
@@ -119,8 +119,8 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      * @param atomicView Atomic projection.
      * @param ctx Cache context.
      */
-    public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, GridCacheProjection<GridCacheInternalKey,
-        GridCacheAtomicStampedValue<T, S>> atomicView, GridCacheContext ctx) {
+    public GridCacheAtomicStampedImpl(String name, GridCacheInternalKey key, CacheProjection<GridCacheInternalKey,
+            GridCacheAtomicStampedValue<T, S>> atomicView, GridCacheContext ctx) {
         assert key != null;
         assert atomicView != null;
         assert ctx != null;
@@ -340,7 +340,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new GridCacheDataStructureRemovedException("Atomic stamped was removed from cache: " + name);
+            throw new CacheDataStructureRemovedException("Atomic stamped was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

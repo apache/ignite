@@ -29,7 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Test filtered put.
@@ -89,7 +89,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testFilteredPutCheckNear() throws Exception {
         doFilteredPut();
 
-        GridCache<Integer, Integer> c = cache();
+        Cache<Integer, Integer> c = cache();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }
@@ -100,7 +100,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testFilteredPutCheckDht() throws Exception {
         doFilteredPut();
 
-        GridCache<Integer, Integer> c =
+        Cache<Integer, Integer> c =
             ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
@@ -112,7 +112,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testPutAndRollbackCheckNear() throws Exception {
         doPutAndRollback();
 
-        GridCache<Integer, Integer> c = cache();
+        Cache<Integer, Integer> c = cache();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
     }
@@ -123,7 +123,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
     public void testPutAndRollbackCheckDht() throws Exception {
         doPutAndRollback();
 
-        GridCache<Integer, Integer> c =
+        Cache<Integer, Integer> c =
             ((GridNearCacheAdapter<Integer, Integer>)cache().<Integer, Integer>cache()).dht();
 
         assert c.entrySet().isEmpty() : "Actual size: " + c.entrySet().size();
@@ -133,7 +133,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void doFilteredPut() throws Exception {
-        GridCache<Integer, Integer> c = cache();
+        Cache<Integer, Integer> c = cache();
 
         try (IgniteTx tx = c.txStart()) {
             assert !c.putx(1, 1, F.<Integer, Integer>cacheHasPeekValue());
@@ -150,7 +150,7 @@ public class GridCachePartitionedFilteredPutSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void doPutAndRollback() throws Exception {
-        GridCache<Integer, Integer> c = cache();
+        Cache<Integer, Integer> c = cache();
 
         try (IgniteTx tx = c.txStart()) {
             assert c.putx(1, 1);

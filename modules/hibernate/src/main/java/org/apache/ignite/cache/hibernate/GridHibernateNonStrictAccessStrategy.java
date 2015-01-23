@@ -64,7 +64,7 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
      * @param cache Cache.
      * @param writeCtx Thread local instance used to track updates done during one Hibernate transaction.
      */
-    protected GridHibernateNonStrictAccessStrategy(Ignite ignite, GridCache<Object, Object> cache, ThreadLocal writeCtx) {
+    protected GridHibernateNonStrictAccessStrategy(Ignite ignite, Cache<Object, Object> cache, ThreadLocal writeCtx) {
         super(ignite, cache);
 
         this.writeCtx = (ThreadLocal<WriteContext>)writeCtx;
@@ -209,7 +209,7 @@ public class GridHibernateNonStrictAccessStrategy extends GridHibernateAccessStr
          * @param cache Cache.
          * @throws IgniteCheckedException If failed.
          */
-        void updateCache(GridCache<Object, Object> cache) throws IgniteCheckedException {
+        void updateCache(Cache<Object, Object> cache) throws IgniteCheckedException {
             if (!F.isEmpty(rmvs))
                 cache.removeAll(rmvs);
 

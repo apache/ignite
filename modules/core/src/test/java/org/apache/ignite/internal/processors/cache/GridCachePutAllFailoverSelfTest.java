@@ -39,8 +39,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests putAll() method along with failover and different configurations.
@@ -564,7 +564,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        GridCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
+        Cache<Object, Object> cache = workerNode.cache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.

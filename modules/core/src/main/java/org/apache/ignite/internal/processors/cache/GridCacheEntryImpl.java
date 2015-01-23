@@ -39,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 /**
  * Entry wrapper that never obscures obsolete entries from user.
  */
-public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externalizable {
+public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -91,7 +91,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjection<K, V> projection() {
+    @Override public CacheProjection<K, V> projection() {
         return proxy;
     }
 
@@ -276,7 +276,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -348,7 +348,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 
@@ -414,25 +414,25 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Nullable @Override public V set(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         // Should not pass dht entries as to near cache.
         return proxy.put(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         // Should not pass dht entries as to near cache.
         return proxy.putAsync(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public boolean setx(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         // Should not pass dht entries as to near cache.
         return proxy.putx(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxAsync(V val, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> setxAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         // Should not pass dht entries as to near cache.
         return proxy.putxAsync(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
@@ -524,22 +524,22 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Nullable @Override public V remove(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return proxy.remove(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return proxy.removeAsync(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public boolean removex(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return proxy.removex(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> removexAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return proxy.removexAsync(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
@@ -629,7 +629,7 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
                 // Delegate to near if dht.
                 if (e.isDht() && isNearEnabled(ctx)) {
-                    GridCache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
+                    Cache<K, V> near = ctx.isDht() ? ctx.dht().near() : ctx.near();
 
                     return near.isLockedByThread(key) || e.lockedByThread();
                 }
@@ -644,18 +644,18 @@ public class GridCacheEntryImpl<K, V> implements GridCacheEntry<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         return proxy.lock(key, timeout, filter);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return proxy.lockAsync(key, timeout, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         proxy.unlock(key, filter);
     }
 

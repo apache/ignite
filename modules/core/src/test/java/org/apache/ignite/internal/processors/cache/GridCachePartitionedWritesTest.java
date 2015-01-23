@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
@@ -25,12 +26,11 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Test that in {@link org.apache.ignite.cache.CacheMode#PARTITIONED} mode cache writes values only to the near cache store. <p/> This check
@@ -55,7 +55,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(CacheMode.PARTITIONED);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
@@ -91,7 +91,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
                 return null;
             }
 
-            @Override public void write(Cache.Entry<? extends Object, ? extends Object> entry) {
+            @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> entry) {
                 putCnt.incrementAndGet();
             }
 
@@ -102,7 +102,7 @@ public class GridCachePartitionedWritesTest extends GridCommonAbstractTest {
 
         startGrid();
 
-        GridCache<Integer, String> cache = cache();
+        Cache<Integer, String> cache = cache();
 
         try {
             cache.get(1);

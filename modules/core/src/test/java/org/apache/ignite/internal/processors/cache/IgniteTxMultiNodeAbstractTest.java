@@ -109,7 +109,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private static UUID primaryId(Ignite ignite, Object key) {
-        GridCacheAffinity aff = ignite.cache(null).cache().affinity();
+        CacheAffinity aff = ignite.cache(null).cache().affinity();
 
         Collection<ClusterNode> affNodes = aff.mapPartitionToPrimaryAndBackups(aff.partition(key));
 
@@ -157,7 +157,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private void onItemNear(boolean putCntr, Ignite ignite, String itemKey, int retry) throws IgniteCheckedException {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
         UUID itemPrimaryId = primaryId(ignite, itemKey);
@@ -209,7 +209,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private void onItemPrimary(boolean putCntr, Ignite ignite, String itemKey, int retry) throws IgniteCheckedException {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
         UUID itemPrimaryId = primaryId(ignite, itemKey);
@@ -262,7 +262,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private void onRemoveItemQueried(boolean putCntr, Ignite ignite, int retry) throws IgniteCheckedException {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
         UUID cntrPrimaryId = primaryId(ignite, RMVD_CNTR_KEY);
@@ -294,7 +294,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
             }
 
             while (true) {
-                GridCacheQuery<Map.Entry<String, Integer>> qry =
+                CacheQuery<Map.Entry<String, Integer>> qry =
                     cache.queries().createSqlQuery(Integer.class, "_key != 'RMVD_CNTR_KEY' and _val >= 0");
 
                 if (DEBUG)
@@ -352,7 +352,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
      */
     @SuppressWarnings("unchecked")
     private void onRemoveItemSimple(boolean putCntr, Ignite ignite, int retry) throws IgniteCheckedException {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
         UUID locId = ignite.cluster().localNode().id();
         UUID cntrPrimaryId = primaryId(ignite, RMVD_CNTR_KEY);
@@ -629,7 +629,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            Cache<String, Integer> cache = grid(0).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -640,7 +640,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int j = 0; j < GRID_CNT; j++)
                     assertEquals(i, grid(j).cache(null).get(String.valueOf(i)));
 
-            GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, " _val >= 0");
+            CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, " _val >= 0");
 
             Collection<Map.Entry<String, Integer>> entries = qry.execute().get();
 
@@ -670,7 +670,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         startGrids(GRID_CNT);
 
         try {
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            Cache<String, Integer> cache = grid(0).cache(null);
 
             cache.put(RMVD_CNTR_KEY, 0);
 
@@ -681,7 +681,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int j = 0; j < GRID_CNT; j++)
                     assertEquals(i, grid(j).cache(null).get(Integer.toString(i)));
 
-            GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, " _val >= 0");
+            CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, " _val >= 0");
 
             Collection<Map.Entry<String, Integer>> entries = qry.execute().get();
 
@@ -721,7 +721,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
         try {
             startGrids(GRID_CNT);
 
-            GridCache<String, Integer> cache = grid(0).cache(null);
+            Cache<String, Integer> cache = grid(0).cache(null);
 
             // Store counter.
             cache.put(RMVD_CNTR_KEY, 0);
@@ -737,7 +737,7 @@ public abstract class IgniteTxMultiNodeAbstractTest extends GridCommonAbstractTe
                 for (int j = 0; j < GRID_CNT; j++)
                     assertEquals(i, grid(j).cache(null).get(String.valueOf(i)));
 
-            GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0");
+            CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "_val >= 0");
 
             // Load all results.
             qry.keepAll(true);

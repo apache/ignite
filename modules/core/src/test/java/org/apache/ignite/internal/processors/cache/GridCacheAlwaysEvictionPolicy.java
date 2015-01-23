@@ -25,9 +25,9 @@ import org.apache.ignite.cache.eviction.*;
  * This eviction policy can be used whenever one cache is used to front another
  * and its size should be kept at {@code 0}.
  */
-public class GridCacheAlwaysEvictionPolicy<K, V> implements GridCacheEvictionPolicy<K, V> {
+public class GridCacheAlwaysEvictionPolicy<K, V> implements CacheEvictionPolicy<K, V> {
     /** {@inheritDoc} */
-    @Override public void onEntryAccessed(boolean rmv, GridCacheEntry<K, V> entry) {
+    @Override public void onEntryAccessed(boolean rmv, CacheEntry<K, V> entry) {
         if (!rmv && entry.isCached())
             entry.evict();
     }

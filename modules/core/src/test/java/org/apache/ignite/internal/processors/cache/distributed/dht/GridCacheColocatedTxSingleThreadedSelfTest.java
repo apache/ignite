@@ -27,7 +27,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Test txs in single-threaded mode for colocated cache.
@@ -50,12 +50,12 @@ public class GridCacheColocatedTxSingleThreadedSelfTest extends IgniteTxSingleTh
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+        cc.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         cc.setEvictionPolicy(null);
 
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_ASYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
 
         cc.setPreloadMode(NONE);
 

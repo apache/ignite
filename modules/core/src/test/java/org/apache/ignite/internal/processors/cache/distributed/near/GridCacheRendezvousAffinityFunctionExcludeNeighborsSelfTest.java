@@ -26,7 +26,7 @@ import org.apache.ignite.cache.affinity.rendezvous.*;
 public class GridCacheRendezvousAffinityFunctionExcludeNeighborsSelfTest extends
     GridCacheAffinityFunctionExcludeNeighborsAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAffinityFunction affinityFunction() {
-        return new GridCacheRendezvousAffinityFunction(true);
+    @Override protected CacheAffinityFunction affinityFunction() {
+        return new CacheRendezvousAffinityFunction(true);
     }
 }

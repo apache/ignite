@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 public class GridCachePartitionedNearDisabledBasicStoreMultiNodeSelfTest
     extends GridCachePartitionedBasicStoreMultiNodeSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode mode() {
+    @Override protected CacheDistributionMode mode() {
         return PARTITIONED_ONLY;
     }
 }

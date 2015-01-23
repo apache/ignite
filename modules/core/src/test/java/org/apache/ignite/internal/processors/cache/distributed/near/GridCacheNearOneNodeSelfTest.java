@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -27,13 +28,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -81,7 +81,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         cacheCfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
         cacheCfg.setReadThrough(true);
@@ -95,7 +95,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testRemove() throws Exception {
-        GridCache<Integer, String> near = cache();
+        Cache<Integer, String> near = cache();
 
         assertEquals("DHT entries: " + dht().entries(), 0, dht().size());
         assertEquals("Near entries: " + near().entries(), 0, near().size());
@@ -123,9 +123,9 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testReadThrough() throws Exception {
-        GridCache<Integer, String> near = cache();
+        Cache<Integer, String> near = cache();
 
-        GridCache<Integer, String> dht = dht();
+        Cache<Integer, String> dht = dht();
 
         String s = near.get(1);
 
@@ -153,7 +153,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ConstantConditions"})
     public void testOptimisticTxWriteThrough() throws Exception {
-        GridCache<Integer, String> near = cache();
+        Cache<Integer, String> near = cache();
         GridCacheAdapter<Integer, String> dht = dht();
 
         try (IgniteTx tx = cache().txStart(OPTIMISTIC, REPEATABLE_READ) ) {
@@ -279,7 +279,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testTransactionSingleGet() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        Cache<Integer, String> cache = cache();
 
         cache.put(1, "val1");
 
@@ -298,7 +298,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testTransactionSingleGetRemove() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        Cache<Integer, String> cache = cache();
 
         cache.put(1, "val1");
 
@@ -378,7 +378,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends String> e) {
             map.put(e.getKey(), e.getValue());
         }
 

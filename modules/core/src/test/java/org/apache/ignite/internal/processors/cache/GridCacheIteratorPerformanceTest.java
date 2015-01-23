@@ -84,16 +84,16 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @param prj Projection.
      * @param c Visitor closure.
      */
-    private void iterate(GridCacheProjection<Integer, Integer> prj, IgniteInClosure<GridCacheEntry<Integer, Integer>> c) {
+    private void iterate(CacheProjection<Integer, Integer> prj, IgniteInClosure<CacheEntry<Integer, Integer>> c) {
         prj.forEach(c);
     }
 
     /**
      * @return Empty filter.
      */
-    private IgniteInClosure<GridCacheEntry<Integer, Integer>> emptyFilter() {
-        return new CI1<GridCacheEntry<Integer, Integer>>() {
-            @Override public void apply(GridCacheEntry<Integer, Integer> e) {
+    private IgniteInClosure<CacheEntry<Integer, Integer>> emptyFilter() {
+        return new CI1<CacheEntry<Integer, Integer>>() {
+            @Override public void apply(CacheEntry<Integer, Integer> e) {
                 // No-op
             }
         };
@@ -103,14 +103,14 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSmall() throws Exception {
-        GridCacheProjection<Integer, Integer> cache = grid().cache(null);
+        CacheProjection<Integer, Integer> cache = grid().cache(null);
 
         for (int i = 0; i < SMALL_ENTRY_CNT; i++)
             assert cache.putx(i, i);
 
         assert cache.size() == SMALL_ENTRY_CNT;
 
-        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<CacheEntry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
         for (int i = 0; i < 10; i ++)
@@ -132,14 +132,14 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLarge() throws Exception {
-        GridCacheProjection<Integer, Integer> cache = grid().cache(null);
+        CacheProjection<Integer, Integer> cache = grid().cache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             assert cache.putx(i, i);
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
-        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<CacheEntry<Integer, Integer>> c = emptyFilter();
 
         // Warmup.
         for (int i = 0; i < 3; i++)
@@ -161,16 +161,16 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionFiltered() throws Exception {
-        GridCache<Integer, Integer> cache = grid().cache(null);
+        Cache<Integer, Integer> cache = grid().cache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             assert cache.putx(i, i);
 
         assert cache.size() == LARGE_ENTRY_CNT;
 
-        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = emptyFilter();
+        IgniteInClosure<CacheEntry<Integer, Integer>> c = emptyFilter();
 
-        GridCacheProjection<Integer, Integer> prj = cache.projection(new P2<Integer, Integer>() {
+        CacheProjection<Integer, Integer> prj = cache.projection(new P2<Integer, Integer>() {
             @Override public boolean apply(Integer key, Integer val) {
                 return val < SMALL_ENTRY_CNT;
             }
@@ -199,7 +199,7 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFiltered() throws Exception {
-        GridCache<Integer, Integer> cache = grid().cache(null);
+        Cache<Integer, Integer> cache = grid().cache(null);
 
         for (int i = 0; i < LARGE_ENTRY_CNT; i++)
             assert cache.putx(i, i);
@@ -208,8 +208,8 @@ public class GridCacheIteratorPerformanceTest extends GridCommonAbstractTest {
 
         final BoxedInt cnt = new BoxedInt();
 
-        IgniteInClosure<GridCacheEntry<Integer, Integer>> c = new CI1<GridCacheEntry<Integer, Integer>>() {
-            @Override public void apply(GridCacheEntry<Integer, Integer> t) {
+        IgniteInClosure<CacheEntry<Integer, Integer>> c = new CI1<CacheEntry<Integer, Integer>>() {
+            @Override public void apply(CacheEntry<Integer, Integer> t) {
                 if (t.peek() < SMALL_ENTRY_CNT)
                     cnt.increment();
             }

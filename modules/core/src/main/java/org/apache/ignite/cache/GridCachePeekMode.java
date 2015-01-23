@@ -23,9 +23,9 @@ import java.util.*;
 
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
- * {@code 'GridCacheProjection.peek(..)'} and {@code GridCacheEntry.peek(..)} methods,
- * such as {@link GridCacheProjection#peek(Object, Collection)},
- * {@link GridCacheEntry#peek()}, and others.
+ * {@code 'CacheProjection.peek(..)'} and {@code CacheEntry.peek(..)} methods,
+ * such as {@link CacheProjection#peek(Object, Collection)},
+ * {@link CacheEntry#peek()}, and others.
  * <p>
  * The following modes are supported:
  * <ul>

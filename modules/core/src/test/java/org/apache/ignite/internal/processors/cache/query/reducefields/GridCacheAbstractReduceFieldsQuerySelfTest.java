@@ -35,10 +35,10 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for reduce fields queries.
@@ -68,7 +68,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     /**
      * @return Distribution.
      */
-    protected GridCacheDistributionMode distributionMode() {
+    protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 
@@ -113,20 +113,20 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        Cache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        GridCache<GridCacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        Cache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new GridCacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new GridCacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new GridCacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        assert personCache.putx(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        assert personCache.putx(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        assert personCache.putx(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
     }
 
     /** {@inheritDoc} */
@@ -155,7 +155,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testNoDataInCache() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0)
+        CacheQuery<List<?>> qry = grid(0)
             .cache(null).queries().createSqlFieldsQuery("select age from Person where orgId = 999");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
@@ -167,7 +167,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQuery() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select age from Person");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -178,7 +178,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testAverageQueryWithArguments() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
             "select age from Person where orgId = ?");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer(), 1).get();
@@ -196,7 +196,7 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //        qry = qry.remoteKeyFilter(
 //            new GridPredicate<Object>() {
 //                @Override public boolean apply(Object e) {
-//                    return !"p2".equals(((GridCacheAffinityKey)e).key());
+//                    return !"p2".equals(((CacheAffinityKey)e).key());
 //                }
 //            }
 //        ).remoteValueFilter(
@@ -219,16 +219,16 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
      * @throws Exception If failed.
      */
     public void testOnProjection() throws Exception {
-        P2<GridCacheAffinityKey<String>, Person> p = new P2<GridCacheAffinityKey<String>, Person>() {
-            @Override public boolean apply(GridCacheAffinityKey<String> key, Person val) {
+        P2<CacheAffinityKey<String>, Person> p = new P2<CacheAffinityKey<String>, Person>() {
+            @Override public boolean apply(CacheAffinityKey<String> key, Person val) {
                 return val.orgId == 1;
             }
         };
 
-        GridCacheProjection<GridCacheAffinityKey<String>, Person> cachePrj =
-            grid(0).<GridCacheAffinityKey<String>, Person>cache(null).projection(p);
+        CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
+            grid(0).<CacheAffinityKey<String>, Person>cache(null).projection(p);
 
-        GridCacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
+        CacheQuery<List<?>> qry = cachePrj.queries().createSqlFieldsQuery("select age from Person");
 
         Collection<IgniteBiTuple<Integer, Integer>> res = qry.execute(new AverageRemoteReducer()).get();
 
@@ -239,16 +239,16 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
 //     * @throws Exception If failed.
 //     */
 //    public void testOnProjectionWithFilter() throws Exception {
-//        P2<GridCacheAffinityKey<String>, Person> p = new P2<GridCacheAffinityKey<String>, Person>() {
-//            @Override public boolean apply(GridCacheAffinityKey<String> key, Person val) {
+//        P2<CacheAffinityKey<String>, Person> p = new P2<CacheAffinityKey<String>, Person>() {
+//            @Override public boolean apply(CacheAffinityKey<String> key, Person val) {
 //                return val.orgId == 1;
 //            }
 //        };
 //
-//        GridCacheProjection<GridCacheAffinityKey<String>, Person> cachePrj =
-//            grid(0).<GridCacheAffinityKey<String>, Person>cache(null).projection(p);
+//        CacheProjection<CacheAffinityKey<String>, Person> cachePrj =
+//            grid(0).<CacheAffinityKey<String>, Person>cache(null).projection(p);
 //
-//        GridCacheReduceFieldsQuery<GridCacheAffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =
+//        GridCacheReduceFieldsQuery<CacheAffinityKey<String>, Person, GridBiTuple<Integer, Integer>, Integer> qry =
 //            cachePrj.queries().createReduceFieldsQuery("select age from Person");
 //
 //        qry = qry.remoteValueFilter(
@@ -279,15 +279,15 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private final int age;
 
         /** Organization ID. */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private final int orgId;
 
         /**
@@ -336,11 +336,11 @@ public abstract class GridCacheAbstractReduceFieldsQuerySelfTest extends GridCom
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int id;
 
         /** Name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String name;
 
         /**

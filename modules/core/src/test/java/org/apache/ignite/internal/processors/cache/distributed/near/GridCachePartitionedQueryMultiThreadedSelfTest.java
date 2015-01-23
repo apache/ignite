@@ -36,7 +36,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -72,9 +72,9 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         cc.setCacheMode(PARTITIONED);
 
         // Query should be executed without ongoing transactions.
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setBackups(0);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
@@ -101,7 +101,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
 
         // Clean up all caches.
         for (int i = 0; i < GRID_CNT; i++)
-            grid(i).cache(null).removeAll(F.<GridCacheEntry<Object, Object>>alwaysTrue());
+            grid(i).cache(null).removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
     }
 
     /** {@inheritDoc} */
@@ -128,7 +128,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final Person p3 = new Person("Mike", 1800, "Bachelor");
         final Person p4 = new Person("Bob", 1900, "Bachelor");
 
-        final GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        final Cache<UUID, Person> cache0 = grid(0).cache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -147,7 +147,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         IgniteFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    GridCacheQuery<Map.Entry<UUID, Person>> masters = cache0.queries().createFullTextQuery(
+                    CacheQuery<Map.Entry<UUID, Person>> masters = cache0.queries().createFullTextQuery(
                         Person.class, "Master");
 
                     Collection<Map.Entry<UUID, Person>> entries = masters.execute().get();
@@ -168,7 +168,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         IgniteFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    GridCacheQuery<Map.Entry<UUID, Person>> bachelors =
+                    CacheQuery<Map.Entry<UUID, Person>> bachelors =
                         cache0.queries().createSqlQuery(Person.class, "degree = 'Bachelor'");
 
                     Collection<Map.Entry<UUID, Person>> entries = bachelors.execute().get();
@@ -210,16 +210,16 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         private UUID id = UUID.randomUUID();
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String name;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int salary;
 
         /** */
-        @GridCacheQuerySqlField
-        @GridCacheQueryTextField
+        @CacheQuerySqlField
+        @CacheQueryTextField
         private String degree;
 
         /** Required by {@link Externalizable}. */

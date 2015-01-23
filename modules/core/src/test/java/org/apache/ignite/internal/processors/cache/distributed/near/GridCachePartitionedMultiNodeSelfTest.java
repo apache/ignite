@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.distributed.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Test cases for multi-threaded tests.
@@ -37,7 +37,7 @@ public class GridCachePartitionedMultiNodeSelfTest extends GridCacheMultiNodeAbs
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(2); // 1 + backups == gridCnt.
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 

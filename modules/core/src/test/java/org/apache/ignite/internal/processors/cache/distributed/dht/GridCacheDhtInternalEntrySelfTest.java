@@ -38,7 +38,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests for internal DHT entry.
@@ -67,10 +67,10 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setPreloadMode(SYNC);
-        cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 2));
+        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 2));
         cacheCfg.setBackups(0);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
         cacheCfg.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -97,7 +97,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode other = nodes.get2();
 
         // Create on non-primary node.
-        GridCacheAtomicLong l = grid(other).cache(null).dataStructures().atomicLong(ATOMIC_LONG_NAME, 1, true);
+        CacheAtomicLong l = grid(other).cache(null).dataStructures().atomicLong(ATOMIC_LONG_NAME, 1, true);
 
         assert l != null;
         assert l.get() == 1;
@@ -196,7 +196,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
      * @return Pair {primary node, some other node}.
      */
     private IgniteBiTuple<ClusterNode, ClusterNode> getNodes(String key) {
-        GridCacheAffinity<Object> aff = grid(0).cache(null).affinity();
+        CacheAffinity<Object> aff = grid(0).cache(null).affinity();
 
         ClusterNode primary = aff.mapKeyToNode(key);
 

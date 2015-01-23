@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -30,11 +31,10 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Load cache test.
@@ -86,9 +86,9 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             cache.localLoadCache(null, PUT_CNT);
 
-            GridCache<Integer, String> cache0 = cache(0);
+            Cache<Integer, String> cache0 = cache(0);
 
-            GridCacheAffinity aff = cache0.affinity();
+            CacheAffinity aff = cache0.affinity();
 
             int[] parts = aff.allPartitions(grid(0).localNode());
 
@@ -103,7 +103,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
 
             int cnt2 = 0;
 
-            for (GridCacheEntry<Integer, String> e : cache0.entrySet()) {
+            for (CacheEntry<Integer, String> e : cache0.entrySet()) {
                 assert e.primary() || e.backup();
 
                 cnt2++;
@@ -143,7 +143,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends String> e) {
             // No-op.
         }
 

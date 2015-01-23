@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -64,13 +64,13 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         int size = 10;
 
@@ -101,8 +101,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
-        GridCache<String, Integer> primary = fullCache();
+        Cache<String, Integer> nearCache = cache();
+        Cache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -174,8 +174,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testClearKeys() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
-        GridCache<String, Integer> primary = fullCache();
+        Cache<String, Integer> nearCache = cache();
+        Cache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -224,7 +224,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -331,7 +331,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testPeekExpired() throws Exception {
-        GridCache<String, Integer> c = cache();
+        Cache<String, Integer> c = cache();
 
         String key = primaryKeysForCache(c, 1).get(0);
 
@@ -355,7 +355,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testEvict() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         List<String> keys = primaryKeysForCache(cache, 2);
 

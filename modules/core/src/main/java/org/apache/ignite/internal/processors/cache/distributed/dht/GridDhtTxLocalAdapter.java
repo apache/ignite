@@ -615,7 +615,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
         final boolean read,
         final Set<K> skipped,
         final long accessTtl,
-        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter) {
         if (log.isDebugEnabled())
             log.debug("Before acquiring transaction lock on keys [passedKeys=" + passedKeys + ", skipped=" +
                 skipped + ']');

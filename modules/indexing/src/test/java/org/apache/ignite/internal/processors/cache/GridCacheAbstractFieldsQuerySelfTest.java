@@ -39,7 +39,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests for fields queries.
@@ -90,10 +90,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         cache.setName(name);
         cache.setCacheMode(cacheMode());
         cache.setAtomicityMode(atomicityMode());
-        cache.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cache.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cache.setPreloadMode(SYNC);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
         qcfg.setIndexPrimitiveValue(true);
@@ -126,35 +126,35 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        Cache<String, Organization> orgCache = grid(0).cache(null);
 
         assert orgCache != null;
 
         assert orgCache.putx("o1", new Organization(1, "A"));
         assert orgCache.putx("o2", new Organization(2, "B"));
 
-        GridCache<GridCacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        Cache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new GridCacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new GridCacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new GridCacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        assert personCache.putx(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        assert personCache.putx(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        assert personCache.putx(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        GridCache<String, String> strCache = grid(0).cache(null);
+        Cache<String, String> strCache = grid(0).cache(null);
 
         assert strCache != null;
 
         assert strCache.putx("key", "val");
 
-        GridCache<Integer, Integer> intCache = grid(0).cache(null);
+        Cache<Integer, Integer> intCache = grid(0).cache(null);
 
         assert intCache != null;
 
         for (int i = 0; i < 200; i++)
             assert intCache.putx(i, i);
 
-        GridCache<Integer, Integer> namedCache = grid(0).cache(CACHE);
+        Cache<Integer, Integer> namedCache = grid(0).cache(CACHE);
 
         for (int i = 0; i < 200; i++)
             assert namedCache.putx(i, i);
@@ -202,7 +202,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
                 assert types.contains("String");
                 assert types.contains("Integer");
 
-                assert GridCacheAffinityKey.class.getName().equals(meta.keyClass("Person"));
+                assert CacheAffinityKey.class.getName().equals(meta.keyClass("Person"));
                 assert String.class.getName().equals(meta.keyClass("Organization"));
                 assert String.class.getName().equals(meta.keyClass("String"));
 
@@ -214,7 +214,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
                 assert fields != null;
                 assert fields.size() == 5;
-                assert GridCacheAffinityKey.class.getName().equals(fields.get("_KEY"));
+                assert CacheAffinityKey.class.getName().equals(fields.get("_KEY"));
                 assert Person.class.getName().equals(fields.get("_VAL"));
                 assert String.class.getName().equals(fields.get("NAME"));
                 assert int.class.getName().equals(fields.get("AGE"));
@@ -265,10 +265,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecute() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
             "select _KEY, name, age from Person");
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         assert metadata(fut) == null;
 
@@ -292,17 +292,17 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             assert row.size() == 3;
 
             if (cnt == 0) {
-                assert new GridCacheAffinityKey<>("p1", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p1", "o1").equals(row.get(0));
                 assert "John White".equals(row.get(1));
                 assert row.get(2).equals(25);
             }
             else if (cnt == 1) {
-                assert new GridCacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
                 assert "Joe Black".equals(row.get(1));
                 assert row.get(2).equals(35);
             }
             if (cnt == 2) {
-                assert new GridCacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
                 assert "Mike Green".equals(row.get(1));
                 assert row.get(2).equals(40);
             }
@@ -315,10 +315,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecuteWithArguments() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
             "select _KEY, name, age from Person where age > ?");
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute(30);
+        CacheQueryFuture<List<?>> fut = qry.execute(30);
 
         assert metadata(fut) == null;
 
@@ -342,12 +342,12 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             assert row.size() == 3;
 
             if (cnt == 0) {
-                assert new GridCacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
                 assert "Joe Black".equals(row.get(1));
                 assert row.get(2).equals(35);
             }
             else if (cnt == 1) {
-                assert new GridCacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
                 assert "Mike Green".equals(row.get(1));
                 assert row.get(2).equals(40);
             }
@@ -360,12 +360,12 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecuteWithMetaData() throws Exception {
-        GridCacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
             "select p._KEY, p.name, p.age, o.name " +
                 "from Person p, Organization o where p.orgId = o.id",
             true);
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         List<GridQueryFieldMetadata> meta = metadata(fut);
 
@@ -435,19 +435,19 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             assert row.size() == 4;
 
             if (cnt == 0) {
-                assert new GridCacheAffinityKey<>("p1", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p1", "o1").equals(row.get(0));
                 assert "John White".equals(row.get(1));
                 assert row.get(2).equals(25);
                 assert "A".equals(row.get(3));
             }
             else if (cnt == 1) {
-                assert new GridCacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
                 assert "Joe Black".equals(row.get(1));
                 assert row.get(2).equals(35);
                 assert "A".equals(row.get(3));
             }
             if (cnt == 2) {
-                assert new GridCacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
                 assert "Mike Green".equals(row.get(1));
                 assert row.get(2).equals(40);
                 assert "B".equals(row.get(3));
@@ -461,11 +461,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testSelectAllJoined() throws Exception {
-        GridCacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
             "select * from Person p, Organization o where p.orgId = o.id",
             true);
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         List<GridQueryFieldMetadata> meta = metadata(fut);
 
@@ -585,7 +585,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             assert row.size() == 9;
 
             if (cnt == 0) {
-                assert new GridCacheAffinityKey<>("p1", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p1", "o1").equals(row.get(0));
                 assert Person.class.getName().equals(row.get(1).getClass().getName());
                 assert "John White".equals(row.get(2));
                 assert row.get(3).equals(25);
@@ -596,7 +596,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
                 assert "A".equals(row.get(8));
             }
             else if (cnt == 1) {
-                assert new GridCacheAffinityKey<>("p2", "o1").equals(row.get(0));
+                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
                 assert Person.class.getName().equals(row.get(1).getClass().getName());
                 assert "Joe Black".equals(row.get(2));
                 assert row.get(3).equals(35);
@@ -607,7 +607,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
                 assert "A".equals(row.get(8));
             }
             if (cnt == 2) {
-                assert new GridCacheAffinityKey<>("p3", "o2").equals(row.get(0));
+                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
                 assert Person.class.getName().equals(row.get(1).getClass().getName());
                 assert "Mike Green".equals(row.get(2));
                 assert row.get(3).equals(40);
@@ -626,10 +626,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testEmptyResult() throws Exception {
-        GridCacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
             "select name from Person where age = 0", true);
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         assert fut != null;
 
@@ -654,7 +654,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select * from String");
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select * from String");
 
         Collection<List<?>> res = qry.execute().get();
 
@@ -671,11 +671,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testQueryIntegersWithJoin() throws Exception {
-        GridCacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
+        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
             "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100", true)
             .projection(grid(0));
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         List<GridQueryFieldMetadata> meta = metadata(fut);
 
@@ -739,7 +739,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testPagination() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select * from Integer");
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select * from Integer");
 
         qry.pageSize(20);
 
@@ -761,12 +761,12 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testNamedCache() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(CACHE);
+        Cache<Integer, Integer> cache = grid(0).cache(CACHE);
 
         for (int i = 0; i < 200; i++)
             assert cache.putx(i, i);
 
-        GridCacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0));
+        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0));
 
         Collection<List<?>> res = qry.execute().get();
 
@@ -776,7 +776,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void _testNoPrimitives() throws Exception { // TODO
-        GridCache<Object, Object> cache = grid(0).cache(CACHE_NO_PRIMITIVES);
+        Cache<Object, Object> cache = grid(0).cache(CACHE_NO_PRIMITIVES);
 
         assert cache.putx("key", "val");
 
@@ -786,16 +786,16 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         assert F.first(metas).types().isEmpty() : "Non empty types: " + F.first(metas).types();
 
-        GridCacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from String");
+        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from String");
 
         assert qry.execute().get().isEmpty();
 
-        cache.removeAll(F.<GridCacheEntry<Object, Object>>alwaysTrue());
+        cache.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
     }
 
     /** @throws Exception If failed. */
     public void _testComplexKeys() throws Exception { // TODO
-        GridCache<PersonKey, Person> cache = grid(0).cache(CACHE_COMPLEX_KEYS);
+        Cache<PersonKey, Person> cache = grid(0).cache(CACHE_COMPLEX_KEYS);
 
         UUID id = UUID.randomUUID();
 
@@ -880,7 +880,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             }
         }
 
-        cache.removeAll(F.<GridCacheEntry<PersonKey, Person>>alwaysTrue());
+        cache.removeAll(F.<CacheEntry<PersonKey, Person>>alwaysTrue());
     }
 
     /** @throws Exception If failed. */
@@ -898,14 +898,14 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
-        GridCacheQuery<List<?>> q = grid(0).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
+        CacheQuery<List<?>> q = grid(0).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
             "Integer")
             .projection(grid(0));
 
         q.pageSize(10);
         q.keepAll(false);
 
-        GridCacheQueryFuture<List<?>> f = q.execute();
+        CacheQueryFuture<List<?>> f = q.execute();
 
         int cnt = 0;
 
@@ -931,13 +931,13 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testPaginationIteratorKeepAll() throws Exception {
-        GridCacheQuery<List<?>> q = grid(0).cache(null).queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> q = grid(0).cache(null).queries().createSqlFieldsQuery(
             "select _key, _val from Integer");
 
         q.pageSize(10);
         q.keepAll(true);
 
-        GridCacheQueryFuture<List<?>> f = q.execute();
+        CacheQueryFuture<List<?>> f = q.execute();
 
         int cnt = 0;
 
@@ -990,13 +990,13 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void testPaginationGet(@Nullable String cacheName) throws Exception {
-        GridCacheQuery<List<?>> q = grid(0).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
+        CacheQuery<List<?>> q = grid(0).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
             "Integer");
 
         q.pageSize(10);
         q.keepAll(true);
 
-        GridCacheQueryFuture<List<?>> f = q.execute();
+        CacheQueryFuture<List<?>> f = q.execute();
 
         List<List<?>> list = new ArrayList<>(f.get());
 
@@ -1018,7 +1018,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testEmptyGrid() throws Exception {
-        GridCacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select name, " +
+        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select name, " +
             "age from Person where age = 25");
 
         List<?> res = F.first(qry.execute().get());
@@ -1037,9 +1037,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             }
         };
 
-        GridCacheProjection<Integer, Integer> cachePrj = grid(0).<Integer, Integer>cache(null).projection(p);
+        CacheProjection<Integer, Integer> cachePrj = grid(0).<Integer, Integer>cache(null).projection(p);
 
-        GridCacheQuery<List<?>> q = cachePrj.queries()
+        CacheQuery<List<?>> q = cachePrj.queries()
             .createSqlFieldsQuery("select _key, _val from Integer where _key >= 20 and _val < 40");
 
         List<List<?>> list = new ArrayList<>(q.execute().get());
@@ -1097,7 +1097,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @return Metadata.
      * @throws IgniteCheckedException In case of error.
      */
-    private List<GridQueryFieldMetadata> metadata(GridCacheQueryFuture<List<?>> fut) throws IgniteCheckedException {
+    private List<GridQueryFieldMetadata> metadata(CacheQueryFuture<List<?>> fut) throws IgniteCheckedException {
         assert fut != null;
 
         return ((GridCacheQueryMetadataAware)fut).metadata().get();
@@ -1167,7 +1167,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     @SuppressWarnings("UnusedDeclaration")
     private static class PersonKey implements Serializable {
         /** ID. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final UUID id;
 
         /** @param id ID. */
@@ -1203,15 +1203,15 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {
         /** Name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String name;
 
         /** Age. */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private final int age;
 
         /** Organization ID. */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private final int orgId;
 
         /**
@@ -1260,11 +1260,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     @SuppressWarnings("UnusedDeclaration")
     private static class Organization implements Serializable {
         /** ID. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int id;
 
         /** Name. */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String name;
 
         /**

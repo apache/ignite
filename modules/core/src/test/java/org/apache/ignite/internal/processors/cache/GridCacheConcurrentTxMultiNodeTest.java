@@ -45,12 +45,12 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -105,7 +105,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             cc.setCacheMode(mode);
             cc.setDistributionMode(PARTITIONED_ONLY);
-            cc.setEvictionPolicy(new GridCacheLruEvictionPolicy(1000));
+            cc.setEvictionPolicy(new CacheLruEvictionPolicy(1000));
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
             cc.setSwapEnabled(false);
@@ -419,7 +419,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         /**
          * @return Terminal ID.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public String terminalId() {
             return message().getTerminalId();
         }
@@ -492,7 +492,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             t.set1(System.currentTimeMillis());
             t.set2(0L);
             t.set4(xid);
-            t.set5(key == null ? null : new GridCacheAffinityKey<String>(key, termId) {});
+            t.set5(key == null ? null : new CacheAffinityKey<String>(key, termId) {});
         }
 
         /**
@@ -524,7 +524,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             if (lastPrint.get() + PRINT_FREQ < now && lastPrint.setIfGreater(now)) {
                 Map<String, Long> maxes = new HashMap<>();
 
-                Set<GridCacheAffinityKey<String>> keys = null;
+                Set<CacheAffinityKey<String>> keys = null;
 
                 for (Map.Entry<Thread, ConcurrentMap<String, T5<Long, Long, Long, IgniteUuid, Object>>> e1 : timers.entrySet()) {
                     for (Map.Entry<String, T5<Long, Long, Long, IgniteUuid, Object>> e2 : e1.getValue().entrySet()) {
@@ -547,7 +547,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                                 ", duration=" + duration + ", ongoing=" + (end == 0) +
                                 ", thread=" + e1.getKey().getName() + ", xid=" + xid + ']');
 
-                            GridCacheAffinityKey<String> key = (GridCacheAffinityKey<String>)t.get5();
+                            CacheAffinityKey<String> key = (CacheAffinityKey<String>)t.get5();
 
                             if (key != null) {
                                 if (keys == null)
@@ -569,12 +569,12 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                 if (!F.isEmpty(keys)) {
                     for (Ignite g : G.allGrids()) {
                         if (g.name().contains("server")) {
-                            GridNearCacheAdapter<GridCacheAffinityKey<String>, Object> near =
-                                (GridNearCacheAdapter<GridCacheAffinityKey<String>, Object>)((GridKernal)g).
-                                    <GridCacheAffinityKey<String>, Object>internalCache();
-                            GridDhtCacheAdapter<GridCacheAffinityKey<String>, Object> dht = near.dht();
+                            GridNearCacheAdapter<CacheAffinityKey<String>, Object> near =
+                                (GridNearCacheAdapter<CacheAffinityKey<String>, Object>)((GridKernal)g).
+                                    <CacheAffinityKey<String>, Object>internalCache();
+                            GridDhtCacheAdapter<CacheAffinityKey<String>, Object> dht = near.dht();
 
-                            for (GridCacheAffinityKey<String> k : keys) {
+                            for (CacheAffinityKey<String> k : keys) {
                                 GridNearCacheEntry<?, ?> nearEntry = near.peekExx(k);
                                 GridDhtCacheEntry<?, ?> dhtEntry = dht.peekExx(k);
 
@@ -611,7 +611,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          *
          */
         private void doWork()  {
-            GridCache cache = ignite.cache(null);
+            Cache cache = ignite.cache(null);
 
             Session ses = new Session(terminalId());
 
@@ -664,7 +664,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private long getId() throws IgniteCheckedException {
-            GridCacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
+            CacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
             return seq.incrementAndGet();
         }
 
@@ -673,9 +673,9 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @return Request.
          */
         private Request findRequestWithMessageId(Long msgId) {
-            GridCacheProjection<Object, Request> cache = ignite.cache(null).projection(Object.class, Request.class);
+            CacheProjection<Object, Request> cache = ignite.cache(null).projection(Object.class, Request.class);
 
-            GridCacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
+            CacheQuery<Map.Entry<Object, Request>> qry = cache.queries().createSqlQuery(
                 Request.class, "messageId = ?");
 
             try {
@@ -703,11 +703,11 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private void put(Object o, String cacheKey, String terminalId) throws IgniteCheckedException {
-            GridCache<GridCacheAffinityKey<String>, Object> cache = ignite.cache(null);
+            Cache<CacheAffinityKey<String>, Object> cache = ignite.cache(null);
 
-            GridCacheAffinityKey<String> affinityKey = new GridCacheAffinityKey<>(cacheKey, terminalId);
+            CacheAffinityKey<String> affinityKey = new CacheAffinityKey<>(cacheKey, terminalId);
 
-            GridCacheEntry<GridCacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
+            CacheEntry<CacheAffinityKey<String>, Object> entry = cache.entry(affinityKey);
 
             entry.setx(o);
         }
@@ -720,7 +720,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          */
         @SuppressWarnings({"RedundantCast"})
         private <T> Object get(String cacheKey, String terminalId) throws IgniteCheckedException {
-            Object key = new GridCacheAffinityKey<>(cacheKey, terminalId);
+            Object key = new CacheAffinityKey<>(cacheKey, terminalId);
 
             return (T) ignite.cache(null).get(key);
         }
@@ -729,21 +729,21 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /**
      *
      */
-    @GridCacheQueryGroupIndex(name = "msg_tx", unique = true)
+    @CacheQueryGroupIndex(name = "msg_tx", unique = true)
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Request implements Serializable {
         /** */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private Long id;
 
         /** */
-        @GridCacheQuerySqlField(name = "messageId")
-        @GridCacheQuerySqlField.Group(name = "msg_tx", order = 3)
+        @CacheQuerySqlField(name = "messageId")
+        @CacheQuerySqlField.Group(name = "msg_tx", order = 3)
         private long msgId;
 
         /** */
-        @GridCacheQuerySqlField(name = "transactionId")
-        @GridCacheQuerySqlField.Group(name = "msg_tx", order = 1)
+        @CacheQuerySqlField(name = "transactionId")
+        @CacheQuerySqlField.Group(name = "msg_tx", order = 1)
         private long txId;
 
         /**
@@ -774,15 +774,15 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings({"UnusedDeclaration"})
     private static class Response implements Serializable {
         /** */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private Long id;
 
         /** */
-        @GridCacheQuerySqlField(name = "messageId")
+        @CacheQuerySqlField(name = "messageId")
         private long msgId;
 
         /** */
-        @GridCacheQuerySqlField(name = "transactionId")
+        @CacheQuerySqlField(name = "transactionId")
         private long txId;
 
         /**
@@ -805,7 +805,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class Session implements Serializable {
         /** */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private String terminalId;
 
         /**

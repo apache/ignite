@@ -63,7 +63,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     private final AtomicLong seq = new AtomicLong();
 
     /** Continues queries created for cache event listeners. */
-    private final ConcurrentMap<CacheEntryListenerConfiguration, GridCacheContinuousQuery<K, V>> lsnrQrys =
+    private final ConcurrentMap<CacheEntryListenerConfiguration, CacheContinuousQuery<K, V>> lsnrQrys =
         new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      * @param prjPred Projection predicate.
      * @return New continuous query.
      */
-    public GridCacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<GridCacheEntry<K, V>> prjPred) {
+    public CacheContinuousQuery<K, V> createQuery(@Nullable IgnitePredicate<CacheEntry<K, V>> prjPred) {
         Object topic = TOPIC_CACHE.topic(topicPrefix, cctx.localNodeId(), seq.getAndIncrement());
 
         return new GridCacheContinuousQueryAdapter<>(cctx, topic, prjPred);
@@ -243,7 +243,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
             qry = (GridCacheContinuousQueryAdapter<K, V>)cctx.cache().queries().createContinuousQuery();
 
-            GridCacheContinuousQuery<K, V> old = lsnrQrys.putIfAbsent(lsnrCfg, qry);
+            CacheContinuousQuery<K, V> old = lsnrQrys.putIfAbsent(lsnrCfg, qry);
 
             if (old != null)
                 throw new IllegalArgumentException("Listener is already registered for configuration: " + lsnrCfg);
@@ -284,7 +284,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     public void deregisterCacheEntryListener(CacheEntryListenerConfiguration lsnrCfg) throws IgniteCheckedException {
         A.notNull(lsnrCfg, "lsnrCfg");
 
-        GridCacheContinuousQuery<K, V> qry = lsnrQrys.remove(lsnrCfg);
+        CacheContinuousQuery<K, V> qry = lsnrQrys.remove(lsnrCfg);
 
         if (qry != null) {
             cctx.config().removeCacheEntryListenerConfiguration(lsnrCfg);
@@ -373,7 +373,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
                 cctx.projectionPerCall(cctx.cache().<K, V>keepPortable0());
             }
 
-            Set<GridCacheEntry<K, V>> entries;
+            Set<CacheEntry<K, V>> entries;
 
             if (cctx.isReplicated())
                 entries = internal ? cctx.cache().entrySetx() :
@@ -384,7 +384,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
             boolean evt = !internal && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
-            for (GridCacheEntry<K, V> e : entries) {
+            for (CacheEntry<K, V> e : entries) {
                 GridCacheContinuousQueryEntry<K, V> qryEntry = new GridCacheContinuousQueryEntry<>(cctx,
                     e,
                     e.getKey(),
@@ -505,7 +505,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      *
      */
     static class EntryListenerFilter<K1, V1> implements
-        IgnitePredicate<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K1, V1>>, Externalizable {
+        IgnitePredicate<CacheContinuousQueryEntry<K1, V1>>, Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -579,7 +579,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override public boolean apply(org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K1, V1> entry) {
+        @Override public boolean apply(CacheContinuousQueryEntry<K1, V1> entry) {
             try {
                 EventType evtType = (((GridCacheContinuousQueryEntry)entry).eventType());
 
@@ -669,7 +669,7 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
      *
      */
     private class EntryListenerCallback implements
-        IgniteBiPredicate<UUID, Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>>> {
+        IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<K, V>>> {
         /** */
         private final IgniteCacheProxy<K, V> cache;
 
@@ -729,8 +729,8 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public boolean apply(UUID uuid,
-            Collection<org.apache.ignite.cache.query.GridCacheContinuousQueryEntry<K, V>> entries) {
-            for (org.apache.ignite.cache.query.GridCacheContinuousQueryEntry entry : entries) {
+            Collection<CacheContinuousQueryEntry<K, V>> entries) {
+            for (CacheContinuousQueryEntry entry : entries) {
                 try {
                     EventType evtType = (((GridCacheContinuousQueryEntry)entry).eventType());
 

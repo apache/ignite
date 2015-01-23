@@ -301,7 +301,7 @@ public abstract class IgniteCacheNoReadThroughAbstractTest extends IgniteCacheAb
      * @throws Exception If failed.
      */
     protected Collection<Integer> keys() throws Exception {
-        GridCache<Integer, Object> cache = cache(0);
+        Cache<Integer, Object> cache = cache(0);
 
         ArrayList<Integer> keys = new ArrayList<>();
 

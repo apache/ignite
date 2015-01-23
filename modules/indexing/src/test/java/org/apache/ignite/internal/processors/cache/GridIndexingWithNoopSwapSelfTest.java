@@ -33,7 +33,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * GG-4368
@@ -60,16 +60,16 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setPreloadMode(SYNC);
         cc.setSwapEnabled(true);
-        cc.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
+        cc.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
         cc.setEvictNearSynchronized(false);
-        cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy(1000));
+        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(1000));
         cc.setBackups(1);
         cc.setAtomicityMode(TRANSACTIONAL);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -94,7 +94,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testQuery() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
+        Cache<Integer, ObjectValue> cache = ignite.cache(null);
 
         int cnt = 10;
 
@@ -107,7 +107,7 @@ public class GridIndexingWithNoopSwapSelfTest extends GridCommonAbstractTest {
             cache.evict(i); // Swap.
         }
 
-        GridCacheQuery<Map.Entry<Integer, ObjectValue>> qry =
+        CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
             cache.queries().createSqlQuery(ObjectValue.class, "intVal >= ? order by intVal");
 
         qry.enableDedup(true);

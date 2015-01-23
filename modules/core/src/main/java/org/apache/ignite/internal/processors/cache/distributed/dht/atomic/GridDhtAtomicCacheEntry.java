@@ -47,7 +47,7 @@ public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrap(boolean prjAware) {
+    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
         GridCacheProjectionImpl<K, V> prjPerCall = cctx.projectionPerCall();
 
         if (prjPerCall != null && prjAware)
@@ -62,7 +62,7 @@ public class GridDhtAtomicCacheEntry<K, V> extends GridDhtCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
+    @Override public CacheEntry<K, V> wrapFilterLocked() throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         return new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(true), this);

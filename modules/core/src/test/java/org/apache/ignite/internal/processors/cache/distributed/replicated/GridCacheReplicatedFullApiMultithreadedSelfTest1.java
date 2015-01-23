@@ -79,7 +79,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testA() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 8;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
@@ -168,7 +168,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testB() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 8;
 //
 //                Map<String, Integer> pairs = commonPairs(size);
@@ -266,13 +266,13 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testC() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 4;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
 //
-//                GridPredicate<GridCacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<GridCacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                for (Map.Entry<String, Integer> pair : pairs.entrySet()) {
 //                    assert !cache.containsKey(pair.getKey(), hasPrd);
@@ -328,15 +328,15 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testD() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 4;
 //
 //                Map<String, Integer> pairs = commonPairs(size);
 //
 //                GridCacheTx tx = cache.txStart();
 //
-//                GridPredicate<GridCacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<GridCacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                for (Map.Entry<String, Integer> pair : pairs.entrySet()) {
 //                    assert !cache.containsKey(pair.getKey(), hasPrd);
@@ -399,13 +399,13 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testE() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 5;
 //
 //                final Map<String, Integer> pairs = threadPairs(size, idx);
 //
-//                P1<GridCacheEntry<String, Integer>> p = new P1<GridCacheEntry<String, Integer>>() {
-//                    @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+//                P1<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
+//                    @Override public boolean apply(CacheEntry<String, Integer> e) {
 //                        String key = e.getKey();
 //
 //                        Integer val = pairs.get(key);
@@ -471,13 +471,13 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testF() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 5;
 //
 //                final Map<String, Integer> pairs = commonPairs(size);
 //
-//                P1<GridCacheEntry<String, Integer>> p = new P1<GridCacheEntry<String, Integer>>() {
-//                    @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+//                P1<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
+//                    @Override public boolean apply(CacheEntry<String, Integer> e) {
 //                        return pairs.get(e.getKey()).equals(e.peek());
 //                    }
 //                };
@@ -545,13 +545,13 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testG() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 5;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
 //
-//                GridPredicate<GridCacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<GridCacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                Collection<String> keys = pairs.keySet();
 //                Collection<Integer> vals = pairs.values();
@@ -630,13 +630,13 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //    public void testH() throws Exception {
 //        // Tests put.
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 5;
 //
 //                Map<String, Integer> pairs = commonPairs(size);
 //
-//                GridPredicate<GridCacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
-//                GridPredicate<GridCacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> noPrd = F.cacheNoPeekValue();
+//                GridPredicate<CacheEntry<String, Integer>> hasPrd = F.cacheHasPeekValue();
 //
 //                Collection<String> keys = pairs.keySet();
 //                Collection<Integer> vals = pairs.values();
@@ -720,7 +720,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testI() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 6;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
@@ -783,7 +783,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testJ() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 6;
 //
 //                Map<String, Integer> pairs = commonPairs(size);
@@ -852,7 +852,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testK() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 6;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
@@ -929,7 +929,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testL() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 6;
 //
 //                Map<String, Integer> pairs = commonPairs(size);
@@ -1009,7 +1009,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     * @throws Exception If test failed.
 //     */
 //    public void testM() throws Exception {
-//        GridCache<String, Integer> cache = cache();
+//        Cache<String, Integer> cache = cache();
 //
 //        int size = 10;
 //
@@ -1020,8 +1020,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //        final int min = Collections.min(vals);
 //
-//        final GridPredicate<GridCacheEntry<String, Integer>> p = new P1<GridCacheEntry<String, Integer>>() {
-//            @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+//        final GridPredicate<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
+//            @Override public boolean apply(CacheEntry<String, Integer> e) {
 //                Integer val = e.peek();
 //
 //                return val != null && val >= min;
@@ -1035,7 +1035,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //        waitForEventCount(F.t(EVT_CACHE_OBJECT_PUT, size));
 //
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                assert cache.forAll(p);
 //                assert cache.forAllAsync(p).get();
 //
@@ -1055,7 +1055,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testN() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 10;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
@@ -1065,8 +1065,8 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //                final int min = Collections.min(vals);
 //
-//                GridPredicate<GridCacheEntry<String, Integer>> p = new P1<GridCacheEntry<String, Integer>>() {
-//                    @Override public boolean apply(GridCacheEntry<String, Integer> e) {
+//                GridPredicate<CacheEntry<String, Integer>> p = new P1<CacheEntry<String, Integer>>() {
+//                    @Override public boolean apply(CacheEntry<String, Integer> e) {
 //                        Integer val = e.peek();
 //
 //                        return val != null && val >= min;
@@ -1099,7 +1099,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     * @throws Exception If test failed.
 //     */
 //    public void testO() throws Exception {
-//        GridCache<String, Integer> cache = cache();
+//        Cache<String, Integer> cache = cache();
 //
 //        GridCacheClosure c = new GridCacheClosure();
 //
@@ -1120,7 +1120,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //        waitForEventCount(F.t(EVT_CACHE_OBJECT_PUT, size));
 //
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                GridCacheClosure c = new GridCacheClosure();
 //
 //                cache.forEach(c);
@@ -1167,7 +1167,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     */
 //    public void testP() throws Exception {
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                int size = 10;
 //
 //                Map<String, Integer> pairs = threadPairs(size, idx);
@@ -1233,7 +1233,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     * @throws Exception If test failed.
 //     */
 //    public void testQ() throws Exception {
-//        GridCache<String, Integer> cache = cache();
+//        Cache<String, Integer> cache = cache();
 //
 //        int size = 3;
 //
@@ -1253,7 +1253,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
 //            @SuppressWarnings({"TooBroadScope"})
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                long timeout = 10;
 //
 //                String key = keys[0];
@@ -1371,7 +1371,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     * @throws Exception If test failed.
 //     */
 //    public void testR() throws Exception {
-//        GridCache<String, Integer> cache = cache();
+//        Cache<String, Integer> cache = cache();
 //
 //        int size = 3;
 //
@@ -1391,7 +1391,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //
 //        runMultiThreadedTest(new GridTestCacheRunnable() {
 //            @SuppressWarnings({"TooBroadScope"})
-//            @Override public void run(GridCache<String, Integer> cache, int idx) throws Exception {
+//            @Override public void run(Cache<String, Integer> cache, int idx) throws Exception {
 //                GridCacheTx tx = cache.txStart();
 //
 //                long timeout = 10;
@@ -1603,12 +1603,12 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //     * Checks caches.
 //     */
 //    private void checkCaches() {
-//        GridCache<String, Integer> c0 = cache(0);
+//        Cache<String, Integer> c0 = cache(0);
 //
 //        int gridCnt = gridCount();
 //
 //        for (int i = 1; i < gridCnt; i++) {
-//            GridCache<String, Integer> ci = cache(i);
+//            Cache<String, Integer> ci = cache(i);
 //
 //            assert ci.size() == c0.size();
 //
@@ -1626,7 +1626,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //        int gridCnt = gridCount();
 //
 //        for(int i = 0; i < gridCnt; i++) {
-//            GridCache cache = cache(i);
+//            Cache cache = cache(i);
 //
 //            cache.clearAll();
 //
@@ -1739,7 +1739,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //         * @param idx Index.
 //         * @throws Exception If any exception occurs.
 //         */
-//        void run(GridCache<String, Integer> cache, int idx) throws Exception;
+//        void run(Cache<String, Integer> cache, int idx) throws Exception;
 //    }
 //
 //    /**
@@ -1883,7 +1883,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //    /**
 //     * Closure for this test.
 //     */
-//    private static class GridCacheClosure extends GridInClosure<GridCacheEntry<String, Integer>> {
+//    private static class GridCacheClosure extends GridInClosure<CacheEntry<String, Integer>> {
 //        /** 0 - calculates minimum, 1 - maximum, 2 - sum. */
 //        private int type;
 //
@@ -1907,7 +1907,7 @@ public class GridCacheReplicatedFullApiMultithreadedSelfTest1 extends GridCacheA
 //        }
 //
 //        /** {@inheritDoc} */
-//        @Override public void apply(GridCacheEntry<String, Integer> e) {
+//        @Override public void apply(CacheEntry<String, Integer> e) {
 //            Integer i = e.peek();
 //
 //            if (i != null) {

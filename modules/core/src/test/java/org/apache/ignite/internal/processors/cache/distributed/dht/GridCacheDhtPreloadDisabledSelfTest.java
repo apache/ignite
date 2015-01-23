@@ -37,8 +37,8 @@ import java.util.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -80,9 +80,9 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_ASYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_ASYNC);
         cacheCfg.setPreloadMode(NONE);
-        cacheCfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, partitions));
+        cacheCfg.setAffinity(new CacheConsistentHashAffinityFunction(false, partitions));
         cacheCfg.setBackups(backups);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
@@ -172,7 +172,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
         try {
             Ignite ignite1 = startGrid(0);
 
-            GridCache<Integer, String> cache1 = ignite1.cache(null);
+            Cache<Integer, String> cache1 = ignite1.cache(null);
 
             int keyCnt = 10;
 
@@ -193,7 +193,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
             // Check all nodes.
             for (Ignite g : ignites) {
-                GridCache<Integer, String> c = g.cache(null);
+                Cache<Integer, String> c = g.cache(null);
 
                 for (int i = 0; i < keyCnt; i++)
                     assertNull(c.peek(i));
@@ -217,7 +217,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
 
                 // Check all nodes.
                 for (Ignite gg : ignites) {
-                    GridCache<Integer, String> c = gg.cache(null);
+                    Cache<Integer, String> c = gg.cache(null);
 
                     for (int i = 0; i < keyCnt; i++)
                         assertNull(c.peek(i));
@@ -271,7 +271,7 @@ public class GridCacheDhtPreloadDisabledSelfTest extends GridCommonAbstractTest 
      * @param cnt Key count.
      * @throws IgniteCheckedException If failed.
      */
-    private void putKeys(GridCache<Integer, String> c, int cnt) throws IgniteCheckedException {
+    private void putKeys(Cache<Integer, String> c, int cnt) throws IgniteCheckedException {
         for (int i = 0; i < cnt; i++)
             c.put(i, Integer.toString(i));
     }

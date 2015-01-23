@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -87,7 +87,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     /**
      * @return Distribution mode.
      */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
@@ -109,7 +109,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemove() throws Exception {
         awaitPartitionMapExchange();
 
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         int keyCnt = 10;
 
@@ -117,7 +117,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             cache.put("key" + i, i);
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            Cache<String, Integer> cache0 = cache(g);
             ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
@@ -148,7 +148,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
             assertEquals((Integer)i, cache.remove("key" + i));
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            Cache<String, Integer> cache0 = cache(g);
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
@@ -166,7 +166,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     public void testPutRemoveAll() throws Exception {
         awaitPartitionMapExchange();
 
-        GridCache<String, Integer> cache = cache();
+        Cache<String, Integer> cache = cache();
 
         int keyCnt = 10;
 
@@ -177,7 +177,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         }
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            Cache<String, Integer> cache0 = cache(g);
             ClusterNode locNode = grid(g).localNode();
 
             for (int i = 0; i < keyCnt; i++) {
@@ -211,7 +211,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         info(">>>> Starting values check");
 
         for (int g = 0; g < gridCount(); g++) {
-            GridCache<String, Integer> cache0 = cache(g);
+            Cache<String, Integer> cache0 = cache(g);
 
             for (int i = 0; i < keyCnt; i++) {
                 String key = "key" + i;
@@ -246,7 +246,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
 
                     Ignite ignite = grid(g);
 
-                    GridCache<Object, Object> cache = ignite.cache(null);
+                    Cache<Object, Object> cache = ignite.cache(null);
 
                     int k = rnd.nextInt(range);
 
@@ -299,7 +299,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
      * @param g Grid to check.
      */
     private void checkKeySet(Ignite g) {
-        GridCache<Object, Object> cache = g.cache(null);
+        Cache<Object, Object> cache = g.cache(null);
 
         Set<Object> keys = cache.keySet();
 

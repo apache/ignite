@@ -49,7 +49,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testWithoutStoreLoad() throws Exception {
-        GridCache<Integer, CacheValue> cache = grid(0).cache(null);
+        Cache<Integer, CacheValue> cache = grid(0).cache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++)
             cache.put(i, new CacheValue(i));
@@ -65,7 +65,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < ENTRY_CNT; i++)
             putToStore(i, new CacheValue(i));
 
-        GridCache<Integer, CacheValue> cache0 = grid(0).cache(null);
+        Cache<Integer, CacheValue> cache0 = grid(0).cache(null);
 
         cache0.loadCache(null, 0);
 
@@ -77,7 +77,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @param cache Cache.
      * @throws Exception If failed.
      */
-    private void checkCache(GridCacheProjection<Integer,CacheValue> cache) throws Exception {
+    private void checkCache(CacheProjection<Integer,CacheValue> cache) throws Exception {
         assert cache.entrySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert cache.keySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert cache.values().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
@@ -89,8 +89,8 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @param backups Include backups flag.
      * @throws Exception If failed.
      */
-    private void checkQuery(GridCacheProjection<Integer, CacheValue> cache, boolean backups) throws Exception {
-        GridCacheQuery<Map.Entry<Integer, CacheValue>> qry = cache.queries().createSqlQuery(
+    private void checkQuery(CacheProjection<Integer, CacheValue> cache, boolean backups) throws Exception {
+        CacheQuery<Map.Entry<Integer, CacheValue>> qry = cache.queries().createSqlQuery(
             CacheValue.class, "val >= 5");
 
         if (backups)
@@ -105,7 +105,7 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * Test cache value.
      */
     private static class CacheValue {
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final int val;
 
         CacheValue(int val) {

@@ -82,7 +82,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** Internal metadata cache. */
-    private GridCache<GridTaskNameHashKey, String> tasksMetaCache;
+    private Cache<GridTaskNameHashKey, String> tasksMetaCache;
 
     /**
      * @param ctx Kernal context.

@@ -27,13 +27,12 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -140,7 +139,7 @@ public class GridCacheGetStoreErrorSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000; i++) {
             key = String.valueOf(i);
 
-            GridCacheEntry<Object, Object> entry = grid(0).cache(null).entry(key);
+            CacheEntry<Object, Object> entry = grid(0).cache(null).entry(key);
 
             if (!entry.primary() && entry.backup())
                 break;

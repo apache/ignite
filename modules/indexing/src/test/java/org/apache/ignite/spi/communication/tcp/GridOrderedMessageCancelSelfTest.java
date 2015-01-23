@@ -39,7 +39,7 @@ import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  *
@@ -97,7 +97,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        GridCacheQueryFuture<Map.Entry<Object, Object>> fut =
+        CacheQueryFuture<Map.Entry<Object, Object>> fut =
             grid(0).cache(null).queries().createSqlQuery(String.class, "_key is not null").execute();
 
         testMessageSet(fut);

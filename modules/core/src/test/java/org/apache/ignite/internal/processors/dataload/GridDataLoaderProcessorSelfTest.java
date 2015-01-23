@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.dataload;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,9 +40,9 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -100,7 +100,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
             cc.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
             cc.setWriteSynchronizationMode(FULL_SYNC);
 
-            cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy(10000));
+            cc.setEvictionPolicy(new CacheFifoEvictionPolicy(10000));
 
             cc.setEvictSynchronized(false);
             cc.setEvictNearSynchronized(false);
@@ -638,7 +638,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            final GridCache<Integer, Integer> c = g.cache(null);
+            final Cache<Integer, Integer> c = g.cache(null);
 
             final IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -690,7 +690,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = startGrid();
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            Cache<Integer, Integer> c = g.cache(null);
 
             IgniteDataLoader<Integer, Integer> ldr = g.dataLoader(null);
 
@@ -735,7 +735,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }, EVT_CACHE_OBJECT_PUT);
 
-            GridCache<Integer, Integer> c = g.cache(null);
+            Cache<Integer, Integer> c = g.cache(null);
 
             assertTrue(c.isEmpty());
 
@@ -871,7 +871,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<?, ?> entry) {
+        @Override public void write(javax.cache.Cache.Entry<?, ?> entry) {
             storeMap.put(entry.getKey(), entry.getValue());
         }
 

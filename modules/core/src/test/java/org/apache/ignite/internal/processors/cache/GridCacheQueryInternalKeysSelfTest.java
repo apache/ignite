@@ -29,7 +29,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Test for http://gridgain.jira.com/browse/GG-3979.
@@ -67,7 +67,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
     @SuppressWarnings("unchecked")
     public void testInternalKeysPreloading() throws Exception {
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            Cache<Object, Object> cache = grid(0).cache(null);
 
             for (int i = 0; i < ENTRY_CNT; i++)
                 cache.dataStructures().queue("queue" + i, Integer.MAX_VALUE, false, true);

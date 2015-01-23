@@ -32,7 +32,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
  * Tests that offheap entry is not evicted while cache entry is in use.
@@ -91,7 +91,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final Cache<Integer, Object> cache = grid(0).cache(null);
 
         vals = new ArrayList<>(VALS);
 
@@ -128,7 +128,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testPut() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final Cache<Integer, Object> cache = grid(0).cache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -153,7 +153,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testRemove() throws Exception {
-        final GridCache<Integer, Object> cache = grid(0).cache(null);
+        final Cache<Integer, Object> cache = grid(0).cache(null);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -251,7 +251,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
     /**
      *
      */
-    protected abstract static class TestPredicate implements P1<GridCacheEntry<Integer, Object>> {
+    protected abstract static class TestPredicate implements P1<CacheEntry<Integer, Object>> {
         /** */
         protected String expVal;
 
@@ -268,7 +268,7 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
         }
 
         /** {@inheritDoc} */
-        @Override public final boolean apply(GridCacheEntry<Integer, Object> e) {
+        @Override public final boolean apply(CacheEntry<Integer, Object> e) {
             assertNotNull(e);
 
             Object val = e.peek();

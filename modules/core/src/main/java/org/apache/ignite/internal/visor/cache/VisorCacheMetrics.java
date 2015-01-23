@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Data transfer object for {@link GridCacheMetrics}.
+ * Data transfer object for {@link org.apache.ignite.cache.CacheMetrics}.
  */
 public class VisorCacheMetrics implements Serializable {
     /** */
@@ -97,10 +97,10 @@ public class VisorCacheMetrics implements Serializable {
      * @param c Cache.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(GridCache c) {
+    public static VisorCacheMetrics from(Cache c) {
         VisorCacheMetrics cm = new VisorCacheMetrics();
 
-        GridCacheMetrics m = c.metrics();
+        CacheMetrics m = c.metrics();
 
         cm.size = c.size();
 

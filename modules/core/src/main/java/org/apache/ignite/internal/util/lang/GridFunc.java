@@ -359,7 +359,7 @@ public class GridFunc {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
             try {
-                return ((GridCacheEntry)o).get();
+                return ((CacheEntry)o).get();
             }
             catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
@@ -375,7 +375,7 @@ public class GridFunc {
     private static final IgniteClosure CACHE_ENTRY_VAL_PEEK = new IgniteClosure() {
         @SuppressWarnings({"unchecked"})
         @Nullable @Override public Object apply(Object o) {
-            return ((GridCacheEntry<?, ?>)o).peek();
+            return ((CacheEntry<?, ?>)o).peek();
         }
 
         @Override public String toString() {
@@ -388,7 +388,7 @@ public class GridFunc {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             try {
-                return ((GridCacheEntry)o).get() != null;
+                return ((CacheEntry)o).get() != null;
             }
             catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
@@ -405,7 +405,7 @@ public class GridFunc {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
             try {
-                return ((GridCacheEntry)o).get() == null;
+                return ((CacheEntry)o).get() == null;
             }
             catch (IgniteCheckedException e) {
                 throw new GridClosureException(e);
@@ -421,7 +421,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_HAS_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((GridCacheEntry)o).peek() != null;
+            return ((CacheEntry)o).peek() != null;
         }
 
         @Override public String toString() {
@@ -433,7 +433,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_NO_PEEK_VAL = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((GridCacheEntry)o).peek() == null;
+            return ((CacheEntry)o).peek() == null;
         }
 
         @Override public String toString() {
@@ -445,7 +445,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_PRIMARY = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((GridCacheEntry)o).primary();
+            return ((CacheEntry)o).primary();
         }
 
         @Override public String toString() {
@@ -457,7 +457,7 @@ public class GridFunc {
     private static final IgnitePredicate CACHE_ENTRY_BACKUP = new IgnitePredicate() {
         @SuppressWarnings({"unchecked"})
         @Override public boolean apply(Object o) {
-            return ((GridCacheEntry)o).backup();
+            return ((CacheEntry)o).backup();
         }
 
         @Override public String toString() {
@@ -7708,8 +7708,8 @@ public class GridFunc {
      * @return Closure that returns key for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntry<K, V>, K> cacheEntry2Key() {
-        return (IgniteClosure<GridCacheEntry<K, V>, K>)MAP_ENTRY_KEY;
+    public static <K, V> IgniteClosure<CacheEntry<K, V>, K> cacheEntry2Key() {
+        return (IgniteClosure<CacheEntry<K, V>, K>)MAP_ENTRY_KEY;
     }
 
     /**
@@ -7726,29 +7726,29 @@ public class GridFunc {
 
     /**
      * Gets closure that returns value for an entry. The closure internally
-     * delegates to {@link GridCacheEntry#get()} method.
+     * delegates to {@link org.apache.ignite.cache.CacheEntry#get()} method.
      *
      * @param <K> Key type.
      * @param <V> Value type.
      * @return Closure that returns value for an entry.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntry<K, V>, V> cacheEntry2Get() {
-        return (IgniteClosure<GridCacheEntry<K, V>, V>)CACHE_ENTRY_VAL_GET;
+    public static <K, V> IgniteClosure<CacheEntry<K, V>, V> cacheEntry2Get() {
+        return (IgniteClosure<CacheEntry<K, V>, V>)CACHE_ENTRY_VAL_GET;
     }
 
     /**
      * Gets closure that returns result of
-     * {@link GridCacheEntry#peek()} method.
+     * {@link org.apache.ignite.cache.CacheEntry#peek()} method.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
      * @return Closure that returns result of
-     *      {@link GridCacheEntry#peek()} method.
+     *      {@link org.apache.ignite.cache.CacheEntry#peek()} method.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgniteClosure<GridCacheEntry<K, V>, V> cacheEntry2Peek() {
-        return (IgniteClosure<GridCacheEntry<K, V>, V>)CACHE_ENTRY_VAL_PEEK;
+    public static <K, V> IgniteClosure<CacheEntry<K, V>, V> cacheEntry2Peek() {
+        return (IgniteClosure<CacheEntry<K, V>, V>)CACHE_ENTRY_VAL_PEEK;
     }
 
     /**
@@ -7761,11 +7761,11 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if entry's key is contained in given collection.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasKeys(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheHasKeys(
         @Nullable final Collection<? extends K> keys) {
-        return isEmpty(keys) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(keys) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     return keys != null && keys.contains(e.getKey());
                 }
             };
@@ -7782,7 +7782,7 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry's key
      *      is equal to any of provided keys.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasKeys(@Nullable K... keys) {
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheHasKeys(@Nullable K... keys) {
         if (isEmpty(keys))
             return alwaysFalse();
 
@@ -7799,11 +7799,11 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry
      *      expires on or before given time.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheExpireBefore(final long msec) {
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheExpireBefore(final long msec) {
         A.ensure(msec >= 0, "msec >= 0");
 
-        return new IgnitePredicate<GridCacheEntry<K, V>>() {
-            @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return new IgnitePredicate<CacheEntry<K, V>>() {
+            @Override public boolean apply(CacheEntry<K, V> e) {
                 return e.expirationTime() <= msec;
             }
         };
@@ -7819,106 +7819,106 @@ public class GridFunc {
      * @return Predicate which returns {@code true} if entry
      *      expires on or after given time.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheExpireAfter(final long msec) {
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheExpireAfter(final long msec) {
         A.ensure(msec >= 0, "msec >= 0");
 
-        return new IgnitePredicate<GridCacheEntry<K, V>>() {
-            @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return new IgnitePredicate<CacheEntry<K, V>>() {
+            @Override public boolean apply(CacheEntry<K, V> e) {
                 return e.expirationTime() >= msec;
             }
         };
     }
 
     /**
-     * Gets predicate which returns {@code true} if {@link GridCacheEntry#get()}
+     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#get()}
      * method returns {@code non-null} value.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link GridCacheEntry#get()}
+     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#get()}
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasGetValue() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheHasGetValue() {
+        return (IgnitePredicate<CacheEntry<K, V>>)CACHE_ENTRY_HAS_GET_VAL;
     }
 
     /**
-     * Gets predicate which returns {@code true} if {@link GridCacheEntry#get()}
+     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#get()}
      * method returns {@code null} value.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link GridCacheEntry#get()}
+     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#get()}
      *      method returns {@code null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheNoGetValue() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheNoGetValue() {
+        return (IgnitePredicate<CacheEntry<K, V>>)CACHE_ENTRY_NO_GET_VAL;
     }
 
     /**
      * Gets predicate which returns {@code true} if
-     * {@link GridCacheEntry#peek() GridCacheEntry.peek()} method
+     * {@link org.apache.ignite.cache.CacheEntry#peek() CacheEntry.peek()} method
      * returns {@code non-null} value.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if
-     *      {@link GridCacheEntry#peek() GridCacheEntry.peek()}
+     *      {@link org.apache.ignite.cache.CacheEntry#peek() CacheEntry.peek()}
      *      method returns {@code non-null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheHasPeekValue() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheHasPeekValue() {
+        return (IgnitePredicate<CacheEntry<K, V>>)CACHE_ENTRY_HAS_PEEK_VAL;
     }
 
     /**
      * Gets predicate which returns {@code true} if
-     * {@link GridCacheEntry#peek() GridCacheEntry.peek()}
+     * {@link org.apache.ignite.cache.CacheEntry#peek() CacheEntry.peek()}
      * method returns {@code null} value.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if
-     *      {@link GridCacheEntry#peek() GridCacheEntry.peek()}
+     *      {@link org.apache.ignite.cache.CacheEntry#peek() CacheEntry.peek()}
      *      method returns {@code null} value.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheNoPeekValue() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_NO_PEEK_VAL;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheNoPeekValue() {
+        return (IgnitePredicate<CacheEntry<K, V>>)CACHE_ENTRY_NO_PEEK_VAL;
     }
 
     /**
-     * Gets predicate which returns {@code true} if {@link GridCacheEntry#primary()}
+     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#primary()}
      * method returns {@code true}.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link GridCacheEntry#primary()}
+     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#primary()}
      *      method returns {@code true}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cachePrimary() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_PRIMARY;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cachePrimary() {
+        return (IgnitePredicate<CacheEntry<K, V>>)CACHE_ENTRY_PRIMARY;
     }
 
     /**
-     * Gets predicate which returns {@code true} if {@link GridCacheEntry#primary()}
+     * Gets predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#primary()}
      * method returns {@code false}.
      *
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns {@code true} if {@link GridCacheEntry#primary()}
+     * @return Predicate which returns {@code true} if {@link org.apache.ignite.cache.CacheEntry#primary()}
      *      method returns {@code false}.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheBackup() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>)CACHE_ENTRY_BACKUP;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheBackup() {
+        return (IgnitePredicate<CacheEntry<K, V>>)CACHE_ENTRY_BACKUP;
     }
 
     /**
-     * Gets predicate which returns true if {@link GridCacheEntry#get()}
+     * Gets predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#get()}
      * method returns value that is contained in given collection. Note that if collection
      * of provided values is empty this method returns predicate that evaluates to {@code false}
      * when applying.
@@ -7926,14 +7926,14 @@ public class GridFunc {
      * @param vals Values to check in predicate.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns true if {@link GridCacheEntry#get()} methods returns
+     * @return Predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#get()} methods returns
      *      value that is contained in given collection.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsGet(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsGet(
         @Nullable final Collection<? extends V> vals) {
-        return isEmpty(vals) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(vals) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     try {
                         V v = e.get();
 
@@ -7949,7 +7949,7 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns true if {@link GridCacheEntry#get()} method returns
+     * Gets predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#get()} method returns
      * value that is contained among given values. Note that if array of provided values
      * is {@code null} or empty this method returns predicate that evaluates to
      * {@code false} when applying.
@@ -7957,10 +7957,10 @@ public class GridFunc {
      * @param vals Values to check in predicate.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns true if {@link GridCacheEntry#get()} methods returns
+     * @return Predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#get()} methods returns
      *      value that is contained among given values.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable V... vals) {
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsGet(@Nullable V... vals) {
         if (isEmpty(vals))
             return alwaysFalse();
 
@@ -7968,7 +7968,7 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns true if {@link GridCacheEntry#peek()} methods returns
+     * Gets predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#peek()} methods returns
      * value that is contained in given collection. Note that if collection of provided values
      * is empty this method returns predicate that evaluates to {@code false}
      * when applying.
@@ -7976,14 +7976,14 @@ public class GridFunc {
      * @param vals Values to check in predicate.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns true if {@link GridCacheEntry#peek()} methods returns
+     * @return Predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#peek()} methods returns
      *      value that is contained in given collection.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsPeek(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsPeek(
         @Nullable final Collection<? extends V> vals) {
-        return isEmpty(vals) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(vals) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     V v = e.peek();
 
                     assert vals != null;
@@ -7998,7 +7998,7 @@ public class GridFunc {
     }
 
     /**
-     * Gets predicate which returns true if {@link GridCacheEntry#peek()} methods returns
+     * Gets predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#peek()} methods returns
      * value that is contained among given values. Note that if array of provided values
      * is {@code null} or empty this method returns predicate that evaluates to {@code false}
      * when applying.
@@ -8006,10 +8006,10 @@ public class GridFunc {
      * @param vals Values to check in predicate.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Predicate which returns true if {@link GridCacheEntry#peek()} methods returns
+     * @return Predicate which returns true if {@link org.apache.ignite.cache.CacheEntry#peek()} methods returns
      *      value that is contained among given values.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsPeek(@Nullable V... vals) {
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsPeek(@Nullable V... vals) {
         if (isEmpty(vals))
             return alwaysFalse();
 
@@ -8026,10 +8026,10 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache contains all given key-value pairs.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
-        return isEmpty(map) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsGet(@Nullable final Map<K, V> map) {
+        return isEmpty(map) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     assert map != null;
 
                     try {
@@ -8052,11 +8052,11 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsPeek(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsPeek(
         @Nullable final Map<K, V> map) {
-        return isEmpty(map) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(map) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     assert map != null;
 
                     return eq(e.peek(), map.get(e.getKey()));
@@ -8067,7 +8067,7 @@ public class GridFunc {
     /**
      * Gets predicate which returns {@code true} if cache entry matches any given key-value pair.
      * Both, key and value will be checked for containment. Value will be retrieved using
-     * {@link GridCacheEntry#get()} method. Note that if collection of
+     * {@link org.apache.ignite.cache.CacheEntry#get()} method. Note that if collection of
      * provided entries is empty this method returns predicate that evaluates to {@code false} when
      * applying.
      *
@@ -8078,11 +8078,11 @@ public class GridFunc {
      */
     // cacheEntryPredicateForContainsEntriesGet
     // ptCacheContainsEntriesGet
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsEntriesGet(
         @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
-        return isEmpty(entries) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(entries) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     try {
                         K k = e.getKey();
                         V v = e.get();
@@ -8106,7 +8106,7 @@ public class GridFunc {
     /**
      * Gets predicate which returns {@code true} if cache entry matches any given key-value pair.
      * Both, key and value will be checked for containment. Value will be retrieved using
-     * {@link GridCacheEntry#peek()} method. Note that if collection
+     * {@link org.apache.ignite.cache.CacheEntry#peek()} method. Note that if collection
      * of provided entries is empty this method returns predicate that evaluates to {@code false}
      * when applying.
      *
@@ -8115,11 +8115,11 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsEntriesPeek(
         @Nullable final Collection<? extends Map.Entry<K, V>> entries) {
-        return isEmpty(entries) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(entries) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     K k = e.getKey();
                     V v = e.peek();
 
@@ -8138,7 +8138,7 @@ public class GridFunc {
     /**
      * Gets predicate which returns {@code true} if cache entry matches any given key-value pair.
      * Both, key and value will be checked for containment. Value will be retrieved using
-     * {@link GridCacheEntry#get()} method. Note that if array of provided
+     * {@link org.apache.ignite.cache.CacheEntry#get()} method. Note that if array of provided
      * entries is {@code null} or empty this method returns predicate that evaluates to {@code false}
      * when applying.
      *
@@ -8147,7 +8147,7 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesGet(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsEntriesGet(
         @Nullable Map.Entry<K, V>... entries) {
         if (isEmpty(entries))
             return alwaysFalse();
@@ -8158,7 +8158,7 @@ public class GridFunc {
     /**
      * Gets predicate which returns {@code true} if cache entry matches any given key-value pair.
      * Both, key and value will be checked for containment. Value will be retrieved using
-     * {@link GridCacheEntry#peek()} method. Note that if array of
+     * {@link org.apache.ignite.cache.CacheEntry#peek()} method. Note that if array of
      * provided entries is {@code null} or empty this method returns predicate that evaluates
      * to {@code false} when applying.
      *
@@ -8167,7 +8167,7 @@ public class GridFunc {
      * @param <V> Cache value type.
      * @return Predicate which returns {@code true} if cache entry matches any given key-value pair.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheContainsEntriesPeek(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheContainsEntriesPeek(
         @Nullable Map.Entry<K, V>... entries) {
         if (isEmpty(entries))
             return alwaysFalse();
@@ -8176,38 +8176,38 @@ public class GridFunc {
     }
 
     /**
-     * Converts key filter to entry filter using {@link GridCacheEntry#getKey()}
+     * Converts key filter to entry filter using {@link org.apache.ignite.cache.CacheEntry#getKey()}
      * to get value. Note that if array of provided filters is {@code null} or empty this
      * method returns predicate that evaluates to {@code true} when applying.
      *
      * @param ps Key filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheKeys(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheKeys(
         @Nullable final IgnitePredicate<? super K>... ps) {
-        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
-            isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<CacheEntry<K, V>>alwaysTrue() :
+            isAlwaysFalse(ps) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     return F.isAll(e.getKey(), ps);
                 }
             };
     }
 
     /**
-     * Converts value filter to entry filter using {@link GridCacheEntry#get()} to get value.
+     * Converts value filter to entry filter using {@link org.apache.ignite.cache.CacheEntry#get()} to get value.
      * Note that if array of provided filters is {@code null} or empty this method returns
      * predicate that evaluates to {@code true} when applying.
      *
      * @param ps Value filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheValuesGet(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheValuesGet(
         @Nullable final IgnitePredicate<? super V>... ps) {
-        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
-            isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<CacheEntry<K, V>>alwaysTrue() :
+            isAlwaysFalse(ps) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     try {
                         V v = e.get();
 
@@ -8221,19 +8221,19 @@ public class GridFunc {
     }
 
     /**
-     * Converts value filter to entry filter using {@link GridCacheEntry#peek()}
+     * Converts value filter to entry filter using {@link org.apache.ignite.cache.CacheEntry#peek()}
      * to get value. Note that if array of provided filters is {@code null} or empty this method returns
      * predicate that evaluates to {@code true} when applying.
      *
      * @param ps Value filter(s) to convert.
      * @return Entry filter.
      */
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>> cacheValuesPeek(
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>> cacheValuesPeek(
         @Nullable final IgnitePredicate<? super V>... ps) {
-        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<GridCacheEntry<K, V>>alwaysTrue() :
-            isAlwaysFalse(ps) ? F.<GridCacheEntry<K, V>>alwaysFalse() :
-            new IgnitePredicate<GridCacheEntry<K, V>>() {
-                @Override public boolean apply(GridCacheEntry<K, V> e) {
+        return isEmpty(ps) || isAlwaysTrue(ps) ? F.<CacheEntry<K, V>>alwaysTrue() :
+            isAlwaysFalse(ps) ? F.<CacheEntry<K, V>>alwaysFalse() :
+            new IgnitePredicate<CacheEntry<K, V>>() {
+                @Override public boolean apply(CacheEntry<K, V> e) {
                     V v = e.peek();
 
                     return v != null && F.isAll(v, ps);

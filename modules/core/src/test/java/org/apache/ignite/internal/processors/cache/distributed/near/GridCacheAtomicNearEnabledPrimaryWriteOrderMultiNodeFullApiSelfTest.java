@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Multi-node tests for atomic cache with primary write order mode and near cache enabled.
@@ -27,7 +27,7 @@ import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 public class GridCacheAtomicNearEnabledPrimaryWriteOrderMultiNodeFullApiSelfTest
     extends GridCacheAtomicPrimaryWriteOrderMultiNodeFullApiSelfTest{
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 }

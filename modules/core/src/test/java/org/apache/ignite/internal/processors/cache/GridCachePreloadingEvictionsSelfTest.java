@@ -38,9 +38,9 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -100,7 +100,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         try {
             final Ignite ignite1 = startGrid(1);
 
-            GridCache<Integer, Object> cache1 = ignite1.cache(null);
+            Cache<Integer, Object> cache1 = ignite1.cache(null);
 
             for (int i = 0; i < 5000; i++)
                 cache1.put(i, VALUE + i);
@@ -121,7 +121,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
                         info("Started evicting...");
 
                         for (int i = 0; i < 3000 && !done.get(); i++) {
-                            GridCacheEntry<Integer, Object> entry = randomEntry(ignite1);
+                            CacheEntry<Integer, Object> entry = randomEntry(ignite1);
 
                             if (entry != null)
                                 entry.evict();
@@ -161,7 +161,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             info("Evicting on constant topology.");
 
             for (int i = 0; i < 1000; i++) {
-                GridCacheEntry<Integer, Object> entry = randomEntry(ignite1);
+                CacheEntry<Integer, Object> entry = randomEntry(ignite1);
 
                 if (entry != null)
                     entry.evict();
@@ -204,7 +204,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param g Grid.
      * @return Random entry from cache.
      */
-    @Nullable private GridCacheEntry<Integer, Object> randomEntry(Ignite g) {
+    @Nullable private CacheEntry<Integer, Object> randomEntry(Ignite g) {
         GridKernal g1 = (GridKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();

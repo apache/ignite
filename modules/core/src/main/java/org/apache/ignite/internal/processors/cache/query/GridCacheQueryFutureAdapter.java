@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.*;
  *
  */
 public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAdapter<Collection<R>>
-    implements GridCacheQueryFuture<R>, GridTimeoutObject {
+    implements CacheQueryFuture<R>, GridTimeoutObject {
     /** */
     private static final long serialVersionUID = 0L;
 

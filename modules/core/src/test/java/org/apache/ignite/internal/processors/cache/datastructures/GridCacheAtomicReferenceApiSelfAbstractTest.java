@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -28,14 +29,13 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.mockito.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.integration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Basic tests for atomic reference.
@@ -89,7 +89,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
                 return null;
             }
 
-            @Override public void write(Cache.Entry entry) throws CacheWriterException {
+            @Override public void write(javax.cache.Cache.Entry entry) throws CacheWriterException {
                 storeCalled.set(true);
             }
 
@@ -123,9 +123,9 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
         String atomicName2 = UUID.randomUUID().toString();
 
         String initVal = "1";
-        GridCacheAtomicReference<String> atomic1 = grid().cache(null).dataStructures()
+        CacheAtomicReference<String> atomic1 = grid().cache(null).dataStructures()
             .atomicReference(atomicName1, initVal, true);
-        GridCacheAtomicReference<String> atomic2 = grid().cache(null).dataStructures()
+        CacheAtomicReference<String> atomic2 = grid().cache(null).dataStructures()
             .atomicReference(atomicName2, null, true);
 
         assertNotNull(atomic1);
@@ -155,7 +155,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         String initVal = "qwerty";
 
-        GridCacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
+        CacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
             .atomicReference(atomicName, initVal, true);
 
         assertEquals(initVal, atomic.get());
@@ -175,7 +175,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         String initVal = "qwerty";
 
-        GridCacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
+        CacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
             .atomicReference(atomicName, initVal, true);
 
         assertEquals(initVal, atomic.get());
@@ -198,11 +198,11 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
     public void testNonPersistentMode() throws IgniteCheckedException {
         String atomicName = UUID.randomUUID().toString();
 
-        GridCache<Object, Object> cache = grid().cache(null);
+        Cache<Object, Object> cache = grid().cache(null);
 
         assertNotNull(cache);
 
-        GridCacheAtomicReference<Boolean> atomic = cache.dataStructures().atomicReference(atomicName, false, true);
+        CacheAtomicReference<Boolean> atomic = cache.dataStructures().atomicReference(atomicName, false, true);
 
         atomic.set(true);
 

@@ -37,7 +37,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test cases for partitioned cache {@link GridDhtPreloader preloader}.
@@ -51,7 +51,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
     private static final int KEY_CNT = 1000;
 
     /** Preload mode. */
-    private GridCachePreloadMode preloadMode = GridCachePreloadMode.SYNC;
+    private CachePreloadMode preloadMode = CachePreloadMode.SYNC;
 
     /** IP finder. */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -67,7 +67,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setPreloadMode(preloadMode);
-        cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 521));
+        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 521));
         cc.setBackups(1);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -96,7 +96,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         int cnt = KEY_CNT;
 
-        GridCache<String, Integer> c0 = g0.cache(null);
+        Cache<String, Integer> c0 = g0.cache(null);
 
         for (int i = 0; i < cnt; i++)
             c0.put(Integer.toString(i), i);
@@ -106,8 +106,8 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
 
         U.sleep(1000);
 
-        GridCache<String, Integer> c1 = g1.cache(null);
-        GridCache<String, Integer> c2 = g2.cache(null);
+        Cache<String, Integer> c1 = g1.cache(null);
+        Cache<String, Integer> c2 = g2.cache(null);
 
         TestCommunicationSpi spi0 = (TestCommunicationSpi)g0.configuration().getCommunicationSpi();
         TestCommunicationSpi spi1 = (TestCommunicationSpi)g1.configuration().getCommunicationSpi();
@@ -126,7 +126,7 @@ public class GridCacheDhtPreloadMessageCountTest extends GridCommonAbstractTest 
      * @param c Cache.
      * @param keyCnt Key count.
      */
-    private void checkCache(GridCache<String, Integer> c, int keyCnt) {
+    private void checkCache(Cache<String, Integer> c, int keyCnt) {
         Ignite g = c.gridProjection().ignite();
 
         for (int i = 0; i < keyCnt; i++) {

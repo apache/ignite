@@ -164,7 +164,7 @@ public class GridCacheStoreValueBytesTest {
 
             int sizeRange = maxSize - minSize;
 
-            GridCache<Integer, String> cache = ignite.cache(null);
+            Cache<Integer, String> cache = ignite.cache(null);
 
             if (sizeRange == 0) {
                 for (Integer key : KEYS)
@@ -216,7 +216,7 @@ public class GridCacheStoreValueBytesTest {
         for (int i = 0; i < threadsNum; i++) {
             futs.add(exec.submit(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    GridCache<Integer, String> cache = ignite.cache(null);
+                    Cache<Integer, String> cache = ignite.cache(null);
 
                     Random random = new Random();
 

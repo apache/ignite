@@ -26,8 +26,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -59,7 +59,7 @@ public class GridCachePartitionedNodeRestartSelfTest extends GridCommonAbstractT
         cc.setBackups(1);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setPreloadMode(SYNC);
-        cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy(100));
+        cc.setEvictionPolicy(new CacheFifoEvictionPolicy(100));
 
         c.setCacheConfiguration(cc);
 

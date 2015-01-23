@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Load test for atomic long.
@@ -60,11 +60,11 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setStartSize(200);
-        cc.setPreloadMode(GridCachePreloadMode.SYNC);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setEvictionPolicy(new GridCacheLruEvictionPolicy<>(1000));
+        cc.setEvictionPolicy(new CacheLruEvictionPolicy<>(1000));
         cc.setBackups(1);
-        cc.setAffinity(new GridCacheConsistentHashAffinityFunction(true));
+        cc.setAffinity(new CacheConsistentHashAffinityFunction(true));
         cc.setAtomicSequenceReserveSize(10);
         cc.setEvictSynchronized(true);
         cc.setEvictNearSynchronized(true);
@@ -102,11 +102,11 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         @Override public Boolean call() throws Exception {
             Ignite ignite = grid();
 
-            GridCache cache = ignite.cache(null);
+            Cache cache = ignite.cache(null);
 
             assert cache != null;
 
-            GridCacheAtomicSequence seq = cache.dataStructures().atomicSequence("SEQUENCE", 0, true);
+            CacheAtomicSequence seq = cache.dataStructures().atomicSequence("SEQUENCE", 0, true);
 
             long start = System.currentTimeMillis();
 

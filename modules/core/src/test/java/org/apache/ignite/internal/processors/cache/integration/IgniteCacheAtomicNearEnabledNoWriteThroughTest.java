@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache.integration;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
  */
 public class IgniteCacheAtomicNearEnabledNoWriteThroughTest extends IgniteCacheAtomicNoWriteThroughTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 }

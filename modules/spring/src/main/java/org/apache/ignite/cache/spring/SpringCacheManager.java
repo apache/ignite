@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.spring;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -217,7 +217,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
     }
 
     /** {@inheritDoc} */
-    @Override public Cache getCache(String name) {
+    @Override public org.springframework.cache.Cache getCache(String name) {
         assert grid != null;
 
         try {
@@ -232,8 +232,8 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
     @Override public Collection<String> getCacheNames() {
         assert grid != null;
 
-        return F.viewReadOnly(grid.caches(), new IgniteClosure<GridCache<?,?>, String>() {
-            @Override public String apply(GridCache<?, ?> c) {
+        return F.viewReadOnly(grid.caches(), new IgniteClosure<Cache<?,?>, String>() {
+            @Override public String apply(Cache<?, ?> c) {
                 return c.name();
             }
         });

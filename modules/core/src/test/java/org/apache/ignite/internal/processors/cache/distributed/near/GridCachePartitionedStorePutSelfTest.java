@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -28,12 +29,11 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.distributed.GridCacheModuloAffinityFunction.*;
 
 /**
@@ -47,13 +47,13 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
     private static final AtomicInteger CNT = new AtomicInteger(0);
 
     /** */
-    private GridCache<Integer, Integer> cache1;
+    private Cache<Integer, Integer> cache1;
 
     /** */
-    private GridCache<Integer, Integer> cache2;
+    private Cache<Integer, Integer> cache2;
 
     /** */
-    private GridCache<Integer, Integer> cache3;
+    private Cache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -136,7 +136,7 @@ public class GridCachePartitionedStorePutSelfTest extends GridCommonAbstractTest
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
             // No-op
         }
 

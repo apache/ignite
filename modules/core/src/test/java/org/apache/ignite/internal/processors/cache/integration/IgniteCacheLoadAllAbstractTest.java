@@ -203,7 +203,7 @@ public abstract class IgniteCacheLoadAllAbstractTest extends IgniteCacheAbstract
      * @param expVals Expected values.
      */
     private void checkValues(int keys, Map<Integer, String> expVals) {
-        GridCacheAffinity<Object> aff = cache(0).affinity();
+        CacheAffinity<Object> aff = cache(0).affinity();
 
         for (int i = 0; i < gridCount(); i++) {
             ClusterNode node = ignite(i).cluster().localNode();

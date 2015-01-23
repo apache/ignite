@@ -26,7 +26,7 @@ import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -134,7 +134,7 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
         assertFalse(cache().containsKey("key"));
         assertNull(cache().get("key"));
 
-        GridCacheProjection<String, Integer> prj = cache().flagsOn(SKIP_SWAP, SKIP_STORE);
+        CacheProjection<String, Integer> prj = cache().flagsOn(SKIP_SWAP, SKIP_STORE);
 
         prj.put("key", 1);
 

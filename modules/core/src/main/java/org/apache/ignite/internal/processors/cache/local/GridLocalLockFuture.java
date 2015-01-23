@@ -81,7 +81,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
@@ -110,7 +110,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         IgniteTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
         long timeout,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<CacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext());
 
         assert keys != null;

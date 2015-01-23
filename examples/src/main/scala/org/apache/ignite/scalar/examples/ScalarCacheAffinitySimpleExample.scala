@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.cache.GridCache
+import org.apache.ignite.cache.Cache
 import org.gridgain.scalar.scalar
 import scalar._
 
@@ -43,7 +43,7 @@ object ScalarCacheAffinitySimpleExample extends App {
     private val NAME = "partitioned"
 
     /** Type alias. */
-    type Cache = GridCache[Int, String]
+    type Cache = Cache[Int, String]
 
     /*
      * Note that in case of `LOCAL` configuration,

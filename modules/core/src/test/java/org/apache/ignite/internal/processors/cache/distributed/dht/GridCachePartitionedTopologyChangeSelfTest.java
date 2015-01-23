@@ -38,8 +38,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.events.IgniteEventType.*;
@@ -74,7 +74,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 18));
+        cc.setAffinity(new CacheConsistentHashAffinityFunction(false, 18));
         cc.setBackups(1);
         cc.setPreloadMode(SYNC);
         cc.setDistributionMode(PARTITIONED_ONLY);
@@ -248,7 +248,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            GridCache<Integer, Integer> cache = node.cache(null);
+                            Cache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -317,7 +317,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        GridCache<Integer, Integer> cache = g.cache(null);
+                        Cache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -402,7 +402,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 for (final Integer key : keysMap.values()) {
                     futs.add(multithreadedAsync(new Runnable() {
                         @Override public void run() {
-                            GridCache<Integer, Integer> cache = node.cache(null);
+                            Cache<Integer, Integer> cache = node.cache(null);
 
                             try {
                                 try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
@@ -453,7 +453,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             for (final Ignite g : nodes) {
                 txFuts.add(multithreadedAsync(new Runnable() {
                     @Override public void run() {
-                        GridCache<Integer, Integer> cache = g.cache(null);
+                        Cache<Integer, Integer> cache = g.cache(null);
 
                         int key = (int)Thread.currentThread().getId();
 
@@ -488,7 +488,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                GridCacheConsistentHashAffinityFunction affinity = (GridCacheConsistentHashAffinityFunction)((GridKernal)grid(i))
+                CacheConsistentHashAffinityFunction affinity = (CacheConsistentHashAffinityFunction)((GridKernal)grid(i))
                     .internalCache().context().config().getAffinity();
 
                 ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
@@ -555,7 +555,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private List<Integer> partitions(Ignite node, int partType) {
         List<Integer> res = new LinkedList<>();
 
-        GridCacheAffinity<Object> aff = node.cache(null).affinity();
+        CacheAffinity<Object> aff = node.cache(null).affinity();
 
         for (int partCnt = aff.partitions(), i = 0; i < partCnt; i++) {
             ClusterNode locNode = node.cluster().localNode();

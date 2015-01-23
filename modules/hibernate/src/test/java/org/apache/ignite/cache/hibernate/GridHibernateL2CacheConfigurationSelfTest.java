@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -77,7 +78,7 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        for (GridCache<?, ?> cache : grid(0).caches())
+        for (Cache<?, ?> cache : grid(0).caches())
             cache.clearAll();
     }
 
@@ -233,11 +234,11 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
                 ses.close();
             }
 
-            GridCache<Object, Object> cache1 = grid(0).cache("cache1");
-            GridCache<Object, Object> cache2 = grid(0).cache("cache2");
-            GridCache<Object, Object> cache3 = grid(0).cache("cache3");
-            GridCache<Object, Object> cacheE3 = grid(0).cache(ENTITY3_NAME);
-            GridCache<Object, Object> cacheE4 = grid(0).cache(ENTITY4_NAME);
+            Cache<Object, Object> cache1 = grid(0).cache("cache1");
+            Cache<Object, Object> cache2 = grid(0).cache("cache2");
+            Cache<Object, Object> cache3 = grid(0).cache("cache3");
+            Cache<Object, Object> cacheE3 = grid(0).cache(ENTITY3_NAME);
+            Cache<Object, Object> cacheE4 = grid(0).cache(ENTITY4_NAME);
 
             assertEquals("Unexpected entries: " + cache1.entrySet(), expCache1, cache1.size());
             assertEquals("Unexpected entries: " + cache2.entrySet(), expCache2, cache2.size());

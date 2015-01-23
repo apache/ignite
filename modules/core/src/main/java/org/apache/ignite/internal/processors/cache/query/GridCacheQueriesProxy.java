@@ -73,12 +73,12 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
      *
      * @return Cache projection.
      */
-    public GridCacheProjection<K, V> projection() {
+    public CacheProjection<K, V> projection() {
         return prj;
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
+    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(Class<?> cls, String clause) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -90,7 +90,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
+    @Override public CacheQuery<Map.Entry<K, V>> createSqlQuery(String clsName, String clause) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -102,7 +102,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry) {
+    @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -114,7 +114,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
+    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(Class<?> cls, String search) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -126,7 +126,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
+    @Override public CacheQuery<Map.Entry<K, V>> createFullTextQuery(String clsName, String search) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -138,7 +138,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
+    @Override public CacheQuery<Map.Entry<K, V>> createScanQuery(@Nullable IgniteBiPredicate<K, V> filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -150,7 +150,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheContinuousQuery<K, V> createContinuousQuery() {
+    @Override public CacheContinuousQuery<K, V> createContinuousQuery() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -162,7 +162,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public <R> GridCacheQuery<R> createSpiQuery() {
+    @Override public <R> CacheQuery<R> createSpiQuery() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -210,7 +210,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQueryMetrics metrics() {
+    @Override public CacheQueryMetrics metrics() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -246,7 +246,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
+    @Override public CacheQuery<List<?>> createSqlFieldsQuery(String qry, boolean incMeta) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

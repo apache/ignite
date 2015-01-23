@@ -38,7 +38,7 @@ public class CacheSetExample {
     private static final String CACHE_NAME = "partitioned_tx";
 
     /** Set instance. */
-    private static GridCacheSet<String> set;
+    private static CacheSet<String> set;
 
     /**
      * Executes example.
@@ -72,9 +72,9 @@ public class CacheSetExample {
      * @return Set.
      * @throws IgniteCheckedException If execution failed.
      */
-    private static GridCacheSet<String> initializeSet(Ignite g, String setName) throws IgniteCheckedException {
+    private static CacheSet<String> initializeSet(Ignite g, String setName) throws IgniteCheckedException {
         // Initialize new set.
-        GridCacheSet<String> set = g.cache(CACHE_NAME).dataStructures().set(setName, false, true);
+        CacheSet<String> set = g.cache(CACHE_NAME).dataStructures().set(setName, false, true);
 
         // Initialize set items.
         for (int i = 0; i < 10; i++)
@@ -173,7 +173,7 @@ public class CacheSetExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                GridCacheSet<String> set = Ignition.ignite().cache(cacheName).dataStructures().set(setName, false, true);
+                CacheSet<String> set = Ignition.ignite().cache(cacheName).dataStructures().set(setName, false, true);
 
                 UUID locId = Ignition.ignite().cluster().localNode().id();
 

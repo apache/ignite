@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.IgniteFs.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
@@ -123,7 +123,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     protected final boolean dual;
 
     /** Memory mode. */
-    protected final GridCacheMemoryMode memoryMode;
+    protected final CacheMemoryMode memoryMode;
 
     /**
      * Constructor.
@@ -134,7 +134,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         this(mode, ONHEAP_TIERED);
     }
 
-    protected GridGgfsAbstractSelfTest(IgniteFsMode mode, GridCacheMemoryMode memoryMode) {
+    protected GridGgfsAbstractSelfTest(IgniteFsMode mode, CacheMemoryMode memoryMode) {
         assert mode != null && mode != PROXY;
 
         this.mode = mode;
@@ -198,8 +198,8 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         dataCacheCfg.setName("dataCache");
         dataCacheCfg.setCacheMode(PARTITIONED);
-        dataCacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
-        dataCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        dataCacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+        dataCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         dataCacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(2));
         dataCacheCfg.setBackups(0);
         dataCacheCfg.setQueryIndexEnabled(false);
@@ -211,7 +211,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         metaCacheCfg.setName("metaCache");
         metaCacheCfg.setCacheMode(REPLICATED);
-        metaCacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        metaCacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         metaCacheCfg.setQueryIndexEnabled(false);
         metaCacheCfg.setAtomicityMode(TRANSACTIONAL);
 
@@ -772,7 +772,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     @SuppressWarnings("ConstantConditions")
     public void _testFormat() throws Exception {
         GridKernal grid = (GridKernal)G.ignite("grid");
-        GridCache cache = grid.internalCache("dataCache");
+        Cache cache = grid.internalCache("dataCache");
 
         if (dual)
             create(ggfsSecondary, paths(DIR, SUBDIR, DIR_NEW, SUBDIR_NEW), paths(FILE, FILE_NEW));

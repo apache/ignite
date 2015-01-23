@@ -232,7 +232,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         /**
          * @param cacheName Name of the cache.
          *
-         * @return Instance of a GridCache proxy.
+         * @return Instance of a Cache proxy.
          */
         @Override protected GridCacheProjectionEx<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
             final GridCacheProjectionEx<Object, Object> cache = super.localCache(cacheName);

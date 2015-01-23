@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for {@code GridDataLoaderImpl}.
@@ -148,7 +148,7 @@ public class GridDataLoaderImplSelfTest extends GridCommonAbstractTest {
 
             Random rnd = new Random();
 
-            GridCache<Integer, String> c = g0.cache(null);
+            Cache<Integer, String> c = g0.cache(null);
 
             for (int i = 0; i < KEYS_COUNT; i ++) {
                 Integer k = rnd.nextInt(KEYS_COUNT);

@@ -32,7 +32,7 @@ import java.io.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests for cache preloader.
@@ -43,10 +43,10 @@ public abstract class GridCachePreloadLifecycleAbstractTest extends GridCommonAb
     protected static final String TEST_STRING = "ABC";
 
     /** */
-    protected static final GridCachePreloadMode DFLT_PRELOAD_MODE = SYNC;
+    protected static final CachePreloadMode DFLT_PRELOAD_MODE = SYNC;
 
     /** */
-    protected GridCachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
+    protected CachePreloadMode preloadMode = DFLT_PRELOAD_MODE;
 
     /** */
     protected LifecycleBean lifecycleBean;

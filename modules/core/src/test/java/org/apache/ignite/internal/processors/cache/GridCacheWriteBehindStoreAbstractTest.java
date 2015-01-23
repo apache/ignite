@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -62,7 +62,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCache<?, ?> cache = cache();
+        Cache<?, ?> cache = cache();
 
         if (cache != null)
             cache.clearAll();
@@ -87,7 +87,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(cacheMode());
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
@@ -107,7 +107,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @throws Exception If test fails. */
     public void testWriteThrough() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        Cache<Integer, String> cache = cache();
 
         Map<Integer, String> map = store.getMap();
 
@@ -172,7 +172,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
     /** @throws Exception If test failed. */
     public void testReadThrough() throws Exception {
-        GridCache<Integer, String> cache = cache();
+        Cache<Integer, String> cache = cache();
 
         Map<Integer, String> map = store.getMap();
 
@@ -268,7 +268,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final GridCache<Integer, String> cache = cache();
+        final Cache<Integer, String> cache = cache();
 
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})

@@ -36,7 +36,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
     private int backups;
 
     /** Affinity function. */
-    private GridCacheAffinityFunction func;
+    private CacheAffinityFunction func;
 
     /** */
     private int nodesCnt = 5;
@@ -61,7 +61,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testConsistentHashBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new GridCacheConsistentHashAffinityFunction());
+            checkBackups(i, new CacheConsistentHashAffinityFunction());
     }
 
     /**
@@ -69,7 +69,7 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testRendezvousBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new GridCacheRendezvousAffinityFunction());
+            checkBackups(i, new CacheRendezvousAffinityFunction());
     }
 
     /**
@@ -77,20 +77,20 @@ public class GridCacheAffinityBackupsSelfTest extends GridCommonAbstractTest {
      */
     public void testFairBackups() throws Exception {
         for (int i = 0; i < nodesCnt; i++)
-            checkBackups(i, new GridCachePartitionFairAffinity());
+            checkBackups(i, new CachePartitionFairAffinity());
     }
 
     /**
      * @throws Exception If failed.
      */
-    private void checkBackups(int backups, GridCacheAffinityFunction func) throws Exception {
+    private void checkBackups(int backups, CacheAffinityFunction func) throws Exception {
         this.backups = backups;
         this.func = func;
 
         startGrids(nodesCnt);
 
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            Cache<Object, Object> cache = grid(0).cache(null);
 
             Collection<UUID> members = new HashSet<>();
 

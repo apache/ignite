@@ -50,7 +50,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     public void testInternalKeys() throws Exception {
         assert gridCount() >= 2;
 
-        GridCache<InternalKey, Object> prj = grid(0).cache(null);
+        Cache<InternalKey, Object> prj = grid(0).cache(null);
 
         final InternalKey key = new InternalKey(0); // Hangs on the first remote put.
 

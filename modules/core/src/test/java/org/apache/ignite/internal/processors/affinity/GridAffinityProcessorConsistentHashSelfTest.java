@@ -25,7 +25,7 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
  */
 public class GridAffinityProcessorConsistentHashSelfTest extends GridAffinityProcessorAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheAffinityFunction affinityFunction() {
-        return new GridCacheConsistentHashAffinityFunction();
+    @Override protected CacheAffinityFunction affinityFunction() {
+        return new CacheConsistentHashAffinityFunction();
     }
 }

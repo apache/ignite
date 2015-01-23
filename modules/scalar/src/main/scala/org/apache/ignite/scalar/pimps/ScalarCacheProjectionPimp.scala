@@ -17,7 +17,7 @@
 
 package org.gridgain.scalar.pimps
 
-import org.apache.ignite.cache.{GridCacheEntry, GridCacheProjection}
+import org.apache.ignite.cache.{CacheEntry, CacheProjection}
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.lang.{IgnitePredicate, IgniteReducer, IgniteClosure, IgniteBiTuple}
 
@@ -39,7 +39,7 @@ object ScalarCacheProjectionPimp {
      *
      * @param impl Java-side implementation.
      */
-    def apply[K, V](impl: GridCacheProjection[K, V]) = {
+    def apply[K, V](impl: CacheProjection[K, V]) = {
         if (impl == null)
             throw new NullPointerException("impl")
 
@@ -53,12 +53,12 @@ object ScalarCacheProjectionPimp {
 
 /**
  * ==Overview==
- * Defines Scalar "pimp" for `GridCacheProjection` on Java side.
+ * Defines Scalar "pimp" for `CacheProjection` on Java side.
  *
- * Essentially this class extends Java `GridCacheProjection` interface with Scala specific
+ * Essentially this class extends Java `CacheProjection` interface with Scala specific
  * API adapters using primarily implicit conversions defined in `ScalarConversions` object. What
  * it means is that you can use functions defined in this class on object
- * of Java `GridCacheProjection` type. Scala will automatically (implicitly) convert it into
+ * of Java `CacheProjection` type. Scala will automatically (implicitly) convert it into
  * Scalar's pimp and replace the original call with a call on that pimp.
  *
  * Note that Scalar provide extensive library of implicit conversion between Java and
@@ -70,16 +70,16 @@ object ScalarCacheProjectionPimp {
  * Instead of giving two different names to the same function we've decided to simply mark
  * Scala's side method with `$` suffix.
  */
-class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedType[GridCacheProjection[K, V]]
-    with Iterable[GridCacheEntry[K, V]] {
+class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedType[CacheProjection[K, V]]
+    with Iterable[CacheEntry[K, V]] {
     /** */
-    lazy val value: GridCacheProjection[K, V] = impl
+    lazy val value: CacheProjection[K, V] = impl
 
     /** */
-    protected var impl: GridCacheProjection[K, V] = _
+    protected var impl: CacheProjection[K, V] = _
 
     /** Type alias. */
-    protected type EntryPred = (GridCacheEntry[K, V]) => Boolean
+    protected type EntryPred = (CacheEntry[K, V]) => Boolean
 
     /** Type alias. */
     protected type KvPred = (K, V) => Boolean
@@ -93,7 +93,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
     /**
      * Unwraps sequence of functions to sequence of GridGain predicates.
      */
-    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[IgnitePredicate[GridCacheEntry[K, V]]] =
+    private def unwrap(@Nullable p: Seq[EntryPred]): Seq[IgnitePredicate[CacheEntry[K, V]]] =
         if (p == null)
             null
         else
@@ -163,7 +163,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Filter to check prior to getting the value. Note that filter check
      *      together with getting the value is an atomic operation.
      * @return Value for the given key.
-     * @see `GridCacheProjection.get(...)`
+     * @see `CacheProjection.get(...)`
      */
     def opt(k: K, p: EntryPred = null): Option[V] =
         Option(value.projection(p).get(k))
@@ -177,9 +177,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Key-value predicate for this projection. If `null`, then the
      *      same projection is returned.
      * @return Projection for given key-value predicate.
-     * @see `GridCacheProjection.projection(...)`
+     * @see `CacheProjection.projection(...)`
      */
-    def viewByKv(@Nullable p: ((K, V) => Boolean)): GridCacheProjection[K, V] =
+    def viewByKv(@Nullable p: ((K, V) => Boolean)): CacheProjection[K, V] =
         if (p == null)
             value
         else
@@ -194,9 +194,9 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *      same projection is returned.  If cache operation receives its own filter, then filters
      *      will be `anded`.
      * @return Projection based on given filter.
-     * @see `GridCacheProjection.projection(...)`
+     * @see `CacheProjection.projection(...)`
      */
-    def viewByEntry(@Nullable p: EntryPred): GridCacheProjection[K, V] =
+    def viewByEntry(@Nullable p: EntryPred): CacheProjection[K, V] =
         if (p == null)
             value
         else
@@ -210,17 +210,17 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * it properly converts types from Scala counterparts to Java ones.
      *
      * ===Cache Flags===
-     * The resulting projection will have flag `GridCacheFlag#STRICT` set on it.
+     * The resulting projection will have flag `CacheFlag#STRICT` set on it.
      *
      * @param k Key type.
      * @param v Value type.
      * @return Cache projection for given key and value types.
-     * @see `GridCacheProjection.projection(...)`
+     * @see `CacheProjection.projection(...)`
      */
-    def viewByType[A, B](k: Class[A], v: Class[B]): GridCacheProjection[A, B] = {
+    def viewByType[A, B](k: Class[A], v: Class[B]): CacheProjection[A, B] = {
         assert(k != null && v != null)
 
-        value.projection(toJavaType(k), toJavaType(v)).asInstanceOf[GridCacheProjection[A, B]]
+        value.projection(toJavaType(k), toJavaType(v)).asInstanceOf[CacheProjection[A, B]]
     }
 
     /**
@@ -272,13 +272,13 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param kv Key-Value pair to store in cache.
      * @param p Optional filter to check prior to putting value in cache. Note
      *      that filter check is atomic with put operation.
      * @return `True` if value was stored in cache, `false` otherwise.
-     * @see `GridCacheProjection#putx(...)`
+     * @see `CacheProjection#putx(...)`
      */
     def putx$(kv: (K, V), @Nullable p: EntryPred*): Boolean =
         value.putx(kv._1, kv._2, unwrap(p): _*)
@@ -297,7 +297,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param kv Key-Value pair to store in cache.
      * @param p Optional filter to check prior to putting value in cache. Note
@@ -305,7 +305,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @return Previous value associated with specified key, or `null`
      *      if entry did not pass the filter, or if there was no mapping for the key in swap
      *      or in persistent storage.
-     * @see `GridCacheProjection#put(...)`
+     * @see `CacheProjection#put(...)`
      */
     def put$(kv: (K, V), @Nullable p: EntryPred*): V =
         value.put(kv._1, kv._2, unwrap(p): _*)
@@ -324,13 +324,13 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param kv Key-Value pair to store in cache.
      * @param p Optional filter to check prior to putting value in cache. Note
      *      that filter check is atomic with put operation.
      * @return Previous value associated with specified key as an option.
-     * @see `GridCacheProjection#put(...)`
+     * @see `CacheProjection#put(...)`
      */
     def putOpt$(kv: (K, V), @Nullable p: EntryPred*): Option[V] =
         Option(value.put(kv._1, kv._2, unwrap(p): _*))
@@ -342,7 +342,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param p Optional filter to check prior to putting value in cache. Note
      *      that filter check is atomic with put operation.
      * @return `True` if value was stored in cache, `false` otherwise.
-     * @see `GridCacheProjection#putx(...)`
+     * @see `CacheProjection#putx(...)`
      */
     def +=(kv: (K, V), @Nullable p: EntryPred*): Boolean =
         putx$(kv, p: _*)
@@ -359,12 +359,12 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param kv1 Key-value pair to store in cache.
      * @param kv2 Key-value pair to store in cache.
      * @param kvs Optional key-value pairs to store in cache.
-     * @see `GridCacheProjection#putAll(...)`
+     * @see `CacheProjection#putAll(...)`
      */
     def putAll$(kv1: (K, V), kv2: (K, V), @Nullable kvs: (K, V)*) {
         var m = mutable.Map.empty[K, V]
@@ -389,10 +389,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param kvs Key-value pairs to store in cache. If `null` this function is no-op.
-     * @see `GridCacheProjection#putAll(...)`
+     * @see `CacheProjection#putAll(...)`
      */
     def putAll$(@Nullable kvs: Seq[(K, V)]) {
         if (kvs != null)
@@ -411,10 +411,10 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param ks Sequence of additional keys to remove. If `null` - this function is no-op.
-     * @see `GridCacheProjection#removeAll(...)`
+     * @see `CacheProjection#removeAll(...)`
      */
     def removeAll$(@Nullable ks: Seq[K]) {
         if (ks != null)
@@ -427,7 +427,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param kv1 Key-value pair to store in cache.
      * @param kv2 Key-value pair to store in cache.
      * @param kvs Optional key-value pairs to store in cache.
-     * @see `GridCacheProjection#putAll(...)`
+     * @see `CacheProjection#putAll(...)`
      */
     def +=(kv1: (K, V), kv2: (K, V), @Nullable kvs: (K, V)*) {
         putAll$(kv1, kv2, kvs: _*)
@@ -456,14 +456,14 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param k Key whose mapping is to be removed from cache.
      * @param p Optional filters to check prior to removing value form cache. Note
      *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key, or `null`
      *      if there was no value for this key.
-     * @see `GridCacheProjection#remove(...)`
+     * @see `CacheProjection#remove(...)`
      */
     def remove$(k: K, @Nullable p: EntryPred*): V =
         value.remove(k, unwrap(p): _*)
@@ -491,13 +491,13 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param k Key whose mapping is to be removed from cache.
      * @param p Optional filters to check prior to removing value form cache. Note
      *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key as an option.
-     * @see `GridCacheProjection#remove(...)`
+     * @see `CacheProjection#remove(...)`
      */
     def removeOpt$(k: K, @Nullable p: EntryPred*): Option[V] =
         Option(value.remove(k, unwrap(p): _*))
@@ -510,7 +510,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *      that filter is checked atomically together with remove operation.
      * @return Previous value associated with specified key, or `null`
      *      if there was no value for this key.
-     * @see `GridCacheProjection#remove(...)`
+     * @see `CacheProjection#remove(...)`
      */
     def -=(k: K, @Nullable p: EntryPred*): V =
         remove$(k, p: _*)
@@ -527,12 +527,12 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * ===Cache Flags===
      * This method is not available if any of the following flags are set on projection:
-     * `GridCacheFlag#LOCAL`, `GridCacheFlag#READ`.
+     * `CacheFlag#LOCAL`, `CacheFlag#READ`.
      *
      * @param k1 1st key to remove.
      * @param k2 2nd key to remove.
      * @param ks Optional sequence of additional keys to remove.
-     * @see `GridCacheProjection#removeAll(...)`
+     * @see `CacheProjection#removeAll(...)`
      */
     def removeAll$(k1: K, k2: K, @Nullable ks: K*) {
         val s = new mutable.ArrayBuffer[K](2 + (if (ks == null) 0 else ks.length))
@@ -552,7 +552,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * @param k1 1st key to remove.
      * @param k2 2nd key to remove.
      * @param ks Optional sequence of additional keys to remove.
-     * @see `GridCacheProjection#removeAll(...)`
+     * @see `CacheProjection#removeAll(...)`
      */
     def -=(k1: K, k2: K, @Nullable ks: K*) {
         removeAll$(k1, k2, ks: _*)
@@ -572,7 +572,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def scan(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
@@ -599,7 +599,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def scan(@Nullable grid: ClusterGroup, kvp: KvPred)
@@ -621,7 +621,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def scan(cls: Class[_ <: V], kvp: KvPred): Iterable[(K, V)] = {
@@ -644,7 +644,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def scan(kvp: KvPred)(implicit m: Manifest[V]): Iterable[(K, V)] = {
@@ -667,7 +667,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
@@ -697,7 +697,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def sql(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
@@ -722,7 +722,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
@@ -746,7 +746,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
@@ -770,7 +770,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
      */
@@ -794,7 +794,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def text(@Nullable grid: ClusterGroup = null, cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
@@ -821,7 +821,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def text(@Nullable grid: ClusterGroup, clause: String)(implicit m: Manifest[V]): Iterable[(K, V)] = {
@@ -842,7 +842,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def text(cls: Class[_ <: V], clause: String): Iterable[(K, V)] = {
@@ -865,7 +865,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @return Collection of cache key-value pairs.
      */
     def text(clause: String)(implicit m: Manifest[V]): Iterable[(K, V)] = {
@@ -888,7 +888,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -917,7 +917,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * cache projection.
      *
      * @param grid Grid projection on which this query will be executed. If `null` the global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -941,7 +941,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -966,7 +966,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -992,7 +992,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
@@ -1024,7 +1024,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -1052,7 +1052,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
@@ -1078,7 +1078,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
@@ -1105,7 +1105,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @param args Optional list of query arguments.
      * @return Collection of cache key-value pairs.
@@ -1133,7 +1133,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -1163,7 +1163,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -1187,7 +1187,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -1212,7 +1212,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param trans Transform function that will be applied to each returned value.
      * @return Collection of cache key-value pairs.
      */
@@ -1238,7 +1238,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1270,7 +1270,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1296,7 +1296,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1324,7 +1324,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1352,7 +1352,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @param args Optional list of query arguments.
@@ -1386,7 +1386,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1416,7 +1416,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @param args Optional list of query arguments.
@@ -1444,7 +1444,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @param args Optional list of query arguments.
@@ -1474,7 +1474,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @param args Optional list of query arguments.
@@ -1504,7 +1504,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1536,7 +1536,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1562,7 +1562,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1590,7 +1590,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param locRdc Reduce function that will be called on local node.
      * @return Reduced value.
@@ -1618,7 +1618,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1647,7 +1647,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * cache projection.
      *
      * @param grid Grid projection on which this query will be executed. If `null` the global projection will be used.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1671,7 +1671,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1696,7 +1696,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param kvp Filter to be used prior to returning key-value pairs to user. See `GridCacheQuery` for more details.
+     * @param kvp Filter to be used prior to returning key-value pairs to user. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1721,7 +1721,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
@@ -1753,7 +1753,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1781,7 +1781,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
@@ -1807,7 +1807,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
@@ -1835,7 +1835,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @param args Optional list of query arguments.
      * @return Collection of reduced values.
@@ -1863,7 +1863,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *     global projection will be used.
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1893,7 +1893,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Grid projection on which this query will be executed. If `null` the
      *     global projection will be used.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1917,7 +1917,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param cls Query values class. Since cache can, in general, contain values of any subtype of `V`
      *     query needs to know the exact type it should operate on.
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1943,7 +1943,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      * Note that query value class will be taken implicitly as exact type `V` of this
      * cache projection.
      *
-     * @param clause Query text clause. See `GridCacheQuery` for more details.
+     * @param clause Query text clause. See `CacheQuery` for more details.
      * @param rmtRdc Reduce function that will be called on each remote node.
      * @return Collection of reduced values.
      */
@@ -1967,7 +1967,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Optional grid projection on which this query will be executed. If `null` the
      *      global projection will be used.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @param args Optional list of query arguments.
      * @return Sequence of sequences of field values.
      */
@@ -1993,7 +1993,7 @@ class ScalarCacheProjectionPimp[@specialized K, @specialized V] extends PimpedTy
      *
      * @param grid Optional grid projection on which this query will be executed. If `null` the
      *      global projection will be used.
-     * @param clause Query SQL clause. See `GridCacheQuery` for more details.
+     * @param clause Query SQL clause. See `CacheQuery` for more details.
      * @return Sequence of sequences of field values.
      */
     def sqlFields(@Nullable grid: ClusterGroup = null, clause: String): IndexedSeq[IndexedSeq[Any]] = {

@@ -95,7 +95,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
     private IgniteLogger log;
 
     /** Filter. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] filter;
+    private IgnitePredicate<CacheEntry<K, V>>[] filter;
 
     /** Transaction. */
     @GridToStringExclude
@@ -147,7 +147,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         boolean retval,
         long timeout,
         long accessTtl,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<CacheEntry<K, V>>[] filter) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;

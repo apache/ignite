@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -68,7 +68,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     private AtomicInteger cntr = new AtomicInteger(0);
 
     /** Affinity based on node index mode. */
-    private GridCacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
+    private CacheAffinityFunction aff = new GridCacheModuloAffinityFunction(GRID_CNT, BACKUPS);
 
     /** Debug flag for mappings. */
     private boolean mapDebug = true;
@@ -99,7 +99,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAffinity(aff);
         cacheCfg.setAtomicityMode(atomicityMode());
         cacheCfg.setBackups(BACKUPS);
@@ -180,7 +180,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param g Grid.
      * @return Near cache.
      */
-    private GridCacheProjection<Integer, String> cache(Ignite g) {
+    private CacheProjection<Integer, String> cache(Ignite g) {
         return g.cache(null);
     }
 
@@ -206,13 +206,13 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @param idx Index.
      * @return Affinity.
      */
-    private GridCacheAffinity<Object> affinity(int idx) {
+    private CacheAffinity<Object> affinity(int idx) {
         return grid(idx).cache(null).affinity();
     }
 
     /** @param cnt Count. */
     private void mapKeys(int cnt) {
-        GridCacheAffinity<Object> aff = affinity(0);
+        CacheAffinity<Object> aff = affinity(0);
 
         for (int key = 1; key <= cnt; key++) {
             Integer part = aff.partition(key);
@@ -336,7 +336,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         info("Local node: " + U.toShortString(loc));
 
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         int cnt = 10;
 
@@ -361,7 +361,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             assert ((Collection)n.meta("primary")).contains(key);
 
-            GridCache<Integer, String> dhtCache = dht(G.ignite(n.id()));
+            Cache<Integer, String> dhtCache = dht(G.ignite(n.id()));
 
             String s = dhtCache.peek(key);
 
@@ -377,7 +377,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ConstantConditions"})
     public void testOptimisticWriteThrough() throws Exception {
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         if (transactional()) {
             try (IgniteTx tx = near.txStart(OPTIMISTIC, REPEATABLE_READ, 0, 0)) {
@@ -422,7 +422,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testNoTransactionSinglePutx() throws Exception {
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         near.putx(2, "2");
 
@@ -439,7 +439,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testNoTransactionSinglePut() throws Exception {
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         // There should be a not-null previously mapped value because
         // we use a store implementation that just returns values which
@@ -481,7 +481,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
     /** @throws Exception If failed. */
     public void testNoTransactionWriteThrough() throws Exception {
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         near.putx(2, "2");
 
@@ -510,7 +510,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"ConstantConditions"})
     public void testPessimisticWriteThrough() throws Exception {
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         if (transactional()) {
             try (IgniteTx tx = near.txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
@@ -557,7 +557,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         // Don't create missing values.
         store.create(false);
 
-        GridCache<Integer, String> near = cache(0);
+        Cache<Integer, String> near = cache(0);
 
         int key = 1;
 
@@ -598,7 +598,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkBackupConsistency(int key) throws Exception {
-        GridCache<Integer, String> cache = cache(0);
+        Cache<Integer, String> cache = cache(0);
 
         String val = Integer.toString(key);
 
@@ -652,7 +652,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         if (!transactional())
             return;
 
-        GridCache<Integer, String> cache = cache(0);
+        Cache<Integer, String> cache = cache(0);
 
         String val = Integer.toString(key);
 
@@ -810,7 +810,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkTransactionSingleGet(int key) throws Exception {
-        GridCache<Integer, String> cache = cache(0);
+        Cache<Integer, String> cache = cache(0);
 
         String val = Integer.toString(key);
 
@@ -856,7 +856,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void checkTransactionSingleGetRemove(int key) throws Exception {
-        GridCache<Integer, String> cache = cache(0);
+        Cache<Integer, String> cache = cache(0);
 
         String val = Integer.toString(key);
 
@@ -955,7 +955,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends String> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends String> e) {
             map.put(e.getKey(), e.getValue());
         }
 

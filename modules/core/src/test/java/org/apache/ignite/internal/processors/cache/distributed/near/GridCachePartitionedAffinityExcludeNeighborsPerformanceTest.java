@@ -32,7 +32,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Partitioned affinity test.
@@ -70,7 +70,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
 
         cc.setBackups(2);
 
-        GridCacheAffinityFunction aff = new GridCacheConsistentHashAffinityFunction(excNeighbores);
+        CacheAffinityFunction aff = new CacheConsistentHashAffinityFunction(excNeighbores);
 
         cc.setAffinity(aff);
 
@@ -90,7 +90,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param ignite Grid.
      * @return Affinity.
      */
-    static GridCacheAffinity<Object> affinity(Ignite ignite) {
+    static CacheAffinity<Object> affinity(Ignite ignite) {
         return ignite.cache(null).affinity();
     }
 
@@ -99,7 +99,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @param key Key.
      * @return Nodes.
      */
-    private static Collection<? extends ClusterNode> nodes(GridCacheAffinity<Object> aff, Object key) {
+    private static Collection<? extends ClusterNode> nodes(CacheAffinity<Object> aff, Object key) {
         return aff.mapKeyToPrimaryAndBackups(key);
     }
 
@@ -167,7 +167,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
      * @throws Exception If failed.
      */
     private long checkCountPerformance0(Ignite g, int cnt) throws Exception {
-        GridCacheAffinity<Object> aff = affinity(g);
+        CacheAffinity<Object> aff = affinity(g);
 
         GridTimer timer = new GridTimer("test");
 
@@ -218,7 +218,7 @@ public class GridCachePartitionedAffinityExcludeNeighborsPerformanceTest extends
         try {
             Ignite g = grid(0);
 
-            GridCacheAffinity<Object> aff = affinity(g);
+            CacheAffinity<Object> aff = affinity(g);
 
             // Warmup.
             checkCountPerformance0(g, 10000);

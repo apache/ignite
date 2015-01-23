@@ -340,7 +340,7 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
          GridCacheContext<K, V> ctx,
          boolean failFast,
          K key,
-         @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
+         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws GridCacheFilterFailedException;
 
     /**
      * @return Start version.

@@ -35,10 +35,10 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -152,7 +152,7 @@ public class GridCacheReplicatedInvalidateSelfTest extends GridCommonAbstractTes
         IgniteTxIsolation isolation) throws Throwable {
         int idx = RAND.nextInt(GRID_CNT);
 
-        GridCache<Integer, String> cache = cache(idx);
+        Cache<Integer, String> cache = cache(idx);
 
         IgniteTx tx = cache.txStart(concurrency, isolation, 0, 0);
 

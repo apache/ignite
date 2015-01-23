@@ -46,8 +46,8 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */

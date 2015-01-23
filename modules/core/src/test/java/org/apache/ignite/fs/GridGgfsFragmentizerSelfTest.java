@@ -245,7 +245,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
                 for (int i = 0; i < NODE_CNT; i++) {
                     GridEx g = grid(i);
 
-                    GridCache<Object, Object> cache = g.cachex(DATA_CACHE_NAME);
+                    Cache<Object, Object> cache = g.cachex(DATA_CACHE_NAME);
 
                     assertTrue("Data cache is not empty [keys=" + cache.keySet() +
                         ", node=" + g.localNode().id() + ']', cache.isEmpty());

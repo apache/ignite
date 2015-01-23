@@ -41,11 +41,11 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Hash ID resolver. */
-    private GridCacheAffinityNodeHashResolver rslvr;
+    private CacheAffinityNodeHashResolver rslvr;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
+        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
 
         aff.setHashIdResolver(rslvr);
 
@@ -77,7 +77,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
      * @throws Exception If failed.
      */
     public void testDuplicateId() throws Exception {
-        rslvr = new GridCacheAffinityNodeHashResolver() {
+        rslvr = new CacheAffinityNodeHashResolver() {
             @Override public Object resolve(ClusterNode node) {
                 return 1;
             }

@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -83,10 +83,10 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
         cc.setSwapEnabled(false);
 
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         // Set only DHT policy, leave default near policy.
-        cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy<>(10));
+        cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(10));
         cc.setEvictSynchronized(evictSync);
         cc.setEvictNearSynchronized(evictNearSync);
         cc.setEvictSynchronizedKeyBufferSize(1);
@@ -167,7 +167,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
         Ignite g = startGrid(0);
 
-        final GridCache<Integer, Integer> cache = g.cache(null);
+        final Cache<Integer, Integer> cache = g.cache(null);
 
         for (int i = 1; i < 20; i++) {
             cache.putx(i * gridCnt, i * gridCnt);
@@ -183,7 +183,7 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
 
             Ignite ignite = grid(0);
 
-            final GridCache<Integer, Integer> cache = ignite.cache(null);
+            final Cache<Integer, Integer> cache = ignite.cache(null);
 
             // Put 1 entry to primary node.
             cache.putx(0, 0);

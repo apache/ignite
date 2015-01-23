@@ -58,13 +58,13 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     private void checkNonLocalKey(IgniteTxConcurrency concurrency) throws Exception {
         final UUID key = primaryKeyForCache(grid(1));
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        Cache<Object, Object> cache = grid(0).cache(null);
 
         IgniteTx tx = null;
         try {
             tx = cache.txStartAffinity(key, concurrency, READ_COMMITTED, 0, 2);
 
-            cache.put(new GridCacheAffinityKey<>("1", key), "2");
+            cache.put(new CacheAffinityKey<>("1", key), "2");
 
             tx.commit();
 
@@ -115,13 +115,13 @@ public abstract class GridCacheGroupLockPartitionedMultiNodeAbstractSelfTest ext
     private void checkNearReadersUpdate(boolean touchAffKey, IgniteTxConcurrency concurrency) throws Exception {
         UUID affinityKey = primaryKeyForCache(grid(0));
 
-        GridCacheAffinityKey<String> key1 = new GridCacheAffinityKey<>("key1", affinityKey);
-        GridCacheAffinityKey<String> key2 = new GridCacheAffinityKey<>("key2", affinityKey);
-        GridCacheAffinityKey<String> key3 = new GridCacheAffinityKey<>("key3", affinityKey);
+        CacheAffinityKey<String> key1 = new CacheAffinityKey<>("key1", affinityKey);
+        CacheAffinityKey<String> key2 = new CacheAffinityKey<>("key2", affinityKey);
+        CacheAffinityKey<String> key3 = new CacheAffinityKey<>("key3", affinityKey);
 
         grid(0).cache(null).put(affinityKey, "aff");
 
-        GridCache<GridCacheAffinityKey<String>, String> cache = grid(0).cache(null);
+        Cache<CacheAffinityKey<String>, String> cache = grid(0).cache(null);
 
         cache.putAll(F.asMap(
             key1, "val1",

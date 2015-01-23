@@ -19,14 +19,14 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
  */
 public class IgniteCacheAtomicNearEnabledInvokeTest extends IgniteCacheAtomicInvokeTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 }

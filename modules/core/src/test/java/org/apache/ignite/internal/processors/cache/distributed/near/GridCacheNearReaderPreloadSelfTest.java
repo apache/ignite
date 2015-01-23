@@ -30,9 +30,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * We have three nodes - A, B and C - and start them in that order. Each node contains NEAR_PARTITIONED transactional
@@ -51,13 +51,13 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "cache";
 
     /** Cache on primary node. */
-    private GridCache<Integer, Integer> cache1;
+    private Cache<Integer, Integer> cache1;
 
     /** Cache on near node. */
-    private GridCache<Integer, Integer> cache2;
+    private Cache<Integer, Integer> cache2;
 
     /** Cache on backup node. */
-    private GridCache<Integer, Integer> cache3;
+    private Cache<Integer, Integer> cache3;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -190,8 +190,8 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * @param expVal Expected value.
      * @throws Exception If failed.
      */
-    private void checkCache(GridCacheProjection<Integer, Integer> cache, int key, int expVal) throws Exception {
-        GridCacheEntry<Integer, Integer> entry = cache.entry(key);
+    private void checkCache(CacheProjection<Integer, Integer> cache, int key, int expVal) throws Exception {
+        CacheEntry<Integer, Integer> entry = cache.entry(key);
 
         assert F.eq(expVal, entry.getValue()) : "Unexpected cache value [key=" + key + ", expected=" + expVal +
             ", actual=" + entry.getValue() + ", primary=" + entry.primary() + ", backup=" + entry.backup() + ']';

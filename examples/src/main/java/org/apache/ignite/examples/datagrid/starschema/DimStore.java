@@ -26,11 +26,11 @@ import org.apache.ignite.cache.query.*;
  */
 public class DimStore {
     /** Primary key. */
-    @GridCacheQuerySqlField(index = true)
+    @CacheQuerySqlField(index = true)
     private int id;
 
     /** Store name. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private String name;
 
     /** Zip code. */

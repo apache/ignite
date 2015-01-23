@@ -37,8 +37,8 @@ import java.util.*;
 
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -46,7 +46,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  */
 public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
-    private GridCachePreloadMode preloadMode = ASYNC;
+    private CachePreloadMode preloadMode = ASYNC;
 
     /** */
     private int batchSize = 4096;
@@ -153,12 +153,12 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g1 = startGrid(1);
 
-            GridCache<Integer, String> cache1 = g1.cache(null);
+            Cache<Integer, String> cache1 = g1.cache(null);
 
             cache1.put(1, "val1");
             cache1.put(2, "val2");
 
-            GridCacheEntry<Integer, String> e1 = cache1.entry(1);
+            CacheEntry<Integer, String> e1 = cache1.entry(1);
 
             assert e1 != null;
 
@@ -186,12 +186,12 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertEquals(EVT_CACHE_PRELOAD_STARTED, iter.next().type());
             assertEquals(EVT_CACHE_PRELOAD_STOPPED, iter.next().type());
 
-            GridCache<Integer, String> cache2 = g2.cache(null);
+            Cache<Integer, String> cache2 = g2.cache(null);
 
             assertEquals("val1", cache2.peek(1));
             assertEquals("val2", cache2.peek(2));
 
-            GridCacheEntry<Integer, String> e2 = cache2.entry(1);
+            CacheEntry<Integer, String> e2 = cache2.entry(1);
 
             assert e2 != null;
             assert e2 != e1;
@@ -214,8 +214,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
             Ignite g2 = startGrid(2);
 
-            GridCache<Integer, Object> cache1 = g1.cache(null);
-            GridCache<Integer, Object> cache2 = g2.cache(null);
+            Cache<Integer, Object> cache1 = g1.cache(null);
+            Cache<Integer, Object> cache2 = g2.cache(null);
 
             ClassLoader ldr = new GridTestClassLoader(
                 GridCacheReplicatedPreloadSelfTest.class.getName(),
@@ -241,7 +241,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g3 = startGrid(3);
 
-            GridCache<Integer, Object> cache3 = g3.cache(null);
+            Cache<Integer, Object> cache3 = g3.cache(null);
 
             Object v3 = cache3.peek(1);
 
@@ -267,14 +267,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         batchSize = 512;
 
         try {
-            GridCache<Integer, String> cache1 = startGrid(1).cache(null);
+            Cache<Integer, String> cache1 = startGrid(1).cache(null);
 
             int keyCnt = 1000;
 
             for (int i = 0; i < keyCnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            Cache<Integer, String> cache2 = startGrid(2).cache(null);
 
             assertEquals(keyCnt, cache2.size());
         }
@@ -291,14 +291,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         batchSize = 256;
 
         try {
-            GridCache<Integer, String> cache1 = startGrid(1).cache(null);
+            Cache<Integer, String> cache1 = startGrid(1).cache(null);
 
             int keyCnt = 2000;
 
             for (int i = 0; i < keyCnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            Cache<Integer, String> cache2 = startGrid(2).cache(null);
 
             int size = cache2.size();
 
@@ -319,7 +319,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * @throws InterruptedException If thread was interrupted.
      */
     @SuppressWarnings({"BusyWait"})
-    private boolean waitCacheSize(GridCacheProjection<Integer, String> cache, int expSize, long timeout)
+    private boolean waitCacheSize(CacheProjection<Integer, String> cache, int expSize, long timeout)
         throws InterruptedException {
         assert cache != null;
         assert expSize > 0;
@@ -345,14 +345,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         batchSize = 1; // 1 byte but one entry should be in batch anyway.
 
         try {
-            GridCache<Integer, String> cache1 = startGrid(1).cache(null);
+            Cache<Integer, String> cache1 = startGrid(1).cache(null);
 
             int cnt = 100;
 
             for (int i = 0; i < cnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            Cache<Integer, String> cache2 = startGrid(2).cache(null);
 
             assertEquals(cnt, cache2.size());
         }
@@ -369,14 +369,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         batchSize = 1000; // 1000 bytes.
 
         try {
-            GridCache<Integer, String> cache1 = startGrid(1).cache(null);
+            Cache<Integer, String> cache1 = startGrid(1).cache(null);
 
             int cnt = 100;
 
             for (int i = 0; i < cnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            Cache<Integer, String> cache2 = startGrid(2).cache(null);
 
             assertEquals(cnt, cache2.size());
         }
@@ -393,14 +393,14 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         batchSize = 10000; // 10000 bytes.
 
         try {
-            GridCache<Integer, String> cache1 = startGrid(1).cache(null);
+            Cache<Integer, String> cache1 = startGrid(1).cache(null);
 
             int cnt = 100;
 
             for (int i = 0; i < cnt; i++)
                 cache1.put(i, "val" + i);
 
-            GridCache<Integer, String> cache2 = startGrid(2).cache(null);
+            Cache<Integer, String> cache2 = startGrid(2).cache(null);
 
             assertEquals(cnt, cache2.size());
         }
@@ -451,7 +451,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
                 info("Cache size is OK for grid index: " + gridIdx);
             }
 
-            GridCache<Integer, String> lastCache = startGrid(gridCnt).cache(null);
+            Cache<Integer, String> lastCache = startGrid(gridCnt).cache(null);
 
             // Let preloading start.
             Thread.sleep(1000);
@@ -525,7 +525,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
      * Test affinity.
      */
     @SuppressWarnings({"PublicInnerClass"})
-    private static class TestAffinityFunction implements GridCacheAffinityFunction {
+    private static class TestAffinityFunction implements CacheAffinityFunction {
         /** {@inheritDoc} */
         @Override public int partitions() {
             return 2;
@@ -540,7 +540,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+        @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
             List<List<ClusterNode>> res = new ArrayList<>(partitions());
 
             for (int part = 0; part < partitions(); part++)

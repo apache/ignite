@@ -32,7 +32,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -66,8 +66,8 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setEvictionPolicy(new GridCacheFifoEvictionPolicy<>(1000));
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setEvictionPolicy(new CacheFifoEvictionPolicy<>(1000));
         cc.setNearEvictionPolicy(new GridCacheAlwaysEvictionPolicy());
         cc.setSwapEnabled(false);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -175,7 +175,7 @@ public class GridCachePartitionedMultiThreadedPutGetSelfTest extends GridCommonA
         multithreaded(new CAX() {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() throws IgniteCheckedException {
-                GridCache<Integer, Integer> c = grid(0).cache(null);
+                Cache<Integer, Integer> c = grid(0).cache(null);
 
                 for (int i = 0; i < TX_CNT; i++) {
                     int kv = cntr.incrementAndGet();

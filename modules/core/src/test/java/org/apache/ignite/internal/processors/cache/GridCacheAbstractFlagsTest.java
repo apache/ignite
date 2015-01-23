@@ -24,7 +24,7 @@ import org.apache.ignite.lang.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests cache flags.
@@ -36,7 +36,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheWriteSynchronizationMode writeSynchronization() {
+    @Override protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_ASYNC;
     }
 
@@ -78,7 +78,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
                 @Override public Object call() throws Exception {
                     int idx = cntr.getAndIncrement() % gridCount();
 
-                    GridCache<String, Integer> c = cache(idx);
+                    Cache<String, Integer> c = cache(idx);
 
                     l.await();
 
@@ -88,7 +88,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
                 }
             }, gridCount() * 3);
 
-            cache(0).flagsOn(GridCacheFlag.SYNC_COMMIT).put(key, val);
+            cache(0).flagsOn(CacheFlag.SYNC_COMMIT).put(key, val);
 
             l.countDown();
 

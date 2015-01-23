@@ -19,12 +19,12 @@ package org.apache.ignite.loadtests.colocation;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jdk8.backport.*;
 
-import javax.cache.*;
 import javax.cache.integration.*;
 import java.util.concurrent.*;
 
@@ -59,12 +59,12 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
         try {
             ExecutorCompletionService<Object> completeSvc = new ExecutorCompletionService<>(execSvc);
 
-            GridCache<GridTestKey, Long> cache = ignite.cache("partitioned");
+            Cache<GridTestKey, Long> cache = ignite.cache("partitioned");
 
             assert cache != null;
 
             // Get projection just to check affinity for Integer.
-            final GridCacheProjection<Integer, Long> prj = cache.projection(Integer.class, Long.class);
+            final CacheProjection<Integer, Long> prj = cache.projection(Integer.class, Long.class);
 
             final LongAdder adder = new LongAdder();
 
@@ -123,7 +123,7 @@ public class GridTestCacheStore extends CacheStoreAdapter<GridTestKey, Long> {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(Cache.Entry<? extends GridTestKey, ? extends Long> e) {
+    @Override public void write(javax.cache.Cache.Entry<? extends GridTestKey, ? extends Long> e) {
         // No-op.
     }
 

@@ -36,11 +36,11 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests near transactions.
@@ -130,10 +130,10 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
                 Ignite g = F.rand(ignites);
 
-                g.cache(null).put(new GridCacheAffinityKey<>(i, mainKey), Integer.toString(cntr++));
+                g.cache(null).put(new CacheAffinityKey<>(i, mainKey), Integer.toString(cntr++));
             }
 
-            GridCacheProjection cache = priIgnite.cache(null).flagsOn(GridCacheFlag.CLONE);
+            CacheProjection cache = priIgnite.cache(null).flagsOn(CacheFlag.CLONE);
 
             IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -196,7 +196,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void testReadersUpdate(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(null);
+        Cache<Integer, Integer> cache = grid(0).cache(null);
 
         try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             for (int i = 0; i < 100; i++)
@@ -207,7 +207,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
 
         // Create readers.
         for (int g = 0; g < GRID_CNT; g++) {
-            GridCache<Integer, Integer> c = grid(g).cache(null);
+            Cache<Integer, Integer> c = grid(g).cache(null);
 
             for (int i = 0; i < 100; i++)
                 assertEquals((Integer)1, c.get(i));
@@ -221,7 +221,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
         }
 
         for (int g = 0; g < GRID_CNT; g++) {
-            GridCache<Integer, Integer> c = grid(g).cache(null);
+            Cache<Integer, Integer> c = grid(g).cache(null);
 
             for (int i = 0; i < 100; i++)
                 assertEquals((Integer)2, c.get(i));

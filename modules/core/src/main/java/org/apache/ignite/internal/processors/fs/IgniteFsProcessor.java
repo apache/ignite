@@ -40,7 +40,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
@@ -267,7 +267,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
             if (cacheCfg == null)
                 continue; // No cache for the given GGFS configuration.
 
-            GridCacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
+            CacheAffinityKeyMapper affMapper = cacheCfg.getAffinityMapper();
 
             if (!(affMapper instanceof IgniteFsGroupDataBlocksKeyMapper))
                 // Do not create GGFS attributes for such a node nor throw error about invalid configuration.
@@ -319,7 +319,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
             if (dataCache.configuration().isQueryIndexEnabled())
                 throw new IgniteCheckedException("GGFS data cache cannot start with enabled query indexing.");
 
-            GridCache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
+            Cache<Object, Object> metaCache = ctx.cache().cache(cfg.getMetaCacheName());
 
             if (metaCache == null)
                 throw new IgniteCheckedException("Metadata cache is not configured locally for GGFS: " + cfg);

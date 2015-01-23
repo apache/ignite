@@ -24,17 +24,17 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
  */
 public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTest {
     /** Memory mode. */
-    private GridCacheMemoryMode memMode;
+    private CacheMemoryMode memMode;
 
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -60,7 +60,7 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setMemoryMode(memMode);
         ccfg.setOffHeapMaxMemory(1024 * 1024 * 1024);
-        ccfg.setPreloadMode(GridCachePreloadMode.SYNC);
+        ccfg.setPreloadMode(CachePreloadMode.SYNC);
 
         return ccfg;
     }

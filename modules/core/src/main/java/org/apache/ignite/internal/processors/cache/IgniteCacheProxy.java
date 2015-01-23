@@ -118,7 +118,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return flagsOn(GridCacheFlag.SKIP_STORE);
+        return flagsOn(CacheFlag.SKIP_STORE);
     }
 
     /** {@inheritDoc} */
@@ -362,7 +362,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<GridCacheEntry<K, V>> entrySetx(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    public Set<CacheEntry<K, V>> entrySetx(IgnitePredicate<CacheEntry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -376,7 +376,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /**
      * @param filter Filter.
      */
-    public void removeAll(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    public void removeAll(IgnitePredicate<CacheEntry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -824,8 +824,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return F.iterator(delegate, new C1<GridCacheEntry<K, V>, Entry<K, V>>() {
-                @Override public Entry<K, V> apply(final GridCacheEntry<K, V> e) {
+            return F.iterator(delegate, new C1<CacheEntry<K, V>, Entry<K, V>>() {
+                @Override public Entry<K, V> apply(final CacheEntry<K, V> e) {
                     return new Entry<K, V>() {
                         @Override public K getKey() {
                             return e.getKey();
@@ -898,7 +898,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
         try {
             GridCacheProjectionImpl<K1, V1> prj0 = new GridCacheProjectionImpl<>(
-                (GridCacheProjection<K1, V1>)(prj != null ? prj : delegate),
+                (CacheProjection<K1, V1>)(prj != null ? prj : delegate),
                 (GridCacheContext<K1, V1>)ctx,
                 null,
                 null,
@@ -921,13 +921,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @param flags Flags to turn on (if empty, then no-op).
      * @return Cache with given flags enabled.
      */
-    public IgniteCache<K, V> flagsOn(@Nullable GridCacheFlag... flags) {
+    public IgniteCache<K, V> flagsOn(@Nullable CacheFlag... flags) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
+            Set<CacheFlag> res = EnumSet.noneOf(CacheFlag.class);
 
-            Set<GridCacheFlag> flags0 = prj !=null ? prj.flags() : null;
+            Set<CacheFlag> flags0 = prj !=null ? prj.flags() : null;
 
             if (flags0 != null && !flags0.isEmpty())
                 res.addAll(flags0);

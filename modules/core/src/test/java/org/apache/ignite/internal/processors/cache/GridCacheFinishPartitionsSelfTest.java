@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -84,7 +84,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
         String key = "key";
         String val = "value";
 
-        GridCache<String, String> cache = grid.cache(null);
+        Cache<String, String> cache = grid.cache(null);
 
         int keyPart = grid.<String, String>internalCache().context().affinity().partition(key);
 
@@ -127,7 +127,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 if (barrier.await() == 0)
                     start.set(System.currentTimeMillis());
 
-                GridCache<String, String> cache = grid(0).cache(null);
+                Cache<String, String> cache = grid(0).cache(null);
 
                 IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -187,7 +187,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
      * @throws Exception If failed.
      */
     public void testMvccFinishKeys() throws Exception {
-        GridCache<String, Integer> cache = grid(0).cache(null);
+        Cache<String, Integer> cache = grid(0).cache(null);
 
         try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             final String key = "key";

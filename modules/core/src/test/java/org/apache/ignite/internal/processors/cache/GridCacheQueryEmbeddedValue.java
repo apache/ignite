@@ -27,15 +27,15 @@ import java.io.*;
 @SuppressWarnings("unused")
 public class GridCacheQueryEmbeddedValue implements Serializable {
     /** Query embedded field. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private int embeddedField1 = 55;
 
     /** Query embedded field. */
-    @GridCacheQuerySqlField(groups = {"grp1"})
+    @CacheQuerySqlField(groups = {"grp1"})
     private int embeddedField2 = 11;
 
     /** */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private Val embeddedField3 = new Val();
 
     /**
@@ -43,7 +43,7 @@ public class GridCacheQueryEmbeddedValue implements Serializable {
     @SuppressWarnings("PublicInnerClass")
     public static class Val implements Serializable {
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Long x = 3L;
     }
 }

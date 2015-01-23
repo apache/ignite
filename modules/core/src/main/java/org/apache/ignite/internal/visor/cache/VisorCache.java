@@ -33,7 +33,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Data transfer object for {@link org.apache.ignite.cache.GridCache}.
+ * Data transfer object for {@link org.apache.ignite.cache.Cache}.
  */
 public class VisorCache implements Serializable {
     /** */
@@ -97,7 +97,7 @@ public class VisorCache implements Serializable {
      * @return Data transfer object for given cache.
      * @throws IgniteCheckedException
      */
-    public static VisorCache from(Ignite g, GridCache c, int sample) throws IgniteCheckedException {
+    public static VisorCache from(Ignite g, Cache c, int sample) throws IgniteCheckedException {
         assert g != null;
         assert c != null;
 
@@ -126,7 +126,7 @@ public class VisorCache implements Serializable {
         CacheMode mode = cfg.getCacheMode();
 
         boolean partitioned = (mode == CacheMode.PARTITIONED || mode == CacheMode.REPLICATED)
-            && cfg.getDistributionMode() != GridCacheDistributionMode.CLIENT_ONLY;
+            && cfg.getDistributionMode() != CacheDistributionMode.CLIENT_ONLY;
 
         if (partitioned) {
             GridDhtCacheAdapter dca = null;
@@ -187,11 +187,11 @@ public class VisorCache implements Serializable {
         int size = ca.size();
         int near = ca.nearSize();
 
-        Set<GridCacheEntry> set = ca.entrySet();
+        Set<CacheEntry> set = ca.entrySet();
 
         long memSz = 0;
 
-        Iterator<GridCacheEntry> it = set.iterator();
+        Iterator<CacheEntry> it = set.iterator();
 
         int sz = sample > 0 ? sample : DFLT_CACHE_SIZE_SAMPLING;
 

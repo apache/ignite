@@ -32,8 +32,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * The benchmark that performs put and remove operations on the cache to identify memory leaks.
@@ -45,7 +45,7 @@ public class GridCachePutRemoveLoadTest {
     private final Arguments args;
 
     /** */
-    private GridCache<Object, Object> cache;
+    private Cache<Object, Object> cache;
 
     /**
      * @param args Arguments.
@@ -104,7 +104,7 @@ public class GridCachePutRemoveLoadTest {
 
             CacheConfiguration cacheCfg = cfg.getCacheConfiguration()[0];
 
-            GridCacheDistributionMode distro = i == 0 &&
+            CacheDistributionMode distro = i == 0 &&
                 args.distribution() == CLIENT_ONLY ? CLIENT_ONLY : PARTITIONED_ONLY;
 
             cacheCfg.setCacheMode(args.cache());
@@ -125,7 +125,7 @@ public class GridCachePutRemoveLoadTest {
             cacheCfg.setAtomicityMode(args.transactional() ? TRANSACTIONAL : ATOMIC);
 
             if (args.evictionEnabled())
-                cacheCfg.setEvictionPolicy(new GridCacheLruEvictionPolicy(1000));
+                cacheCfg.setEvictionPolicy(new CacheLruEvictionPolicy(1000));
 
             G.start(cfg);
         }
@@ -240,7 +240,7 @@ public class GridCachePutRemoveLoadTest {
 
         /** */
         @Parameter(names = "-sm", description = "Synchronization Mode")
-        private GridCacheWriteSynchronizationMode syncMode = GridCacheWriteSynchronizationMode.PRIMARY_SYNC;
+        private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
         /** */
         @Parameter(names = "-wo", description = "Write Ordering Mode")
@@ -248,7 +248,7 @@ public class GridCachePutRemoveLoadTest {
 
         /** */
         @Parameter(names = "-dm", description = "Distribution mode")
-        private GridCacheDistributionMode distroMode = PARTITIONED_ONLY;
+        private CacheDistributionMode distroMode = PARTITIONED_ONLY;
 
         /** */
         @Parameter(names = "-ot", description = "Tiered Offheap")
@@ -284,7 +284,7 @@ public class GridCachePutRemoveLoadTest {
         /**
          * @return Distribution.
          */
-        public GridCacheDistributionMode distribution() {
+        public CacheDistributionMode distribution() {
             return distroMode;
         }
 
@@ -298,7 +298,7 @@ public class GridCachePutRemoveLoadTest {
         /**
          * @return Synchronization.
          */
-        public GridCacheWriteSynchronizationMode synchronization() {
+        public CacheWriteSynchronizationMode synchronization() {
             return syncMode;
         }
 

@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -84,7 +84,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        final GridCache<Integer, Person> cache = grid(0).cache(null);
+        final Cache<Integer, Person> cache = grid(0).cache(null);
 
         for (int i = 0; i < 2000; i++)
             cache.put(i, new Person(i));
@@ -92,7 +92,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 for (int i = 0; i < 100; i++) {
-                    GridCacheQuery<Map.Entry<Integer, Person>> qry =
+                    CacheQuery<Map.Entry<Integer, Person>> qry =
                         cache.queries().createSqlQuery("Person", "age >= 0");
 
                     qry.includeBackups(false);
@@ -100,7 +100,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
                     qry.keepAll(true);
                     qry.pageSize(50);
 
-                    GridCacheQueryFuture<Map.Entry<Integer, Person>> fut = qry.execute();
+                    CacheQueryFuture<Map.Entry<Integer, Person>> fut = qry.execute();
 
                     int cnt = 0;
 
@@ -120,7 +120,7 @@ public class GridCacheSqlQueryMultiThreadedSelfTest extends GridCommonAbstractTe
      */
     private static class Person implements Serializable {
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int age;
 
         /**

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
@@ -39,7 +40,6 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
@@ -47,13 +47,13 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
-import static org.apache.ignite.cache.query.GridCacheQueryType.*;
+import static org.apache.ignite.cache.query.CacheQueryType.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.junit.Assert.*;
 
 /**
@@ -92,7 +92,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     /**
      * @return Distribution.
      */
-    protected GridCacheDistributionMode distributionMode() {
+    protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 
@@ -138,7 +138,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cc.setSwapEnabled(true);
             cc.setEvictNearSynchronized(false);
 
-            GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+            CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
             qcfg.setIndexPrimitiveKey(true);
             qcfg.setIndexFixedTyping(true);
@@ -177,7 +177,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testDifferentKeyTypes() throws Exception {
-        GridCache<Object, Object> cache = ignite.cache(null);
+        Cache<Object, Object> cache = ignite.cache(null);
 
         cache.putx("key", "value");
 
@@ -192,7 +192,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testDifferentValueTypes() throws Exception {
-        GridCache<Object, Object> cache = ignite.cache(null);
+        Cache<Object, Object> cache = ignite.cache(null);
 
         cache.putx("key", "value");
 
@@ -207,11 +207,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testStringType() throws Exception {
-        GridCache<String, String> cache = ignite.cache(null);
+        Cache<String, String> cache = ignite.cache(null);
 
         cache.putx("tst", "test");
 
-        GridCacheQuery<Map.Entry<String, String>> qry = cache.queries().createSqlQuery(String.class, "_val='test'");
+        CacheQuery<Map.Entry<String, String>> qry = cache.queries().createSqlQuery(String.class, "_val='test'");
 
         Map.Entry<String, String> entry = F.first(qry.execute().get());
 
@@ -224,7 +224,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testIntegerType() throws Exception {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
         String key = "k";
 
@@ -232,7 +232,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         cache.putx(key, val);
 
-        GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
+        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
             "select * from Integer where _key = 'k' and _val > 1");
 
         Map.Entry<String, Integer> entry = F.first(qry.execute().get());
@@ -249,10 +249,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     public void testUserDefinedFunction() throws IgniteCheckedException {
         // Without alias.
-        GridCacheQuery<List<?>> qry = ignite.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
+        CacheQuery<List<?>> qry = ignite.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
             projection(ignite.cluster());
 
-        GridCacheQueryFuture<List<?>> fut = qry.execute();
+        CacheQueryFuture<List<?>> fut = qry.execute();
 
         Collection<List<?>> res = fut.get();
 
@@ -278,7 +278,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(8, row.get(1));
 
         // Not registered.
-        final GridCacheQuery<List<?>> qry3 = ignite.cache(null).queries().createSqlFieldsQuery("select no()");
+        final CacheQuery<List<?>> qry3 = ignite.cache(null).queries().createSqlFieldsQuery("select no()");
 
         GridTestUtils.assertThrows(
             log,
@@ -303,9 +303,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         ignite.jcache(null).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put("key1", 1);
 
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
-        GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "1=1");
+        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "1=1");
 
         Map.Entry<String, Integer> res = F.first(qry.execute().get());
 
@@ -322,12 +322,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testIllegalBounds() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         cache.put(1, 1);
         cache.put(2, 2);
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
+        CacheQuery<Map.Entry<Integer, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
             "_key between 2 and 1");
 
         assertTrue(qry.execute().get().isEmpty());
@@ -339,7 +339,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testComplexType() throws Exception {
-        GridCache<Key, GridCacheQueryTestValue> cache = ignite.cache(null);
+        Cache<Key, GridCacheQueryTestValue> cache = ignite.cache(null);
 
         GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
 
@@ -357,7 +357,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         cache.putx(new Key(100500), val1);
         cache.putx(new Key(100501), val2);
 
-        GridCacheQuery<Map.Entry<Key, GridCacheQueryTestValue>> qry =
+        CacheQuery<Map.Entry<Key, GridCacheQueryTestValue>> qry =
             cache.queries().createSqlQuery(GridCacheQueryTestValue.class,
                 "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3");
 
@@ -373,7 +373,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class Key {
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private final long id;
 
         /**
@@ -409,14 +409,14 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testSelectQuery() throws Exception {
-        GridCache<String, String> cache = ignite.cache(null);
+        Cache<String, String> cache = ignite.cache(null);
 
         cache.putx("key", "value");
 
-        GridCacheQuery<Map.Entry<String, String>> qry = cache.queries().createSqlQuery(String.class,
+        CacheQuery<Map.Entry<String, String>> qry = cache.queries().createSqlQuery(String.class,
             "select * from String");
 
-        GridCacheQueryFuture<Map.Entry<String, String>> iter = qry.execute();
+        CacheQueryFuture<Map.Entry<String, String>> iter = qry.execute();
 
         assert iter != null;
         assert iter.next() != null;
@@ -428,16 +428,16 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testObjectQuery() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
+        Cache<Integer, ObjectValue> cache = ignite.cache(null);
 
         ObjectValue val = new ObjectValue("test", 0);
 
         cache.putx(1, val);
 
-        GridCacheQuery<Map.Entry<Integer, ObjectValue>> qry =
+        CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
             cache.queries().createSqlQuery(ObjectValue.class, "_val=?");
 
-        GridCacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute(val);
+        CacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute(val);
 
         assert iter != null;
 
@@ -466,7 +466,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testTextQueryOnProjection() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
+        Cache<Integer, ObjectValue> cache = ignite.cache(null);
 
         cache.putx(1, new ObjectValue("test", 1));
         cache.putx(2, new ObjectValue("test", 2));
@@ -477,12 +477,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        GridCacheProjection<Integer, ObjectValue> cachePrj = grid(0).<Integer, ObjectValue>cache(null).projection(p);
+        CacheProjection<Integer, ObjectValue> cachePrj = grid(0).<Integer, ObjectValue>cache(null).projection(p);
 
-        GridCacheQuery<Map.Entry<Integer, ObjectValue>> qry =
+        CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
             cachePrj.queries().createFullTextQuery(ObjectValue.class, "test");
 
-        GridCacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute();
+        CacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute();
 
         assert iter != null;
 
@@ -500,7 +500,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testObjectQueryWithSwap() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
+        Cache<Integer, ObjectValue> cache = ignite.cache(null);
 
         boolean partitioned = cache.configuration().getCacheMode() == PARTITIONED;
 
@@ -510,7 +510,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             cache.putx(i, new ObjectValue("test" + i, i));
 
         for (Ignite g : G.allGrids()) {
-            GridCache<Integer, ObjectValue> c = g.cache(null);
+            Cache<Integer, ObjectValue> c = g.cache(null);
 
             for (int i = 0; i < cnt; i++) {
                 if (i % 2 == 0) {
@@ -527,12 +527,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         }
 
-        GridCacheQuery<Map.Entry<Integer, ObjectValue>> qry =
+        CacheQuery<Map.Entry<Integer, ObjectValue>> qry =
             cache.queries().createSqlQuery(ObjectValue.class, "intVal >= ? order by intVal");
 
         qry.enableDedup(true);
 
-        GridCacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute(0);
+        CacheQueryFuture<Map.Entry<Integer, ObjectValue>> iter = qry.execute(0);
 
         assert iter != null;
 
@@ -590,10 +590,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testFullTextSearch() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
+        Cache<Integer, ObjectValue> cache = ignite.cache(null);
 
         // Try to execute on empty cache first.
-        GridCacheQuery<Map.Entry<Integer, ObjectValue>> qry = cache.queries().createFullTextQuery(ObjectValue.class,
+        CacheQuery<Map.Entry<Integer, ObjectValue>> qry = cache.queries().createFullTextQuery(ObjectValue.class,
             "full");
 
         assert qry.execute().get().isEmpty();
@@ -637,8 +637,8 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testRemoveIndex() throws Exception {
-        GridCache<Integer, ObjectValue> cache = ignite.cache(null);
-        GridCache<Integer, ObjectValue> cache1 = ignite.cache("c1");
+        Cache<Integer, ObjectValue> cache = ignite.cache(null);
+        Cache<Integer, ObjectValue> cache1 = ignite.cache("c1");
 
         ObjectValue val = new ObjectValue("test full text", 0);
 
@@ -673,13 +673,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testScanQuery() throws Exception {
-        GridCache<String, String> c1 = ignite.cache(null);
+        Cache<String, String> c1 = ignite.cache(null);
 
         c1.putx("key", "value");
 
-        GridCacheQuery<Map.Entry<String, String>> qry1 = c1.queries().createScanQuery(null);
+        CacheQuery<Map.Entry<String, String>> qry1 = c1.queries().createScanQuery(null);
 
-        GridCacheQueryFuture<Map.Entry<String, String>> iter = qry1.execute();
+        CacheQueryFuture<Map.Entry<String, String>> iter = qry1.execute();
 
         assert iter != null;
 
@@ -701,7 +701,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testTwoObjectsTextSearch() throws Exception {
-        GridCache<Object, Object> c = ignite.cache(null);
+        Cache<Object, Object> c = ignite.cache(null);
 
         c.put(1, new ObjectValue("ObjectValue str", 1));
         c.put("key", new ObjectValueOther("ObjectValueOther str"));
@@ -738,7 +738,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testTransformQuery() throws Exception {
-        GridCache<UUID, Person> c = ignite.cache(null);
+        Cache<UUID, Person> c = ignite.cache(null);
 
         final Person p1 = new Person("Bob", 100);
         final Person p2 = new Person("Tom", 200);
@@ -746,7 +746,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         c.put(p1.id, p1);
         c.put(p2.id, p2);
 
-        GridCacheQuery<Map.Entry<UUID, Person>> q = c.queries().createScanQuery(null);
+        CacheQuery<Map.Entry<UUID, Person>> q = c.queries().createScanQuery(null);
 
         Collection<Map.Entry<UUID, String>> res = q.execute(new C1<Map.Entry<UUID, Person>, Map.Entry<UUID, String>>() {
             @Override public Map.Entry<UUID, String> apply(Map.Entry<UUID, Person> p) {
@@ -828,7 +828,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testReduceQuery() throws Exception {
-        GridCache<String, Integer> c = ignite.cache(null);
+        Cache<String, Integer> c = ignite.cache(null);
 
         assert c.putx("key1", 1);
         assert c.putx("key2", 2);
@@ -836,7 +836,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assert c.putx("key4", 4);
         assert c.putx("key5", 5);
 
-        GridCacheQuery<Map.Entry<String, Integer>> qry = c.queries().createSqlQuery(Integer.class, "_val > 2");
+        CacheQuery<Map.Entry<String, Integer>> qry = c.queries().createSqlQuery(Integer.class, "_val > 2");
 
         Collection<Integer> res1 = qry.execute(new SumRemoteReducer()).get();
 
@@ -849,7 +849,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testReduceQueryOnProjection() throws Exception {
-        GridCacheProjection<String, Integer> c = ignite.cache(null);
+        CacheProjection<String, Integer> c = ignite.cache(null);
 
         assert c.putx("key1", 1);
         assert c.putx("key2", 2);
@@ -864,9 +864,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }
         };
 
-        GridCacheProjection<String, Integer> cachePrj = ignite.<String, Integer>cache(null).projection(p);
+        CacheProjection<String, Integer> cachePrj = ignite.<String, Integer>cache(null).projection(p);
 
-        GridCacheQuery<Map.Entry<String, Integer>> q = cachePrj.queries().createSqlQuery(Integer.class, "_val > 2");
+        CacheQuery<Map.Entry<String, Integer>> q = cachePrj.queries().createSqlQuery(Integer.class, "_val > 2");
 
         Collection<Integer> res = q.execute(new SumRemoteReducer()).get();
 
@@ -877,7 +877,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testEmptyObject() throws Exception {
-        GridCache<EmptyObject, EmptyObject> cache = ignite.cache(null);
+        Cache<EmptyObject, EmptyObject> cache = ignite.cache(null);
 
         cache.putx(new EmptyObject(1), new EmptyObject(2));
 
@@ -893,12 +893,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testPrimitiveType() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         assert cache.putx(1, 1);
         assert cache.putx(2, 2);
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(int.class, "_val > 1");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(int.class, "_val > 1");
 
         Collection<Map.Entry<Integer, Integer>> res = q.execute().get();
 
@@ -929,19 +929,19 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(cacheName);
+        Cache<Integer, Integer> cache = ignite.cache(cacheName);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class,
             "_key >= 0").projection(ignite.cluster());
 
         q.pageSize(10);
         q.enableDedup(true);
         q.keepAll(false);
 
-        GridCacheQueryFuture<Map.Entry<Integer, Integer>> f = q.execute();
+        CacheQueryFuture<Map.Entry<Integer, Integer>> f = q.execute();
 
         int cnt = 0;
 
@@ -966,18 +966,18 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testPaginationIteratorKeepAll() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
 
         q.pageSize(10);
         q.enableDedup(true);
         q.keepAll(true);
 
-        GridCacheQueryFuture<Map.Entry<Integer, Integer>> f = q.execute();
+        CacheQueryFuture<Map.Entry<Integer, Integer>> f = q.execute();
 
         int cnt = 0;
 
@@ -1029,12 +1029,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     private void testPaginationGet(@Nullable String cacheName) throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(cacheName);
+        Cache<Integer, Integer> cache = ignite.cache(cacheName);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= 0");
 
         q.pageSize(10);
         q.enableDedup(true);
@@ -1059,12 +1059,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testScanFilters() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 50; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createScanQuery(
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createScanQuery(
             new P2<Integer, Integer>() {
                 @Override public boolean apply(Integer k, Integer v) {
                     assertNotNull(k);
@@ -1098,7 +1098,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testEmptyGrid() throws Exception {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        Cache<String, Integer> cache = ignite.cache(null);
 
         String key = "k";
 
@@ -1106,7 +1106,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         cache.putx(key, val);
 
-        GridCacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
+        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
             "select * from Integer where _key = 'k' and _val > 1");
 
         Map.Entry<String, Integer> entry = F.first(qry.execute().get());
@@ -1120,7 +1120,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws IgniteCheckedException if failed.
      */
     public void testBadHashObjectKey() throws IgniteCheckedException {
-        GridCache<BadHashKeyObject, Integer> cache = ignite.cache(null);
+        Cache<BadHashKeyObject, Integer> cache = ignite.cache(null);
 
         cache.put(new BadHashKeyObject("test_key1"), 9);
         cache.put(new BadHashKeyObject("test_key0"), 1005001);
@@ -1134,7 +1134,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws IgniteCheckedException if failed.
      */
     public void testTextIndexedKey() throws IgniteCheckedException {
-        GridCache<ObjectValue, Integer> cache = ignite.cache(null);
+        Cache<ObjectValue, Integer> cache = ignite.cache(null);
 
         cache.put(new ObjectValue("test_key1", 10), 19);
         cache.put(new ObjectValue("test_key0", 11), 11005);
@@ -1149,10 +1149,10 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testAnonymousClasses() throws Exception {
-        GridCache<Integer, Object> cache = ignite.cache(null);
+        Cache<Integer, Object> cache = ignite.cache(null);
 
         Object val = new Object() {
-            @GridCacheQuerySqlField
+            @CacheQuerySqlField
             private int field1 = 10;
 
             @Override public String toString() {
@@ -1164,7 +1164,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         assertTrue(cache.putx(1, val));
 
-        GridCacheQuery<Map.Entry<Integer, Object>> q = cache.queries().createSqlQuery(val.getClass(), "_key >= 0");
+        CacheQuery<Map.Entry<Integer, Object>> q = cache.queries().createSqlQuery(val.getClass(), "_key >= 0");
 
         q.enableDedup(true);
 
@@ -1172,7 +1172,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
 
         assertEquals(1, res.size());
 
-        GridCacheQuery<List<?>> fieldsQry = cache.queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> fieldsQry = cache.queries().createSqlFieldsQuery(
             "select field1 from GridCacheAbstractQuerySelfTest_16");
 
         fieldsQry.enableDedup(true);
@@ -1191,7 +1191,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testTwoAnonymousClasses() throws Exception {
-        GridCache<Integer, Object> cache = ignite.cache(null);
+        Cache<Integer, Object> cache = ignite.cache(null);
 
         Object val1 = new Object() {
             @Override public String toString() {
@@ -1208,7 +1208,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertTrue(cache.putx(1, val1));
         assertTrue(cache.putx(2, val2));
 
-        GridCacheQuery<Map.Entry<Integer, Object>> q = cache.queries().createSqlQuery(val1.getClass(), "_key >= 0");
+        CacheQuery<Map.Entry<Integer, Object>> q = cache.queries().createSqlQuery(val1.getClass(), "_key >= 0");
 
         q.enableDedup(true);
 
@@ -1221,12 +1221,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testOrderByOnly() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 10; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "order by _val");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "order by _val");
 
         q.enableDedup(true);
 
@@ -1252,12 +1252,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testLimitOnly() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 10; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "limit 5");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "limit 5");
 
         q.enableDedup(true);
 
@@ -1283,12 +1283,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testArray() throws Exception {
-        GridCache<Integer, ArrayObject> cache = ignite.cache(null);
+        Cache<Integer, ArrayObject> cache = ignite.cache(null);
 
         assertTrue(cache.putx(1, new ArrayObject(new Long[] {1L, null, 3L})));
         assertTrue(cache.putx(2, new ArrayObject(new Long[] {4L, 5L, 6L})));
 
-        GridCacheQuery<Map.Entry<Integer, ArrayObject>> q =
+        CacheQuery<Map.Entry<Integer, ArrayObject>> q =
             cache.queries().createSqlQuery(ArrayObject.class, "array_contains(arr, cast(4 as long))");
 
         q.enableDedup(true);
@@ -1376,12 +1376,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 20; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= ?");
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createSqlQuery(Integer.class, "_key >= ?");
 
         if (customSubjId)
             ((GridCacheQueryAdapter)q).subjectId(subjId);
@@ -1470,12 +1470,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        Cache<Integer, Integer> cache = ignite.cache(null);
 
         for (int i = 0; i < 20; i++)
             assertTrue(cache.putx(i, i));
 
-        GridCacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createScanQuery(
+        CacheQuery<Map.Entry<Integer, Integer>> q = cache.queries().createScanQuery(
             new IgniteBiPredicate<Integer, Integer>() {
                 @Override public boolean apply(Integer key, Integer val) {
                     return key >= 10;
@@ -1568,13 +1568,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Person> cache = ignite.cache(null);
+        Cache<Integer, Person> cache = ignite.cache(null);
 
         assertTrue(cache.putx(1, new Person("Bob White", 1000)));
         assertTrue(cache.putx(2, new Person("Tom White", 1000)));
         assertTrue(cache.putx(3, new Person("Mike Green", 1000)));
 
-        GridCacheQuery<Map.Entry<Integer, Person>> q = cache.queries().createFullTextQuery(Person.class, "White");
+        CacheQuery<Map.Entry<Integer, Person>> q = cache.queries().createFullTextQuery(Person.class, "White");
 
         if (customSubjId)
             ((GridCacheQueryAdapter)q).subjectId(subjId);
@@ -1664,12 +1664,12 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
             }, EVT_CACHE_QUERY_EXECUTED);
         }
 
-        GridCache<Integer, Person> cache = ignite.cache(null);
+        Cache<Integer, Person> cache = ignite.cache(null);
 
         for (int i = 1; i <= 20; i++)
             assertTrue(cache.putx(i, new Person("Person " + i, i)));
 
-        GridCacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> q = cache.queries().createSqlFieldsQuery(
             "select _key, name from Person where salary > ?");
 
         if (customSubjId)
@@ -1701,7 +1701,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class ArrayObject implements Serializable {
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private Long[] arr;
 
         /**
@@ -1718,20 +1718,20 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     public static class Person implements Externalizable {
         /** */
         @GridToStringExclude
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private UUID id = UUID.randomUUID();
 
         /** */
-        @GridCacheQuerySqlField
-        @GridCacheQueryTextField
+        @CacheQuerySqlField
+        @CacheQueryTextField
         private String name;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int salary;
 
         /** */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private int fake$Field;
 
         /**
@@ -1818,11 +1818,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
     @SuppressWarnings("PublicInnerClass")
     public static class ObjectValue implements Serializable {
         /** String value. */
-        @GridCacheQueryTextField
+        @CacheQueryTextField
         private String strVal;
 
         /** Integer value. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int intVal;
 
         /**
@@ -1882,7 +1882,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class ObjectValueOther {
         /** Value. */
-        @GridCacheQueryTextField
+        @CacheQueryTextField
         private String val;
 
         /**
@@ -1965,7 +1965,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     private static class BadHashKeyObject implements Serializable {
         /** */
-        @GridCacheQuerySqlField(index = false)
+        @CacheQuerySqlField(index = false)
         private final String str;
 
         /**
@@ -2014,7 +2014,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Object, ? extends Object> e) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
             map.put(e.getKey(), e.getValue());
         }
 
@@ -2033,7 +2033,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
          * @param x Argument.
          * @return Square of given value.
          */
-        @GridCacheQuerySqlFunction
+        @CacheQuerySqlFunction
         public static int square(int x) {
             return x * x;
         }
@@ -2042,7 +2042,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
          * @param x Argument.
          * @return Cube of given value.
          */
-        @GridCacheQuerySqlFunction(alias = "_cube_")
+        @CacheQuerySqlFunction(alias = "_cube_")
         public static int cube(int x) {
             return x * x * x;
         }

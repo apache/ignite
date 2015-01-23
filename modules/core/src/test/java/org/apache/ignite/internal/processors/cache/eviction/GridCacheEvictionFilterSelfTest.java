@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Base class for eviction tests.
@@ -53,8 +53,8 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     private EvictionFilter filter;
 
     /** Policy. */
-    private GridCacheEvictionPolicy<Object, Object> plc = new GridCacheEvictionPolicy<Object, Object>() {
-        @Override public void onEntryAccessed(boolean rmv, GridCacheEntry entry) {
+    private CacheEvictionPolicy<Object, Object> plc = new CacheEvictionPolicy<Object, Object>() {
+        @Override public void onEntryAccessed(boolean rmv, CacheEntry entry) {
             assert !(entry.peek() instanceof Integer);
         }
     };
@@ -72,7 +72,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         cc.setEvictSynchronized(false);
         cc.setEvictNearSynchronized(false);
         cc.setSwapEnabled(false);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionFilter(filter);
         cc.setPreloadMode(SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
@@ -131,7 +131,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
         try {
             Ignite g = grid(0);
 
-            GridCache<Object, Object> c = g.cache(null);
+            Cache<Object, Object> c = g.cache(null);
 
             int cnt = 1;
 
@@ -186,7 +186,7 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
 
         Ignite g = startGrid();
 
-        GridCache<Object, Object> cache = g.cache(null);
+        Cache<Object, Object> cache = g.cache(null);
 
         try {
             int id = 1;
@@ -212,12 +212,12 @@ public class GridCacheEvictionFilterSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private final class EvictionFilter implements GridCacheEvictionFilter<Object, Object> {
+    private final class EvictionFilter implements CacheEvictionFilter<Object, Object> {
         /** */
         private final ConcurrentMap<Object, AtomicInteger> cnts = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
-        @Override public boolean evictAllowed(GridCacheEntry<Object, Object> entry) {
+        @Override public boolean evictAllowed(CacheEntry<Object, Object> entry) {
             AtomicInteger i = cnts.get(entry.getKey());
 
             if (i == null) {

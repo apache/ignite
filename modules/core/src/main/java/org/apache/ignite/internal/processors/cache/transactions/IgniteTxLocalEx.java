@@ -75,7 +75,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean deserializePortable,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
+        IgnitePredicate<CacheEntry<K, V>>[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -92,7 +92,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         boolean retval,
         @Nullable GridCacheEntryEx<K, V> cached,
         long ttl,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
+        IgnitePredicate<CacheEntry<K, V>>[] filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -118,7 +118,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
         boolean retval,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter);
+        IgnitePredicate<CacheEntry<K, V>>[] filter);
 
     /**
      * @param cacheCtx Cache context.

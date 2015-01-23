@@ -30,7 +30,7 @@ public class VisorCachePreloadConfiguration implements Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Cache preload mode. */
-    private GridCachePreloadMode mode;
+    private CachePreloadMode mode;
 
     /** Preload thread pool size. */
     private int threadPoolSize;
@@ -67,14 +67,14 @@ public class VisorCachePreloadConfiguration implements Serializable {
     /**
      * @return Cache preload mode.
      */
-    public GridCachePreloadMode mode() {
+    public CachePreloadMode mode() {
         return mode;
     }
 
     /**
      * @param mode New cache preload mode.
      */
-    public void mode(GridCachePreloadMode mode) {
+    public void mode(CachePreloadMode mode) {
         this.mode = mode;
     }
 

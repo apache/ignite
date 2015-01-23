@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
@@ -28,14 +29,13 @@ import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for reproduce problem with GG-6895:
@@ -100,7 +100,7 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPutxShouldNotTriggerLoadWithTx() throws Exception {
-        GridCache<Integer, Integer> cache = cache();
+        Cache<Integer, Integer> cache = cache();
 
         try (IgniteTx tx = cache.txStart()) {
             assertTrue(cache.putx(1, 1));
@@ -132,12 +132,12 @@ public class GridCacheStorePutxSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void write(Cache.Entry<? extends Integer, ? extends Integer> entry) {
+        @Override public void write(javax.cache.Cache.Entry<? extends Integer, ? extends Integer> entry) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void writeAll(Collection<Cache.Entry<? extends Integer, ? extends Integer>> entries) {
+        @Override public void writeAll(Collection<javax.cache.Cache.Entry<? extends Integer, ? extends Integer>> entries) {
             // No-op.
         }
 

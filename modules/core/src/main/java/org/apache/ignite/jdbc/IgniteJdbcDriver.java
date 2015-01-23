@@ -48,7 +48,7 @@ import java.util.logging.*;
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
  *         collocated mode. Refer to
- *         {@link org.apache.ignite.cache.affinity.GridCacheAffinityKey}
+ *         {@link org.apache.ignite.cache.affinity.CacheAffinityKey}
  *         javadoc for more details.
  *     </li>
  *     <li>

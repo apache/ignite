@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Partitioned cache nested transaction test.

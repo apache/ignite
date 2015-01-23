@@ -629,7 +629,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheEntry<K, V> wrap(boolean prjAware) {
+    @Override public CacheEntry<K, V> wrap(boolean prjAware) {
         GridCacheContext<K, V> nearCtx = cctx.dht().near().context();
 
         GridCacheProjectionImpl<K, V> prjPerCall = nearCtx.projectionPerCall();

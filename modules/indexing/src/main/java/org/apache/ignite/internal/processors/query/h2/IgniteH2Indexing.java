@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -1232,7 +1233,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         for (Class<?> cls : idxCustomFuncClss) {
             for (Method m : cls.getDeclaredMethods()) {
-                GridCacheQuerySqlFunction ann = m.getAnnotation(GridCacheQuerySqlFunction.class);
+                CacheQuerySqlFunction ann = m.getAnnotation(CacheQuerySqlFunction.class);
 
                 if (ann != null) {
                     int modifiers = m.getModifiers();
@@ -1315,7 +1316,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If primitive keys must be indexed.
      */
     public boolean isIndexPrimitiveKey(@Nullable String spaceName) {
-        GridCacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexPrimitiveKey();
     }
@@ -1325,21 +1326,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return {@code true} If primitive values must be indexed.
      */
     public boolean isIndexPrimitiveValue(String spaceName) {
-        GridCacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexPrimitiveValue();
     }
 
     /** {@inheritDoc} */
     public boolean isIndexFixedTyping(String spaceName) {
-        GridCacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isIndexFixedTyping();
     }
 
     /** {@inheritDoc} */
     public boolean isEscapeAll(String spaceName) {
-        GridCacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
+        CacheQueryConfiguration cfg = cacheQueryConfiguration(spaceName);
 
         return cfg != null && cfg.isEscapeAll();
     }
@@ -1348,7 +1349,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param spaceName Space name.
      * @return Cache query configuration.
      */
-    @Nullable private GridCacheQueryConfiguration cacheQueryConfiguration(String spaceName) {
+    @Nullable private CacheQueryConfiguration cacheQueryConfiguration(String spaceName) {
         return ctx == null ? null : ctx.cache().internalCache(spaceName).configuration().getQueryConfiguration();
     }
 
@@ -1940,7 +1941,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            GridCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
+            Cache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
 
             GridCacheContext cctx = ((GridCacheProxyImpl)cache).context();
 

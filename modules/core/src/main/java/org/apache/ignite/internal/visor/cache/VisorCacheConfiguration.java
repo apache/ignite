@@ -40,7 +40,7 @@ public class VisorCacheConfiguration implements Serializable {
     private CacheMode mode;
 
     /** Distribution mode. */
-    private GridCacheDistributionMode distributionMode;
+    private CacheDistributionMode distributionMode;
 
     /** Cache atomicity mode */
     private CacheAtomicityMode atomicityMode;
@@ -55,7 +55,7 @@ public class VisorCacheConfiguration implements Serializable {
     private boolean eagerTtl;
 
     /** Write synchronization mode. */
-    private GridCacheWriteSynchronizationMode writeSynchronizationMode;
+    private CacheWriteSynchronizationMode writeSynchronizationMode;
 
     /** Sequence reserve size. */
     private int seqReserveSize;
@@ -100,7 +100,7 @@ public class VisorCacheConfiguration implements Serializable {
     private int pessimisticTxLogLinger;
 
     /** Memory mode. */
-    private GridCacheMemoryMode memoryMode;
+    private CacheMemoryMode memoryMode;
 
     /** Name of SPI to use for indexing. */
     private String indexingSpiName;
@@ -225,14 +225,14 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Distribution mode.
      */
-    public GridCacheDistributionMode distributionMode() {
+    public CacheDistributionMode distributionMode() {
         return distributionMode;
     }
 
     /**
      * @param distributionMode New distribution mode.
      */
-    public void distributionMode(GridCacheDistributionMode distributionMode) {
+    public void distributionMode(CacheDistributionMode distributionMode) {
         this.distributionMode = distributionMode;
     }
 
@@ -295,14 +295,14 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Write synchronization mode.
      */
-    public GridCacheWriteSynchronizationMode writeSynchronizationMode() {
+    public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return writeSynchronizationMode;
     }
 
     /**
      * @param writeSynchronizationMode New write synchronization mode.
      */
-    public void writeSynchronizationMode(GridCacheWriteSynchronizationMode writeSynchronizationMode) {
+    public void writeSynchronizationMode(CacheWriteSynchronizationMode writeSynchronizationMode) {
         this.writeSynchronizationMode = writeSynchronizationMode;
     }
 
@@ -506,14 +506,14 @@ public class VisorCacheConfiguration implements Serializable {
     /**
      * @return Memory mode.
      */
-    public GridCacheMemoryMode memoryMode() {
+    public CacheMemoryMode memoryMode() {
         return memoryMode;
     }
 
     /**
      * @param memoryMode New memory mode.
      */
-    public void memoryMode(GridCacheMemoryMode memoryMode) {
+    public void memoryMode(CacheMemoryMode memoryMode) {
         this.memoryMode = memoryMode;
     }
 

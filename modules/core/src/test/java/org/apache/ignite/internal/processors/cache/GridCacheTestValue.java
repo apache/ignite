@@ -26,7 +26,7 @@ import java.io.*;
  */
 public class GridCacheTestValue implements Serializable, Cloneable {
     /** */
-    @GridCacheQuerySqlField(unique = true)
+    @CacheQuerySqlField(unique = true)
     private String val;
 
     /**

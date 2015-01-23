@@ -86,7 +86,7 @@ public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
      * @param filter Filter.
      * @return Peeked value.
      */
-    @Nullable private V peekDht(@Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Nullable private V peekDht(@Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         try {
             return peekDht0(SMART, filter);
         }
@@ -103,7 +103,7 @@ public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peekDht0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peekDht0(SMART, filter);
 
@@ -127,7 +127,7 @@ public class GridDhtCacheEntryImpl<K, V> extends GridCacheEntryImpl<K, V> {
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peekDht0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
         if (mode == null)
             mode = SMART;
 

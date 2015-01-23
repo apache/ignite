@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  *
@@ -47,7 +47,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheWriteSynchronizationMode writeSynchronization() {
+    @Override protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_SYNC;
     }
 
@@ -71,7 +71,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
                     log.info("Use cache " + idx);
 
-                    GridCache<Object, Object> cache = grid(idx).cache(null);
+                    Cache<Object, Object> cache = grid(idx).cache(null);
 
                     for (int i = 0; i < 100; i++)
                         putAndCheckEntrySet(cache);
@@ -89,7 +89,7 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
      * @param cache Cache.
      * @throws Exception If failed.
      */
-    private void putAndCheckEntrySet(GridCache<Object, Object> cache) throws Exception {
+    private void putAndCheckEntrySet(Cache<Object, Object> cache) throws Exception {
         try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
             Integer total = (Integer) cache.get(TX_KEY);
 
@@ -98,9 +98,9 @@ public abstract class GridCacheEntrySetAbstractSelfTest extends GridCacheAbstrac
 
             int cntr = 0;
 
-            Set<GridCacheEntry<Object, Object>> entries = cache.entrySet();
+            Set<CacheEntry<Object, Object>> entries = cache.entrySet();
 
-            for (GridCacheEntry e : entries) {
+            for (CacheEntry e : entries) {
                 if (e.getKey() instanceof Integer)
                     cntr++;
             }

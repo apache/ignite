@@ -34,22 +34,22 @@ public class GridCacheIterator<K, V, T> implements GridSerializableIterator<T> {
     private static final long serialVersionUID = 0L;
 
     /** Base iterator. */
-    private final Iterator<? extends GridCacheEntry<K, V>> it;
+    private final Iterator<? extends CacheEntry<K, V>> it;
 
     /** Transformer. */
-    private final IgniteClosure<GridCacheEntry<K, V>, T> trans;
+    private final IgniteClosure<CacheEntry<K, V>, T> trans;
 
     /** Current element. */
-    private GridCacheEntry<K, V> cur;
+    private CacheEntry<K, V> cur;
 
     /**
      * @param c Cache entry collection.
      * @param trans Transformer.
      * @param filter Filter.
      */
-    public GridCacheIterator(Iterable<? extends GridCacheEntry<K, V>> c,
-        IgniteClosure<GridCacheEntry<K, V>, T> trans,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    public GridCacheIterator(Iterable<? extends CacheEntry<K, V>> c,
+        IgniteClosure<CacheEntry<K, V>, T> trans,
+        IgnitePredicate<CacheEntry<K, V>>[] filter) {
         it = F.iterator0(c, false, filter);
 
         this.trans = trans;

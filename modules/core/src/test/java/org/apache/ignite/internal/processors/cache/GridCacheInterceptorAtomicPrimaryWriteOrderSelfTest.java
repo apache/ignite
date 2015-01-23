@@ -22,10 +22,10 @@ import org.jetbrains.annotations.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Tests {@link org.apache.ignite.cache.GridCacheInterceptor}.
+ * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public class GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest extends GridCacheInterceptorAbstractSelfTest {
     /** {@inheritDoc} */
@@ -34,7 +34,7 @@ public class GridCacheInterceptorAtomicPrimaryWriteOrderSelfTest extends GridCac
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 

@@ -27,29 +27,29 @@ import java.io.*;
 @SuppressWarnings("unused")
 public class GridCacheQueryTestValue implements Serializable {
     /** */
-    @GridCacheQueryTextField
-    @GridCacheQuerySqlField(name = "fieldname")
+    @CacheQueryTextField
+    @CacheQuerySqlField(name = "fieldname")
     private String field1;
 
     /** */
     private int field2;
 
     /** */
-    @GridCacheQuerySqlField(unique = true)
+    @CacheQuerySqlField(unique = true)
     private long field3;
 
     /** */
-    @GridCacheQuerySqlField(orderedGroups = {
-        @GridCacheQuerySqlField.Group(name = "grp1", order = 1),
-        @GridCacheQuerySqlField.Group(name = "grp2", order = 2)})
+    @CacheQuerySqlField(orderedGroups = {
+        @CacheQuerySqlField.Group(name = "grp1", order = 1),
+        @CacheQuerySqlField.Group(name = "grp2", order = 2)})
     private long field4;
 
     /** */
-    @GridCacheQuerySqlField(orderedGroups = {@GridCacheQuerySqlField.Group(name = "grp1", order = 2)})
+    @CacheQuerySqlField(orderedGroups = {@CacheQuerySqlField.Group(name = "grp1", order = 2)})
     private long field5;
 
     /** */
-    @GridCacheQuerySqlField(orderedGroups = {@GridCacheQuerySqlField.Group(name = "grp1", order = 3)})
+    @CacheQuerySqlField(orderedGroups = {@CacheQuerySqlField.Group(name = "grp1", order = 3)})
     private GridCacheQueryEmbeddedValue field6 = new GridCacheQueryEmbeddedValue();
 
     /**
@@ -72,7 +72,7 @@ public class GridCacheQueryTestValue implements Serializable {
      *
      * @return Field.
      */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     public int getField2() {
         return field2;
     }

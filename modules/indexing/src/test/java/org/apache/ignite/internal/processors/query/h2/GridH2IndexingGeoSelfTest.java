@@ -57,7 +57,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeo() throws Exception {
-        GridCache<Integer, EnemyCamp> cache = grid(0).cache(null);
+        Cache<Integer, EnemyCamp> cache = grid(0).cache(null);
 
         WKTReader r = new WKTReader();
 
@@ -66,7 +66,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
         cache.put(2, new EnemyCamp(r.read("POINT(70 30)"), "C"));
         cache.put(3, new EnemyCamp(r.read("POINT(75 25)"), "D"));
 
-        GridCacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(EnemyCamp.class,
+        CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(EnemyCamp.class,
             "coords && ?");
 
         Collection<Map.Entry<Integer, EnemyCamp>> res = qry.execute(r.read("POLYGON((5 70, 5 80, 30 80, 30 70, 5 70))"))
@@ -113,9 +113,9 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     @SuppressWarnings("unchecked")
     public void testGeoMultithreaded() throws Exception {
-        final GridCache<Integer, EnemyCamp> cache1 = grid(0).cache(null);
-        final GridCache<Integer, EnemyCamp> cache2 = grid(1).cache(null);
-        final GridCache<Integer, EnemyCamp> cache3 = grid(2).cache(null);
+        final Cache<Integer, EnemyCamp> cache1 = grid(0).cache(null);
+        final Cache<Integer, EnemyCamp> cache2 = grid(1).cache(null);
+        final Cache<Integer, EnemyCamp> cache3 = grid(2).cache(null);
 
         final String[] points = new String[CNT];
 
@@ -146,7 +146,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                 while (!stop.get()) {
                     int cacheIdx = rnd.nextInt(0, 3);
 
-                    GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                    Cache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
                     int idx = rnd.nextInt(CNT);
                     int x = rnd.nextInt(1, 100);
@@ -171,9 +171,9 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
                     try {
                         int cacheIdx = rnd.nextInt(0, 3);
 
-                        GridCache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
+                        Cache<Integer, EnemyCamp> cache = cacheIdx == 0 ? cache1 : cacheIdx == 1 ? cache2 : cache3;
 
-                        GridCacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(
+                        CacheQuery<Map.Entry<Integer, EnemyCamp>> qry = cache.queries().createSqlQuery(
                             EnemyCamp.class, "coords && ?");
 
                         Collection<Map.Entry<Integer, EnemyCamp>> res = qry.execute(
@@ -229,11 +229,11 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      */
     private static class EnemyCamp implements Serializable {
         /** */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private Geometry coords;
 
         /** */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String name;
 
         /**

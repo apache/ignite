@@ -76,7 +76,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                 @Override public Object execute() throws IgniteCheckedException {
                     log.info("Going to put data: " + data);
 
-                    GridCacheProjection<Object, Object> cache = ignite.cache(cacheName);
+                    CacheProjection<Object, Object> cache = ignite.cache(cacheName);
 
                     assert cache != null;
 

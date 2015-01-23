@@ -35,11 +35,11 @@ import java.lang.reflect.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests from {@link GridCacheEntry#memorySize()} method.
+ * Tests from {@link org.apache.ignite.cache.CacheEntry#memorySize()} method.
  */
 public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -107,7 +107,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(mode);
         cacheCfg.setDistributionMode(nearEnabled ? NEAR_PARTITIONED : PARTITIONED_ONLY);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         if (mode == PARTITIONED)
@@ -129,7 +129,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = LOCAL;
 
         try {
-            GridCache<Integer, Value> cache = startGrid().cache(null);
+            Cache<Integer, Value> cache = startGrid().cache(null);
 
             assertTrue(cache.putx(1, new Value(new byte[1024])));
             assertTrue(cache.putx(2, new Value(new byte[2048])));
@@ -151,7 +151,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
         mode = REPLICATED;
 
         try {
-            GridCache<Integer, Value> cache = startGrid().cache(null);
+            Cache<Integer, Value> cache = startGrid().cache(null);
 
             assertTrue(cache.putx(1, new Value(new byte[1024])));
             assertTrue(cache.putx(2, new Value(new byte[2048])));
@@ -270,7 +270,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
      * @return Extras size.
      * @throws Exception If failed.
      */
-    private int extrasSize(GridCacheEntry entry) throws Exception {
+    private int extrasSize(CacheEntry entry) throws Exception {
         Method mthd = GridCacheMapEntry.class.getDeclaredMethod("extrasSize");
 
         mthd.setAccessible(true);

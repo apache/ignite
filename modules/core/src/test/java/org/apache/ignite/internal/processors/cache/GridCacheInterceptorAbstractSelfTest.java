@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests {@link GridCacheInterceptor}.
+ * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** */
@@ -404,7 +404,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private void testCancelUpdate(String key, Operation op) throws Exception {
         // Interceptor returns null to disabled update.
-        GridCacheInterceptor retInterceptor = new InterceptorAdapter() {
+        CacheInterceptor retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
                 return null;
             }
@@ -486,7 +486,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      */
     private void testModifyUpdate(String key, Operation op) throws Exception {
         // Interceptor returns incremented new value.
-        GridCacheInterceptor retInterceptor = new InterceptorAdapter() {
+        CacheInterceptor retInterceptor = new InterceptorAdapter() {
             @Nullable @Override public Object onBeforePut(Object key, @Nullable Object oldVal, Object newVal) {
                 return (Integer)newVal + 1;
             }
@@ -1351,7 +1351,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     private List<String> primaryKeys(int idx, int cnt) {
         assert cnt > 0;
 
-        GridCacheAffinity aff = cache(0).affinity();
+        CacheAffinity aff = cache(0).affinity();
 
         List<String> keys = new ArrayList<>(cnt);
 
@@ -1376,7 +1376,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Primary key for grid.
      */
     private String backupKey(int idx) {
-        GridCacheAffinity aff = cache(0).affinity();
+        CacheAffinity aff = cache(0).affinity();
 
         String key = null;
 
@@ -1398,7 +1398,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
      * @return Key which does not belong to the grid.
      */
     private String nearKey(int idx) {
-        GridCacheAffinity aff = cache(0).affinity();
+        CacheAffinity aff = cache(0).affinity();
 
         String key = null;
 
@@ -1466,7 +1466,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      *
      */
-    private static class InterceptorAdapter implements GridCacheInterceptor {
+    private static class InterceptorAdapter implements CacheInterceptor {
         /** */
         @Nullable @Override public Object onGet(Object key, Object val) {
             fail("onGet not expected");
@@ -1502,7 +1502,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     /**
      *
      */
-    private class Interceptor implements GridCacheInterceptor {
+    private class Interceptor implements CacheInterceptor {
         /** */
         private final Map<Object, Object> getMap = new ConcurrentHashMap8<>();
 
@@ -1525,7 +1525,7 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
         private volatile boolean disabled;
 
         /** */
-        private volatile GridCacheInterceptor retInterceptor;
+        private volatile CacheInterceptor retInterceptor;
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")

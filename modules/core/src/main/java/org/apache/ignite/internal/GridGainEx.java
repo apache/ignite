@@ -82,10 +82,10 @@ import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
@@ -2076,7 +2076,7 @@ public class GridGainEx {
             cache.setQueryIndexEnabled(false);
             cache.setPreloadMode(SYNC);
             cache.setWriteSynchronizationMode(FULL_SYNC);
-            cache.setAffinity(new GridCacheRendezvousAffinityFunction(false, 100));
+            cache.setAffinity(new CacheRendezvousAffinityFunction(false, 100));
 
             if (client)
                 cache.setDistributionMode(CLIENT_ONLY);

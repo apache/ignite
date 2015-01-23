@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public class GridCachePartitionedNearDisabledTxOriginatingNodeFailureSelfTest
     extends GridCachePartitionedTxOriginatingNodeFailureSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 }

@@ -30,8 +30,8 @@ import java.util.*;
  */
 public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends GridCachePartitionedFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.CLIENT_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.CLIENT_ONLY;
     }
 
     /**

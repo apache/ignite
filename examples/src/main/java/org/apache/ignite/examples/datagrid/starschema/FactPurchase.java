@@ -26,19 +26,19 @@ import org.apache.ignite.cache.query.*;
  */
 public class FactPurchase {
     /** Primary key. */
-    @GridCacheQuerySqlField(index = true)
+    @CacheQuerySqlField(index = true)
     private int id;
 
     /** Foreign key to store at which purchase occurred. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private int storeId;
 
     /** Foreign key to purchased product. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private int productId;
 
     /** Purchase price. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private float purchasePrice;
 
     /**

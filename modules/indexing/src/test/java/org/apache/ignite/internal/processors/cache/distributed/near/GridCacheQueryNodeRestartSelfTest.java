@@ -35,7 +35,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -75,11 +75,11 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
 
         cc.setCacheMode(PARTITIONED);
         cc.setBackups(1);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setDistributionMode(NEAR_PARTITIONED);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
 
@@ -102,7 +102,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         final long nodeLifeTime = 2 * 1000;
         final int logFreq = 20;
 
-        final GridCache<Integer, Integer> cache = grid(0).cache(null);
+        final Cache<Integer, Integer> cache = grid(0).cache(null);
 
         assert cache != null;
 
@@ -118,7 +118,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         IgniteFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    GridCacheQuery<Map.Entry<Integer, Integer>> qry =
+                    CacheQuery<Map.Entry<Integer, Integer>> qry =
                         cache.queries().createSqlQuery(Integer.class, "_val >= 0");
 
                     qry.includeBackups(true);

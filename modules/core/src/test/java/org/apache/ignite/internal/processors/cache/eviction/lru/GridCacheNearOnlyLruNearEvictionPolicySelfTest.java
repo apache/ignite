@@ -27,10 +27,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * LRU near eviction tests for NEAR_ONLY distribution mode (GG-8884).
@@ -72,7 +72,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
         cc.setWriteSynchronizationMode(PRIMARY_SYNC);
         cc.setDistributionMode(cnt == 0 ? NEAR_ONLY : PARTITIONED_ONLY);
         cc.setPreloadMode(SYNC);
-        cc.setNearEvictionPolicy(new GridCacheLruEvictionPolicy(EVICTION_MAX_SIZE));
+        cc.setNearEvictionPolicy(new CacheLruEvictionPolicy(EVICTION_MAX_SIZE));
         cc.setStartSize(100);
         cc.setQueryIndexEnabled(true);
         cc.setBackups(0);
@@ -152,7 +152,7 @@ public class GridCacheNearOnlyLruNearEvictionPolicySelfTest extends GridCommonAb
             info("Getting " + cnt + " keys from cache.");
 
             for (int i = 0; i < cnt; i++) {
-                GridCache<Integer, String> cache = grid(0).cache(null);
+                Cache<Integer, String> cache = grid(0).cache(null);
 
                 assertTrue(cache.get(i).equals(Integer.toString(i)));
             }

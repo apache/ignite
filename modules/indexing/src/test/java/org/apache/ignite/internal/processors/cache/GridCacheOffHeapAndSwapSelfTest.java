@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.*;
 import static org.apache.ignite.configuration.IgniteDeploymentMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
 
@@ -123,7 +123,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
@@ -136,7 +136,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setEvictionPolicy(null);
 
-        GridCacheQueryConfiguration qcfg = new GridCacheQueryConfiguration();
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
         qcfg.setIndexPrimitiveKey(true);
         qcfg.setIndexPrimitiveValue(true);
@@ -192,8 +192,8 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @return Cache to use in tests.
      * @throws Exception If failed.
      */
-    private GridCache<Long, Long> populate() throws Exception {
-        GridCache<Long, Long> cache = grid(0).cache(null);
+    private Cache<Long, Long> populate() throws Exception {
+        Cache<Long, Long> cache = grid(0).cache(null);
 
         assertEquals(0, cache.size());
         assertEquals(0, cache.offHeapEntriesCount());
@@ -213,7 +213,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             assert val != null;
             assert val == i;
 
-            GridCacheEntry<Long, Long> entry = cache.entry(i);
+            CacheEntry<Long, Long> entry = cache.entry(i);
 
             assert entry != null;
 
@@ -263,9 +263,9 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @param cache Cache.
      * @throws Exception In case of error.
      */
-    private void checkEntries(GridCacheProjection<Long, Long> cache) throws Exception {
+    private void checkEntries(CacheProjection<Long, Long> cache) throws Exception {
         for (long i = from; i < to; i++) {
-            GridCacheEntry<Long, Long> entry = cache.entry(i);
+            CacheEntry<Long, Long> entry = cache.entry(i);
 
             assert entry != null;
             assert entry.getKey() != null;
@@ -343,7 +343,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIterators() throws Exception {
-        GridCache<Long, Long> cache = populate();
+        Cache<Long, Long> cache = populate();
 
         int cnt = 0;
 
@@ -381,7 +381,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSql() throws Exception {
-        GridCache<Long, Long> cache = populate();
+        Cache<Long, Long> cache = populate();
 
         Collection<Map.Entry<Long, Long>> res = cache.queries().
             createSqlQuery(Long.class, "_val >= ? and _val < ?").
@@ -407,12 +407,12 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link GridCacheProjection#promote(Object)} behavior on offheaped entries.
+     * Tests {@link org.apache.ignite.cache.CacheProjection#promote(Object)} behavior on offheaped entries.
      *
      * @throws Exception If failed.
      */
     public void testUnswap() throws Exception {
-        GridCache<Long, Long> cache = populate();
+        Cache<Long, Long> cache = populate();
 
         for (long i = from; i < to; i++) {
             Long val = cache.promote(i);
@@ -438,7 +438,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testUnswapAll() throws Exception {
-        GridCache<Long, Long> cache = populate();
+        Cache<Long, Long> cache = populate();
 
         Collection<Long> keys = new HashSet<>();
 
@@ -461,7 +461,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGet() throws Exception {
-        GridCache<Long, Long> cache = populate();
+        Cache<Long, Long> cache = populate();
 
         for (long i = from; i < to; i++) {
             Long val = cache.get(i);
@@ -480,12 +480,12 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests {@link GridCacheProjection#peek(Object)} behavior on offheaped entries.
+     * Tests {@link org.apache.ignite.cache.CacheProjection#peek(Object)} behavior on offheaped entries.
      *
      * @throws Exception If failed.
      */
     public void testPeek() throws Exception {
-        GridCache<Long, Long> cache = populate();
+        Cache<Long, Long> cache = populate();
 
         for (long i = from; i < to; i++) {
             assertNull(cache.peek(i));
@@ -510,7 +510,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIteratorsCleanup() throws Exception {
-        final GridCache<Long, Long> cache = populate();
+        final Cache<Long, Long> cache = populate();
 
         IgniteFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {

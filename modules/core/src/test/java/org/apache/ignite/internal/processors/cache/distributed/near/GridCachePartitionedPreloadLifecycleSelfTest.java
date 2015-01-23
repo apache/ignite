@@ -31,8 +31,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for replicated cache preloader.
@@ -84,8 +84,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
                 switch (evt) {
                     case AFTER_GRID_START: {
-                        GridCache<Object, MyValue> c1 = ignite.cache("one");
-                        GridCache<Object, MyValue> c2 = ignite.cache("two");
+                        Cache<Object, MyValue> c1 = ignite.cache("one");
+                        Cache<Object, MyValue> c2 = ignite.cache("two");
 
                         if (!ignite.name().contains("Test0")) {
                             info("Keys already in cache:");
@@ -145,8 +145,8 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c1 = grid(j).cache("one");
-                GridCache<Object, MyValue> c2 = grid(j).cache("two");
+                Cache<Object, MyValue> c1 = grid(j).cache("one");
+                Cache<Object, MyValue> c2 = grid(j).cache("two");
 
                 int k = 0;
 
@@ -175,9 +175,9 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
             info("Checking '" + (i + 1) + "' nodes...");
 
             for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCache<Object, MyValue> c2 = grid(j).cache("two");
+                Cache<Object, MyValue> c2 = grid(j).cache("two");
 
-                GridCacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
+                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.queries().createScanQuery(null);
 
                 int totalCnt = F.sumInt(qry.execute(new IgniteReducer<Map.Entry<Object, MyValue>, Integer>() {
                     @IgniteInstanceResource

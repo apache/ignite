@@ -43,7 +43,7 @@ public class IgniteTxReentryNearSelfTest extends IgniteTxReentryAbstractSelfTest
     @Override protected int testKey() {
         int key = 0;
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        Cache<Object, Object> cache = grid(0).cache(null);
 
         while (true) {
             Collection<ClusterNode> nodes = cache.affinity().mapKeyToPrimaryAndBackups(key);

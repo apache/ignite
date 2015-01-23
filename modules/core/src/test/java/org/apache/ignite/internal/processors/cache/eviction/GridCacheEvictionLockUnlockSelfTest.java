@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -66,7 +66,7 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(mode);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setEvictionPolicy(new EvictionPolicy());
         cc.setNearEvictionPolicy(new EvictionPolicy());
         cc.setEvictNearSynchronized(false);
@@ -164,9 +164,9 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
     }
 
     /** Eviction policy. */
-    private static class EvictionPolicy implements GridCacheEvictionPolicy<Object, Object> {
+    private static class EvictionPolicy implements CacheEvictionPolicy<Object, Object> {
         /** {@inheritDoc} */
-        @Override public void onEntryAccessed(boolean rmv, GridCacheEntry<Object, Object> entry) {
+        @Override public void onEntryAccessed(boolean rmv, CacheEntry<Object, Object> entry) {
             touchCnt.incrementAndGet();
 
             entry.evict();

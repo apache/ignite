@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
-import org.apache.ignite.cache.affinity.GridCacheAffinityKeyMapped;
+import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -52,7 +52,7 @@ public class GridCacheInternalKeyImpl implements GridCacheInternalKey, Externali
     }
 
     /** {@inheritDoc} */
-    @GridCacheAffinityKeyMapped
+    @CacheAffinityKeyMapped
     @Override public String name() {
         return name;
     }

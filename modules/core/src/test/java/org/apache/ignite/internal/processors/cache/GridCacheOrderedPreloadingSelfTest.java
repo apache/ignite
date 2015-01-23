@@ -28,7 +28,7 @@ import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Checks ordered preloading.
@@ -126,7 +126,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            GridCache<Object, Object> cache = g.cache("first");
+            Cache<Object, Object> cache = g.cache("first");
 
             // Put some data into cache.
             for (int i = 0; i < 1000; i++)

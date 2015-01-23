@@ -23,7 +23,7 @@ import org.apache.ignite.examples.*;
 /**
  * Demonstrates how cache can be populated with data utilizing {@link org.apache.ignite.IgniteDataLoader} API.
  * {@link org.apache.ignite.IgniteDataLoader} is a lot more efficient to use than standard
- * {@code GridCacheProjection.put(...)} operation as it properly buffers cache requests
+ * {@code CacheProjection.put(...)} operation as it properly buffers cache requests
  * together and properly manages load on remote nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which

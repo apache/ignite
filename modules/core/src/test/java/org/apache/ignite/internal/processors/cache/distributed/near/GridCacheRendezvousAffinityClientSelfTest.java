@@ -27,7 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Tests rendezvous affinity function with CLIENT_ONLY node (GG-8768).
@@ -43,7 +43,7 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
 
         ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setBackups(1);
-        ccfg.setAffinity(new GridCacheRendezvousAffinityFunction());
+        ccfg.setAffinity(new CacheRendezvousAffinityFunction());
 
         if (client)
             ccfg.setDistributionMode(CLIENT_ONLY);
@@ -71,9 +71,9 @@ public class GridCacheRendezvousAffinityClientSelfTest extends GridCommonAbstrac
             Map<Integer, Collection<UUID>> mapping = new HashMap<>();
 
             for (int i = 0; i < 4; i++) {
-                GridCache<Object, Object> cache = grid(i).cache(null);
+                Cache<Object, Object> cache = grid(i).cache(null);
 
-                GridCacheAffinity<Object> aff = cache.affinity();
+                CacheAffinity<Object> aff = cache.affinity();
 
                 int parts = aff.partitions();
 

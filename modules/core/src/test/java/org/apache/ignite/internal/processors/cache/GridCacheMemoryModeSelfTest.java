@@ -33,7 +33,7 @@ import org.junit.*;
 import java.util.*;
 
 import static java.lang.String.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Memory model self test.
@@ -50,7 +50,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
     private CacheMode mode;
 
     /** */
-    private GridCacheMemoryMode memoryMode;
+    private CacheMemoryMode memoryMode;
 
     /** */
     private int maxOnheapSize;
@@ -83,10 +83,10 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(mode);
         cacheCfg.setMemoryMode(memoryMode);
         cacheCfg.setEvictionPolicy(maxOnheapSize == Integer.MAX_VALUE ? null :
-            new GridCacheLruEvictionPolicy(maxOnheapSize));
+            new CacheLruEvictionPolicy(maxOnheapSize));
         cacheCfg.setAtomicityMode(atomicity);
         cacheCfg.setOffHeapMaxMemory(offheapSize);
-        cacheCfg.setQueryIndexEnabled(memoryMode != GridCacheMemoryMode.OFFHEAP_VALUES);
+        cacheCfg.setQueryIndexEnabled(memoryMode != CacheMemoryMode.OFFHEAP_VALUES);
         cacheCfg.setPortableEnabled(portableEnabled());
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -107,7 +107,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      */
     public void testOnheap() throws Exception {
         mode = CacheMode.LOCAL;
-        memoryMode = GridCacheMemoryMode.ONHEAP_TIERED;
+        memoryMode = CacheMemoryMode.ONHEAP_TIERED;
         maxOnheapSize = Integer.MAX_VALUE;
         swapEnabled = false;
         atomicity = CacheAtomicityMode.ATOMIC;
@@ -121,7 +121,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      */
     public void testOnheapSwap() throws Exception {
         mode = CacheMode.LOCAL;
-        memoryMode = GridCacheMemoryMode.ONHEAP_TIERED;
+        memoryMode = CacheMemoryMode.ONHEAP_TIERED;
         maxOnheapSize = 330;
         swapEnabled = true;
         atomicity = CacheAtomicityMode.ATOMIC;
@@ -135,7 +135,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      */
     public void testOffheap() throws Exception {
         mode = CacheMode.LOCAL;
-        memoryMode = GridCacheMemoryMode.OFFHEAP_TIERED;
+        memoryMode = CacheMemoryMode.OFFHEAP_TIERED;
         maxOnheapSize = Integer.MAX_VALUE;
         swapEnabled = false;
         atomicity = CacheAtomicityMode.ATOMIC;
@@ -149,7 +149,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      */
     public void testOffheapSwap() throws Exception {
         mode = CacheMode.LOCAL;
-        memoryMode = GridCacheMemoryMode.OFFHEAP_TIERED;
+        memoryMode = CacheMemoryMode.OFFHEAP_TIERED;
         maxOnheapSize = Integer.MAX_VALUE;
         swapEnabled = true;
         atomicity = CacheAtomicityMode.ATOMIC;
@@ -163,7 +163,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      */
     public void testTiered() throws Exception {
         mode = CacheMode.LOCAL;
-        memoryMode = GridCacheMemoryMode.ONHEAP_TIERED;
+        memoryMode = CacheMemoryMode.ONHEAP_TIERED;
         maxOnheapSize = 24;
         swapEnabled = true;
         atomicity = CacheAtomicityMode.ATOMIC;
@@ -177,7 +177,7 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      */
     public void testOffheapValuesConfigFixBackward() throws Exception {
         mode = CacheMode.LOCAL;
-        memoryMode = GridCacheMemoryMode.OFFHEAP_VALUES;
+        memoryMode = CacheMemoryMode.OFFHEAP_VALUES;
         maxOnheapSize = 24;
         swapEnabled = true;
         atomicity = CacheAtomicityMode.ATOMIC;
@@ -209,16 +209,16 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
         final int all = cache + offheapSwap;
 
         // put
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
+        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<Cache<String, Integer>>() {
+            @Override public void applyx(Cache<String, Integer> c) throws IgniteCheckedException {
                 for (int i = 0; i < all; i++)
                     c.put(valueOf(i), i);
             }
         });
 
         //putAll
-        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<GridCache<String, Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> c) throws IgniteCheckedException {
+        doTest(cache, offheapSwap, offheapEmpty, swapEmpty, new CIX1<Cache<String, Integer>>() {
+            @Override public void applyx(Cache<String, Integer> c) throws IgniteCheckedException {
                 Map<String, Integer> m = new HashMap<>();
 
                 for (int i = 0; i < all; i++)
@@ -237,12 +237,12 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
      * @param x Cache modifier.
      * @throws IgniteCheckedException If failed.
      */
-    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<GridCache<String, Integer>> x) throws Exception {
+    void doTest(int cache, int offheapSwap, boolean offheapEmpty, boolean swapEmpty, CIX1<Cache<String, Integer>> x) throws Exception {
         ipFinder = new TcpDiscoveryVmIpFinder(true);
 
         startGrid();
 
-        final GridCache<String, Integer> c = cache();
+        final Cache<String, Integer> c = cache();
 
         x.applyx(c);
 

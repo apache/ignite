@@ -123,8 +123,8 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
         while (it0.hasNext()) {
             Object obj = it0.next();
 
-            if (obj instanceof GridCacheEntry)
-                checkEntry((GridCacheEntry<String, Integer>)obj, bound);
+            if (obj instanceof CacheEntry)
+                checkEntry((CacheEntry<String, Integer>)obj, bound);
             else if (obj instanceof String)
                 checkKey((String)obj);
             else if (obj instanceof Integer)
@@ -143,7 +143,7 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
      * @param bound Value bound.
      * @throws Exception If failed.
      */
-    private void checkEntry(GridCacheEntry<String, Integer> entry, int bound) throws Exception {
+    private void checkEntry(CacheEntry<String, Integer> entry, int bound) throws Exception {
         assert entry != null;
 
         checkKey(entry.getKey());

@@ -29,9 +29,9 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Leak test.
@@ -71,7 +71,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
 
         cfg.setName(CACHE_NAME);
 
-        cfg.setAffinity(new GridCacheRendezvousAffinityFunction(false, 128));
+        cfg.setAffinity(new CacheRendezvousAffinityFunction(false, 128));
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);
@@ -108,7 +108,7 @@ public class GridCacheLeakTest extends GridCommonAbstractTest {
         try {
             int i = 0;
 
-            GridCache<Object, Object> cache = grid(0).cache(CACHE_NAME);
+            Cache<Object, Object> cache = grid(0).cache(CACHE_NAME);
 
             while (!Thread.currentThread().isInterrupted()) {
                 UUID key = UUID.randomUUID();

@@ -48,7 +48,7 @@ public class CacheContinuousQueryExample {
             System.out.println();
             System.out.println(">>> Cache continuous query example started.");
 
-            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            Cache<Integer, String> cache = g.cache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
             cache.globalClearAll(0);
@@ -59,15 +59,15 @@ public class CacheContinuousQueryExample {
                 cache.putx(i, Integer.toString(i));
 
             // Create new continuous query.
-            try (GridCacheContinuousQuery<Integer, String> qry = cache.queries().createContinuousQuery()) {
+            try (CacheContinuousQuery<Integer, String> qry = cache.queries().createContinuousQuery()) {
                 // Callback that is called locally when update notifications are received.
                 qry.localCallback(
-                    new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry<Integer, String>>>() {
+                    new IgniteBiPredicate<UUID, Collection<CacheContinuousQueryEntry<Integer, String>>>() {
                         @Override public boolean apply(
                             UUID nodeId,
-                            Collection<GridCacheContinuousQueryEntry<Integer, String>> entries
+                            Collection<CacheContinuousQueryEntry<Integer, String>> entries
                         ) {
-                            for (GridCacheContinuousQueryEntry<Integer, String> e : entries)
+                            for (CacheContinuousQueryEntry<Integer, String> e : entries)
                                 System.out.println("Queried entry [key=" + e.getKey() + ", val=" + e.getValue() + ']');
 
                             return true; // Return true to continue listening.
@@ -76,8 +76,8 @@ public class CacheContinuousQueryExample {
 
                 // This filter will be evaluated remotely on all nodes
                 // Entry that pass this filter will be sent to the caller.
-                qry.remoteFilter(new IgnitePredicate<GridCacheContinuousQueryEntry<Integer, String>>() {
-                    @Override public boolean apply(GridCacheContinuousQueryEntry<Integer, String> e) {
+                qry.remoteFilter(new IgnitePredicate<CacheContinuousQueryEntry<Integer, String>>() {
+                    @Override public boolean apply(CacheContinuousQueryEntry<Integer, String> e) {
                         return e.getKey() > 15;
                     }
                 });

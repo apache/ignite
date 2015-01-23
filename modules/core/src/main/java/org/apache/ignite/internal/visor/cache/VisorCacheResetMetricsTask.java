@@ -53,7 +53,7 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(String cacheName) throws IgniteCheckedException {
-            GridCache cache = g.cachex(cacheName);
+            Cache cache = g.cachex(cacheName);
 
             if (cache != null)
                 cache.resetMetrics();

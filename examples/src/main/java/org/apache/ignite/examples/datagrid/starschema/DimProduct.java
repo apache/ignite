@@ -26,14 +26,14 @@ import org.apache.ignite.cache.query.*;
  */
 public class DimProduct {
     /** Primary key. */
-    @GridCacheQuerySqlField(index = true)
+    @CacheQuerySqlField(index = true)
     private int id;
 
     /** Product name. */
     private String name;
 
     /** Product list price. */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private float price;
 
     /** Available product quantity. */

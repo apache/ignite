@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.query.reducefields;
 import org.apache.ignite.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Reduce fields queries tests for partitioned cache.
@@ -32,7 +32,7 @@ public class GridCacheReduceFieldsQueryAtomicSelfTest extends GridCacheReduceFie
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 }

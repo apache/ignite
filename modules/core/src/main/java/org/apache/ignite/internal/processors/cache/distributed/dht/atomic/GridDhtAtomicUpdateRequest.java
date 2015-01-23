@@ -91,7 +91,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     private GridLongList nearExpireTimes;
 
     /** Write synchronization mode. */
-    private GridCacheWriteSynchronizationMode syncMode;
+    private CacheWriteSynchronizationMode syncMode;
 
     /** Keys to update. */
     @GridToStringInclude
@@ -178,7 +178,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
         UUID nodeId,
         GridCacheVersion futVer,
         GridCacheVersion writeVer,
-        GridCacheWriteSynchronizationMode syncMode,
+        CacheWriteSynchronizationMode syncMode,
         long topVer,
         boolean forceTransformBackups,
         UUID subjId,
@@ -414,7 +414,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
     /**
      * @return Cache write synchronization mode.
      */
-    public GridCacheWriteSynchronizationMode writeSynchronizationMode() {
+    public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
@@ -1192,7 +1192,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
                 byte syncMode0 = commState.getByte();
 
-                syncMode = GridCacheWriteSynchronizationMode.fromOrdinal(syncMode0);
+                syncMode = CacheWriteSynchronizationMode.fromOrdinal(syncMode0);
 
                 commState.idx++;
 

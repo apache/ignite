@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -49,7 +49,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
@@ -63,7 +63,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
 
         ccfg.setBackups(2);
 
-        ccfg.setAffinity(new GridCacheConsistentHashAffinityFunction(false, 500));
+        ccfg.setAffinity(new CacheConsistentHashAffinityFunction(false, 500));
 
         return ccfg;
     }
@@ -77,7 +77,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testSynchronousEvictions() throws Exception {
-        GridCache<String, Integer> cache = cache(0);
+        Cache<String, Integer> cache = cache(0);
 
         final AtomicBoolean stop = new AtomicBoolean();
 
@@ -139,7 +139,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
      * @param node Primary node for keys.
      * @param data Map where keys/values should be put to.
      */
-    private void addKeysForNode(GridCacheAffinity<String> aff, ClusterNode node, Map<String, Integer> data) {
+    private void addKeysForNode(CacheAffinity<String> aff, ClusterNode node, Map<String, Integer> data) {
         int cntr = 0;
 
         for (int i = 0; i < 100_000; i++) {

@@ -65,7 +65,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
@@ -123,7 +123,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
             @SuppressWarnings({"BusyWait"})
             @Override public void applyx() throws IgniteCheckedException {
                 while (cnt++ < txCnt && !done.get()) {
-                    GridCache<Object, Object> cache = grid(0).cache(null);
+                    Cache<Object, Object> cache = grid(0).cache(null);
 
                     if (cnt % logMod == 0)
                         info("Starting transaction: " + cnt);
@@ -164,7 +164,7 @@ public class GridCacheVariableTopologySelfTest extends GridCommonAbstractTest {
         GridFuture<?> debugFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @SuppressWarnings({"UnusedDeclaration"})
             @Override public void run() {
-                GridCache<Object, Object> cache = grid(0).cache(null);
+                Cache<Object, Object> cache = grid(0).cache(null);
 
                 try {
                     Thread.sleep(15000);

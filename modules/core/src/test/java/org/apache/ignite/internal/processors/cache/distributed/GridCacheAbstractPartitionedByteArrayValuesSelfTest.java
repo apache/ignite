@@ -21,9 +21,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for byte array values in PARTITIONED caches.
@@ -96,5 +96,5 @@ public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extend
     /**
      * @return Distribution mode.
      */
-    protected abstract GridCacheDistributionMode distributionMode();
+    protected abstract CacheDistributionMode distributionMode();
 }

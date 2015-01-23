@@ -37,8 +37,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests group lock transaction failover.
@@ -381,7 +381,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> ret = new ArrayList<>(keys.size());
 
-        GridCache<Object, Object> cache = workerNode.cache(CACHE_NAME);
+        Cache<Object, Object> cache = workerNode.cache(CACHE_NAME);
 
         for (Integer key : keys) {
             if (cache.get(key) == null) // Key is absent.

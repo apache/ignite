@@ -22,7 +22,7 @@ import org.apache.ignite.cache.affinity.*;
 /**
  * Test mapper for P2P class loading tests.
  */
-public class GridExternalAffinityKeyMapper implements GridCacheAffinityKeyMapper {
+public class GridExternalAffinityKeyMapper implements CacheAffinityKeyMapper {
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
         if (key instanceof Integer)

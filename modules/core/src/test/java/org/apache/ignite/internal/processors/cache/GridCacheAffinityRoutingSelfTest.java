@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Affinity routing tests.
@@ -272,7 +272,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     private static class FieldAffinityJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         @GridToStringInclude
         private Object affKey;
 
@@ -305,7 +305,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
+            CacheAffinity<Object> aff = ignite.cache(null).affinity();
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -346,7 +346,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         /**
          * @return Affinity key.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public Object affinityKey() {
             return affKey;
         }
@@ -361,7 +361,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
+            CacheAffinity<Object> aff = ignite.cache(null).affinity();
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -381,7 +381,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         private Object affKey;
 
         /** Cache name to use affinity from. */
-        @GridCacheName
+        @CacheName
         private String cacheName = NON_DFLT_CACHE_NAME;
 
         /** */
@@ -406,7 +406,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         /**
          * @return Affinity key.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public Object affinityKey() {
             return affKey;
         }
@@ -421,7 +421,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheAffinity<Object> aff = ignite.cache(cacheName).affinity();
+            CacheAffinity<Object> aff = ignite.cache(cacheName).affinity();
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -462,7 +462,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         /**
          * @return Affinity key.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public Object affinityKey() {
             return affKey;
         }
@@ -470,7 +470,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         /**
          * @return Cache name for affinity routing.
          */
-        @GridCacheName
+        @CacheName
         public String cacheName() {
             return NON_DFLT_CACHE_NAME;
         }
@@ -485,7 +485,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheAffinity<Object> aff = ignite.cache(cacheName()).affinity();
+            CacheAffinity<Object> aff = ignite.cache(cacheName()).affinity();
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -502,12 +502,12 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     private static class MultipleAnnotationsJob implements IgniteCallable<Boolean> {
         /** Affinity key. */
         @GridToStringInclude
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private Object affKey;
 
         /** Duplicated affinity key. */
         @SuppressWarnings({"UnusedDeclaration"})
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private Object affKeyDup;
 
         /** */
@@ -533,7 +533,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
             if (log.isDebugEnabled())
                 log.debug("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
+            CacheAffinity<Object> aff = ignite.cache(null).affinity();
 
             return F.eqNodes(ignite.cluster().localNode(), aff.mapKeyToNode(affKey));
         }
@@ -550,7 +550,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
     private static class OneJobTask extends ComputeTaskSplitAdapter<Integer, Boolean> {
         /** Affinity key. */
         @GridToStringInclude
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private Object affKey;
 
         /** */
@@ -572,7 +572,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws IgniteCheckedException {
             return F.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
-                    GridCacheAffinity<Object> aff = ignite.cache(null).affinity();
+                    CacheAffinity<Object> aff = ignite.cache(null).affinity();
 
                     ClusterNode primary = aff.mapKeyToNode(affKey);
 
@@ -595,7 +595,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
      */
     private static class AffinityTestKey {
         /** Affinity key. */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private final int affKey;
 
         /**

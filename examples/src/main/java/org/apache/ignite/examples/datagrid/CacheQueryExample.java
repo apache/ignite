@@ -47,7 +47,7 @@ import java.util.*;
  *     </li>
  *     <li>
  *         Joins will work correctly only if joined objects are stored in
- *         collocated mode. Refer to {@link org.apache.ignite.cache.affinity.GridCacheAffinityKey} javadoc for more details.
+ *         collocated mode. Refer to {@link org.apache.ignite.cache.affinity.CacheAffinityKey} javadoc for more details.
  *     </li>
  *     <li>
  *         Note that if you created query on to replicated cache, all data will
@@ -119,10 +119,10 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQuery() throws IgniteCheckedException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query which selects salaries based on range.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
+        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
             cache.queries().createSqlQuery(Person.class, "salary > ? and salary <= ?");
 
         // Execute queries for salary ranges.
@@ -139,10 +139,10 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQueryWithJoin() throws IgniteCheckedException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query which joins on 2 types to select people for a specific organization.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
+        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
             cache.queries().createSqlQuery(Person.class, "from Person, Organization " +
                 "where Person.orgId = Organization.id " +
                 "and lower(Organization.name) = lower(?)");
@@ -158,14 +158,14 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void textQuery() throws IgniteCheckedException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         //  Query for all people with "Master Degree" in their resumes.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> masters =
+        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> masters =
             cache.queries().createFullTextQuery(Person.class, "Master");
 
         // Query for all people with "Bachelor Degree"in their resumes.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> bachelors =
+        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> bachelors =
             cache.queries().createFullTextQuery(Person.class, "Bachelor");
 
         print("Following people have 'Master Degree' in their resumes: ", masters.execute().get());
@@ -179,21 +179,21 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQueryWithReducers() throws IgniteCheckedException {
-        GridCacheProjection<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        CacheProjection<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Calculate average of salary of all persons in GridGain.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(
+        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry = cache.queries().createSqlQuery(
             Person.class,
             "from Person, Organization where Person.orgId = Organization.id and " +
                 "lower(Organization.name) = lower(?)");
 
         Collection<IgniteBiTuple<Double, Integer>> res = qry.execute(
-            new IgniteReducer<Map.Entry<GridCacheAffinityKey<UUID>, Person>, IgniteBiTuple<Double, Integer>>() {
+            new IgniteReducer<Map.Entry<CacheAffinityKey<UUID>, Person>, IgniteBiTuple<Double, Integer>>() {
                 private double sum;
 
                 private int cnt;
 
-                @Override public boolean collect(Map.Entry<GridCacheAffinityKey<UUID>, Person> e) {
+                @Override public boolean collect(Map.Entry<CacheAffinityKey<UUID>, Person> e) {
                     sum += e.getValue().salary;
 
                     cnt++;
@@ -228,10 +228,10 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlQueryWithTransformer() throws IgniteCheckedException {
-        GridCache<GridCacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<CacheAffinityKey<UUID>, Person> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees working for some company.
-        GridCacheQuery<Map.Entry<GridCacheAffinityKey<UUID>, Person>> qry =
+        CacheQuery<Map.Entry<CacheAffinityKey<UUID>, Person>> qry =
             cache.queries().createSqlQuery(Person.class,
                 "from Person, Organization " +
                     "where Person.orgId = Organization.id and lower(Organization.name) = lower(?)");
@@ -239,9 +239,9 @@ public class CacheQueryExample {
         // Transformer to convert Person objects to String.
         // Since caller only needs employee names, we only
         // send names back.
-        IgniteClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String> trans =
-            new IgniteClosure<Map.Entry<GridCacheAffinityKey<UUID>, Person>, String>() {
-                @Override public String apply(Map.Entry<GridCacheAffinityKey<UUID>, Person> e) {
+        IgniteClosure<Map.Entry<CacheAffinityKey<UUID>, Person>, String> trans =
+            new IgniteClosure<Map.Entry<CacheAffinityKey<UUID>, Person>, String>() {
+                @Override public String apply(Map.Entry<CacheAffinityKey<UUID>, Person> e) {
                     return e.getValue().lastName;
                 }
             };
@@ -257,10 +257,10 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlFieldsQuery() throws IgniteCheckedException {
-        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
-        GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
             "select concat(firstName, ' ', lastName) from Person");
 
         // Execute query to get collection of rows. In this particular
@@ -278,10 +278,10 @@ public class CacheQueryExample {
      * @throws IgniteCheckedException In case of error.
      */
     private static void sqlFieldsQueryWithJoin() throws IgniteCheckedException {
-        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Create query to get names of all employees.
-        GridCacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
+        CacheQuery<List<?>> qry1 = cache.queries().createSqlFieldsQuery(
             "select concat(firstName, ' ', lastName), Organization.name from Person, Organization where " +
                 "Person.orgId = Organization.id");
 
@@ -300,14 +300,14 @@ public class CacheQueryExample {
      * @throws InterruptedException In case of error.
      */
     private static void initialize() throws IgniteCheckedException, InterruptedException {
-        GridCache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
+        Cache<?, ?> cache = Ignition.ignite().cache(CACHE_NAME);
 
         // Organization projection.
-        GridCacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);
+        CacheProjection<UUID, Organization> orgCache = cache.projection(UUID.class, Organization.class);
 
         // Person projection.
-        GridCacheProjection<GridCacheAffinityKey<UUID>, Person> personCache =
-            cache.projection(GridCacheAffinityKey.class, Person.class);
+        CacheProjection<CacheAffinityKey<UUID>, Person> personCache =
+            cache.projection(CacheAffinityKey.class, Person.class);
 
         // Organizations.
         Organization org1 = new Organization("GridGain");
@@ -374,31 +374,31 @@ public class CacheQueryExample {
      */
     private static class Person implements Serializable {
         /** Person ID (indexed). */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private UUID id;
 
         /** Organization ID (indexed). */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private UUID orgId;
 
         /** First name (not-indexed). */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String firstName;
 
         /** Last name (not indexed). */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String lastName;
 
         /** Resume text (create LUCENE-based TEXT index for this field). */
-        @GridCacheQueryTextField
+        @CacheQueryTextField
         private String resume;
 
         /** Salary (indexed). */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private double salary;
 
         /** Custom cache key to guarantee that person is always collocated with its organization. */
-        private transient GridCacheAffinityKey<UUID> key;
+        private transient CacheAffinityKey<UUID> key;
 
         /**
          * Constructs person record.
@@ -427,9 +427,9 @@ public class CacheQueryExample {
          *
          * @return Custom affinity key to guarantee that person is always collocated with organization.
          */
-        public GridCacheAffinityKey<UUID> key() {
+        public CacheAffinityKey<UUID> key() {
             if (key == null)
-                key = new GridCacheAffinityKey<>(id, orgId);
+                key = new CacheAffinityKey<>(id, orgId);
 
             return key;
         }
@@ -450,11 +450,11 @@ public class CacheQueryExample {
      */
     private static class Organization implements Serializable {
         /** Organization ID (indexed). */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private UUID id;
 
         /** Organization name (indexed). */
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         private String name;
 
         /**

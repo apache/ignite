@@ -71,9 +71,9 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         String initVal = "1";
         String initStamp = "2";
 
-        GridCacheAtomicStamped<String, String> atomic1 = grid().cache(null).dataStructures()
+        CacheAtomicStamped<String, String> atomic1 = grid().cache(null).dataStructures()
             .atomicStamped(atomicName1, initVal, initStamp, true);
-        GridCacheAtomicStamped<String, String> atomic2 = grid().cache(null).dataStructures()
+        CacheAtomicStamped<String, String> atomic2 = grid().cache(null).dataStructures()
             .atomicStamped(atomicName1, null, null, true);
 
         assertNotNull(atomic1);
@@ -107,7 +107,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         String initVal = "qwerty";
         String initStamp = "asdfgh";
 
-        GridCacheAtomicStamped<String, String> atomic = grid().cache(null).dataStructures()
+        CacheAtomicStamped<String, String> atomic = grid().cache(null).dataStructures()
             .atomicStamped(atomicName, initVal, initStamp, true);
 
         assertEquals(initVal, atomic.value());
@@ -132,7 +132,7 @@ public abstract class GridCacheAtomicStampedApiSelfAbstractTest extends GridComm
         String initVal = "qwerty";
         String initStamp = "asdfgh";
 
-        GridCacheAtomicStamped<String, String> atomic = grid().cache(null).dataStructures()
+        CacheAtomicStamped<String, String> atomic = grid().cache(null).dataStructures()
             .atomicStamped(atomicName, initVal, initStamp, true);
 
         assertEquals(initVal, atomic.value());

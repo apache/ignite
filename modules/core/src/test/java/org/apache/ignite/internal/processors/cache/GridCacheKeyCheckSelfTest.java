@@ -24,9 +24,9 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for cache key check.
@@ -44,7 +44,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
@@ -128,7 +128,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            GridCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            Cache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.get(new IncorrectCacheKey(0));
 
@@ -148,7 +148,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            GridCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            Cache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.put(new IncorrectCacheKey(0), "test_value");
 
@@ -168,7 +168,7 @@ public class GridCacheKeyCheckSelfTest extends GridCacheAbstractSelfTest {
         this.atomicityMode = atomicityMode;
 
         try {
-            GridCache<IncorrectCacheKey, String> cache = grid(0).cache(null);
+            Cache<IncorrectCacheKey, String> cache = grid(0).cache(null);
 
             cache.remove(new IncorrectCacheKey(0));
 

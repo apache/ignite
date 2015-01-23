@@ -33,8 +33,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Partitioned affinity test.
@@ -66,7 +66,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        GridCacheConsistentHashAffinityFunction aff = new GridCacheConsistentHashAffinityFunction();
+        CacheConsistentHashAffinityFunction aff = new CacheConsistentHashAffinityFunction();
 
         aff.setBackupFilter(backupFilter);
 
@@ -75,7 +75,7 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(BACKUPS);
         cacheCfg.setAffinity(aff);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setPreloadMode(SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
@@ -122,11 +122,11 @@ public class GridCachePartitionedAffinityFilterSelfTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     private void checkPartitions() throws Exception {
-        int partCnt = GridCacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT;
+        int partCnt = CacheConsistentHashAffinityFunction.DFLT_PARTITION_COUNT;
 
-        GridCacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
+        CacheAffinityFunction aff = cacheConfiguration(grid(0).configuration(), null).getAffinity();
 
-        GridCache<Object, Object> cache = grid(0).cache(null);
+        Cache<Object, Object> cache = grid(0).cache(null);
 
         for (int i = 0; i < partCnt; i++) {
             assertEquals(i, aff.partition(i));

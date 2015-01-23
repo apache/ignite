@@ -35,7 +35,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests message count for different deployment scenarios.
@@ -130,7 +130,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
         try {
             startGrids(2);
 
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            Cache<Object, Object> cache = grid(0).cache(null);
 
             cache.put("key", valCls.newInstance());
 

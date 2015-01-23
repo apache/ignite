@@ -223,7 +223,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
         /**
          * @return Affinity key.
          */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         public String affinityKey() {
             return "key";
         }

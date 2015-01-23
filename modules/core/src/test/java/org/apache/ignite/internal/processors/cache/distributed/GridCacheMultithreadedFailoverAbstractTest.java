@@ -40,9 +40,9 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Base test for all multithreaded cache scenarios w/ and w/o failover.
@@ -124,7 +124,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
     /**
      * @return Distribution mode.
      */
-    protected GridCacheDistributionMode distributionMode() {
+    protected CacheDistributionMode distributionMode() {
         return NEAR_PARTITIONED;
     }
 
@@ -277,7 +277,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
                     Ignite ignite = G.ignite(nodeName(0));
 
-                    GridCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
+                    Cache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
                     int startKey = keysPerThread * idx;
                     int endKey = keysPerThread * (idx + 1);
@@ -500,11 +500,11 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
      */
     @SuppressWarnings({"TooBroadScope", "ConstantIfStatement"})
     private boolean compareCaches(Map<Integer, Integer> expVals) throws Exception {
-        List<GridCache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
+        List<Cache<Integer, Integer>> caches = new ArrayList<>(dataNodes());
         List<GridDhtCacheAdapter<Integer, Integer>> dhtCaches = null;
 
         for (int i = 0 ; i < dataNodes(); i++) {
-            GridCache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
+            Cache<Integer, Integer> cache = G.ignite(nodeName(i)).cache(CACHE_NAME);
 
             assert cache != null;
 
@@ -587,7 +587,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
 
             for (Integer key : failedKeys) {
                 for (int i = 0; i < dataNodes(); i++) {
-                    GridCacheEntry<Integer, Integer> cacheEntry = caches.get(i).entry(key);
+                    CacheEntry<Integer, Integer> cacheEntry = caches.get(i).entry(key);
 
                     UUID nodeId = G.ignite(nodeName(i)).cluster().localNode().id();
 

@@ -30,11 +30,11 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheMemoryMode.*;
+import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  */
@@ -59,7 +59,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
         startNodes();
 
         for (int i = 0; i < KEY_CNT; i++) {
-            GridCache<Object, Integer> c = cache(i);
+            Cache<Object, Integer> c = cache(i);
 
             c.putx((long)i, 0);
             c.putx(new UserKey(i, 0), 0);
@@ -71,7 +71,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 
         long key = 5;
 
-        GridCache<Object, Integer> c = cache(key);
+        Cache<Object, Integer> c = cache(key);
 
         try (IgniteTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
             Integer val = c.get(key);
@@ -108,7 +108,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
 //                    while (!Thread.currentThread().isInterrupted()) {
 //                        long key = rnd.nextInt(KEY_CNT);
 //
-//                        GridCache<Object, Integer> c = cache(key);
+//                        Cache<Object, Integer> c = cache(key);
 //
 //                        try (GridCacheTx tx = c.txStartAffinity(key, PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
 //                            Integer val = c.get(key);
@@ -153,7 +153,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      * @param key Key.
      * @return Cache.
      */
-    private static GridCache<Object, Integer> cache(long key) {
+    private static Cache<Object, Integer> cache(long key) {
         UUID id = Ignition.ignite("grid-0").cache(null).affinity().mapKeyToNode(key).id();
 
         return Ignition.ignite(id).cache(null);
@@ -200,7 +200,7 @@ public class GridCacheAffinityTransactionsOffHeapTest {
      */
     private static class UserKey implements Externalizable {
         /** */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private long affKey;
 
         /** */

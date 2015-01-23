@@ -48,7 +48,7 @@ public class VisorCacheQueryMetrics implements Serializable {
      * @param m Cache query metrics.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheQueryMetrics from(GridCacheQueryMetrics m) {
+    public static VisorCacheQueryMetrics from(CacheQueryMetrics m) {
         VisorCacheQueryMetrics qm = new VisorCacheQueryMetrics();
 
         qm.minTime = m.minimumTime();

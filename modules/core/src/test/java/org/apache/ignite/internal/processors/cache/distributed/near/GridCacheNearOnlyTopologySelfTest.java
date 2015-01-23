@@ -32,8 +32,8 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -160,7 +160,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 10; i++)
                 grid(1).cache(null).put(i, i);
 
-            final GridCache<Object, Object> nearOnly = grid(0).cache(null);
+            final Cache<Object, Object> nearOnly = grid(0).cache(null);
 
             // Populate near cache.
             for (int i = 0; i < 10; i++) {

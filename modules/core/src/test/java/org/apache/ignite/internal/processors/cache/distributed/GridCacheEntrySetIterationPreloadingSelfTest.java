@@ -37,8 +37,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -49,7 +49,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
     @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration ccfg = super.cacheConfiguration(gridName);
 
-        ccfg.setPreloadMode(GridCachePreloadMode.SYNC);
+        ccfg.setPreloadMode(CachePreloadMode.SYNC);
 
         return ccfg;
     }
@@ -59,14 +59,14 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
      */
     public void testIteration()  throws Exception {
         try {
-            final GridCache<String, Integer> cache = cache();
+            final Cache<String, Integer> cache = cache();
 
             final int entryCnt = 1000;
 
             for (int i = 0; i < entryCnt; i++)
                 cache.put(String.valueOf(i), i);
 
-            Collection<GridCacheEntry<String, Integer>> entries = new ArrayList<>(10_000);
+            Collection<CacheEntry<String, Integer>> entries = new ArrayList<>(10_000);
 
             for (int i = 0; i < 10_000; i++)
                 entries.add(cache.randomEntry());
@@ -75,7 +75,7 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
             startGrid(2);
             startGrid(3);
 
-            for (GridCacheEntry<String, Integer> entry : entries)
+            for (CacheEntry<String, Integer> entry : entries)
                 entry.partition();
 
             for (int i = 0; i < entryCnt; i++)

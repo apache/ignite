@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.affinity.fair;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.affinity.fair.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -93,7 +92,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
     private void checkNodeRemoved(int backups) throws Exception {
         int parts = 256;
 
-        GridCacheAffinityFunction aff = new GridCachePartitionFairAffinity(parts);
+        CacheAffinityFunction aff = new CachePartitionFairAffinity(parts);
 
         int nodesCnt = 50;
 
@@ -151,7 +150,7 @@ public class GridCachePartitionFairAffinitySelfTest extends GridCommonAbstractTe
     private void checkRandomReassignment(int backups) {
         int parts = 256;
 
-        GridCacheAffinityFunction aff = new GridCachePartitionFairAffinity(parts);
+        CacheAffinityFunction aff = new CachePartitionFairAffinity(parts);
 
         Random rnd = new Random();
 

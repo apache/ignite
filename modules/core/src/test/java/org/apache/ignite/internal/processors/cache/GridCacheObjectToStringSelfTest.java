@@ -34,7 +34,7 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -49,7 +49,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     private CacheMode cacheMode;
 
     /** Cache eviction policy. */
-    private GridCacheEvictionPolicy evictionPlc;
+    private CacheEvictionPolicy evictionPlc;
 
     /** Near enabled flag. */
     private boolean nearEnabled;
@@ -84,7 +84,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testLocalCacheFifoEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
-        evictionPlc = new GridCacheFifoEvictionPolicy();
+        evictionPlc = new CacheFifoEvictionPolicy();
 
         checkToString();
     }
@@ -92,7 +92,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testLocalCacheLruEvictionPolicy() throws Exception {
         cacheMode = LOCAL;
-        evictionPlc = new GridCacheLruEvictionPolicy();
+        evictionPlc = new CacheLruEvictionPolicy();
 
         checkToString();
     }
@@ -100,7 +100,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testReplicatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
-        evictionPlc = new GridCacheFifoEvictionPolicy();
+        evictionPlc = new CacheFifoEvictionPolicy();
 
         checkToString();
     }
@@ -108,7 +108,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     public void testReplicatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = REPLICATED;
-        evictionPlc = new GridCacheLruEvictionPolicy();
+        evictionPlc = new CacheLruEvictionPolicy();
 
         checkToString();
     }
@@ -117,7 +117,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testPartitionedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
-        evictionPlc = new GridCacheFifoEvictionPolicy();
+        evictionPlc = new CacheFifoEvictionPolicy();
 
         checkToString();
     }
@@ -126,7 +126,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testPartitionedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = true;
-        evictionPlc = new GridCacheLruEvictionPolicy();
+        evictionPlc = new CacheLruEvictionPolicy();
 
         checkToString();
     }
@@ -135,7 +135,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testColocatedCacheFifoEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
-        evictionPlc = new GridCacheFifoEvictionPolicy();
+        evictionPlc = new CacheFifoEvictionPolicy();
 
         checkToString();
     }
@@ -144,7 +144,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
     public void testColocatedCacheLruEvictionPolicy() throws Exception {
         cacheMode = PARTITIONED;
         nearEnabled = false;
-        evictionPlc = new GridCacheLruEvictionPolicy();
+        evictionPlc = new CacheLruEvictionPolicy();
 
         checkToString();
     }
@@ -154,7 +154,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
         Ignite g = startGrid(0);
 
         try {
-            GridCache<Object, Object> cache = g.cache(null);
+            Cache<Object, Object> cache = g.cache(null);
 
             for (int i = 0; i < 10; i++)
                 cache.put(i, i);
@@ -166,7 +166,7 @@ public class GridCacheObjectToStringSelfTest extends GridCommonAbstractTest {
                     assertFalse("Entry is locked after implicit transaction commit: " + entry, entry.lockedByAny());
             }
 
-            Set<GridCacheEntry<Object, Object>> entries = cache.entrySet();
+            Set<CacheEntry<Object, Object>> entries = cache.entrySet();
 
             assertNotNull(entries);
             assertFalse(entries.toString().isEmpty());

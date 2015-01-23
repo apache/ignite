@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -31,16 +30,16 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testMethodAffinityMapper() {
-        GridCacheAffinityKeyMapper mapper =
+        CacheAffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
-        List<GridCacheAffinityKey<Integer>> keys = new ArrayList<>();
+        List<CacheAffinityKey<Integer>> keys = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++)
-            keys.add(new GridCacheAffinityKey<>(i, Integer.toString(i)));
+            keys.add(new CacheAffinityKey<>(i, Integer.toString(i)));
 
         for (int i = 1; i <= 10; i++) {
-            GridCacheAffinityKey<Integer> key = keys.get(i - 1);
+            CacheAffinityKey<Integer> key = keys.get(i - 1);
 
             Object mapped = mapper.affinityKey(key);
 
@@ -55,7 +54,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testFieldAffinityMapper() {
-        GridCacheAffinityKeyMapper mapper =
+        CacheAffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
         List<FieldAffinityKey<Integer>> keys = new ArrayList<>();
@@ -79,7 +78,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testFieldAffinityMapperWithWrongClass() {
-        GridCacheAffinityKeyMapper mapper =
+        CacheAffinityKeyMapper mapper =
             new GridCacheDefaultAffinityKeyMapper();
 
         FieldNoAffinityKey key = new FieldNoAffinityKey();
@@ -102,7 +101,7 @@ public class GridCacheAffinityMapperSelfTest extends GridCommonAbstractTest {
         private K key;
 
         /** Affinity key. */
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private Object affKey;
 
         /**

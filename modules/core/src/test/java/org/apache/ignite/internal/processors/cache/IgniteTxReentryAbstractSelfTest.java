@@ -36,7 +36,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -82,7 +82,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(cacheMode());
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(nearEnabled() ? NEAR_PARTITIONED : PARTITIONED_ONLY);
 
@@ -96,7 +96,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
         startGrids(gridCount());
 
         try {
-            GridCache<Object, Object> cache = grid(0).cache(null);
+            Cache<Object, Object> cache = grid(0).cache(null);
 
             // Find test key.
             int key = testKey();

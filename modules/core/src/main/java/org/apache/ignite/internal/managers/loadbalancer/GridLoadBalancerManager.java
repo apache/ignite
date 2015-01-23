@@ -130,12 +130,12 @@ public class GridLoadBalancerManager extends GridManagerAdapter<LoadBalancingSpi
         if (log.isDebugEnabled())
             log.debug("Looking for cache affinity node [job=" + job + "]");
 
-        Object key = dep.annotatedValue(job, GridCacheAffinityKeyMapped.class);
+        Object key = dep.annotatedValue(job, CacheAffinityKeyMapped.class);
 
         if (key == null)
             return null;
 
-        String cacheName = (String)dep.annotatedValue(job, GridCacheName.class);
+        String cacheName = (String)dep.annotatedValue(job, CacheName.class);
 
         if (log.isDebugEnabled())
             log.debug("Affinity properties [key=" + key + ", cacheName=" + cacheName + "]");

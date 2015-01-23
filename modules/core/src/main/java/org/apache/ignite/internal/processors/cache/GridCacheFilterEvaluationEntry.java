@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.GridCachePeekMode.*;
  * Needed to protect original entry from invalidation by filter's peek.
  */
 @SuppressWarnings("unchecked")
-public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V> {
+public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -122,7 +122,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheProjection<K, V> projection() {
+    @Override public CacheProjection<K, V> projection() {
         throw new UnsupportedOperationException("parent");
     }
 
@@ -203,13 +203,13 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V set(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable @Override public V set(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
         throw new UnsupportedOperationException("set");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setAsync(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("setAsync");
     }
 
@@ -224,14 +224,14 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean setx(V val, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
+    @Override public boolean setx(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
         throw new UnsupportedOperationException("setx");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> setxAsync(V val,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("setxAsync");
     }
 
@@ -276,23 +276,23 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public V remove(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
+    @Nullable @Override public V remove(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
         throw new UnsupportedOperationException("remove");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("removeAsync");
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removex(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public boolean removex(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
         throw new UnsupportedOperationException("removex");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("removexAsync");
     }
 
@@ -323,19 +323,19 @@ public class GridCacheFilterEvaluationEntry<K, V> implements GridCacheEntry<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout, @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter)
+    @Override public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
         throws IgniteCheckedException {
         throw new UnsupportedOperationException("lock");
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("lockAsync");
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<GridCacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
         throw new UnsupportedOperationException("unlock");
     }
 

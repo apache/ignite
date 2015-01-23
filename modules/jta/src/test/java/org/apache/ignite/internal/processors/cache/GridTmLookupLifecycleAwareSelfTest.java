@@ -28,7 +28,7 @@ import org.jetbrains.annotations.*;
 
 import javax.transaction.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -39,7 +39,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     private static final String CACHE_NAME = "cache";
 
     /** */
-    private GridCacheDistributionMode distroMode;
+    private CacheDistributionMode distroMode;
 
     /**
      */
@@ -93,7 +93,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
 
     /** {@inheritDoc} */
     @Override public void testLifecycleAware() throws Exception {
-        for (GridCacheDistributionMode mode : new GridCacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
+        for (CacheDistributionMode mode : new CacheDistributionMode[] {PARTITIONED_ONLY, NEAR_PARTITIONED}) {
             distroMode = mode;
 
             super.testLifecycleAware();

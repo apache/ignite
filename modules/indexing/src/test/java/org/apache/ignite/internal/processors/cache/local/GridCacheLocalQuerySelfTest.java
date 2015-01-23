@@ -44,7 +44,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
      * @throws IgniteCheckedException If test failed.
      */
     public void testQueryLocal() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        Cache<Integer, String> cache = ignite.cache(null);
 
         cache.put(1, "value1");
         cache.put(2, "value2");
@@ -53,9 +53,9 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
         cache.put(5, "value5");
 
         // Tests equals query.
-        GridCacheQuery<Map.Entry<Integer, String>> qry = cache.queries().createSqlQuery(String.class, "_val='value1'");
+        CacheQuery<Map.Entry<Integer, String>> qry = cache.queries().createSqlQuery(String.class, "_val='value1'");
 
-        GridCacheQueryFuture<Map.Entry<Integer,String>> iter = qry.execute();
+        CacheQueryFuture<Map.Entry<Integer,String>> iter = qry.execute();
 
         Map.Entry<Integer, String> entry = iter.next();
 
@@ -78,7 +78,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
         assert iter.next() == null;
 
         // Tests reducer.
-        GridCacheQuery<Map.Entry<Integer, String>> rdcQry = cache.queries().createSqlQuery(String.class,
+        CacheQuery<Map.Entry<Integer, String>> rdcQry = cache.queries().createSqlQuery(String.class,
             "_val like 'value%' and _key != 2 and _val != 'value3' order by _val");
 
         Iterator<String> iter2 = rdcQry.

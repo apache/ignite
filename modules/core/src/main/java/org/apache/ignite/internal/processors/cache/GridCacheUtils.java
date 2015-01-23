@@ -42,11 +42,11 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
@@ -340,11 +340,11 @@ public class GridCacheUtils {
      * @param <V> Value type.
      * @return Factory instance.
      */
-    public static <K, V> IgniteClosure<Integer, IgnitePredicate<GridCacheEntry<K, V>>[]> factory() {
-        return new IgniteClosure<Integer, IgnitePredicate<GridCacheEntry<K, V>>[]>() {
+    public static <K, V> IgniteClosure<Integer, IgnitePredicate<CacheEntry<K, V>>[]> factory() {
+        return new IgniteClosure<Integer, IgnitePredicate<CacheEntry<K, V>>[]>() {
             @SuppressWarnings({"unchecked"})
-            @Override public IgnitePredicate<GridCacheEntry<K, V>>[] apply(Integer len) {
-                return (IgnitePredicate<GridCacheEntry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
+            @Override public IgnitePredicate<CacheEntry<K, V>>[] apply(Integer len) {
+                return (IgnitePredicate<CacheEntry<K, V>>[])(len == 0 ? EMPTY : new IgnitePredicate[len]);
             }
         };
     }
@@ -384,19 +384,19 @@ public class GridCacheUtils {
     }
 
     /**
-     * Gets closure which returns {@link GridCacheEntry} given cache key.
+     * Gets closure which returns {@link org.apache.ignite.cache.CacheEntry} given cache key.
      * If current cache is DHT and key doesn't belong to current partition,
      * {@code null} is returned.
      *
      * @param ctx Cache context.
      * @param <K> Cache key type.
      * @param <V> Cache value type.
-     * @return Closure which returns {@link GridCacheEntry} given cache key or {@code null} if partition is invalid.
+     * @return Closure which returns {@link org.apache.ignite.cache.CacheEntry} given cache key or {@code null} if partition is invalid.
      */
-    public static <K, V> IgniteClosure<K, GridCacheEntry<K, V>> cacheKey2Entry(
+    public static <K, V> IgniteClosure<K, CacheEntry<K, V>> cacheKey2Entry(
         final GridCacheContext<K, V> ctx) {
-        return new IgniteClosure<K, GridCacheEntry<K, V>>() {
-            @Nullable @Override public GridCacheEntry<K, V> apply(K k) {
+        return new IgniteClosure<K, CacheEntry<K, V>>() {
+            @Nullable @Override public CacheEntry<K, V> apply(K k) {
                 try {
                     return ctx.cache().entry(k);
                 }
@@ -568,13 +568,13 @@ public class GridCacheUtils {
         if (cfg.getCacheMode() == LOCAL)
             return true;
 
-        GridCacheDistributionMode partTax = cfg.getDistributionMode();
+        CacheDistributionMode partTax = cfg.getDistributionMode();
 
         if (partTax == null)
             partTax = distributionMode(cfg);
 
-        return partTax == GridCacheDistributionMode.PARTITIONED_ONLY ||
-            partTax == GridCacheDistributionMode.NEAR_PARTITIONED;
+        return partTax == CacheDistributionMode.PARTITIONED_ONLY ||
+            partTax == CacheDistributionMode.NEAR_PARTITIONED;
     }
 
     /**
@@ -646,7 +646,7 @@ public class GridCacheUtils {
             return false;
 
         return cfg.getDistributionMode() == NEAR_PARTITIONED ||
-            cfg.getDistributionMode() == GridCacheDistributionMode.NEAR_ONLY;
+            cfg.getDistributionMode() == CacheDistributionMode.NEAR_ONLY;
     }
 
     /**
@@ -655,9 +655,9 @@ public class GridCacheUtils {
      * @param cfg Configuration.
      * @return Partitioned cache mode.
      */
-    public static GridCacheDistributionMode distributionMode(CacheConfiguration cfg) {
+    public static CacheDistributionMode distributionMode(CacheConfiguration cfg) {
         return cfg.getDistributionMode() != null ?
-            cfg.getDistributionMode() : GridCacheDistributionMode.PARTITIONED_ONLY;
+            cfg.getDistributionMode() : CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /**
@@ -751,16 +751,16 @@ public class GridCacheUtils {
      * @return Empty filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] empty() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>[])EMPTY_FILTER;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] empty() {
+        return (IgnitePredicate<CacheEntry<K, V>>[])EMPTY_FILTER;
     }
 
     /**
      * @return Always false filter.
      */
     @SuppressWarnings({"unchecked"})
-    public static <K, V> IgnitePredicate<GridCacheEntry<K, V>>[] alwaysFalse() {
-        return (IgnitePredicate<GridCacheEntry<K, V>>[])ALWAYS_FALSE;
+    public static <K, V> IgnitePredicate<CacheEntry<K, V>>[] alwaysFalse() {
+        return (IgnitePredicate<CacheEntry<K, V>>[])ALWAYS_FALSE;
     }
 
     /**
@@ -1208,7 +1208,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteTx txStartInternal(GridCacheContext ctx, GridCacheProjection prj,
+    public static IgniteTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1622,8 +1622,8 @@ public class GridCacheUtils {
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    public static <K, V> void inTx(GridCacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
-        IgniteTxIsolation isolation, IgniteInClosureX<GridCacheProjection<K ,V>> clo) throws IgniteCheckedException {
+    public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
         try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
             clo.applyx(cache);
@@ -1654,7 +1654,7 @@ public class GridCacheUtils {
      * @param key Key.
      * @return {@code True} if entry was invalidated.
      */
-    public static <K, V> boolean invalidate(GridCacheProjection<K, V> cache, K key) {
+    public static <K, V> boolean invalidate(CacheProjection<K, V> cache, K key) {
         return cache.clear(key);
     }
 

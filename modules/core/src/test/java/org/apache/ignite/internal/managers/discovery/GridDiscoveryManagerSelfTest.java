@@ -26,7 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  *
@@ -62,7 +62,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
 
         ccfg2.setName(null);
 
-        GridCacheDistributionMode distrMode;
+        CacheDistributionMode distrMode;
 
         if (gridName.equals(getTestGridName(1)))
             distrMode = NEAR_ONLY;

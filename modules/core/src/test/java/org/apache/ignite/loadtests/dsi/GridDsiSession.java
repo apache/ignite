@@ -59,7 +59,7 @@ public class GridDsiSession implements Serializable{
 
         /** */
         @SuppressWarnings("UnusedDeclaration")
-        @GridCacheAffinityKeyMapped
+        @CacheAffinityKeyMapped
         private String terminalId;
 
         /**

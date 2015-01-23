@@ -76,7 +76,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
     public void testTakeFromJoined() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        GridCacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
+        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
             .queue(queueName, 0, true, true);
 
         assertNotNull(queue);
@@ -175,7 +175,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
                 ", job=" + getClass().getSimpleName() + "]");
 
             try {
-                GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
+                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
 
                 assertNotNull(queue);
 
@@ -269,7 +269,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
             Integer lastPolled = null;
 
             try {
-                GridCacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
+                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, true, false);
 
                 assertNotNull(queue);
 

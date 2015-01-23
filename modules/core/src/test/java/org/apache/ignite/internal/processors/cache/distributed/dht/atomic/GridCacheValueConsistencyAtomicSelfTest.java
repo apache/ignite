@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 
 /**
  * Tests cache value consistency for ATOMIC mode.
@@ -92,7 +92,7 @@ public class GridCacheValueConsistencyAtomicSelfTest extends GridCacheValueConsi
             int total = 0;
 
             for (int idx = 0; idx < gridCount(); idx++) {
-                GridCache<Integer, Integer> cache = grid(idx).cache(null);
+                Cache<Integer, Integer> cache = grid(idx).cache(null);
 
                 for (int i = 0; i < keyCnt; i++) {
                     Integer val = cache.peek(i);

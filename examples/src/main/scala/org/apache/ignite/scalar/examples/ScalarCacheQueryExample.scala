@@ -17,8 +17,8 @@
 
 package org.gridgain.scalar.examples
 
-import org.apache.ignite.cache.{CacheMode, GridCacheFlag, GridCacheProjection}
-import org.apache.ignite.cache.affinity.GridCacheAffinityKey
+import org.apache.ignite.cache.{CacheMode, CacheFlag, CacheProjection}
+import org.apache.ignite.cache.affinity.CacheAffinityKey
 import org.gridgain.scalar._
 import scalar._
 import org.apache.ignite._
@@ -57,7 +57,7 @@ object ScalarCacheQueryExample {
         initialize()
 
         // Cache instance shortcut.
-        val cache = mkCache[GridCacheAffinityKey[UUID], Person]
+        val cache = mkCache[CacheAffinityKey[UUID], Person]
 
         // Using distributed queries for partitioned cache and local queries for replicated cache.
         // Since in replicated caches data is available on all nodes, including local one,
@@ -91,7 +91,7 @@ object ScalarCacheQueryExample {
             cache.textReduce(
                 prj,
                 "Master",
-                (e: Iterable[(GridCacheAffinityKey[UUID], Person)]) => (e.map(_._2.salary).sum, e.size),
+                (e: Iterable[(CacheAffinityKey[UUID], Person)]) => (e.map(_._2.salary).sum, e.size),
                 (e: Iterable[(Double, Int)]) => e.map(_._1).sum / e.map(_._2).sum
             )
         )
@@ -102,9 +102,9 @@ object ScalarCacheQueryExample {
      *
      * @return Cache to use.
      */
-    private def mkCache[K, V]: GridCacheProjection[K, V] = {
+    private def mkCache[K, V]: CacheProjection[K, V] = {
         // Using distributed queries.
-        cache$[K, V](CACHE_NAME).get.flagsOn(GridCacheFlag.SYNC_COMMIT)
+        cache$[K, V](CACHE_NAME).get.flagsOn(CacheFlag.SYNC_COMMIT)
     }
 
     /**
@@ -125,7 +125,7 @@ object ScalarCacheQueryExample {
         orgCache += (org2.id -> org2)
 
         // Person cache projection.
-        val prnCache = mkCache[GridCacheAffinityKey[UUID], Person]
+        val prnCache = mkCache[CacheAffinityKey[UUID], Person]
 
         // People.
         val p1 = Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.")
@@ -192,7 +192,7 @@ private case class Person(
     val orgId = org.id
 
     /** Affinity key for this person. */
-    val key = new GridCacheAffinityKey[UUID](id, org.id)
+    val key = new CacheAffinityKey[UUID](id, org.id)
 
     /**
      * `toString` implementation.

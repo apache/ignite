@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -77,7 +77,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCacheProjection<String, int[]> cache = grid(0).cache(null).flagsOn(SYNC_COMMIT).
+        CacheProjection<String, int[]> cache = grid(0).cache(null).flagsOn(SYNC_COMMIT).
             projection(String.class, int[].class);
 
         cache.removeAll();
@@ -85,7 +85,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
         for (int i = 0; i < GRID_CNT; i++) {
             Ignite g = grid(i);
 
-            GridCache<String, int[]> c = g.cache(null);
+            Cache<String, int[]> c = g.cache(null);
 
             assertEquals("Cache is not empty: " + c.entrySet(), 0, c.size());
         }
@@ -131,7 +131,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
                 private Ignite ignite;
 
                 @Override public Void applyx(final Integer i) throws IgniteCheckedException {
-                    GridCache<String, int[]> cache = this.ignite.cache(null);
+                    Cache<String, int[]> cache = this.ignite.cache(null);
 
                     try (IgniteTx tx = cache.txStart(concur, isolation)) {
                         int[] arr = cache.get("TestKey");
@@ -162,7 +162,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCacheProjection<String, int[]> c = grid(i).cache(null).projection(String.class, int[].class);
+            CacheProjection<String, int[]> c = grid(i).cache(null).projection(String.class, int[].class);
 
             // Do within transaction to make sure that lock is acquired
             // which means that all previous transactions have committed.

@@ -25,7 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for cache checkpoint SPI with second cache configured.
@@ -82,8 +82,8 @@ public class GridCacheCheckpointSpiSecondCacheSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testSecondCachePutRemove() throws Exception {
-        GridCache<Integer, Integer> data = grid().cache(DATA_CACHE);
-        GridCache<Integer, String> cp = grid().cache(CP_CACHE);
+        Cache<Integer, Integer> data = grid().cache(DATA_CACHE);
+        Cache<Integer, String> cp = grid().cache(CP_CACHE);
 
         assertTrue(data.putx(1, 1));
         assertTrue(cp.putx(1, "1"));

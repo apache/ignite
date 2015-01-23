@@ -40,13 +40,13 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
     protected static Ignite[] ignites;
 
     /** Regular caches. */
-    private static GridCache<Integer, Object>[] caches;
+    private static Cache<Integer, Object>[] caches;
 
     /** Offheap values caches. */
-    private static GridCache<Integer, Object>[] cachesOffheap;
+    private static Cache<Integer, Object>[] cachesOffheap;
 
     /** Offheap tiered caches. */
-    private static GridCache<Integer, Object>[] cachesOffheapTiered;
+    private static Cache<Integer, Object>[] cachesOffheapTiered;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -142,9 +142,9 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
 
         ignites = new Ignite[gridCnt];
 
-        caches = new GridCache[gridCnt];
-        cachesOffheap = new GridCache[gridCnt];
-        cachesOffheapTiered = new GridCache[gridCnt];
+        caches = new Cache[gridCnt];
+        cachesOffheap = new Cache[gridCnt];
+        cachesOffheapTiered = new Cache[gridCnt];
 
         for (int i = 0; i < gridCnt; i++) {
             ignites[i] = startGrid(i);
@@ -280,14 +280,14 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @throws Exception If failed.
      */
     public void testSwap() throws Exception {
-        for (GridCache<Integer, Object> cache : caches)
+        for (Cache<Integer, Object> cache : caches)
             assert cache.configuration().isSwapEnabled();
 
         byte[] val1 = wrap(1);
 
-        GridCache<Integer, Object> primaryCache = null;
+        Cache<Integer, Object> primaryCache = null;
 
-        for (GridCache<Integer, Object> cache : caches) {
+        for (Cache<Integer, Object> cache : caches) {
             if (cache.entry(SWAP_TEST_KEY).primary()) {
                 primaryCache = cache;
 
@@ -317,7 +317,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val Value.
      * @throws Exception If failed.
      */
-    private void testTransaction0(GridCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
+    private void testTransaction0(Cache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
         Integer key, byte[] val) throws Exception {
         testTransactionMixed0(caches, concurrency, key, val, null, null);
     }
@@ -333,9 +333,9 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
      * @param val2 Value 2.
      * @throws Exception If failed.
      */
-    private void testTransactionMixed0(GridCache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
+    private void testTransactionMixed0(Cache<Integer, Object>[] caches, IgniteTxConcurrency concurrency,
         Integer key1, byte[] val1, @Nullable Integer key2, @Nullable Object val2) throws Exception {
-        for (GridCache<Integer, Object> cache : caches) {
+        for (Cache<Integer, Object> cache : caches) {
             IgniteTx tx = cache.txStart(concurrency, REPEATABLE_READ);
 
             try {
@@ -350,7 +350,7 @@ public abstract class GridCacheAbstractDistributedByteArrayValuesSelfTest extend
                 tx.close();
             }
 
-            for (GridCache<Integer, Object> cacheInner : caches) {
+            for (Cache<Integer, Object> cacheInner : caches) {
                 tx = cacheInner.txStart(concurrency, REPEATABLE_READ);
 
                 try {

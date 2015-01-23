@@ -57,13 +57,13 @@ public class VisorCacheAffinityConfiguration implements Serializable {
      * @return Data transfer object for affinity configuration properties.
      */
     public static VisorCacheAffinityConfiguration from(CacheConfiguration ccfg) {
-        GridCacheAffinityFunction aff = ccfg.getAffinity();
+        CacheAffinityFunction aff = ccfg.getAffinity();
 
         Integer dfltReplicas = null;
         Boolean excludeNeighbors = null;
 
-        if (aff instanceof GridCacheConsistentHashAffinityFunction) {
-            GridCacheConsistentHashAffinityFunction hashAffFunc = (GridCacheConsistentHashAffinityFunction)aff;
+        if (aff instanceof CacheConsistentHashAffinityFunction) {
+            CacheConsistentHashAffinityFunction hashAffFunc = (CacheConsistentHashAffinityFunction)aff;
 
             dfltReplicas = hashAffFunc.getDefaultReplicas();
             excludeNeighbors = hashAffFunc.isExcludeNeighbors();

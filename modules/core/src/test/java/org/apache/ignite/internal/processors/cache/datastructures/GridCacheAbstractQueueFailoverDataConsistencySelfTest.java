@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
@@ -107,7 +107,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 
@@ -130,7 +130,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testAddFailover(boolean collocated) throws Exception {
-        GridCacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
+        CacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
@@ -168,7 +168,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @throws Exception If failed.
      */
-    private void testAddFailover(GridCacheQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
+    private void testAddFailover(CacheQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
         assert !killIdxs.isEmpty();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -223,7 +223,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testPollFailover(boolean collocated) throws Exception {
-        GridCacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
+        CacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
@@ -261,7 +261,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @throws Exception If failed.
      */
-    private void testPollFailover(GridCacheQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
+    private void testPollFailover(CacheQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
         assert !killIdxs.isEmpty();
 
         final int ITEMS = atomicityMode() == ATOMIC && !queue.collocated() ? 10_000 : 3000;
@@ -363,7 +363,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @return Primary node for queue's header.
      */
     private int primaryQueueNode() {
-        GridCacheAffinity<Object> aff = grid(0).cache(null).affinity();
+        CacheAffinity<Object> aff = grid(0).cache(null).affinity();
 
         for (int i = 0; i < gridCount(); i++) {
             for (GridCacheEntryEx e : ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0()) {

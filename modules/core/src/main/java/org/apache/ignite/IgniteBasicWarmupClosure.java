@@ -242,8 +242,8 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         ExecutorService svc = Executors.newFixedThreadPool(threadCnt);
 
         try {
-            for (GridCache<?, ?> cache : first.caches()) {
-                GridCache<Object, Object> cache0 = first.cache(cache.name());
+            for (Cache<?, ?> cache : first.caches()) {
+                Cache<Object, Object> cache0 = first.cache(cache.name());
 
                 for (String warmupMethod : warmupMethods) {
                     Collection<Future> futs = new ArrayList<>(threadCnt);
@@ -349,10 +349,10 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
             if (!matches(reduced, ccfg)) {
                 CacheConfiguration ccfgCp = new CacheConfiguration(ccfg);
 
-                if (ccfgCp.getDistributionMode() == GridCacheDistributionMode.CLIENT_ONLY)
-                    ccfgCp.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
-                else if (ccfgCp.getDistributionMode() == GridCacheDistributionMode.NEAR_ONLY)
-                    ccfgCp.setDistributionMode(GridCacheDistributionMode.NEAR_PARTITIONED);
+                if (ccfgCp.getDistributionMode() == CacheDistributionMode.CLIENT_ONLY)
+                    ccfgCp.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
+                else if (ccfgCp.getDistributionMode() == CacheDistributionMode.NEAR_ONLY)
+                    ccfgCp.setDistributionMode(CacheDistributionMode.NEAR_PARTITIONED);
 
                 ccfgCp.setCacheStoreFactory(null);
                 ccfgCp.setWriteBehindEnabled(false);
@@ -411,12 +411,12 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
      */
     private abstract class BaseWarmupCallable implements Callable<Object> {
         /** Cache. */
-        protected final GridCache<Object, Object> cache;
+        protected final Cache<Object, Object> cache;
 
         /**
          * @param cache Cache.
          */
-        protected BaseWarmupCallable(GridCache<Object, Object> cache) {
+        protected BaseWarmupCallable(Cache<Object, Object> cache) {
             this.cache = cache;
         }
 
@@ -446,7 +446,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private GetCallable(GridCache<Object, Object> cache) {
+        private GetCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 
@@ -463,7 +463,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private PutCallable(GridCache<Object, Object> cache) {
+        private PutCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 
@@ -480,7 +480,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private PutxCallable(GridCache<Object, Object> cache) {
+        private PutxCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 
@@ -497,7 +497,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private RemoveCallable(GridCache<Object, Object> cache) {
+        private RemoveCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 
@@ -514,7 +514,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private RemovexCallable(GridCache<Object, Object> cache) {
+        private RemovexCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 
@@ -531,7 +531,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private PutIfAbsentCallable(GridCache<Object, Object> cache) {
+        private PutIfAbsentCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 
@@ -548,7 +548,7 @@ public class IgniteBasicWarmupClosure implements IgniteInClosure<IgniteConfigura
         /**
          * @param cache Cache.
          */
-        private ReplaceCallable(GridCache<Object, Object> cache) {
+        private ReplaceCallable(Cache<Object, Object> cache) {
             super(cache);
         }
 

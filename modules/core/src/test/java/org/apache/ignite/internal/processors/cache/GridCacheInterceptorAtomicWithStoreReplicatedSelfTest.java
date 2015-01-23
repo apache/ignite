@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.cache.GridCacheInterceptor;
-
 /**
- * Tests {@link GridCacheInterceptor}.
+ * Tests {@link org.apache.ignite.cache.CacheInterceptor}.
  */
 public class GridCacheInterceptorAtomicWithStoreReplicatedSelfTest
     extends GridCacheInterceptorAtomicReplicatedSelfTest {

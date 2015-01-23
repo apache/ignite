@@ -35,7 +35,7 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.GridCacheFlag.*;
+import static org.apache.ignite.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 
 /**
@@ -100,7 +100,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializePortable,
-        @Nullable final IgnitePredicate<GridCacheEntry<K, V>>[] filter
+        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -145,7 +145,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
         @Nullable Collection<? extends K> keys,
         boolean readThrough,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filter,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         assert tx != null;
@@ -414,7 +414,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean retval,
         IgniteTxIsolation isolation,
         long accessTtl,
-        IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+        IgnitePredicate<CacheEntry<K, V>>[] filter) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
             (GridNearTxLocal<K, V>)tx,
@@ -464,7 +464,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<GridCacheEntry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         if (keys.isEmpty())
             return;
 

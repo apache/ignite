@@ -19,18 +19,18 @@ package org.apache.ignite.internal.processors.cache.eviction;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
  * Swap benchmark.
@@ -78,7 +78,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
                     c.apply((long)i, String.valueOf(i));
             }
 
-            @Override public void write(Cache.Entry<? extends Long, ? extends String> val) {
+            @Override public void write(javax.cache.Cache.Entry<? extends Long, ? extends String> val) {
                 // No-op.
             }
 
@@ -92,7 +92,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
         cacheCfg.setWriteThrough(true);
         cacheCfg.setLoadPreviousValue(true);
 
-        cacheCfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(EVICT_PLC_SIZE));
+        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(EVICT_PLC_SIZE));
         cacheCfg.setSwapEnabled(true);
         cacheCfg.setEvictSynchronized(false);
         cacheCfg.setDistributionMode(PARTITIONED_ONLY);
@@ -118,7 +118,7 @@ public class GridCacheBatchEvictUnswapSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicInteger evictedKeysCnt = new AtomicInteger();
 
-        final GridCache<Object, Object> cache = g.cache(null);
+        final Cache<Object, Object> cache = g.cache(null);
 
         cache.loadCache(null, 0);
 

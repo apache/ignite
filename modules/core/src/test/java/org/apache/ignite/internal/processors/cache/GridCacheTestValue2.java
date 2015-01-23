@@ -26,7 +26,7 @@ import java.io.*;
  */
 public class GridCacheTestValue2 implements Serializable {
     /** */
-    @GridCacheQuerySqlField
+    @CacheQuerySqlField
     private String val;
 
     /**

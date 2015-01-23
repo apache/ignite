@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.hibernate;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.Cache;
 import org.hibernate.*;
 import org.hibernate.cache.spi.*;
 
@@ -65,7 +65,7 @@ public class GridHibernateQueryResultsRegion extends GridHibernateGeneralDataReg
      * @param cache Region cache.
      */
     public GridHibernateQueryResultsRegion(GridHibernateRegionFactory factory, String name,
-        Ignite ignite, GridCache<Object, Object> cache) {
+        Ignite ignite, Cache<Object, Object> cache) {
         super(factory, name, ignite, cache);
     }
 }

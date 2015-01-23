@@ -34,8 +34,8 @@ import java.util.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  *
@@ -96,7 +96,7 @@ public abstract class GridCachePreloadEventsAbstractSelfTest extends GridCommonA
     public void testPreloadEvents() throws Exception {
         Ignite g1 = startGrid("g1");
 
-        GridCache<Integer, String> cache = g1.cache(null);
+        Cache<Integer, String> cache = g1.cache(null);
 
         cache.put(1, "val1");
         cache.put(2, "val2");

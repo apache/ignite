@@ -37,8 +37,8 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -69,7 +69,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setEvictNearSynchronized(true);
@@ -81,8 +81,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         // Set eviction queue size explicitly.
         cacheCfg.setEvictSynchronizedKeyBufferSize(1);
         cacheCfg.setEvictMaxOverflowRatio(0);
-        cacheCfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(10));
-        cacheCfg.setNearEvictionPolicy(new GridCacheFifoEvictionPolicy(10));
+        cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(10));
+        cacheCfg.setNearEvictionPolicy(new CacheFifoEvictionPolicy(10));
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -167,8 +167,8 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @param idx Index.
      * @return Affinity.
      */
-    private GridCacheConsistentHashAffinityFunction affinity(int idx) {
-        return (GridCacheConsistentHashAffinityFunction)grid(idx).cache(null).configuration().getAffinity();
+    private CacheConsistentHashAffinityFunction affinity(int idx) {
+        return (CacheConsistentHashAffinityFunction)grid(idx).cache(null).configuration().getAffinity();
     }
 
     /**
@@ -176,7 +176,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      * @return Primary node for the given key.
      */
     private Collection<ClusterNode> keyNodes(Object key) {
-        GridCacheConsistentHashAffinityFunction aff = affinity(0);
+        CacheConsistentHashAffinityFunction aff = affinity(0);
 
         return aff.nodes(aff.partition(key), grid(0).nodes(), 1);
     }

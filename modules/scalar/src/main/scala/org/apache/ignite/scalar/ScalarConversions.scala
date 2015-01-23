@@ -18,7 +18,7 @@
 package org.gridgain.scalar
 
 import org.apache.ignite.Ignite
-import org.apache.ignite.cache.{GridCacheEntry, GridCache, GridCacheProjection}
+import org.apache.ignite.cache.{CacheEntry, Cache, CacheProjection}
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.compute.ComputeJob
 import org.apache.ignite.lang._
@@ -269,8 +269,8 @@ trait ScalarConversions {
      *
      * @param p Cache KV-pair predicate to convert.
      */
-    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: GridCacheEntry[K, V]) => Boolean =
-        (e: GridCacheEntry[K, V]) =>
+    implicit def toEntryPred[K, V](p: (K, V) => Boolean): (_ >: CacheEntry[K, V]) => Boolean =
+        (e: CacheEntry[K, V]) =>
             p(e.getKey, e.getValue)
 
     /**
@@ -393,19 +393,19 @@ trait ScalarConversions {
         ScalarProjectionPimp(impl)
 
     /**
-     * Implicit converter from `GridCache` to `ScalarCachePimp` "pimp".
+     * Implicit converter from `Cache` to `ScalarCachePimp` "pimp".
      *
      * @param impl Grid cache to convert.
      */
-    implicit def toScalarCache[K, V](impl: GridCache[K, V]): ScalarCachePimp[K, V] =
+    implicit def toScalarCache[K, V](impl: Cache[K, V]): ScalarCachePimp[K, V] =
         ScalarCachePimp[K, V](impl)
 
     /**
-     * Implicit converter from `GridCacheProjection` to `ScalarCacheProjectionPimp` "pimp".
+     * Implicit converter from `CacheProjection` to `ScalarCacheProjectionPimp` "pimp".
      *
      * @param impl Grid cache projection to convert.
      */
-    implicit def toScalarCacheProjection[K, V](impl: GridCacheProjection[K, V]): ScalarCacheProjectionPimp[K, V] =
+    implicit def toScalarCacheProjection[K, V](impl: CacheProjection[K, V]): ScalarCacheProjectionPimp[K, V] =
         ScalarCacheProjectionPimp[K, V](impl)
 
     /**

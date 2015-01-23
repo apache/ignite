@@ -1046,11 +1046,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         if (c instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 /** */
-                @GridCacheName
+                @CacheName
                 private final String cn = cacheName;
 
                 /** */
-                @GridCacheAffinityKeyMapped
+                @CacheAffinityKeyMapped
                 private final Object ak = affKey;
 
                 @Override public Object execute() {
@@ -1070,11 +1070,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         else {
             return new ComputeJobAdapter() {
                 /** */
-                @GridCacheName
+                @CacheName
                 private final String cn = cacheName;
 
                 /** */
-                @GridCacheAffinityKeyMapped
+                @CacheAffinityKeyMapped
                 private final Object ak = affKey;
 
                 @Override public Object execute() {
@@ -1138,11 +1138,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         if (r instanceof ComputeJobMasterLeaveAware) {
             return new GridMasterLeaveAwareComputeJobAdapter() {
                 /** */
-                @GridCacheName
+                @CacheName
                 private final String cn = cacheName;
 
                 /** */
-                @GridCacheAffinityKeyMapped
+                @CacheAffinityKeyMapped
                 private final Object ak = affKey;
 
                 @Nullable @Override public Object execute() {
@@ -1159,11 +1159,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         else {
             return new ComputeJobAdapter() {
                 /** */
-                @GridCacheName
+                @CacheName
                 private final String cn = cacheName;
 
                 /** */
-                @GridCacheAffinityKeyMapped
+                @CacheAffinityKeyMapped
                 private final Object ak = affKey;
 
                 @Nullable @Override public Object execute() {

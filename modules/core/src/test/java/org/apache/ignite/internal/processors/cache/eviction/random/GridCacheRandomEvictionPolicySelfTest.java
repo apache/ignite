@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * Random eviction policy test.
  */
 public class GridCacheRandomEvictionPolicySelfTest extends
-    GridCacheEvictionAbstractTest<GridCacheRandomEvictionPolicy<String, String>> {
+    GridCacheEvictionAbstractTest<CacheRandomEvictionPolicy<String, String>> {
     /**
      * @throws Exception If failed.
      */
@@ -109,7 +109,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
         try {
             startGrid();
 
-            GridCache<String, String> c = cache();
+            Cache<String, String> c = cache();
 
             MockEntry e1 = new MockEntry("1", c);
 
@@ -127,7 +127,7 @@ public class GridCacheRandomEvictionPolicySelfTest extends
 
             e5.setValue("val");
 
-            GridCacheRandomEvictionPolicy<String, String> p = policy();
+            CacheRandomEvictionPolicy<String, String> p = policy();
 
             p.setMaxSize(10);
 
@@ -244,13 +244,13 @@ public class GridCacheRandomEvictionPolicySelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheRandomEvictionPolicy<String, String> createPolicy(int plcMax) {
-        return new GridCacheRandomEvictionPolicy<>(plcMax);
+    @Override protected CacheRandomEvictionPolicy<String, String> createPolicy(int plcMax) {
+        return new CacheRandomEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheRandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
-        return new GridCacheRandomEvictionPolicy<>(plcMax);
+    @Override protected CacheRandomEvictionPolicy<String, String> createNearPolicy(int nearMax) {
+        return new CacheRandomEvictionPolicy<>(plcMax);
     }
 
     /** {@inheritDoc} */

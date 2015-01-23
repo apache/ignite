@@ -31,8 +31,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Test for cache swap.
@@ -77,7 +77,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         cacheCfg.setStartSize(startSize);
 
         if (onheap > 0) {
-            cacheCfg.setEvictionPolicy(new GridCacheFifoEvictionPolicy(onheap));
+            cacheCfg.setEvictionPolicy(new CacheFifoEvictionPolicy(onheap));
 
             cacheCfg.setOffHeapMaxMemory(80 * 1024L * 1024L * 1024L); // 10GB
         }
@@ -180,7 +180,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         Ignite g = startGrid();
 
         try {
-            GridCache<Integer, Integer> cache = g.cache(null);
+            Cache<Integer, Integer> cache = g.cache(null);
 
 //            int max = 17 * 1024 * 1024;
             int max = Integer.MAX_VALUE;
@@ -210,7 +210,7 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
         Ignite g = startGrid();
 
         try {
-            final GridCache<Integer, Integer> c = g.cache(null);
+            final Cache<Integer, Integer> c = g.cache(null);
 
             final long start = System.currentTimeMillis();
 

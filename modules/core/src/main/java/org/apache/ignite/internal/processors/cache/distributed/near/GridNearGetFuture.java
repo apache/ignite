@@ -82,7 +82,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private IgniteTxLocalEx<K, V> tx;
 
     /** Filters. */
-    private IgnitePredicate<GridCacheEntry<K, V>>[] filters;
+    private IgnitePredicate<CacheEntry<K, V>>[] filters;
 
     /** Logger. */
     private IgniteLogger log;
@@ -133,7 +133,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean reload,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx<K, V> tx,
-        @Nullable IgnitePredicate<GridCacheEntry<K, V>>[] filters,
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,

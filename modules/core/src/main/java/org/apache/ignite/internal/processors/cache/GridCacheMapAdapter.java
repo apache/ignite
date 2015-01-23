@@ -29,14 +29,14 @@ import java.util.concurrent.*;
  */
 public class GridCacheMapAdapter<K, V> implements ConcurrentMap<K, V> {
     /** */
-    private GridCacheProjection<K, V> prj;
+    private CacheProjection<K, V> prj;
 
     /**
      * Constructor.
      *
      * @param prj Cache to wrap.
      */
-    public GridCacheMapAdapter(GridCacheProjection<K, V> prj) {
+    public GridCacheMapAdapter(CacheProjection<K, V> prj) {
         this.prj = prj;
     }
 

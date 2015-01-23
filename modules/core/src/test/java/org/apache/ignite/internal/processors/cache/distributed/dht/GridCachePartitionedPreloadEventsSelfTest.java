@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -40,7 +40,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
     private boolean replicatedAffinity = true;
 
     /** */
-    private GridCachePreloadMode preloadMode = SYNC;
+    private CachePreloadMode preloadMode = SYNC;
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
@@ -48,7 +48,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         if (replicatedAffinity)
             // replicate entries to all nodes
-            cacheCfg.setAffinity(new GridCacheAffinityFunction() {
+            cacheCfg.setAffinity(new CacheAffinityFunction() {
                 /** {@inheritDoc} */
                 @Override public void reset() {
                 }
@@ -64,7 +64,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
                 }
 
                 /** {@inheritDoc} */
-                @Override public List<List<ClusterNode>> assignPartitions(GridCacheAffinityFunctionContext affCtx) {
+                @Override public List<List<ClusterNode>> assignPartitions(CacheAffinityFunctionContext affCtx) {
                     List<ClusterNode> nodes = new ArrayList<>(affCtx.currentTopologySnapshot());
 
                     return Collections.singletonList(nodes);
@@ -99,7 +99,7 @@ public class GridCachePartitionedPreloadEventsSelfTest extends GridCachePreloadE
 
         Collection<Integer> keys = new HashSet<>();
 
-        GridCache<Integer, String> cache = g1.cache(null);
+        Cache<Integer, String> cache = g1.cache(null);
 
         for (int i = 0; i < 100; i++) {
             keys.add(i);

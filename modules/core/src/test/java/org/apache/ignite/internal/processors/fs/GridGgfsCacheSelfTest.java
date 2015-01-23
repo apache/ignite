@@ -77,13 +77,13 @@ public class GridGgfsCacheSelfTest extends GridGgfsCommonAbstractTest {
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setDistributionMode(GridCacheDistributionMode.PARTITIONED_ONLY);
+            cacheCfg.setDistributionMode(CacheDistributionMode.PARTITIONED_ONLY);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgniteFsGroupDataBlocksKeyMapper(128));
         }
 
-        cacheCfg.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setQueryIndexEnabled(false);
 

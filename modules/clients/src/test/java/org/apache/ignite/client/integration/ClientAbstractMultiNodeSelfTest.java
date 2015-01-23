@@ -49,9 +49,9 @@ import java.util.concurrent.atomic.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests basic client behavior with multiple nodes.
@@ -400,7 +400,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     public void testInvalidateFlag() throws Exception {
         GridEx g0 = grid(0);
 
-        GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
+        Cache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
 
         String key = null;
 

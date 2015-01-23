@@ -39,8 +39,8 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
@@ -57,7 +57,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
     private static final int TX_CNT = 1000;
 
     /** Distribution mode. */
-    private GridCacheDistributionMode mode;
+    private CacheDistributionMode mode;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -118,7 +118,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    Cache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
 
                     cache.put(rnd.nextInt(1000), "value");
                 }
@@ -132,7 +132,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    Cache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
 
                     cache.putIfAbsent(rnd.nextInt(1000), "value");
                 }
@@ -161,7 +161,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                     for (int j = 0; j < 10; j++)
                         map.put(rnd.nextInt(1000), "value");
 
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    Cache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
 
                     cache.putAll(map);
                 }
@@ -182,7 +182,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
 
             @Override public Object call() throws Exception {
                 for (int i = 0; i < TX_CNT; i++) {
-                    GridCache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
+                    Cache<Integer, String> cache = cache(rnd.nextInt(GRID_CNT));
 
                     try (IgniteTx tx = cache.txStart()) {
                         cache.put(1, "value");

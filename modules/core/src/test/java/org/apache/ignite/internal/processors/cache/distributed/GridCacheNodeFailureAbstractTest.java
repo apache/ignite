@@ -112,7 +112,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 IGNITEs.set(i, startGrid(i));
             }
 
-            GridCacheEntry e = cache(i).entry(KEY);
+            CacheEntry e = cache(i).entry(KEY);
 
             assert !e.isLocked() : "Entry is locked for grid [idx=" + i + ", entry=" + e + ']';
         }
@@ -122,7 +122,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
      * @param i Grid index.
      * @return Cache.
      */
-    @Override protected <K, V> GridCache<K, V> cache(int i) {
+    @Override protected <K, V> Cache<K, V> cache(int i) {
         return IGNITEs.get(i).cache(null);
     }
 
@@ -163,7 +163,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         Ignite g = grid(idx);
 
-        GridCache<Integer, String> cache = cache(idx);
+        Cache<Integer, String> cache = cache(idx);
 
         IgniteTx tx = cache.txStart(concurrency, isolation);
 
@@ -188,7 +188,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             U.sleep(getInteger(GG_TX_SALVAGE_TIMEOUT, 3000));
 
-            GridCache<Integer, String> checkCache = cache(checkIdx);
+            Cache<Integer, String> checkCache = cache(checkIdx);
 
             boolean locked = false;
 
@@ -237,7 +237,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
         info("Nodes for key [id=" + grid(idx).cache(null).affinity().mapKeyToPrimaryAndBackups(KEY) +
             ", key=" + KEY + ']');
 
-        GridCache<Integer, String> cache = cache(idx);
+        Cache<Integer, String> cache = cache(idx);
 
         // TODO:  GG-7437.
         if (cache.configuration().getCacheMode() == CacheMode.REPLICATED)
@@ -251,11 +251,11 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         info("Check grid index: " + checkIdx);
 
-        GridCache<Integer, String> checkCache = cache(checkIdx);
+        Cache<Integer, String> checkCache = cache(checkIdx);
 
         assert !checkCache.lock(KEY, -1);
 
-        GridCacheEntry e = checkCache.entry(KEY);
+        CacheEntry e = checkCache.entry(KEY);
 
         assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 

@@ -66,7 +66,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
     private static final long serialVersionUID = -1984731272984397445L;
 
     /** Query type. */
-    private final GridCacheQueryType qryType;
+    private final CacheQueryType qryType;
 
     /** Cache name. */
     private final String cacheName;
@@ -83,7 +83,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
 
     /** Continuous query filter. */
     @GridToStringInclude
-    private final IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter;
+    private final IgnitePredicate<CacheContinuousQueryEntry<K, V>> contQryFilter;
 
     /** Query arguments. */
     @GridToStringInclude
@@ -129,12 +129,12 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
         ClusterNode node,
         String msg,
         int type,
-        GridCacheQueryType qryType,
+        CacheQueryType qryType,
         @Nullable String cacheName,
         @Nullable String clsName,
         @Nullable String clause,
         @Nullable IgniteBiPredicate<K, V> scanQryFilter,
-        @Nullable IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> contQryFilter,
+        @Nullable IgnitePredicate<CacheContinuousQueryEntry<K, V>> contQryFilter,
         @Nullable Object[] args,
         @Nullable UUID subjId,
         @Nullable String taskName,
@@ -166,7 +166,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
      *
      * @return Query type.
      */
-    public GridCacheQueryType queryType() {
+    public CacheQueryType queryType() {
         return qryType;
     }
 
@@ -219,7 +219,7 @@ public class IgniteCacheQueryReadEvent<K, V> extends IgniteEventAdapter {
      *
      * @return Continuous query filter.
      */
-    @Nullable public IgnitePredicate<GridCacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
+    @Nullable public IgnitePredicate<CacheContinuousQueryEntry<K, V>> continuousQueryFilter() {
         return contQryFilter;
     }
 

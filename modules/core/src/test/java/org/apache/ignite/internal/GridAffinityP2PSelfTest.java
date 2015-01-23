@@ -99,8 +99,8 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(URLS);
 
-            cc.setAffinity((GridCacheAffinityFunction)ldr.loadClass(EXT_AFFINITY_CLS_NAME).newInstance());
-            cc.setAffinityMapper((GridCacheAffinityKeyMapper)ldr.loadClass(EXT_AFFINITY_MAPPER_CLS_NAME)
+            cc.setAffinity((CacheAffinityFunction)ldr.loadClass(EXT_AFFINITY_CLS_NAME).newInstance());
+            cc.setAffinityMapper((CacheAffinityKeyMapper)ldr.loadClass(EXT_AFFINITY_MAPPER_CLS_NAME)
                 .newInstance());
 
             c.setCacheConfiguration(cc);

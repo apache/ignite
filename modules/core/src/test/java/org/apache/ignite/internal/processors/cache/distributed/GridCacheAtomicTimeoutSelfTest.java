@@ -39,9 +39,9 @@ import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests timeout exception when message gets lost.
@@ -113,7 +113,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
 
         TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        Cache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -145,7 +145,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testNearUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        Cache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -179,7 +179,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateRequestLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        Cache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -214,7 +214,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     public void testDhtUpdateResponseLost() throws Exception {
         Ignite ignite = grid(0);
 
-        GridCache<Object, Object> cache = ignite.cache(null);
+        Cache<Object, Object> cache = ignite.cache(null);
 
         int key = keyForTest();
 
@@ -249,7 +249,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     private int keyForTest() {
         int i = 0;
 
-        GridCacheAffinity<Object> aff = grid(0).cache(null).affinity();
+        CacheAffinity<Object> aff = grid(0).cache(null).affinity();
 
         while (!aff.isPrimary(grid(1).localNode(), i) || !aff.isBackup(grid(2).localNode(), i))
             i++;

@@ -51,7 +51,7 @@ public class MemcacheRestExample {
             System.out.println();
             System.out.println(">>> Memcache REST example started.");
 
-            GridCache<String, Object> cache = g.cache(null);
+            Cache<String, Object> cache = g.cache(null);
 
             client = startMemcachedClient(host, port);
 
@@ -88,7 +88,7 @@ public class MemcacheRestExample {
             System.out.println(">>> Current cache size: " + cache.size() + " (expected: 0).");
 
             // Create atomic long.
-            GridCacheAtomicLong l = cache.dataStructures().atomicLong("atomicLong", 10, true);
+            CacheAtomicLong l = cache.dataStructures().atomicLong("atomicLong", 10, true);
 
             // Increment atomic long by 5 using Memcache client.
             if (client.incr("atomicLong", 5, 0) == 15)

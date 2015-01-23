@@ -30,10 +30,10 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.GridCacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.GridCachePreloadMode.*;
-import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Cache atomic long api test.
@@ -125,7 +125,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void createRemove(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
@@ -134,9 +134,9 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
 
         String atomicName2 = "SECOND";
 
-        GridCacheAtomicLong atomic1 = cache.dataStructures().atomicLong(atomicName1, 0, true);
-        GridCacheAtomicLong atomic2 = cache.dataStructures().atomicLong(atomicName2, 0, true);
-        GridCacheAtomicLong atomic3 = cache.dataStructures().atomicLong(atomicName1, 0, true);
+        CacheAtomicLong atomic1 = cache.dataStructures().atomicLong(atomicName1, 0, true);
+        CacheAtomicLong atomic2 = cache.dataStructures().atomicLong(atomicName2, 0, true);
+        CacheAtomicLong atomic3 = cache.dataStructures().atomicLong(atomicName1, 0, true);
 
         assertNotNull(atomic1);
         assertNotNull(atomic2);
@@ -183,12 +183,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void incrementAndGet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -216,12 +216,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndIncrement(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -249,12 +249,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void decrementAndGet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -282,12 +282,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndDecrement(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -315,12 +315,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndAdd(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -350,12 +350,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void addAndGet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -385,12 +385,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndSet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -421,12 +421,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void compareAndSet(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -463,12 +463,12 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
     private void getAndSetInTx(String cacheName) throws Exception {
         info("Running test [name=" + getName() + ", cache=" + cacheName + ']');
 
-        GridCache cache = grid().cache(cacheName);
+        Cache cache = grid().cache(cacheName);
 
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        GridCacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
