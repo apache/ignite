@@ -24,6 +24,8 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
+
 /**
  * File map self test.
  */

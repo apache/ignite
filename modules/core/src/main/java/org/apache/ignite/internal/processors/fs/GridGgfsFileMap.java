@@ -27,6 +27,8 @@ import org.jetbrains.annotations.*;
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
+
 /**
  * Auxiliary class that is responsible for managing file affinity keys allocation by ranges.
  */

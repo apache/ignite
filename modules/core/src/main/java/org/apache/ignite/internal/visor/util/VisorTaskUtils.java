@@ -24,6 +24,7 @@ import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.cache.eviction.random.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.visor.event.*;
 import org.apache.ignite.internal.visor.file.*;

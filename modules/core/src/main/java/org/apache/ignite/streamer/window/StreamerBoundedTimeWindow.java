@@ -18,6 +18,7 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;

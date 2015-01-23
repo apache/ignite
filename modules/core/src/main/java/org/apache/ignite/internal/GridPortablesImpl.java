@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.portables.*;
 import org.jetbrains.annotations.*;
 

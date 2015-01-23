@@ -39,6 +39,7 @@ import java.util.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
@@ -996,7 +997,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         // which will be used by delete worker for event notifications.
         id2InfoPrj.invoke(fileId, new UpdatePath(path));
 
-        return GridGgfsFileInfo.builder(fileInfo).path(path).build();
+        return builder(fileInfo).path(path).build();
     }
 
     /**
@@ -2968,7 +2969,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         @Override public Void process(MutableEntry<IgniteUuid, GridGgfsFileInfo> e, Object... args) {
             GridGgfsFileInfo info = e.getValue();
 
-            e.setValue(GridGgfsFileInfo.builder(info).path(path).build());
+            e.setValue(builder(info).path(path).build());
 
             return null;
         }

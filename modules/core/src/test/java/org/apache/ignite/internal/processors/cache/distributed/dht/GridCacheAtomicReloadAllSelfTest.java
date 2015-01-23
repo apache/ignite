@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 
 import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 

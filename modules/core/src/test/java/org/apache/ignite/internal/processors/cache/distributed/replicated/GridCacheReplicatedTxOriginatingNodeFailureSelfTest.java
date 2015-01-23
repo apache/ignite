@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.distributed.*;
 
 /**
  * Tests originating node failure in REPLICATED cache.

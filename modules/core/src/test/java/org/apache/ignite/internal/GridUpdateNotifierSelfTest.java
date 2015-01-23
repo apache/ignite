@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;

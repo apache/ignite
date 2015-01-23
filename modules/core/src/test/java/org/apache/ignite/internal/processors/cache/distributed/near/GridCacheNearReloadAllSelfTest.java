@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.internal.processors.cache.distributed.*;
+
 /**
  * Tests reloadAll for near cache.
  */

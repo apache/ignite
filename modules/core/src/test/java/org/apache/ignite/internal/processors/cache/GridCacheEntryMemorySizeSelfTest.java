@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.grid.kernal.processors.cache;
+package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
@@ -278,7 +278,7 @@ public class GridCacheEntryMemorySizeSelfTest extends GridCommonAbstractTest {
 
         GridCacheContext ctx = U.field(entry, "ctx");
 
-        GridCacheEntryEx entry0 = ((GridCacheEntryImpl) entry).entryEx(false, ctx.discovery().topologyVersion());
+        GridCacheEntryEx entry0 = ((GridCacheEntryImpl)entry).entryEx(false, ctx.discovery().topologyVersion());
 
         return (Integer)mthd.invoke(entry0);
     }

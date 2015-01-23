@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.gridgain.grid.product.*;
 import org.gridgain.grid.spi.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.testsuites.*;
 
 /**
  * Basic test suite.

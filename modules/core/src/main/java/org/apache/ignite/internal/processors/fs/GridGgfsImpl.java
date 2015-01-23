@@ -48,6 +48,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 
 /**
  * Cache-based GGFS implementation.

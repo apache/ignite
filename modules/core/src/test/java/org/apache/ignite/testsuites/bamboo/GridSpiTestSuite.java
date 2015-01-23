@@ -20,7 +20,6 @@ package org.apache.ignite.testsuites.bamboo;
 import junit.framework.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.testsuites.*;
-import org.gridgain.testsuites.*;
 
 /**
  * Grid SPI test suite.

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import org.apache.ignite.internal.processors.cache.distributed.*;
+
 /**
  * Colocated preload restart test.
  */

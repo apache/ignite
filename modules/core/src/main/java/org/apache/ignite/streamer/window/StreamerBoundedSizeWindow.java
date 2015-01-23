@@ -17,6 +17,7 @@
 
 package org.apache.ignite.streamer.window;
 
+import org.apache.ignite.internal.processors.streamer.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 

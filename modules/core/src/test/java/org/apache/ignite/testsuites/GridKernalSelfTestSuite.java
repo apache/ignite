@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.gridgain.grid.kernal.*;
 import org.apache.ignite.internal.managers.*;

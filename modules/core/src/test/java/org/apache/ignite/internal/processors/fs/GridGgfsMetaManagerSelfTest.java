@@ -35,6 +35,8 @@ import static org.apache.ignite.cache.GridCacheAtomicityMode.*;
 import static org.apache.ignite.cache.GridCacheDistributionMode.*;
 import static org.apache.ignite.cache.GridCacheMode.*;
 import static org.apache.ignite.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
 
 /**
  * {@link GridGgfsMetaManager} test case.
@@ -399,8 +401,9 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      */
     private void expectsUpdatePropertiesFail(@Nullable final IgniteUuid fileId, @Nullable final Map<String, String> props,
         Class<? extends Throwable> cls, @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
+        assertThrows(log, new Callable() {
+            @Override
+            public Object call() throws Exception {
                 return mgr.updateProperties(null, fileId, "file", props);
             }
         }, cls, msg);
@@ -416,8 +419,9 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      */
     private void expectsPutIfAbsentFail(final IgniteUuid parentId, final String fileName, final GridGgfsFileInfo fileInfo,
         @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
+        assertThrows(log, new Callable() {
+            @Override
+            public Object call() throws Exception {
                 return mgr.putIfAbsent(parentId, fileName, fileInfo);
             }
         }, IgniteFsException.class, msg);
@@ -435,8 +439,9 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      */
     private void expectsRenameFail(final IgniteUuid fileId, final String srcFileName, final IgniteUuid srcParentId,
         final String destFileName, final IgniteUuid destParentId, @Nullable String msg) {
-        GridTestUtils.assertThrowsInherited(log, new Callable() {
-            @Override public Object call() throws Exception {
+        assertThrowsInherited(log, new Callable() {
+            @Override
+            public Object call() throws Exception {
                 mgr.move(fileId, srcFileName, srcParentId, destFileName, destParentId);
 
                 return null;

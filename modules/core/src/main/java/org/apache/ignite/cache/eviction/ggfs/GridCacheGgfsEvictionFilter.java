@@ -19,6 +19,7 @@ package org.apache.ignite.cache.eviction.ggfs;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.eviction.*;
+import org.apache.ignite.internal.processors.fs.*;
 
 /**
  * GGFS eviction filter which will not evict blocks of particular files.

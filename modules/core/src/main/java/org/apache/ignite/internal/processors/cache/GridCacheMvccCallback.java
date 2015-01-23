@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.distributed.*;
+
 /**
  * Lock and Unlock callbacks.
  */

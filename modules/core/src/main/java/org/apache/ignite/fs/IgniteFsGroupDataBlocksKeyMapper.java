@@ -18,6 +18,7 @@
 package org.apache.ignite.fs;
 
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**

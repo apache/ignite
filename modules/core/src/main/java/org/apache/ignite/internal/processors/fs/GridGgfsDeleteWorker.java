@@ -33,6 +33,7 @@ import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileInfo.*;
 
 /**
  * GGFS worker for removal from the trash directory.

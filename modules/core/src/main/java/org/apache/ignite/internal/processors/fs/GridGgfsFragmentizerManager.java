@@ -38,6 +38,7 @@ import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.processors.fs.GridGgfsFileAffinityRange.*;
 
 /**
  * GGFS fragmentizer manager.
