@@ -1,0 +1,255 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.datastructures;
+
+import org.apache.commons.collections.*;
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.junits.common.*;
+
+import java.util.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.internal.processors.cache.datastructures.GridCacheQueueMultiNodeAbstractSelfTest.*;
+
+/**
+ * Consistency test for cache queue in multi node environment.
+ */
+public class GridCacheQueueMultiNodeConsistencySelfTest extends GridCommonAbstractTest {
+    /** */
+    protected static final int GRID_CNT = 3;
+
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    protected static final int RETRIES = 20;
+
+    /** */
+    private static final int PRELOAD_DELAY = 200;
+
+    /** Indicates whether force repartitioning is needed or not. */
+    private boolean forceRepartition;
+
+    /** Indicates whether random grid stopping is needed or not. */
+    private boolean stopRandomGrid;
+
+    /** */
+    private CacheConfiguration cc = new CacheConfiguration();
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+
+        spi.setIpFinder(IP_FINDER);
+
+        c.setDiscoverySpi(spi);
+
+        cc.setCacheMode(PARTITIONED);
+        cc.setQueryIndexEnabled(true);
+        cc.setSwapEnabled(false);
+
+        c.setCacheConfiguration(cc);
+
+        return c;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfNoPreloadingAndBackupDisabled() throws Exception {
+        cc.setBackups(0);
+        cc.setPreloadPartitionedDelay(-1);
+        cc.setPreloadMode(CachePreloadMode.NONE);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfNoPreloadingAndBackupDisabledAndRepartitionForced() throws Exception {
+        cc.setBackups(0);
+        cc.setPreloadPartitionedDelay(-1);
+        cc.setPreloadMode(CachePreloadMode.NONE);
+
+        forceRepartition = true;
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsSyncAndBackupDisabled() throws Exception {
+        cc.setBackups(0);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsAsyncAndBackupDisabled() throws Exception {
+        cc.setBackups(0);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsSyncAndPartitionedDelayAndBackupDisabled() throws Exception {
+        cc.setBackups(0);
+        cc.setPreloadPartitionedDelay(PRELOAD_DELAY);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsAsyncAndPartitionedDelayAndBackupDisabled() throws Exception {
+        cc.setBackups(0);
+        cc.setPreloadPartitionedDelay(PRELOAD_DELAY);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsSyncAndBackupEnabled() throws Exception {
+        cc.setBackups(1);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsAsyncAndBackupEnabled() throws Exception {
+        cc.setBackups(1);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsSyncAndBackupEnabledAndOneNodeIsKilled() throws Exception {
+        cc.setBackups(1);
+        cc.setPreloadMode(CachePreloadMode.SYNC);
+
+        stopRandomGrid = true;
+
+        checkCacheQueue();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIteratorIfPreloadingIsAsyncAndBackupEnabledAndOneNodeIsKilled() throws Exception {
+        cc.setBackups(1);
+        cc.setPreloadMode(CachePreloadMode.ASYNC);
+
+        stopRandomGrid = true;
+
+        checkCacheQueue();
+    }
+
+    /**
+     * Starts {@code GRID_CNT} nodes, broadcasts {@code AddAllJob} to them then starts new grid and
+     * reads cache queue content and finally asserts queue content is the same.
+     *
+     * @throws Exception If failed.
+     */
+    private void checkCacheQueue() throws Exception {
+        startGrids(GRID_CNT);
+
+        final String queueName = UUID.randomUUID().toString();
+
+        CacheQueue<Integer> queue0 = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+            false, true);
+
+        assertTrue(queue0.isEmpty());
+
+        grid(0).compute().broadcast(new AddAllJob(queueName, RETRIES));
+
+        assertEquals(GRID_CNT * RETRIES, queue0.size());
+
+        if (stopRandomGrid)
+            stopGrid(1 + new Random().nextInt(GRID_CNT));
+
+        if (forceRepartition)
+            for (int i = 0; i < GRID_CNT; i++)
+                grid(i).cache(null).forceRepartition();
+
+        Ignite newIgnite = startGrid(GRID_CNT + 1);
+
+        // Intentionally commented code cause in this way inconsistent queue problem doesn't appear.
+        // CacheQueue<Integer> newQueue = newGrid.cache().queue(queueName);
+        // assertTrue(CollectionUtils.isEqualCollection(queue0, newQueue));
+
+        Collection<Integer> locQueueContent = compute(newIgnite.cluster().forLocal()).call(new IgniteCallable<Collection<Integer>>() {
+            @IgniteInstanceResource
+            private Ignite grid;
+
+            /** {@inheritDoc} */
+            @Override public Collection<Integer> call() throws Exception {
+                Collection<Integer> values = new ArrayList<>();
+
+                grid.log().info("Running job [node=" + grid.cluster().localNode().id() + ", job=" + this + "]");
+
+                CacheQueue<Integer> locQueue = grid.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+                    false, true);
+
+                grid.log().info("Queue size " + locQueue.size());
+
+                for (Integer element : locQueue)
+                    values.add(element);
+
+                return values;
+            }
+        });
+
+        assertTrue(CollectionUtils.isEqualCollection(queue0, locQueueContent));
+
+        grid(0).cache(null).dataStructures().removeQueue(queueName);
+    }
+}

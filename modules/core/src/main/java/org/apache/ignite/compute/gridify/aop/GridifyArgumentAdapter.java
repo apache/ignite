@@ -18,7 +18,7 @@
 package org.apache.ignite.compute.gridify.aop;
 
 import org.apache.ignite.compute.gridify.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Convenience adapter for {@link org.apache.ignite.compute.gridify.GridifyArgument} interface. This adapter

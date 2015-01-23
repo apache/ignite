@@ -18,14 +18,14 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

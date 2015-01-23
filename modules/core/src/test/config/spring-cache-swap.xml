@@ -35,7 +35,7 @@
                 <property name="swapEnabled" value="true"/>
 
                 <property name="evictionPolicy">
-                    <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                    <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
                         <property name="maxSize" value="10000"/>
                     </bean>
                 </property>

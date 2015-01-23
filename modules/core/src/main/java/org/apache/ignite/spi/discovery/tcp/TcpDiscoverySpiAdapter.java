@@ -19,20 +19,19 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.io.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -637,7 +636,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
             try {
                 U.sleep(2000);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -706,7 +705,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected IgniteSpiException authenticationFailedError(TcpDiscoveryAuthFailedMessage msg) {
         assert msg != null;
 
-        return new IgniteSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+        return new IgniteSpiException(new IgniteAuthenticationException("Authentication failed [nodeId=" +
             msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
     }
 

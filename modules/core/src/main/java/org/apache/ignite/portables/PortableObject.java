@@ -33,7 +33,7 @@ import java.util.*;
  * To work with the portable format directly, user should create a cache projection
  * over {@code GridPortableObject} class and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * GridCacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj =
+ * CacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj =
  *     cache.projection(GridPortableObject.class, GridPortableObject.class);
  *
  * // Convert instance of MyKey to portable format.
@@ -49,7 +49,7 @@ import java.util.*;
  * the keys are concrete deserialized objects and the values are returned in portable
  * format, like so:
  * <pre name=code class=java>
- * GridCacheProjection&lt;MyKey.class, GridPortableObject.class&gt; prj =
+ * CacheProjection&lt;MyKey.class, GridPortableObject.class&gt; prj =
  *     cache.projection(MyKey.class, GridPortableObject.class);
  *
  * GridPortableObject val = prj.get(new MyKey());
@@ -65,7 +65,7 @@ import java.util.*;
  * GridGain will only deserialize on the first access and will cache the deserialized object,
  * so it does not have to be deserialized again:
  * <pre name=code class=java>
- * GridCacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
+ * CacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
  *     cache.projection(MyKey.class, MyValue.class);
  *
  * MyValue val = prj.get(new MyKey());

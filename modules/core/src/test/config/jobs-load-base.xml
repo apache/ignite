@@ -33,7 +33,7 @@
             <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
                 <property name="classNames">
                     <list>
-                        <value>org.gridgain.loadtests.job.GridJobExecutionLoadTestJob</value>
+                        <value>org.apache.ignite.loadtests.job.GridJobExecutionLoadTestJob</value>
                     </list>
                 </property>
             </bean>

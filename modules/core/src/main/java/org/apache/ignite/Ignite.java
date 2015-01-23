@@ -17,16 +17,15 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.fs.*;
+import org.apache.ignite.fs.IgniteFsConfiguration;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.product.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.hadoop.*;
+import org.apache.ignite.hadoop.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -44,7 +43,7 @@ import java.util.concurrent.*;
  * <p>
  * In addition to {@link ClusterGroup} functionality, from here you can get the following:
  * <ul>
- * <li>{@link GridCache} - functionality for in-memory distributed cache.</li>
+ * <li>{@link org.apache.ignite.cache.GridCache} - functionality for in-memory distributed cache.</li>
  * <li>{@link IgniteDataLoader} - functionality for loading data large amounts of data into cache.</li>
  * <li>{@link IgniteFs} - functionality for distributed Hadoop-compliant in-memory file system and map-reduce.</li>
  * <li>{@link IgniteStreamer} - functionality for streaming events workflow with queries and indexes into rolling windows.</li>
@@ -320,13 +319,4 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteCheckedException If failed to stop grid.
      */
     @Override public void close() throws IgniteCheckedException;
-
-    /**
-     * Gets affinity service to provide information about data partitioning
-     * and distribution.
-     * @param cacheName Cache name.
-     * @param <K> Cache key type.
-     * @return Affinity.
-     */
-    public <K> GridCacheAffinity<K> affinity(String cacheName);
 }

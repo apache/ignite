@@ -19,7 +19,6 @@ package org.apache.ignite.scheduler;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 
 import java.util.concurrent.*;
 
@@ -134,7 +133,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      *
      * @return Result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws GridInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public R get() throws IgniteCheckedException;
@@ -147,7 +146,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @param timeout {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws GridInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
@@ -161,7 +160,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @param unit {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws GridInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
