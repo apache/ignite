@@ -24,7 +24,6 @@ import org.gridgain.grid.p2p.*;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.spi.deployment.uri.scanners.file.*;
 import org.apache.ignite.spi.deployment.uri.scanners.http.*;
-import org.gridgain.testsuites.*;
 
 /**
  * Tests against {@link GridUriDeploymentSpi}.

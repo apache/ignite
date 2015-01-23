@@ -20,7 +20,6 @@ package org.gridgain.scalar.pimps
 import org.apache.ignite.scheduler.SchedulerFuture
 import org.apache.ignite.{IgniteCluster, Ignite}
 import org.apache.ignite._
-import org.gridgain.grid._
 import org.jetbrains.annotations.Nullable
 
 /**

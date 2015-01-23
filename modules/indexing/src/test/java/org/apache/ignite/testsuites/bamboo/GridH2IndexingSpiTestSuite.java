@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.gridgain.grid.kernal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.query.h2.*;

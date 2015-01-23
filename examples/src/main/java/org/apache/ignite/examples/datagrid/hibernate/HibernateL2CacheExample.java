@@ -19,7 +19,6 @@ package org.apache.ignite.examples.datagrid.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
-import org.gridgain.examples.*;
 import org.hibernate.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.*;

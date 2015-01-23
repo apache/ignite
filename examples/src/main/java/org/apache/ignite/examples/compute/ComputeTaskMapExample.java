@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
-import org.gridgain.examples.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

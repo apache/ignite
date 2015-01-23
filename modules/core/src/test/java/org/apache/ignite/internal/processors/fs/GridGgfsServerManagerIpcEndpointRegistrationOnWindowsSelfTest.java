@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.util.ipc.loopback.*;
 import org.apache.ignite.internal.util.ipc.shmem.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.concurrent.*;
 
@@ -35,7 +36,7 @@ public class GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
      * @throws Exception If failed.
      */
     public void testShmemEndpointsRegistration() throws Exception {
-        Throwable e = assertThrows(log, new Callable<Object>() {
+        Throwable e = GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 IgniteConfiguration cfg = gridConfiguration();
 

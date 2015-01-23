@@ -28,6 +28,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

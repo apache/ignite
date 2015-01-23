@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.hadoop.*;
 import org.gridgain.grid.kernal.ggfs.hadoop.*;
@@ -157,7 +158,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                 GridGgfsEx ggfs = null;
 
                 if (F.eq(ignite.name(), endpoint.grid()))
-                    ggfs = (GridGgfsEx) ((GridEx) ignite).ggfsx(endpoint.ggfs());
+                    ggfs = (GridGgfsEx)((GridEx)ignite).ggfsx(endpoint.ggfs());
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
                     Collection<IgniteFsBlockLocation> blocks = ggfs.affinity(new IgniteFsPath(split0.file()),

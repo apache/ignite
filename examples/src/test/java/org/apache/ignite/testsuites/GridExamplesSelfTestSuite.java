@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.*;
 import org.apache.ignite.examples.*;
-import org.gridgain.examples.*;
 import org.apache.ignite.testframework.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
@@ -38,7 +37,7 @@ public class GridExamplesSelfTestSuite extends TestSuite {
         System.setProperty(GG_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(GridExamplesSelfTestSuite.class));
 
-        TestSuite suite = new TestSuite("GridGain Examples Test Suite");
+        TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
         suite.addTest(new TestSuite(GridCacheExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridBasicExamplesSelfTest.class));

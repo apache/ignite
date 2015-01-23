@@ -19,7 +19,6 @@ package org.apache.ignite.examples.datagrid;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
-import org.gridgain.examples.*;
 
 /**
  * Demonstrates how cache can be populated with data utilizing {@link org.apache.ignite.IgniteDataLoader} API.

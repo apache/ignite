@@ -1965,7 +1965,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     // Should read through if filter is specified.
                                     old = entry.innerGet(this,
                                         /*swap*/false,
-                                        /*read-through*/cacheCtx.loadPreviousValue(),
+                                        /*read-through*/readThrough && cacheCtx.loadPreviousValue(),
                                         /*fail-fast*/false,
                                         /*unmarshal*/retval,
                                         /*metrics*/retval,

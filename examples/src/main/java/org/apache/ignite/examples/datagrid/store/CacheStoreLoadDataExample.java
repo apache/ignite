@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.examples.*;
 
 /**
  * Loads data from persistent store at cache startup by calling

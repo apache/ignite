@@ -23,7 +23,6 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.examples.*;
 
 import java.util.*;
 

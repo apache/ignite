@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.scheduler.*;
-import org.gridgain.examples.*;
 
 import java.util.concurrent.*;
 

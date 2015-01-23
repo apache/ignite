@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.examples.*;
 
 /**
  * Demonstrates new functional APIs.

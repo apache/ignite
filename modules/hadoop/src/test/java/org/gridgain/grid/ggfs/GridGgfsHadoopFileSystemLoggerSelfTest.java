@@ -19,6 +19,7 @@ package org.gridgain.grid.ggfs;
 
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.fs.common.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;

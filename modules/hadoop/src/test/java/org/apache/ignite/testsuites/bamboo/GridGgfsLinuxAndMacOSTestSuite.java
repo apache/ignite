@@ -18,8 +18,11 @@
 package org.apache.ignite.testsuites.bamboo;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.gridgain.grid.ggfs.*;
 import org.apache.ignite.internal.processors.hadoop.*;
+
+import static org.apache.ignite.testsuites.bamboo.GridHadoopTestSuite.*;
 
 /**
  * Test suite for Hadoop file system over GridGain cache.
@@ -34,7 +37,7 @@ public class GridGgfsLinuxAndMacOSTestSuite extends TestSuite {
         downloadHadoop();
 
         GridHadoopClassLoader ldr = new GridHadoopClassLoader(null);
-        
+
         TestSuite suite = new TestSuite("Gridgain GGFS Test Suite For Linux And Mac OS");
 
         suite.addTest(new TestSuite(ldr.loadClass(GridGgfsServerManagerIpcEndpointRegistrationOnLinuxAndMacSelfTest.class.getName())));

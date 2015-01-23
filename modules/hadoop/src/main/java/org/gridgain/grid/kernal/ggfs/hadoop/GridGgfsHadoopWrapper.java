@@ -21,6 +21,7 @@ import org.apache.commons.logging.*;
 import org.apache.hadoop.conf.*;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;

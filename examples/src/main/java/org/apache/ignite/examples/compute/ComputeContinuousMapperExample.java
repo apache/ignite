@@ -22,7 +22,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
 import org.apache.ignite.resources.*;
-import org.gridgain.examples.*;
 
 import java.util.*;
 import java.util.concurrent.*;

@@ -70,11 +70,11 @@ public final class GridifySpringEnhancer {
             proxyFac.removeAdvisor(0);
 
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
-            new GridifySpringPointcut(GridifySpringPointcutType.DFLT), dfltAsp));
+            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.DFLT), dfltAsp));
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
-            new GridifySpringPointcut(GridifySpringPointcutType.SET_TO_VALUE), setToValAsp));
+            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.SET_TO_VALUE), setToValAsp));
         proxyFac.addAdvisor(new DefaultPointcutAdvisor(
-            new GridifySpringPointcut(GridifySpringPointcutType.SET_TO_SET), setToSetAsp));
+            new GridifySpringPointcut(GridifySpringPointcut.GridifySpringPointcutType.SET_TO_SET), setToSetAsp));
 
         return (T)proxyFac.getProxy();
     }

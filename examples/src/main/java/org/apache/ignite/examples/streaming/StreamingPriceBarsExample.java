@@ -22,7 +22,6 @@ import org.apache.ignite.examples.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.router.*;
-import org.gridgain.examples.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

@@ -17,6 +17,7 @@
 
 package org.gridgain.visor.commands
 
+import org.apache.ignite.internal.util.GridStringBuilder
 import org.gridgain.visor.commands.VisorTextTable._
 
 import scala.collection.Traversable

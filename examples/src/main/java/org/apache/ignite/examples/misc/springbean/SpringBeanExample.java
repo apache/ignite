@@ -19,7 +19,6 @@ package org.apache.ignite.examples.misc.springbean;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
-import org.gridgain.examples.*;
 import org.springframework.context.support.*;
 
 import java.util.concurrent.*;

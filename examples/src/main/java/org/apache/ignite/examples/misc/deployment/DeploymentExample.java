@@ -20,7 +20,6 @@ package org.apache.ignite.examples.misc.deployment;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
-import org.gridgain.examples.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

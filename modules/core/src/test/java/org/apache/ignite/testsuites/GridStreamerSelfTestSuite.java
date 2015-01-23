@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
+import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.window.*;
 
