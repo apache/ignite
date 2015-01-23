@@ -1764,13 +1764,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked by deployment manager for whenever a class loader
      * gets undeployed.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader.
      */
-    public void onUndeployed(@Nullable UUID leftNodeId, ClassLoader ldr) {
+    public void onUndeployed(ClassLoader ldr) {
         if (!ctx.isStopping())
             for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(leftNodeId, ldr);
+                cache.onUndeploy(ldr);
     }
 
     /**

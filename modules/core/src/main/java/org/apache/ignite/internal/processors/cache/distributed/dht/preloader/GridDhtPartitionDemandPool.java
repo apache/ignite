@@ -389,7 +389,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         demandLock.writeLock().lock();
 
         try {
-            cctx.deploy().unwind();
+            cctx.deploy().unwind(cctx);
         }
         finally {
             demandLock.writeLock().unlock();
