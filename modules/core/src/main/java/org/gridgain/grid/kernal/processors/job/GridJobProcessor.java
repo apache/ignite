@@ -58,9 +58,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** */
     private static final int FINISHED_JOBS_COUNT = Integer.getInteger(GG_JOBS_HISTORY_SIZE, 10240);
 
-    /** Version when subject ID was added. */
-    public static final IgniteProductVersion SUBJECT_ID_ADDED_SINCE_VER = IgniteProductVersion.fromString("6.2.1");
-
     /** */
     private final IgniteMarshaller marsh;
 

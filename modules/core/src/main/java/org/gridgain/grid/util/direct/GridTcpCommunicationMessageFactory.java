@@ -62,9 +62,6 @@ public class GridTcpCommunicationMessageFactory {
                     case 0:
                         return new GridJobCancelRequest();
 
-                    case 1:
-                        return new GridJobExecuteRequest();
-
                     case 2:
                         return new GridJobExecuteResponse();
 
@@ -270,7 +267,7 @@ public class GridTcpCommunicationMessageFactory {
                         return new GridDhtAffinityAssignmentResponse();
 
                     case 81:
-                        return new GridJobExecuteRequestV2();
+                        return new GridJobExecuteRequest();
 
                     case 82:
                         return new GridCacheTtlUpdateRequest();

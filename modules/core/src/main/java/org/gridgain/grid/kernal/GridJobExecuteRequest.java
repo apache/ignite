@@ -34,7 +34,10 @@ import java.util.*;
  */
 public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter implements GridTaskMessage {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final long serialVersionUID = -1470089047880101067L;
+
+    /** Subject ID. */
+    private UUID subjId;
 
     /** */
     private IgniteUuid sesId;
@@ -161,6 +164,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @param forceLocDep {@code True} If remote node should ignore deployment settings.
      * @param sesFullSup {@code True} if session attributes are disabled.
      * @param internal {@code True} if internal job.
+     * @param subjId Subject ID.
      */
     public GridJobExecuteRequest(
         IgniteUuid sesId,
@@ -186,7 +190,8 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         Map<UUID, IgniteUuid> ldrParticipants,
         boolean forceLocDep,
         boolean sesFullSup,
-        boolean internal) {
+        boolean internal,
+        UUID subjId) {
         this.top = top;
         assert sesId != null;
         assert jobId != null;
@@ -222,6 +227,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         this.forceLocDep = forceLocDep;
         this.sesFullSup = sesFullSup;
         this.internal = internal;
+        this.subjId = subjId;
 
         this.cpSpi = cpSpi == null || cpSpi.isEmpty() ? null : cpSpi;
     }
@@ -406,7 +412,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
      * @return Subject ID.
      */
     public UUID getSubjectId() {
-        return null;
+        return subjId;
     }
 
     /** {@inheritDoc} */
@@ -449,6 +455,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
         _clone.sesFullSup = sesFullSup;
         _clone.internal = internal;
         _clone.top = top;
+        _clone.subjId = subjId;
     }
 
     /** {@inheritDoc} */
@@ -643,6 +650,11 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
+            case 21:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -901,6 +913,15 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
                 commState.idx++;
 
+            case 21:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
         }
 
         return true;
@@ -908,7 +929,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 1;
+        return 81;
     }
 
     /** {@inheritDoc} */
