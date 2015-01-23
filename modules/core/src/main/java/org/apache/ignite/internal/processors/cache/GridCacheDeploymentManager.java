@@ -53,12 +53,10 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private volatile ClassLoader globalLdr;
 
     /** Undeploys. */
-    private final ConcurrentHashMap8<GridCacheContext, ConcurrentLinkedQueue<CA>> undeploys
-        = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, ConcurrentLinkedQueue<CA>> undeploys = new ConcurrentHashMap8<>();
 
     /** Per-thread deployment context. */
-    private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps =
-        new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap8<>();
 
     /** Collection of all known participants (Node ID -> Loader ID). */
     private Map<UUID, IgniteUuid> allParticipants = new ConcurrentHashMap8<>();
@@ -184,10 +182,12 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     public void unwind(GridCacheContext ctx) {
         int cnt = 0;
 
-        if (undeploys.get(ctx) == null)
+        ConcurrentLinkedQueue<CA> q = undeploys.get(ctx);
+
+        if (q == null)
             return;
 
-        for (CA c = undeploys.get(ctx).poll(); c != null; c = undeploys.get(ctx).poll()) {
+        for (CA c = q.poll(); c != null; c = q.poll()) {
             c.apply();
 
             cnt++;
@@ -209,7 +209,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
 
         for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-            undeploys.putIfAbsent(cacheCtx, new ConcurrentLinkedQueue<CA>());
+            undeploys.putIfAbsent(cacheCtx.namexx(), new ConcurrentLinkedQueue<CA>()); // TODO
 
             undeploys.get(cacheCtx).add(new CA() {
                 @Override
