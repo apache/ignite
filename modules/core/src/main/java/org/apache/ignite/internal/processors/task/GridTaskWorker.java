@@ -1119,33 +1119,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
                     boolean forceLocDep = internal || !ctx.deploy().enabled();
 
-                    req = node.version().compareTo(GridJobProcessor.SUBJECT_ID_ADDED_SINCE_VER) < 0 ?
-                        new GridJobExecuteRequest(
-                            ses.getId(),
-                            res.getJobContext().getJobId(),
-                            ses.getTaskName(),
-                            ses.getUserVersion(),
-                            ses.getTaskClassName(),
-                            loc ? null : marsh.marshal(res.getJob()),
-                            loc ? res.getJob() : null,
-                            ses.getStartTime(),
-                            timeout,
-                            ses.getTopology(),
-                            loc ? null : marsh.marshal(ses.getJobSiblings()),
-                            loc ? ses.getJobSiblings() : null,
-                            loc ? null : marsh.marshal(sesAttrs),
-                            loc ? sesAttrs : null,
-                            loc ? null: marsh.marshal(jobAttrs),
-                            loc ? jobAttrs : null,
-                            ses.getCheckpointSpi(),
-                            dep.classLoaderId(),
-                            dep.deployMode(),
-                            continuous,
-                            dep.participants(),
-                            forceLocDep,
-                            ses.isFullSupport(),
-                            internal) :
-                        new GridJobExecuteRequestV2(
+                    req = new GridJobExecuteRequestV2(
                             ses.getId(),
                             res.getJobContext().getJobId(),
                             ses.getTaskName(),

@@ -49,8 +49,12 @@ public class CacheEntryImpl<K, V> implements Cache.Entry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> T unwrap(Class<T> clazz) {
-        throw new IllegalArgumentException();
+    @SuppressWarnings("unchecked")
+    @Override public <T> T unwrap(Class<T> cls) {
+        if (!cls.equals(getClass()))
+            throw new IllegalArgumentException("Unwrapping to class is not supported: " + cls);
+
+        return (T)this;
     }
 
     /** {@inheritDoc} */

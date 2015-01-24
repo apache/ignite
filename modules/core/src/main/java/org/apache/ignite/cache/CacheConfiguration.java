@@ -1135,7 +1135,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * swap is disabled which is defined via {@link #DFLT_SWAP_ENABLED} constant.
      * <p>
      * Note that this flag may be overridden for cache projection created with flag
-     * {@link CacheFlag#SKIP_SWAP}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}.
      *
      * @return {@code True} if swap storage is enabled.
      */
@@ -1320,7 +1320,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Cloner to be used for cloning values that are returned to user only if {@link CacheFlag#CLONE}
+     * Cloner to be used for cloning values that are returned to user only if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE}
      * is set on {@link CacheProjection}. Cloning values is useful when it is needed to get value from
      * cache, change it and put it back (if the value was not cloned, then user would be updating the
      * cached reference which would violate cache integrity).
@@ -1331,7 +1331,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * regardless of the {@link Cloneable} interface. If none of the above cloners fit your
      * logic, you can also provide your own implementation of {@link org.apache.ignite.cache.cloner.CacheCloner} interface.
      *
-     * @return Cloner to be used if {@link CacheFlag#CLONE} flag is set on cache projection.
+     * @return Cloner to be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set on cache projection.
      */
     @SuppressWarnings({"unchecked"})
     public CacheCloner getCloner() {
@@ -1339,7 +1339,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets cloner to be used if {@link CacheFlag#CLONE} flag is set on projection.
+     * Sets cloner to be used if {@link org.apache.ignite.internal.processors.cache.CacheFlag#CLONE} flag is set on projection.
      *
      * @param cloner Cloner to use.
      * @see #getCloner()

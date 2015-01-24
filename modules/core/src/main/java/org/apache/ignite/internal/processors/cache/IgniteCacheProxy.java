@@ -820,27 +820,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return F.iterator(delegate, new C1<CacheEntry<K, V>, Entry<K, V>>() {
-                @Override public Entry<K, V> apply(final CacheEntry<K, V> e) {
-                    return new Entry<K, V>() {
-                        @Override public K getKey() {
-                            return e.getKey();
-                        }
-
-                        @Override public V getValue() {
-                            return e.getValue();
-                        }
-
-                        @Override public <T> T unwrap(Class<T> clazz) {
-                            throw new IllegalArgumentException();
-                        }
-                    };
-                }
-            }, false);
+            return ((GridCacheAdapter)delegate).igniteIterator(prj);
         }
         finally {
             gate.leave(prev);
@@ -959,8 +942,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @return Cache exception.
      */
     private CacheException cacheException(IgniteCheckedException e) {
-        if (e instanceof GridCachePartialUpdateException)
-            return new CachePartialUpdateException((GridCachePartialUpdateException)e);
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
