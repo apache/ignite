@@ -15,23 +15,28 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.*;
 
-import javax.cache.*;
 import java.util.*;
 
 /**
  * Exception thrown from non-transactional cache in case when update succeeded only partially.
  * One can get list of keys for which update failed with method {@link #failedKeys()}.
  */
-public class CachePartialUpdateException extends CacheException {
+public class CachePartialUpdateCheckedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Failed keys. */
+    private final Collection<Object> failedKeys = new ArrayList<>();
+
     /**
-     * @param e Cause.
+     * @param msg Error message.
      */
-    public CachePartialUpdateException(CachePartialUpdateCheckedException e) {
-        super(e.getMessage(), e);
+    public CachePartialUpdateCheckedException(String msg) {
+        super(msg);
     }
 
     /**
@@ -39,6 +44,21 @@ public class CachePartialUpdateException extends CacheException {
      * @return Collection of failed keys.
      */
     public <K> Collection<K> failedKeys() {
-        return ((CachePartialUpdateCheckedException)getCause()).failedKeys();
+        return (Collection<K>)failedKeys;
+    }
+
+    /**
+     * @param failedKeys Failed keys.
+     * @param err Error.
+     */
+    public void add(Collection<?> failedKeys, Throwable err) {
+        this.failedKeys.addAll(failedKeys);
+
+        addSuppressed(err);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getMessage() {
+        return super.getMessage() + ": " + failedKeys;
     }
 }

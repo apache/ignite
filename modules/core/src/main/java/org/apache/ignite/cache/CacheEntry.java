@@ -473,7 +473,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
@@ -481,7 +481,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @return {@code True} if all filters passed and lock was acquired,
      *      {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
-     * @throws CacheFlagException If flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
         throws IgniteCheckedException;
@@ -497,7 +497,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
@@ -505,7 +505,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * @return Future for the lock operation. The future will return {@code true}
      *      whenever all filters pass and locks are acquired before timeout is expired,
      *      {@code false} otherwise.
-     * @throws CacheFlagException If flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public IgniteFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
@@ -521,11 +521,11 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * which will acquire explicit locks for relevant cache operations.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param filter Optional filter that needs to pass prior to unlock taking effect.
      * @throws IgniteCheckedException If unlock execution resulted in error.
-     * @throws CacheFlagException If flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
 

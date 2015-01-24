@@ -167,7 +167,7 @@
         <aspect name="org.apache.ignite.compute.gridify.aop.aspectj.GridifySetToSetAspectJAspect"/>
 
         <!-- Declare folder to search for aspects. -->
-        <include within="org.gridgain.grid.compute.gridify.aop.aspectj.*"/>
+        <include within="org.apache.ignite.compute.gridify.aop.aspectj.*"/>
 
         <!-- BEA libs. -->
         <exclude within="weblogic..*"/>

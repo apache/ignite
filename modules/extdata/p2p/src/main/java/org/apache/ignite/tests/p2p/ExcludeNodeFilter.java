@@ -27,14 +27,14 @@ import java.util.*;
  * This node filter excludes the node with the given UUID
  * from the topology.
  */
-public class GridExcludeNodeFilter implements IgnitePredicate<ClusterNode> {
+public class ExcludeNodeFilter implements IgnitePredicate<ClusterNode> {
     /** Node ID to exclude. */
     private final UUID excludeId;
 
     /**
      * @param excludeId Excluded node UUID.
      */
-    public GridExcludeNodeFilter(UUID excludeId) {
+    public ExcludeNodeFilter(UUID excludeId) {
         assert excludeId != null;
 
         this.excludeId = excludeId;
@@ -47,6 +47,6 @@ public class GridExcludeNodeFilter implements IgnitePredicate<ClusterNode> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridExcludeNodeFilter.class, this);
+        return S.toString(ExcludeNodeFilter.class, this);
     }
 }

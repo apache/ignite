@@ -49,7 +49,7 @@ public enum CacheAtomicityMode {
      * In addition to transactions and locking, one of the main differences in {@code ATOMIC} mode
      * is that bulk writes, such as {@code putAll(...)}, {@code removeAll(...)}, and {@code transformAll(...)}
      * methods, become simple batch operations which can partially fail. In case of partial
-     * failure {@link GridCachePartialUpdateException} will be thrown which will contain a list of keys
+     * failure {@link org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException} will be thrown which will contain a list of keys
      * for which the update failed. It is recommended that bulk writes are used whenever multiple keys
      * need to be inserted or updated in cache, as they reduce number of network trips and provide
      * better performance.

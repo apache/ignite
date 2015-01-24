@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.tests.p2p;
 
-import org.apache.ignite.internal.processors.cache.*;
-
-import javax.cache.*;
-import java.util.*;
+import java.io.*;
 
 /**
- * Exception thrown from non-transactional cache in case when update succeeded only partially.
- * One can get list of keys for which update failed with method {@link #failedKeys()}.
+ * Test user resource.
  */
-public class CachePartialUpdateException extends CacheException {
-    /**
-     * @param e Cause.
-     */
-    public CachePartialUpdateException(CachePartialUpdateCheckedException e) {
-        super(e.getMessage(), e);
-    }
-
-    /**
-     * Gets collection of failed keys.
-     * @return Collection of failed keys.
-     */
-    public <K> Collection<K> failedKeys() {
-        return ((CachePartialUpdateCheckedException)getCause()).failedKeys();
-    }
+public class TestUserResource implements Serializable {
+    // No-op.
 }
