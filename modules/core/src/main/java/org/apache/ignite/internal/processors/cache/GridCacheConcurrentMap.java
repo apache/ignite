@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Concurrent implementation of cache map.

@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
