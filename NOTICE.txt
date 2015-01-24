@@ -1,0 +1,46 @@
+Apache Ignite (incubating)
+Copyright [2014-2015] The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+This software has a dependency on Java port of a concurrent trie hash
+map implementation from the Scala collections library, licensed
+under Apache 2.0: https://github.com/romix/java-concurrent-hash-trie-map
+
+This software has a dependency on JetBrains Annotations licensed under
+Apache 2.0 license.
+
+This software has a dependency on Spring software licensed under Apache 2.0
+license: https://spring.io/
+
+This software has a dependency on AWS Java SDK licensed under Apache 2.0
+license: http://aws.amazon.com/sdk-for-java/
+
+This software has a dependency on Jetty Servlet Engine licensed
+under Apache 2.0: http://eclipse.org/jetty/
+
+This software has a dependency on H2 database licensed under
+Eclipse Public License: http://www.h2database.com/
+
+This software has a dependency on AspectJ 1.7 licensed under
+Eclipse Public License: https://eclipse.org/aspectj/
+
+This software has a dependency on SLF4J licensed under MIT license:
+http://www.slf4j.org/
+
+This software has a dependency on Persistent Collections library, licensed
+under MIT license: https://github.com/blackdrag/pcollections
+
+This software has a dependency on Snaptree library licensed under
+New BSD License: https://github.com/nbronson/snaptree/
+
+This software has a dependency on Scala licensed under New BSD license:
+http://www.scala-lang.org/
+
+This software has a dependency on Java Secure Channel library licensed
+under New BSD license: http://www.jcraft.com/jsch/
+
+
+
+
