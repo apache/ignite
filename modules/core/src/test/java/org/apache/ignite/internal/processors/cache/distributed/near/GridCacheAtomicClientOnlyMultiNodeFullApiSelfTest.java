@@ -121,7 +121,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         for (String key : keys)
             assertEquals(null, nearCache.peek(key));
 
-        nearCache.clearAll();
+        nearCache.clearLocally();
 
         for (String key : keys)
             assertNull(nearCache.peek(key));
@@ -134,14 +134,14 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         String first = F.first(keys);
 
-        nearCache.projection(gte100).clear(first);
+        nearCache.projection(gte100).clearLocally(first);
 
         assertEquals(null, nearCache.peek(first));
         assertEquals(vals.get(first), primary.peek(first));
 
         nearCache.put(first, 101);
 
-        nearCache.projection(gte100).clear(first);
+        nearCache.projection(gte100).clearLocally(first);
 
         assertTrue(nearCache.isEmpty());
         assertFalse(primary.isEmpty());
@@ -159,7 +159,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         nearCache.put(first, 101);
         vals.put(first, 101);
 
-        nearCache.projection(gte100).clear(first);
+        nearCache.projection(gte100).clearLocally(first);
 
         for (String key : keys)
             assertEquals(vals.get(key), primary.peek(key));
@@ -198,7 +198,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         nearCache.putAll(vals);
 
         for (String subKey : subKeys)
-            nearCache.clear(subKey);
+            nearCache.clearLocally(subKey);
 
         for (String key : subKeys) {
             assertNull(nearCache.peek(key));
@@ -207,14 +207,14 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         assertEquals(null, nearCache.peek(lastKey));
 
-        nearCache.clearAll();
+        nearCache.clearLocally();
 
         vals.put(lastKey, 102);
 
         nearCache.putAll(vals);
 
         for (String key : keys)
-            nearCache.projection(gte100).clear(key);
+            nearCache.projection(gte100).clearLocally(key);
 
         assertNull(nearCache.peek(lastKey));
 
@@ -468,7 +468,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assertEquals(cnt, swapEvts.get());
         assertEquals(cnt, unswapEvts.get());
 
-        cache().clearAll();
+        cache().clearLocally();
 
         // Check with multiple arguments.
         cache().put(k1, 1);

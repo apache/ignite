@@ -409,7 +409,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
         assert cache2.size() == 3;
         assert cache3.size() == 3;
 
-        cache1.globalClearAll();
+        cache1.clear();
 
         assert cache1.isEmpty();
         assert cache2.isEmpty();

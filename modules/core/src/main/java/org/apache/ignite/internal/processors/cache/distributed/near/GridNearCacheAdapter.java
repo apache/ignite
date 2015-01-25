@@ -558,16 +558,16 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return super.clear0(key, filter) | dht().clear0(key, filter);
+    public boolean clearLocally0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        return super.clearLocally0(key, filter) | dht().clearLocally0(key, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll0(Collection<? extends K> keys,
+    @Override public void clearLocally0(Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        super.clearAll0(keys, filter);
+        super.clearLocally0(keys, filter);
 
-        dht().clearAll0(keys, filter);
+        dht().clearLocally0(keys, filter);
     }
 
     /** {@inheritDoc} */

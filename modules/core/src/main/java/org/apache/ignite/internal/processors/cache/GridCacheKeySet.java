@@ -70,7 +70,7 @@ public class GridCacheKeySet<K, V> extends GridSerializableSet<K> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        ctx.cache().clearAll0(F.viewReadOnly(map.values(), F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
+        ctx.cache().clearLocally0(F.viewReadOnly(map.values(), F.<K>mapEntry2Key(), filter), CU.<K, V>empty());
 
         map.clear();
     }

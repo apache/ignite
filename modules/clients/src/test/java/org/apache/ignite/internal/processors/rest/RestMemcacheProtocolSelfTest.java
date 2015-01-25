@@ -71,8 +71,8 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         client.shutdown();
 
-        grid().cache(null).clearAll();
-        grid().cache(CACHE_NAME).clearAll();
+        grid().cache(null).clearLocally();
+        grid().cache(CACHE_NAME).clearLocally();
     }
 
     /** {@inheritDoc} */
@@ -193,7 +193,7 @@ public class RestMemcacheProtocolSelfTest extends GridCommonAbstractTest {
         assertTrue(grid().cache(null).putx("key2", "val1"));
         assertTrue(client.cacheReplace(null, "key2", "val2"));
 
-        grid().cache(null).clearAll();
+        grid().cache(null).clearLocally();
 
         assertFalse(client.cacheReplace(CACHE_NAME, "key1", "val1"));
         assertTrue(grid().cache(CACHE_NAME).putx("key1", "val1"));

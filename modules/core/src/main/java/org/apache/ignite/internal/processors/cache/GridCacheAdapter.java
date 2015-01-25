@@ -81,7 +81,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** removeAll() batch size. */
     private static final long REMOVE_ALL_BATCH_SIZE = 100L;
 
-    /** clearAll() split threshold. */
+    /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
     /** Deserialization stash. */
@@ -1146,7 +1146,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Split clear all task into multiple runnables.
+     * Split clearLocally all task into multiple runnables.
      *
      * @return Split runnables.
      */
@@ -1172,12 +1172,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(K key) {
-        return clear0(key);
+    @Override public boolean clearLocally(K key) {
+        return clearLocally0(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void clearAll() {
+    @Override public void clearLocally() {
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
@@ -1205,7 +1205,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                             execSvc.awaitTermination(1000, TimeUnit.MILLISECONDS);
                     }
                     catch (InterruptedException ignore) {
-                        U.warn(log, "Got interrupted while waiting for Cache.clearAll() executor service to " +
+                        U.warn(log, "Got interrupted while waiting for Cache.clearLocally() executor service to " +
                             "finish.");
 
                         Thread.currentThread().interrupt();
@@ -1219,7 +1219,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param keys Keys.
      * @param readers Readers flag.
      */
-    public void clearAll(Collection<? extends K> keys, boolean readers) {
+    public void clearLocally(Collection<? extends K> keys, boolean readers) {
         if (F.isEmpty(keys))
             return;
 
@@ -1236,7 +1236,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                     e.clear(obsoleteVer, readers, null);
             }
             catch (IgniteCheckedException ex) {
-                U.error(log, "Failed to clear entry (will continue to clear other entries): " + e,
+                U.error(log, "Failed to clearLocally entry (will continue to clearLocally other entries): " + e,
                     ex);
             }
         }
@@ -1246,12 +1246,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * Clears entry from cache.
      *
      * @param obsoleteVer Obsolete version to set.
-     * @param key Key to clear.
+     * @param key Key to clearLocally.
      * @param filter Optional filter.
      * @return {@code True} if cleared.
      */
-    private boolean clear(GridCacheVersion obsoleteVer, K key,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    private boolean clearLocally(GridCacheVersion obsoleteVer, K key,
+                                 @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         try {
             if (ctx.portableEnabled())
                 key = (K)ctx.marshalToPortable(key);
@@ -1261,19 +1261,19 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             return e != null && e.clear(obsoleteVer, false, filter);
         }
         catch (IgniteCheckedException ex) {
-            U.error(log, "Failed to clear entry for key: " + key, ex);
+            U.error(log, "Failed to clearLocally entry for key: " + key, ex);
         }
 
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll() throws IgniteCheckedException {
-        globalClearAll(0);
+    @Override public void clear() throws IgniteCheckedException {
+        clear(0);
     }
 
     /** {@inheritDoc} */
-    @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
+    @Override public void clear(long timeout) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
             Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
@@ -1287,17 +1287,17 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             // Clear local cache synchronously.
-            clearAll();
+            clearLocally();
 
             if (fut != null)
                 fut.get();
         }
         catch (ClusterGroupEmptyException ignore) {
             if (log.isDebugEnabled())
-                log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
+                log.debug("All remote nodes left while cache clearLocally [cacheName=" + name() + "]");
         }
         catch (ComputeTaskTimeoutException e) {
-            U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
+            U.warn(log, "Timed out waiting for remote nodes to finish cache clearLocally (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 
             throw e;
@@ -3915,12 +3915,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
         catch (ClusterGroupEmptyException ignore) {
             if (log.isDebugEnabled())
-                log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
+                log.debug("All remote nodes left while cache clearLocally [cacheName=" + name() + "]");
 
             return primaryOnly ? primarySize() : size();
         }
         catch (ComputeTaskTimeoutException e) {
-            U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
+            U.warn(log, "Timed out waiting for remote nodes to finish cache clearLocally (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 
             throw e;
@@ -4244,7 +4244,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param keys Keys.
      * @param filter Filters to evaluate.
      */
-    public void clearAll0(Collection<? extends K> keys,
+    public void clearLocally0(Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
@@ -4258,7 +4258,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         GridCacheVersion obsoleteVer = ctx.versions().next();
 
         for (K k : keys)
-            clear(obsoleteVer, k, filter);
+            clearLocally(obsoleteVer, k, filter);
     }
 
     /**
@@ -4266,7 +4266,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param filter Filters to evaluate.
      * @return {@code True} if cleared.
      */
-    public boolean clear0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    public boolean clearLocally0(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         A.notNull(key, "key");
 
         if (keyCheck)
@@ -4275,7 +4275,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
-        return clear(ctx.versions().next(), key, filter);
+        return clearLocally(ctx.versions().next(), key, filter);
     }
 
     /**
@@ -5062,7 +5062,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * Internal callable which performs {@link org.apache.ignite.cache.CacheProjection#clearAll()}
+     * Internal callable which performs {@link org.apache.ignite.cache.CacheProjection#clearLocally()}
      * operation on a cache with the given name.
      */
     @GridInternal
@@ -5093,7 +5093,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ((GridEx) ignite).cachex(cacheName).clearAll();
+            ((GridEx) ignite).cachex(cacheName).clearLocally();
 
             return null;
         }

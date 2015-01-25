@@ -70,8 +70,8 @@ public class CacheStarSchemaExample {
         System.out.println(">>> Cache star schema example started.");
 
         // Clean up caches on all nodes before run.
-        g.cache(PARTITIONED_CACHE_NAME).globalClearAll(0);
-        g.cache(REPLICATED_CACHE_NAME).globalClearAll(0);
+        g.cache(PARTITIONED_CACHE_NAME).clear(0);
+        g.cache(REPLICATED_CACHE_NAME).clear(0);
 
         try {
             populateDimensions();

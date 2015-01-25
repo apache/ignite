@@ -21,7 +21,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Runnable for {@link GridCacheAdapter#clearAll()} routine for near cache.
+ * Runnable for {@link GridCacheAdapter#clearLocally()} routine for near cache.
  */
 public class GridNearCacheClearAllRunnable<K, V> extends GridCacheClearAllRunnable<K, V> {
     /** Runnable for DHT cache. */

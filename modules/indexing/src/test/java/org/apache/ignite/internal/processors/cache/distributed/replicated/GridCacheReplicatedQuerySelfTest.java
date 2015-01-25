@@ -184,7 +184,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
      * @throws Exception If test failed.
      */
     public void testLocalQuery() throws Exception {
-        cache1.clearAll();
+        cache1.clearLocally();
 
         IgniteTx tx = cache1.txStart();
 

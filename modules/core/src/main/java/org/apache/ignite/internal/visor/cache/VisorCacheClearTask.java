@@ -69,7 +69,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<Strin
                     int before = keys.size(), after = before;
 
                     for (Object key : keys) {
-                        if (cache.clear(key))
+                        if (cache.clearLocally(key))
                             after--;
                     }
 

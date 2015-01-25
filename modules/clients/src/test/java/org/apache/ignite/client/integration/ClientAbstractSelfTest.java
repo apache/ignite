@@ -132,8 +132,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         for (HashMapStore cacheStore : cacheStores.values())
             cacheStore.map.clear();
 
-        grid().cache(null).clearAll();
-        grid().cache(CACHE_NAME).clearAll();
+        grid().cache(null).clearLocally();
+        grid().cache(CACHE_NAME).clearLocally();
 
         INTERCEPTED_OBJECTS.clear();
     }

@@ -257,7 +257,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
         assert size(ValueObject.class) == PUT_CNT - 5;
 
         for (Integer key : keys)
-            cache.clear(key);
+            cache.clearLocally(key);
 
         assert cache.isEmpty();
         assertEquals(0, cache.size());
@@ -300,7 +300,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
 
         // Invalidate will remove entries.
         for (Integer key : keys)
-            cache.clear(key);
+            cache.clearLocally(key);
 
         assert cache.isEmpty();
         assertEquals(0, cache.size());
@@ -333,7 +333,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
             keys[i] = i;
 
         for (Integer key : keys)
-            cache.clear(key);
+            cache.clearLocally(key);
 
         assert cache.isEmpty();
         assertEquals(0, cache.size());
@@ -371,7 +371,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
             keys[i] = i;
 
         for (Integer key : keys)
-            cache.clear(key);
+            cache.clearLocally(key);
 
         assert cache.isEmpty();
         assertEquals(0, cache.size());

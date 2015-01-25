@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Base runnable for {@link GridCacheAdapter#clearAll()} routine.
+ * Base runnable for {@link GridCacheAdapter#clearLocally()} routine.
  */
 public class GridCacheClearAllRunnable<K, V> implements Runnable {
     /** Cache to be cleared. */
@@ -35,7 +35,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
     /** Mod for the given runnable. */
     protected final int id;
 
-    /** Mods count across all spawned clearAll runnables. */
+    /** Mods count across all spawned clearLocally runnables. */
     protected final int totalCnt;
 
     /** Cache context. */
@@ -50,7 +50,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
      * @param cache Cache to be cleared.
      * @param obsoleteVer Obsolete version.
      * @param id Mod for the given runnable.
-     * @param totalCnt Mods count across all spawned clearAll runnables.
+     * @param totalCnt Mods count across all spawned clearLocally runnables.
      */
     public GridCacheClearAllRunnable(GridCacheAdapter<K, V> cache, GridCacheVersion obsoleteVer, int id, int totalCnt) {
         assert cache != null;
@@ -117,7 +117,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
                             ctx.swap().clearSwap();
                         }
                         catch (IgniteCheckedException e) {
-                            U.error(log, "Failed to clear entries from swap storage.", e);
+                            U.error(log, "Failed to clearLocally entries from swap storage.", e);
                         }
                     }
                 }
@@ -135,7 +135,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
             e.clear(obsoleteVer, false, CU.<K, V>empty());
         }
         catch (IgniteCheckedException ex) {
-            U.error(log, "Failed to clear entry from cache (will continue to clear other entries): " + e, ex);
+            U.error(log, "Failed to clearLocally entry from cache (will continue to clearLocally other entries): " + e, ex);
         }
     }
 
@@ -160,7 +160,7 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
     }
 
     /**
-     * @return Total count across all spawned clearAll runnables.
+     * @return Total count across all spawned clearLocally runnables.
      */
     public int totalCount() {
         return totalCnt;

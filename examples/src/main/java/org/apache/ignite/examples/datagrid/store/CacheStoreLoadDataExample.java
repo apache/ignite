@@ -54,7 +54,7 @@ public class CacheStoreLoadDataExample {
             final GridCache<String, Integer> cache = g.cache(null);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear(0);
 
             long start = System.currentTimeMillis();
 

@@ -52,7 +52,7 @@ public class CacheStoreExample {
             GridCache<Long, Person> cache = g.cache(null);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear(0);
 
             try (IgniteTx tx = cache.txStart()) {
                 Person val = cache.get(id);

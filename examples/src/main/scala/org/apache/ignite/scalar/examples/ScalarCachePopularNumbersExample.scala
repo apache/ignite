@@ -59,7 +59,7 @@ object ScalarCachePopularNumbersExample extends App {
 
     scalar("examples/config/example-cache.xml") {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.globalClearAll(0)
+        cache$(CACHE_NAME).get.clear(0)
 
         println()
         println(">>> Cache popular numbers example started.")
@@ -81,7 +81,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearAll(), null)
+                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearLocally(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

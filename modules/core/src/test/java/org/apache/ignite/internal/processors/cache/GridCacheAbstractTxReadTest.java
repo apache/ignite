@@ -101,7 +101,7 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
         throws IgniteCheckedException {
         GridCache<String, Integer> cache = cache(0);
 
-        cache.clearAll();
+        cache.clearLocally();
 
         IgniteTx tx = cache.txStart(concurrency, isolation);
 

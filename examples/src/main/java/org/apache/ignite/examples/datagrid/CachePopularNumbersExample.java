@@ -65,7 +65,7 @@ public class CachePopularNumbersExample {
             System.out.println(">>> Cache popular numbers example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.cache(CACHE_NAME).clear(0);
 
             ClusterGroup prj = g.cluster().forCache(CACHE_NAME);
 

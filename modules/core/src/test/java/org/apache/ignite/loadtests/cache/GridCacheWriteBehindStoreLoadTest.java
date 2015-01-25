@@ -83,7 +83,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
         GridCache<?, ?> cache = cache();
 
         if (cache != null)
-            cache.clearAll();
+            cache.clearLocally();
     }
 
     /**

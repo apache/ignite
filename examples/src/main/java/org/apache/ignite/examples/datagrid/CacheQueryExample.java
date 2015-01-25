@@ -80,7 +80,7 @@ public class CacheQueryExample {
             System.out.println(">>> Cache query example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.cache(CACHE_NAME).clear(0);
 
             // Populate cache.
             initialize();

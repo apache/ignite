@@ -348,7 +348,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         assert locPrj.containsKey("key");
 
-        locPrj.clear("key");
+        locPrj.clearLocally("key");
 
         assert !locPrj.containsKey("key");
     }
@@ -488,7 +488,7 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
 
         assertFlagException(new CA() {
             @Override public void apply() {
-                readPrj.clear("key");
+                readPrj.clearLocally("key");
             }
         });
 

@@ -44,7 +44,7 @@ public class CachePutGetExample {
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.cache(CACHE_NAME).clear(0);
 
             // Individual puts and gets.
             putGet();

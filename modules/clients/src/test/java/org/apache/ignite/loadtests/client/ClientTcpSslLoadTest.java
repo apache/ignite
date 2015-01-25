@@ -78,6 +78,6 @@ public class ClientTcpSslLoadTest extends ClientTcpSslMultiThreadedSelfTest {
     @SuppressWarnings("ConstantConditions")
     private void clearCaches() {
         for (int i = 0; i < NODES_CNT; i++)
-            grid(i).cache(PARTITIONED_CACHE_NAME).clearAll();
+            grid(i).cache(PARTITIONED_CACHE_NAME).clearLocally();
     }
 }

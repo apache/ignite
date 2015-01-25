@@ -1918,6 +1918,6 @@ public class GridHibernateL2CacheSelfTest extends GridCommonAbstractTest {
         sesFactory2 = null;
 
         for (GridCache<?, ?> cache : grid(0).caches())
-            cache.globalClearAll();
+            cache.clear();
     }
 }

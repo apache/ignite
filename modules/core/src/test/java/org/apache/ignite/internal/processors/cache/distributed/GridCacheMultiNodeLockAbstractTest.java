@@ -106,7 +106,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         lsnrs.clear();
 
         for (int i = 1; i <= 3; i++) {
-            cache(i).clearAll();
+            cache(i).clearLocally();
 
             assertTrue(
                 "Cache isn't empty [i=" + i + ", entries=" + ((GridKernal)grid(i)).internalCache().entries() + "]",

@@ -178,7 +178,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
         assert e0.readers().contains(other.id());
         assert e1 == null || e1.readers().isEmpty();
 
-        assert !near0.clear(key);
+        assert !near0.clearLocally(key);
 
         assertEquals(1, near0.size());
         assertEquals(1, dht0.size());

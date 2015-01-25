@@ -150,7 +150,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
             if (LOAD)
                 test.loadTest(test.writeClos, test.readClos);
 
-            G.ignite().cache(null).clearAll();
+            G.ignite().cache(null).clearLocally();
 
             System.gc();
 

@@ -113,7 +113,7 @@ object ScalarCacheQueryExample {
      */
     private def initialize() {
         // Clean up caches on all nodes before run.
-        cache$(CACHE_NAME).get.globalClearAll(0)
+        cache$(CACHE_NAME).get.clear(0)
 
         // Organization cache projection.
         val orgCache = mkCache[UUID, Organization]
