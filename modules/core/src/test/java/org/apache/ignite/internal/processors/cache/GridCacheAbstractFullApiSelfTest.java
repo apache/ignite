@@ -3056,8 +3056,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (Integer k : keys)
             cache.put(k, k);
 
-        cache.clearLocally(keys.get(0));
-        cache.clearLocally(keys.get(1));
+        cache.clear();
 
         for (int g = 0; g < gridCount(); g++) {
             Ignite grid0 = grid(g);
@@ -3103,8 +3102,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (Integer k : keys)
             cache.put(k, k + 1);
 
-        cache.clearLocally(keys.get(0));
-        cache.clearLocally(keys.get(1));
+        cache.clear();
 
         for (int g = 0; g < gridCount(); g++) {
             Ignite grid0 = grid(g);

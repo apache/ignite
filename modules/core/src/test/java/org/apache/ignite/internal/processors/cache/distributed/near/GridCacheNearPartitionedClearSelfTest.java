@@ -109,7 +109,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         int key = primaryKey0(grid(0), cache);
 
         cache.putx(key, 1);
-        cache.clearLocally(key);
+        cache.clear();
 
         for (int i = 0; i < GRID_CNT; i++) {
             GridCache cache0 = cacheForIndex(i);
@@ -120,7 +120,7 @@ public class GridCacheNearPartitionedClearSelfTest extends GridCommonAbstractTes
         }
 
         cache.putx(key, 1);
-        cache.clearLocally(key);
+        cache.clear();
 
         assertEquals(0, cache.size());
     }
