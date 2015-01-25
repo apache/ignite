@@ -233,7 +233,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
         for (String key : keys)
             assertEquals(vals.get(key), nearCache.peek(key));
 
-        nearCache.clearLocally();
+        nearCache.clear();
 
         for (String key : keys)
             assertNull(nearCache.peek(key));
@@ -248,7 +248,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         assertTrue(nearCache.lock(first, 0L));
 
-        nearCache.clearLocally();
+        nearCache.clear();
 
         assertEquals(vals.get(first), nearCache.peek(first));
         assertEquals(vals.get(first), primary.peek(first));
@@ -328,7 +328,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
 
         assertEquals(vals.get(lastKey), nearCache.peek(lastKey));
 
-        nearCache.clearLocally();
+        nearCache.clear();
 
         vals.put(lastKey, 102);
 

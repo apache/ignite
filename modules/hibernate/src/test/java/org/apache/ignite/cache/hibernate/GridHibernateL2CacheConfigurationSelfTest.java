@@ -79,7 +79,7 @@ public class GridHibernateL2CacheConfigurationSelfTest extends GridCommonAbstrac
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (GridCache<?, ?> cache : grid(0).caches())
-            cache.clearLocally();
+            cache.clear();
     }
 
     /** {@inheritDoc} */

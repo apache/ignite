@@ -65,7 +65,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
         GridCache<?, ?> cache = cache();
 
         if (cache != null)
-            cache.clearLocally();
+            cache.clear();
 
         store.reset();
     }
@@ -199,7 +199,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
             assert val.equals(Integer.toString(i));
         }
 
-        cache.clearLocally();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -221,7 +221,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         assert cache.size() == 10;
 
-        cache.clearLocally();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();

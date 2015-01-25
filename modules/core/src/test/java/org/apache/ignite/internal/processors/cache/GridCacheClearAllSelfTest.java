@@ -236,7 +236,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
                 fillCache(cache, keysCnt);
 
-                cache.clearLocally();
+                cache.clear();
 
                 assert cache.isEmpty();
 
@@ -249,7 +249,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
                 // Ensure correct no-op clean of CLIENT_ONLY cache.
                 warmCache(cachesPartitioned[2], keysCnt);
                 assert cachesPartitioned[2].isEmpty();
-                cachesPartitioned[2].clearLocally();
+                cachesPartitioned[2].clear();
                 assert cachesPartitioned[2].isEmpty();
 
                 stopGrid(2); // Shutdown Grid in order to remove reader in NEAR_PARTITIONED cache.
@@ -257,7 +257,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
                 // Ensure correct clearLocally of NEA_ONLY cache.
                 warmCache(cachesPartitioned[1], keysCnt);
                 assert !cachesPartitioned[1].isEmpty();
-                cachesPartitioned[1].clearLocally();
+                cachesPartitioned[1].clear();
                 assert cachesPartitioned[1].isEmpty();
                 fillCache(cachesPartitioned[1], keysCnt);
 
@@ -265,7 +265,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
 
                 // Ensure correct clearLocally of NEAR_PARTITIONED cache.
                 assert !cachesPartitioned[0].isEmpty();
-                cachesPartitioned[0].clearLocally();
+                cachesPartitioned[0].clear();
                 assert cachesPartitioned[0].isEmpty();
 
                 break;
@@ -280,7 +280,7 @@ public class GridCacheClearAllSelfTest extends GridCommonAbstractTest {
                 for (GridCache<Integer, Integer> cache : caches) {
                     assert !cache.isEmpty();
 
-                    cache.clearLocally();
+                    cache.clear();
 
                     assert cache.isEmpty();
                 }

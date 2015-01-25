@@ -97,7 +97,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         for (String key : keys)
             assertEquals((Integer)i++, nearCache.peek(key));
 
-        nearCache.clearLocally();
+        nearCache.clear();
 
         for (String key : keys)
             assertNull(nearCache.peek(key));

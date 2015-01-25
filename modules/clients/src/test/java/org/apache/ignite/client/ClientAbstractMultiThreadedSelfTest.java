@@ -497,7 +497,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         }
 
         for (Ignite g : gridMap.values())
-            g.cache(PARTITIONED_CACHE_NAME).clearLocally();
+            g.cache(PARTITIONED_CACHE_NAME).clear();
     }
 
     /**

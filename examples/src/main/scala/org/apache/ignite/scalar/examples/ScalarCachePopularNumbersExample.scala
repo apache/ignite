@@ -81,7 +81,7 @@ object ScalarCachePopularNumbersExample extends App {
                 query(POPULAR_NUMBERS_CNT)
 
                 // Clean up caches on all nodes after run.
-                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clearLocally(), null)
+                grid$.cluster().forCache(CACHE_NAME).bcastRun(() => grid$.cache(CACHE_NAME).clear(), null)
             }
             finally {
                 popularNumbersQryTimer.cancel()

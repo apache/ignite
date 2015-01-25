@@ -61,7 +61,7 @@ public abstract class GridCacheGetAndTransformStoreAbstractTest extends GridComm
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clearLocally();
+        cache().clear();
 
         store.reset();
     }

@@ -62,7 +62,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().clearLocally();
+        cache().clear();
 
         store.reset();
     }
@@ -247,7 +247,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             assert val.equals(Integer.toString(i));
         }
 
-        cache.clearLocally();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -266,7 +266,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         assert cache.size() == 10;
 
-        cache.clearLocally();
+        cache.clear();
 
         assert cache.isEmpty();
         assert cache.isEmpty();
@@ -407,7 +407,7 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
             checkLastMethod(null);
         }
 
-        cache.clearLocally();
+        cache.clear();
 
         cache.loadCache(new P2<Integer, String>() {
             @Override public boolean apply(Integer k, String v) {

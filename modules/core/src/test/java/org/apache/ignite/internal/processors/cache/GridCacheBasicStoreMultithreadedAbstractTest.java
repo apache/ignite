@@ -50,7 +50,7 @@ public abstract class GridCacheBasicStoreMultithreadedAbstractTest extends GridC
         GridCache<?, ?> cache = cache();
 
         if (cache != null)
-            cache.clearLocally();
+            cache.clear();
 
         stopAllGrids();
     }

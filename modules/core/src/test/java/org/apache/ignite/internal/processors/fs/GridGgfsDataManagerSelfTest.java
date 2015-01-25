@@ -133,9 +133,9 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            grid(i).cachex(META_CACHE_NAME).clearLocally();
+            grid(i).cachex(META_CACHE_NAME).clear();
 
-            grid(i).cachex(DATA_CACHE_NAME).clearLocally();
+            grid(i).cachex(DATA_CACHE_NAME).clear();
         }
     }
 
