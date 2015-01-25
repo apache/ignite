@@ -1150,7 +1150,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      *
      * @return Split runnables.
      */
-    public List<GridCacheClearAllRunnable<K, V>> splitClearAll() {
+    public List<GridCacheClearAllRunnable<K, V>> splitClearLocally() {
         assert CLEAR_ALL_SPLIT_THRESHOLD > 0;
 
         int keySize = size();
@@ -1181,7 +1181,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.denyOnFlag(READ);
         ctx.checkSecurity(GridSecurityPermission.CACHE_REMOVE);
 
-        List<GridCacheClearAllRunnable<K, V>> jobs = splitClearAll();
+        List<GridCacheClearAllRunnable<K, V>> jobs = splitClearLocally();
 
         if (!F.isEmpty(jobs)) {
             ExecutorService execSvc = null;
