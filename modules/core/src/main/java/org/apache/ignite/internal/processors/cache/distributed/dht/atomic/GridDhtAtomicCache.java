@@ -513,7 +513,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void removeAll(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        removeAllAsync(filter).get();
+        super.removeAll(filter); // TODO: IGNITE-?? Fix asynс cleanup
+        //removeAllAsync(filter).get();
     }
 
     /** {@inheritDoc} */

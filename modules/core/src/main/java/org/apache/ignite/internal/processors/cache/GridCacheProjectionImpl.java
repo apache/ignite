@@ -915,6 +915,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        return cache.keySet(filter);
+    }
+
+    /** {@inheritDoc} */
     @Override public Set<K> primaryKeySet() {
         return cache.primaryKeySet(entryFilter(true));
     }

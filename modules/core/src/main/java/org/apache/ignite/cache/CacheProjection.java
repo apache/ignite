@@ -1049,6 +1049,23 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public Set<K> keySet();
 
     /**
+     * Set of keys cached on this node. You can remove elements from this set, but you cannot add elements
+     * to this set. All removal operation will be reflected on the cache itself.
+     * <p>
+     * Iterator over this set will not fail if set was concurrently updated
+     * by another thread. This means that iterator may or may not return latest
+     * keys depending on whether they were added before or after current
+     * iterator position.
+     * <p>
+     * NOTE: this operation is not distributed and returns only the keys cached on this node.
+     *
+     * @param filter Optional filter to check prior to getting key form cache. Note
+     * that filter is checked atomically together with get operation.
+     * @return Key set for this cache projection.
+     */
+    public Set<K> keySet(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+
+    /**
      * Set of keys for which this node is primary.
      * This set is dynamic and may change with grid topology changes.
      * Note that this set will contain mappings for all keys, even if their values are

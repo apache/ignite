@@ -620,25 +620,6 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         }
     }
 
-    /**
-     * @param keys Keys to remove.
-     */
-    public void removeAll(Collection<? extends K> keys) {
-        try {
-            GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-            try {
-                delegate.removeAll(keys);
-            }
-            finally {
-                gate.leave(prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void removeAll() {
         // TODO IGNITE-1.

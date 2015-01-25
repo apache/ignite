@@ -78,6 +78,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** removeAll() batch size. */
+    private static final long REMOVE_ALL_BATCH_SIZE = 100L;
+
     /** clearAll() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
@@ -3151,22 +3154,38 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public void removeAll(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
-        ctx.denyOnLocalRead();
+        try {
+            if (F.isEmptyOrNulls(filter))
+                filter = ctx.trueArray();
 
-        if (F.isEmptyOrNulls(filter))
-            filter = ctx.trueArray();
+            long topVer;
 
-        final IgnitePredicate<CacheEntry<K, V>>[] p = filter;
+            do {
+                topVer = ctx.affinity().affinityTopologyVersion();
 
-        syncOp(new SyncInOp(false) {
-            @Override public void inOp(IgniteTxLocalAdapter<K, V> tx) throws IgniteCheckedException {
-                tx.removeAllAsync(ctx, keySet(p), null, false, null).get();
-            }
+                // Send job to all nodes.
+                Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
 
-            @Override public String toString() {
-                return "removeAll [filter=" + Arrays.toString(p) + ']';
-            }
-        });
+                IgniteFuture<Object> fut = null;
+
+                if (!nodes.isEmpty())
+                    fut = ctx.closures().callAsyncNoFailover(BROADCAST, new GlobalRemoveAllCallable<>(name(), topVer, REMOVE_ALL_BATCH_SIZE, filter), nodes, true);
+
+                if (fut != null)
+                    fut.get();
+
+            } while (ctx.affinity().affinityTopologyVersion() > topVer);
+        }
+        catch (ClusterGroupEmptyException ignore) {
+            if (log.isDebugEnabled())
+                log.debug("All remote nodes left while cache remove [cacheName=" + name() + "]");
+        }
+        catch (ComputeTaskTimeoutException e) {
+            U.warn(log, "Timed out waiting for remote nodes to finish cache remove (consider increasing " +
+                    "'networkTimeout' configuration property) [cacheName=" + name() + "]");
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
@@ -4949,6 +4968,97 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @return Operation return value.
          */
         public abstract IgniteFuture<?> inOp(IgniteTxLocalAdapter<K, V> tx);
+    }
+
+    /**
+     * Internal callable which performs remove all primary key mappings
+     * operation on a cache with the given name.
+     */
+    @GridInternal
+    private static class GlobalRemoveAllCallable<K,V> implements Callable<Object>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Cache name. */
+        private String cacheName;
+
+        /** Topology version. */
+        private long topVer;
+
+        /** Remove batch size. */
+        private long rmvBatchSz;
+
+        /** Filters. */
+        private IgnitePredicate<CacheEntry<K, V>>[] filter;
+
+        /** Injected grid instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /**
+         * Empty constructor for serialization.
+         */
+        public GlobalRemoveAllCallable() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param topVer Topology version.
+         * @param rmvBatchSz Remove batch size.
+         * @param filter Filter.
+         */
+        private GlobalRemoveAllCallable(String cacheName, long topVer, long rmvBatchSz, IgnitePredicate<CacheEntry<K, V>> ... filter) {
+            this.cacheName = cacheName;
+            this.topVer = topVer;
+            this.rmvBatchSz = rmvBatchSz;
+            this.filter = filter;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override public Object call() throws Exception {
+            Set<K> keys = new HashSet<>();
+
+            final GridKernal grid = (GridKernal) ignite;
+
+            final GridCache<K,V> cache = grid.cachex(cacheName);
+
+            final GridCacheContext<K, V> ctx = grid.context().cache().<K, V>internalCache(cacheName).context();
+
+            assert cache != null;
+
+            for (K k : cache.keySet(filter)) {
+                if (ctx.affinity().primary(ctx.localNode(), k, topVer))
+                    keys.add(k);
+                if (keys.size() >= rmvBatchSz) {
+                    cache.removeAll(keys);
+
+                    keys.clear();
+                }
+            }
+            cache.removeAll(keys);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, cacheName);
+            out.writeLong(topVer);
+            out.writeLong(rmvBatchSz);
+            out.writeObject(filter);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cacheName = U.readString(in);
+            topVer = in.readLong();
+            rmvBatchSz = in.readLong();
+            filter = (IgnitePredicate<CacheEntry<K, V>>[]) in.readObject();
+        }
     }
 
     /**

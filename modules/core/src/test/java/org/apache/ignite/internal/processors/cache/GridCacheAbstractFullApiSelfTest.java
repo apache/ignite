@@ -2486,6 +2486,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().removeAll();
 
         assert cache().isEmpty();
+        long entryCount = hugeRemoveAllEntryCount();
+
+        for (int i = 0; i < entryCount; i++)
+            cache().put(String.valueOf(i), i);
+
+        for (int i = 0; i < entryCount; i++)
+            assertEquals(Integer.valueOf(i), cache().get(String.valueOf(i)));
+
+        cache().removeAll();
+
+        for (int i = 0; i < entryCount; i++)
+            assertNull(cache().get(String.valueOf(i)));
+    }
+
+    /**
+     * Provides count on entities to be removed in removeAll() test
+     */
+    protected long hugeRemoveAllEntryCount(){
+        return 1000L;
     }
 
     /**
