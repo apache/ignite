@@ -742,6 +742,10 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                     "listener is registered): " + msg);
             }
 
+            // Mark the message as processed.
+            if (msgC != null)
+                msgC.run();
+
             return;
         }
 
@@ -1715,6 +1719,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         private final IgniteUuid timeoutId;
 
         /** */
+        @GridToStringInclude
         private final Object topic;
 
         /** */
@@ -1922,7 +1927,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized String toString() {
+        @Override public String toString() {
             return S.toString(GridCommunicationMessageSet.class, this);
         }
     }

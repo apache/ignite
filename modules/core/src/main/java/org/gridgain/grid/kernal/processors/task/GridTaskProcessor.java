@@ -61,7 +61,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     private final IgniteMarshaller marsh;
 
     /** */
-    private final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
+    public final ConcurrentMap<IgniteUuid, GridTaskWorker<?, ?>> tasks = GridConcurrentFactory.newMap();
 
     /** */
     private boolean stopping;

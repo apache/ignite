@@ -1393,6 +1393,8 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridTaskWorker.class, this);
+        synchronized (mux) {
+            return S.toString(GridTaskWorker.class, this);
+        }
     }
 }
