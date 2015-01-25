@@ -18,7 +18,6 @@
 package org.apache.ignite.schema.ui;
 
 import javafx.application.*;
-import javafx.beans.property.*;
 import javafx.beans.value.*;
 import javafx.collections.*;
 import javafx.concurrent.*;
@@ -29,20 +28,18 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.generator.*;
+import org.apache.ignite.schema.model.*;
+import org.apache.ignite.schema.parser.*;
 import org.gridgain.grid.cache.query.*;
 
 import java.io.*;
-import java.math.*;
 import java.net.*;
 import java.sql.*;
-import java.sql.Date;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.prefs.*;
 
-import static java.sql.Types.*;
 import static javafx.embed.swing.SwingFXUtils.*;
 import static org.apache.ignite.schema.ui.Controls.*;
 
@@ -137,7 +134,6 @@ public class SchemaLoadApp extends Application {
 
     /** */
     private final ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
-        /** {@inheritDoc} */
         @Override public Thread newThread(Runnable r) {
             Thread t = new Thread(r, "schema-load-worker");
 
@@ -202,7 +198,7 @@ public class SchemaLoadApp extends Application {
                 long started = System.currentTimeMillis();
 
                 try (Connection conn = connect()) {
-                    pojos = parse(conn);
+                    pojos = DatabaseMetadataParser.parse(conn);
                 }
 
                 perceptualDelay(started);
@@ -263,9 +259,9 @@ public class SchemaLoadApp extends Application {
      * Generate XML and POJOs.
      */
     private void generate() {
-        Collection<PojoDescriptor> selItems = selectedItems();
+        final Collection<PojoDescriptor> selPojos = selectedItems();
 
-        if (selItems.isEmpty()) {
+        if (selPojos.isEmpty()) {
             MessageBox.warningDialog(owner, "Please select tables to generate XML and POJOs files!");
 
             return;
@@ -280,11 +276,10 @@ public class SchemaLoadApp extends Application {
         final File destFolder = new File(outFolder);
 
         Runnable task = new Task<Void>() {
-            private void checkEmpty(Collection<GridCacheQueryTypeDescriptor> items,
-                final PojoDescriptor pojo, String msg) {
-                if (items.isEmpty()) {
+            private void checkEmpty(final PojoDescriptor pojo, Collection<GridCacheQueryTypeDescriptor> descs,
+                String msg) {
+                if (descs.isEmpty()) {
                     Platform.runLater(new Runnable() {
-                        /** {@inheritDoc} */
                         @Override public void run() {
                             pojosTbl.getSelectionModel().select(pojo);
                         }
@@ -304,41 +299,19 @@ public class SchemaLoadApp extends Application {
                 Collection<GridCacheQueryTypeMetadata> all = new ArrayList<>();
 
                 boolean constructor = pojoConstructorCh.isSelected();
-                boolean include = pojoIncludeKeysCh.isSelected();
+                boolean includeKeys = pojoIncludeKeysCh.isSelected();
                 boolean singleXml = xmlSingleFileCh.isSelected();
 
                 ConfirmCallable askOverwrite = new ConfirmCallable(owner, "File already exists: %s\nOverwrite?");
 
                 // Generate XML and POJO.
-                for (PojoDescriptor pojo : pojos) {
+                for (PojoDescriptor pojo : selPojos) {
                     if (pojo.selected()) {
-                        GridCacheQueryTypeMetadata meta = pojo.metadata();
+                        GridCacheQueryTypeMetadata meta = pojo.metadata(includeKeys);
 
-                        Collection<GridCacheQueryTypeDescriptor> keys = new ArrayList<>();
+                        checkEmpty(pojo, meta.getKeyDescriptors(), "No key fields specified for type: ");
 
-                        Collection<GridCacheQueryTypeDescriptor> vals = new ArrayList<>();
-
-                        // Fill list with key and value type descriptors.
-                        for (PojoField fld : pojo.fields()) {
-                            GridCacheQueryTypeDescriptor desc = fld.descriptor();
-
-                            if (fld.key()) {
-                                keys.add(desc);
-
-                                if (include)
-                                    vals.add(desc);
-                            }
-                            else
-                                vals.add(desc);
-                        }
-
-                        checkEmpty(keys, pojo, "No key fields specified for type: ");
-
-                        checkEmpty(vals, pojo, "No value fields specified for type: ");
-
-                        meta.setKeyDescriptors(keys);
-
-                        meta.setValueDescriptors(vals);
+                        checkEmpty(pojo, meta.getValueDescriptors(), "No value fields specified for type: ");
 
                         all.add(meta);
 
@@ -346,13 +319,11 @@ public class SchemaLoadApp extends Application {
                             XmlGenerator.generate(pkg, meta, new File(destFolder, meta.getType() + ".xml"),
                                 askOverwrite);
 
-                        PojoGenerator.generate(meta, outFolder, pkg, constructor, askOverwrite);
+                        PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                     }
                 }
 
-                if (all.isEmpty())
-                    throw new IllegalStateException("Nothing selected!");
-                else if (singleXml)
+                if (singleXml)
                     XmlGenerator.generate(pkg, all, new File(outFolder, "Ignite.xml"), askOverwrite);
 
                 perceptualDelay(started);
@@ -562,6 +533,11 @@ public class SchemaLoadApp extends Application {
         connPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         connPnl.addColumn(35, 35, 35, Priority.NEVER);
 
+        connPnl.add(text("This utility is designed to automatically generate configuration XML files and" +
+            " POGO classes from database schema information.", 550), 3);
+
+        connPnl.wrap();
+
         jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
 
         connPnl.add(button("...", "Select JDBC driver jar or zip", new EventHandler<ActionEvent>() {
@@ -594,6 +570,55 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
+     * Check if new class name is unique.
+     *
+     * @param pojo Current edited POJO.
+     * @param newVal New value for class name.
+     * @param key {@code true} if key class name is checked.
+     * @return {@code true} if class name is valid.
+     */
+    private boolean checkClassNameUnique(PojoDescriptor pojo, String newVal, boolean key) {
+        for (PojoDescriptor otherPojo : pojos)
+            if (pojo != otherPojo) {
+                String otherKeyCls = otherPojo.keyClassName();
+                String otherValCls = otherPojo.valueClassName();
+
+                if (newVal.equals(otherKeyCls) || newVal.equals(otherValCls)) {
+                    MessageBox.warningDialog(owner, (key ? "Key" : "Value") + " class name must be unique!");
+
+                    return false;
+                }
+            }
+
+        return true;
+    }
+
+    /**
+     * Check if new class name is valid.
+     *
+     * @param pojo Current edited POJO.
+     * @param newVal New value for class name.
+     * @param key {@code true} if key class name is checked.
+     * @return {@code true} if class name is valid.
+     */
+    private boolean checkClassName(PojoDescriptor pojo, String newVal, boolean key) {
+        if (key) {
+            if (newVal.equals(pojo.valueClassName())) {
+                MessageBox.warningDialog(owner, "Key class name must be different from value class name!");
+
+                return false;
+            }
+        }
+        else if (newVal.equals(pojo.keyClassName())) {
+            MessageBox.warningDialog(owner, "Value class name must be different from key class name!");
+
+            return false;
+        }
+
+        return checkClassNameUnique(pojo, newVal, key);
+    }
+
+    /**
      * Create generate pane with controls.
      */
     private void createGeneratePane() {
@@ -607,19 +632,21 @@ public class SchemaLoadApp extends Application {
         genPnl.addRows(7);
 
         TableColumn<PojoDescriptor, Boolean> useCol = customColumn("Schema / Table", "use",
-            "If checked then this table will be used for XML and POJOs generation", SchemaCell.cellFactory());
+            "If checked then this table will be used for XML and POJOs generation", PojoDescriptorCell.cellFactory());
 
-        TableColumn<PojoDescriptor, String> keyClsCol = textColumn("Key Class", "keyClass", "Key class name");
+        TableColumn<PojoDescriptor, String> keyClsCol = textColumn("Key Class", "keyClassName", "Key class name",
+            new TextColumnValidator<PojoDescriptor>() {
+                @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
+                    return checkClassName(rowVal, newVal, true);
+                }
+            });
 
-        keyClsCol.setOnEditCommit(new EventHandler<TableColumn.CellEditEvent<PojoDescriptor, String>>() {
-            @Override public void handle(TableColumn.CellEditEvent<PojoDescriptor, String> evt) {
-                System.out.println("committed: " + evt.getNewValue());
-
-                evt.getRowValue().keyClsName.set(evt.getNewValue() + "boom");
-            }
-        });
-
-        TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class", "valueClass", "Value class name");
+        TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class", "valueClassName", "Value class name",
+            new TextColumnValidator<PojoDescriptor>() {
+                @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
+                    return checkClassName(rowVal, newVal, false);
+                }
+            });
 
         pojosTbl = tableView("Tables not found in database", useCol, keyClsCol, valClsCol);
 
@@ -630,7 +657,19 @@ public class SchemaLoadApp extends Application {
 
         TableColumn<PojoField, String> dbTypeNameCol = tableColumn("DB Type", "dbTypeName", "Field type in database");
 
-        TableColumn<PojoField, String> javaNameCol = textColumn("Ignite Name", "javaName", "Field name in POJO class");
+        TableColumn<PojoField, String> javaNameCol = textColumn("Ignite Name", "javaName", "Field name in POJO class",
+            new TextColumnValidator<PojoField>() {
+                @Override public boolean valid(PojoField rowVal, String newVal) {
+                    for (PojoField field : curPojo.fields())
+                        if (rowVal != field && newVal.equals(field.javaName())) {
+                            MessageBox.warningDialog(owner, "Ignite name must be unique!");
+
+                            return false;
+                        }
+
+                    return true;
+                }
+            });
 
         TableColumn<PojoField, String> javaTypeNameCol = customColumn("Java Type", "javaTypeName",
             "Field java type in POJO class", JavaTypeCell.cellFactory());
@@ -638,65 +677,7 @@ public class SchemaLoadApp extends Application {
         final TableView<PojoField> fieldsTbl = tableView("Select table to see table columns",
             keyCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
 
-        final Button upBtn = button(imageView("navigate_up", 24), "Move selected row up",
-            new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent evt) {
-                    TableView.TableViewSelectionModel<PojoField> selMdl = fieldsTbl.getSelectionModel();
-
-                    int selIdx = selMdl.getSelectedIndex();
-
-                    if (selIdx > 0) {
-                        ObservableList<PojoField> items = fieldsTbl.getItems();
-
-                        int newId = selIdx - 1;
-
-                        items.add(newId, items.remove(selIdx));
-
-                        if (newId == 0)
-                            fieldsTbl.requestFocus();
-
-                        selMdl.select(newId);
-                    }
-                }
-            });
-
-        upBtn.setDisable(true);
-
-        final Button downBtn = button(imageView("navigate_down", 24), "Move selected row down",
-            new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent evt) {
-                    TableView.TableViewSelectionModel<PojoField> selMdl = fieldsTbl.getSelectionModel();
-
-                    int selIdx = selMdl.getSelectedIndex();
-
-                    ObservableList<PojoField> items = fieldsTbl.getItems();
-
-                    int maxIdx = items.size() - 1;
-
-                    if (selIdx < maxIdx) {
-                        int newId = selIdx + 1;
-
-                        items.add(newId, items.remove(selIdx));
-
-                        if (newId == maxIdx)
-                            fieldsTbl.requestFocus();
-
-                        selMdl.select(newId);
-
-                    }
-                }
-            });
-
-        downBtn.setDisable(true);
-
-        fieldsTbl.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
-            @Override public void changed(ObservableValue<? extends Number> observable, Number oldVal, Number newVal) {
-                upBtn.setDisable(newVal == null || newVal.intValue() == 0);
-                downBtn.setDisable(newVal == null || newVal.intValue() == fieldsTbl.getItems().size() - 1);
-            }
-        });
-
-        genPnl.add(splitPane(pojosTbl, borderPane(null, fieldsTbl, null, null, vBox(10, upBtn, downBtn)), 0.6), 3);
+        genPnl.add(splitPane(pojosTbl, fieldsTbl, 0.6), 3);
 
         final GridPaneEx keyValPnl = paneEx(0, 0, 0, 0);
         keyValPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
@@ -704,62 +685,11 @@ public class SchemaLoadApp extends Application {
         keyValPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         keyValPnl.addColumn();
 
-//        keyValPnl.add(button("Apply", "Change key and value class names", new EventHandler<ActionEvent>() {
-//            @Override public void handle(ActionEvent evt) {
-//                if (checkInput(keyClsTf, true, "Key class name must not be empty!") ||
-//                    checkInput(valClsTf, true, "Value class name must not be empty!"))
-//                    return;
-//
-//                String keyCls = keyClsTf.getText().trim();
-//
-//                String valCls = valClsTf.getText().trim();
-//
-//                if (keyCls.equals(valCls)) {
-//                    MessageBox.warningDialog(owner, "Key class name must be different from value class name!");
-//
-//                    keyClsTf.requestFocus();
-//
-//                    return;
-//                }
-//
-//                for (PojoDescriptor pojo : pojos)
-//                    if (pojo != curPojo) {
-//                        String pojoKeyCls = pojo.keyClassName();
-//
-//                        String pojoValCls = pojo.valueClassName();
-//
-//                        if (keyCls.equals(pojoKeyCls) || keyCls.equals(pojoValCls)) {
-//                            MessageBox.warningDialog(owner, "Key class name must be unique!");
-//
-//                            keyClsTf.requestFocus();
-//
-//                            return;
-//                        }
-//
-//                        if (valCls.equals(pojoKeyCls) || valCls.equals(pojoValCls)) {
-//                            MessageBox.warningDialog(owner, "Value class name must be unique!");
-//
-//                            valClsTf.requestFocus();
-//
-//                            return;
-//                        }
-//                    }
-//
-//                curPojo.keyClassName(keyCls);
-//                curPojo.valueClassName(valCls);
-//            }
-//        }));
-//
-//        keyValPnl.setDisable(true);
-//
-//        genPnl.add(keyValPnl, 2);
-
         pkgTf = genPnl.addLabeled("Package:", textField("Package that will be used for POJOs generation"), 2);
 
         outFolderTf = genPnl.addLabeled("Output Folder:", textField("Output folder for XML and POJOs files"));
 
         genPnl.add(button("...", "Select output folder", new EventHandler<ActionEvent>() {
-            /** {@inheritDoc} */
             @Override public void handle(ActionEvent evt) {
                 DirectoryChooser dc = new DirectoryChooser();
 
@@ -794,7 +724,6 @@ public class SchemaLoadApp extends Application {
 
         final Button renBtn = button("Rename", "Replace Ignite names by provided regular expression for current table",
             new EventHandler<ActionEvent>() {
-                /** {@inheritDoc} */
                 @Override public void handle(ActionEvent evt) {
                     if (curPojo == null) {
                         MessageBox.warningDialog(owner, "Please select table to rename Ignite names!");
@@ -821,7 +750,6 @@ public class SchemaLoadApp extends Application {
         renBtn.setDisable(true);
 
         final Button revertBtn = button("Revert", "Revert changes to Ignite names for current table", new EventHandler<ActionEvent>() {
-            /** {@inheritDoc} */
             @Override public void handle(ActionEvent evt) {
                 if (curPojo != null)
                     curPojo.revertJavaNames();
@@ -835,7 +763,6 @@ public class SchemaLoadApp extends Application {
             renBtn,
             button("Rename All", "Replace Ignite names by provided regular expression for all selected tables",
                 new EventHandler<ActionEvent>() {
-                    /** {@inheritDoc} */
                     @Override public void handle(ActionEvent evt) {
                         if (checkInput(regexTf, false, "Regular expression should not be empty!"))
                             return;
@@ -868,7 +795,6 @@ public class SchemaLoadApp extends Application {
                 }),
             revertBtn,
             button("Revert All", "Revert changes to Ignite names for all selected tables", new EventHandler<ActionEvent>() {
-                /** {@inheritDoc} */
                 @Override public void handle(ActionEvent evt) {
                     Collection<PojoDescriptor> selItems = selectedItems();
 
@@ -891,7 +817,7 @@ public class SchemaLoadApp extends Application {
         pojosTbl.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<PojoDescriptor>() {
             @Override public void changed(ObservableValue<? extends PojoDescriptor> val,
                 PojoDescriptor oldVal, PojoDescriptor newItem) {
-                if (newItem != null && newItem.parent != null) {
+                if (newItem != null && newItem.parent() != null) {
                     curPojo = newItem;
 
                     fieldsTbl.setItems(curPojo.fields());
@@ -910,8 +836,6 @@ public class SchemaLoadApp extends Application {
 
                     renBtn.setDisable(true);
                     revertBtn.setDisable(true);
-                    upBtn.setDisable(true);
-                    downBtn.setDisable(true);
                 }
             }
         });
@@ -1043,260 +967,6 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * @param name Source name.
-     * @return String converted to java class name notation.
-     */
-    private String toJavaClassName(String name) {
-        int len = name.length();
-
-        StringBuilder buf = new StringBuilder(len);
-
-        boolean capitalizeNext = true;
-
-        for (int i = 0; i < len; i++) {
-            char ch = name.charAt(i);
-
-            if (Character.isWhitespace(ch) || '_' == ch)
-                capitalizeNext = true;
-            else if (capitalizeNext) {
-                buf.append(Character.toUpperCase(ch));
-
-                capitalizeNext = false;
-            }
-            else
-                buf.append(Character.toLowerCase(ch));
-        }
-
-        return buf.toString();
-    }
-
-    /**
-     * @param name Source name.
-     * @return String converted to java field name notation.
-     */
-    private String toJavaFieldName(String name) {
-        String javaName = toJavaClassName(name);
-
-        return Character.toLowerCase(javaName.charAt(0)) + javaName.substring(1);
-    }
-
-    /**
-     * Convert JDBC data type to java type.
-     *
-     * @param type JDBC SQL data type.
-     * @return Java data type.
-     */
-    private Class<?> dataType(int type) {
-        switch (type) {
-            case BIT:
-            case BOOLEAN:
-                return Boolean.class;
-
-            case TINYINT:
-                return Byte.class;
-
-            case SMALLINT:
-                return Short.class;
-
-            case INTEGER:
-                return Integer.class;
-
-            case BIGINT:
-                return Long.class;
-
-            case REAL:
-                return Float.class;
-
-            case FLOAT:
-            case DOUBLE:
-                return Double.class;
-
-            case NUMERIC:
-            case DECIMAL:
-                return BigDecimal.class;
-
-            case CHAR:
-            case VARCHAR:
-            case LONGVARCHAR:
-            case NCHAR:
-            case NVARCHAR:
-            case LONGNVARCHAR:
-                return String.class;
-
-            case DATE:
-                return Date.class;
-
-            case TIME:
-                return Time.class;
-
-            case TIMESTAMP:
-                return Timestamp.class;
-
-            case BINARY:
-            case VARBINARY:
-            case LONGVARBINARY:
-            case ARRAY:
-            case BLOB:
-            case CLOB:
-            case NCLOB:
-                return Array.class;
-
-            case NULL:
-                return Void.class;
-
-            case DATALINK:
-                return URL.class;
-
-            // OTHER, JAVA_OBJECT, DISTINCT, STRUCT, REF, ROWID, SQLXML
-            default:
-                return Object.class;
-        }
-    }
-
-    /**
-     * Parse database metadata.
-     *
-     * @param dbMeta Database metadata.
-     * @param catalog Catalog name.
-     * @param schema Schema name.
-     * @param tbl Table name.
-     * @return New initialized instance of {@code GridCacheQueryTypeMetadata}.
-     * @throws SQLException If parsing failed.
-     */
-    private PojoDescriptor parseTable(PojoDescriptor parent, DatabaseMetaData dbMeta, String catalog,
-        String schema, String tbl) throws SQLException {
-        GridCacheQueryTypeMetadata typeMeta = new GridCacheQueryTypeMetadata();
-
-        typeMeta.setSchema(schema);
-        typeMeta.setTableName(tbl);
-
-        typeMeta.setType(toJavaClassName(tbl));
-        typeMeta.setKeyType(typeMeta.getType() + "Key");
-
-        Collection<GridCacheQueryTypeDescriptor> keyDescs = typeMeta.getKeyDescriptors();
-        Collection<GridCacheQueryTypeDescriptor> valDescs = typeMeta.getValueDescriptors();
-
-        Map<String, Class<?>> qryFields = typeMeta.getQueryFields();
-        Map<String, Class<?>> ascFields = typeMeta.getAscendingFields();
-        Map<String, Class<?>> descFields = typeMeta.getDescendingFields();
-        Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> groups = typeMeta.getGroups();
-
-        Set<String> pkFlds = new LinkedHashSet<>();
-
-        try (ResultSet pk = dbMeta.getPrimaryKeys(catalog, schema, tbl)) {
-            while (pk.next())
-                pkFlds.add(pk.getString(4));
-        }
-
-        try (ResultSet flds = dbMeta.getColumns(catalog, schema, tbl, null)) {
-            while (flds.next()) {
-                String dbName = flds.getString(4);
-                int dbType = flds.getInt(5);
-
-                String javaName = toJavaFieldName(dbName);
-                Class<?> javaType = dataType(dbType);
-
-                GridCacheQueryTypeDescriptor desc = new GridCacheQueryTypeDescriptor(javaName, javaType, dbName, dbType);
-
-                if (pkFlds.contains(dbName))
-                    keyDescs.add(desc);
-                else
-                    valDescs.add(desc);
-
-                qryFields.put(javaName, javaType);
-            }
-        }
-
-        try (ResultSet idxs = dbMeta.getIndexInfo(catalog, schema, tbl, false, true)) {
-            while (idxs.next()) {
-                String idx = toJavaFieldName(idxs.getString(6));
-                String col = toJavaFieldName(idxs.getString(9));
-                String askOrDesc = idxs.getString(10);
-
-                LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxCols = groups.get(idx);
-
-                if (idxCols == null) {
-                    idxCols = new LinkedHashMap<>();
-
-                    groups.put(idx, idxCols);
-                }
-
-                Class<?> dataType = qryFields.get(col);
-
-                Boolean desc = askOrDesc != null ? "D".equals(askOrDesc) : null;
-
-                if (desc != null) {
-                    if (desc)
-                        descFields.put(col, dataType);
-                    else
-                        ascFields.put(col, dataType);
-                }
-
-                idxCols.put(col, new IgniteBiTuple<Class<?>, Boolean>(dataType, desc));
-            }
-        }
-
-        List<PojoField> flds = new ArrayList<>();
-
-        return new PojoDescriptor(parent, typeMeta, flds);
-    }
-
-    /**
-     * Parse database metadata.
-     *
-     * @param conn Connection to database.
-     * @return Map with schemes and tables metadata.
-     * @throws SQLException If parsing failed.
-     */
-    private ObservableList<PojoDescriptor> parse(Connection conn) throws SQLException {
-        DatabaseMetaData dbMeta = conn.getMetaData();
-
-        List<PojoDescriptor> res = new ArrayList<>();
-
-        try (ResultSet schemas = dbMeta.getSchemas()) {
-            while (schemas.next()) {
-                String schema = schemas.getString(1);
-
-                // Skip system tables from INFORMATION_SCHEMA.
-                if ("INFORMATION_SCHEMA".equalsIgnoreCase(schema))
-                    continue;
-
-                String catalog = schemas.getString(2);
-
-                PojoDescriptor parent = PojoDescriptor.createSchema(schema);
-
-                List<PojoDescriptor> children = new ArrayList<>();
-
-                try (ResultSet tbls = dbMeta.getTables(catalog, schema, "%", null)) {
-                    while (tbls.next()) {
-                        String tbl = tbls.getString(3);
-
-                        children.add(parseTable(parent, dbMeta, catalog, schema, tbl));
-                    }
-                }
-
-                if (!children.isEmpty()) {
-                    parent.children(children);
-
-                    res.add(parent);
-                    res.addAll(children);
-                }
-            }
-        }
-
-        Collections.sort(res, new Comparator<PojoDescriptor>() {
-            @Override public int compare(PojoDescriptor o1, PojoDescriptor o2) {
-                GridCacheQueryTypeMetadata t1 = o1.typeMeta;
-                GridCacheQueryTypeMetadata t2 = o2.typeMeta;
-
-                return (t1.getSchema() + t1.getTableName()).compareTo(t2.getSchema() + t2.getTableName());
-            }
-        });
-
-        return FXCollections.observableList(res);
-    }
-
-    /**
      * Schema load utility launcher.
      *
      * @param args Command line arguments passed to the application.
@@ -1330,568 +1000,6 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * Field descriptor with properties for JavaFX GUI bindings.
-     */
-    public static class PojoField {
-        /** If this field belongs to primary key. */
-        private final BooleanProperty key;
-
-        /** Field name for POJO. */
-        private final StringProperty javaName;
-
-        /** Field type for POJO. */
-        private final StringProperty javaTypeName;
-
-        /** Field name in database. */
-        private final StringProperty dbName;
-
-        /** Field type in database. */
-        private final StringProperty dbTypeName;
-
-        /** Is NULL allowed for field in database. */
-        private final boolean nullable;
-
-        /** Field type descriptor. */
-        private final GridCacheQueryTypeDescriptor desc;
-
-        /** List of possible java type conversions. */
-        private final ObservableList<String> conversions;
-
-        /** */
-        private static final Map<String, Class<?>> classesMap = new HashMap<>();
-
-        /**
-         * @param clss Class to add.
-         */
-        private static void fillClassesMap(Class<?>... clss) {
-            for (Class<?> cls : clss)
-                classesMap.put(cls.getName(), cls);
-        }
-
-        /**
-         * @param clss List of classes to get class names.
-         * @return List of classes names to show in UI for manual select.
-         */
-        private static List<String> classNames(Class<?>... clss) {
-            List<String> names = new ArrayList<>(clss.length);
-
-            for (Class<?> cls : clss)
-                names.add(cls.getName());
-
-            return names;
-        }
-
-        /** Null number conversions. */
-        private static final ObservableList<String> NULL_NUM_CONVERSIONS = FXCollections.observableArrayList();
-
-        /** Not null number conversions. */
-        private static final ObservableList<String> NOT_NULL_NUM_CONVERSIONS = FXCollections.observableArrayList();
-
-        static {
-            List<String> primitives = classNames(boolean.class, byte.class, short.class,
-                int.class, long.class, float.class, double.class);
-
-            List<String> objects = classNames(Boolean.class, Byte.class, Short.class, Integer.class,
-                Long.class, Float.class, Double.class, BigDecimal.class);
-
-            NULL_NUM_CONVERSIONS.addAll(objects);
-
-            NOT_NULL_NUM_CONVERSIONS.addAll(primitives);
-            NOT_NULL_NUM_CONVERSIONS.addAll(objects);
-
-            fillClassesMap(boolean.class, Boolean.class,
-                byte.class, Byte.class,
-                short.class, Short.class,
-                int.class, Integer.class,
-                long.class, Long.class,
-                float.class, Float.class,
-                double.class, Double.class,
-                BigDecimal.class,
-                String.class,
-                java.sql.Date.class, java.sql.Time.class, java.sql.Timestamp.class,
-                Array.class, Void.class, URL.class, Object.class);
-        }
-
-        /**
-         * @param dbType Database type.
-         * @param nullable Nullable.
-         * @param dflt Default.
-         * @return List of possible type conversions.
-         */
-        private static ObservableList<String> conversions(int dbType, boolean nullable, String dflt) {
-            switch (dbType) {
-                case TINYINT:
-                case SMALLINT:
-                case INTEGER:
-                case BIGINT:
-                case REAL:
-                case FLOAT:
-                case DOUBLE:
-                    return nullable ? NULL_NUM_CONVERSIONS : NOT_NULL_NUM_CONVERSIONS;
-
-                default:
-                    return FXCollections.singletonObservableList(dflt);
-            }
-        }
-
-        /**
-         * @param key {@code true} if this field belongs to primary key.
-         * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
-         * @param desc Field type descriptor.
-         */
-        private PojoField(boolean key, boolean nullable, GridCacheQueryTypeDescriptor desc) {
-            this.desc = desc;
-            this.key = new SimpleBooleanProperty(key);
-
-            javaName = new SimpleStringProperty(desc.getJavaName());
-
-            String typeName = desc.getJavaType().getName();
-
-            javaTypeName = new SimpleStringProperty(typeName);
-
-            dbName = new SimpleStringProperty(desc.getDbName());
-
-            dbTypeName = new SimpleStringProperty(jdbcTypeName(desc.getDbType()));
-
-            this.nullable = nullable;
-
-            conversions = conversions(desc.getDbType(), nullable, typeName);
-        }
-
-        /**
-         * Copy constructor.
-         *
-         * @param src Source POJO field descriptor.
-         */
-        private PojoField(PojoField src) {
-            this(src.key(), src.nullable(), src.descriptor());
-        }
-
-        /**
-         * @param jdbcType String name for JDBC type.
-         */
-        private String jdbcTypeName(int jdbcType) {
-            switch (jdbcType) {
-                case BIT:
-                    return "BIT";
-                case TINYINT:
-                    return "TINYINT";
-                case SMALLINT:
-                    return "SMALLINT";
-                case INTEGER:
-                    return "INTEGER";
-                case BIGINT:
-                    return "BIGINT";
-                case FLOAT:
-                    return "FLOAT";
-                case REAL:
-                    return "REAL";
-                case DOUBLE:
-                    return "DOUBLE";
-                case NUMERIC:
-                    return "NUMERIC";
-                case DECIMAL:
-                    return "DECIMAL";
-                case CHAR:
-                    return "CHAR";
-                case VARCHAR:
-                    return "VARCHAR";
-                case LONGVARCHAR:
-                    return "LONGVARCHAR";
-                case DATE:
-                    return "DATE";
-                case TIME:
-                    return "TIME";
-                case TIMESTAMP:
-                    return "TIMESTAMP";
-                case BINARY:
-                    return "BINARY";
-                case VARBINARY:
-                    return "VARBINARY";
-                case LONGVARBINARY:
-                    return "LONGVARBINARY";
-                case NULL:
-                    return "NULL";
-                case OTHER:
-                    return "OTHER";
-                case JAVA_OBJECT:
-                    return "JAVA_OBJECT";
-                case DISTINCT:
-                    return "DISTINCT";
-                case STRUCT:
-                    return "STRUCT";
-                case ARRAY:
-                    return "ARRAY";
-                case BLOB:
-                    return "BLOB";
-                case CLOB:
-                    return "CLOB";
-                case REF:
-                    return "REF";
-                case DATALINK:
-                    return "DATALINK";
-                case BOOLEAN:
-                    return "BOOLEAN";
-                case ROWID:
-                    return "ROWID";
-                case NCHAR:
-                    return "NCHAR";
-                case NVARCHAR:
-                    return "NVARCHAR";
-                case LONGNVARCHAR:
-                    return "LONGNVARCHAR";
-                case NCLOB:
-                    return "NCLOB";
-                case SQLXML:
-                    return "SQLXML";
-                default:
-                    return "Unknown";
-            }
-        }
-
-        /**
-         * @return {@code true} if this field belongs to primary key.
-         */
-        public boolean key() {
-            return key.get();
-        }
-
-        /**
-         * @param pk {@code true} if this field belongs to primary key.
-         */
-        public void key(boolean pk) {
-            key.set(pk);
-        }
-
-        /**
-         * @return POJO field java name.
-         */
-        public String javaName() {
-            return javaName.get();
-        }
-
-        /**
-         * @param name POJO field java name.
-         */
-        public void javaName(String name) {
-            javaName.set(name);
-        }
-
-        /**
-         * @return POJO field java type name.
-         */
-        public String javaTypeName() {
-            return javaTypeName.get();
-        }
-
-        /**
-         * @return Type descriptor.
-         */
-        public GridCacheQueryTypeDescriptor descriptor() {
-            desc.setJavaName(javaName.get());
-            desc.setJavaType(classesMap.get(javaTypeName()));
-
-            return desc;
-        }
-
-        /**
-         * @return Is NULL allowed for field in database.
-         */
-        public boolean nullable() {
-            return nullable;
-        }
-
-        /**
-         * @return POJO field JDBC type in database.
-         */
-        public int dbType() {
-            return desc.getDbType();
-        }
-
-        /**
-         * @return Boolean property support for {@code key} property.
-         */
-        public BooleanProperty keyProperty() {
-            return key;
-        }
-
-        /**
-         * @return String property support for {@code javaName} property.
-         */
-        public StringProperty javaNameProperty() {
-            return javaName;
-        }
-
-        /**
-         * @return String property support for {@code javaTypeName} property.
-         */
-        public StringProperty javaTypeNameProperty() {
-            return javaTypeName;
-        }
-
-        /**
-         * @return String property support for {@code dbName} property.
-         */
-        public StringProperty dbNameProperty() {
-            return dbName;
-        }
-
-        /**
-         * @return String property support for {@code dbName} property.
-         */
-        public StringProperty dbTypeNameProperty() {
-            return dbTypeName;
-        }
-
-        /**
-         * @return List of possible java type conversions.
-         */
-        public ObservableList<String> conversions() {
-            return conversions;
-        }
-    }
-
-    /**
-     * Descriptor for java type.
-     */
-    public static class PojoDescriptor {
-        /** Selected property. */
-        private final BooleanProperty use;
-
-        /** Schema name to show on screen. */
-        private final String schema;
-
-        /** Table name to show on screen. */
-        private final String tbl;
-
-        /** Key class name to show on screen. */
-        private final StringProperty keyClsName;
-
-        /** Previous name for key class. */
-        private final String keyClsNamePrev;
-
-        /** Value class name to show on screen. */
-        private final StringProperty valClsName;
-
-        /** Previous name for value class. */
-        private final String valClsNamePrev;
-
-        /** Parent item (schema name). */
-        private final PojoDescriptor parent;
-
-        /** Children items (tables names). */
-        private Collection<PojoDescriptor> children = Collections.emptyList();
-
-        /** Indeterminate state of parent. */
-        private final BooleanProperty indeterminate = new SimpleBooleanProperty(false);
-
-        /** Java class fields. */
-        private final ObservableList<PojoField> fields;
-
-        /** Java class fields. */
-        private final List<PojoField> fieldsPrev;
-
-        /** Type metadata. */
-        private final GridCacheQueryTypeMetadata typeMeta;
-
-        private static PojoDescriptor createSchema(String schema) {
-            GridCacheQueryTypeMetadata schemaMeta = new GridCacheQueryTypeMetadata();
-
-            schemaMeta.setSchema(schema);
-            schemaMeta.setTableName("");
-
-            return new PojoDescriptor(null, schemaMeta, Collections.<PojoField>emptyList());
-        }
-
-        /**
-         * @param prn
-         * @param typeMeta
-         * @param flds
-         */
-        private PojoDescriptor(PojoDescriptor prn, GridCacheQueryTypeMetadata typeMeta, List<PojoField> flds) {
-            parent = prn;
-
-            boolean isTbl = parent != null;
-
-            schema = isTbl ? "" : typeMeta.getSchema();
-            tbl = isTbl ? typeMeta.getTableName() : "";
-
-            keyClsNamePrev = isTbl ? typeMeta.getKeyType() : "";
-            keyClsName = new SimpleStringProperty(keyClsNamePrev);
-
-            valClsNamePrev = isTbl ? typeMeta.getType() : "";
-            valClsName = new SimpleStringProperty(valClsNamePrev);
-
-            use = new SimpleBooleanProperty(true);
-
-            use.addListener(new ChangeListener<Boolean>() {
-                @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
-                    for (PojoDescriptor child : children)
-                        child.use.set(newVal);
-
-                    if (parent != null && !parent.children.isEmpty()) {
-                        Iterator<PojoDescriptor> it = parent.children.iterator();
-
-                        boolean parentIndeterminate = false;
-                        boolean first = it.next().use.get();
-
-                        while (it.hasNext()) {
-                            if (it.next().use.get() != first) {
-                                parentIndeterminate = true;
-
-                                break;
-                            }
-                        }
-
-                        parent.indeterminate.set(parentIndeterminate);
-
-                        if (!parentIndeterminate)
-                            parent.use.set(first);
-                    }
-                }
-            });
-
-            if (isTbl) {
-                fieldsPrev = new ArrayList<>(flds.size());
-
-                for (PojoField fld : flds)
-                    fieldsPrev.add(new PojoField(fld));
-
-                fields = FXCollections.observableList(flds);
-
-//                Collection<GridCacheQueryTypeDescriptor> keys = typeMeta.getKeyDescriptors();
-//
-//                Collection<GridCacheQueryTypeDescriptor> vals = typeMeta.getValueDescriptors();
-//
-//                int sz = keys.size() + vals.size();
-//
-//                List<PojoField> flds = new ArrayList<>(sz);
-//                fieldsPrev = new ArrayList<>(sz);
-//
-//                for (GridCacheQueryTypeDescriptor key : keys) {
-//                    flds.add(new PojoField(true, false /* TODO: IGNITE-32 FIX nullable*/, key));
-//                    fieldsPrev.add(new PojoField(true, false /* TODO: IGNITE-32 FIX nullable*/, key));
-//                }
-//
-//                for (GridCacheQueryTypeDescriptor val : vals) {
-//                    flds.add(new PojoField(false, false /* TODO: IGNITE-32 FIX nullable*/, val));
-//                    fieldsPrev.add(new PojoField(false, false /* TODO: IGNITE-32 FIX nullable*/, val));
-//                }
-//
-//                fields = FXCollections.observableList(flds);
-            }
-            else {
-                fields = FXCollections.emptyObservableList();
-                fieldsPrev = FXCollections.emptyObservableList();
-            }
-
-            this.typeMeta = typeMeta;
-        }
-
-        /**
-         * @return {@code true} if POJO descriptor is a table descriptor and selected in GUI.
-         */
-        public boolean selected() {
-            return parent != null && use.get();
-        }
-
-        /**
-         * @return Boolean property support for {@code use} property.
-         */
-        public BooleanProperty useProperty() {
-            return use;
-        }
-
-        /**
-         * @return Boolean property support for parent {@code indeterminate} property.
-         */
-        public BooleanProperty indeterminate() {
-            return indeterminate;
-        }
-
-        /**
-         * @return Key class name property.
-         */
-        public StringProperty keyClassProperty() {
-            return keyClsName;
-        }
-
-        /**
-         * @return Value class name property.
-         */
-        public StringProperty valueClassProperty() {
-            return valClsName;
-        }
-
-        /**
-         * @return Schema name.
-         */
-        public String schema() {
-            return schema;
-        }
-
-        /**
-         * @return Table name.
-         */
-        public String table() {
-            return tbl;
-        }
-
-        /**
-         * Sets children items.
-         *
-         * @param children Items to set.
-         */
-        public void children(Collection<PojoDescriptor> children) {
-            this.children = children;
-        }
-
-        /**
-         * @return {@code true} if descriptor was changed by user via GUI.
-         */
-        public boolean changed() {
-            boolean diff = !keyClsName.get().equals(keyClsNamePrev) || !valClsName.get().equals(valClsNamePrev);
-
-            if (!diff)
-                for (int i = 0; i < fields.size(); i++) {
-                    PojoField cur = fields.get(i);
-                    PojoField prev = fieldsPrev.get(i);
-
-                    // User can change via GUI only key and java name properties.
-                    if (cur.key() != prev.key() || !cur.javaName().equals(prev.javaName())) {
-                        diff = true;
-
-                        break;
-                    }
-                }
-
-            return diff;
-        }
-
-        /**
-         * Revert changes to java names made by user.
-         */
-        public void revertJavaNames() {
-            for (int i = 0; i < fields.size(); i++)
-                fields.get(i).javaName(fieldsPrev.get(i).javaName());
-        }
-
-        /**
-         * @return Java class fields.
-         */
-        public ObservableList<PojoField> fields() {
-            return fields;
-        }
-
-        /**
-         * @return Type metadata.
-         */
-        public GridCacheQueryTypeMetadata metadata() {
-            return typeMeta;
-        }
-    }
-
-    /**
      * Special table cell to select possible java type conversions.
      */
     private static class JavaTypeCell extends TableCell<PojoField, String> {
@@ -1901,7 +1009,6 @@ public class SchemaLoadApp extends Application {
         /** Creates a ComboBox cell factory for use in TableColumn controls. */
         public static Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>> cellFactory() {
             return new Callback<TableColumn<PojoField, String>, TableCell<PojoField, String>>() {
-                /** {@inheritDoc} */
                 @Override public TableCell<PojoField, String> call(TableColumn<PojoField, String> col) {
                     return new JavaTypeCell();
                 }
@@ -1915,7 +1022,6 @@ public class SchemaLoadApp extends Application {
             comboBox = new ComboBox<>(FXCollections.<String>emptyObservableList());
 
             comboBox.valueProperty().addListener(new ChangeListener<String>() {
-                /** {@inheritDoc} */
                 @Override public void changed(ObservableValue<? extends String> val, String oldVal, String newVal) {
                     if (isEditing())
                         commitEdit(newVal);
@@ -1969,16 +1075,18 @@ public class SchemaLoadApp extends Application {
     /**
      * Special table cell to select schema or table.
      */
-    private static class SchemaCell extends TableCell<PojoDescriptor, Boolean> {
+    private static class PojoDescriptorCell extends TableCell<PojoDescriptor, Boolean> {
         /** Creates a ComboBox cell factory for use in TableColumn controls. */
         public static Callback<TableColumn<PojoDescriptor, Boolean>, TableCell<PojoDescriptor, Boolean>> cellFactory() {
             return new Callback<TableColumn<PojoDescriptor, Boolean>, TableCell<PojoDescriptor, Boolean>>() {
-                /** {@inheritDoc} */
                 @Override public TableCell<PojoDescriptor, Boolean> call(TableColumn<PojoDescriptor, Boolean> col) {
-                    return new SchemaCell();
+                    return new PojoDescriptorCell();
                 }
             };
         }
+
+        /** Previous POJO bound to cell. */
+        private PojoDescriptor prevPojo;
 
         /** {@inheritDoc} */
         @Override public void updateItem(Boolean item, boolean empty) {
@@ -1988,16 +1096,20 @@ public class SchemaLoadApp extends Application {
                 TableRow row = getTableRow();
 
                 if (row != null) {
-                    final PojoDescriptor schemaItem = (PojoDescriptor)row.getItem();
+                    final PojoDescriptor pojo = (PojoDescriptor)row.getItem();
 
-                    if (schemaItem != null && getGraphic() == null) {
-                        boolean isTbl = schemaItem.schema.isEmpty();
+                    if (pojo != prevPojo) {
+                        prevPojo = pojo;
 
-                        final CheckBox ch = new CheckBox(isTbl ? schemaItem.table() : schemaItem.schema());
+                        boolean isTbl = pojo.parent() != null;
+
+                        CheckBox ch = new CheckBox(isTbl ? pojo.table() : pojo.schema());
 
                         ch.setAllowIndeterminate(false);
-                        ch.selectedProperty().bindBidirectional(schemaItem.useProperty());
-                        ch.indeterminateProperty().bindBidirectional(schemaItem.indeterminate());
+                        ch.setMnemonicParsing(false);
+
+                        ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
+                        ch.selectedProperty().bindBidirectional(pojo.useProperty());
 
                         Pane pnl = new HBox();
 

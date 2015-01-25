@@ -17,6 +17,8 @@
 
 package org.apache.ignite.schema.ui;
 
+import com.sun.javafx.scene.control.skin.*;
+import javafx.application.*;
 import javafx.beans.value.*;
 import javafx.event.*;
 import javafx.geometry.*;
@@ -400,10 +402,11 @@ public class Controls {
      * @param tip Column tooltip text.
      * @return New {@code TableColumn} instance.
      */
-    public static <S> TableColumn<S, String> textColumn(String colName, String propName, String tip) {
+    public static <S> TableColumn<S, String> textColumn(String colName, String propName, String tip,
+        TextColumnValidator<S> validator) {
         TableColumn<S, String> col = tableColumn(colName, propName, tip, 100, 0, true);
 
-        col.setCellFactory(TextFieldTableCellEx.<S>cellFactory());
+        col.setCellFactory(TextFieldTableCellEx.cellFactory(validator));
 
         return col;
     }
@@ -471,7 +474,6 @@ public class Controls {
         /** Creates a ComboBox cell factory for use in TableColumn controls. */
         public static <S> Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>> cellFactory() {
             return new Callback<TableColumn<S, Boolean>, TableCell<S, Boolean>>() {
-                /** {@inheritDoc} */
                 @Override public TableCell<S, Boolean> call(TableColumn<S, Boolean> col) {
                     return new CheckBoxTableCellEx<>();
                 }
@@ -491,6 +493,8 @@ public class Controls {
      */
     private static class TextFieldTableCellEx<S> extends TextFieldTableCell<S, String> {
         /** */
+        private final TextColumnValidator<S> validator;
+        /** */
         private boolean cancelling;
         /** */
         private boolean hardCancel;
@@ -498,21 +502,36 @@ public class Controls {
         private String curTxt = "";
 
         /** Create cell factory. */
-        public static <S> Callback<TableColumn<S, String>, TableCell<S, String>> cellFactory() {
+        public static <S> Callback<TableColumn<S, String>, TableCell<S, String>>
+        cellFactory(final TextColumnValidator<S> validator) {
             return new Callback<TableColumn<S, String>, TableCell<S, String>>() {
-                /** {@inheritDoc} */
                 @Override public TableCell<S, String> call(TableColumn<S, String> col) {
-                    return new TextFieldTableCellEx<>();
+                    return new TextFieldTableCellEx<>(validator);
                 }
             };
         }
 
+        /**
+         * Text field cell constructor.
+         *
+         * @param validator Input text validator.
+         */
+        private TextFieldTableCellEx(TextColumnValidator<S> validator) {
+            this.validator = validator;
+        }
+
         /** {@inheritDoc} */
         @Override public void startEdit() {
-            if (getItem().isEmpty())
+            String item = getItem();
+
+            if (item == null || item.isEmpty())
                 return;
 
             super.startEdit();
+
+            curTxt = "";
+
+            hardCancel = false;
 
             Node g = getGraphic();
 
@@ -526,7 +545,6 @@ public class Controls {
                 });
 
                 tf.setOnKeyReleased(new EventHandler<KeyEvent>() {
-                    /** {@inheritDoc} */
                     @Override public void handle(KeyEvent evt) {
                         if (KeyCode.ENTER == evt.getCode())
                             cancelEdit();
@@ -535,6 +553,29 @@ public class Controls {
 
                             cancelEdit();
                         }
+                    }
+                });
+
+                // Special hack for editable TextFieldTableCell.
+                // Cancel edit when focus lost from text field, but do not cancel if focus lost to VirtualFlow.
+                tf.focusedProperty().addListener(new ChangeListener<Boolean>() {
+                    @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                        Node fo = getScene().getFocusOwner();
+
+                        if (!newVal) {
+                            if (fo instanceof VirtualFlow) {
+                                if (fo.getParent().getParent() != getTableView())
+                                    cancelEdit();
+                            }
+                            else
+                                cancelEdit();
+                        }
+                    }
+                });
+
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        tf.requestFocus();
                     }
                 });
             }
@@ -550,20 +591,14 @@ public class Controls {
 
                     if (hardCancel || curTxt.trim().isEmpty())
                         super.cancelEdit();
-                    else
+                    else if (validator.valid(getTableView().getSelectionModel().getSelectedItem(), curTxt))
                         commitEdit(curTxt);
+                    else
+                        super.cancelEdit();
                 }
                 finally {
                     cancelling = false;
                 }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void commitEdit(String s) {
-            super.commitEdit(s);
-
-            hardCancel = false;
-            curTxt = "";
         }
     }
 }
