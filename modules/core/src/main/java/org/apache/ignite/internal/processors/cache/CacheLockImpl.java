@@ -37,6 +37,12 @@ class CacheLockImpl<K> implements Lock {
     /** */
     private final Collection<? extends K> keys;
 
+    /** */
+    private int cntr;
+
+    /** */
+    private volatile Thread lockedThread;
+
     /**
      * @param delegate Delegate.
      * @param keys Keys.
@@ -50,10 +56,23 @@ class CacheLockImpl<K> implements Lock {
     @Override public void lock() {
         try {
             delegate.lockAll(keys, 0);
+
+            incrementLockCounter();
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
         }
+    }
+
+    /**
+     *
+     */
+    private void incrementLockCounter() {
+        assert (lockedThread == null && cntr == 0) || (lockedThread == Thread.currentThread() && cntr > 0);
+
+        lockedThread = Thread.currentThread();
+
+        cntr++;
     }
 
     /** {@inheritDoc} */
@@ -64,7 +83,12 @@ class CacheLockImpl<K> implements Lock {
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
         try {
-            return delegate.lockAll(keys, -1);
+            boolean res = delegate.lockAll(keys, -1);
+
+            if (res)
+                incrementLockCounter();
+
+            return res;
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
@@ -76,27 +100,31 @@ class CacheLockImpl<K> implements Lock {
         if (Thread.interrupted())
             throw new InterruptedException();
 
-        try {
-            if (time <= 0)
-                return delegate.lockAll(keys, -1);
+        if (time <= 0)
+            return tryLock();
 
-            IgniteFuture<Boolean> fut = null;
+        try {
+            IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
             try {
-                fut = delegate.lockAllAsync(keys, unit.toMillis(time));
+                boolean res = fut.get();
 
-                return fut.get();
+                if (res)
+                    incrementLockCounter();
+
+                return res;
             }
             catch (IgniteInterruptedException e) {
-                if (fut != null) {
-                    if (!fut.cancel()) {
-                        if (fut.isDone()) {
-                            Boolean res = fut.get();
+                if (!fut.cancel()) {
+                    if (fut.isDone()) {
+                        Boolean res = fut.get();
 
-                            Thread.currentThread().interrupt();
+                        Thread.currentThread().interrupt();
 
-                            return res;
-                        }
+                        if (res)
+                            incrementLockCounter();
+
+                        return res;
                     }
                 }
 
@@ -111,9 +139,43 @@ class CacheLockImpl<K> implements Lock {
         }
     }
 
+    /**
+     *
+     */
+    private boolean isKeysLocked() {
+        for (K key : keys) {
+            if (delegate.isLocked(key))
+                return true;
+        }
+
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public void unlock() {
         try {
+            Thread lockedThread = this.lockedThread;
+
+            if (lockedThread != Thread.currentThread()) {
+                if (lockedThread == null) {
+                    if (isKeysLocked()) {
+                        throw new IllegalStateException("Failed to unlock keys, looks like lock has been obtain on " +
+                            "another instance of Lock, that was returned by IgniteCache.lock(key). You have to call " +
+                            "lock() and unlock() methods on the same instance of Lock [keys=" + keys + ']');
+                    }
+                } else {
+                    throw new IllegalStateException("Failed to unlock cache keys, keys are locked by another thread " +
+                        "any threads [keys=" + keys + ", lockOwnerThread=" + lockedThread.getName() + ']');
+                }
+            }
+
+            assert cntr > 0;
+
+            cntr--;
+
+            if (cntr == 0)
+                this.lockedThread = null;
+
             delegate.unlockAll(keys);
         }
         catch (IgniteCheckedException e) {

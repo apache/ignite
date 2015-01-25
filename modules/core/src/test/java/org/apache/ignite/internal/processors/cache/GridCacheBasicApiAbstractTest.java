@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.beust.jcommander.internal.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.Nullable;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -168,7 +170,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     public void testInterruptLock() throws InterruptedException {
         final IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        cache.lock(1).lock();
+        final Lock lock = cache.lock(1);
+
+        lock.lock();
 
         final AtomicBoolean isOk = new AtomicBoolean(false);
 
@@ -176,13 +180,13 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             @Override public void run() {
                 assertFalse(cache.isLocalLocked(1, true));
 
-                cache.lock(1).lock();
+                lock.lock();
 
                 try {
                     assertTrue(cache.isLocalLocked(1, true));
                 }
                 finally {
-                    cache.lock(1).unlock();
+                    lock.unlock();
                 }
 
                 assertTrue(Thread.currentThread().isInterrupted());
@@ -197,7 +201,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         t.interrupt();
 
-        cache.lock(1).unlock();
+        lock.unlock();
 
         t.join();
 
@@ -210,7 +214,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     public void testInterruptLockWithTimeout() throws InterruptedException {
         final IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        cache.lock(2).lock();
+        Lock lock2 = cache.lock(2);
+
+        lock2.lock();
 
         final AtomicBoolean isOk = new AtomicBoolean(false);
 
@@ -233,7 +239,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         t.join();
 
-        cache.lock(2).unlock();
+        lock2.unlock();
 
         assertFalse(cache.isLocalLocked(1, false));
         assertFalse(cache.isLocalLocked(2, false));
@@ -249,7 +255,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         Integer key = 1;
 
-        cache.lock(key).lock();
+        Lock lock = cache.lock(key);
+
+        lock.lock();
 
         try {
             assert cache.get(key) == null;
@@ -259,7 +267,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             assert cache.isLocalLocked(key, false);
             assert cache.isLocalLocked(key, true);
 
-            cache.lock(key).lock();
+            lock.lock();
 
             assert cache.isLocalLocked(key, false);
             assert cache.isLocalLocked(key, true);
@@ -268,14 +276,14 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                 assert "1".equals(cache.getAndRemove(key));
             }
             finally {
-                cache.lock(key).unlock();
+                lock.unlock();
             }
 
             assert cache.isLocalLocked(key, false);
             assert cache.isLocalLocked(key, true);
         }
         finally {
-            cache.lock(key).unlock();
+            lock.unlock();
 
             assert !cache.isLocalLocked(key, false);
             assert !cache.isLocalLocked(key, true);
@@ -292,12 +300,14 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         final CountDownLatch l2 = new CountDownLatch(1);
         final CountDownLatch l3 = new CountDownLatch(1);
 
+        final Lock lock = cache.lock(1);
+
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for.key 1");
 
-                cache.lock(1).lock();
+                lock.lock();
 
                 info("After lock for key 1");
 
@@ -310,22 +320,24 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                     info("Let thread2 proceed.");
 
                     // Reentry.
-                    assert cache.lock(1).tryLock();
+                    assert lock.tryLock();
 
                     // Nested lock.
-                    assert cache.lock(2).tryLock();
+                    Lock lock2 = cache.lock(2);
+
+                    assert lock2.tryLock();
 
                     l2.await();
 
-                    cache.lock(1).unlock();
+                    lock.unlock();
 
                     // Unlock in reverse order.
-                    cache.lock(2).unlock();
+                    lock2.unlock();
 
                     info("Waited for latch 2");
                 }
                 finally {
-                    cache.lock(1).unlock();
+                    lock.unlock();
 
                     info("Unlocked entry for key 1.");
                 }
@@ -345,7 +357,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
                 info("Latch1 released.");
 
-                assert !cache.lock(1).tryLock();
+                assert !lock.tryLock();
 
                 if (!cache.isLocalLocked(1, false))
                     throw new IllegalArgumentException();
@@ -360,7 +372,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
                 l3.await();
 
-                assert cache.lock(1).tryLock();
+                assert lock.tryLock();
 
                 try {
                     info("Locked cache for key 1");
@@ -371,7 +383,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                     info("Checked that cache is locked for key 1");
                 }
                 finally {
-                    cache.lock(1).unlock();
+                    lock.unlock();
 
                     info("Unlocked cache for key 1");
                 }
@@ -467,7 +479,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
         assert !cache.containsKey(key);
 
-        cache.lock(key).lock();
+        Lock lock = cache.lock(key);
+
+        lock.lock();
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -518,7 +532,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
             assert cache.isLocalLocked(key, false);
         }
         finally {
-            cache.lock(key).unlock();
+            lock.unlock();
 
             ignite.events().stopLocalListen(lsnr, EVTS_CACHE);
         }
@@ -533,11 +547,11 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     public void testMultiLocks() throws Exception {
         IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        Set<Integer> keys = new HashSet<>();
+        Collection<Integer> keys = Lists.newArrayList(1, 2, 3);
 
-        Collections.addAll(keys, 1, 2, 3);
+        Lock lock = cache.lockAll(keys);
 
-        cache.lockAll(keys).lock();
+        lock.lock();
 
         assert cache.isLocalLocked(1, false);
         assert cache.isLocalLocked(2, false);
@@ -547,7 +561,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
         assert cache.isLocalLocked(2, true);
         assert cache.isLocalLocked(3, true);
 
-        cache.lockAll(keys).unlock();
+        lock.unlock();
 
         assert !cache.isLocalLocked(1, false);
         assert !cache.isLocalLocked(2, false);

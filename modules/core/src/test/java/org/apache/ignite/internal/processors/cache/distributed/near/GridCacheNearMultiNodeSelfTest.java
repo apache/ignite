@@ -40,6 +40,7 @@ import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -752,7 +753,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         String val = Integer.toString(key);
 
-        near.lock(key).lock();
+        Lock lock = near.lock(key);
+
+        lock.lock();
 
         try {
             near.put(key, val);
@@ -763,7 +766,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertTrue(near.isLocalLocked(key, false));
             assertTrue(near.isLocalLocked(key, true));
 
-            near.lock(key).lock(); // Reentry.
+            lock.lock(); // Reentry.
 
             try {
                 assertEquals(val, near.get(key));
@@ -776,7 +779,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertTrue(near.isLocalLocked(key, true));
             }
             finally {
-                near.lock(key).unlock();
+                lock.unlock();
             }
 
             assertTrue(near.isLocalLocked(key, false));
@@ -788,7 +791,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             throw t;
         }
         finally {
-            near.lock(key).unlock();
+            lock.unlock();
         }
 
         assertFalse(near(0).isLockedNearOnly(key));

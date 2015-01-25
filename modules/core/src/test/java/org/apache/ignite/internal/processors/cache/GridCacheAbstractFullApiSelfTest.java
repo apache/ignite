@@ -3323,13 +3323,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert !cache.isLocalLocked(key, false);
 
-            cache.lock(key).lock();
+            Lock lock = cache.lock(key);
+
+            lock.lock();
 
             lockCnt.await();
 
             assert cache.isLocalLocked(key, false);
 
-            cache.lock(key).unlock();
+            lock.unlock();
 
             unlockCnt.await();
 
@@ -3707,12 +3709,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert !cache.isLocalLocked("key1", false);
             assert !cache.isLocalLocked("key2", false);
 
-            cache.lockAll(ImmutableSet.of("key1", "key2")).lock();
+            Lock lock1_2 = cache.lockAll(ImmutableSet.of("key1", "key2"));
+
+            lock1_2.lock();
 
             assert cache.isLocalLocked("key1", false);
             assert cache.isLocalLocked("key2", false);
 
-            cache.lockAll(ImmutableSet.of("key1", "key2")).unlock();
+            lock1_2.unlock();
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
@@ -3723,14 +3727,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert !cache.isLocalLocked("key1", false);
             assert !cache.isLocalLocked("key2", false);
 
-            Lock lock = cache.lockAll(ImmutableSet.of("key1", "key2"));
-
-            lock.lock();
+            lock1_2.lock();
 
             assert cache.isLocalLocked("key1", false);
             assert cache.isLocalLocked("key2", false);
 
-            lock.unlock();
+            lock1_2.unlock();
 
             for (int i = 0; i < 100; i++)
                 if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))

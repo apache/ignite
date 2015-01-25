@@ -376,11 +376,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             final CountDownLatch lockLatch = new CountDownLatch(1);
             final CountDownLatch unlockLatch = new CountDownLatch(1);
 
+            final Lock lock = g0.jcache(null).lock(key);
+
             IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        Lock lock = g0.jcache(null).lock(key);
-
                         lock.lock();
 
                         try {
@@ -403,8 +403,6 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             assert g0.jcache(null).isLocalLocked(key, false);
             assert !g0.jcache(null).isLocalLocked(key, true) : "Key can not be locked by current thread.";
-
-            Lock lock = g0.jcache(null).lock(key);
 
             assert !lock.tryLock();
 
@@ -897,13 +895,15 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Object, Object> cache = jcache();
 
-            cache.lock(1).lock();
+            Lock lock = cache.lock(1);
+
+            lock.lock();
 
             assertNull(cache.getAndPut(1, "key1"));
             assertEquals("key1", cache.getAndPut(1, "key2"));
             assertEquals("key2", cache.get(1));
 
-            cache.lock(1).unlock();
+            lock.unlock();
         }
         finally {
             stopAllGrids();
@@ -929,9 +929,13 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache = jcache(0);
 
-            cache.lock(k0).lock();
-            cache.lock(k1).lock();
-            cache.lock(k2).lock();
+            Lock lock0 = cache.lock(k0);
+            Lock lock1 = cache.lock(k1);
+            Lock lock2 = cache.lock(k2);
+
+            lock0.lock();
+            lock1.lock();
+            lock2.lock();
 
             cache.put(k0, "val0");
 
@@ -941,9 +945,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             assertEquals("val1", cache.get(k1));
             assertEquals("val2", cache.get(k2));
 
-            cache.lock(k0).unlock();
-            cache.lock(k1).unlock();
-            cache.lock(k2).unlock();
+            lock0.unlock();
+            lock1.unlock();
+            lock2.unlock();
         }
         finally {
             stopAllGrids();

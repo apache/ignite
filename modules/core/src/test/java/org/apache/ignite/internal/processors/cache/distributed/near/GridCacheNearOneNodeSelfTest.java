@@ -188,7 +188,9 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     public void testSingleLockPut() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1).lock();
+        Lock lock = near.lock(1);
+
+        lock.lock();
 
         try {
             near.put(1, "1");
@@ -200,7 +202,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertEquals("1", one);
         }
         finally {
-            near.lock(1).unlock();
+            lock.unlock();
         }
     }
 
@@ -228,7 +230,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertTrue(near.isLocalLocked(1, true));
         }
         finally {
-            near.lock(1).unlock();
+            lock.unlock();
         }
 
         assertFalse(near.isLocalLocked(1, false));
@@ -239,7 +241,9 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
     public void testSingleLockReentry() throws Exception {
         IgniteCache<Integer, String> near = jcache();
 
-        near.lock(1).lock();
+        Lock lock = near.lock(1);
+
+        lock.lock();
 
         try {
             near.put(1, "1");
@@ -250,7 +254,7 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
             assertTrue(near.isLocalLocked(1, false));
             assertTrue(near.isLocalLocked(1, true));
 
-            near.lock(1).lock(); // Reentry.
+            lock.lock(); // Reentry.
 
             try {
                 assertEquals("1", near.get(1));
@@ -263,14 +267,14 @@ public class GridCacheNearOneNodeSelfTest extends GridCommonAbstractTest {
                 assertTrue(near.isLocalLocked(1, true));
             }
             finally {
-                near.lock(1).unlock();
+                lock.unlock();
             }
 
             assertTrue(near.isLocalLocked(1, false));
             assertTrue(near.isLocalLocked(1, true));
         }
         finally {
-            near.lock(1).unlock();
+            lock.unlock();
         }
 
         assertFalse(near.isLocalLocked(1, false));

@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -171,8 +172,10 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
 
+                    Lock lock = c.lock(CNTR_KEY);
+
                     try {
-                        c.lock(CNTR_KEY).lock();
+                        lock.lock();
 
                         int cntr = c.get(CNTR_KEY);
 
@@ -184,7 +187,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        c.lock(CNTR_KEY).unlock();
+                        lock.unlock();
                     }
                 }
             }));
@@ -224,8 +227,10 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
             threads.add(new Thread(new Runnable() {
                 @Override public void run() {
 
+                    Lock lock = c.lock(CNTR_KEY);
+
                     try {
-                        c.lock(CNTR_KEY).lock();
+                        lock.lock();
 
                         int cntr = c.get(CNTR_KEY);
 
@@ -257,7 +262,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
                         error("Failed lock thread", e);
                     }
                     finally {
-                        c.lock(CNTR_KEY).unlock();
+                        lock.unlock();
                     }
                 }
             }));

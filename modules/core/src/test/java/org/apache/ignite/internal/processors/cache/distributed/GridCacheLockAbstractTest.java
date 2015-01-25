@@ -30,6 +30,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -176,7 +177,9 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         info("Before lock for key: " + k);
 
-        cache1.lock(k).lock();
+        Lock lock = cache1.lock(k);
+
+        lock.lock();
 
         info("After lock for key: " + k);
 
@@ -190,7 +193,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
             info("Put " + k + '=' + k + " key pair into cache.");
         }
         finally {
-            cache1.lock(k).unlock();
+            lock.unlock();
 
             info("Unlocked key: " + k);
         }
@@ -209,11 +212,13 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
+        final Lock lock = cache1.lock(kv);
+
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
-                cache1.lock(kv).lock();
+                lock.lock();
 
                 info("After lock for key: " + kv);
 
@@ -232,7 +237,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 finally {
                     Thread.sleep(1000);
 
-                    cache1.lockAll(Collections.singleton(kv)).unlock();
+                    lock.unlock();
 
                     info("Unlocked key in thread 1: " + kv);
                 }
@@ -252,7 +257,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                 l1.await();
 
-                cache2.lock(kv).lock();
+                lock.lock();
 
                 try {
                     String v = cache2.get(kv);
@@ -262,7 +267,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     assertEquals(Integer.toString(kv), v);
                 }
                 finally {
-                    cache2.lockAll(Collections.singleton(kv)).unlock();
+                    lock.unlock();
 
                     info("Unlocked key in thread 2: " + kv);
                 }
@@ -297,7 +302,9 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                cache1.lock(1).lock();
+                Lock lock = cache1.lock(1);
+
+                lock.lock();
 
                 info("Locked cache key: 1");
 
@@ -321,7 +328,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                     info("Woke up from sleep.");
                 }
                 finally {
-                    cache1.lockAll(Collections.singleton(1)).unlock();
+                    lock.unlock();
 
                     info("Unlocked cache key: 1");
                 }
@@ -390,7 +397,9 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
                 @Nullable @Override public Object call() throws Exception {
                     info("Before lock for keys.");
 
-                    cache1.lockAll(keys).lock();
+                    Lock lock = cache1.lockAll(keys);
+
+                    lock.lock();
 
                     info("After lock for keys.");
 
@@ -418,7 +427,7 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                         info("Before unlock keys in thread 1: " + keys);
 
-                        cache1.lockAll(keys).unlock();
+                        lock.unlock();
 
                         info("Unlocked entry for keys.");
                     }
@@ -442,7 +451,12 @@ public abstract class GridCacheLockAbstractTest extends GridCommonAbstractTest {
 
                         info("Before unlock keys in thread 2: " + keys);
 
-                        cache1.lockAll(keys).unlock();
+                        GridTestUtils.assertThrows(null, new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                cache1.lockAll(keys).unlock();
+                                return null;
+                            }
+                        }, IllegalStateException.class, null);
 
                         // The keys should still be locked.
                         for (Integer key : keys)

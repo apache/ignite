@@ -27,6 +27,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -83,7 +84,9 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         assert !cache.isLocalLocked(1, false);
         assert !cache.isLocalLocked(1, true);
 
-        cache.lock(1).lock();
+        Lock lock = cache.lock(1);
+
+        lock.lock();
 
         assert cache.isLocalLocked(1, false);
         assert cache.isLocalLocked(1, true);
@@ -94,7 +97,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
             assert "1".equals(cache.get(1));
 
             // Reentry.
-            cache.lock(1).lock();
+            lock.lock();
 
             assert cache.isLocalLocked(1, false);
             assert cache.isLocalLocked(1, true);
@@ -103,14 +106,14 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                 assert "1".equals(cache.getAndRemove(1));
             }
             finally {
-                cache.lock(1).unlock();
+                lock.unlock();
             }
 
             assert cache.isLocalLocked(1, false);
             assert cache.isLocalLocked(1, true);
         }
         finally {
-            cache.lock(1).unlock();
+            lock.unlock();
         }
 
         assert !cache.isLocalLocked(1, false);
@@ -127,12 +130,14 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
         final CountDownLatch latch2 = new CountDownLatch(1);
         final CountDownLatch latch3 = new CountDownLatch(1);
 
+        final Lock lock = cache.lock(1);
+
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             @SuppressWarnings({"CatchGenericClass"})
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for.key 1");
 
-                cache.lock(1).lock();
+                lock.lock();
 
                 info("After lock for key 1");
 
@@ -153,7 +158,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Waited for latch 2");
                 }
                 finally {
-                    cache.lock(1).unlock();
+                    lock.unlock();
 
                     info("Unlocked entry for key 1.");
 
@@ -173,7 +178,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 info("Latch1 released.");
 
-                assert !cache.lock(1).tryLock();
+                assert !lock.tryLock();
 
                 assert cache.isLocalLocked(1, false);
                 assert !cache.isLocalLocked(1, true);
@@ -186,7 +191,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
                 latch3.await();
 
-                assert cache.lock(1).tryLock();
+                assert lock.tryLock();
 
                 assert cache.isLocalLocked(1, false);
                 assert cache.isLocalLocked(1, true);
@@ -208,7 +213,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Checked that cache is locked for key 1");
                 }
                 finally {
-                    cache.lock(1).unlock();
+                    lock.unlock();
 
                     info("Unlocked cache for key 1");
                 }
@@ -243,7 +248,9 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
 
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
-                cache.lock(1).lock();
+                Lock lock = cache.lock(1);
+
+                lock.lock();
 
                 info("Locked cache key: 1");
 
@@ -267,7 +274,7 @@ public class GridCacheLocalLockSelfTest extends GridCommonAbstractTest {
                     info("Woke up from sleep.");
                 }
                 finally {
-                    cache.lock(1).unlock();
+                    lock.unlock();
 
                     info("Unlocked cache key: 1");
                 }

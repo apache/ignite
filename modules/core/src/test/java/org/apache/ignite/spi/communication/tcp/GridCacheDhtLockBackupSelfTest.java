@@ -37,6 +37,7 @@ import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -125,7 +126,9 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
-                cache1.lock(kv).lock();
+                Lock lock = cache1.lock(kv);
+
+                lock.lock();
 
                 info("After lock for key: " + kv);
 
@@ -144,7 +147,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                 finally {
                     Thread.sleep(1000);
 
-                    cache1.lockAll(Collections.singleton(kv)).unlock();
+                    lock.unlock();
 
                     info("Unlocked key in thread 1: " + kv);
                 }
@@ -161,7 +164,9 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
                 l1.await();
 
-                cache2.lock(kv).lock();
+                Lock lock = cache2.lock(kv);
+
+                lock.lock();
 
                 try {
                     String v = cache2.get(kv);
@@ -170,7 +175,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     assertEquals(Integer.toString(kv), v);
                 }
                 finally {
-                    cache2.lockAll(Collections.singleton(kv)).unlock();
+                    lock.unlock();
 
                     info("Unlocked key in thread 2: " + kv);
                 }

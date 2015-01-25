@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -86,7 +87,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                assert cache.lock(1).tryLock(1000L, TimeUnit.MILLISECONDS);
+                Lock lock = cache.lock(1);
+
+                assert lock.tryLock(1000L, TimeUnit.MILLISECONDS);
 
                 info("Locked key from thread: " + thread());
 
@@ -94,7 +97,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 info("Unlocking key from thread: " + thread());
 
-                cache.lock(1).unlock();
+                lock.unlock();
 
                 info("Unlocked key from thread: " + thread());
 
@@ -112,7 +115,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
             @Override public Object call() throws Exception {
                 Set<Integer> keys = Sets.newHashSet(1, 2, 3);
 
-                cache.lockAll(keys).lock();
+                Lock lock = cache.lockAll(keys);
+
+                lock.lock();
 
                 info("Locked keys from thread [keys=" + keys + ", thread=" + thread() + ']');
 
@@ -120,7 +125,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 info("Unlocking key from thread: " + thread());
 
-                cache.lockAll(keys).unlock();
+                lock.unlock();
 
                 info("Unlocked keys from thread: " + thread());
 
@@ -142,7 +147,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 Set<Integer> keys = Sets.newHashSet(idx, idx + 1, idx + 2, idx + 3);
 
-                cache.lockAll(keys).lock();
+                Lock lock = cache.lockAll(keys);
+
+                lock.lock();
 
                 info("Locked keys from thread [keys=" + keys + ", thread=" + thread() + ']');
 
@@ -150,7 +157,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 info("Unlocking key from thread [keys=" + keys + ", thread=" + thread() + ']');
 
-                cache.lockAll(keys).unlock();
+                lock.unlock();
 
                 info("Unlocked keys from thread [keys=" + keys + ", thread=" + thread() + ']');
 
@@ -166,12 +173,14 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
         final CountDownLatch l1 = new CountDownLatch(1);
         final CountDownLatch l2 = new CountDownLatch(1);
 
+        final Lock lock = cache.lock(1);
+
         GridTestThread t1 = new GridTestThread(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
                 assert !cache.isLocalLocked(1, false);
 
-                cache.lock(1).lock();
+                lock.lock();
 
                 assert cache.isLocalLocked(1, true);
                 assert cache.isLocalLocked(1, false);
@@ -180,7 +189,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 l2.await();
 
-                cache.lock(1).unlock();
+                lock.unlock();
 
                 assert !cache.isLocalLocked(1, true);
                 assert !cache.isLocalLocked(1, false);
@@ -197,7 +206,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
                 assert cache.isLocalLocked(1, false);
                 assert !cache.isLocalLocked(1, true);
 
-                assert !cache.lock(1).tryLock(100L, TimeUnit.MILLISECONDS);
+                assert !lock.tryLock(100L, TimeUnit.MILLISECONDS);
 
                 assert cache.isLocalLocked(1, false);
                 assert !cache.isLocalLocked(1, true);
@@ -245,7 +254,9 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 Collections.addAll(keys1, idx, idx + 1, idx + 2, idx + 3);
 
-                cache.lockAll(keys1).lock();
+                Lock lock = cache.lockAll(keys1);
+
+                lock.lock();
 
                 for (Integer key : keys1) {
                     assert cache.isLocalLocked(key, false) : "Failed to acquire lock for key: " + key;
@@ -256,7 +267,7 @@ public class GridCacheLocalMultithreadedSelfTest extends GridCommonAbstractTest 
 
                 l2.await();
 
-                cache.lockAll(keys1).unlock();
+                lock.unlock();
 
                 for (Integer key : keys1) {
                     assert !cache.isLocalLocked(key, false);
