@@ -119,6 +119,16 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
                                     cache.removeAll();
 
+                                    // Fix for tests where mapping was removed at primary node
+                                    // but was not removed at others.
+                                    // removeAll() removes mapping only when it presents at a primary node.
+                                    // To remove all mappings used force remove by key.
+                                    if (cache.size() > 0) {
+                                        for (String k : cache.keySet()) {
+                                            cache.remove(k);
+                                        }
+                                    }
+
                                     if (offheapTiered(cache)) {
                                         Iterator it = cache.offHeapIterator();
 
