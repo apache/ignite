@@ -22,7 +22,7 @@ import javax.cache.configuration.*;
 import javax.cache.management.*;
 
 /**
- *
+ * Implementation of {@link javax.cache.management.CacheMXBean}.
  */
 public class IgniteCacheMXBean implements CacheMXBean {
     /** */

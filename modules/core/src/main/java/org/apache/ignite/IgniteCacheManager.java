@@ -31,7 +31,7 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- *
+ * Implementation of {@link javax.cache.CacheManager}.
  */
 public class IgniteCacheManager implements CacheManager {
     /** */

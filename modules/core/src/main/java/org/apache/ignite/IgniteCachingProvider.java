@@ -28,7 +28,7 @@ import java.net.*;
 import java.util.*;
 
 /**
- *
+ * Implementation of {@link javax.cache.spi.CachingProvider}.
  */
 public class IgniteCachingProvider implements CachingProvider {
     /** */
