@@ -186,6 +186,16 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
             c.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
 
+            // Fix for tests where mapping was removed at primary node
+            // but was not removed at others.
+            // removeAll() removes mapping only when it presents at a primary node.
+            // To remove all mappings used force remove by key.
+            if (c.size() > 0) {
+                for (Object k : c.keySet()) {
+                    c.remove(k);
+                }
+            }
+
             Iterator<Map.Entry<Object, Object>> it = c.swapIterator();
 
             while (it.hasNext()) {
