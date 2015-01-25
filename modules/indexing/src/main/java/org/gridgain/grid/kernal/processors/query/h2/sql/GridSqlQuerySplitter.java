@@ -11,7 +11,6 @@ package org.gridgain.grid.kernal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.util.typedef.*;
 
 import java.sql.*;
 import java.util.*;
@@ -51,6 +50,7 @@ public class GridSqlQuerySplitter {
      * @return Two step query.
      */
     public static GridCacheTwoStepQuery split(Connection conn, String query, Object[] params) {
+        // TODO possibly get column types from query.
         GridSqlSelect srcQry = GridSqlQueryParser.parse(conn, query);
 
         if (srcQry.groups().isEmpty()) { // Simple case.
@@ -127,7 +127,7 @@ public class GridSqlQuerySplitter {
             String mapAggAlias = columnName(idx);
 
             switch (agg.type()) {
-                case AVG: // SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ).
+                case AVG: // SUM( AVG(CAST(x AS DECIMAL))*COUNT(x) )/SUM( COUNT(x) ).
                     //-- COUNT(x) map
                     GridSqlElement cntMapAgg = aggregate(agg.distinct(), COUNT).addChild(agg.child());
 
@@ -139,8 +139,9 @@ public class GridSqlQuerySplitter {
 
                     mapSelect.add(cntMapAgg);
 
-                    //-- AVG(x) map
-                    mapAgg = aggregate(agg.distinct(), AVG).addChild(agg.child()); // Add function argument.
+                    //-- AVG(CAST(x AS DECIMAL)) map
+                    mapAgg = aggregate(agg.distinct(), AVG).addChild( // Add function argument.
+                        function(CAST).setCastType("DECIMAL").addChild(agg.child()));
 
                     //-- SUM( AVG(x)*COUNT(x) )/SUM( COUNT(x) ) reduce
                     GridSqlElement sumUpRdc = aggregate(false, SUM).addChild(
