@@ -46,9 +46,11 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -3613,6 +3615,36 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public Iterator<CacheEntry<K, V>> iterator() {
         return entrySet().iterator();
+    }
+
+    /**
+     * @param prj Projection.
+     * @return Distributed ignite cache iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> igniteIterator(final GridCacheProjectionImpl<K, V> prj) {
+        CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
+            .keepAll(false)
+            .execute();
+
+        return ctx.itHolder().iterator(fut, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
+            @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
+                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+            }
+
+            @Override protected void remove(Cache.Entry<K, V> item) {
+                GridCacheProjectionImpl<K, V> prev = ctx.gate().enter(prj);
+
+                try {
+                    GridCacheAdapter.this.removex(item.getKey());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e);
+                }
+                finally {
+                    ctx.gate().leave(prev);
+                }
+            }
+        });
     }
 
     /** {@inheritDoc} */
