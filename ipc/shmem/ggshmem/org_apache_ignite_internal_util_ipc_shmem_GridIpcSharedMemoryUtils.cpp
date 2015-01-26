@@ -39,7 +39,6 @@ using namespace std;
 const char* GRID_EXCEPTION = "org/apache/ignite/IgniteCheckedException";
 
 /** GridIpcSharedMemoryOperationTimedoutException JNI class name. */
-org.apache.ignite.internal.util.ipc.shmem
 const char* OP_TIMEDOUT_EXCEPTION = "org/apache/ignite/internal/util/ipc/shmem/GridIpcSharedMemoryOperationTimedoutException";
 
 /** GridIpcOutOfSystemResourcesException JNI class name. */
