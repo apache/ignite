@@ -17,8 +17,8 @@
 
 package org.apache.ignite;
 
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -42,11 +42,12 @@ public class IgniteCachingProvider implements CachingProvider {
 
         try {
             URL dfltCfgURL = U.resolveGridGainUrl(GridGainEx.DFLT_CFG);
+
             if (dfltCfgURL != null)
                 uri = dfltCfgURL.toURI();
         }
         catch (URISyntaxException ignored) {
-
+            // No-op.
         }
 
         if (uri == null)

@@ -18,9 +18,8 @@
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -338,10 +337,10 @@ public class Ignition {
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite() throws GridIllegalStateException {
+    public static Ignite ignite() throws IgniteIllegalStateException {
         return GridGainEx.grid();
     }
 
@@ -363,10 +362,10 @@ public class Ignition {
      * @param locNodeId ID of local node the requested grid instance is managing.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if grid was not properly
+     * @throws IgniteIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite(UUID locNodeId) throws GridIllegalStateException {
+    public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
         return GridGainEx.grid(locNodeId);
     }
 
@@ -383,10 +382,10 @@ public class Ignition {
      *      then grid instance belonging to a default no-name grid will be returned.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite(@Nullable String name) throws GridIllegalStateException {
+    public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
         return GridGainEx.grid(name);
     }
 

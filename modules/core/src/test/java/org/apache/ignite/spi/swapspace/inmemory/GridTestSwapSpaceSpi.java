@@ -20,7 +20,7 @@ package org.apache.ignite.spi.swapspace.inmemory;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 

@@ -21,7 +21,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -35,8 +34,8 @@ import java.util.concurrent.*;
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
  * method.
  * <h1 class="header">Functionality</h1>
- * This API extends {@link org.gridgain.grid.cache.GridCacheProjection} API which contains vast majority of cache functionality
- * and documentation. In addition to {@link org.gridgain.grid.cache.GridCacheProjection} functionality this API provides:
+ * This API extends {@link org.apache.ignite.cache.CacheProjection} API which contains vast majority of cache functionality
+ * and documentation. In addition to {@link org.apache.ignite.cache.CacheProjection} functionality this API provides:
  * <ul>
  * <li>
  *  Various {@code 'loadCache(..)'} methods to load cache either synchronously or asynchronously.
@@ -44,13 +43,13 @@ import java.util.concurrent.*;
  *  data based on the optionally passed in arguments.
  * </li>
  * <li>
- *     Method {@link #affinity()} provides {@link org.gridgain.grid.cache.affinity.GridCacheAffinityFunction} service for information on
+ *     Method {@link #affinity()} provides {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} service for information on
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
  * </li>
  * <li>
- *     Method {@link #dataStructures()} provides {@link org.gridgain.grid.cache.datastructures.GridCacheDataStructures} service for
+ *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
  *     creating and working with distributed concurrent data structures, such as
- *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link org.gridgain.grid.cache.datastructures.GridCacheQueue}, etc.
+ *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link org.apache.ignite.cache.datastructures.CacheQueue}, etc.
  * </li>
  * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
@@ -78,7 +77,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * which is true for near fully populated caches, this method will generally perform significantly
      * faster with complexity of O(S) where {@code S = 5}.
      * <p>
-     * Note that this method is not available on {@link org.gridgain.grid.cache.GridCacheProjection} API since it is
+     * Note that this method is not available on {@link org.apache.ignite.cache.CacheProjection} API since it is
      * impossible (or very hard) to deterministically return a number value when pre-filtering
      * and post-filtering is involved (e.g. projection level predicate filters).
      *
@@ -130,7 +129,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     /**
      * Stores given key-value pair in cache only if cache had no previous mapping for it. If cache
      * previously contained value for the given key, then this value is returned.
-     * In case of {@link org.gridgain.grid.cache.GridCacheMode#PARTITIONED} or {@link org.gridgain.grid.cache.GridCacheMode#REPLICATED} caches,
+     * In case of {@link org.apache.ignite.cache.CacheMode#PARTITIONED} or {@link org.apache.ignite.cache.CacheMode#REPLICATED} caches,
      * the value will be loaded from the primary node, which in its turn may load the value
      * from the swap storage, and consecutively, if it's not in swap,
      * from the underlying persistent storage. If value has to be loaded from persistent
@@ -147,14 +146,14 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.gridgain.grid.cache.GridCacheFlag#LOCAL}, {@link org.gridgain.grid.cache.GridCacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
      * @return Previously contained value regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
-     * @throws org.gridgain.grid.cache.GridCacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
      */
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
@@ -224,26 +223,26 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * participating in any locks or transactions).
      * <p>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.gridgain.grid.cache.GridCacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
     public void localEvict(Collection<? extends K> keys);
 
     /**
-     * Peeks at in-memory cached value using default {@link org.gridgain.grid.cache.GridCachePeekMode#SMART}
+     * Peeks at in-memory cached value using default {@link org.apache.ignite.cache.GridCachePeekMode#SMART}
      * peek mode.
      * <p>
      * This method will not load value from any persistent store or from a remote node.
      * <h2 class="header">Transactions</h2>
      * This method does not participate in any transactions, however, it will
-     * peek at transactional value according to the {@link org.gridgain.grid.cache.GridCachePeekMode#SMART} mode
+     * peek at transactional value according to the {@link org.apache.ignite.cache.GridCachePeekMode#SMART} mode
      * semantics. If you need to look at global cached value even from within transaction,
-     * you can use {@link GridCache#peek(Object, Collection)} method.
+     * you can use {@link org.apache.ignite.cache.GridCache#peek(Object, Collection)} method.
      *
      * @param key Entry key.
      * @return Peeked value.
@@ -258,11 +257,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method is not transactional.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP}, {@link org.gridgain.grid.cache.GridCacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
      * @throws CacheException If promote failed.
-     * @throws org.gridgain.grid.cache.GridCacheFlagException If flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
@@ -271,7 +270,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * is not currently locked, and is not participating in a transaction.
      * <p>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.gridgain.grid.cache.GridCacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
@@ -279,7 +278,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * remote caches or from underlying persistent storage.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.gridgain.grid.cache.GridCacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to clear.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}
@@ -341,7 +340,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * (which will be stored in portable format), you should acquire following projection
      * to avoid deserialization:
      * <pre>
-     * GridCacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
+     * CacheProjection<Integer, GridPortableObject> prj = cache.keepPortable();
      *
      * // Value is not deserialized and returned in portable format.
      * GridPortableObject po = prj.get(1);

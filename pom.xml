@@ -593,7 +593,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -618,11 +618,11 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.gridgain.grid.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.apache.ignite.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
-                                            <packages>org.gridgain.grid.messaging</packages>
+                                            <packages>org.apache.ignite.messaging</packages>
                                         </group>
                                         <group>
                                             <title>Event Notification APIs</title>
@@ -634,11 +634,11 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
+                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.gridgain.grid.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
+                                            <packages>org.gridgain.grid.ggfs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -654,7 +654,7 @@
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>
-                                            <packages>org.gridgain.jdbc</packages>
+                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
@@ -710,7 +710,7 @@
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
-                                            <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
+                                            <packages>org.apache.ignite.marshaller:org.apache.ignite.marshaller.optimized:org.apache.ignite.marshaller.jdk</packages>
                                         </group>
                                     </groups>
                                     <header>
@@ -792,7 +792,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -820,11 +820,11 @@
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
-                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.gridgain.grid.lang:org.gridgain.grid.resources:org.gridgain.grid.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
+                                            <packages>org.gridgain.grid:org.gridgain.grid.spi:org.apache.ignite.lang:org.gridgain.grid.resources:org.apache.ignite.thread:org.gridgain.grid.product:org.gridgain.grid.scheduler</packages>
                                         </group>
                                         <group>
                                             <title>Messaging APIs</title>
-                                            <packages>org.gridgain.grid.messaging</packages>
+                                            <packages>org.apache.ignite.messaging</packages>
                                         </group>
                                         <group>
                                             <title>Event Notification APIs</title>
@@ -836,11 +836,11 @@
                                         </group>
                                         <group>
                                             <title>Data Grid APIs</title>
-                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.gridgain.grid.cache.jta.jndi:org.gridgain.grid.cache.jta.reflect:org.gridgain.grid.cache.websession:org.gridgain.grid.cache.hibernate:org.gridgain.grid.dataload</packages>
+                                            <packages>org.gridgain.grid.cache:org.gridgain.grid.cache.datastructures:org.gridgain.grid.cache.cloner:org.gridgain.grid.cache.store:org.gridgain.grid.cache.store.hibernate:org.gridgain.grid.cache.store.jdbc:org.gridgain.grid.cache.query:org.gridgain.grid.cache.affinity:org.gridgain.grid.cache.affinity.consistenthash:org.gridgain.grid.cache.affinity.rendezvous:org.gridgain.grid.cache.affinity.fair:org.gridgain.grid.cache.eviction:org.gridgain.grid.cache.eviction.fifo:org.gridgain.grid.cache.eviction.ggfs:org.gridgain.grid.cache.eviction.lru:org.gridgain.grid.cache.eviction.random:org.gridgain.grid.cache.jta:org.apache.ignite.cache.jta.jndi:org.apache.ignite.cache.jta.reflect:org.apache.ignite.cache.websession:org.apache.ignite.cache.hibernate:org.gridgain.grid.dataload</packages>
                                         </group>
                                         <group>
                                             <title>Hadoop Accelerator APIs</title>
-                                            <packages>org.gridgain.grid.ggfs:org.gridgain.grid.ggfs.hadoop:org.gridgain.grid.ggfs.hadoop.v1:org.gridgain.grid.ggfs.hadoop.v2:org.gridgain.grid.ggfs.mapreduce:org.gridgain.grid.ggfs.mapreduce.records:org.gridgain.grid.hadoop</packages>
+                                            <packages>org.gridgain.grid.ggfs:org.apache.ignite.fs.hadoop:org.apache.ignite.fs.hadoop.v1:org.apache.ignite.fs.hadoop.v2:org.apache.ignite.fs.mapreduce:org.apache.ignite.fs.mapreduce.records:org.apache.ignite.hadoop</packages>
                                         </group>
                                         <group>
                                             <title>Streaming APIs</title>
@@ -856,7 +856,7 @@
                                         </group>
                                         <group>
                                             <title>JDBC Driver</title>
-                                            <packages>org.gridgain.jdbc</packages>
+                                            <packages>org.apache.ignite.jdbc</packages>
                                         </group>
                                         <group>
                                             <title>SPI: CheckPoint</title>
@@ -912,7 +912,7 @@
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
-                                            <packages>org.gridgain.grid.marshaller:org.gridgain.grid.marshaller.optimized:org.gridgain.grid.marshaller.jdk</packages>
+                                            <packages>org.apache.ignite.marshaller:org.apache.ignite.marshaller.optimized:org.apache.ignite.marshaller.jdk</packages>
                                         </group>
                                         <group>
                                             <title>Visor Plugins</title>
@@ -924,7 +924,7 @@
                                         </group>
                                         <group>
                                             <title>.Net Configuration</title>
-                                            <packages>org.gridgain.grid.dotnet</packages>
+                                            <packages>org.apache.ignite.dotnet</packages>
                                         </group>
                                     </groups>
                                     <header>
@@ -1006,7 +1006,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.gridgain.grid.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -1029,20 +1029,21 @@
                                         <link>http://docs.oracle.com/javase/7/docs/api/</link>
                                     </links>
                                     <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.gridgain.client</subpackages>
-                                    <additionalparam>-exclude org.gridgain.client.impl:org.gridgain.client.util:org.gridgain.client.router.impl</additionalparam>
+                                    <subpackages>org.apache.ignite.client</subpackages>
+                                    <additionalparam>-exclude
+                                        org.apache.ignite.client.impl:org.apache.ignite.client.util:org.apache.ignite.client.router.impl</additionalparam>
                                     <groups>
                                         <group>
                                             <title>Client APIs</title>
-                                            <packages>org.gridgain.client:org.gridgain.client.balancer:org.gridgain.client.ssl:org.gridgain.client.hadoop:org.gridgain.client.hadoop.counter</packages>
+                                            <packages>org.gridgain.client:org.apache.ignite.client.balancer:org.apache.ignite.client.ssl:org.apache.ignite.client.hadoop:org.apache.ignite.client.hadoop.counter</packages>
                                         </group>
                                         <group>
                                             <title>Router APIs</title>
-                                            <packages>org.gridgain.client.router</packages>
+                                            <packages>org.apache.ignite.client.router</packages>
                                         </group>
                                         <group>
                                             <title>Marshallers</title>
-                                            <packages>org.gridgain.client.marshaller:org.gridgain.client.marshaller.jdk:org.gridgain.client.marshaller.optimized:org.gridgain.client.marshaller.portable</packages>
+                                            <packages>org.apache.ignite.client.marshaller:org.apache.ignite.client.marshaller.jdk:org.apache.ignite.client.marshaller.optimized:org.apache.ignite.client.marshaller.portable</packages>
                                         </group>
                                     </groups>
                                     <header>
@@ -1127,7 +1128,7 @@
                                         <!-- todo IGNITE-40 Uncomment javadoc checking. -->
 
                                         <!--<taskdef name="doctask"-->
-                                                 <!--classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>-->
+                                                 <!--classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>-->
 
                                         <!--<doctask css="dotted" dir="target/javadoc/core">-->
                                             <!--<include name="**/*.html"/>-->

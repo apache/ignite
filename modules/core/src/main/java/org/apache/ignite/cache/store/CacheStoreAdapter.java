@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.store;
 
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -40,7 +39,7 @@ import java.util.*;
 public abstract class CacheStoreAdapter<K, V> extends CacheStore<K, V> {
     /**
      * Default empty implementation. This method needs to be overridden only if
-     * {@link GridCache#loadCache(IgniteBiPredicate, long, Object...)} method
+     * {@link org.apache.ignite.cache.GridCache#loadCache(IgniteBiPredicate, long, Object...)} method
      * is explicitly called.
      *
      * @param clo {@inheritDoc}

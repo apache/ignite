@@ -21,12 +21,12 @@ import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.kernal.managers.security.*;
+import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import javax.management.*;
 import java.io.*;

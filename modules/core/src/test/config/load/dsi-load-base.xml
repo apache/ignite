@@ -36,13 +36,13 @@
             <bean class="org.apache.ignite.marshaller.optimized.IgniteOptimizedMarshaller">
                 <property name="classNames">
                     <list>
-                        <value>org.gridgain.loadtests.dsi.GridDsiSession</value>
-                        <value>org.gridgain.loadtests.dsi.GridDsiPerfJob</value>
-                        <value>org.gridgain.loadtests.dsi.GridDsiRequestTask</value>
-                        <value>org.gridgain.loadtests.dsi.GridDsiResponseTask</value>
-                        <value>org.gridgain.loadtests.dsi.GridDsiRequest</value>
-                        <value>org.gridgain.loadtests.dsi.GridDsiResponse</value>
-                        <value>org.gridgain.loadtests.dsi.GridDsiMessage</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiSession</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiPerfJob</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiRequestTask</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiResponseTask</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiRequest</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiResponse</value>
+                        <value>org.apache.ignite.loadtests.dsi.GridDsiMessage</value>
                     </list>
                 </property>
             </bean>

@@ -18,10 +18,10 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -64,7 +64,7 @@ import java.util.*;
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller"&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller"&gt;
  *             &lt;property name="requireSerializable"&gt;true&lt;/property&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;

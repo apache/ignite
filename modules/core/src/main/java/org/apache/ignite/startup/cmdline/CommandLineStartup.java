@@ -18,11 +18,11 @@
 package org.apache.ignite.startup.cmdline;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.swing.*;
@@ -38,7 +38,7 @@ import java.util.concurrent.*;
 
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.gridgain.grid.kernal.GridProductImpl.*;
+import static org.apache.ignite.internal.GridProductImpl.*;
 
 /**
  * This class defines command-line GridGain startup. This startup can be used to start GridGain

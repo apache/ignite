@@ -22,7 +22,7 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 
 /**
- * Evictable cache entry passed into {@link org.gridgain.grid.cache.eviction.GridCacheEvictionPolicy}.
+ * Evictable cache entry passed into {@link CacheEvictionPolicy}.
  *
  * @author @java.author
  * @version @java.version

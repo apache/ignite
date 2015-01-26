@@ -86,7 +86,7 @@
                         <configuration>
                             <target>
                                 <taskdef name="gar"
-                                    classname="org.gridgain.grid.util.antgar.GridDeploymentGarAntTask"/>
+                                    classname="org.apache.ignite.util.antgar.IgniteDeploymentGarAntTask"/>
 
                                 <gar destfile="${basedir}/deploy/p2p.gar"
                                      descrdir="${basedir}/META-INF"

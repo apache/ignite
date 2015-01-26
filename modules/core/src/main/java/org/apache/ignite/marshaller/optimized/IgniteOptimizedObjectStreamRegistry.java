@@ -18,9 +18,8 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.io.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.io.*;
 
 import java.io.*;
 import java.util.concurrent.*;
@@ -65,9 +64,9 @@ class IgniteOptimizedObjectStreamRegistry {
      * Gets output stream.
      *
      * @return Object output stream.
-     * @throws GridInterruptedException If thread is interrupted while trying to take holder from pool.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted while trying to take holder from pool.
      */
-    static IgniteOptimizedObjectOutputStream out() throws GridInterruptedException {
+    static IgniteOptimizedObjectOutputStream out() throws IgniteInterruptedException {
         return holder().acquireOut();
     }
 
@@ -75,9 +74,9 @@ class IgniteOptimizedObjectStreamRegistry {
      * Gets input stream.
      *
      * @return Object input stream.
-     * @throws GridInterruptedException If thread is interrupted while trying to take holder from pool.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted while trying to take holder from pool.
      */
-    static IgniteOptimizedObjectInputStream in() throws GridInterruptedException {
+    static IgniteOptimizedObjectInputStream in() throws IgniteInterruptedException {
         return holder().acquireIn();
     }
 
@@ -128,9 +127,9 @@ class IgniteOptimizedObjectStreamRegistry {
      * Gets holder from pool or thread local.
      *
      * @return Stream holder.
-     * @throws GridInterruptedException If thread is interrupted while trying to take holder from pool.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted while trying to take holder from pool.
      */
-    private static StreamHolder holder() throws GridInterruptedException {
+    private static StreamHolder holder() throws IgniteInterruptedException {
         StreamHolder holder = holders.get();
 
         if (holder == null) {
@@ -138,7 +137,7 @@ class IgniteOptimizedObjectStreamRegistry {
                 holders.set(holder = pool != null ? pool.take() : new StreamHolder());
             }
             catch (InterruptedException e) {
-                throw new GridInterruptedException("Failed to take object stream from pool (thread interrupted).", e);
+                throw new IgniteInterruptedException("Failed to take object stream from pool (thread interrupted).", e);
             }
         }
 
