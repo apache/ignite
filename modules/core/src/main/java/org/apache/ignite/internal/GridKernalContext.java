@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.collision.*;

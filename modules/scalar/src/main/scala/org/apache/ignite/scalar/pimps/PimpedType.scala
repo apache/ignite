@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.pimps
+package org.apache.ignite.scalar.pimps
 
 /**
  * Sub class to create a wrapper type for `X` as documentation that the sub class follows the

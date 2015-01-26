@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
-import org.apache.ignite.compute.{ComputeTaskSplitAdapter, ComputeJob, ComputeJobResult}
-import org.gridgain.scalar.scalar
-import scalar._
-import collection.JavaConversions._
+import org.apache.ignite.compute.{ComputeJob, ComputeJobResult, ComputeTaskSplitAdapter}
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+
 import java.util
+
+import scala.collection.JavaConversions._
 
 /**
  * Demonstrates use of full grid task API using Scalar. Note that using task-based
