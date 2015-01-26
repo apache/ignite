@@ -29,7 +29,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.portables.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.processors.streamer.*;

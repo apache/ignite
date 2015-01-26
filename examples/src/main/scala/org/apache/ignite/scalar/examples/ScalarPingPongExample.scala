@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.messaging.MessagingListenActor
-import org.gridgain.scalar.scalar
-import scalar._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+
 import java.util.UUID
 import java.util.concurrent.CountDownLatch
 

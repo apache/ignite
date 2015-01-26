@@ -27,7 +27,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.extensions.discovery.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.thread.*;
