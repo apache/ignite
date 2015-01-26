@@ -7,7 +7,7 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.kernal.processors.cache.query;
+package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.*;
 
