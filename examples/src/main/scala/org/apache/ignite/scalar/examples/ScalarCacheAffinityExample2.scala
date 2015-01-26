@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.Ignite
-import org.gridgain.scalar.scalar
-import scalar._
-import collection.JavaConversions._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+
+import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 
 /**

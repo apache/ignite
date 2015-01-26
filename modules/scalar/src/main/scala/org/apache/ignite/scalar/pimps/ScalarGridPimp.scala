@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.pimps
+package org.apache.ignite.scalar.pimps
 
 import org.apache.ignite.scheduler.SchedulerFuture
-import org.apache.ignite.{IgniteCluster, Ignite}
-import org.apache.ignite._
+import org.apache.ignite.{Ignite, IgniteCluster}
 import org.jetbrains.annotations.Nullable
 
 /**

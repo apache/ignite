@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.failover.jobstealing;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**

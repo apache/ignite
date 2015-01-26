@@ -613,6 +613,11 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
+        return cache.containsKeyAsync(key, entryFilter(false));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean containsValue(V val) {
         return cache.containsValue(val, entryFilter(true));
     }
