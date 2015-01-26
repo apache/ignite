@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.gridgain.grid.kernal.processors.query.h2.twostep.messages.*;
-import org.gridgain.grid.util.typedef.internal.*;
 
 /**
  * Page result.

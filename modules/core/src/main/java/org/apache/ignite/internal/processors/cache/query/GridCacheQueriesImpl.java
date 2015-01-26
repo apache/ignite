@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -163,6 +164,21 @@ public class GridCacheQueriesImpl<K, V> implements GridCacheQueriesEx<K, V>, Ext
             null,
             false,
             prj != null && prj.isKeepPortable());
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
+        return ctx.kernalContext().query().queryTwoStep(space, qry);
+    }
+
+    /**
+     * @param space Space.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Result.
+     */
+    public IgniteFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
+        return ctx.kernalContext().query().queryTwoStep(space, sqlQry, params);
     }
 
     /** {@inheritDoc} */

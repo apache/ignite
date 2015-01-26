@@ -11,14 +11,15 @@ package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
+import org.gridgain.grid.kernal.GridTopic;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.query.h2.*;
 import org.gridgain.grid.kernal.processors.query.h2.twostep.messages.*;
-import org.gridgain.grid.util.typedef.*;
 import org.h2.jdbc.*;
 import org.h2.result.*;
 import org.h2.value.*;
@@ -58,7 +59,7 @@ public class GridMapQueryExecutor {
     private GridKernalContext ctx;
 
     /** */
-    private GridH2Indexing h2;
+    private IgniteH2Indexing h2;
 
     /** */
     private ConcurrentMap<UUID, ConcurrentMap<Long, QueryResults>> qryRess = new ConcurrentHashMap8<>();
@@ -68,7 +69,7 @@ public class GridMapQueryExecutor {
      * @param h2 H2 Indexing.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(final GridKernalContext ctx, GridH2Indexing h2) throws IgniteCheckedException {
+    public void start(final GridKernalContext ctx, IgniteH2Indexing h2) throws IgniteCheckedException {
         this.ctx = ctx;
         this.h2 = h2;
 

@@ -9,7 +9,7 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.h2.util.*;
 import org.h2.value.*;
 

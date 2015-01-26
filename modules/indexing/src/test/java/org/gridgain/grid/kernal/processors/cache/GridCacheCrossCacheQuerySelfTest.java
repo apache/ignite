@@ -19,23 +19,23 @@ package org.gridgain.grid.kernal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.testframework.junits.common.*;
 
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Tests cross cache queries.
@@ -59,8 +59,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         c.setMarshaller(new IgniteOptimizedMarshaller(false));
 
-        c.setCacheConfiguration(createCache("replicated", GridCacheMode.REPLICATED),
-            createCache("partitioned", GridCacheMode.PARTITIONED));
+        c.setCacheConfiguration(createCache("replicated", CacheMode.REPLICATED),
+            createCache("partitioned", CacheMode.PARTITIONED));
 
         return c;
     }
@@ -84,12 +84,12 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @param mode Cache mode.
      * @return Cache configuration.
      */
-    private static CacheConfiguration createCache(String name, GridCacheMode mode) {
+    private static CacheConfiguration createCache(String name, CacheMode mode) {
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setName(name);
         cc.setCacheMode(mode);
-        cc.setWriteSynchronizationMode(GridCacheWriteSynchronizationMode.FULL_SYNC);
+        cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setPreloadMode(SYNC);
         cc.setSwapEnabled(true);
         cc.setEvictNearSynchronized(false);
@@ -172,10 +172,10 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     public void testOnProjection() throws Exception {
         fillCaches();
 
-        GridCacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
-            new IgnitePredicate<GridCacheEntry<Integer, FactPurchase>>() {
+        CacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
+            new IgnitePredicate<CacheEntry<Integer, FactPurchase>>() {
                 @Override
-                public boolean apply(GridCacheEntry<Integer, FactPurchase> e) {
+                public boolean apply(CacheEntry<Integer, FactPurchase> e) {
                     return e.getKey() > 12;
                 }
             });
@@ -205,8 +205,8 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             dimCache.put(id, new DimProduct(id, "Product" + id));
         }
 
-        GridCacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
-        GridCacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
+        CacheProjection<Integer, DimStore> stores = dimCache.projection(Integer.class, DimStore.class);
+        CacheProjection<Integer, DimProduct> prods = dimCache.projection(Integer.class, DimProduct.class);
 
         GridCache<Integer, FactPurchase> factCache = ignite.cache("partitioned");
 
@@ -242,9 +242,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      * @return Result.
      */
-    private List<Map.Entry<Integer, FactPurchase>> body(GridCacheProjection<Integer, FactPurchase> prj)
+    private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
         throws Exception {
-        GridCacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
+        CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
             ignite.<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
@@ -289,15 +289,15 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Represents a product available for purchase. In our {@code snowflake} schema a {@code product} is a {@code
-     * 'dimension'} and will be cached in {@link GridCacheMode#REPLICATED} cache.
+     * 'dimension'} and will be cached in {@link CacheMode#REPLICATED} cache.
      */
     private static class DimProduct {
         /** Primary key. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int id;
 
         /** Product name. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String name;
 
         /**
@@ -332,15 +332,15 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Represents a physical store location. In our {@code snowflake} schema a {@code store} is a {@code 'dimension'}
-     * and will be cached in {@link GridCacheMode#REPLICATED} cache.
+     * and will be cached in {@link CacheMode#REPLICATED} cache.
      */
     private static class DimStore {
         /** Primary key. */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private int id;
 
         /** Store name. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private String name;
 
         /**
@@ -375,22 +375,22 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
     /**
      * Represents a purchase record. In our {@code snowflake} schema purchase is a {@code 'fact'} and will be cached in
-     * larger {@link GridCacheMode#PARTITIONED} cache.
+     * larger {@link CacheMode#PARTITIONED} cache.
      */
     private static class FactPurchase {
         /** Primary key. */
-        @GridCacheQuerySqlField(unique = true)
+        @CacheQuerySqlField(unique = true)
         private int id;
 
         /** Foreign key to store at which purchase occurred. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int storeId;
 
         /** Foreign key to purchased product. */
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int productId;
 
-        @GridCacheQuerySqlField
+        @CacheQuerySqlField
         private int price;
 
         /**

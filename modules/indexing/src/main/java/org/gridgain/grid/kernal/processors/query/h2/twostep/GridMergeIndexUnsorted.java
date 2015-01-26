@@ -10,7 +10,6 @@
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.typedef.*;
 import org.h2.index.*;
 import org.h2.result.*;
 import org.h2.table.*;

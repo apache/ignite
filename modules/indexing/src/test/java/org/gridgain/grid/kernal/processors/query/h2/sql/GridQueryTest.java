@@ -9,13 +9,13 @@
 
 package org.gridgain.grid.kernal.processors.query.h2.sql;
 
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.kernal.processors.query.*;
-import org.gridgain.grid.kernal.processors.query.h2.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.query.*;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
@@ -34,8 +34,8 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */
@@ -151,7 +151,7 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
 
         GridQueryProcessor qryProcessor = ctx.query();
 
-        GridH2Indexing idx = U.field(qryProcessor, "idx");
+        IgniteH2Indexing idx = U.field(qryProcessor, "idx");
 
         return (JdbcConnection)idx.connectionForSpace(null);
     }
@@ -210,19 +210,19 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
      *
      */
     public static class Person implements Serializable {
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public Date date = new Date();
 
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public String name = "Ivan";
 
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public String parentName;
 
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public int addrId;
 
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public int old;
     }
 
@@ -230,14 +230,13 @@ public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
      *
      */
     public static class Address implements Serializable {
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public int id;
 
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public int streetNumber;
 
-        @GridCacheQuerySqlField(index = true)
+        @CacheQuerySqlField(index = true)
         public String street = "Nevskiy";
     }
-
 }

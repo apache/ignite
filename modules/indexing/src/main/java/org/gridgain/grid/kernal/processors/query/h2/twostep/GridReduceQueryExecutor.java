@@ -11,15 +11,15 @@ package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.query.h2.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
+import org.gridgain.grid.kernal.GridTopic;
 import org.gridgain.grid.kernal.processors.cache.query.*;
-import org.gridgain.grid.kernal.processors.query.h2.*;
 import org.gridgain.grid.kernal.processors.query.h2.twostep.messages.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jdk8.backport.*;
 
 import java.sql.*;
@@ -35,7 +35,7 @@ public class GridReduceQueryExecutor {
     private GridKernalContext ctx;
 
     /** */
-    private GridH2Indexing h2;
+    private IgniteH2Indexing h2;
 
     /** */
     private IgniteLogger log;
@@ -51,7 +51,7 @@ public class GridReduceQueryExecutor {
      * @param h2 H2 Indexing.
      * @throws IgniteCheckedException If failed.
      */
-    public void start(final GridKernalContext ctx, GridH2Indexing h2) throws IgniteCheckedException {
+    public void start(final GridKernalContext ctx, IgniteH2Indexing h2) throws IgniteCheckedException {
         this.ctx = ctx;
         this.h2 = h2;
 

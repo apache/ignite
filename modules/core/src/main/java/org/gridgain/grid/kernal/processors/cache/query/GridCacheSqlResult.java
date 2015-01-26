@@ -12,6 +12,8 @@ package org.gridgain.grid.kernal.processors.cache.query;
 import java.util.*;
 
 /**
+ * TODO replace with {@link org.apache.ignite.cache.query.QueryCursor}
+ *
  * SQL Query result.
  */
 public interface GridCacheSqlResult extends AutoCloseable, Iterable<List<?>> {

@@ -10,14 +10,11 @@
 package org.gridgain.grid.kernal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
 import org.h2.engine.*;
 import org.h2.index.*;
 import org.h2.message.*;
 import org.h2.result.*;
 import org.h2.table.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
