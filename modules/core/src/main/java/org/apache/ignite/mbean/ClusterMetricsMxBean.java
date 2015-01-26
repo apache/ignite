@@ -234,4 +234,8 @@ public interface ClusterMetricsMxBean extends ClusterMetrics {
     @IgniteMBeanDescription("Outbound messages queue size.")
     public int getOutboundMessagesQueueSize();
 
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Start time of the grid node in milliseconds.")
+    @Override long getNodeStartTime();
+
 }
