@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Simple test task.
  */
-public class GridP2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer> {
+public class P2PTestTaskExternalPath2 extends ComputeTaskAdapter<Object, Integer> {
     /** */
     @IgniteLoggerResource
     private IgniteLogger log;

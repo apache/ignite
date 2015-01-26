@@ -73,7 +73,7 @@ public class GridP2PNodeLeftSelfTest extends GridCommonAbstractTest {
             Ignite ignite2 = startGrid(2);
             Ignite ignite3 = startGrid(3);
 
-            Class task1 = urlClsLdr1.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
+            Class task1 = urlClsLdr1.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
 
             Integer res1 = (Integer)ignite1.compute().execute(task1, ignite2.cluster().localNode().id());
 
