@@ -254,7 +254,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterMetrics metrics() throws IgniteCheckedException {
+    @Override public final ClusterNodeMetrics metrics() throws IgniteCheckedException {
         guard();
 
         try {

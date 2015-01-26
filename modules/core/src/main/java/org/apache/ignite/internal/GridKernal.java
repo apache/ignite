@@ -978,10 +978,12 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                         int cpus = 0;
 
                         try {
-                            ClusterMetrics metrics = metrics();
+                            ClusterNodeMetrics metrics = metrics();
 
-                            hosts = metrics.getTotalHosts();
-                            nodes = metrics.getTotalNodes();
+                            Collection<ClusterNode> nodes0 = nodes();
+
+                            hosts = U.neighborhood(nodes0).size();
+                            nodes = nodes0.size();
                             cpus = metrics.getTotalCpus();
                         }
                         catch (IgniteCheckedException ignore) {

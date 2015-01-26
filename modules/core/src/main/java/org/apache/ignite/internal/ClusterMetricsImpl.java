@@ -27,23 +27,32 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * Implementation for {@link org.apache.ignite.cluster.ClusterMetrics} interface.
+ * Implementation for {@link ClusterNodeMetrics ClusterNodeMetrics} interface.
  */
-class ClusterMetricsImpl implements ClusterMetrics {
+class ClusterMetricsImpl implements ClusterNodeMetrics {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private int minActJobs = Integer.MAX_VALUE;
+    private int totalExecutedTask;
 
     /** */
     private int maxActJobs = Integer.MIN_VALUE;
 
     /** */
+    private int curActJobs;
+
+    /** */
+    private int totalExecutedJobs;
+
+    /** */
     private float avgActJobs;
 
     /** */
-    private int minCancelJobs = Integer.MAX_VALUE;
+    private int curCancelJobs;
+
+    /** */
+    private int totalCancelJobs;
 
     /** */
     private int maxCancelJobs = Integer.MIN_VALUE;
@@ -52,7 +61,7 @@ class ClusterMetricsImpl implements ClusterMetrics {
     private float avgCancelJobs;
 
     /** */
-    private int minRejectJobs = Integer.MAX_VALUE;
+    private int curRejectJobs;
 
     /** */
     private int maxRejectJobs = Integer.MIN_VALUE;
@@ -61,16 +70,16 @@ class ClusterMetricsImpl implements ClusterMetrics {
     private float avgRejectJobs;
 
     /** */
-    private int minWaitJobs = Integer.MAX_VALUE;
+    private int totalRejectJobs;
+
+    /** */
+    private int curWaitJobs;
 
     /** */
     private int maxWaitJobs = Integer.MIN_VALUE;
 
     /** */
     private float avgWaitJobs;
-
-    /** */
-    private long minJobExecTime = Long.MAX_VALUE;
 
     /** */
     private long maxJobExecTime = Long.MIN_VALUE;
@@ -88,166 +97,91 @@ class ClusterMetricsImpl implements ClusterMetrics {
     private double avgJobWaitTime;
 
     /** */
-    private int minDaemonThreadCnt = Integer.MAX_VALUE;
-
-    /** */
-    private int maxDaemonThreadCnt = Integer.MIN_VALUE;
-
-    /** */
-    private float avgDaemonThreadCnt;
-
-    /** */
-    private int minThreadCnt = Integer.MAX_VALUE;
+    private int curDaemonThreadCnt;
 
     /** */
     private int maxThreadCnt = Integer.MIN_VALUE;
 
     /** */
-    private float avgThreadCnt;
+    private int curThreadCnt;
+
+    /** */
+    private int totalStartedThreadCnt;
 
     /** */
     private long minIdleTime = Long.MAX_VALUE;
 
     /** */
-    private long maxIdleTime = Long.MIN_VALUE;
-
-    /** */
-    private double avgIdleTime;
-
-    /** */
     private float avgIdleTimePercent;
 
     /** */
-    private float minBusyTimePerc = Float.POSITIVE_INFINITY;
-
-    /** */
-    private float maxBusyTimePerc = Float.NEGATIVE_INFINITY;
+    private int totalIdleTime;
 
     /** */
     private float avgBusyTimePerc;
 
     /** */
-    private double minCpuLoad = Double.POSITIVE_INFINITY;
-
-    /** */
-    private double maxCpuLoad = Double.NEGATIVE_INFINITY;
+    private int totalBusyTime;
 
     /** */
     private double avgCpuLoad;
 
     /** */
-    private long minHeapMemCmt = Long.MAX_VALUE;
+    private long totalHeapMemCmt = Long.MIN_VALUE;
 
     /** */
-    private long maxHeapMemCmt = Long.MIN_VALUE;
-
-    /** */
-    private double avgHeapMemCmt;
-
-    /** */
-    private long minHeapMemUsed = Long.MAX_VALUE;
-
-    /** */
-    private long maxHeapMemUsed = Long.MIN_VALUE;
-
-    /** */
-    private double avgHeapMemUsed;
-
-    /** */
-    private long minHeapMemMax = Long.MAX_VALUE;
+    private long totalHeapMemUsed;
 
     /** */
     private long maxHeapMemMax = Long.MIN_VALUE;
 
     /** */
-    private double avgHeapMemMax;
+    private long totalHeapMemInit;
 
     /** */
-    private long minHeapMemInit = Long.MAX_VALUE;
+    private long totalNonHeapMemCmt;
 
     /** */
-    private long maxHeapMemInit = Long.MIN_VALUE;
-
-    /** */
-    private double avgHeapMemInit;
-
-    /** */
-    private long minNonHeapMemCmt = Long.MAX_VALUE;
-
-    /** */
-    private long maxNonHeapMemCmt = Long.MIN_VALUE;
-
-    /** */
-    private double avgNonHeapMemCmt;
-
-    /** */
-    private long minNonHeapMemUsed = Long.MAX_VALUE;
-
-    /** */
-    private long maxNonHeapMemUsed = Long.MIN_VALUE;
-
-    /** */
-    private double avgNonHeapMemUsed;
-
-    /** */
-    private long minNonHeapMemMax = Long.MAX_VALUE;
+    private long totalNonHeapMemUsed;
 
     /** */
     private long maxNonHeapMemMax = Long.MIN_VALUE;
 
     /** */
-    private double avgNonHeapMemMax;
-
-    /** */
-    private long minNonHeapMemInit = Long.MAX_VALUE;
-
-    /** */
-    private long maxNonHeapMemInit = Long.MIN_VALUE;
-
-    /** */
-    private double avgNonHeapMemInit;
-
-    /** */
-    private long youngestNodeStartTime = Long.MIN_VALUE;
+    private long totalNonHeapMemInit;
 
     /** */
     private long oldestNodeStartTime = Long.MAX_VALUE;
 
     /** */
-    private long minUpTime = Long.MAX_VALUE;
-
-    /** */
     private long maxUpTime = Long.MIN_VALUE;
-
-    /** */
-    private double avgUpTime;
-
-    /** */
-    private int minCpusPerNode = Integer.MAX_VALUE;
-
-    /** */
-    private int maxCpusPerNode = Integer.MIN_VALUE;
-
-    /** */
-    private float avgCpusPerNode;
-
-    /** */
-    private int minNodesPerHost = Integer.MAX_VALUE;
-
-    /** */
-    private int maxNodesPerHost = Integer.MIN_VALUE;
-
-    /** */
-    private float avgNodesPerHost;
 
     /** */
     private int totalCpus;
 
     /** */
-    private int totalHosts;
+    private int currentGcCpus;
 
     /** */
-    private int totalNodes;
+    private long lastUpdateTime;
+
+    /** */
+    private long lastDataVersion = Long.MIN_VALUE;
+
+    /** */
+    private int sentMessagesCnt;
+
+    /** */
+    private long sentBytesCnt;
+
+    /** */
+    private int receivedMessagesCnt;
+
+    /** */
+    private long receivedBytesCnt;
+
+    /** */
+    private int outboundMessagesQueueSize;
 
     /**
      * @param p Projection to get metrics for.
@@ -262,23 +196,30 @@ class ClusterMetricsImpl implements ClusterMetrics {
         for (ClusterNode node : nodes) {
             ClusterNodeMetrics m = node.metrics();
 
-            minActJobs = min(minActJobs, m.getCurrentActiveJobs());
+            lastUpdateTime = max(lastUpdateTime, node.metrics().getLastUpdateTime());
+
+            curActJobs += m.getCurrentActiveJobs();
             maxActJobs = max(maxActJobs, m.getCurrentActiveJobs());
             avgActJobs += m.getCurrentActiveJobs();
+            totalExecutedJobs += m.getTotalExecutedJobs();
 
-            minCancelJobs = min(minCancelJobs, m.getCurrentCancelledJobs());
+            totalExecutedTask += m.getTotalExecutedTasks();
+
+            totalCancelJobs += m.getTotalCancelledJobs();
+            curCancelJobs += m.getCurrentCancelledJobs();
             maxCancelJobs = max(maxCancelJobs, m.getCurrentCancelledJobs());
             avgCancelJobs += m.getCurrentCancelledJobs();
 
-            minRejectJobs = min(minRejectJobs, m.getCurrentRejectedJobs());
+            totalRejectJobs += m.getTotalRejectedJobs();
+            curRejectJobs += m.getCurrentRejectedJobs();
+            totalRejectJobs += m.getTotalRejectedJobs();
             maxRejectJobs = max(maxRejectJobs, m.getCurrentRejectedJobs());
             avgRejectJobs += m.getCurrentRejectedJobs();
 
-            minWaitJobs = min(minWaitJobs, m.getCurrentWaitingJobs());
+            curWaitJobs += m.getCurrentJobWaitTime();
             maxWaitJobs = max(maxWaitJobs, m.getCurrentWaitingJobs());
             avgWaitJobs += m.getCurrentWaitingJobs();
 
-            minJobExecTime = min(minJobExecTime, m.getCurrentJobExecuteTime());
             maxJobExecTime = max(maxJobExecTime, m.getCurrentJobExecuteTime());
             avgJobExecTime += m.getCurrentJobExecuteTime();
 
@@ -286,66 +227,46 @@ class ClusterMetricsImpl implements ClusterMetrics {
             maxJobWaitTime = max(maxJobWaitTime, m.getCurrentJobWaitTime());
             avgJobWaitTime += m.getCurrentJobWaitTime();
 
-            minDaemonThreadCnt = min(minDaemonThreadCnt, m.getCurrentDaemonThreadCount());
-            maxDaemonThreadCnt = max(maxDaemonThreadCnt, m.getCurrentDaemonThreadCount());
-            avgDaemonThreadCnt += m.getCurrentDaemonThreadCount();
+            curDaemonThreadCnt += m.getCurrentDaemonThreadCount();
 
-            minThreadCnt = min(minThreadCnt, m.getCurrentThreadCount());
             maxThreadCnt = max(maxThreadCnt, m.getCurrentThreadCount());
-            avgThreadCnt += m.getCurrentThreadCount();
+            curThreadCnt += m.getCurrentThreadCount();
+            totalStartedThreadCnt += m.getTotalStartedThreadCount();
 
             minIdleTime = min(minIdleTime, m.getCurrentIdleTime());
-            maxIdleTime = max(maxIdleTime, m.getCurrentIdleTime());
-            avgIdleTime += m.getCurrentIdleTime();
             avgIdleTimePercent += m.getIdleTimePercentage();
+            totalIdleTime += m.getTotalIdleTime();
 
-            minBusyTimePerc = min(minBusyTimePerc, m.getBusyTimePercentage());
-            maxBusyTimePerc = max(maxBusyTimePerc, m.getBusyTimePercentage());
             avgBusyTimePerc += m.getBusyTimePercentage();
+            totalBusyTime += m.getTotalBusyTime();
 
-            minCpuLoad = min(minCpuLoad, m.getCurrentCpuLoad());
-            maxCpuLoad = max(maxCpuLoad, m.getCurrentCpuLoad());
             avgCpuLoad += m.getCurrentCpuLoad();
 
-            minHeapMemCmt = min(minHeapMemCmt, m.getHeapMemoryCommitted());
-            maxHeapMemCmt = max(maxHeapMemCmt, m.getHeapMemoryCommitted());
-            avgHeapMemCmt += m.getHeapMemoryCommitted();
+            totalHeapMemCmt += m.getHeapMemoryCommitted();
 
-            minHeapMemUsed = min(minHeapMemUsed, m.getHeapMemoryUsed());
-            maxHeapMemUsed = max(maxHeapMemUsed, m.getHeapMemoryUsed());
-            avgHeapMemUsed += m.getHeapMemoryUsed();
+            totalHeapMemUsed += m.getHeapMemoryUsed();
 
-            minHeapMemMax = min(minHeapMemMax, m.getHeapMemoryMaximum());
             maxHeapMemMax = max(maxHeapMemMax, m.getHeapMemoryMaximum());
-            avgHeapMemMax += m.getHeapMemoryMaximum();
 
-            minHeapMemInit = min(minHeapMemInit, m.getHeapMemoryInitialized());
-            maxHeapMemInit = max(maxHeapMemInit, m.getHeapMemoryInitialized());
-            avgHeapMemInit += m.getHeapMemoryInitialized();
+            totalHeapMemInit += m.getHeapMemoryInitialized();
 
-            minNonHeapMemCmt = min(minNonHeapMemCmt, m.getNonHeapMemoryCommitted());
-            maxNonHeapMemCmt = max(maxNonHeapMemCmt, m.getNonHeapMemoryCommitted());
-            avgNonHeapMemCmt += m.getNonHeapMemoryCommitted();
+            totalNonHeapMemCmt += m.getNonHeapMemoryCommitted();
 
-            minNonHeapMemUsed = min(minNonHeapMemUsed, m.getNonHeapMemoryUsed());
-            maxNonHeapMemUsed = max(maxNonHeapMemUsed, m.getNonHeapMemoryUsed());
-            avgNonHeapMemUsed += m.getNonHeapMemoryUsed();
+            totalNonHeapMemUsed += m.getNonHeapMemoryUsed();
 
-            minNonHeapMemMax = min(minNonHeapMemMax, m.getNonHeapMemoryMaximum());
             maxNonHeapMemMax = max(maxNonHeapMemMax, m.getNonHeapMemoryMaximum());
-            avgNonHeapMemMax += m.getNonHeapMemoryMaximum();
 
-            minNonHeapMemInit = min(minNonHeapMemInit, m.getNonHeapMemoryInitialized());
-            maxNonHeapMemInit = max(maxNonHeapMemInit, m.getNonHeapMemoryInitialized());
-            avgNonHeapMemInit += m.getNonHeapMemoryInitialized();
+            totalNonHeapMemInit += m.getNonHeapMemoryInitialized();
 
-            minUpTime = min(minUpTime, m.getUpTime());
             maxUpTime = max(maxUpTime, m.getUpTime());
-            avgUpTime += m.getUpTime();
 
-            minCpusPerNode = min(minCpusPerNode, m.getTotalCpus());
-            maxCpusPerNode = max(maxCpusPerNode, m.getTotalCpus());
-            avgCpusPerNode += m.getTotalCpus();
+            lastDataVersion = max(lastDataVersion, m.getLastDataVersion());
+
+            sentMessagesCnt += m.getSentMessagesCount();
+            sentBytesCnt += m.getSentBytesCount();
+            receivedMessagesCnt += m.getReceivedMessagesCount();
+            receivedBytesCnt += m.getReceivedBytesCount();
+            outboundMessagesQueueSize += m.getOutboundMessagesQueueSize();
         }
 
         avgActJobs /= size;
@@ -354,47 +275,18 @@ class ClusterMetricsImpl implements ClusterMetrics {
         avgWaitJobs /= size;
         avgJobExecTime /= size;
         avgJobWaitTime /= size;
-        avgDaemonThreadCnt /= size;
-        avgThreadCnt /= size;
-        avgIdleTime /= size;
         avgIdleTimePercent /= size;
         avgBusyTimePerc /= size;
         avgCpuLoad /= size;
-        avgHeapMemCmt /= size;
-        avgHeapMemUsed /= size;
-        avgHeapMemMax /= size;
-        avgHeapMemInit /= size;
-        avgNonHeapMemCmt /= size;
-        avgNonHeapMemUsed /= size;
-        avgNonHeapMemMax /= size;
-        avgNonHeapMemInit /= size;
-        avgUpTime /= size;
-        avgCpusPerNode /= size;
 
         if (!F.isEmpty(nodes)) {
-            youngestNodeStartTime = youngest(nodes).metrics().getNodeStartTime();
             oldestNodeStartTime = oldest(nodes).metrics().getNodeStartTime();
         }
 
         Map<String, Collection<ClusterNode>> neighborhood = U.neighborhood(nodes);
 
-        for (Collection<ClusterNode> neighbors : neighborhood.values()) {
-            minNodesPerHost = min(minNodesPerHost, neighbors.size());
-            maxNodesPerHost = max(maxNodesPerHost, neighbors.size());
-            avgNodesPerHost += neighbors.size();
-        }
-
-        if (!F.isEmpty(neighborhood))
-            avgNodesPerHost /= neighborhood.size();
-
+        currentGcCpus = gcCpus(neighborhood);
         totalCpus = cpus(neighborhood);
-        totalHosts = neighborhood.size();
-        totalNodes = nodes.size();
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMinimumActiveJobs() {
-        return minActJobs;
     }
 
     /** {@inheritDoc} */
@@ -408,11 +300,6 @@ class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMinimumCancelledJobs() {
-        return minCancelJobs;
-    }
-
-    /** {@inheritDoc} */
     @Override public int getMaximumCancelledJobs() {
         return maxCancelJobs;
     }
@@ -420,11 +307,6 @@ class ClusterMetricsImpl implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public float getAverageCancelledJobs() {
         return avgCancelJobs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMinimumRejectedJobs() {
-        return minRejectJobs;
     }
 
     /** {@inheritDoc} */
@@ -438,11 +320,6 @@ class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMinimumWaitingJobs() {
-        return minWaitJobs;
-    }
-
-    /** {@inheritDoc} */
     @Override public int getMaximumWaitingJobs() {
         return maxWaitJobs;
     }
@@ -450,11 +327,6 @@ class ClusterMetricsImpl implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public float getAverageWaitingJobs() {
         return avgWaitJobs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumJobExecuteTime() {
-        return minJobExecTime;
     }
 
     /** {@inheritDoc} */
@@ -468,11 +340,6 @@ class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public long getMinimumJobWaitTime() {
-        return minJobWaitTime;
-    }
-
-    /** {@inheritDoc} */
     @Override public long getMaximumJobWaitTime() {
         return maxJobWaitTime;
     }
@@ -483,48 +350,8 @@ class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public int getMinimumDaemonThreadCount() {
-        return minDaemonThreadCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMaximumDaemonThreadCount() {
-        return maxDaemonThreadCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getAverageDaemonThreadCount() {
-        return avgDaemonThreadCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMinimumThreadCount() {
-        return minThreadCnt;
-    }
-
-    /** {@inheritDoc} */
     @Override public int getMaximumThreadCount() {
         return maxThreadCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getAverageThreadCount() {
-        return avgThreadCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumIdleTime() {
-        return minIdleTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumIdleTime() {
-        return maxIdleTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageIdleTime() {
-        return avgIdleTime;
     }
 
     /** {@inheritDoc} */
@@ -533,208 +360,8 @@ class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public float getMinimumBusyTimePercentage() {
-        return minBusyTimePerc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getMaximumBusyTimePercentage() {
-        return maxBusyTimePerc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getAverageBusyTimePercentage() {
-        return avgBusyTimePerc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getMinimumCpuLoad() {
-        return minCpuLoad;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getMaximumCpuLoad() {
-        return maxCpuLoad;
-    }
-
-    /** {@inheritDoc} */
     @Override public double getAverageCpuLoad() {
         return avgCpuLoad;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumHeapMemoryCommitted() {
-        return minHeapMemCmt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumHeapMemoryCommitted() {
-        return maxHeapMemCmt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageHeapMemoryCommitted() {
-        return avgHeapMemCmt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumHeapMemoryUsed() {
-        return minHeapMemUsed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumHeapMemoryUsed() {
-        return maxHeapMemUsed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageHeapMemoryUsed() {
-        return avgHeapMemUsed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumHeapMemoryMaximum() {
-        return minHeapMemMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumHeapMemoryMaximum() {
-        return maxHeapMemMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageHeapMemoryMaximum() {
-        return avgHeapMemMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumHeapMemoryInitialized() {
-        return minHeapMemInit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumHeapMemoryInitialized() {
-        return maxHeapMemInit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageHeapMemoryInitialized() {
-        return avgHeapMemInit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumNonHeapMemoryCommitted() {
-        return minNonHeapMemCmt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumNonHeapMemoryCommitted() {
-        return maxNonHeapMemCmt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageNonHeapMemoryCommitted() {
-        return avgNonHeapMemCmt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumNonHeapMemoryUsed() {
-        return minNonHeapMemUsed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumNonHeapMemoryUsed() {
-        return maxNonHeapMemUsed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageNonHeapMemoryUsed() {
-        return avgNonHeapMemUsed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumNonHeapMemoryMaximum() {
-        return minNonHeapMemMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumNonHeapMemoryMaximum() {
-        return maxNonHeapMemMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageNonHeapMemoryMaximum() {
-        return avgNonHeapMemMax;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumNonHeapMemoryInitialized() {
-        return minNonHeapMemInit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumNonHeapMemoryInitialized() {
-        return maxNonHeapMemInit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageNonHeapMemoryInitialized() {
-        return avgNonHeapMemInit;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getYoungestNodeStartTime() {
-        return youngestNodeStartTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getOldestNodeStartTime() {
-        return oldestNodeStartTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMinimumUpTime() {
-        return minUpTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMaximumUpTime() {
-        return maxUpTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public double getAverageUpTime() {
-        return avgUpTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMinimumCpusPerNode() {
-        return minCpusPerNode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMaximumCpusPerNode() {
-        return maxCpusPerNode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getAverageCpusPerNode() {
-        return avgCpusPerNode;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMinimumNodesPerHost() {
-        return minNodesPerHost;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMaximumNodesPerHost() {
-        return maxNodesPerHost;
-    }
-
-    /** {@inheritDoc} */
-    @Override public float getAverageNodesPerHost() {
-        return avgNodesPerHost;
     }
 
     /** {@inheritDoc} */
@@ -743,13 +370,188 @@ class ClusterMetricsImpl implements ClusterMetrics {
     }
 
     /** {@inheritDoc} */
-    @Override public int getTotalHosts() {
-        return totalHosts;
+    @Override public long getLastUpdateTime() {
+        return lastUpdateTime;
     }
 
     /** {@inheritDoc} */
-    @Override public int getTotalNodes() {
-        return totalNodes;
+    @Override public int getCurrentActiveJobs() {
+        return curActJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCurrentWaitingJobs() {
+        return curWaitJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCurrentRejectedJobs() {
+        return curRejectJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalRejectedJobs() {
+        return totalRejectJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCurrentCancelledJobs() {
+        return curCancelJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalCancelledJobs() {
+        return totalCancelJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalExecutedJobs() {
+        return totalExecutedJobs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentJobWaitTime() {
+        return minJobWaitTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentJobExecuteTime() {
+        return maxJobExecTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getTotalExecutedTasks() {
+        return totalExecutedTask;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalBusyTime() {
+        return totalBusyTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalIdleTime() {
+        return totalIdleTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCurrentIdleTime() {
+        return minIdleTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public float getBusyTimePercentage() {
+        return avgBusyTimePerc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getCurrentCpuLoad() {
+        return totalCpus;
+    }
+
+    /** {@inheritDoc} */
+    @Override public double getCurrentGcCpuLoad() {
+        return currentGcCpus;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeapMemoryInitialized() {
+        return totalHeapMemInit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeapMemoryUsed() {
+        return totalHeapMemUsed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeapMemoryCommitted() {
+        return totalHeapMemCmt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getHeapMemoryMaximum() {
+        return maxHeapMemMax;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNonHeapMemoryInitialized() {
+        return totalNonHeapMemInit;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNonHeapMemoryUsed() {
+        return totalNonHeapMemUsed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNonHeapMemoryCommitted() {
+        return totalNonHeapMemCmt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNonHeapMemoryMaximum() {
+        return maxNonHeapMemMax;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getUpTime() {
+        return maxUpTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getStartTime() {
+        return oldestNodeStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getNodeStartTime() {
+        return oldestNodeStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCurrentThreadCount() {
+        return curThreadCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalStartedThreadCount() {
+        return totalStartedThreadCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCurrentDaemonThreadCount() {
+        return curDaemonThreadCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLastDataVersion() {
+        return lastDataVersion;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getSentMessagesCount() {
+        return sentMessagesCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getSentBytesCount() {
+        return sentBytesCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getReceivedMessagesCount() {
+        return receivedMessagesCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getReceivedBytesCount() {
+        return receivedBytesCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getOutboundMessagesQueueSize() {
+        return outboundMessagesQueueSize;
     }
 
     /**
@@ -801,6 +603,20 @@ class ClusterMetricsImpl implements ClusterMetrics {
             // Projection can be empty if all nodes in it failed.
             if (first != null)
                 cpus += first.metrics().getTotalCpus();
+        }
+
+        return cpus;
+    }
+
+    private static int gcCpus(Map<String, Collection<ClusterNode>> neighborhood) {
+        int cpus = 0;
+
+        for (Collection<ClusterNode> nodes : neighborhood.values()) {
+            ClusterNode first = F.first(nodes);
+
+            // Projection can be empty if all nodes in it failed.
+            if (first != null)
+                cpus += first.metrics().getCurrentGcCpuLoad();
         }
 
         return cpus;

@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.mbean;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.mbean.*;
 
 /**
  * MBean for local node metrics.

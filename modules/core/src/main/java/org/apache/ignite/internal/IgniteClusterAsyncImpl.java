@@ -233,7 +233,7 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterMetrics metrics() throws IgniteCheckedException {
+    @Override public ClusterNodeMetrics metrics() throws IgniteCheckedException {
         return grid.metrics();
     }
 }

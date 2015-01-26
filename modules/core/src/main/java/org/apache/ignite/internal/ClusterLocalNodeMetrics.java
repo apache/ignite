@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * Local node metrics MBean.
