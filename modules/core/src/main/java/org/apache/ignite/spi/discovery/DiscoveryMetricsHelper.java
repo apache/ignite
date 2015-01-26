@@ -91,7 +91,7 @@ public final class DiscoveryMetricsHelper {
      * @param metrics Node metrics to serialize.
      * @return New offset.
      */
-    public static int serialize(byte[] data, int off, ClusterNodeMetrics metrics) {
+    public static int serialize(byte[] data, int off, ClusterMetrics metrics) {
         int start = off;
 
         off = U.intToBytes(metrics.getMaximumActiveJobs(), data, off);
@@ -157,10 +157,10 @@ public final class DiscoveryMetricsHelper {
      * @param off Offset into byte array.
      * @return Deserialized node metrics.
      */
-    public static ClusterNodeMetrics deserialize(byte[] data, int off) {
+    public static ClusterMetrics deserialize(byte[] data, int off) {
         int start = off;
 
-        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
+        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 

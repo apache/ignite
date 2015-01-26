@@ -146,7 +146,7 @@ public interface ClusterNode {
     /**
      * Gets metrics snapshot for this node. Note that node metrics are constantly updated
      * and provide up to date information about nodes. For example, you can get
-     * an idea about CPU load on remote node via {@link ClusterNodeMetrics#getCurrentCpuLoad()}
+     * an idea about CPU load on remote node via {@link ClusterMetrics#getCurrentCpuLoad()}
      * method and use it during {@link org.apache.ignite.compute.ComputeTask#map(List, Object)} or during collision
      * resolution.
      * <p>
@@ -156,7 +156,7 @@ public interface ClusterNode {
      *
      * @return Runtime metrics snapshot for this node.
      */
-    public ClusterNodeMetrics metrics();
+    public ClusterMetrics metrics();
 
     /**
      * Gets all node attributes. Attributes are assigned to nodes at startup

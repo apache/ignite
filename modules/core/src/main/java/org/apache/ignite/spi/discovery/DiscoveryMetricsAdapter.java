@@ -29,7 +29,7 @@ import java.io.*;
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update {@link DiscoveryMetricsHelper} as well.
  */
-public class DiscoveryNodeMetricsAdapter implements ClusterNodeMetrics, Externalizable {
+public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1016,7 +1016,7 @@ public class DiscoveryNodeMetricsAdapter implements ClusterNodeMetrics, External
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        DiscoveryNodeMetricsAdapter other = (DiscoveryNodeMetricsAdapter)obj;
+        DiscoveryMetricsAdapter other = (DiscoveryMetricsAdapter)obj;
 
         return
             availProcs == other.availProcs &&
@@ -1063,6 +1063,6 @@ public class DiscoveryNodeMetricsAdapter implements ClusterNodeMetrics, External
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DiscoveryNodeMetricsAdapter.class, this);
+        return S.toString(DiscoveryMetricsAdapter.class, this);
     }
 }

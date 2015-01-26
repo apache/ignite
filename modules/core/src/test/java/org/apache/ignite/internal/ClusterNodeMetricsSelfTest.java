@@ -36,7 +36,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Grid node metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
-public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
+public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     /** Test message size. */
     private static final int MSG_SIZE = 1024;
 
@@ -87,7 +87,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -143,7 +143,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         // Wait for metrics update.
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite.cluster().localNode().metrics();
 
         info("Node metrics: " + metrics);
 
@@ -206,7 +206,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         latch.await();
 
-        ClusterNodeMetrics metrics = ignite0.cluster().localNode().metrics();
+        ClusterMetrics metrics = ignite0.cluster().localNode().metrics();
 
         info("Node 0 metrics: " + metrics);
 

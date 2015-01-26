@@ -493,10 +493,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             private final long startTime = U.currentTimeMillis();
 
             /** {@inheritDoc} */
-            @Override public ClusterNodeMetrics getMetrics() {
+            @Override public ClusterMetrics getMetrics() {
                 GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
 
-                DiscoveryNodeMetricsAdapter nm = new DiscoveryNodeMetricsAdapter();
+                DiscoveryMetricsAdapter nm = new DiscoveryMetricsAdapter();
 
                 nm.setLastUpdateTime(U.currentTimeMillis());
 

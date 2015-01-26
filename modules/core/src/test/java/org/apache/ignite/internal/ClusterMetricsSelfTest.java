@@ -119,7 +119,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
             // Wait until local node will have updated metrics.
             metricsUpdLock.await();
 
-            ClusterNodeMetrics m = g.cluster().metrics();
+            ClusterMetrics m = g.cluster().metrics();
 
             checkMetrics(m);
         }
@@ -135,7 +135,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
      * @param m Metrics.
      */
     @SuppressWarnings({"FloatingPointEquality"})
-    private void checkMetrics(ClusterNodeMetrics m) {
+    private void checkMetrics(ClusterMetrics m) {
         assert m.getMaximumActiveJobs() == 0;
         assert m.getAverageActiveJobs() == 0;
 

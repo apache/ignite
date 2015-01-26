@@ -4340,7 +4340,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                        for (T2<UUID, ClusterNodeMetrics> t : metricsSet.clientMetrics())
+                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
                             updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
@@ -4354,7 +4354,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
-                        ClusterNodeMetrics metrics = e.getValue().metrics();
+                        ClusterMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
                             msg.setClientMetrics(locNodeId, nodeId, metrics);
@@ -4399,7 +4399,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param metrics Metrics.
          * @param tstamp Timestamp.
          */
-        private void updateMetrics(UUID nodeId, ClusterNodeMetrics metrics, long tstamp) {
+        private void updateMetrics(UUID nodeId, ClusterMetrics metrics, long tstamp) {
             assert nodeId != null;
             assert metrics != null;
 
@@ -5108,7 +5108,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private final Socket sock;
 
         /** Current client metrics. */
-        private volatile ClusterNodeMetrics metrics;
+        private volatile ClusterMetrics metrics;
 
         /**
          * @param sock Socket.
@@ -5124,7 +5124,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @return Current client metrics.
          */
-        ClusterNodeMetrics metrics() {
+        ClusterMetrics metrics() {
             return metrics;
         }
 

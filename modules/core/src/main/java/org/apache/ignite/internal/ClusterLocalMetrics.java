@@ -24,7 +24,7 @@ import org.apache.ignite.mbean.*;
 /**
  * Local node metrics MBean.
  */
-public class ClusterLocalNodeMetrics implements ClusterNodeMetricsMxBean {
+public class ClusterLocalMetrics implements ClusterMetricsMxBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,7 +34,7 @@ public class ClusterLocalNodeMetrics implements ClusterNodeMetricsMxBean {
     /**
      * @param node Node to manage.
      */
-    public ClusterLocalNodeMetrics(ClusterNode node) {
+    public ClusterLocalMetrics(ClusterNode node) {
         assert node != null;
 
         this.node = node;
@@ -307,6 +307,6 @@ public class ClusterLocalNodeMetrics implements ClusterNodeMetricsMxBean {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ClusterLocalNodeMetrics.class, this);
+        return S.toString(ClusterLocalMetrics.class, this);
     }
 }

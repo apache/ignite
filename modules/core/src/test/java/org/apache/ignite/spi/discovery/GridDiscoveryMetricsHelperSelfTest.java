@@ -46,7 +46,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
         assert off == DiscoveryMetricsHelper.METRICS_SIZE;
 
         // Test deserialization.
-        ClusterNodeMetrics res = DiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterMetrics res = DiscoveryMetricsHelper.deserialize(data, 0);
 
         assert res != null;
     }
@@ -55,7 +55,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
     public void testSerialization() {
         byte[] data = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
 
-        ClusterNodeMetrics metrics1 = createMetrics();
+        ClusterMetrics metrics1 = createMetrics();
 
         // Test serialization.
         int off = DiscoveryMetricsHelper.serialize(data, 0, metrics1);
@@ -63,7 +63,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
         assert off == DiscoveryMetricsHelper.METRICS_SIZE;
 
         // Test deserialization.
-        ClusterNodeMetrics metrics2 = DiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterMetrics metrics2 = DiscoveryMetricsHelper.deserialize(data, 0);
 
         assert metrics2 != null;
 
@@ -74,7 +74,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
      * @throws IOException If I/O error occurs.
      */
     public void testMultipleMetricsSerialization() throws IOException {
-        Map<UUID, ClusterNodeMetrics> metrics = new HashMap<>(METRICS_COUNT);
+        Map<UUID, ClusterMetrics> metrics = new HashMap<>(METRICS_COUNT);
 
         for (int i = 0; i < METRICS_COUNT; i++)
             metrics.put(UUID.randomUUID(), createMetrics());
@@ -94,8 +94,8 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
     /**
      * @return Test metrics.
      */
-    private ClusterNodeMetrics createMetrics() {
-        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
+    private ClusterMetrics createMetrics() {
+        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
 
         metrics.setAvailableProcessors(1);
         metrics.setAverageActiveJobs(2);

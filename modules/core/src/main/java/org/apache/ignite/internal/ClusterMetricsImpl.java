@@ -27,9 +27,9 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * Implementation for {@link ClusterNodeMetrics ClusterNodeMetrics} interface.
+ * Implementation for {@link org.apache.ignite.cluster.ClusterMetrics ClusterNodeMetrics} interface.
  */
-class ClusterMetricsImpl implements ClusterNodeMetrics {
+class ClusterMetricsImpl implements ClusterMetrics {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -194,7 +194,7 @@ class ClusterMetricsImpl implements ClusterNodeMetrics {
         int size = nodes.size();
 
         for (ClusterNode node : nodes) {
-            ClusterNodeMetrics m = node.metrics();
+            ClusterMetrics m = node.metrics();
 
             lastUpdateTime = max(lastUpdateTime, node.metrics().getLastUpdateTime());
 
