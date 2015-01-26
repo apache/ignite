@@ -544,7 +544,7 @@ public class Controls {
                     }
                 });
 
-                tf.setOnKeyReleased(new EventHandler<KeyEvent>() {
+                tf.setOnKeyPressed(new EventHandler<KeyEvent>() {
                     @Override public void handle(KeyEvent evt) {
                         if (KeyCode.ENTER == evt.getCode())
                             cancelEdit();
@@ -554,6 +554,10 @@ public class Controls {
                             cancelEdit();
                         }
                     }
+                });
+
+                tf.setOnKeyReleased(new EventHandler<KeyEvent>() {
+                    @Override public void handle(KeyEvent evt) {}
                 });
 
                 // Special hack for editable TextFieldTableCell.
