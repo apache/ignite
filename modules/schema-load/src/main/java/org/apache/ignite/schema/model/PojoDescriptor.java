@@ -20,7 +20,7 @@ package org.apache.ignite.schema.model;
 import javafx.beans.property.*;
 import javafx.beans.value.*;
 import javafx.collections.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 
 import java.util.*;
 
@@ -47,7 +47,7 @@ public class PojoDescriptor {
     private final PojoDescriptor parent;
 
     /** Type metadata. */
-    private final GridCacheQueryTypeMetadata typeMeta;
+    private final CacheQueryTypeMetadata typeMeta;
 
     /** Children items (tables names). */
     private Collection<PojoDescriptor> children = Collections.emptyList();
@@ -68,7 +68,7 @@ public class PojoDescriptor {
      * @return New {@code PojoDescriptor} instance.
      */
     public static PojoDescriptor schema(String schema) {
-        GridCacheQueryTypeMetadata typeMeta = new GridCacheQueryTypeMetadata();
+        CacheQueryTypeMetadata typeMeta = new CacheQueryTypeMetadata();
 
         typeMeta.setSchema(schema);
         typeMeta.setTableName("");
@@ -85,7 +85,7 @@ public class PojoDescriptor {
      * @param typeMeta Type metadata descriptor.
      * @param fields List of POJO fields.
      */
-    public PojoDescriptor(PojoDescriptor prn, GridCacheQueryTypeMetadata typeMeta, List<PojoField> fields) {
+    public PojoDescriptor(PojoDescriptor prn, CacheQueryTypeMetadata typeMeta, List<PojoField> fields) {
         parent = prn;
 
         fullDbName = typeMeta.getSchema() + "." + typeMeta.getTableName();
@@ -279,13 +279,13 @@ public class PojoDescriptor {
      * @param includeKeys {@code true} if key fields should be included into value class.
      * @return Type metadata updated with user changes.
      */
-    public GridCacheQueryTypeMetadata metadata(boolean includeKeys) {
+    public CacheQueryTypeMetadata metadata(boolean includeKeys) {
         typeMeta.setKeyType(keyClsName.get());
         typeMeta.setType(valClsName.get());
 
-        Collection<GridCacheQueryTypeDescriptor> keys = new ArrayList<>();
+        Collection<CacheQueryTypeDescriptor> keys = new ArrayList<>();
 
-        Collection<GridCacheQueryTypeDescriptor> vals = new ArrayList<>();
+        Collection<CacheQueryTypeDescriptor> vals = new ArrayList<>();
 
         for (PojoField field : fields) {
             if (field.key()) {

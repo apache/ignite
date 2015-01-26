@@ -18,18 +18,17 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.cache.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.cache.GridAbstractCacheStoreSelfTest.*;
-import org.gridgain.testframework.junits.cache.*;
-import org.gridgain.testframework.junits.common.*;
 import org.h2.jdbcx.*;
 import org.jetbrains.annotations.*;
 import org.springframework.beans.*;
@@ -44,6 +43,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStoreSelfTest.*;
 
 /**
  * Class for {@code PojoCacheStore} tests.
@@ -87,7 +88,7 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
         UrlResource metaUrl;
 
         try {
-            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/all.xml").toURI().toURL());
+            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/Ignite.xml").toURI().toURL());
         }
         catch (MalformedURLException e) {
             throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
@@ -100,8 +101,8 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
 
             springCtx.refresh();
 
-            Collection<GridCacheQueryTypeMetadata> typeMetadata =
-                springCtx.getBeansOfType(GridCacheQueryTypeMetadata.class).values();
+            Collection<CacheQueryTypeMetadata> typeMetadata =
+                springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
 
             store.setTypeMetadata(typeMetadata);
         }

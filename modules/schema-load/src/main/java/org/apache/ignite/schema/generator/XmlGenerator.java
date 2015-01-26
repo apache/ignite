@@ -17,10 +17,10 @@
 
 package org.apache.ignite.schema.generator;
 
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.ui.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.*;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.*;
@@ -169,14 +169,14 @@ public class XmlGenerator {
      * @param descs Map with type descriptors.
      */
     private static void addTypeDescriptors(Document doc, Node parent, String name,
-        Collection<GridCacheQueryTypeDescriptor> descs) {
+        Collection<CacheQueryTypeDescriptor> descs) {
         if (!descs.isEmpty()) {
             Element prop = addProperty(doc, parent, name, null);
 
             Element list = addElement(doc, prop, "list");
 
-            for (GridCacheQueryTypeDescriptor desc : descs) {
-                Element item = addBean(doc, list, GridCacheQueryTypeDescriptor.class);
+            for (CacheQueryTypeDescriptor desc : descs) {
+                Element item = addBean(doc, list, CacheQueryTypeDescriptor.class);
 
                 addProperty(doc, item, "javaName", desc.getJavaName());
                 addProperty(doc, item, "javaType", desc.getJavaType().getName());
@@ -251,8 +251,8 @@ public class XmlGenerator {
      * @param pkg Package fo types.
      * @param meta Meta.
      */
-    private static void addTypeMetadata(Document doc, Node parent, String pkg, GridCacheQueryTypeMetadata meta) {
-        Element bean = addBean(doc, parent, GridCacheQueryTypeMetadata.class);
+    private static void addTypeMetadata(Document doc, Node parent, String pkg, CacheQueryTypeMetadata meta) {
+        Element bean = addBean(doc, parent, CacheQueryTypeMetadata.class);
 
         addProperty(doc, bean, "type", pkg + "." + meta.getType());
 
@@ -285,7 +285,7 @@ public class XmlGenerator {
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, GridCacheQueryTypeMetadata meta, File out, ConfirmCallable askOverwrite) {
+    public static void generate(String pkg, CacheQueryTypeMetadata meta, File out, ConfirmCallable askOverwrite) {
         generate(pkg, Collections.singleton(meta), out, askOverwrite);
     }
 
@@ -297,7 +297,7 @@ public class XmlGenerator {
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, Collection<GridCacheQueryTypeMetadata> meta, File out,
+    public static void generate(String pkg, Collection<CacheQueryTypeMetadata> meta, File out,
         ConfirmCallable askOverwrite) {
 
         try {
@@ -323,14 +323,11 @@ public class XmlGenerator {
             Element beans = addElement(doc, doc, "beans");
             beans.setAttribute("xmlns", "http://www.springframework.org/schema/beans");
             beans.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
-            beans.setAttribute("xmlns:util", "http://www.springframework.org/schema/util");
             beans.setAttribute("xsi:schemaLocation",
                 "http://www.springframework.org/schema/beans " +
-                    "http://www.springframework.org/schema/beans/spring-beans.xsd " +
-                    "http://www.springframework.org/schema/util " +
-                    "http://www.springframework.org/schema/util/spring-util.xsd");
+                "http://www.springframework.org/schema/beans/spring-beans.xsd");
 
-            for (GridCacheQueryTypeMetadata item : meta)
+            for (CacheQueryTypeMetadata item : meta)
                 addTypeMetadata(doc, beans, pkg, item);
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
@@ -349,7 +346,7 @@ public class XmlGenerator {
                 .replaceAll("><", ">\n<")
                 .replaceAll("\" xmlns", "\"\n       xmlns")
                 .replaceAll("\" xsi", "\"\n       xsi")
-                .replaceAll(" http://www.springframework", " \n                           http://www.springframewor")
+                .replaceAll(" http://www.springframework", " \n                           http://www.springframework")
                 .getBytes());
         }
         catch (ParserConfigurationException | TransformerException | IOException e) {

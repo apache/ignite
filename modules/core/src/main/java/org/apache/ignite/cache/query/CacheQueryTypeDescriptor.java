@@ -7,14 +7,14 @@
  *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
  */
 
-package org.gridgain.grid.cache.query;
+package org.apache.ignite.cache.query;
 
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Type descriptor for field in java and database.
  */
-public class GridCacheQueryTypeDescriptor {
+public class CacheQueryTypeDescriptor {
     /** Column name in database. */
     private String javaName;
 
@@ -30,7 +30,7 @@ public class GridCacheQueryTypeDescriptor {
     /**
      * Default constructor.
      */
-    public GridCacheQueryTypeDescriptor() {
+    public CacheQueryTypeDescriptor() {
         // No-op.
     }
 
@@ -40,7 +40,7 @@ public class GridCacheQueryTypeDescriptor {
      * @param dbName Column name in database.
      * @param dbType Column JDBC type in database.
      */
-    public GridCacheQueryTypeDescriptor(String javaName, Class<?> javaType, String dbName, int dbType) {
+    public CacheQueryTypeDescriptor(String javaName, Class<?> javaType, String dbName, int dbType) {
         this.javaName = javaName;
         this.javaType = javaType;
         this.dbName = dbName;
@@ -108,10 +108,10 @@ public class GridCacheQueryTypeDescriptor {
         if (this == o)
             return true;
 
-        if (!(o instanceof GridCacheQueryTypeDescriptor))
+        if (!(o instanceof CacheQueryTypeDescriptor))
             return false;
 
-        GridCacheQueryTypeDescriptor that = (GridCacheQueryTypeDescriptor)o;
+        CacheQueryTypeDescriptor that = (CacheQueryTypeDescriptor)o;
 
         return javaName.equals(that.javaName) && dbName.equals(that.dbName) &&
             javaType == that.javaType && dbType == that.dbType;
@@ -130,6 +130,6 @@ public class GridCacheQueryTypeDescriptor {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheQueryTypeDescriptor.class, this);
+        return S.toString(CacheQueryTypeDescriptor.class, this);
     }
 }

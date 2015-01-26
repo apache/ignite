@@ -19,7 +19,7 @@ package org.apache.ignite.schema.model;
 
 import javafx.beans.property.*;
 import javafx.collections.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 
 import java.math.*;
 import java.net.*;
@@ -65,7 +65,7 @@ public class PojoField {
     private final ObservableList<String> conversions;
 
     /** Field type desctiptor. */
-    private final GridCacheQueryTypeDescriptor desc;
+    private final CacheQueryTypeDescriptor desc;
 
     /**
      * @param clss List of classes to get class names.
@@ -146,7 +146,7 @@ public class PojoField {
      * @param desc Field type descriptor.
      * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
      */
-    public PojoField(boolean key, GridCacheQueryTypeDescriptor desc, boolean nullable) {
+    public PojoField(boolean key, CacheQueryTypeDescriptor desc, boolean nullable) {
         keyPrev = key;
 
         this.key = new SimpleBooleanProperty(key);
@@ -327,7 +327,7 @@ public class PojoField {
     /**
      * @return Field type descriptor.
      */
-    public GridCacheQueryTypeDescriptor descriptor() {
+    public CacheQueryTypeDescriptor descriptor() {
         desc.setJavaName(javaName());
         desc.setJavaType(classesMap.get(javaTypeName()));
 

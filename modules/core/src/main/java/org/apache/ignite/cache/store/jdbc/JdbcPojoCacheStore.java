@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -56,7 +56,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
          * @param clsName Class name.
          * @param fields Fields.
          */
-        public PojoMethodsCache(String clsName, Collection<GridCacheQueryTypeDescriptor> fields) throws CacheException {
+        public PojoMethodsCache(String clsName, Collection<CacheQueryTypeDescriptor> fields) throws CacheException {
 
             try {
                 cls = Class.forName(clsName);
@@ -77,7 +77,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
             getters = U.newHashMap(fields.size());
 
-            for (GridCacheQueryTypeDescriptor field : fields) {
+            for (CacheQueryTypeDescriptor field : fields) {
                 String prop = capitalFirst(field.getJavaName());
 
                 try {
@@ -139,7 +139,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
         mtdsCache = U.newHashMap(typeMetadata.size() * 2);
 
-        for (GridCacheQueryTypeMetadata type : typeMetadata) {
+        for (CacheQueryTypeMetadata type : typeMetadata) {
             PojoMethodsCache keyCache = new PojoMethodsCache(type.getKeyType(), type.getKeyDescriptors());
 
             mtdsCache.put(type.getKeyType(), keyCache);
@@ -155,14 +155,14 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override protected <R> R buildObject(String typeName, Collection<GridCacheQueryTypeDescriptor> fields,
+    @Override protected <R> R buildObject(String typeName, Collection<CacheQueryTypeDescriptor> fields,
         ResultSet rs) throws CacheLoaderException {
         PojoMethodsCache t = mtdsCache.get(typeName);
 
         Object obj = t.newInstance();
 
         try {
-            for (GridCacheQueryTypeDescriptor field : fields)
+            for (CacheQueryTypeDescriptor field : fields)
                 t.setters.get(field.getJavaName()).invoke(obj, rs.getObject(field.getDbName()));
 
             return (R)obj;

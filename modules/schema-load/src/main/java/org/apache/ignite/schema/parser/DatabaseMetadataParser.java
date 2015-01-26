@@ -18,9 +18,9 @@
 package org.apache.ignite.schema.parser;
 
 import javafx.collections.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.model.*;
-import org.gridgain.grid.cache.query.*;
 
 import java.math.*;
 import java.net.*;
@@ -30,7 +30,7 @@ import java.util.*;
 import static java.sql.Types.*;
 
 /**
- * TODO: Add class description.
+ * Database metadata parser.
  */
 public class DatabaseMetadataParser {
     /**
@@ -151,12 +151,12 @@ public class DatabaseMetadataParser {
      * @param catalog Catalog name.
      * @param schema Schema name.
      * @param tbl Table name.
-     * @return New initialized instance of {@code GridCacheQueryTypeMetadata}.
+     * @return New initialized instance of {@code CacheQueryTypeMetadata}.
      * @throws SQLException If parsing failed.
      */
     private static PojoDescriptor parseTable(PojoDescriptor parent, DatabaseMetaData dbMeta, String catalog,
         String schema, String tbl) throws SQLException {
-        GridCacheQueryTypeMetadata typeMeta = new GridCacheQueryTypeMetadata();
+        CacheQueryTypeMetadata typeMeta = new CacheQueryTypeMetadata();
 
         typeMeta.setSchema(schema);
         typeMeta.setTableName(tbl);
@@ -164,8 +164,8 @@ public class DatabaseMetadataParser {
         typeMeta.setType(toJavaClassName(tbl));
         typeMeta.setKeyType(typeMeta.getType() + "Key");
 
-        Collection<GridCacheQueryTypeDescriptor> keyDescs = typeMeta.getKeyDescriptors();
-        Collection<GridCacheQueryTypeDescriptor> valDescs = typeMeta.getValueDescriptors();
+        Collection<CacheQueryTypeDescriptor> keyDescs = typeMeta.getKeyDescriptors();
+        Collection<CacheQueryTypeDescriptor> valDescs = typeMeta.getValueDescriptors();
 
         Map<String, Class<?>> qryFields = typeMeta.getQueryFields();
         Map<String, Class<?>> ascFields = typeMeta.getAscendingFields();
@@ -193,7 +193,7 @@ public class DatabaseMetadataParser {
 
                 Class<?> javaType = dataType(dbType);
 
-                GridCacheQueryTypeDescriptor desc = new GridCacheQueryTypeDescriptor(javaName, javaType, dbName, dbType);
+                CacheQueryTypeDescriptor desc = new CacheQueryTypeDescriptor(javaName, javaType, dbName, dbType);
 
                 boolean key = pkFlds.contains(dbName);
 

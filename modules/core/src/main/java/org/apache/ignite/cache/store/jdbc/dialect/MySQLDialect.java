@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.store.jdbc.dialect;
 
-import org.gridgain.grid.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;
 

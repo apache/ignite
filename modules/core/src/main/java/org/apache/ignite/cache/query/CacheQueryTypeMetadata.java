@@ -28,24 +28,40 @@ import java.util.*;
  */
 public class CacheQueryTypeMetadata {
     /** Type name, e.g. class name. */
-    @GridToStringInclude
     private String type;
+
+    /** Schema name in database. */
+    private String schema;
+
+    /** Table name in database. */
+    private String tbl;
+
+    /** Key class. */
+    private String keyType;
+
+    /** Type descriptors. */
+    @GridToStringInclude
+    private Collection<CacheQueryTypeDescriptor> keyDescs;
+
+    /** Type descriptors. */
+    @GridToStringInclude
+    private Collection<CacheQueryTypeDescriptor> valDescs;
 
     /** Fields to be queried, in addition to indexed fields. */
     @GridToStringInclude
-    private Map<String, Class<?>> qryFlds = new HashMap<>();
+    private Map<String, Class<?>> qryFlds;
 
     /** Fields to index in ascending order. */
     @GridToStringInclude
-    private Map<String, Class<?>> ascFlds = new HashMap<>();
+    private Map<String, Class<?>> ascFlds;
 
     /** Fields to index in descending order. */
     @GridToStringInclude
-    private Map<String, Class<?>> descFlds = new HashMap<>();
+    private Map<String, Class<?>> descFlds;
 
     /** Fields to index as text. */
     @GridToStringInclude
-    private Collection<String> txtFlds = new LinkedHashSet<>();
+    private Collection<String> txtFlds;
 
     /** Fields to create group indexes for. */
     @GridToStringInclude
@@ -55,21 +71,40 @@ public class CacheQueryTypeMetadata {
      * Default constructor.
      */
     public CacheQueryTypeMetadata() {
-        // No-op.
+        keyDescs = new ArrayList<>();
+
+        valDescs = new ArrayList<>();
+
+        qryFlds = new LinkedHashMap<>();
+
+        ascFlds = new LinkedHashMap<>();
+
+        descFlds = new LinkedHashMap<>();
+
+        txtFlds = new LinkedHashSet<>();
+
+        grps = new LinkedHashMap<>();
     }
 
     /**
      *
      */
-    public CacheQueryTypeMetadata(CacheQueryTypeMetadata src) {
+    public CacheQueryTypeMetadata( CacheQueryTypeMetadata src) {
         type = src.getType();
+        keyType = src.getKeyType();
 
-        qryFlds = new HashMap<>(src.getQueryFields());
-        ascFlds = new HashMap<>(src.getAscendingFields());
-        descFlds = new HashMap<>(src.getDescendingFields());
-        txtFlds = new HashSet<>(src.getTextFields());
+        schema = src.getSchema();
+        tbl = src.getTableName();
 
-        grps = new HashMap<>(src.getGroups());
+        keyDescs = new ArrayList<>(src.getKeyDescriptors());
+        valDescs = new ArrayList<>(src.getValueDescriptors());
+
+        qryFlds = new LinkedHashMap<>(src.getQueryFields());
+        ascFlds = new LinkedHashMap<>(src.getAscendingFields());
+        descFlds = new LinkedHashMap<>(src.getDescendingFields());
+        txtFlds = new LinkedHashSet<>(src.getTextFields());
+
+        grps = new LinkedHashMap<>(src.getGroups());
     }
 
     /**
@@ -97,6 +132,96 @@ public class CacheQueryTypeMetadata {
      */
     public void setType(String type) {
         this.type = type;
+    }
+
+    /**
+     * Gets database schema name.
+     *
+     * @return Schema name.
+     */
+    public String getSchema() {
+        return schema;
+    }
+
+    /**
+     * Sets database schema name.
+     *
+     * @param schema Schema name.
+     */
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
+    /**
+     * Gets table name in database.
+     *
+     * @return Table name in database.
+     */
+    public String getTableName() {
+        return tbl;
+    }
+
+    /**
+     * Table name in database.
+     *
+     * @param tbl Table name in database.
+     */
+    public void setTableName(String tbl) {
+        this.tbl = tbl;
+    }
+
+    /**
+     * Gets key type.
+     *
+     * @return Key type.
+     */
+    public String getKeyType() {
+        return keyType;
+    }
+
+    /**
+     * Sets key type.
+     *
+     * @param keyType Key type.
+     */
+    public void setKeyType(String keyType) {
+        this.keyType = keyType;
+    }
+
+    /**
+     * Gets key fields type descriptors.
+     *
+     * @return Key fields type descriptors.
+     */
+    public Collection<CacheQueryTypeDescriptor> getKeyDescriptors() {
+        return keyDescs;
+    }
+
+    /**
+     * Sets key fields type descriptors.
+     *
+     * @param keyDescs Key fields type descriptors.
+     */
+    public void setKeyDescriptors(Collection<CacheQueryTypeDescriptor> keyDescs) {
+        this.keyDescs = keyDescs;
+    }
+
+    /**
+     * Gets value fields type descriptors.
+     *
+     * @return Key value type descriptors.
+     */
+    public Collection<CacheQueryTypeDescriptor> getValueDescriptors() {
+        return valDescs;
+    }
+
+    /**
+     * Sets value fields type descriptors.
+     *
+     * @param valDescs Value fields type descriptors.
+     */
+    public void setValueDescriptors(Collection<CacheQueryTypeDescriptor> valDescs) {
+        this.valDescs = valDescs;
     }
 
     /**

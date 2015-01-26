@@ -18,15 +18,15 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -80,26 +80,26 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         private final Collection<String> cols;
 
         /** Unique value fields. */
-        private final Collection<GridCacheQueryTypeDescriptor> uniqValFields;
+        private final Collection<CacheQueryTypeDescriptor> uniqValFields;
 
         /** Type metadata. */
-        private final GridCacheQueryTypeMetadata typeMetadata;
+        private final CacheQueryTypeMetadata typeMetadata;
 
         /**
          * @param typeMetadata Type metadata.
          */
-        public EntryMapping(JdbcDialect dialect, GridCacheQueryTypeMetadata typeMetadata) {
+        public EntryMapping(JdbcDialect dialect, CacheQueryTypeMetadata typeMetadata) {
             this.dialect = dialect;
 
             this.typeMetadata = typeMetadata;
 
-            final Collection<GridCacheQueryTypeDescriptor> keyFields = typeMetadata.getKeyDescriptors();
+            final Collection<CacheQueryTypeDescriptor> keyFields = typeMetadata.getKeyDescriptors();
 
-            Collection<GridCacheQueryTypeDescriptor> valFields = typeMetadata.getValueDescriptors();
+            Collection<CacheQueryTypeDescriptor> valFields = typeMetadata.getValueDescriptors();
 
             uniqValFields = F.view(typeMetadata.getValueDescriptors(),
-                new IgnitePredicate<GridCacheQueryTypeDescriptor>() {
-                    @Override public boolean apply(GridCacheQueryTypeDescriptor desc) {
+                new IgnitePredicate<CacheQueryTypeDescriptor>() {
+                    @Override public boolean apply(CacheQueryTypeDescriptor desc) {
                         return !keyFields.contains(desc);
                     }
                 });
@@ -165,7 +165,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
          *
          * @return Key fields type descriptors.
          */
-        protected Collection<GridCacheQueryTypeDescriptor> keyDescriptors() {
+        protected Collection<CacheQueryTypeDescriptor> keyDescriptors() {
             return typeMetadata.getKeyDescriptors();
         }
 
@@ -174,7 +174,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
          *
          * @return Key value type descriptors.
          */
-        protected Collection<GridCacheQueryTypeDescriptor> valueDescriptors() {
+        protected Collection<CacheQueryTypeDescriptor> valueDescriptors() {
             return typeMetadata.getValueDescriptors();
         }
     }
@@ -221,7 +221,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     protected ExecutorService exec;
 
     /** Type mapping description. */
-    protected Collection<GridCacheQueryTypeMetadata> typeMetadata;
+    protected Collection<CacheQueryTypeMetadata> typeMetadata;
 
     /** Cache with query by type. */
     protected Map<Object, EntryMapping> typeMeta;
@@ -255,7 +255,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String typeName, Collection<GridCacheQueryTypeDescriptor> fields, ResultSet rs)
+    protected abstract <R> R buildObject(String typeName, Collection<CacheQueryTypeDescriptor> fields, ResultSet rs)
         throws CacheLoaderException;
 
     /**
@@ -862,14 +862,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /**
-     * Extract database column names from {@link GridCacheQueryTypeDescriptor}.
+     * Extract database column names from {@link CacheQueryTypeDescriptor}.
      *
-     * @param dsc collection of {@link GridCacheQueryTypeDescriptor}.
+     * @param dsc collection of {@link CacheQueryTypeDescriptor}.
      */
-    protected static Collection<String> databaseColumns(Collection<GridCacheQueryTypeDescriptor> dsc) {
-        return F.transform(dsc, new C1<GridCacheQueryTypeDescriptor, String>() {
+    protected static Collection<String> databaseColumns(Collection<CacheQueryTypeDescriptor> dsc) {
+        return F.transform(dsc, new C1<CacheQueryTypeDescriptor, String>() {
             /** {@inheritDoc} */
-            @Override public String apply(GridCacheQueryTypeDescriptor desc) {
+            @Override public String apply(CacheQueryTypeDescriptor desc) {
                 return desc.getDbName();
             }
         });
@@ -884,7 +884,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      */
     protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping type,
         Object key) throws CacheException {
-        for (GridCacheQueryTypeDescriptor field : type.keyDescriptors()) {
+        for (CacheQueryTypeDescriptor field : type.keyDescriptors()) {
             Object fieldVal = extractField(type.keyType(), field.getJavaName(), key);
 
             try {
@@ -920,7 +920,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      */
     protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping type, Object val)
         throws CacheWriterException {
-        for (GridCacheQueryTypeDescriptor field : type.uniqValFields) {
+        for (CacheQueryTypeDescriptor field : type.uniqValFields) {
             Object fieldVal = extractField(type.valueType(), field.getJavaName(), val);
 
             try {
@@ -998,7 +998,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      *
      * @param typeMetadata Type mapping description.
      */
-    public void setTypeMetadata(Collection<GridCacheQueryTypeMetadata> typeMetadata) {
+    public void setTypeMetadata(Collection<CacheQueryTypeMetadata> typeMetadata) {
         this.typeMetadata = typeMetadata;
     }
 
@@ -1079,7 +1079,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 int i = 1;
 
                 for (Object key : keys)
-                    for (GridCacheQueryTypeDescriptor field : m.keyDescriptors()) {
+                    for (CacheQueryTypeDescriptor field : m.keyDescriptors()) {
                         Object fieldVal = extractField(m.keyType(), field.getJavaName(), key);
 
                         if (fieldVal != null)

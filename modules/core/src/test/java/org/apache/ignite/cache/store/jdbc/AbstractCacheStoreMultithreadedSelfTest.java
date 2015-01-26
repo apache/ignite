@@ -17,19 +17,17 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
-
-import static org.gridgain.testframework.GridTestUtils.*;
 
 /**
  *
@@ -97,7 +95,7 @@ public abstract class AbstractCacheStoreMultithreadedSelfTest<T extends JdbcCach
     public void testMultithreadedPutAll() throws Exception {
         startGrid();
 
-        runMultiThreaded(new Callable<Object>() {
+        multithreaded(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Nullable @Override public Object call() throws Exception {

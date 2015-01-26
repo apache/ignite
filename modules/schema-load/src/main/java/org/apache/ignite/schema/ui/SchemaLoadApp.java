@@ -28,10 +28,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
-import org.gridgain.grid.cache.query.*;
 
 import java.io.*;
 import java.net.*;
@@ -276,7 +276,7 @@ public class SchemaLoadApp extends Application {
         final File destFolder = new File(outFolder);
 
         Runnable task = new Task<Void>() {
-            private void checkEmpty(final PojoDescriptor pojo, Collection<GridCacheQueryTypeDescriptor> descs,
+            private void checkEmpty(final PojoDescriptor pojo, Collection<CacheQueryTypeDescriptor> descs,
                 String msg) {
                 if (descs.isEmpty()) {
                     Platform.runLater(new Runnable() {
@@ -296,7 +296,7 @@ public class SchemaLoadApp extends Application {
                 if (!destFolder.exists() && !destFolder.mkdirs())
                     throw new IOException("Failed to create output folder: " + destFolder);
 
-                Collection<GridCacheQueryTypeMetadata> all = new ArrayList<>();
+                Collection<CacheQueryTypeMetadata> all = new ArrayList<>();
 
                 boolean constructor = pojoConstructorCh.isSelected();
                 boolean includeKeys = pojoIncludeKeysCh.isSelected();
@@ -307,7 +307,7 @@ public class SchemaLoadApp extends Application {
                 // Generate XML and POJO.
                 for (PojoDescriptor pojo : selPojos) {
                     if (pojo.selected()) {
-                        GridCacheQueryTypeMetadata meta = pojo.metadata(includeKeys);
+                        CacheQueryTypeMetadata meta = pojo.metadata(includeKeys);
 
                         checkEmpty(pojo, meta.getKeyDescriptors(), "No key fields specified for type: ");
 

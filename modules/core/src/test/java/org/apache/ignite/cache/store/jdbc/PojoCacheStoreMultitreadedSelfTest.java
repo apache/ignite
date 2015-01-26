@@ -19,10 +19,10 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.spi.discovery.tcp.*;
-import org.gridgain.grid.cache.query.*;
-import org.gridgain.grid.util.typedef.*;
 import org.h2.jdbcx.*;
 import org.springframework.beans.*;
 import org.springframework.beans.factory.xml.*;
@@ -34,8 +34,8 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
@@ -50,7 +50,7 @@ public class PojoCacheStoreMultitreadedSelfTest extends AbstractCacheStoreMultit
         UrlResource metaUrl;
 
         try {
-            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/all.xml").toURI().toURL());
+            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/Ignite.xml").toURI().toURL());
         }
         catch (MalformedURLException e) {
             throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
@@ -63,8 +63,8 @@ public class PojoCacheStoreMultitreadedSelfTest extends AbstractCacheStoreMultit
 
             springCtx.refresh();
 
-            Collection<GridCacheQueryTypeMetadata> typeMetadata =
-                springCtx.getBeansOfType(GridCacheQueryTypeMetadata.class).values();
+            Collection<CacheQueryTypeMetadata> typeMetadata =
+                springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
 
             store.setTypeMetadata(typeMetadata);
         }
