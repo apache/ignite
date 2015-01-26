@@ -36,7 +36,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Grid node metrics self test.
  */
 @GridCommonTest(group = "Kernal Self")
-public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
+public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Test message size. */
     private static final int MSG_SIZE = 1024;
 
