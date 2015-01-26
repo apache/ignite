@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.mbean;
 
 import javax.cache.*;
 import javax.cache.configuration.*;

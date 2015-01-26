@@ -753,11 +753,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheManager getCacheManager() {
+    @Override public javax.cache.CacheManager getCacheManager() {
         // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
-            IgniteCachingProvider.class.getName(),
-            IgniteCachingProvider.class.getClassLoader());
+        CachingProvider provider = (CachingProvider)Caching.getCachingProvider(
+            CachingProvider.class.getName(),
+            CachingProvider.class.getClassLoader());
 
         if (provider == null)
             return null;
