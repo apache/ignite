@@ -2350,7 +2350,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut =
                     tx.invokeAsync(ctx, invokeMap, args);
 
-                return fut.get().value();
+                Map<K, EntryProcessorResult<T>> res = fut.get().value();
+
+                return res != null ? res : Collections.<K, EntryProcessorResult<T>>emptyMap();
             }
         });
     }
