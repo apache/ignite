@@ -18,7 +18,6 @@
 package org.apache.ignite.visor.commands.config
 
 import org.apache.ignite.internal.util.GridUtils
-import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 
 import org.apache.ignite._
@@ -45,7 +44,7 @@ import scala.util.control.Breaks._
  * When using this command from Scala code (not from REPL) you need to make sure to
  * properly import all necessary typed and implicit conversions:
  * <ex>
- * import org.gridgain.visor._
+ * import org.apache.ignite.visor._
  * import commands.config.VisorConfigurationCommand._
  * </ex>
  * Note that `VisorConfigurationCommand` object contains necessary implicit conversions so that

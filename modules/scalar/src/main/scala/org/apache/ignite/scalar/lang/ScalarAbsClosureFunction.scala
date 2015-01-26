@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.lang
+package org.apache.ignite.scalar.lang
 
 /**
  * Wrapping Scala function for `GridAbsClosure`.

@@ -32,10 +32,10 @@ import java.net.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     /** Class Name of task 1. */
-    private static final String TEST_TASK1_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TEST_TASK1_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** Class Name of task 2. */
-    private static final String TEST_TASK2_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath2";
+    private static final String TEST_TASK2_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2";
 
     /** */
     private static final ClassLoader CLASS_LOADER;

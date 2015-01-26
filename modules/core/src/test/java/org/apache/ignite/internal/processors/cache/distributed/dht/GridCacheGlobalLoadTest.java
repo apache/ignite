@@ -41,6 +41,9 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     /** */
     private static ConcurrentMap<String, Object[]> map;
 
+    /** */
+    private static volatile boolean failStore;
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -65,11 +68,36 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
+        loadCache(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLoadCacheAsync() throws Exception {
+        loadCache(true);
+    }
+
+    /**
+     * @param async If {@code true} uses asynchronous method.
+     * @throws Exception If failed.
+     */
+    private void loadCache(boolean async) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
+
+        IgniteCache<Integer, Integer> asyncCache = cache.enableAsync();
+
+        assertTrue(asyncCache.isAsync());
 
         map = new ConcurrentHashMap8<>();
 
-        cache.loadCache(null, 1, 2, 3);
+        if (async) {
+            asyncCache.loadCache(null, 1, 2, 3);
+
+            asyncCache.future().get();
+        }
+        else
+            cache.loadCache(null, 1, 2, 3);
 
         assertEquals(3, map.size());
 
@@ -87,14 +115,28 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
         map = new ConcurrentHashMap8<>();
 
-        cache.loadCache(new IgniteBiPredicate<Integer, Integer>() {
-            @Override public boolean apply(Integer key, Integer val) {
-                assertNotNull(key);
-                assertNotNull(val);
+        if (async) {
+            asyncCache.loadCache(new IgniteBiPredicate<Integer, Integer>() {
+                @Override public boolean apply(Integer key, Integer val) {
+                    assertNotNull(key);
+                    assertNotNull(val);
 
-                return key % 2 == 0;
-            }
-        }, 1, 2, 3, 4, 5, 6);
+                    return key % 2 == 0;
+                }
+            }, 1, 2, 3, 4, 5, 6);
+
+            asyncCache.future().get();
+        }
+        else {
+            cache.loadCache(new IgniteBiPredicate<Integer, Integer>() {
+                @Override public boolean apply(Integer key, Integer val) {
+                    assertNotNull(key);
+                    assertNotNull(val);
+
+                    return key % 2 == 0;
+                }
+            }, 1, 2, 3, 4, 5, 6);
+        }
 
         assertEquals(3, map.size());
 
@@ -115,10 +157,24 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        failStore = true;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
         map = null;
+
+        failStore = false;
+
+        IgniteCache<Integer, Integer> cache = jcache();
+
+        for (int i = 0; i < 7; i++)
+            cache.remove(i);
     }
 
     /** {@inheritDoc} */
@@ -153,7 +209,8 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Integer load(Integer key) {
-            assertEquals((Integer)5, key);
+            if (failStore)
+                assertEquals((Integer)5, key);
 
             return null;
         }
@@ -165,7 +222,8 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void delete(Object key) {
-            fail();
+            if (failStore)
+                fail();
         }
     }
 }

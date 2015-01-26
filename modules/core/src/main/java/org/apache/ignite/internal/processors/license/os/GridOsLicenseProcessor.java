@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.license.os;
 
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.jetbrains.annotations.*;
 

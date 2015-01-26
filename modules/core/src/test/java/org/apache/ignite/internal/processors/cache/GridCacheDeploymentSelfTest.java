@@ -54,22 +54,22 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     private static final String GRID_NAME = "grid-no-cache";
 
     /** First test task name. */
-    private static final String TEST_TASK_1 = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestTask1";
+    private static final String TEST_TASK_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask1";
 
     /** Second test task name. */
-    private static final String TEST_TASK_2 = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestTask2";
+    private static final String TEST_TASK_2 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask2";
 
     /** Third test task name. */
-    private static final String TEST_TASK_3 = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestTask3";
+    private static final String TEST_TASK_3 = "org.apache.ignite.tests.p2p.CacheDeploymentTestTask3";
 
     /** Test value 1. */
-    private static final String TEST_KEY = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestKey";
+    private static final String TEST_KEY = "org.apache.ignite.tests.p2p.CacheDeploymentTestKey";
 
     /** Test value 1. */
-    private static final String TEST_VALUE_1 = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestValue";
+    private static final String TEST_VALUE_1 = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
     /** Test value 2. */
-    private static final String TEST_VALUE_2 = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestValue2";
+    private static final String TEST_VALUE_2 = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue2";
 
     /** */
     private IgniteDeploymentMode depMode;

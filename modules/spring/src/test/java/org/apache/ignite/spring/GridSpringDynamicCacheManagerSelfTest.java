@@ -46,7 +46,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
     private GridSpringDynamicCacheTestService svc;
 
     /** */
-    private CacheManager mgr;
+    private org.springframework.cache.CacheManager mgr;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -88,7 +88,7 @@ public class GridSpringDynamicCacheManagerSelfTest extends GridCommonAbstractTes
             "org/apache/ignite/spring/spring-dynamic-caching.xml");
 
         svc = (GridSpringDynamicCacheTestService)factory.getBean("testService");
-        mgr = (CacheManager)factory.getBean("cacheManager");
+        mgr = (org.springframework.cache.CacheManager)factory.getBean("cacheManager");
     }
 
     /** {@inheritDoc} */

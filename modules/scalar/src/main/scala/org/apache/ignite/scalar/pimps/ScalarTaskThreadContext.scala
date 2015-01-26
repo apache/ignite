@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.pimps
+package org.apache.ignite.scalar.pimps
 
 import org.apache.ignite.cluster.ClusterGroup
-import org.apache.ignite._
-import org.gridgain.scalar._
+import org.apache.ignite.scalar.ScalarConversions
 import org.jetbrains.annotations._
 
 /**
