@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.pimps
+package org.apache.ignite.scalar.pimps
 
-import org.apache.ignite.cluster.{ClusterGroupEmptyException, ClusterGroup, ClusterNode}
-import org.apache.ignite.lang.{IgniteFutureCancelledException, IgniteFuture, IgnitePredicate}
 import org.apache.ignite._
+import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterNode}
+import org.apache.ignite.lang.{IgniteFuture, IgniteFutureCancelledException, IgnitePredicate}
 import org.jetbrains.annotations._
 
 /**
@@ -118,7 +118,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * Gets sequence of all nodes in this projection for given predicate.
      *
      * @param p Optional node filter predicates. It `null` provided - all nodes will be returned.
-     * @see `org.gridgain.grid.GridProjection.nodes(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.nodes(...)`
      */
     def nodes$(@Nullable p: NF): Seq[ClusterNode] =
         toScalaSeq(forPredicate(p).nodes())
@@ -127,7 +127,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * Gets sequence of all remote nodes in this projection for given predicate.
      *
      * @param p Optional node filter predicate. It `null` provided - all remote nodes will be returned.
-     * @see `org.gridgain.grid.GridProjection.remoteNodes(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.remoteNodes(...)`
      */
     def remoteNodes$(@Nullable p: NF = null): Seq[ClusterNode] =
         toScalaSeq(forPredicate(p).forRemotes().nodes())
@@ -138,7 +138,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param obj Optional object to send. If `null` - this method is no-op.
      * @param p Optional node filter predicates. If none provided or `null` -
      *      all nodes in the projection will be used.
-     * @see `org.gridgain.grid.GridProjection.send(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.send(...)`
      */
     def !<(@Nullable obj: AnyRef, @Nullable p: NF) {
         value.ignite().message(forPredicate(p)).send(null, obj)
@@ -151,7 +151,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      method is no-op.
      * @param p Optional node filter predicate. If none provided or `null` -
      *      all nodes in the projection will be used.
-     * @see `org.gridgain.grid.GridProjection.send(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.send(...)`
      */
     def !<(@Nullable seq: Seq[AnyRef], @Nullable p: NF) {
         value.ignite().message(forPredicate(p)).send(null, seq)
@@ -163,7 +163,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param obj Optional object to send. If `null` - this method is no-op.
      * @param p Optional node filter predicate. If none provided or `null` -
      *      all nodes in the projection will be used.
-     * @see `org.gridgain.grid.GridProjection.send(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.send(...)`
      */
     def send$(@Nullable obj: AnyRef, @Nullable p: NF) {
         value.ignite().message(forPredicate(p)).send(null, obj)
@@ -175,7 +175,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param seq Optional sequence of objects to send. If empty or `null` - this
      *      method is no-op.
      * @param p Optional node filter predicate. If  `null` provided - all nodes in the projection will be used.
-     * @see `org.gridgain.grid.GridProjection.send(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.send(...)`
      */
     def send$(@Nullable seq: Seq[AnyRef], @Nullable p: NF) {
         value.ignite().message(forPredicate(p)).send(null, seq)
@@ -218,7 +218,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op and returns `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def #<[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): Seq[R] =
         call$(s, p)
@@ -230,7 +230,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional closure to call. If `null` - this method is no-op and returns `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def call$[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] =
         call$(Seq(s), p)
@@ -244,7 +244,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param dflt Closure to execute if projection is empty.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def callSafe[R](@Nullable s: Call[R], dflt: () => Seq[R], @Nullable p: NF): Seq[R] = {
         assert(dflt != null)
@@ -263,7 +263,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Sequence of result values from all nodes where given closures were executed
      *      or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def #<[R](@Nullable s: Call[R], @Nullable p: NF): Seq[R] =
         call$(s, p)
@@ -274,7 +274,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If `null` provided- all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def run$(@Nullable s: Seq[Run], @Nullable p: NF) {
         runAsync$(s, p).get
@@ -299,7 +299,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      method is no-op.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @param dflt Closure to execute if projection is empty.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def runSafe(@Nullable s: Seq[Run], @Nullable dflt: Run, @Nullable p: NF) {
         try {
@@ -315,7 +315,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *
      * @param s Optional sequence of closures to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def *<(@Nullable s: Seq[Run], @Nullable p: NF) {
         run$(s, p)
@@ -327,7 +327,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *
      * @param s Optional closure to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def run$(@Nullable s: Run, @Nullable p: NF) {
         run$(Seq(s), p)
@@ -341,7 +341,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional closure to call. If empty or `null` - this method is no-op.
      * @param dflt Closure to execute if projection is empty.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def runSafe(@Nullable s: Run, @Nullable dflt: Run, @Nullable p: NF) {
         try {
@@ -357,7 +357,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *
      * @param s Optional closure to call. If empty or `null` - this method is no-op.
      * @param p Optional node filter predicate. If none provided or `null` - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def *<(@Nullable s: Run, @Nullable p: NF) {
         run$(s, p)
@@ -372,7 +372,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Future of Java collection containing result values from all nodes where given
      *      closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         IgniteFuture[java.util.Collection[R]] = {
@@ -391,7 +391,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Future of Java collection containing result values from all nodes where given
      *      closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def #?[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
         callAsync$(s, p)
@@ -406,7 +406,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Future of Java collection containing result values from all nodes where given
      *      closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def callAsync$[R](@Nullable s: Call[R], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
         callAsync$(Seq(s), p)
@@ -420,7 +420,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Future of Java collection containing result values from all nodes where given
      *      closures were executed or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def #?[R](@Nullable s: Call[R], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
         callAsync$(s, p)
@@ -433,7 +433,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional sequence of absolute closures to call. If empty or `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
         val comp = value.ignite().compute(forPredicate(p)).enableAsync()
@@ -449,7 +449,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional sequence of absolute closures to call. If empty or `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.call(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def *?(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
         runAsync$(s, p)
@@ -462,7 +462,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional absolute closure to call. If `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def runAsync$(@Nullable s: Run, @Nullable p: NF): IgniteFuture[_] = {
         runAsync$(Seq(s), p)
@@ -474,7 +474,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param s Optional absolute closure to call. If `null` - this method
      *      is no-op and finished future over `null` will be returned.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
-     * @see `org.gridgain.grid.GridProjection.run(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
     def *?(@Nullable s: Run, @Nullable p: NF): IgniteFuture[_] = {
         runAsync$(s, p)
@@ -490,7 +490,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      is no-op and will return finished future over `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Future over the reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
     def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         assert(s != null && r != null)
@@ -511,7 +511,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      is no-op and will return finished future over `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Future over the reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
     def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         reduceAsync$(s, r, p)
@@ -527,7 +527,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      is no-op and will return `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
     def reduce$[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
         reduceAsync$(s, r, p).get
@@ -544,7 +544,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param dflt Closure to execute if projection is empty.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
     def reduceSafe[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2,
         dflt: () => R2, @Nullable p: NF): R2 = {
@@ -564,7 +564,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param r Optional reduction function. If `null` - this method is no-op and will return `null`.
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @return Reduced result or `null` (see above).
-     * @see `org.gridgain.grid.GridProjection.reduce(...)`
+     * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
     def @<[R1, R2](@Nullable s: Seq[Call[R1]], @Nullable r: Seq[R1] => R2, @Nullable p: NF): R2 =
         reduceAsync$(s, r, p).get
