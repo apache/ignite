@@ -21,12 +21,15 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.gridgain.grid.kernal.processors.cache.query.*;
 
 import java.util.*;
 
@@ -96,8 +99,79 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         return cc;
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTwoStep() throws Exception {
+        fillCaches();
+
+        String cache = "partitioned";
+
+        GridCacheQueriesEx<Integer, FactPurchase> qx =
+            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache(cache).queries();
+
+//        for (Map.Entry<Integer, FactPurchase> e : qx.createSqlQuery(FactPurchase.class, "1 = 1").execute().get())
+//            X.println("___ "  + e);
+
+        GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
+
+        q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2 ,2);
+
+        Object cnt = qx.execute(cache, q).get().iterator().next().get(0);
+
+        assertEquals(10L, cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTwoStepGroupAndAggregates() throws Exception {
+        fillCaches();
+
+        GridCacheQueriesEx<Integer, FactPurchase> qx =
+            (GridCacheQueriesEx<Integer, FactPurchase>)ignite.<Integer, FactPurchase>cache("partitioned").queries();
+
+        Set<Integer> set1 = new HashSet<>();
+
+        X.println("___ simple");
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select f.productId, p.name, f.price " +
+            "from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId ").get()) {
+            X.println("___ -> " + o);
+
+            set1.add((Integer)o.get(0));
+        }
+
+        Set<Integer> set0 = new HashSet<>();
+
+        X.println("___ GROUP BY");
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase group by productId")
+            .get()) {
+            X.println("___ -> " + o);
+
+            assertTrue(set0.add((Integer) o.get(0)));
+        }
+
+        assertFalse(set1.isEmpty());
+        assertEquals(set0, set1);
+
+        X.println("___ AVG MIN MAX SUM COUNT(*) COUNT(x)");
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned",
+            "select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
+                "count(nullif(f.price, 5)) " +
+                "from FactPurchase f, \"replicated\".DimProduct p " +
+                "where p.id = f.productId " +
+                "group by f.productId, p.name").get()) {
+            X.println("___ -> " + o);
+        }
+    }
+
     /** @throws Exception If failed. */
     public void testOnProjection() throws Exception {
+        fillCaches();
+
         CacheProjection<Integer, FactPurchase> prj = ignite.<Integer, FactPurchase>cache("partitioned").projection(
             new IgnitePredicate<CacheEntry<Integer, FactPurchase>>() {
                 @Override public boolean apply(CacheEntry<Integer, FactPurchase> e) {
@@ -111,14 +185,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Fills the caches with data and executes the query.
-     *
-     * @param prj Cache projection.
-     * @throws Exception If failed.
-     * @return Result.
+     * @throws IgniteCheckedException If failed.
      */
-    private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
-        throws Exception {
+    private void fillCaches() throws IgniteCheckedException, InterruptedException {
         int idGen = 0;
 
         GridCache<Integer, Object> dimCache = ignite.cache("replicated");
@@ -161,11 +230,21 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             DimStore store = dimStores.get(i % dimStores.size());
             DimProduct prod = dimProds.get(i % dimProds.size());
 
-            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId()));
+            factCache.put(id, new FactPurchase(id, prod.getId(), store.getId(), i + 5));
         }
+    }
 
-        CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ? factCache : prj).queries().createSqlQuery(
-            FactPurchase.class,
+    /**
+     * Fills the caches with data and executes the query.
+     *
+     * @param prj Cache projection.
+     * @throws Exception If failed.
+     * @return Result.
+     */
+    private List<Map.Entry<Integer, FactPurchase>> body(CacheProjection<Integer, FactPurchase> prj)
+        throws Exception {
+        CacheQuery<Map.Entry<Integer, FactPurchase>> qry = (prj == null ?
+            ignite.<Integer, FactPurchase>cache("partitioned") : prj).queries().createSqlQuery(FactPurchase.class,
             "from \"replicated\".DimStore, \"partitioned\".FactPurchase where DimStore.id = FactPurchase.storeId");
 
         List<Map.Entry<Integer, FactPurchase>> res = new ArrayList<>(qry.execute().get());
@@ -213,10 +292,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimProduct {
         /** Primary key. */
-        @CacheQuerySqlField(unique = true)
+        @CacheQuerySqlField
         private int id;
 
         /** Product name. */
+        @CacheQuerySqlField
         private String name;
 
         /**
@@ -255,7 +335,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class DimStore {
         /** Primary key. */
-        @CacheQuerySqlField(unique = true)
+        @CacheQuerySqlField
         private int id;
 
         /** Store name. */
@@ -298,7 +378,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
      */
     private static class FactPurchase {
         /** Primary key. */
-        @CacheQuerySqlField(unique = true)
+        @CacheQuerySqlField
         private int id;
 
         /** Foreign key to store at which purchase occurred. */
@@ -309,6 +389,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         @CacheQuerySqlField
         private int productId;
 
+        @CacheQuerySqlField
+        private int price;
+
         /**
          * Constructs a purchase record.
          *
@@ -316,10 +399,11 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
          * @param productId Purchased product ID.
          * @param storeId Store ID.
          */
-        FactPurchase(int id, int productId, int storeId) {
+        FactPurchase(int id, int productId, int storeId, int price) {
             this.id = id;
             this.productId = productId;
             this.storeId = storeId;
+            this.price = price;
         }
 
         /**
