@@ -24,6 +24,7 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mbean.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -207,7 +208,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCacheMxBean mxBean() {
+    @Override public CacheMetricsMxBean mxBean() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

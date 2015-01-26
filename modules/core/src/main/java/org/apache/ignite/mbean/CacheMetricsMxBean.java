@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache;
+package org.apache.ignite.mbean;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.*;
 
 /**
@@ -31,7 +31,7 @@ import javax.cache.management.*;
  * This interface defines JMX view on {@link IgniteCache}.
  */
 @IgniteMBeanDescription("MBean that provides access to cache descriptor.")
-public interface IgniteCacheMxBean extends CacheStatisticsMXBean, CacheMetrics {
+public interface CacheMetricsMxBean extends CacheStatisticsMXBean, CacheMetrics {
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Clear statistics.")
     public void clear();

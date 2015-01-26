@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cluster;
 
-import org.apache.ignite.mbean.*;
-
 import java.io.*;
 
 /**
@@ -46,7 +44,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Last update time.
      */
-    @IgniteMBeanDescription("Last update time of this node metrics.")
     public long getLastUpdateTime();
 
     /**
@@ -64,7 +61,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Maximum number of jobs that ever ran concurrently on this node.
      */
-    @IgniteMBeanDescription("Maximum number of jobs that ever ran concurrently on this node.")
     public int getMaximumActiveJobs();
 
     /**
@@ -72,7 +68,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Number of currently active jobs concurrently executing on the node.
      */
-    @IgniteMBeanDescription("Number of currently active jobs concurrently executing on the node.")
     public int getCurrentActiveJobs();
 
     /**
@@ -88,7 +83,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average number of active jobs.
      */
-    @IgniteMBeanDescription("Average number of active jobs concurrently executing on the node.")
     public float getAverageActiveJobs();
 
     /**
@@ -104,7 +98,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Maximum number of waiting jobs.
      */
-    @IgniteMBeanDescription("Maximum number of waiting jobs this node had.")
     public int getMaximumWaitingJobs();
 
     /**
@@ -112,7 +105,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Number of queued jobs currently waiting to be executed.
      */
-    @IgniteMBeanDescription("Number of queued jobs currently waiting to be executed.")
     public int getCurrentWaitingJobs();
 
     /**
@@ -128,7 +120,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average number of waiting jobs.
      */
-    @IgniteMBeanDescription("Average number of waiting jobs this node had queued.")
     public float getAverageWaitingJobs();
 
     /**
@@ -145,7 +136,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Maximum number of jobs rejected at once.
      */
-    @IgniteMBeanDescription("Maximum number of jobs rejected at once during a single collision resolution operation.")
     public int getMaximumRejectedJobs();
 
     /**
@@ -153,7 +143,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Number of jobs rejected after more recent collision resolution operation.
      */
-    @IgniteMBeanDescription("Number of jobs rejected after more recent collision resolution operation.")
     public int getCurrentRejectedJobs();
 
     /**
@@ -169,7 +158,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average number of jobs this node rejects during collision resolution operations.
      */
-    @IgniteMBeanDescription("Average number of jobs this node rejects during collision resolution operations.")
     public float getAverageRejectedJobs();
 
     /**
@@ -181,8 +169,6 @@ public interface ClusterNodeMetrics extends Serializable {
      * @return Total number of jobs this node rejects during collision resolution
      *      operations since node startup.
      */
-    @IgniteMBeanDescription(
-        "Total number of jobs this node rejects during collision resolution operations since node startup.")
     public int getTotalRejectedJobs();
 
     /**
@@ -191,7 +177,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Maximum number of cancelled jobs.
      */
-    @IgniteMBeanDescription("Maximum number of cancelled jobs this node ever had running concurrently.")
     public int getMaximumCancelledJobs();
 
     /**
@@ -201,7 +186,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Number of cancelled jobs that are still running.
      */
-    @IgniteMBeanDescription("Number of cancelled jobs that are still running.")
     public int getCurrentCancelledJobs();
 
     /**
@@ -218,7 +202,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average number of cancelled jobs.
      */
-    @IgniteMBeanDescription("Average number of cancelled jobs this node ever had running concurrently.")
     public float getAverageCancelledJobs();
 
     /**
@@ -229,7 +212,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Total number of cancelled jobs since node startup.
      */
-    @IgniteMBeanDescription("Total number of cancelled jobs since node startup.")
     public int getTotalCancelledJobs();
 
     /**
@@ -240,7 +222,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Total number of jobs handled by the node since node startup.
      */
-    @IgniteMBeanDescription("Total number of jobs handled by the node.")
     public int getTotalExecutedJobs();
 
     /**
@@ -256,7 +237,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Maximum waiting time.
      */
-    @IgniteMBeanDescription("Maximum time a job ever spent waiting in a queue to be executed.")
     public long getMaximumJobWaitTime();
 
     /**
@@ -264,7 +244,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Current wait time of oldest job.
      */
-    @IgniteMBeanDescription("Current wait time of oldest job.")
     public long getCurrentJobWaitTime();
 
     /**
@@ -280,7 +259,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average job wait time.
      */
-    @IgniteMBeanDescription("Average time jobs spend waiting in the queue to be executed.")
     public double getAverageJobWaitTime();
 
     /**
@@ -296,7 +274,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Time it took to execute the longest job on the node.
      */
-    @IgniteMBeanDescription("Time it took to execute the longest job on the node.")
     public long getMaximumJobExecuteTime();
 
     /**
@@ -304,7 +281,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Longest time a current job has been executing for.
      */
-    @IgniteMBeanDescription("Longest time a current job has been executing for.")
     public long getCurrentJobExecuteTime();
 
     /**
@@ -320,7 +296,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average job execution time.
      */
-    @IgniteMBeanDescription("Average time a job takes to execute on the node.")
     public double getAverageJobExecuteTime();
 
     /**
@@ -336,7 +311,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Total number of jobs handled by the node.
      */
-    @IgniteMBeanDescription("Total number of tasks handled by the node.")
     public int getTotalExecutedTasks();
 
     /**
@@ -344,7 +318,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Total time this node spent executing jobs.
      */
-    @IgniteMBeanDescription("Total time this node spent executing jobs.")
     public long getTotalBusyTime();
 
     /**
@@ -352,7 +325,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Gets total time this node spent idling.
      */
-    @IgniteMBeanDescription("Total time this node spent idling (not executing any jobs).")
     public long getTotalIdleTime();
 
     /**
@@ -360,7 +332,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Time this node spend idling since executing last job.
      */
-    @IgniteMBeanDescription("Time this node spend idling since executing last job.")
     public long getCurrentIdleTime();
 
     /**
@@ -369,7 +340,6 @@ public interface ClusterNodeMetrics extends Serializable {
      * @return Percentage of time this node is busy (value is less than
      *      or equal to {@code 1} and greater than or equal to {@code 0})
      */
-    @IgniteMBeanDescription("Percentage of time this node is busy executing jobs vs. idling.")
     public float getBusyTimePercentage();
 
     /**
@@ -378,7 +348,6 @@ public interface ClusterNodeMetrics extends Serializable {
      * @return Percentage of time this node is idle (value is less than
      *      or equal to {@code 1} and greater than or equal to {@code 0})
      */
-    @IgniteMBeanDescription("Percentage of time this node is idling vs. executing jobs.")
     public float getIdleTimePercentage();
 
     /**
@@ -392,7 +361,6 @@ public interface ClusterNodeMetrics extends Serializable {
      * @return The number of processors available to the virtual
      *      machine, never smaller than one.
      */
-    @IgniteMBeanDescription("The number of CPUs available to the Java Virtual Machine.")
     public int getTotalCpus();
 
     /**
@@ -408,7 +376,6 @@ public interface ClusterNodeMetrics extends Serializable {
      * @return The estimated CPU usage in {@code [0, 1]} range.
      *      Negative value if not available.
      */
-    @IgniteMBeanDescription("The system load average; or a negative value if not available.")
     public double getCurrentCpuLoad();
 
     /**
@@ -425,7 +392,6 @@ public interface ClusterNodeMetrics extends Serializable {
      * @return Average of CPU load value in {@code [0, 1]} range over all metrics kept
      *      in the history.
      */
-    @IgniteMBeanDescription("Average of CPU load values over all metrics kept in the history.")
     public double getAverageCpuLoad();
 
     /**
@@ -433,7 +399,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Average time spent in CG since the last update.
      */
-    @IgniteMBeanDescription("Average time spent in CG since the last update.")
     public double getCurrentGcCpuLoad();
 
     /**
@@ -449,7 +414,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The initial size of memory in bytes; {@code -1} if undefined.
      */
-    @IgniteMBeanDescription("The initial size of memory in bytes; -1 if undefined.")
     public long getHeapMemoryInitialized();
 
     /**
@@ -466,7 +430,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Amount of heap memory used.
      */
-    @IgniteMBeanDescription("Current heap size that is used for object allocation.")
     public long getHeapMemoryUsed();
 
     /**
@@ -481,7 +444,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The amount of committed memory in bytes.
      */
-    @IgniteMBeanDescription("The amount of committed memory in bytes.")
     public long getHeapMemoryCommitted();
 
     /**
@@ -503,7 +465,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The maximum amount of memory in bytes; {@code -1} if undefined.
      */
-    @IgniteMBeanDescription("The maximum amount of memory in bytes; -1 if undefined.")
     public long getHeapMemoryMaximum();
 
     /**
@@ -519,7 +480,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The initial size of memory in bytes; {@code -1} if undefined.
      */
-    @IgniteMBeanDescription("The initial size of memory in bytes; -1 if undefined.")
     public long getNonHeapMemoryInitialized();
 
     /**
@@ -535,7 +495,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Amount of none-heap memory used.
      */
-    @IgniteMBeanDescription("Current non-heap memory size that is used by Java VM.")
     public long getNonHeapMemoryUsed();
 
     /**
@@ -550,7 +509,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The amount of committed memory in bytes.
      */
-    @IgniteMBeanDescription("Amount of non-heap memory in bytes that is committed for the JVM to use.")
     public long getNonHeapMemoryCommitted();
 
     /**
@@ -572,8 +530,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The maximum amount of memory in bytes; {@code -1} if undefined.
      */
-    @IgniteMBeanDescription("Maximum amount of non-heap memory in bytes that can " +
-        "be used for memory management. -1 if undefined.")
     public long getNonHeapMemoryMaximum();
 
     /**
@@ -581,7 +537,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Uptime of the JVM in milliseconds.
      */
-    @IgniteMBeanDescription("Uptime of the JVM in milliseconds.")
     public long getUpTime();
 
     /**
@@ -591,7 +546,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Start time of the JVM in milliseconds.
      */
-    @IgniteMBeanDescription("Start time of the JVM in milliseconds.")
     public long getStartTime();
 
     /**
@@ -609,7 +563,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Current number of live threads.
      */
-    @IgniteMBeanDescription("Current number of live threads.")
     public int getCurrentThreadCount();
 
     /**
@@ -621,7 +574,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The peak live thread count.
      */
-    @IgniteMBeanDescription("The peak live thread count.")
     public int getMaximumThreadCount();
 
     /**
@@ -633,7 +585,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return The total number of threads started.
      */
-    @IgniteMBeanDescription("The total number of threads started.")
     public long getTotalStartedThreadCount();
 
     /**
@@ -641,7 +592,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Current number of live daemon threads.
      */
-    @IgniteMBeanDescription("Current number of live daemon threads.")
     public int getCurrentDaemonThreadCount();
 
     /**
@@ -650,7 +600,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Last data version.
      */
-    @IgniteMBeanDescription("Last data version.")
     public long getLastDataVersion();
 
     /**
@@ -658,7 +607,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Sent messages count.
      */
-    @IgniteMBeanDescription("Sent messages count.")
     public int getSentMessagesCount();
 
     /**
@@ -666,7 +614,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Sent bytes count.
      */
-    @IgniteMBeanDescription("Sent bytes count.")
     public long getSentBytesCount();
 
     /**
@@ -674,7 +621,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Received messages count.
      */
-    @IgniteMBeanDescription("Received messages count.")
     public int getReceivedMessagesCount();
 
     /**
@@ -682,7 +628,6 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Received bytes count.
      */
-    @IgniteMBeanDescription("Received bytes count.")
     public long getReceivedBytesCount();
 
     /**
@@ -690,6 +635,5 @@ public interface ClusterNodeMetrics extends Serializable {
      *
      * @return Outbound messages queue size.
      */
-    @IgniteMBeanDescription("Outbound messages queue size.")
     public int getOutboundMessagesQueueSize();
 }

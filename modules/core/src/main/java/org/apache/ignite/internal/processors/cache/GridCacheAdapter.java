@@ -29,6 +29,7 @@ import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mbean.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.resources.*;
@@ -150,7 +151,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     protected CacheMetricsAdapter metrics;
 
     /** Cache mxBean. */
-    protected IgniteCacheMxBean mxBean;
+    protected CacheMetricsMxBean mxBean;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -231,7 +232,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         metrics = new CacheMetricsAdapter(ctx);
 
-        mxBean = new CacheMxBeanImpl(this);
+        mxBean = new CacheMetricsMxBeanImpl(this);
 
         IgniteFsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
 
@@ -3401,7 +3402,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCacheMxBean mxBean() {
+    @Override public CacheMetricsMxBean mxBean() {
         return mxBean;
     }
 

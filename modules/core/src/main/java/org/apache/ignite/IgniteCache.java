@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -366,5 +367,5 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return MxBean.
      */
-    public IgniteCacheMxBean mxBean();
+    public CacheMetricsMxBean mxBean();
 }

@@ -18,12 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.mbean.*;
 
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  */
-class CacheMxBeanImpl implements IgniteCacheMxBean {
+class CacheMetricsMxBeanImpl implements CacheMetricsMxBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
 
@@ -32,7 +32,7 @@ class CacheMxBeanImpl implements IgniteCacheMxBean {
      *
      * @param cache Cache.
      */
-    CacheMxBeanImpl(GridCacheAdapter<?, ?> cache) {
+    CacheMetricsMxBeanImpl(GridCacheAdapter<?, ?> cache) {
         assert cache != null;
 
         this.cache = cache;

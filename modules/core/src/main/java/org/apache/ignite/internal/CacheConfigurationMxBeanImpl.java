@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal;
+
+import org.apache.ignite.mbean.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
@@ -25,14 +27,14 @@ import javax.cache.management.*;
  * Implementation of {@link CacheMXBean}.
  *
  */
-public class CacheMxBeanImpl implements CacheMXBean {
+public class CacheConfigurationMxBeanImpl implements CacheConfigurationMxBean {
     /** */
     private final Cache<?, ?> cache;
 
     /**
      * @param cache Cache.
      */
-    public CacheMxBeanImpl(Cache<?, ?> cache) {
+    public CacheConfigurationMxBeanImpl(Cache<?, ?> cache) {
         this.cache = cache;
     }
 
