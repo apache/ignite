@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Sequence multi node tests.
  */
-public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCommonAbstractTest
+public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends IgniteAtomicsAbstractTest
     implements Externalizable {
     /** */
     protected static final int GRID_CNT = 4;
@@ -43,34 +43,11 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     protected static final int BATCH_SIZE = 33;
 
     /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /** */
     protected static final int RETRIES = 1111;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(GRID_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        return cfg;
+    @Override protected int gridCount() {
+        return GRID_CNT;
     }
 
     /**
@@ -185,10 +162,10 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
         @IgniteLoggerResource
         private IgniteLogger log;
 
-        /* Sequence name. */
+        /** Sequence name. */
         private final String seqName;
 
-        /* */
+        /** */
         private final int retries;
 
         /**

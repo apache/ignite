@@ -21,22 +21,22 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Cache sequence basic tests.
  */
 public class GridCachePartitionedSequenceApiSelfTest extends GridCacheSequenceApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+    @Override protected CacheMode atomicsCacheMode() {
+        return PARTITIONED;
+    }
 
-        atomicCfg.setCacheMode(PARTITIONED);
+    /** {@inheritDoc} */
+    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
+        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
+
         atomicCfg.setBackups(1);
-        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 
         return atomicCfg;
     }

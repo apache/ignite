@@ -588,6 +588,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sysCaches.add(CU.UTILITY_CACHE_NAME);
 
+        sysCaches.add(CU.ATOMICS_CACHE_NAME);
+
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
         sharedCtx = createSharedContext(ctx);

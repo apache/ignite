@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
-import org.apache.ignite.configuration.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -27,12 +27,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheReplicatedSequenceApiSelfTest extends GridCacheSequenceApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
-
-        atomicCfg.setCacheMode(REPLICATED);
-        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
-
-        return atomicCfg;
+    @Override protected CacheMode atomicsCacheMode() {
+        return REPLICATED;
     }
 }

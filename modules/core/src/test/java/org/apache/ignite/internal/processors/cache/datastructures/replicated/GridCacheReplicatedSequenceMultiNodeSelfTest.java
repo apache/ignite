@@ -22,31 +22,22 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Sequence multi node tests.
  */
 public class GridCacheReplicatedSequenceMultiNodeSelfTest extends GridCacheSequenceMultiNodeAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected CacheMode atomicsCacheMode() {
+        return REPLICATED;
+    }
 
-        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+    /** {@inheritDoc} */
+    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
+        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
 
-        atomicCfg.setCacheMode(REPLICATED);
         atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 
-        cfg.setAtomicConfiguration(atomicCfg);
-
-        // Default cache configuration.
-        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
-
-        dfltCacheCfg.setCacheMode(REPLICATED);
-        dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        cfg.setCacheConfiguration(dfltCacheCfg);
-
-        return cfg;
+        return atomicCfg;
     }
 }

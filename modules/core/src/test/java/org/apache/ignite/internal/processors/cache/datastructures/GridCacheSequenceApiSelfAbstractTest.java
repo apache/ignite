@@ -18,12 +18,15 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -32,18 +35,22 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 
 /**
  * Cache sequence basic tests.
  */
-public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomicsAbstractTest {
     /**  */
     protected static final int BATCH_SIZE = 3;
 
     /** Number of sequences. */
     protected static final int SEQ_NUM = 3;
+
+    /** */
+    private static final String TRANSACTIONAL_CACHE_NAME = "cache1";
 
     /** Number of loops in method execution. */
     protected static final int MAX_LOOPS_NUM = 1000;
@@ -60,41 +67,33 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
     /** Mandatory sequences. */
     private static IgniteAtomicSequence[] seqArr = new IgniteAtomicSequence[SEQ_NUM];
 
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
-
-    /**
-     * Constructor.
-     */
-    protected GridCacheSequenceApiSelfAbstractTest() {
-        super(true);
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
+        CacheConfiguration ccfg = new CacheConfiguration();
 
-        spi.setIpFinder(ipFinder);
+        ccfg.setName(TRANSACTIONAL_CACHE_NAME);
+        ccfg.setCacheMode(PARTITIONED);
 
-        cfg.setDiscoverySpi(spi);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        IgniteAtomicConfiguration atomicCfg = atomicConfiguration();
-
-        assertNotNull(atomicCfg);
-
-        cfg.setAtomicConfiguration(atomicCfg);
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
 
-    /**
-     * @return Atomic configuration.
-     */
-    protected abstract IgniteAtomicConfiguration atomicConfiguration();
+    /** {@inheritDoc} */
+    protected IgniteAtomicConfiguration atomicConfiguration() {
+        IgniteAtomicConfiguration atomicCfg = super.atomicConfiguration();
+
+        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
+
+        return atomicCfg;
+    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -122,18 +121,26 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+        try {
+            // Remove mandatory sequences from cache.
+            for (String seqName : seqNames) {
+                IgniteAtomicSequence seq = grid().atomicSequence(seqName, 0, false);
 
-        // Remove mandatory sequences from cache.
-        for (String seqName : seqNames) {
-            IgniteAtomicSequence seq = grid().atomicSequence(seqName, 0, false);
+                assertNotNull(seq);
 
-            assertNotNull(seq);
+                seq.close();
 
-            seq.close();
-
-            assertNull(grid().atomicSequence(seqName, 0, false));
+                assertNull(grid().atomicSequence(seqName, 0, false));
+            }
         }
+        finally {
+            super.afterTestsStopped();
+        }
+    }
+
+    /** {@inheritDoc} */
+    protected GridEx grid() {
+        return grid(0);
     }
 
     /**
@@ -241,7 +248,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testGetAndAddInTx() throws Exception {
-        try (IgniteTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteTx tx = grid().cache(TRANSACTIONAL_CACHE_NAME).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
                 for (IgniteAtomicSequence seq : seqArr)
                     getAndAdd(seq, i);
@@ -313,9 +320,13 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
 
         locSeq.addAndGet(153);
 
-        grid().cache(null).evictAll();
+        GridCacheAdapter cache = ((GridKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
 
-        assert null != grid().cache(null).get(new GridCacheInternalKeyImpl(locSeqName));
+        assertNotNull(cache);
+
+        cache.evictAll();
+
+        assert null != cache.get(new GridCacheInternalKeyImpl(locSeqName));
     }
 
     /**
@@ -349,28 +360,40 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
 
         seq.incrementAndGet();
 
-        for (Object o : grid().cache(null).keySet())
+        GridCacheAdapter cache = ((GridKernal)grid()).internalCache(GridCacheUtils.ATOMICS_CACHE_NAME);
+
+        assertNotNull(cache);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                grid().jcache(GridCacheUtils.ATOMICS_CACHE_NAME);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        for (Object o : cache.keySet())
             assert !(o instanceof GridCacheInternal) : "Wrong keys [key=" + o + ", keySet=" + grid().cache(null).keySet() +
                 ']';
 
-        for (Object o : grid().cache(null).values())
+        for (Object o : cache.values())
             assert !(o instanceof GridCacheInternal) : "Wrong values [value=" + o + ", values=" +
                 grid().cache(null).values() + ']';
 
-        for (Object o : grid().cache(null).entrySet())
+        for (Object o : cache.entrySet())
             assert !(o instanceof GridCacheInternal) : "Wrong entries [entry=" + o + ", entries=" +
                 grid().cache(null).values() + ']';
 
-        assert grid().cache(null).keySet().isEmpty();
+        assert cache.keySet().isEmpty();
 
-        assert grid().cache(null).values().isEmpty();
+        assert cache.values().isEmpty();
 
-        assert grid().cache(null).entrySet().isEmpty();
+        assert cache.entrySet().isEmpty();
 
-        assert grid().cache(null).size() == 0;
+        assert cache.size() == 0;
 
         for (String seqName : seqNames)
-            assert null != grid().cache(null).get(new GridCacheInternalKeyImpl(seqName));
+            assert null != cache.get(new GridCacheInternalKeyImpl(seqName));
     }
 
     /**
