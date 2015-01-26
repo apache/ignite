@@ -76,7 +76,7 @@
                 <property name="restTcpSslClientAuth" value="true"/>
 
                 <property name="restTcpSslContextFactory">
-                    <bean class="org.gridgain.client.ssl.GridSslBasicContextFactory">
+                    <bean class="org.apache.ignite.client.ssl.GridSslBasicContextFactory">
                         <property name="keyStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/server.jks"/>
                         <property name="keyStorePassword" value="123456"/>
                         <property name="trustStoreFilePath" value="${CLIENTS_MODULE_PATH}/src/test/keystore/trust.jks"/>
@@ -91,13 +91,13 @@
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
+                CacheConfiguration interface can be configured here.
             -->
             <list>
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is null. -->
                     <!--<property name="name"><null/></property>-->
 
@@ -110,7 +110,7 @@
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'partitioned'. -->
                     <property name="name" value="partitioned"/>
 
@@ -126,7 +126,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
                             <constructor-arg value="1"/>
                         </bean>
                     </property>
@@ -137,10 +137,10 @@
                     <property name="queryIndexEnabled" value="true"/>
 
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <property name="typeMetadata">
                                 <list>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -158,7 +158,7 @@
                                             </list>
                                         </property>
                                     </bean>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridImplicitPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -171,7 +171,7 @@
                                             </map>
                                         </property>
                                     </bean>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridNoDefPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -193,7 +193,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'replicated'. -->
                     <property name="name" value="replicated"/>
 
@@ -208,7 +208,7 @@
                 <!--
                     Replicated cache with in-memory store enabled.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'replicated.store'. -->
                     <property name="name" value="replicated.store"/>
 
@@ -221,7 +221,7 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.HashMapStore"/>
                     </property>
                 </bean>
             </list>
@@ -328,7 +328,7 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
                         </bean>
                     </list>
                 </property>

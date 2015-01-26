@@ -17,10 +17,10 @@
 
 package org.apache.ignite.spi.loadbalancing.roundrobin;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import java.util.*;
 
 /**

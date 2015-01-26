@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -133,6 +132,7 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws IgniteCheckedException If failed to add listener.
      */
+    @IgniteAsyncSupported
     public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException;
 
     /**
@@ -143,9 +143,9 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
      * @param opId Listen ID that was returned from {@link #remoteListen(Object, org.apache.ignite.lang.IgniteBiPredicate)} method.
      * @throws IgniteCheckedException If failed to unregister listeners.
      */
+    @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override
-    IgniteMessaging enableAsync();
+    @Override IgniteMessaging enableAsync();
 }

@@ -48,7 +48,7 @@
         <property name="localHost" value="127.0.0.1"/>
 
         <property name="cacheConfiguration">
-            <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+            <bean class="org.apache.ignite.cache.CacheConfiguration">
                 <property name="cacheMode" value="PARTITIONED"/>
 
                 <property name="preloadMode" value="SYNC"/>

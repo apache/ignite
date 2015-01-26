@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.cache.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -31,7 +29,6 @@ import java.util.concurrent.locks.*;
 
 /**
  *
- * @param <K>
  */
 class CacheLockImpl<K> implements CacheLock {
     /** */
@@ -39,9 +36,6 @@ class CacheLockImpl<K> implements CacheLock {
 
     /** */
     private final Collection<? extends K> keys;
-
-    /** */
-    private volatile CacheLockAsyncImpl<K> async;
 
     /**
      * @param delegate Delegate.
@@ -84,7 +78,7 @@ class CacheLockImpl<K> implements CacheLock {
 
     /** {@inheritDoc} */
     @Override public void lockInterruptibly() throws InterruptedException {
-        tryLock(-1, TimeUnit.MILLISECONDS);
+        tryLock(Long.MAX_VALUE, TimeUnit.MILLISECONDS);
     }
 
     /** {@inheritDoc} */
@@ -109,11 +103,11 @@ class CacheLockImpl<K> implements CacheLock {
             IgniteFuture<Boolean> fut = null;
 
             try {
-                fut = delegate.lockAllAsync(keys, time <= 0 ? -1 : unit.toMillis(time));
+                fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
                 return fut.get();
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 if (fut != null) {
                     if (!fut.cancel()) {
                         if (fut.isDone()) {
@@ -150,28 +144,5 @@ class CacheLockImpl<K> implements CacheLock {
     /** {@inheritDoc} */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheLock enableAsync() {
-        CacheLockAsyncImpl<K> async = this.async;
-
-        if (async == null) {
-            async = new CacheLockAsyncImpl<>(delegate, keys);
-
-            this.async = async;
-        }
-
-        return async;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
-        throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 }

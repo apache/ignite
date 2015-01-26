@@ -18,7 +18,7 @@
 package org.apache.ignite.fs.mapreduce;
 
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Entity representing part of GGFS file identified by file path, start position, and length.

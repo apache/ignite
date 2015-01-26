@@ -81,14 +81,14 @@
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
+                CacheConfiguration interface can be configured here.
                 Note that absolutely all configuration properties are optional.
             -->
             <list>
                 <!--
                     Partitioned cache example configuration (Atomic mode).
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -114,7 +114,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -133,7 +133,7 @@
                 <!--
                     Partitioned cache example configuration (Transactional mode).
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned_tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -163,7 +163,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -182,7 +182,7 @@
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="replicated"/>
 
                     <!--
@@ -210,7 +210,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>
@@ -220,7 +220,7 @@
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'local'. -->
                     <property name="name" value="local"/>
 
@@ -239,7 +239,7 @@
 
                     <!-- Allow to index primitive values. -->
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <!-- Index primitives. -->
                             <property name="indexPrimitiveKey" value="true"/>
                         </bean>

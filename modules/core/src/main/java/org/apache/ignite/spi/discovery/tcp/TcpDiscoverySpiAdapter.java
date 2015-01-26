@@ -19,20 +19,19 @@ package org.apache.ignite.spi.discovery.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.io.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.io.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -140,17 +139,21 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
 
-    /** Local node ID. */
-    @IgniteLocalNodeIdResource
-    protected UUID locNodeId;
-
-    /** Name of the grid. */
-    @IgniteNameResource
-    protected String gridName;
-
     /** Logger. */
     @IgniteLoggerResource
     protected IgniteLogger log;
+
+    /**
+     * Inject resources
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    protected void injectResources(Ignite ignite) {
+        // Inject resource.
+        if (ignite != null)
+            setLocalAddress(ignite.configuration().getLocalHost());
+    }
 
     /**
      * Sets local host IP address that discovery SPI uses.
@@ -162,7 +165,6 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
      * @param locAddr IP address.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
@@ -634,7 +636,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
             try {
                 U.sleep(2000);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -703,7 +705,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
     protected IgniteSpiException authenticationFailedError(TcpDiscoveryAuthFailedMessage msg) {
         assert msg != null;
 
-        return new IgniteSpiException(new GridAuthenticationException("Authentication failed [nodeId=" +
+        return new IgniteSpiException(new IgniteAuthenticationException("Authentication failed [nodeId=" +
             msg.creatorNodeId() + ", addr=" + msg.address().getHostAddress() + ']'));
     }
 
@@ -763,7 +765,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          *
          */
         SocketTimeoutWorker() {
-            super(gridName, "tcp-disco-sock-timeout-worker", log);
+            super(ignite.name(), "tcp-disco-sock-timeout-worker", log);
 
             setPriority(threadPri);
         }
@@ -931,7 +933,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
          * @param name Thread name.
          */
         protected MessageWorkerAdapter(String name) {
-            super(gridName, name, log);
+            super(ignite.name(), name, log);
 
             setPriority(threadPri);
         }
@@ -939,7 +941,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             if (log.isDebugEnabled())
-                log.debug("Message worker started [locNodeId=" + locNodeId + ']');
+                log.debug("Message worker started [locNodeId=" + ignite.configuration().getNodeId() + ']');
 
             while (!isInterrupted()) {
                 TcpDiscoveryAbstractMessage msg = queue.poll(2000, TimeUnit.MILLISECONDS);
