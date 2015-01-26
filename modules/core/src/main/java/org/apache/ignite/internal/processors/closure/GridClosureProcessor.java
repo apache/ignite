@@ -969,7 +969,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param arg Optional argument.
      * @return Job.
      */
-    private <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
+    private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
         return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
@@ -981,12 +981,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param c Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
-    private <R> ComputeJob job(final Callable<R> c) {
+    private static <R> ComputeJob job(final Callable<R> c) {
         A.notNull(c, "job");
 
-        if (c instanceof ComputeJobMasterLeaveAware)
-            return new C2MLA<>(c);
-        else return new C2<>(c);
+        return c instanceof ComputeJobMasterLeaveAware ? new C2MLA<>(c) : new C2<>(c);
     }
 
     /**
@@ -997,12 +995,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @return Grid job made out of closure.
      */
-    private <R> ComputeJob job(final Callable<R> c, @Nullable final String cacheName, final Object affKey) {
+    private static <R> ComputeJob job(final Callable<R> c, @Nullable final String cacheName, final Object affKey) {
         A.notNull(c, "job");
 
-        if (c instanceof ComputeJobMasterLeaveAware)
-            return new C3MLA<>(c, cacheName, affKey);
-        else return new C3<>(c, cacheName, affKey);
+        return c instanceof ComputeJobMasterLeaveAware ? new C3MLA<>(c, cacheName, affKey) :
+            new C3<>(c, cacheName, affKey);
     }
 
     /**
@@ -1014,9 +1011,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
-        if (r instanceof ComputeJobMasterLeaveAware)
-            return new C4MLA(r);
-        else  return new C4(r);
+       return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
     }
 
     /**
@@ -1027,12 +1022,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @return Grid job made out of closure.
      */
-    private ComputeJob job(final Runnable r, @Nullable final String cacheName, final Object affKey) {
+    private static ComputeJob job(final Runnable r, @Nullable final String cacheName, final Object affKey) {
         A.notNull(r, "job");
 
-        if (r instanceof ComputeJobMasterLeaveAware)
-            return new C5MLA(r, cacheName, affKey);
-        else return new C5(r, cacheName, affKey);
+        return r instanceof ComputeJobMasterLeaveAware ? new C5MLA(r, cacheName, affKey) : new C5(r, cacheName, affKey);
     }
 
     /** */
