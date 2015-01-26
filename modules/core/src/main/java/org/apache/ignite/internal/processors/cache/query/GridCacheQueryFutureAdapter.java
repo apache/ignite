@@ -58,7 +58,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     protected final GridCacheQueryBean qry;
 
     /** Set of received keys used to deduplicate query result set. */
-    private final Collection<K> keys = new HashSet<>();
+    private final Collection<K> keys;
 
     /** */
     private final Queue<Collection<R>> queue = new LinkedList<>();
@@ -92,6 +92,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
      */
     protected GridCacheQueryFutureAdapter() {
         qry = null;
+        keys = null;
     }
 
     /**
@@ -121,6 +122,8 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
 
             cctx.time().addTimeoutObject(this);
         }
+
+        keys = qry.query().enableDedup() ? new HashSet<K>() : null;
     }
 
     /**
@@ -335,7 +338,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         if (!qry.query().enableDedup())
             return col;
 
-        Collection<Object> dedupCol = new LinkedList<>();
+        Collection<Object> dedupCol = new ArrayList<>(col.size());
 
         synchronized (mux) {
             for (Object o : col)
