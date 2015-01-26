@@ -20,5 +20,6 @@ package org.apache.ignite.tests.p2p;
 /**
  * Second test value for deployment.
  */
-public class GridCacheDeploymentTestValue2 {
+public class CacheDeploymentTestValue2 {
+    // No-op.
 }

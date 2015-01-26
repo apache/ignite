@@ -20,21 +20,21 @@ package org.apache.ignite.tests.p2p;
 /**
  * Test key for cache deployment tests.
  */
-public class GridCacheDeploymentTestKey {
+public class CacheDeploymentTestKey {
     /** */
     private String key;
 
     /**
      * Empty constructor.
      */
-    public GridCacheDeploymentTestKey() {
+    public CacheDeploymentTestKey() {
         // No-op.
     }
 
     /**
      * @param key Key.
      */
-    public GridCacheDeploymentTestKey(String key) {
+    public CacheDeploymentTestKey(String key) {
         this.key = key;
     }
 
@@ -50,7 +50,7 @@ public class GridCacheDeploymentTestKey {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        GridCacheDeploymentTestKey that = (GridCacheDeploymentTestKey)o;
+        CacheDeploymentTestKey that = (CacheDeploymentTestKey)o;
 
         return !(key != null ? !key.equals(that.key) : that.key != null);
 
