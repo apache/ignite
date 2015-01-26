@@ -28,7 +28,7 @@ import java.util.*;
 /**
  *
  */
-public class GridQueryTest extends GridCacheAbstractQuerySelfTest {
+public class GridQueryParsingTest extends GridCacheAbstractQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
