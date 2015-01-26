@@ -17,12 +17,12 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 
 import java.util.concurrent.*;
 
 /**
- * Adapter for {@link org.apache.ignite.mbean.IgniteThreadPoolMBean} which delegates all method calls to the underlying
+ * Adapter for {@link org.apache.ignite.mxbean.IgniteThreadPoolMBean} which delegates all method calls to the underlying
  * {@link ExecutorService} instance.
  */
 public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {

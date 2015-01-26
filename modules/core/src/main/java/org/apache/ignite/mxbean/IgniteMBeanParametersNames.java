@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mbean;
+package org.apache.ignite.mxbean;
 
 import java.lang.annotation.*;
 
 /**
- * Provides MBean method parameters description.
+ * Provides MBean method parameters names.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface IgniteMBeanParametersDescriptions {
+public @interface IgniteMBeanParametersNames {
     /**
      *
-     * Array of descriptions for parameters.
+     * Array of parameter names in MBean.
      */
     @SuppressWarnings({"JavaDoc"}) public String[] value();
 }
