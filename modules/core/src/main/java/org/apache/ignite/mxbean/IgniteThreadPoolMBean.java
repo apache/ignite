@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mbean;
+package org.apache.ignite.mxbean;
 
 /**
  * MBean that provides access to information about executor service.

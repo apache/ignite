@@ -320,8 +320,8 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         try {
             Ignite ignite = startGridsMultiThreaded(2);
 
-            String taskClsName = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";
-            String jobClsName = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask$GridSingleSplitTestJob";
+            String taskClsName = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
+            String jobClsName = "org.apache.ignite.tests.p2p.SingleSplitTestTask$SingleSplitTestJob";
 
             ClassLoader ldr = getExternalClassLoader();
 

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mbean;
+package org.apache.ignite.mxbean;
 
 /**
  * This interface defines JMX view on {@link org.apache.ignite.Ignition}.
