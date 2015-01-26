@@ -564,69 +564,99 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public int partition(K key) {
+            ctx.gateway().readLock();
+
             try {
                 return affinityCache(cacheName, topologyVersion()).affFunc.partition(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public boolean isPrimary(ClusterNode n, K key) {
+            ctx.gateway().readLock();
+
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.primaryPartitions(n.id()).contains(key);
+                return affinityCache(cacheName, topologyVersion()).assignment.primaryPartitions(n.id()).contains(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public boolean isBackup(ClusterNode n, K key) {
+            ctx.gateway().readLock();
+
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.backupPartitions(n.id()).contains(key);
+                return affinityCache(cacheName, topologyVersion()).assignment.backupPartitions(n.id()).contains(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public boolean isPrimaryOrBackup(ClusterNode n, K key) {
-            return isPrimary(n, key) || isBackup(n, key);
+            ctx.gateway().readLock();
+
+            try {
+                return isPrimary(n, key) || isBackup(n, key);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public int[] primaryPartitions(ClusterNode n) {
+            ctx.gateway().readLock();
+
             try {
-                Set<Integer> parts = GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.primaryPartitions(n.id());
+                Set<Integer> parts = affinityCache(cacheName, topologyVersion()).assignment.primaryPartitions(n.id());
 
                 return U.toIntArray(parts);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public int[] backupPartitions(ClusterNode n) {
+            ctx.gateway().readLock();
+
             try {
-                Set<Integer> parts = GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.backupPartitions(n.id());
+                Set<Integer> parts = affinityCache(cacheName, topologyVersion()).assignment.backupPartitions(n.id());
 
                 return U.toIntArray(parts);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public int[] allPartitions(ClusterNode n) {
+            ctx.gateway().readLock();
+
             try {
                 Collection<Integer> parts = new HashSet<>();
 
@@ -647,81 +677,117 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public Object affinityKey(K key) {
+            ctx.gateway().readLock();
+
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .mapper.affinityKey(key);
+                return affinityCache(cacheName, topologyVersion()).mapper.affinityKey(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
+            ctx.gateway().readLock();
+
             try {
                 return GridAffinityProcessor.this.mapKeysToNodes(keys);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public ClusterNode mapKeyToNode(K key) {
+            ctx.gateway().readLock();
+
             try {
                 return GridAffinityProcessor.this.mapKeyToNode(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
+            ctx.gateway().readLock();
+
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.get(partition(key));
+                return affinityCache(cacheName, topologyVersion()).assignment.get(partition(key));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public ClusterNode mapPartitionToNode(int part) {
+            ctx.gateway().readLock();
+
             try {
-                return F.first(GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.get(part));
+                return F.first(affinityCache(cacheName, topologyVersion()).assignment.get(part));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
         /** {@inheritDoc} */
         @Override public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts) {
-            Map<Integer, ClusterNode> map = new HashMap<>();
+            ctx.gateway().readLock();
 
-            if (!F.isEmpty(parts)) {
-                for (int p : parts)
-                    map.put(p, mapPartitionToNode(p));
+            try {
+                Map<Integer, ClusterNode> map = new HashMap<>();
+
+                if (!F.isEmpty(parts)) {
+                    for (int p : parts)
+                        map.put(p, mapPartitionToNode(p));
+                }
+
+                return map;
             }
-
-            return map;
+            finally {
+                ctx.gateway().readUnlock();
+            }
         }
 
         /** {@inheritDoc} */
         @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+            ctx.gateway().readLock();
+
             try {
-                return GridAffinityProcessor.this.affinityCache(cacheName, topologyVersion())
-                    .assignment.get(part);
+                return affinityCache(cacheName, topologyVersion()).assignment.get(part);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
             }
         }
 
