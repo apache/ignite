@@ -28,3 +28,10 @@ Usage with GridGain
 Copy compiled library to folder that already listed in 'java.library.path'
 with name in form: 'libggshmem-<gridgain-version>.<extention>'.
 Note: Grid should be restarted.
+
+**************************************************************************************
+*** Additional notes:
+*** - 'make install' should be run under sudo
+*** - if you have problems with <jni.h>, remember that JAVA_HOME have to be set not only for current user, but and for sudo user (check it by typing 'sudo -E env | grep JAVA_HOME')
+*** - if you do all right, but it still no work you can just replace manually $(JAVA_HOME) on your java home path at Makefiles.* . :-)
+**************************************************************************************
