@@ -95,6 +95,21 @@ public class PojoGenerator {
         return javaTypeName.startsWith("java.lang.") ? javaTypeName.substring(10) : javaTypeName;
     }
 
+    private static String equals(PojoField field) {
+        if (field.primitive()) {
+            String javaType = javaTypeName(field);
+
+            if ("double".equals(javaType))
+                return "if (Double.compare(%1$s, that.%1$s) != 0)";
+            else if ("float".equals(javaType))
+                return "if (Float.compare(%1$s, that.%1$s) != 0)";
+            else
+                return "if (%1$s != that.%1$s)";
+        }
+        else
+            return "if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)";
+    }
+
     /**
      * Generate java class code.
      *
@@ -249,8 +264,23 @@ public class PojoGenerator {
 
         for (PojoField field : fields) {
             add0(src, "");
-            add2(src, String.format("if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)",
-                field.javaName()));
+
+            String javaType = javaTypeName(field);
+
+            if (field.primitive()) {
+                String fmt = "if (%1$s != that.%1$s)";
+
+                if ("double".equals(javaType))
+                    fmt = "if (Double.compare(%1$s, that.%1$s) != 0)";
+                else if ("float".equals(javaType))
+                    fmt = "if (Float.compare(%1$s, that.%1$s) != 0)";
+
+                add2(src, String.format(fmt, field.javaName()));
+            }
+            else
+                add2(src, String.format("if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)",
+                    field.javaName()));
+
             add3(src, "return false;");
         }
 
@@ -262,6 +292,16 @@ public class PojoGenerator {
 
         add1(src, "/** {@inheritDoc} */");
         add1(src, "@Override public int hashCode() {");
+
+// TODO sort by keys, primitives, other
+//        int result;
+//        long temp;
+//        result = id;
+//        result = 31 * result + id2;
+//        temp = Double.doubleToLongBits(sum);
+//        result = 31 * result + (int)(temp ^ (temp >>> 32));
+//        result = 31 * result + (int)(id3 ^ (id3 >>> 32));
+//        result = 31 * result + (sum3 != +0.0f ? Float.floatToIntBits(sum3) : 0);
 
         Iterator<PojoField> it = fields.iterator();
 

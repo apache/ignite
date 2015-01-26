@@ -451,7 +451,7 @@ public class Controls {
 
         tbl.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         tbl.setEditable(true);
-        tbl.setMinHeight(50);
+        tbl.setMinHeight(70);
         tbl.setPlaceholder(text(placeholder, 0));
 
         tbl.getColumns().addAll(cols);

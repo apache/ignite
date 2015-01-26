@@ -86,6 +86,10 @@ public class PojoField {
     /** Not null number conversions. */
     private static final ObservableList<String> NOT_NULL_NUM_CONVERSIONS = FXCollections.observableArrayList();
 
+    /** Primitive types. */
+    private static final List<String> PRIMITIVES = classNames(boolean.class, byte.class, short.class,
+        int.class, long.class, float.class, double.class);
+
     /** Java types. */
     private static final Class<?>[] JAVA_TYPES = new Class<?>[] {
         boolean.class, Boolean.class,
@@ -104,13 +108,10 @@ public class PojoField {
     private static final Map<String, Class<?>> classesMap = new HashMap<>();
 
     static {
-        List<String> primitives = classNames(boolean.class, byte.class, short.class,
-            int.class, long.class, float.class, double.class);
-
         List<String> objects = classNames(Boolean.class, Byte.class, Short.class, Integer.class,
             Long.class, Float.class, Double.class, BigDecimal.class);
 
-        NOT_NULL_NUM_CONVERSIONS.addAll(primitives);
+        NOT_NULL_NUM_CONVERSIONS.addAll(PRIMITIVES);
         NOT_NULL_NUM_CONVERSIONS.addAll(objects);
 
         NULL_NUM_CONVERSIONS.addAll(objects);
@@ -332,6 +333,13 @@ public class PojoField {
         desc.setJavaType(classesMap.get(javaTypeName()));
 
         return desc;
+    }
+
+    /**
+     * @return {@code true}
+     */
+    public boolean primitive() {
+        return PRIMITIVES.contains(javaTypeName());
     }
 
     /**
