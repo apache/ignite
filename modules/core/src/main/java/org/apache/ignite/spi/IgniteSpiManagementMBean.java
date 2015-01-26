@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 
 import java.util.*;
 

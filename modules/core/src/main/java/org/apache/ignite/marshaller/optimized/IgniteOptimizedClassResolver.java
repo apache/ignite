@@ -17,10 +17,10 @@
 
 package org.apache.ignite.marshaller.optimized;
 
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -269,7 +269,7 @@ class IgniteOptimizedClassResolver {
                 }
                 catch (ArrayIndexOutOfBoundsException e) {
                     throw new ClassNotFoundException("Failed to find optimized class ID " +
-                        "(is same GridGain version running on all nodes?): " + ggId, e);
+                        "(is same Ignite version running on all nodes?): " + ggId, e);
                 }
 
                 name = ggT.get1();

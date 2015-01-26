@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.*;
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.CachingProvider;
 import org.apache.ignite.configuration.*;
-import org.gridgain.grid.cache.*;
 
 import javax.cache.*;
-import javax.cache.spi.*;
+import javax.cache.CacheManager;
 import java.util.*;
 
 /**
@@ -37,18 +36,18 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
-        return GridCacheMode.REPLICATED;
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
-        return GridCacheAtomicityMode.TRANSACTIONAL;
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
-        return GridCacheDistributionMode.PARTITIONED_ONLY;
+    @Override protected CacheDistributionMode distributionMode() {
+        return CacheDistributionMode.PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -89,9 +88,9 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
      *
      */
     public void testStartIgnite() {
-        CachingProvider cachingProvider = Caching.getCachingProvider();
+        javax.cache.spi.CachingProvider cachingProvider = Caching.getCachingProvider();
 
-        assert cachingProvider instanceof IgniteCachingProvider;
+        assert cachingProvider instanceof CachingProvider;
 
         CacheManager cacheMgr = cachingProvider.getCacheManager();
 
@@ -114,14 +113,14 @@ public class IgniteCachingProviderSelfTest extends IgniteCacheAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testCloseManager() throws Exception {
         startGridsMultiThreaded(1);
 
-        CachingProvider cachingProvider = Caching.getCachingProvider();
+        javax.cache.spi.CachingProvider cachingProvider = Caching.getCachingProvider();
 
-        assert cachingProvider instanceof IgniteCachingProvider;
+        assert cachingProvider instanceof CachingProvider;
 
         CacheManager cacheMgr = cachingProvider.getCacheManager();
 

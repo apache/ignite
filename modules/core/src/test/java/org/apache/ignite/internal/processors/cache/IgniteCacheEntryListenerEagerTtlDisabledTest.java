@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.gridgain.grid.cache.*;
 
 /**
  * Tests expire events when {@link GridCacheConfiguration#isEagerTtl()} is disabled.

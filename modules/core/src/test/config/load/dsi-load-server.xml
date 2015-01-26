@@ -60,7 +60,7 @@
                     <property name="evictNearSynchronized" value="false"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.fifo.GridCacheFifoEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy">
                             <property name="maxSize" value="5000"/>
                         </bean>
                     </property>
@@ -78,6 +78,6 @@
     </bean>
 
     <util:list id="lifecycleBeans">
-        <bean class="org.gridgain.loadtests.dsi.GridDsiLifecycleBean"/>
+        <bean class="org.apache.ignite.loadtests.dsi.GridDsiLifecycleBean"/>
     </util:list>
 </beans>

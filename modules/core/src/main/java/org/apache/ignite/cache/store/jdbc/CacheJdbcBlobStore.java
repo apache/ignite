@@ -19,13 +19,11 @@ package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -148,8 +146,8 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     private IgniteLogger log;
 
     /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     /** Init guard. */
     @GridToStringExclude
@@ -437,7 +435,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
                 try {
                     U.await(initLatch);
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw new IgniteException(e);
                 }
             }
@@ -557,7 +555,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
      * @throws IgniteCheckedException If failed to convert.
      */
     protected byte[] toBytes(Object obj) throws IgniteCheckedException {
-        return marsh.marshal(obj);
+        return ignite.configuration().getMarshaller().marshal(obj);
     }
 
     /**
@@ -572,7 +570,7 @@ public class CacheJdbcBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         if (bytes == null || bytes.length == 0)
             return null;
 
-        return marsh.unmarshal(bytes, getClass().getClassLoader());
+        return ignite.configuration().getMarshaller().unmarshal(bytes, getClass().getClassLoader());
     }
 
     /**

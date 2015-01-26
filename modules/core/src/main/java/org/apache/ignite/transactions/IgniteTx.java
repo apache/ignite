@@ -20,7 +20,8 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.cache.*;
+
+import org.jetbrains.annotations.*;
 
 import java.util.*;
 
@@ -28,8 +29,8 @@ import java.util.*;
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
  * {@gglink org.gridgain.grid.cache.jta.GridCacheTmLookup}
- * interface. Cache transactions can also be started explicitly directly from {@link GridCacheProjection} API
- * via any of the {@code 'GridCacheProjection.txStart(..)'} methods.
+ * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.CacheProjection} API
+ * via any of the {@code 'CacheProjection.txStart(..)'} methods.
  * <p>
  * Cache transactions support the following isolation levels:
  * <ul>
@@ -68,7 +69,7 @@ import java.util.*;
  *  message is sent without waiting for reply. If it is necessary to know whenever remote nodes have committed
  *  as well, synchronous commit or synchronous rollback should be enabled via
  *  {@link CacheConfiguration#setWriteSynchronizationMode}
- *  or by setting proper flags on cache projection, such as {@link GridCacheFlag#SYNC_COMMIT}.
+ *  or by setting proper flags on cache projection, such as {@link org.apache.ignite.internal.processors.cache.CacheFlag#SYNC_COMMIT}.
  *  <p>
  *  Note that in this mode, optimistic failures are only possible in conjunction with
  *  {@link IgniteTxIsolation#SERIALIZABLE} isolation level. In all other cases, optimistic
@@ -88,16 +89,16 @@ import java.util.*;
  * </ul>
  * <p>
  * <h1 class="header">Cache Atomicity Mode</h1>
- * In addition to standard {@link GridCacheAtomicityMode#TRANSACTIONAL} behavior, GridGain also supports
- * a lighter {@link GridCacheAtomicityMode#ATOMIC} mode as well. In this mode distributed transactions
+ * In addition to standard {@link org.apache.ignite.cache.CacheAtomicityMode#TRANSACTIONAL} behavior, GridGain also supports
+ * a lighter {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode as well. In this mode distributed transactions
  * and distributed locking are not supported. Disabling transactions and locking allows to achieve much higher
- * performance and throughput ratios. It is recommended that {@link GridCacheAtomicityMode#ATOMIC} mode
+ * performance and throughput ratios. It is recommended that {@link org.apache.ignite.cache.CacheAtomicityMode#ATOMIC} mode
  * is used whenever full {@code ACID}-compliant transactions are not needed.
  * <p>
  * <h1 class="header">Usage</h1>
  * You can use cache transactions as follows:
  * <pre name="code" class="java">
- * GridCache&lt;String, Integer&gt; cache = GridGain.grid().cache();
+ * Cache&lt;String, Integer&gt; cache = GridGain.grid().cache();
  *
  * try (GridCacheTx tx = cache.txStart()) {
  *     // Perform transactional operations.
@@ -244,4 +245,33 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void rollback() throws IgniteCheckedException;
+
+    /**
+     * Removes metadata by name.
+     *
+     * @param name Name of the metadata to remove.
+     * @param <V> Type of the value.
+     * @return Value of removed metadata or {@code null}.
+     */
+    @Nullable public <V> V removeMeta(String name);
+
+    /**
+     * Gets metadata by name.
+     *
+     * @param name Metadata name.
+     * @param <V> Type of the value.
+     * @return Metadata value or {@code null}.
+     */
+    @Nullable public <V> V meta(String name);
+
+    /**
+     * Adds a new metadata.
+     *
+     * @param name Metadata name.
+     * @param val Metadata value.
+     * @param <V> Type of the value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
+    @Nullable public <V> V addMeta(String name, V val);
 }

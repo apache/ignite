@@ -20,8 +20,8 @@ package org.apache.ignite.streamer.index.hash;
 import com.romix.scala.collection.concurrent.*;
 import org.apache.ignite.*;
 import org.apache.ignite.streamer.index.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

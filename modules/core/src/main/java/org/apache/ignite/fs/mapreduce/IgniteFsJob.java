@@ -19,7 +19,6 @@ package org.apache.ignite.fs.mapreduce;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.gridgain.grid.*;
 
 import java.io.*;
 
