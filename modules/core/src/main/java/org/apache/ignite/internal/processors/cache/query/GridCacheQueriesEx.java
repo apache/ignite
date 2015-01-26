@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 
 import java.util.*;
 

@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;

@@ -9,7 +9,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep.messages;
 
-import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 
 import java.io.*;
 import java.util.*;

@@ -10,7 +10,7 @@
 package org.apache.ignite.internal.processors.query.h2.sql;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 
 import java.sql.*;
 import java.util.*;

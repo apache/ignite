@@ -19,10 +19,10 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.lang.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

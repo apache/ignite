@@ -29,7 +29,6 @@ import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
-import org.gridgain.grid.kernal.processors.cache.query.*;
 
 import java.util.*;
 
