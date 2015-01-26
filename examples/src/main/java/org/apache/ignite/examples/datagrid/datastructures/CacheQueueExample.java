@@ -42,7 +42,7 @@ public class CacheQueueExample {
     private static final int RETRIES = 20;
 
     /** Queue instance. */
-    private static CacheQueue<String> queue;
+    private static IgniteQueue<String> queue;
 
     /**
      * Executes example.
@@ -78,9 +78,9 @@ public class CacheQueueExample {
      * @return Queue.
      * @throws IgniteCheckedException If execution failed.
      */
-    private static CacheQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteCheckedException {
+    private static IgniteQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteCheckedException {
         // Initialize new FIFO queue.
-        CacheQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
@@ -182,7 +182,7 @@ public class CacheQueueExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                CacheQueue<String> queue = Ignition.ignite().cache(cacheName).dataStructures().
+                IgniteQueue<String> queue = Ignition.ignite().cache(cacheName).dataStructures().
                     queue(queueName, 0, false, true);
 
                 if (put) {

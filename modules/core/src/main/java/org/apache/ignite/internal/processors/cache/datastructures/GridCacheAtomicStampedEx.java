@@ -22,7 +22,7 @@ import org.apache.ignite.cache.datastructures.*;
 /**
  * Atomic stamped managed by cache ({@code 'Ex'} stands for external).
  */
-public interface GridCacheAtomicStampedEx<T, S> extends GridCacheRemovable, CacheAtomicStamped<T, S> {
+public interface GridCacheAtomicStampedEx<T, S> extends GridCacheRemovable, IgniteAtomicStamped<T, S> {
     /**
      * Get current atomic stamped key.
      *

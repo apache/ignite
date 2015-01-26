@@ -96,7 +96,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     public void testPutRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+        IgniteQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
             true, true);
 
         assertTrue(queue.isEmpty());
@@ -125,7 +125,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     public void testPutTakeRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
+        IgniteQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
             true, true);
 
         assertTrue(queue.isEmpty());
@@ -156,7 +156,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         final String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<Integer> queue = grid(0).cache(null).dataStructures()
+        final IgniteQueue<Integer> queue = grid(0).cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, true, true);
 
         assertTrue(queue.isEmpty());
@@ -221,7 +221,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures()
+            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -273,7 +273,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheQueue<String> queue = ignite.cache(null).dataStructures()
+            IgniteQueue<String> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -325,7 +325,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures()
+            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -373,7 +373,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures()
+            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, true);
 
             assertNotNull(queue);
@@ -421,7 +421,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            CacheQueue<Integer> queue = ignite.cache(null).dataStructures()
+            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
                 .queue(queueName, QUEUE_CAPACITY, true, false);
 
             assert queue != null;

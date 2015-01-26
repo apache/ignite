@@ -22,7 +22,7 @@ import org.apache.ignite.cache.datastructures.*;
 /**
  * Grid cache count down latch ({@code 'Ex'} stands for external).
  */
-public interface GridCacheCountDownLatchEx extends CacheCountDownLatch, GridCacheRemovable {
+public interface GridCacheCountDownLatchEx extends IgniteCountDownLatch, GridCacheRemovable {
     /**
      * Get current count down latch key.
      *

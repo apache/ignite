@@ -120,7 +120,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicLongConstantTopologyChange() throws Exception {
         try {
-            CacheAtomicLong s = cache().dataStructures().atomicLong(STRUCTURE_NAME, 1, true);
+            IgniteAtomicLong s = cache().dataStructures().atomicLong(STRUCTURE_NAME, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -170,7 +170,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicLongConstantMultipleTopologyChange() throws Exception {
         try {
-            CacheAtomicLong s = cache().dataStructures().atomicLong(STRUCTURE_NAME, 1, true);
+            IgniteAtomicLong s = cache().dataStructures().atomicLong(STRUCTURE_NAME, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -249,7 +249,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicReferenceConstantTopologyChange() throws Exception {
         try {
-            CacheAtomicReference<Integer> s = cache().dataStructures().atomicReference(STRUCTURE_NAME, 1, true);
+            IgniteAtomicReference<Integer> s = cache().dataStructures().atomicReference(STRUCTURE_NAME, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -298,7 +298,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicReferenceConstantMultipleTopologyChange() throws Exception {
         try {
-            CacheAtomicReference<Integer> s = cache().dataStructures().atomicReference(STRUCTURE_NAME, 1, true);
+            IgniteAtomicReference<Integer> s = cache().dataStructures().atomicReference(STRUCTURE_NAME, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -384,7 +384,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicStampedConstantTopologyChange() throws Exception {
         try {
-            CacheAtomicStamped<Integer, Integer> s = cache().dataStructures().atomicStamped(STRUCTURE_NAME, 1, 1, true);
+            IgniteAtomicStamped<Integer, Integer> s = cache().dataStructures().atomicStamped(STRUCTURE_NAME, 1, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -447,7 +447,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicStampedConstantMultipleTopologyChange() throws Exception {
         try {
-            CacheAtomicStamped<Integer, Integer> s = cache().dataStructures().atomicStamped(STRUCTURE_NAME, 1, 1, true);
+            IgniteAtomicStamped<Integer, Integer> s = cache().dataStructures().atomicStamped(STRUCTURE_NAME, 1, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -541,7 +541,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testCountDownLatchConstantTopologyChange() throws Exception {
         try {
-            CacheCountDownLatch s = cache().dataStructures().countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE,
+            IgniteCountDownLatch s = cache().dataStructures().countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE,
                 false, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -596,7 +596,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testCountDownLatchConstantMultipleTopologyChange() throws Exception {
         try {
-            CacheCountDownLatch s = cache().dataStructures()
+            IgniteCountDownLatch s = cache().dataStructures()
                 .countDownLatch(STRUCTURE_NAME, Integer.MAX_VALUE, false, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -680,7 +680,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testFifoQueueConstantTopologyChange() throws Exception {
         try {
-            CacheQueue<Integer> s = cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true);
+            IgniteQueue<Integer> s = cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true);
 
             s.put(1);
 
@@ -730,7 +730,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testFifoQueueConstantMultipleTopologyChange() throws Exception {
         try {
-            CacheQueue<Integer> s = cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true);
+            IgniteQueue<Integer> s = cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true);
 
             s.put(1);
 
@@ -807,7 +807,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicSequenceConstantTopologyChange() throws Exception {
         try {
-            CacheAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
+            IgniteAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
@@ -888,7 +888,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                     private Ignite g;
 
                     @Override public Object call() throws Exception {
-                        CacheAtomicSequence seq = g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1,
+                        IgniteAtomicSequence seq = g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1,
                             true);
 
                         assert seq != null;
@@ -909,7 +909,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicSequenceConstantMultipleTopologyChange() throws Exception {
         try {
-            CacheAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
+            IgniteAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {

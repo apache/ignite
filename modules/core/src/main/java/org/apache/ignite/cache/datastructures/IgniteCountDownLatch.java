@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @see CacheDataStructures#countDownLatch(String, int, boolean, boolean)
  * @see CacheDataStructures#removeCountDownLatch(String)
  */
-public interface CacheCountDownLatch {
+public interface IgniteCountDownLatch {
     /**
      * Gets name of the latch.
      *

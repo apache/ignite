@@ -429,7 +429,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (delta == null)
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("delta"));
 
-        final CacheAtomicLong l = cache.cache().dataStructures().atomicLong(key, init != null ? init : 0, true);
+        final IgniteAtomicLong l = cache.cache().dataStructures().atomicLong(key, init != null ? init : 0, true);
 
         final Long d = delta;
 

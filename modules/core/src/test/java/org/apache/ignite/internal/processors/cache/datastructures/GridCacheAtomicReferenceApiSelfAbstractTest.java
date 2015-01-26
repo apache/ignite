@@ -123,9 +123,9 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
         String atomicName2 = UUID.randomUUID().toString();
 
         String initVal = "1";
-        CacheAtomicReference<String> atomic1 = grid().cache(null).dataStructures()
+        IgniteAtomicReference<String> atomic1 = grid().cache(null).dataStructures()
             .atomicReference(atomicName1, initVal, true);
-        CacheAtomicReference<String> atomic2 = grid().cache(null).dataStructures()
+        IgniteAtomicReference<String> atomic2 = grid().cache(null).dataStructures()
             .atomicReference(atomicName2, null, true);
 
         assertNotNull(atomic1);
@@ -155,7 +155,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         String initVal = "qwerty";
 
-        CacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
+        IgniteAtomicReference<String> atomic = grid().cache(null).dataStructures()
             .atomicReference(atomicName, initVal, true);
 
         assertEquals(initVal, atomic.get());
@@ -175,7 +175,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         String initVal = "qwerty";
 
-        CacheAtomicReference<String> atomic = grid().cache(null).dataStructures()
+        IgniteAtomicReference<String> atomic = grid().cache(null).dataStructures()
             .atomicReference(atomicName, initVal, true);
 
         assertEquals(initVal, atomic.get());
@@ -202,7 +202,7 @@ public abstract class GridCacheAtomicReferenceApiSelfAbstractTest extends GridCo
 
         assertNotNull(cache);
 
-        CacheAtomicReference<Boolean> atomic = cache.dataStructures().atomicReference(atomicName, false, true);
+        IgniteAtomicReference<Boolean> atomic = cache.dataStructures().atomicReference(atomicName, false, true);
 
         atomic.set(true);
 

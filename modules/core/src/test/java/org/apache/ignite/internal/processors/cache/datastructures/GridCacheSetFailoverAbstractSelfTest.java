@@ -98,7 +98,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     public void testNodeRestart() throws Exception {
-        CacheSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
+        IgniteSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
 
         final int ITEMS = 10_000;
 

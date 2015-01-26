@@ -88,7 +88,7 @@ public class MemcacheRestExample {
             System.out.println(">>> Current cache size: " + cache.size() + " (expected: 0).");
 
             // Create atomic long.
-            CacheAtomicLong l = cache.dataStructures().atomicLong("atomicLong", 10, true);
+            IgniteAtomicLong l = cache.dataStructures().atomicLong("atomicLong", 10, true);
 
             // Increment atomic long by 5 using Memcache client.
             if (client.incr("atomicLong", 5, 0) == 15)

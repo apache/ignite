@@ -41,7 +41,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 /**
  * Cache set implementation.
  */
-public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheSet<T> {
+public class GridCacheSetImpl<T> extends AbstractCollection<T> implements IgniteSet<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 

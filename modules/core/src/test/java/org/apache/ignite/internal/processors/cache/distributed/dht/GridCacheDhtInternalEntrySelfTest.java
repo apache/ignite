@@ -97,7 +97,7 @@ public class GridCacheDhtInternalEntrySelfTest extends GridCommonAbstractTest {
         ClusterNode other = nodes.get2();
 
         // Create on non-primary node.
-        CacheAtomicLong l = grid(other).cache(null).dataStructures().atomicLong(ATOMIC_LONG_NAME, 1, true);
+        IgniteAtomicLong l = grid(other).cache(null).dataStructures().atomicLong(ATOMIC_LONG_NAME, 1, true);
 
         assert l != null;
         assert l.get() == 1;

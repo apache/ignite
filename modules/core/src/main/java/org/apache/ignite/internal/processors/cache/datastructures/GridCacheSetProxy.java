@@ -33,7 +33,7 @@ import java.util.concurrent.*;
 /**
  * Cache set proxy.
  */
-public class GridCacheSetProxy<T> implements CacheSet<T>, Externalizable {
+public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

@@ -134,9 +134,9 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
 
         String atomicName2 = "SECOND";
 
-        CacheAtomicLong atomic1 = cache.dataStructures().atomicLong(atomicName1, 0, true);
-        CacheAtomicLong atomic2 = cache.dataStructures().atomicLong(atomicName2, 0, true);
-        CacheAtomicLong atomic3 = cache.dataStructures().atomicLong(atomicName1, 0, true);
+        IgniteAtomicLong atomic1 = cache.dataStructures().atomicLong(atomicName1, 0, true);
+        IgniteAtomicLong atomic2 = cache.dataStructures().atomicLong(atomicName2, 0, true);
+        IgniteAtomicLong atomic3 = cache.dataStructures().atomicLong(atomicName1, 0, true);
 
         assertNotNull(atomic1);
         assertNotNull(atomic2);
@@ -188,7 +188,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -221,7 +221,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -254,7 +254,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -287,7 +287,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -320,7 +320,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -355,7 +355,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -390,7 +390,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -426,7 +426,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 
@@ -468,7 +468,7 @@ public class GridCacheAtomicLongApiSelfTest extends GridCommonAbstractTest {
         assertNotNull(cache);
         assertEquals(0, cache.primarySize());
 
-        CacheAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
+        IgniteAtomicLong atomic = cache.dataStructures().atomicLong("atomic", 0, true);
 
         assertEquals(0, cache.primarySize());
 

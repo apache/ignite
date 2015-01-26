@@ -104,7 +104,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(0);
 
-                    CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
+                    IgniteQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
                         true, true);
 
                     for (int i = 0; i < QUEUE_CAP * 2; i++) {
@@ -144,7 +144,7 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 
-                    CacheQueue<Integer> queue = ignite.cache(null).dataStructures().
+                    IgniteQueue<Integer> queue = ignite.cache(null).dataStructures().
                         queue(queueName, Integer.MAX_VALUE, true, true);
 
                     int cnt = 0;

@@ -805,7 +805,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testDataStructures() throws Exception {
         CacheDataStructures dataStructures = grid().cache(CACHE_NAME).dataStructures();
 
-        CacheAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
+        IgniteAtomicLong atomicLong = dataStructures.atomicLong("test", 0, true);
 
         assert atomicLong != null;
 

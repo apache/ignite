@@ -62,7 +62,7 @@ import org.apache.ignite.*;
  * @see CacheDataStructures#atomicLong(String, long, boolean)
  * @see CacheDataStructures#removeAtomicLong(String)
  */
-public interface CacheAtomicLong {
+public interface IgniteAtomicLong {
     /**
      * Name of atomic long.
      *

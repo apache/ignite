@@ -23,8 +23,8 @@ import org.jetbrains.annotations.*;
 /**
  * Facade for working with distributed cache data structures. All cache data structures are similar
  * in APIs to {@code 'java.util.concurrent'} package, but all operations on them are grid-aware.
- * For example, if you increment {@link CacheAtomicLong} on one node, another node will
- * know about the change. Or if you add an element to {@link CacheQueue} on one node,
+ * For example, if you increment {@link IgniteAtomicLong} on one node, another node will
+ * know about the change. Or if you add an element to {@link IgniteQueue} on one node,
  * you can poll it on another node.
  * <p>
  * You can get data structures facade by calling {@link org.apache.ignite.cache.GridCache#dataStructures()} method.
@@ -40,7 +40,7 @@ public interface CacheDataStructures {
      * @return Sequence for the given name.
      * @throws IgniteCheckedException If sequence could not be fetched or created.
      */
-    @Nullable public CacheAtomicSequence atomicSequence(String name, long initVal, boolean create)
+    @Nullable public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteCheckedException;
 
     /**
@@ -63,7 +63,7 @@ public interface CacheDataStructures {
      * @return Atomic long.
      * @throws IgniteCheckedException If atomic long could not be fetched or created.
      */
-    @Nullable public CacheAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException;
+    @Nullable public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException;
 
     /**
      * Remove atomic long from cache.
@@ -94,7 +94,7 @@ public interface CacheDataStructures {
      * @return Queue with given properties.
      * @throws IgniteCheckedException If remove failed.
      */
-    @Nullable public <T> CacheQueue<T> queue(String name, int cap, boolean collocated,
+    @Nullable public <T> IgniteQueue<T> queue(String name, int cap, boolean collocated,
         boolean create) throws IgniteCheckedException;
 
     /**
@@ -135,7 +135,7 @@ public interface CacheDataStructures {
      * @return Set with given properties.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> CacheSet<T> set(String name, boolean collocated, boolean create) throws IgniteCheckedException;
+    @Nullable public <T> IgniteSet<T> set(String name, boolean collocated, boolean create) throws IgniteCheckedException;
 
     /**
      * Removes set from cache.
@@ -157,7 +157,7 @@ public interface CacheDataStructures {
      * @return Atomic reference for the given name.
      * @throws IgniteCheckedException If atomic reference could not be fetched or created.
      */
-    @Nullable public <T> CacheAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+    @Nullable public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
         throws IgniteCheckedException;
 
     /**
@@ -182,7 +182,7 @@ public interface CacheDataStructures {
      * @return Atomic stamped for the given name.
      * @throws IgniteCheckedException If atomic stamped could not be fetched or created.
      */
-    @Nullable public <T, S> CacheAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+    @Nullable public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
         @Nullable S initStamp, boolean create) throws IgniteCheckedException;
 
     /**
@@ -206,7 +206,7 @@ public interface CacheDataStructures {
      * @return Count down latch for the given name.
      * @throws IgniteCheckedException If operation failed.
      */
-    @Nullable public CacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
+    @Nullable public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
         throws IgniteCheckedException;
 
     /**

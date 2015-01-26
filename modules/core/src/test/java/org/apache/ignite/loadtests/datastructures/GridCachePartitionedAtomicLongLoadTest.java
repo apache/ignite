@@ -106,7 +106,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
             assert cache != null;
 
-            CacheAtomicSequence seq = cache.dataStructures().atomicSequence("SEQUENCE", 0, true);
+            IgniteAtomicSequence seq = cache.dataStructures().atomicSequence("SEQUENCE", 0, true);
 
             long start = System.currentTimeMillis();
 

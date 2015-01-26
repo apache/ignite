@@ -58,7 +58,7 @@ import org.apache.ignite.lang.*;
  * @see CacheDataStructures#atomicStamped(String, Object, Object, boolean)
  * @see CacheDataStructures#removeAtomicStamped(String)
  */
-public interface CacheAtomicStamped<T, S> {
+public interface IgniteAtomicStamped<T, S> {
     /**
      * Name of atomic stamped.
      *

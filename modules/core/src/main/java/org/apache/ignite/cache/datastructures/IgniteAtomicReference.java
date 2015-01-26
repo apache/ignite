@@ -49,7 +49,7 @@ import org.apache.ignite.*;
  * @see CacheDataStructures#atomicReference(String, Object, boolean)
  * @see CacheDataStructures#removeAtomicReference(String)
  */
-public interface CacheAtomicReference<T> {
+public interface IgniteAtomicReference<T> {
     /**
      * Name of atomic reference.
      *

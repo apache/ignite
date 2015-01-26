@@ -130,7 +130,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testAddFailover(boolean collocated) throws Exception {
-        CacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
+        IgniteQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
@@ -168,7 +168,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @throws Exception If failed.
      */
-    private void testAddFailover(CacheQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
+    private void testAddFailover(IgniteQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
         assert !killIdxs.isEmpty();
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -223,7 +223,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testPollFailover(boolean collocated) throws Exception {
-        CacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
+        IgniteQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
@@ -261,7 +261,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @throws Exception If failed.
      */
-    private void testPollFailover(CacheQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
+    private void testPollFailover(IgniteQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
         assert !killIdxs.isEmpty();
 
         final int ITEMS = atomicityMode() == ATOMIC && !queue.collocated() ? 10_000 : 3000;

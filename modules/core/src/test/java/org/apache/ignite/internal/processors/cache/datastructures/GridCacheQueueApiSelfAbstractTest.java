@@ -80,9 +80,9 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         String queueName1 = UUID.randomUUID().toString();
         String queueName2 = UUID.randomUUID().toString();
 
-        CacheQueue queue1 = grid().cache(null).dataStructures().queue(queueName1, 0, false, true);
-        CacheQueue queue2 = grid().cache(null).dataStructures().queue(queueName2, 0, false, true);
-        CacheQueue queue3 = grid().cache(null).dataStructures().queue(queueName1, 0, false, true);
+        IgniteQueue queue1 = grid().cache(null).dataStructures().queue(queueName1, 0, false, true);
+        IgniteQueue queue2 = grid().cache(null).dataStructures().queue(queueName2, 0, false, true);
+        IgniteQueue queue3 = grid().cache(null).dataStructures().queue(queueName1, 0, false, true);
 
         assertNotNull(queue1);
         assertNotNull(queue2);
@@ -108,7 +108,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         String val = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
 
         assert queue.add(val);
 
@@ -126,7 +126,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         String val = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
 
         assert queue.add(val);
 
@@ -145,7 +145,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         String queueName = UUID.randomUUID().toString();
 
         // TODO was LIFO
-        CacheQueue<SameHashItem> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<SameHashItem> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
 
         int retries = 100;
 
@@ -221,7 +221,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
 
         assert queue.add("1");
 
@@ -243,7 +243,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, true, true);
+        IgniteQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, true, true);
 
         String item1 = "1";
         assert queue.add(item1);
@@ -268,7 +268,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = grid().cache(null).dataStructures().queue(queueName, 0, false, true);
 
         for (int i = 0; i < 100; i++)
             assert queue.add(Integer.toString(i));
@@ -324,7 +324,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures()
+        IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, false, true);
 
         String thName = Thread.currentThread().getName();
@@ -347,7 +347,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
+        final IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, false, true);
 
         multithreaded(new Callable<String>() {
@@ -376,7 +376,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
+        final IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, false, true);
 
         multithreaded(new Callable<String>() {
@@ -406,7 +406,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         final AtomicInteger rmvNum = new AtomicInteger(0);
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
+        final IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, false, true);
 
         final CountDownLatch putLatch = new CountDownLatch(THREAD_NUM);
@@ -494,7 +494,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
 
         final AtomicInteger rmvNum = new AtomicInteger(0);
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
+        final IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, QUEUE_CAPACITY, false, true);
 
         final CountDownLatch takeLatch = new CountDownLatch(THREAD_NUM);
@@ -615,7 +615,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        CacheQueue<String> queue = grid().cache(null).dataStructures()
+        IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, 0, false, true);
 
         String thread = Thread.currentThread().getName();
@@ -641,7 +641,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends GridCommonAbstra
         // Random queue name.
         String queueName = UUID.randomUUID().toString();
 
-        final CacheQueue<String> queue = grid().cache(null).dataStructures()
+        final IgniteQueue<String> queue = grid().cache(null).dataStructures()
             .queue(queueName, 0, false, true);
 
         multithreaded(

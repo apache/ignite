@@ -211,7 +211,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            CacheAtomicLong atomic = grid(i).cache(null).dataStructures().atomicLong(name, 0, true);
+            IgniteAtomicLong atomic = grid(i).cache(null).dataStructures().atomicLong(name, 0, true);
 
             long val = atomic.get();
 

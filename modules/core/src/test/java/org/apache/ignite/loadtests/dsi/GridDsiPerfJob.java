@@ -308,7 +308,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
         assert cache != null;
 
-        CacheAtomicSequence seq = cache.dataStructures().atomicSequence("ID", 0, true);
+        IgniteAtomicSequence seq = cache.dataStructures().atomicSequence("ID", 0, true);
 
         return seq.incrementAndGet();
     }

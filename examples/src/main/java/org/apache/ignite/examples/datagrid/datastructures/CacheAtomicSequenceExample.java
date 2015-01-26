@@ -55,7 +55,7 @@ public final class CacheAtomicSequenceExample {
             final String seqName = UUID.randomUUID().toString();
 
             // Initialize atomic sequence in grid.
-            CacheAtomicSequence seq = g.cache(CACHE_NAME).dataStructures().atomicSequence(seqName, 0, true);
+            IgniteAtomicSequence seq = g.cache(CACHE_NAME).dataStructures().atomicSequence(seqName, 0, true);
 
             // First value of atomic sequence on this node.
             long firstVal = seq.get();
@@ -96,7 +96,7 @@ public final class CacheAtomicSequenceExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                CacheAtomicSequence seq = Ignition.ignite().cache(cacheName).dataStructures().
+                IgniteAtomicSequence seq = Ignition.ignite().cache(cacheName).dataStructures().
                     atomicSequence(seqName, 0, true);
 
                 for (int i = 0; i < RETRIES; i++)

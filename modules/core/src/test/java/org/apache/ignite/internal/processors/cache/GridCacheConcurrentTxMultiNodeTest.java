@@ -664,7 +664,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private long getId() throws IgniteCheckedException {
-            CacheAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
+            IgniteAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
             return seq.incrementAndGet();
         }
 

@@ -57,7 +57,7 @@ import org.apache.ignite.*;
  * @see CacheDataStructures#atomicSequence(String, long, boolean)
  * @see CacheDataStructures#removeAtomicSequence(String)
  */
-public interface CacheAtomicSequence {
+public interface IgniteAtomicSequence {
     /**
      * Name of atomic sequence.
      *

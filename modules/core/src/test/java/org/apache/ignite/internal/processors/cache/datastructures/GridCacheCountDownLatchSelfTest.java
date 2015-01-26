@@ -147,7 +147,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      */
     public void testLatchLocal() throws Exception {
         // Test main functionality.
-        CacheCountDownLatch latch = grid(0).cache("local").dataStructures().countDownLatch("latch", 2, false,
+        IgniteCountDownLatch latch = grid(0).cache("local").dataStructures().countDownLatch("latch", 2, false,
             true);
 
         assert latch.count() == 2;
@@ -155,7 +155,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
         IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    CacheCountDownLatch latch = grid(0).cache("local").dataStructures()
+                    IgniteCountDownLatch latch = grid(0).cache("local").dataStructures()
                         .countDownLatch("latch", 2, false, true);
 
                     assert latch != null && latch.count() == 2;
@@ -203,7 +203,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
         checkCountDown(cacheName);
 
         // Test main functionality.
-        CacheCountDownLatch latch1 = grid(0).cache(cacheName).dataStructures().countDownLatch("latch", 2, false,
+        IgniteCountDownLatch latch1 = grid(0).cache(cacheName).dataStructures().countDownLatch("latch", 2, false,
             true);
 
         assert latch1.count() == 2;
@@ -222,7 +222,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
                 IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
-                            CacheCountDownLatch latch = ignite.cache(cacheName).dataStructures()
+                            IgniteCountDownLatch latch = ignite.cache(cacheName).dataStructures()
                                 .countDownLatch("latch", 2, false, true);
 
                             assert latch != null && latch.count() == 2;
@@ -268,7 +268,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      *
      * @throws Exception If failed.
      */
-    private void checkRemovedLatch(CacheCountDownLatch latch) throws Exception {
+    private void checkRemovedLatch(IgniteCountDownLatch latch) throws Exception {
         assert latch.removed();
 
         assert latch.count() == 0;
@@ -291,14 +291,14 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      * @throws Exception Exception.
      */
     private void checkAutoDelete(String cacheName) throws Exception {
-        CacheCountDownLatch latch = createLatch(cacheName, "rmv", 5, true);
+        IgniteCountDownLatch latch = createLatch(cacheName, "rmv", 5, true);
 
         latch.countDownAll();
 
         // Latch should be removed since autoDelete = true
         checkRemovedLatch(latch);
 
-        CacheCountDownLatch latch1 = createLatch(cacheName, "rmv1", 5, false);
+        IgniteCountDownLatch latch1 = createLatch(cacheName, "rmv1", 5, false);
 
         latch1.countDownAll();
 
@@ -314,7 +314,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      */
     private void checkAwait(String cacheName) throws Exception {
         // Check only 'false' cases here. Successful await is tested over the grid.
-        CacheCountDownLatch latch = createLatch(cacheName, "await", 5, true);
+        IgniteCountDownLatch latch = createLatch(cacheName, "await", 5, true);
 
         assert !latch.await(10);
         assert !latch.await(10, MILLISECONDS);
@@ -327,7 +327,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      * @throws Exception Exception.
      */
     private void checkCountDown(String cacheName) throws Exception {
-        CacheCountDownLatch latch = createLatch(cacheName, "cnt", 10, true);
+        IgniteCountDownLatch latch = createLatch(cacheName, "cnt", 10, true);
 
         assert latch.countDown() == 9;
         assert latch.countDown(2) == 7;
@@ -338,7 +338,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         checkRemovedLatch(latch);
 
-        CacheCountDownLatch latch1 = createLatch(cacheName, "cnt1", 10, true);
+        IgniteCountDownLatch latch1 = createLatch(cacheName, "cnt1", 10, true);
 
         assert latch1.countDown() == 9;
         assert latch1.countDown(2) == 7;
@@ -358,9 +358,9 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      * @throws Exception If failed.
      * @return New latch.
      */
-    private CacheCountDownLatch createLatch(String cacheName, String latchName, int cnt, boolean autoDel)
+    private IgniteCountDownLatch createLatch(String cacheName, String latchName, int cnt, boolean autoDel)
         throws Exception {
-        CacheCountDownLatch latch = grid(RND.nextInt(NODES_CNT)).cache(cacheName).dataStructures()
+        IgniteCountDownLatch latch = grid(RND.nextInt(NODES_CNT)).cache(cacheName).dataStructures()
             .countDownLatch(latchName, cnt, autoDel, true);
 
         // Test initialization.
@@ -379,7 +379,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
      */
     private void removeLatch(String cacheName, String latchName)
         throws Exception {
-        CacheCountDownLatch latch = grid(RND.nextInt(NODES_CNT)).cache(cacheName).dataStructures()
+        IgniteCountDownLatch latch = grid(RND.nextInt(NODES_CNT)).cache(cacheName).dataStructures()
             .countDownLatch(latchName, 10, false, true);
 
         assert latch != null;

@@ -22,7 +22,7 @@ import org.apache.ignite.cache.datastructures.*;
 /**
  * Atomic reference managed by cache ({@code 'Ex'} stands for external).
  */
-public interface GridCacheAtomicReferenceEx<T> extends GridCacheRemovable, CacheAtomicReference<T> {
+public interface GridCacheAtomicReferenceEx<T> extends GridCacheRemovable, IgniteAtomicReference<T> {
     /**
      * Get current atomic reference key.
      *

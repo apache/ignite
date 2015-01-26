@@ -22,7 +22,7 @@ import org.apache.ignite.cache.datastructures.*;
 /**
  * Sequence managed by cache ({@code 'Ex'} stands for external.
  */
-public interface GridCacheAtomicSequenceEx extends GridCacheRemovable, CacheAtomicSequence {
+public interface GridCacheAtomicSequenceEx extends GridCacheRemovable, IgniteAtomicSequence {
     /**
      * Get current sequence key.
      *

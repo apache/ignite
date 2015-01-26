@@ -46,7 +46,7 @@ import java.util.*;
  * <li>
  *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
  *     creating and working with distributed concurrent data structures, such as
- *     {@link org.apache.ignite.cache.datastructures.CacheAtomicLong}, {@link org.apache.ignite.cache.datastructures.CacheAtomicReference}, {@link org.apache.ignite.cache.datastructures.CacheQueue}, etc.
+ *     {@link org.apache.ignite.cache.datastructures.IgniteAtomicLong}, {@link org.apache.ignite.cache.datastructures.IgniteAtomicReference}, {@link org.apache.ignite.cache.datastructures.IgniteQueue}, etc.
  * </li>
  * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.

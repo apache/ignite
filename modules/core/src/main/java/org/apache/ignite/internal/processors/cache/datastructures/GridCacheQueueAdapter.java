@@ -35,9 +35,9 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
- * Common code for {@link org.apache.ignite.cache.datastructures.CacheQueue} implementation.
+ * Common code for {@link org.apache.ignite.cache.datastructures.IgniteQueue} implementation.
  */
-public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> implements CacheQueue<T> {
+public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> implements IgniteQueue<T> {
     /** Value returned by closure updating queue header indicating that queue was removed. */
     protected static final long QUEUE_REMOVED_IDX = Long.MIN_VALUE;
 

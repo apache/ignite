@@ -55,7 +55,7 @@ public final class CacheAtomicReferenceExample {
             String val = UUID.randomUUID().toString();
 
             // Initialize atomic reference in grid.
-            CacheAtomicReference<String> ref = g.cache(CACHE_NAME).dataStructures().
+            IgniteAtomicReference<String> ref = g.cache(CACHE_NAME).dataStructures().
                 atomicReference(refName, val, true);
 
             System.out.println("Atomic reference initial value : " + ref.get() + '.');
@@ -113,7 +113,7 @@ public final class CacheAtomicReferenceExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                CacheAtomicReference<String> ref = Ignition.ignite().cache(cacheName).dataStructures().
+                IgniteAtomicReference<String> ref = Ignition.ignite().cache(cacheName).dataStructures().
                     atomicReference(refName, null, true);
 
                 System.out.println("Atomic reference value is " + ref.get() + '.');

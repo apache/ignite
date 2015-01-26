@@ -35,7 +35,7 @@ import java.util.*;
  * @see CacheDataStructures#set(String, boolean, boolean)
  * @see CacheDataStructures#removeSet(String)
  */
-public interface CacheSet<T> extends Set<T> {
+public interface IgniteSet<T> extends Set<T> {
     /**
      * Gets set name.
      *

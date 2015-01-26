@@ -27,7 +27,7 @@ import javax.cache.processor.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.cache.datastructures.CacheQueue} implementation using atomic cache.
+ * {@link org.apache.ignite.cache.datastructures.IgniteQueue} implementation using atomic cache.
  */
 public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
     /** */

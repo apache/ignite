@@ -37,7 +37,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheAtomicSequence atomicSequence(String name, long initVal, boolean create)
+    @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteCheckedException {
         return dsMgr.sequence(name, initVal, create);
     }
@@ -48,7 +48,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
+    @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
         return dsMgr.atomicLong(name, initVal, create);
     }
 
@@ -58,7 +58,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> CacheAtomicReference<T> atomicReference(String name, T initVal, boolean create)
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, T initVal, boolean create)
         throws IgniteCheckedException {
         return dsMgr.atomicReference(name, initVal, create);
     }
@@ -69,7 +69,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, S> CacheAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
         boolean create) throws IgniteCheckedException {
         return dsMgr.atomicStamped(name, initVal, initStamp, create);
     }
@@ -80,7 +80,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> CacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
+    @Override public <T> IgniteQueue<T> queue(String name, int cap, boolean collocated, boolean create)
         throws IgniteCheckedException {
         return dsMgr.queue(name, cap <= 0 ? Integer.MAX_VALUE : cap, collocated, create);
     }
@@ -96,7 +96,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> CacheSet<T> set(String name, boolean collocated, boolean create)
+    @Nullable @Override public <T> IgniteSet<T> set(String name, boolean collocated, boolean create)
         throws IgniteCheckedException {
         return dsMgr.set(name, collocated, create);
     }
@@ -107,7 +107,7 @@ public class GridCacheDataStructuresImpl<K, V> implements CacheDataStructures {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws IgniteCheckedException {
         return dsMgr.countDownLatch(name, cnt, autoDel, create);
     }

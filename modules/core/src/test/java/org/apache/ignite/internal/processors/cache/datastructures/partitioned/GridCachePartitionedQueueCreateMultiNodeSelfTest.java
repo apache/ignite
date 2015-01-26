@@ -100,7 +100,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Creating queue: " + locNodeId);
 
-                    CacheQueue<String> q = cache.dataStructures().queue("queue", 1, true, true);
+                    IgniteQueue<String> q = cache.dataStructures().queue("queue", 1, true, true);
 
                     assert q != null;
 

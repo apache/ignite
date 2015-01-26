@@ -59,7 +59,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Override public CacheAtomicSequence atomicSequence(String name, long initVal, boolean create)
+    @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -84,7 +84,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Override public CacheAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
+    @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
         try {
@@ -108,7 +108,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Override public <T> CacheAtomicReference<T> atomicReference(String name, T initVal, boolean create)
+    @Override public <T> IgniteAtomicReference<T> atomicReference(String name, T initVal, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -133,7 +133,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Override public <T, S> CacheAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
+    @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, T initVal, S initStamp,
         boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -158,7 +158,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Override public <T> CacheQueue<T> queue(String name, int cap, boolean collocated, boolean create)
+    @Override public <T> IgniteQueue<T> queue(String name, int cap, boolean collocated, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -195,7 +195,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <T> CacheSet<T> set(String name, boolean collocated, boolean create)
+    @Nullable @Override public <T> IgniteSet<T> set(String name, boolean collocated, boolean create)
         throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 
@@ -220,7 +220,7 @@ public class GridCacheDataStructuresProxy<K, V> implements CacheDataStructures, 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel,
         boolean create) throws IgniteCheckedException {
         GridCacheProjectionImpl<K, V> old = gate.enter(null);
 

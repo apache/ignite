@@ -58,7 +58,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
     private static String[] seqNames = new String[SEQ_NUM];
 
     /** Mandatory sequences. */
-    private static CacheAtomicSequence[] seqArr = new CacheAtomicSequence[SEQ_NUM];
+    private static IgniteAtomicSequence[] seqArr = new IgniteAtomicSequence[SEQ_NUM];
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -99,7 +99,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
         seqArr[2] = grid().cache(null).dataStructures().atomicSequence(seqNames[2], -1 * RND.nextLong(), true);
 
         // Check and change batch size.
-        for (CacheAtomicSequence seq : seqArr) {
+        for (IgniteAtomicSequence seq : seqArr) {
             assert seq != null;
 
             // Compare with default batch size.
@@ -129,9 +129,9 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
         String locSeqName1 = UUID.randomUUID().toString();
         String locSeqName2 = UUID.randomUUID().toString();
 
-        CacheAtomicSequence locSeq1 = grid().cache(null).dataStructures().atomicSequence(locSeqName1, 0, true);
-        CacheAtomicSequence locSeq2 = grid().cache(null).dataStructures().atomicSequence(locSeqName2, 0, true);
-        CacheAtomicSequence locSeq3 = grid().cache(null).dataStructures().atomicSequence(locSeqName1, 0, true);
+        IgniteAtomicSequence locSeq1 = grid().cache(null).dataStructures().atomicSequence(locSeqName1, 0, true);
+        IgniteAtomicSequence locSeq2 = grid().cache(null).dataStructures().atomicSequence(locSeqName2, 0, true);
+        IgniteAtomicSequence locSeq3 = grid().cache(null).dataStructures().atomicSequence(locSeqName1, 0, true);
 
         assertNotNull(locSeq1);
         assertNotNull(locSeq2);
@@ -151,7 +151,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     public void testAddWrongValue() throws Exception {
-        for (CacheAtomicSequence seq : seqArr) {
+        for (IgniteAtomicSequence seq : seqArr) {
             try {
                 seq.getAndAdd(-15);
 
@@ -177,7 +177,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      */
     public void testGetAndIncrement() throws Exception {
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
-            for (CacheAtomicSequence seq : seqArr)
+            for (IgniteAtomicSequence seq : seqArr)
                 getAndIncrement(seq);
 
             if (i % 100 == 0)
@@ -190,7 +190,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      */
     public void testIncrementAndGet() throws Exception {
         for (int i = 0; i < MAX_LOOPS_NUM; i++) {
-            for (CacheAtomicSequence seq : seqArr)
+            for (IgniteAtomicSequence seq : seqArr)
                 incrementAndGet(seq);
 
             if (i % 100 == 0)
@@ -203,7 +203,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      */
     public void testAddAndGet() throws Exception {
         for (int i = 1; i < MAX_LOOPS_NUM; i++) {
-            for (CacheAtomicSequence seq : seqArr)
+            for (IgniteAtomicSequence seq : seqArr)
                 addAndGet(seq, i);
 
             if (i % 100 == 0)
@@ -216,7 +216,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      */
     public void testGetAndAdd() throws Exception {
         for (int i = 1; i < MAX_LOOPS_NUM; i++) {
-            for (CacheAtomicSequence seq : seqArr)
+            for (IgniteAtomicSequence seq : seqArr)
                 getAndAdd(seq, i);
 
             if (i % 100 == 0)
@@ -230,7 +230,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
     public void testGetAndAddInTx() throws Exception {
         try (IgniteTx tx = grid().cache(null).txStart(PESSIMISTIC, REPEATABLE_READ)) {
             for (int i = 1; i < MAX_LOOPS_NUM; i++) {
-                for (CacheAtomicSequence seq : seqArr)
+                for (IgniteAtomicSequence seq : seqArr)
                     getAndAdd(seq, i);
 
                 if (i % 100 == 0)
@@ -248,14 +248,14 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
         String locSeqName2 = UUID.randomUUID().toString();
 
         // Sequence.
-        CacheAtomicSequence locSeq1 = grid().cache(null).dataStructures().atomicSequence(locSeqName1, 0, true);
+        IgniteAtomicSequence locSeq1 = grid().cache(null).dataStructures().atomicSequence(locSeqName1, 0, true);
 
         locSeq1.batchSize(1);
 
         // Sequence.
         long initVal = -1500;
 
-        CacheAtomicSequence locSeq2 = grid().cache(null).dataStructures().atomicSequence(locSeqName2, initVal, true);
+        IgniteAtomicSequence locSeq2 = grid().cache(null).dataStructures().atomicSequence(locSeqName2, initVal, true);
 
         locSeq2.batchSize(7);
 
@@ -298,7 +298,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
     public void testEviction() throws Exception {
         String locSeqName = UUID.randomUUID().toString();
 
-        CacheAtomicSequence locSeq = grid().cache(null).dataStructures().atomicSequence(locSeqName, 0, true);
+        IgniteAtomicSequence locSeq = grid().cache(null).dataStructures().atomicSequence(locSeqName, 0, true);
 
         locSeq.addAndGet(153);
 
@@ -313,7 +313,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
     public void testRemove() throws Exception {
         String locSeqName = UUID.randomUUID().toString();
 
-        CacheAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(locSeqName, 0, true);
+        IgniteAtomicSequence seq = grid().cache(null).dataStructures().atomicSequence(locSeqName, 0, true);
 
         seq.addAndGet(153);
 
@@ -334,7 +334,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      */
     public void testCacheSets() throws Exception {
         // Make new atomic sequence in cache.
-        CacheAtomicSequence seq = grid().cache(null).dataStructures()
+        IgniteAtomicSequence seq = grid().cache(null).dataStructures()
             .atomicSequence(UUID.randomUUID().toString(), 0, true);
 
         seq.incrementAndGet();
@@ -370,7 +370,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      * @return Result of operation.
      */
-    private long getAndIncrement(CacheAtomicSequence seq) throws Exception {
+    private long getAndIncrement(IgniteAtomicSequence seq) throws Exception {
         long locSeqVal = seq.get();
 
         assertEquals(locSeqVal, seq.getAndIncrement());
@@ -387,7 +387,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      * @return Result of operation.
      */
-    private long incrementAndGet(CacheAtomicSequence seq) throws Exception {
+    private long incrementAndGet(IgniteAtomicSequence seq) throws Exception {
         long locSeqVal = seq.get();
 
         assertEquals(locSeqVal + 1, seq.incrementAndGet());
@@ -405,7 +405,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      * @return Result of operation.
      */
-    private long addAndGet(CacheAtomicSequence seq, long l) throws Exception {
+    private long addAndGet(IgniteAtomicSequence seq, long l) throws Exception {
         long locSeqVal = seq.get();
 
         assertEquals(locSeqVal + l, seq.addAndGet(l));
@@ -423,7 +423,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @throws Exception If failed.
      * @return Result of operation.
      */
-    private long getAndAdd(CacheAtomicSequence seq, long l) throws Exception {
+    private long getAndAdd(IgniteAtomicSequence seq, long l) throws Exception {
         long locSeqVal = seq.get();
 
         assertEquals(locSeqVal, seq.getAndAdd(l));
@@ -445,7 +445,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
         String locSeqName = UUID.randomUUID().toString();
 
         // Sequence.
-        CacheAtomicSequence locSeq = grid().cache(null).dataStructures().atomicSequence(locSeqName, initVal, true);
+        IgniteAtomicSequence locSeq = grid().cache(null).dataStructures().atomicSequence(locSeqName, initVal, true);
 
         locSeq.batchSize(batchSize);
 
@@ -480,7 +480,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
         String locSeqName = UUID.randomUUID().toString();
 
         // Sequence.
-        final CacheAtomicSequence locSeq = grid().cache(null).dataStructures().atomicSequence(locSeqName, initVal,
+        final IgniteAtomicSequence locSeq = grid().cache(null).dataStructures().atomicSequence(locSeqName, initVal,
             true);
 
         locSeq.batchSize(batchSize);
@@ -550,7 +550,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends GridCommonAbs
      * @param calcVal Manually calculated value.
      * @throws Exception If failed.
      */
-    private void integrity(CacheAtomicSequence seq, long calcVal) throws Exception {
+    private void integrity(IgniteAtomicSequence seq, long calcVal) throws Exception {
         assert calcVal == seq.get();
 
         getAndAdd(seq, 1);

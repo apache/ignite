@@ -1349,7 +1349,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Gets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After
+     * Gets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.IgniteAtomicSequence} instances. After
      * a certain number has been reserved, consequent increments of sequence will happen locally,
      * without communication with other nodes, until the next reservation has to be made.
      * <p>
@@ -1362,7 +1362,7 @@ public class CacheConfiguration extends MutableConfiguration {
     }
 
     /**
-     * Sets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.CacheAtomicSequence} instances. After a certain
+     * Sets default number of sequence values reserved for {@link org.apache.ignite.cache.datastructures.IgniteAtomicSequence} instances. After a certain
      * number has been reserved, consequent increments of sequence will happen locally, without communication with other
      * nodes, until the next reservation has to be made.
      *

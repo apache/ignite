@@ -77,7 +77,7 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCleanup() throws Exception {
-        CacheQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME1, 0, false, true);
+        IgniteQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME1, 0, false, true);
 
         ClusterNode node = grid(0).cache(null).affinity().mapKeyToNode(new GridCacheQueueHeaderKey(QUEUE_NAME1));
 
@@ -211,7 +211,7 @@ public class GridCacheQueueCleanupSelfTest extends GridCacheAbstractSelfTest {
     private IgniteFuture<?> startAddPollThread(final Ignite ignite, final AtomicBoolean stop, final String queueName) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                CacheQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, false, true);
+                IgniteQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, 0, false, true);
 
                 assertEquals(0, queue.size());
 
