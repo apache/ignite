@@ -621,7 +621,7 @@ public class SchemaLoadApp extends Application {
         genPnl.addColumn(35, 35, 35, Priority.NEVER);
 
         genPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
-        genPnl.addRows(7);
+        genPnl.addRows(8);
 
         TableColumn<PojoDescriptor, Boolean> useCol = customColumn("Schema / Table", "use",
             "If checked then this table will be used for XML and POJOs generation", PojoDescriptorCell.cellFactory());
@@ -704,6 +704,8 @@ public class SchemaLoadApp extends Application {
         openFolderCh = genPnl.add(checkBox("Reveal output folder",
             "Open output folder in system file manager after generation complete", true), 3);
 
+        genPnl.add(new Separator(), 3);
+
         GridPaneEx regexPnl = paneEx(0, 0, 0, 0);
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
@@ -719,7 +721,7 @@ public class SchemaLoadApp extends Application {
         final ComboBox<String> replaceCb = regexPnl.addLabeled("  Replace:", comboBox("Replacement target",
             "Key class names", "Value class names", "Java names"));
 
-        regexPnl.add(buttonsPane(Pos.BOTTOM_RIGHT, false,
+        regexPnl.add(buttonsPane(Pos.CENTER_LEFT, false,
             button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
                     " with the given replacement.",
                 new EventHandler<ActionEvent>() {
@@ -787,7 +789,7 @@ public class SchemaLoadApp extends Application {
                         pojo.revertJavaNames();
                 }
             })
-        ), 2);
+        ), 2).setPadding(new Insets(0, 0, 0, 10));
 
         pojosTbl.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<PojoDescriptor>() {
             @Override public void changed(ObservableValue<? extends PojoDescriptor> val,
