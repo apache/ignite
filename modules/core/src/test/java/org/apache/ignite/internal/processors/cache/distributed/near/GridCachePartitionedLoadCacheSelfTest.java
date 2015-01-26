@@ -79,12 +79,35 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     public void testLocalLoadCache() throws Exception {
+        loadCache(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalLoadCacheAsync() throws Exception {
+        loadCache(true);
+    }
+
+    /**
+     * @param async If {@code true} uses asynchronous load.
+     * @throws Exception If failed.
+     */
+    private void loadCache(boolean async) throws Exception {
         try {
             startGridsMultiThreaded(GRID_CNT);
 
             IgniteCache<Integer, String> cache = jcache(0);
 
-            cache.localLoadCache(null, PUT_CNT);
+            if (async) {
+                IgniteCache<Integer, String> asyncCache = cache.enableAsync();
+
+                asyncCache.localLoadCache(null, PUT_CNT);
+
+                asyncCache.future().get();
+            }
+            else
+                cache.localLoadCache(null, PUT_CNT);
 
             GridCache<Integer, String> cache0 = cache(0);
 

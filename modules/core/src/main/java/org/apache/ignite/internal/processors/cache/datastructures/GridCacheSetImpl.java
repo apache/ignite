@@ -30,11 +30,9 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
-import java.lang.ref.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -53,9 +51,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
     /** Cache. */
     private final GridCache<GridCacheSetItemKey, Boolean> cache;
 
-    /** Logger. */
-    private final IgniteLogger log;
-
     /** Set name. */
     private final String name;
 
@@ -71,12 +66,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
     /** Removed flag. */
     private volatile boolean rmvd;
 
-    /** Iterators weak references queue. */
-    private final ReferenceQueue<SetIterator<?>> itRefQueue = new ReferenceQueue<>();
-
-    /** Iterators futures. */
-    private final Map<WeakReference<SetIterator<?>>, CacheQueryFuture<?>> itFuts = new ConcurrentHashMap8<>();
-
     /**
      * @param ctx Cache context.
      * @param name Set name.
@@ -90,8 +79,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
         collocated = hdr.collocated();
 
         cache = ctx.cache();
-
-        log = ctx.logger(GridCacheSetImpl.class);
 
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
     }
@@ -348,16 +335,21 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
 
             qry.projection(ctx.grid().forNodes(nodes));
 
-            CacheQueryFuture<T> fut = qry.execute();
+            CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 
-            SetIterator<T> it = new SetIterator<>(fut);
+            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it =
+                ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
+                    @Override protected T convert(Map.Entry<T, ?> e) {
+                        return e.getKey();
+                    }
 
-            itFuts.put(it.weakReference(), fut);
+                    @Override protected void remove(T item) {
+                        GridCacheSetImpl.this.remove(item);
+                    }
+                });
 
             if (rmvd) {
-                itFuts.remove(it.weakReference());
-
-                it.close();
+                ctx.itHolder().removeIterator(it);
 
                 checkRemoved();
             }
@@ -443,18 +435,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
 
         this.rmvd = rmvd;
 
-        if (rmvd) {
-            for (CacheQueryFuture<?> fut : itFuts.values()) {
-                try {
-                    fut.cancel();
-                }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to close iterator.", e);
-                }
-            }
-
-            itFuts.clear();
-        }
+        if (rmvd)
+            ctx.itHolder().clearQueries();
     }
 
     /**
@@ -466,29 +448,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
     }
 
     /**
-     * Closes unreachable iterators.
-     */
-    private void checkWeakQueue() {
-        for (Reference<? extends SetIterator<?>> itRef = itRefQueue.poll(); itRef != null; itRef = itRefQueue.poll()) {
-            try {
-                WeakReference<SetIterator<?>> weakRef = (WeakReference<SetIterator<?>>)itRef;
-
-                CacheQueryFuture<?> fut = itFuts.remove(weakRef);
-
-                if (fut != null)
-                    fut.cancel();
-            }
-            catch (IgniteCheckedException e) {
-                log.error("Failed to close iterator.", e);
-            }
-        }
-    }
-
-    /**
      * Checks if set was removed and handles iterators weak reference queue.
      */
     private void onAccess() {
-        checkWeakQueue();
+        ctx.itHolder().checkWeakQueue();
 
         checkRemoved();
     }
@@ -518,116 +481,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements CacheS
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSetImpl.class, this);
-    }
-
-    /**
-     *
-     */
-    private class SetIterator<T> extends GridCloseableIteratorAdapter<T> {
-        /** */
-        private static final long serialVersionUID = -1460570789166994846L;
-
-        /** Query future. */
-        private final CacheQueryFuture<T> fut;
-
-        /** Init flag. */
-        private boolean init;
-
-        /** Next item. */
-        private T next;
-
-        /** Current item. */
-        private T cur;
-
-        /** Weak reference. */
-        private final WeakReference<SetIterator<?>> weakRef;
-
-        /**
-         * @param fut Query future.
-         */
-        private SetIterator(CacheQueryFuture<T> fut) {
-            this.fut = fut;
-
-            weakRef = new WeakReference<SetIterator<?>>(this, itRefQueue);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected T onNext() throws IgniteCheckedException {
-            init();
-
-            if (next == null) {
-                clearWeakReference();
-
-                throw new NoSuchElementException();
-            }
-
-            cur = next;
-
-            Map.Entry e = (Map.Entry)fut.next();
-
-            next = e != null ? (T)e.getKey() : null;
-
-            if (next == null)
-                clearWeakReference();
-
-            return cur;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected boolean onHasNext() throws IgniteCheckedException {
-            init();
-
-            boolean hasNext = next != null;
-
-            if (!hasNext)
-                clearWeakReference();
-
-            return hasNext;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onClose() throws IgniteCheckedException {
-            fut.cancel();
-
-            clearWeakReference();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void onRemove() throws IgniteCheckedException {
-            if (cur == null)
-                throw new NoSuchElementException();
-
-            GridCacheSetImpl.this.remove(cur);
-        }
-
-        /**
-         * @throws IgniteCheckedException If failed.
-         */
-        private void init() throws IgniteCheckedException {
-            if (!init) {
-                Map.Entry e = (Map.Entry)fut.next();
-
-                next = e != null ? (T)e.getKey() : null;
-
-                init = true;
-            }
-        }
-
-        /**
-         * @return Iterator weak reference.
-         */
-        WeakReference<SetIterator<?>> weakReference() {
-            return weakRef;
-        }
-
-        /**
-         * Clears weak reference.
-         */
-        private void clearWeakReference() {
-            weakRef.clear(); // Do not need to enqueue.
-
-            itFuts.remove(weakRef);
-        }
     }
 
     /**

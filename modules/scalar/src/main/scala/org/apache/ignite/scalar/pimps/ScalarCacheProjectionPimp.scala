@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.pimps
+package org.apache.ignite.scalar.pimps
 
+import org.apache.ignite._
 import org.apache.ignite.cache.{CacheEntry, CacheProjection}
 import org.apache.ignite.cluster.ClusterGroup
-import org.apache.ignite.lang.{IgnitePredicate, IgniteReducer, IgniteClosure, IgniteBiTuple}
-
-import collection._
-import collection.JavaConversions._
-import org.jetbrains.annotations.Nullable
-import org.apache.ignite._
-import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.scala.impl
-import org.gridgain.scalar._
-import scalar._
+import org.apache.ignite.lang.{IgniteBiTuple, IgniteClosure, IgnitePredicate, IgniteReducer}
+import org.apache.ignite.scalar.scalar._
+import org.jetbrains.annotations.Nullable
+
+import scala.collection.JavaConversions._
+import scala.collection._
 
 /**
  * Companion object.

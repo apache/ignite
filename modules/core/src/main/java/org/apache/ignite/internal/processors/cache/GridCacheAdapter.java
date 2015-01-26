@@ -49,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
@@ -59,7 +60,7 @@ import java.util.concurrent.locks.*;
 import static java.util.Collections.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.GridCachePeekMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -634,6 +635,20 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         return containsKey(key, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
+        return containsKeyAsync(key, null);
+    }
+
+    /**
+     * @param key Key.
+     * @param filter Filter.
+     * @return Future.
+     */
+    public IgniteFuture<Boolean> containsKeyAsync(K key, @Nullable IgnitePredicate<CacheEntry<K, V>> filter) {
+        return new GridFinishedFuture<>(ctx.kernalContext(), containsKey(key, filter));
     }
 
     /** {@inheritDoc} */
@@ -3573,6 +3588,37 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         }
     }
 
+    /**
+     * @param p Predicate.
+     * @param args Arguments.
+     * @throws IgniteCheckedException If failed.
+     */
+    void globalLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws IgniteCheckedException {
+        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
+
+        IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
+
+        comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
+    }
+
+    /**
+     * @param p Predicate.
+     * @param args Arguments.
+     * @throws IgniteCheckedException If failed.
+     */
+    IgniteFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+        throws IgniteCheckedException {
+        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
+
+        IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
+
+        comp = comp.enableAsync();
+
+        comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
+
+        return comp.future();
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public CacheEntry<K, V> randomEntry() {
         GridCacheMapEntry<K, V> e = map.randomEntry();
@@ -3613,6 +3659,36 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** {@inheritDoc} */
     @Override public Iterator<CacheEntry<K, V>> iterator() {
         return entrySet().iterator();
+    }
+
+    /**
+     * @param prj Projection.
+     * @return Distributed ignite cache iterator.
+     */
+    public Iterator<Cache.Entry<K, V>> igniteIterator(final GridCacheProjectionImpl<K, V> prj) {
+        CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
+            .keepAll(false)
+            .execute();
+
+        return ctx.itHolder().iterator(fut, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
+            @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
+                return new CacheEntryImpl<>(e.getKey(), e.getValue());
+            }
+
+            @Override protected void remove(Cache.Entry<K, V> item) {
+                GridCacheProjectionImpl<K, V> prev = ctx.gate().enter(prj);
+
+                try {
+                    GridCacheAdapter.this.removex(item.getKey());
+                }
+                catch (IgniteCheckedException e) {
+                    throw new CacheException(e);
+                }
+                finally {
+                    ctx.gate().leave(prev);
+                }
+            }
+        });
     }
 
     /** {@inheritDoc} */
@@ -5004,7 +5080,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            GridCache<Object, Object> cache = ((GridEx) ignite).cachex(cacheName);
+            GridCache<Object, Object> cache = ((GridEx)ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }
@@ -5333,6 +5409,76 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         void onDone() {
             if (!col.isEmpty())
                 ldr.addData(col);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LoadCacheClosure<K, V> implements Callable<Void>, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String cacheName;
+
+        /** */
+        private IgniteBiPredicate<K, V> p;
+
+        /** */
+        private Object[] args;
+
+        /** */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public LoadCacheClosure() {
+            // No-op.
+        }
+
+        /**
+         * @param cacheName Cache name.
+         * @param p Predicate.
+         * @param args Arguments.
+         */
+        private LoadCacheClosure(String cacheName, IgniteBiPredicate<K, V> p, Object[] args) {
+            this.cacheName = cacheName;
+            this.p = p;
+            this.args = args;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            IgniteCache<K, V> cache = ignite.jcache(cacheName);
+
+            assert cache != null : cacheName;
+
+            cache.localLoadCache(p, args);
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(p);
+
+            out.writeObject(args);
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            p = (IgniteBiPredicate<K, V>)in.readObject();
+
+            args = (Object[])in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(LoadCacheClosure.class, this);
         }
     }
 }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 /**

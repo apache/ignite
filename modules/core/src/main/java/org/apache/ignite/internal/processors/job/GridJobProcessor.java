@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.internal.managers.collision.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;

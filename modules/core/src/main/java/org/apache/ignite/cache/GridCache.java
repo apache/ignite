@@ -163,7 +163,7 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * {@link #removex(Object, org.apache.ignite.lang.IgnitePredicate[])} method.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link CacheFlag#SKIP_SWAP}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}.
      *
      * @return Iterator over keys.
      * @throws IgniteCheckedException If failed.

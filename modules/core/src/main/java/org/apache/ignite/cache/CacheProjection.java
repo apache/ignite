@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -341,6 +342,12 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @throws NullPointerException if the key is {@code null}.
      */
     public boolean containsKey(K key);
+
+    /**
+     * @param key Key.
+     * @return Future.
+     */
+    public IgniteFuture<Boolean> containsKeyAsync(K key);
 
     /**
      * Returns {@code true} if this cache contains given value.

@@ -256,8 +256,8 @@ public class GridJobStealingSelfTest extends GridCommonAbstractTest {
 
         ClassLoader ldr1 = new URLClassLoader(clsLdrUrls, getClass().getClassLoader());
 
-        Class taskCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.JobStealingTask");
-        Class nodeFilterCls = ldr1.loadClass("org.gridgain.grid.tests.p2p.GridExcludeNodeFilter");
+        Class taskCls = ldr1.loadClass("org.apache.ignite.tests.p2p.JobStealingTask");
+        Class nodeFilterCls = ldr1.loadClass("org.apache.ignite.tests.p2p.ExcludeNodeFilter");
 
         IgnitePredicate<ClusterNode> nodeFilter = (IgnitePredicate<ClusterNode>)nodeFilterCls
             .getConstructor(UUID.class).newInstance(ignite2.cluster().localNode().id());

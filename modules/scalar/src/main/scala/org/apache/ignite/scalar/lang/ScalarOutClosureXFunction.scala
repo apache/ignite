@@ -15,9 +15,9 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.lang
+package org.apache.ignite.scalar.lang
 
-import org.apache.ignite.internal.util.lang.{IgniteOutClosureX}
+import org.apache.ignite.internal.util.lang.IgniteOutClosureX
 
 /**
  * Wrapping Scala function for `GridOutClosureX`.

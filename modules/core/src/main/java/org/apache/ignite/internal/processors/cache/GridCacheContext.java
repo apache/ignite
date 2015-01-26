@@ -61,7 +61,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -186,6 +186,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
 
+    /** Cache weak query iterator holder. */
+    private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -300,6 +303,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         if (expiryPlc instanceof EternalExpiryPolicy)
             expiryPlc = null;
+
+        itHolder = new CacheWeakQueryIteratorsHolder(log);
     }
 
     /**
@@ -837,6 +842,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Iterators Holder.
+     */
+    public CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder() {
+        return itHolder;
+    }
+
+    /**
      * @return Swap manager.
      */
     public GridCacheSwapManager<K, V> swap() {
@@ -1239,7 +1251,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * Clones cached object depending on whether or not {@link org.apache.ignite.cache.CacheFlag#CLONE} flag
+     * Clones cached object depending on whether or not {@link CacheFlag#CLONE} flag
      * is set thread locally.
      *
      * @param obj Object to clone.

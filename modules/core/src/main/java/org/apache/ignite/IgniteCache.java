@@ -101,6 +101,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
+    @IgniteAsyncSupported
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
@@ -124,6 +125,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
+    @IgniteAsyncSupported
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
@@ -146,15 +148,16 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * if there is one.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param key Key to store in cache.
      * @param val Value to be associated with the given key.
      * @return Previously contained value regardless of whether put happened or not.
      * @throws NullPointerException If either key or value are {@code null}.
      * @throws CacheException If put operation failed.
-     * @throws org.apache.ignite.cache.CacheFlagException If projection flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
      */
+    @IgniteAsyncSupported
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
@@ -223,11 +226,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * participating in any locks or transactions).
      * <p>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entry will
      * be swapped to offheap, and then to disk.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to evict.
      */
@@ -257,11 +260,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method is not transactional.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP}, {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to promote entries for.
      * @throws CacheException If promote failed.
-     * @throws org.apache.ignite.cache.CacheFlagException If flags validation failed.
+     * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
     public void localPromote(Set<? extends K> keys) throws CacheException;
 
@@ -270,7 +273,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * is not currently locked, and is not participating in a transaction.
      * <p>
      * If {@link CacheConfiguration#isSwapEnabled()} is set to {@code true} and
-     * {@link org.apache.ignite.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#SKIP_SWAP} is not enabled, the evicted entries will
      * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
@@ -278,7 +281,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * remote caches or from underlying persistent storage.
      * <h2 class="header">Cache Flags</h2>
      * This method is not available if any of the following flags are set on projection:
-     * {@link org.apache.ignite.cache.CacheFlag#READ}.
+     * {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
      * @param keys Keys to clear.
      * @return {@code True} if entry was successfully cleared from cache, {@code false}
@@ -295,6 +298,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size across all nodes.
      */
+    @IgniteAsyncSupported
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -313,6 +317,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * will be returned for {@link EntryProcessor}s that return a
      * <code>null</code> value for a key.
      */
+    @IgniteAsyncSupported
     <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
 
     /**
@@ -353,4 +358,78 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Projection for portable objects.
      */
     public <K1, V1> IgniteCache<K1, V1> keepPortable();
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V get(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public Map<K, V> getAll(Set<? extends K> keys);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean containsKey(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void put(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V getAndPut(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void putAll(Map<? extends K, ? extends V> map);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean putIfAbsent(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean remove(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean remove(K key, V oldVal);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V getAndRemove(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean replace(K key, V oldVal, V newVal);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean replace(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V getAndReplace(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void removeAll(Set<? extends K> keys);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void removeAll();
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void clear();
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
 }

@@ -40,7 +40,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
@@ -93,7 +93,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     private final ConcurrentMap<UUID, GridNearAtomicUpdateRequest<K, V>> mappings;
 
     /** Error. */
-    private volatile GridCachePartialUpdateException err;
+    private volatile CachePartialUpdateCheckedException err;
 
     /** Operation result. */
     private volatile GridCacheReturn<Object> opRes;
@@ -472,7 +472,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
      */
     private synchronized void checkComplete() {
         if ((syncMode == FULL_ASYNC && cctx.config().getAtomicWriteOrderMode() == PRIMARY) || mappings.isEmpty()) {
-            GridCachePartialUpdateException err0 = err;
+            CachePartialUpdateCheckedException err0 = err;
 
             if (err0 != null)
                 onDone(err0);
@@ -867,13 +867,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
     /**
      * @param failedKeys Failed keys.
      * @param err Error cause.
-     * @return Root {@link GridCachePartialUpdateException}.
+     * @return Root {@link org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException}.
      */
     private synchronized IgniteCheckedException addFailedKeys(Collection<K> failedKeys, Throwable err) {
-        GridCachePartialUpdateException err0 = this.err;
+        CachePartialUpdateCheckedException err0 = this.err;
 
         if (err0 == null)
-            err0 = this.err = new GridCachePartialUpdateException("Failed to update keys (retry update if possible).");
+            err0 = this.err = new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
 
         err0.add(failedKeys, err);
 

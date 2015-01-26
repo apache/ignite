@@ -53,10 +53,10 @@ public class GridP2PUserVersionChangeSelfTest extends GridCommonAbstractTest {
     private IgniteDeploymentMode depMode;
 
     /** Test task class name. */
-    private static final String TEST_TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TEST_TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** Test resource class name. */
-    private static final String TEST_RCRS_NAME = "org.gridgain.grid.tests.p2p.GridTestUserResource";
+    private static final String TEST_RCRS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
 
     /** IP finder. */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

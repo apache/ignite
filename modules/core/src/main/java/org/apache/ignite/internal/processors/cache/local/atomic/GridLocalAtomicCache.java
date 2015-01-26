@@ -39,7 +39,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheFlag.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
@@ -882,7 +882,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         IgniteBiTuple<Boolean, ?> res = null;
 
-        GridCachePartialUpdateException err = null;
+        CachePartialUpdateCheckedException err = null;
 
         boolean intercept = ctx.config().getInterceptor() != null;
 
@@ -980,7 +980,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Optional filter.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @throws GridCachePartialUpdateException If update failed.
+     * @throws org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException If update failed.
      * @return Results map for invoke operation.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
@@ -1009,7 +1009,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
             List<GridCacheEntryEx<K, V>> filtered = new ArrayList<>(size);
 
-            GridCachePartialUpdateException err = null;
+            CachePartialUpdateCheckedException err = null;
 
             Iterator<?> valsIter = vals != null ? vals.iterator() : null;
 
@@ -1257,13 +1257,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @return Partial update exception.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions", "ForLoopReplaceableByForEach"})
-    @Nullable private GridCachePartialUpdateException updatePartialBatch(
+    @Nullable private CachePartialUpdateCheckedException updatePartialBatch(
         List<GridCacheEntryEx<K, V>> entries,
         final GridCacheVersion ver,
         @Nullable Map<K, V> putMap,
         @Nullable Collection<K> rmvKeys,
         @Nullable ExpiryPolicy expiryPlc,
-        @Nullable GridCachePartialUpdateException err,
+        @Nullable CachePartialUpdateCheckedException err,
         UUID subjId,
         String taskName
     ) {
@@ -1419,8 +1419,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /**
      * @return New partial update exception.
      */
-    private static GridCachePartialUpdateException partialUpdateException() {
-        return new GridCachePartialUpdateException("Failed to update keys (retry update if possible).");
+    private static CachePartialUpdateCheckedException partialUpdateException() {
+        return new CachePartialUpdateCheckedException("Failed to update keys (retry update if possible).");
     }
 
     /** {@inheritDoc} */
