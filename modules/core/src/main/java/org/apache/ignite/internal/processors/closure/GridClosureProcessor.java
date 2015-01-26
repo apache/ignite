@@ -969,13 +969,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param arg Optional argument.
      * @return Job.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
-        if (job instanceof ComputeJobMasterLeaveAware)
-            return new C1MLA<>(job, arg);
-        else return new C1<>(job, arg);
+        return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
     }
 
     /**
@@ -984,7 +981,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param c Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private <R> ComputeJob job(final Callable<R> c) {
         A.notNull(c, "job");
 
@@ -1001,7 +997,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings(value = {"IfMayBeConditional", "UnusedDeclaration"})
     private <R> ComputeJob job(final Callable<R> c, @Nullable final String cacheName, final Object affKey) {
         A.notNull(c, "job");
 
@@ -1016,7 +1011,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param r Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
@@ -1033,7 +1027,6 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings(value = {"IfMayBeConditional", "UnusedDeclaration"})
     private ComputeJob job(final Runnable r, @Nullable final String cacheName, final Object affKey) {
         A.notNull(r, "job");
 
