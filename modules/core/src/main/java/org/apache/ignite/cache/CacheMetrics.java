@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cache;
 
-import java.io.*;
-
 /**
  * Cache metrics used to obtain statistics on cache itself.
  * Use {@link org.apache.ignite.IgniteCache#metrics()} to obtain metrics for a cache.
@@ -29,7 +27,7 @@ public interface CacheMetrics {
      *
      * @return the number of hits
      */
-    long getCacheHits();
+    public long getCacheHits();
 
     /**
      * This is a measure of cache efficiency.

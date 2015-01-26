@@ -21,7 +21,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
- * Helper class to serialize and deserialize node metrics.
+ * Helper class to serialize and deserialize cluster metrics.
  */
 public final class DiscoveryMetricsHelper {
     /** Size of serialized node metrics. */

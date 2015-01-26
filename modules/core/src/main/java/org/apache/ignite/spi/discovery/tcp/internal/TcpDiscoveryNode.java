@@ -138,7 +138,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         consistentId = U.consistentId(addrs, discPort);
 
-        metrics = metricsProvider.getMetrics();
+        metrics = metricsProvider.metrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
@@ -193,7 +193,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** {@inheritDoc} */
     @Override public ClusterMetrics metrics() {
         if (metricsProvider != null)
-            metrics = metricsProvider.getMetrics();
+            metrics = metricsProvider.metrics();
 
         return metrics;
     }

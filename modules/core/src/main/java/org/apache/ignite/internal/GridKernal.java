@@ -987,6 +987,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                             cpus = metrics.getTotalCpus();
                         }
                         catch (IgniteCheckedException ignore) {
+                            // No-op.
                         }
 
                         int pubPoolActiveThreads = 0;

@@ -17,13 +17,8 @@
 
 package org.apache.ignite.mxbean;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.*;
-
-/**
- * This interface defines JMX view on {@link IgniteCache}.
- */
-import org.apache.ignite.*;
 
 import javax.cache.management.*;
 
