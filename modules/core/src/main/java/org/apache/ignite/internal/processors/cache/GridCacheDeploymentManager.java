@@ -182,7 +182,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     public void unwind(GridCacheContext ctx) {
         int cnt = 0;
 
-        ConcurrentLinkedQueue<CA> q = undeploys.get(ctx);
+        ConcurrentLinkedQueue<CA> q = undeploys.get(ctx.namexx());
 
         if (q == null)
             return;
@@ -209,9 +209,9 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
 
         for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-            undeploys.putIfAbsent(cacheCtx.namexx(), new ConcurrentLinkedQueue<CA>()); // TODO
+            undeploys.putIfAbsent(cacheCtx.namexx(), new ConcurrentLinkedQueue<CA>());
 
-            undeploys.get(cacheCtx).add(new CA() {
+            undeploys.get(cacheCtx.namexx()).add(new CA() {
                 @Override
                 public void apply() {
                     onUndeploy0(ldr, cacheCtx);
