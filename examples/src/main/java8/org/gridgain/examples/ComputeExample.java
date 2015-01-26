@@ -19,6 +19,8 @@ package org.gridgain.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
+import org.gridgain.grid.*;
+import org.apache.ignite.lang.IgniteCallable;
 
 /**
  * Demonstrates broadcasting and unicasting computations within grid projection.
