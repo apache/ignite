@@ -15,10 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p;
+package org.apache.ignite.mxbean;
+
+import java.lang.annotation.*;
 
 /**
- * Second test value for deployment.
+ * Provides MBean method parameters names.
  */
-public class GridCacheDeploymentTestValue2 {
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+public @interface IgniteMBeanParametersNames {
+    /**
+     *
+     * Array of parameter names in MBean.
+     */
+    @SuppressWarnings({"JavaDoc"}) public String[] value();
 }
