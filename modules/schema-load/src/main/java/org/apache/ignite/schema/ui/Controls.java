@@ -501,6 +501,9 @@ public class Controls {
         /** */
         private String curTxt = "";
 
+        /** Row value. */
+        private S rowVal;
+
         /** Create cell factory. */
         public static <S> Callback<TableColumn<S, String>, TableCell<S, String>>
         cellFactory(final TextColumnValidator<S> validator) {
@@ -528,6 +531,8 @@ public class Controls {
                 return;
 
             super.startEdit();
+
+            rowVal = getTableView().getSelectionModel().getSelectedItem();
 
             curTxt = "";
 
@@ -595,7 +600,7 @@ public class Controls {
 
                     if (hardCancel || curTxt.trim().isEmpty())
                         super.cancelEdit();
-                    else if (validator.valid(getTableView().getSelectionModel().getSelectedItem(), curTxt))
+                    else if (validator.valid(rowVal, curTxt))
                         commitEdit(curTxt);
                     else
                         super.cancelEdit();

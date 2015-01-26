@@ -649,12 +649,12 @@ public class SchemaLoadApp extends Application {
 
         TableColumn<PojoField, String> dbTypeNameCol = tableColumn("DB Type", "dbTypeName", "Field type in database");
 
-        TableColumn<PojoField, String> javaNameCol = textColumn("Ignite Name", "javaName", "Field name in POJO class",
+        TableColumn<PojoField, String> javaNameCol = textColumn("Java Name", "javaName", "Field name in POJO class",
             new TextColumnValidator<PojoField>() {
                 @Override public boolean valid(PojoField rowVal, String newVal) {
                     for (PojoField field : curPojo.fields())
                         if (rowVal != field && newVal.equals(field.javaName())) {
-                            MessageBox.warningDialog(owner, "Ignite name must be unique!");
+                            MessageBox.warningDialog(owner, "Java name must be unique!");
 
                             return false;
                         }
@@ -710,15 +710,15 @@ public class SchemaLoadApp extends Application {
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
 
-        regexPnl.add(new Label("Replace Ignite name for selected or all tables:"), 4);
+        regexPnl.add(new Label("Replace Java name for selected or all tables:"), 4);
         regexTf = regexPnl.addLabeled("  Regexp:", textField("Regular expression. For example: (\\w+)"));
         replaceTf = regexPnl.addLabeled("  Replace with:", textField("Replace text. For example: $1_Suffix"));
 
-        final Button renBtn = button("Rename", "Replace Ignite names by provided regular expression for current table",
+        final Button renBtn = button("Rename", "Replace Java names by provided regular expression for current table",
             new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
                     if (curPojo == null) {
-                        MessageBox.warningDialog(owner, "Please select table to rename Ignite names!");
+                        MessageBox.warningDialog(owner, "Please select table to rename Java names!");
 
                         return;
                     }
@@ -735,25 +735,25 @@ public class SchemaLoadApp extends Application {
                             field.javaName(field.javaName().replaceAll(regex, replace));
                     }
                     catch (Exception e) {
-                        MessageBox.errorDialog(owner, "Failed to rename Ignite names!", e);
+                        MessageBox.errorDialog(owner, "Failed to rename Java names!", e);
                     }
                 }
             });
         renBtn.setDisable(true);
 
-        final Button revertBtn = button("Revert", "Revert changes to Ignite names for current table", new EventHandler<ActionEvent>() {
+        final Button revertBtn = button("Revert", "Revert changes to Java names for current table", new EventHandler<ActionEvent>() {
             @Override public void handle(ActionEvent evt) {
                 if (curPojo != null)
                     curPojo.revertJavaNames();
                 else
-                    MessageBox.warningDialog(owner, "Please select table to revert changes to Ignite names!");
+                    MessageBox.warningDialog(owner, "Please select table to revert changes to Java names!");
             }
         });
         revertBtn.setDisable(true);
 
         regexPnl.add(buttonsPane(Pos.BOTTOM_RIGHT, false,
             renBtn,
-            button("Rename All", "Replace Ignite names by provided regular expression for all selected tables",
+            button("Rename All", "Replace Java names by provided regular expression for all selected tables",
                 new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent evt) {
                         if (checkInput(regexTf, false, "Regular expression should not be empty!"))
@@ -762,13 +762,13 @@ public class SchemaLoadApp extends Application {
                         Collection<PojoDescriptor> selItems = selectedItems();
 
                         if (selItems.isEmpty()) {
-                            MessageBox.warningDialog(owner, "Please select tables to rename Ignite names!");
+                            MessageBox.warningDialog(owner, "Please select tables to rename Java names!");
 
                             return;
                         }
 
                         if (!MessageBox.confirmDialog(owner,
-                            "Are you sure you want to rename Ignite names in all selected tables?"))
+                            "Are you sure you want to rename Java names in all selected tables?"))
                             return;
 
                         String regex = regexTf.getText();
@@ -781,23 +781,23 @@ public class SchemaLoadApp extends Application {
                                     field.javaName(field.javaName().replaceAll(regex, replace));
                         }
                         catch (Exception e) {
-                            MessageBox.errorDialog(owner, "Failed to rename Ignite names!", e);
+                            MessageBox.errorDialog(owner, "Failed to rename Java names!", e);
                         }
                     }
                 }),
             revertBtn,
-            button("Revert All", "Revert changes to Ignite names for all selected tables", new EventHandler<ActionEvent>() {
+            button("Revert All", "Revert changes to Java names for all selected tables", new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
                     Collection<PojoDescriptor> selItems = selectedItems();
 
                     if (selItems.isEmpty()) {
-                        MessageBox.warningDialog(owner, "Please select tables to revert Ignite names!");
+                        MessageBox.warningDialog(owner, "Please select tables to revert Java names!");
 
                         return;
                     }
 
                     if (!MessageBox.confirmDialog(owner,
-                        "Are you sure you want to revert Ignite names for all selected tables?"))
+                        "Are you sure you want to revert Java names for all selected tables?"))
                         return;
 
                     for (PojoDescriptor pojo : selItems)
