@@ -18,13 +18,17 @@
 package org.apache.ignite.cache.store.jdbc;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.gridgain.grid.cache.query.*;
+import org.gridgain.grid.kernal.processors.cache.*;
 import org.gridgain.grid.util.typedef.*;
 import org.gridgain.grid.util.typedef.internal.*;
+import org.gridgain.testframework.*;
 import org.gridgain.testframework.junits.cache.GridAbstractCacheStoreSelfTest.*;
+import org.gridgain.testframework.junits.cache.*;
 import org.gridgain.testframework.junits.common.*;
 import org.h2.jdbcx.*;
 import org.jetbrains.annotations.*;
@@ -33,6 +37,7 @@ import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
@@ -52,6 +57,9 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
 
     /** Person count. */
     protected static final int PERSON_CNT = 100000;
+
+    /** */
+    protected TestThreadLocalCacheSession ses = new TestThreadLocalCacheSession();
 
     /** */
     protected final JdbcPojoCacheStore store;
@@ -79,7 +87,7 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
         UrlResource metaUrl;
 
         try {
-            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/auto/all.xml").toURI().toURL());
+            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/all.xml").toURI().toURL());
         }
         catch (MalformedURLException e) {
             throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
@@ -116,6 +124,8 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
      */
     protected void inject(JdbcCacheStore store) throws Exception {
         getTestResources().inject(store);
+
+        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
     }
 
     /**
@@ -175,8 +185,8 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
         assertEquals(ORGANIZATION_CNT, orgKeys.size());
         assertEquals(PERSON_CNT, prnKeys.size());
 
-        store.removeAll(null, orgKeys);
-        store.removeAll(null, prnKeys);
+        store.deleteAll(orgKeys);
+        store.deleteAll(prnKeys);
 
         orgKeys.clear();
         prnKeys.clear();
@@ -194,31 +204,40 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
         // Create dummy transaction
         IgniteTx tx = new DummyTx();
 
+        ses.newSession(tx);
+
         OrganizationKey k1 = new OrganizationKey(1);
         Organization v1 = new Organization(1, "Name1", "City1");
 
         OrganizationKey k2 = new OrganizationKey(2);
         Organization v2 = new Organization(2, "Name2", "City2");
 
-        store.put(tx, k1, v1);
-        store.put(tx, k2, v2);
+        store.write(new CacheEntryImpl<>(k1, v1));
+        store.write(new CacheEntryImpl<>(k2, v2));
 
-        store.txEnd(tx, true);
+        store.txEnd(true);
 
-        assertEquals(v1, store.load(null, k1));
-        assertEquals(v2, store.load(null, k2));
+        ses.newSession(null);
+
+        assertEquals(v1, store.load(k1));
+        assertEquals(v2, store.load(k2));
+
+        ses.newSession(tx);
 
         OrganizationKey k3 = new OrganizationKey(3);
 
-        assertNull(store.load(tx, k3));
+        assertNull(store.load(k3));
 
-        store.remove(tx, k1);
+        store.delete(k1);
 
-        store.txEnd(tx, true);
+        store.txEnd(true);
 
-        assertNull(store.load(tx, k1));
-        assertEquals(v2, store.load(tx, k2));
-        assertNull(store.load(null, k3));
+        assertNull(store.load(k1));
+        assertEquals(v2, store.load(k2));
+
+        ses.newSession(null);
+
+        assertNull(store.load(k3));
     }
 
     /**
@@ -227,118 +246,140 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
     public void testRollback() throws IgniteCheckedException {
         IgniteTx tx = new DummyTx();
 
+        ses.newSession(tx);
+
         OrganizationKey k1 = new OrganizationKey(1);
         Organization v1 = new Organization(1, "Name1", "City1");
 
         // Put.
-        store.put(tx, k1, v1);
+        store.write(new CacheEntryImpl<>(k1, v1));
 
-        store.txEnd(tx, false); // Rollback.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertNull(store.load(tx, k1));
+        ses.newSession(tx);
+
+        assertNull(store.load(k1));
 
         OrganizationKey k2 = new OrganizationKey(2);
         Organization v2 = new Organization(2, "Name2", "City2");
 
         // Put all.
-        assertNull(store.load(tx, k2));
+        assertNull(store.load(k2));
 
-        store.putAll(tx, Collections.singletonMap(k2, v2));
+        Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
 
-        store.txEnd(tx, false); // Rollback.
+        col.add(new CacheEntryImpl<>(k2, v2));
+
+        store.writeAll(col);
+
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertNull(store.load(tx, k2));
+        ses.newSession(tx);
+
+        assertNull(store.load(k2));
 
         OrganizationKey k3 = new OrganizationKey(3);
         Organization v3 = new Organization(3, "Name3", "City3");
 
-        store.putAll(tx, Collections.singletonMap(k3, v3));
+        col = new ArrayList<>();
 
-        store.txEnd(tx, true); // Commit.
+        col.add(new CacheEntryImpl<>(k3, v3));
+
+        store.writeAll(col);
+
+        store.txEnd(true); // Commit.
 
         tx = new DummyTx();
 
-        assertEquals(v3, store.load(tx, k3));
+        ses.newSession(tx);
+
+        assertEquals(v3, store.load(k3));
 
         OrganizationKey k4 = new OrganizationKey(4);
         Organization v4 = new Organization(4, "Name4", "City4");
 
-        store.put(tx, k4, v4);
+        store.write(new CacheEntryImpl<>(k4, v4));
 
-        store.txEnd(tx, false); // Rollback.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertNull(store.load(tx, k4));
+        ses.newSession(tx);
 
-        assertEquals(v3, store.load(tx, k3));
+        assertNull(store.load(k4));
+
+        assertEquals(v3, store.load(k3));
 
         // Remove.
-        store.remove(tx, k3);
+        store.delete(k3);
 
-        store.txEnd(tx, false); // Rollback.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertEquals(v3, store.load(tx, k3));
+        ses.newSession(tx);
+
+        assertEquals(v3, store.load(k3));
 
         // Remove all.
-        store.removeAll(tx, Arrays.asList(k3));
+        store.deleteAll(Arrays.asList(k3));
 
-        store.txEnd(tx, false); // Rollback.
+        store.txEnd(false); // Rollback.
 
         tx = new DummyTx();
 
-        assertEquals(v3, store.load(tx, k3));
+        ses.newSession(tx);
+
+        assertEquals(v3, store.load(k3));
     }
 
     /**
-     * @throws IgniteCheckedException if failed.
      */
-    public void testAllOpsWithTXNoCommit() throws IgniteCheckedException {
+    public void testAllOpsWithTXNoCommit() {
         doTestAllOps(new DummyTx(), false);
     }
 
     /**
-     * @throws IgniteCheckedException if failed.
      */
-    public void testAllOpsWithTXCommit() throws IgniteCheckedException {
+    public void testAllOpsWithTXCommit() {
         doTestAllOps(new DummyTx(), true);
     }
 
     /**
-     * @throws IgniteCheckedException if failed.
      */
-    public void testAllOpsWithoutTX() throws IgniteCheckedException {
+    public void testAllOpsWithoutTX() {
         doTestAllOps(null, false);
     }
 
     /**
      * @param tx Transaction.
      * @param commit Commit.
-     * @throws IgniteCheckedException If failed.
      */
-    private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) throws IgniteCheckedException {
+    private void doTestAllOps(@Nullable IgniteTx tx, boolean commit) {
         try {
+            ses.newSession(tx);
+
             final OrganizationKey k1 = new OrganizationKey(1);
             final Organization v1 = new Organization(1, "Name1", "City1");
 
-            store.put(tx, k1, v1);
+            store.write(new CacheEntryImpl<>(k1, v1));
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
+
+                ses.newSession(tx);
             }
 
             if (tx == null || commit)
-                assertEquals(v1, store.load(tx, k1));
+                assertEquals(v1, store.load(k1));
 
-            Map<OrganizationKey, Organization> m = new HashMap<>();
+            Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
 
             final OrganizationKey k2 = new OrganizationKey(2);
             final Organization v2 = new Organization(2, "Name2", "City2");
@@ -346,15 +387,17 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
             final OrganizationKey k3 = new OrganizationKey(3);
             final Organization v3 = new Organization(3, "Name3", "City3");
 
-            m.put(k2, v2);
-            m.put(k3, v3);
+            col.add(new CacheEntryImpl<>(k2, v2));
+            col.add(new CacheEntryImpl<>(k3, v3));
 
-            store.putAll(tx, m);
+            store.writeAll(col);
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
+
+                ses.newSession(tx);
             }
 
             final AtomicInteger cntr = new AtomicInteger();
@@ -362,55 +405,62 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
             final OrganizationKey no_such_key = new OrganizationKey(4);
 
             if (tx == null || commit) {
-                store.loadAll(tx, Arrays.asList(k1, k2, k3, no_such_key), new CI2<Object, Object>() {
-                    @Override public void apply(Object o, Object o1) {
-                        if (k1.equals(o))
-                            assertEquals(v1, o1);
+                Map<Object, Object> loaded = store.loadAll(Arrays.asList(k1, k2, k3, no_such_key));
 
-                        if (k2.equals(o))
-                            assertEquals(v2, o1);
+                for (Map.Entry<Object, Object> e : loaded.entrySet()) {
+                    Object key = e.getKey();
+                    Object val = e.getValue();
 
-                        if (k3.equals(o))
-                            assertEquals(v3, o1);
+                    if (k1.equals(key))
+                        assertEquals(v1, val);
 
-                        if (no_such_key.equals(o))
-                            fail();
+                    if (k2.equals(key))
+                        assertEquals(v2, val);
 
-                        cntr.incrementAndGet();
-                    }
-                });
+                    if (k3.equals(key))
+                        assertEquals(v3, val);
+
+                    if (no_such_key.equals(key))
+                        fail();
+
+                    cntr.incrementAndGet();
+                }
 
                 assertEquals(3, cntr.get());
             }
 
-            store.removeAll(tx, Arrays.asList(k2, k3));
+            store.deleteAll(Arrays.asList(k2, k3));
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
+
+                ses.newSession(tx);
             }
 
             if (tx == null || commit) {
-                assertNull(store.load(tx, k2));
-                assertNull(store.load(tx, k3));
-                assertEquals(v1, store.load(tx, k1));
+                assertNull(store.load(k2));
+                assertNull(store.load(k3));
+                assertEquals(v1, store.load(k1));
             }
 
-            store.remove(tx, k1);
+            store.delete(k1);
 
             if (tx != null && commit) {
-                store.txEnd(tx, true);
+                store.txEnd(true);
 
                 tx = new DummyTx();
+
+                ses.newSession(tx);
             }
 
             if (tx == null || commit)
-                assertNull(store.load(tx, k1));
+                assertNull(store.load(k1));
         }
         finally {
             if (tx != null)
-                store.txEnd(tx, false);
+                store.txEnd(false);
         }
     }
 
@@ -427,6 +477,8 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < 1000; i++) {
                     IgniteTx tx = rnd.nextBoolean() ? new DummyTx() : null;
 
+                    ses.newSession(tx);
+
                     int op = rnd.nextInt(10);
 
                     boolean queueEmpty = false;
@@ -438,29 +490,22 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
                             queueEmpty = true;
                         else {
                             if (rnd.nextBoolean())
-                                assertNotNull(store.load(tx, key));
+                                assertNotNull(store.load(key));
                             else {
-                                final AtomicInteger cntr = new AtomicInteger();
+                                Map<Object, Object> loaded = store.loadAll(Collections.singleton(key));
 
-                                store.loadAll(tx, Collections.singleton(key), new CI2<Object, Object>() {
-                                    @Override public void apply(Object o, Object o1) {
-                                        cntr.incrementAndGet();
+                                assertEquals(1, loaded.size());
 
-                                        assertNotNull(o);
-                                        assertNotNull(o1);
+                                Map.Entry<Object, Object> e = loaded.entrySet().iterator().next();
 
-                                        OrganizationKey key = (OrganizationKey)o;
-                                        Organization val = (Organization)o1;
+                                OrganizationKey k = (OrganizationKey)e.getKey();
+                                Organization v = (Organization)e.getValue();
 
-                                        assertTrue(key.getId().equals(val.getId()));
-                                    }
-                                });
-
-                                assertEquals(1, cntr.get());
+                                assertTrue(k.getId().equals(v.getId()));
                             }
 
                             if (tx != null)
-                                store.txEnd(tx, true);
+                                store.txEnd(true);
 
                             queue.add(key);
                         }
@@ -472,12 +517,12 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
                             queueEmpty = true;
                         else {
                             if (rnd.nextBoolean())
-                                store.remove(tx, key);
+                                store.delete(key);
                             else
-                                store.removeAll(tx, Collections.singleton(key));
+                                store.deleteAll(Collections.singleton(key));
 
                             if (tx != null)
-                                store.txEnd(tx, true);
+                                store.txEnd(true);
                         }
                     }
                     else { // Update.
@@ -489,13 +534,20 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
                             Organization val =
                                 new Organization(key.getId(), "Name" + key.getId(), "City" + key.getId());
 
+                            Cache.Entry<OrganizationKey, Organization> entry = new CacheEntryImpl<>(key, val);
+
                             if (rnd.nextBoolean())
-                                store.put(tx, key, val);
-                            else
-                                store.putAll(tx, Collections.singletonMap(key, val));
+                                store.write(entry);
+                            else {
+                                Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
+
+                                col.add(entry);
+
+                                store.writeAll(col);
+                            }
 
                             if (tx != null)
-                                store.txEnd(tx, true);
+                                store.txEnd(true);
 
                             queue.add(key);
                         }
@@ -505,13 +557,20 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
                         OrganizationKey key = new OrganizationKey(rnd.nextInt());
                         Organization val = new Organization(key.getId(), "Name" + key.getId(), "City" + key.getId());
 
+                        Cache.Entry<OrganizationKey, Organization> entry = new CacheEntryImpl<>(key, val);
+
                         if (rnd.nextBoolean())
-                            store.put(tx, key, val);
-                        else
-                            store.putAll(tx, Collections.singletonMap(key, val));
+                            store.write(entry);
+                        else {
+                            Collection<Cache.Entry<?, ?>> col = new ArrayList<>();
+
+                            col.add(entry);
+
+                            store.writeAll(col);
+                        }
 
                         if (tx != null)
-                            store.txEnd(tx, true);
+                            store.txEnd(true);
 
                         queue.add(key);
                     }

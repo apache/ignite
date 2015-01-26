@@ -17,12 +17,13 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
 import org.gridgain.grid.cache.query.*;
 import org.gridgain.grid.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
+import javax.cache.integration.*;
 import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
@@ -55,8 +56,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
          * @param clsName Class name.
          * @param fields Fields.
          */
-        public PojoMethodsCache(String clsName,
-            Collection<GridCacheQueryTypeDescriptor> fields) throws IgniteCheckedException {
+        public PojoMethodsCache(String clsName, Collection<GridCacheQueryTypeDescriptor> fields) throws CacheException {
 
             try {
                 cls = Class.forName(clsName);
@@ -67,10 +67,10 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
                     ctor.setAccessible(true);
             }
             catch (ClassNotFoundException e) {
-                throw new IgniteCheckedException("Failed to find class: " + clsName, e);
+                throw new CacheException("Failed to find class: " + clsName, e);
             }
             catch (NoSuchMethodException e) {
-                throw new IgniteCheckedException("Failed to find empty constructor for class: " + clsName, e);
+                throw new CacheException("Failed to find empty constructor for class: " + clsName, e);
             }
 
             setters = U.newHashMap(fields.size());
@@ -88,7 +88,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
                         getters.put(field.getJavaName(), cls.getMethod("is" + prop));
                     }
                     catch (NoSuchMethodException e) {
-                        throw new IgniteCheckedException("Failed to find getter for property " + field.getJavaName() +
+                        throw new CacheException("Failed to find getter for property " + field.getJavaName() +
                             " of class: " + cls.getName(), e);
                     }
                 }
@@ -97,7 +97,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
                     setters.put(field.getJavaName(), cls.getMethod("set" + prop, field.getJavaType()));
                 }
                 catch (NoSuchMethodException e) {
-                    throw new IgniteCheckedException("Failed to find setter for property " + field.getJavaName() +
+                    throw new CacheException("Failed to find setter for property " + field.getJavaName() +
                         " of class: " + clsName, e);
                 }
             }
@@ -118,14 +118,14 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
          * Construct new instance of pojo object.
          *
          * @return pojo object.
-         * @throws IgniteCheckedException If construct new instance failed.
+         * @throws CacheLoaderException If construct new instance failed.
          */
-        protected Object newInstance() throws IgniteCheckedException {
+        protected Object newInstance() throws CacheLoaderException {
             try {
                 return ctor.newInstance();
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
+                throw new CacheLoaderException("Failed to create new instance for class: " + cls, e);
             }
         }
     }
@@ -134,8 +134,8 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     protected Map<String, PojoMethodsCache> mtdsCache;
 
     /** {@inheritDoc} */
-    @Override protected void buildTypeCache() throws IgniteCheckedException {
-        entryQtyCache = U.newHashMap(typeMetadata.size());
+    @Override protected void buildTypeCache() throws CacheException {
+        typeMeta = U.newHashMap(typeMetadata.size());
 
         mtdsCache = U.newHashMap(typeMetadata.size() * 2);
 
@@ -144,15 +144,19 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
             mtdsCache.put(type.getKeyType(), keyCache);
 
-            entryQtyCache.put(keyCache.cls, new QueryCache(dialect, type));
+            typeMeta.put(keyCache.cls, new EntryMapping(dialect, type));
 
             mtdsCache.put(type.getType(), new PojoMethodsCache(type.getType(), type.getValueDescriptors()));
         }
+
+        typeMeta = Collections.unmodifiableMap(typeMeta);
+
+        mtdsCache = Collections.unmodifiableMap(mtdsCache);
     }
 
     /** {@inheritDoc} */
     @Override protected <R> R buildObject(String typeName, Collection<GridCacheQueryTypeDescriptor> fields,
-        ResultSet rs) throws IgniteCheckedException {
+        ResultSet rs) throws CacheLoaderException {
         PojoMethodsCache t = mtdsCache.get(typeName);
 
         Object obj = t.newInstance();
@@ -164,25 +168,28 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
             return (R)obj;
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to read object of class: " + typeName, e);
+            throw new CacheLoaderException("Failed to read object of class: " + typeName, e);
         }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override protected Object extractField(String typeName, String fieldName, Object obj)
-        throws IgniteCheckedException {
+        throws CacheException {
         try {
             PojoMethodsCache mc = mtdsCache.get(typeName);
 
             return mc.getters.get(fieldName).invoke(obj);
         }
         catch (Exception e) {
-            throw new IgniteCheckedException("Failed to read object of class: " + typeName, e);
+            throw new CacheException("Failed to read object of class: " + typeName, e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override protected Object typeKey(Object key) {
-        return key.getClass();
+    @Override protected Object typeId(Object key) throws CacheException {
+        if (key != null)
+            return key.getClass();
+
+        throw new CacheException();
     }
 }

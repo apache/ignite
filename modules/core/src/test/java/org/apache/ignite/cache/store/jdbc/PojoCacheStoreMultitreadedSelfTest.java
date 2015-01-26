@@ -29,6 +29,7 @@ import org.springframework.beans.factory.xml.*;
 import org.springframework.context.support.*;
 import org.springframework.core.io.*;
 
+import javax.cache.configuration.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -49,7 +50,7 @@ public class PojoCacheStoreMultitreadedSelfTest extends AbstractCacheStoreMultit
         UrlResource metaUrl;
 
         try {
-            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/auto/all.xml").toURI().toURL());
+            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/all.xml").toURI().toURL());
         }
         catch (MalformedURLException e) {
             throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
@@ -97,7 +98,10 @@ public class PojoCacheStoreMultitreadedSelfTest extends AbstractCacheStoreMultit
         cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
 
-        // TODO: IGNITE-32 FIXME cc.setStore(store);
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
 
         c.setCacheConfiguration(cc);
 

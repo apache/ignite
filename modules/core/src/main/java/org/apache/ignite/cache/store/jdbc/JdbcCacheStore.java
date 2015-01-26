@@ -32,7 +32,6 @@ import org.jetbrains.annotations.*;
 import javax.cache.*;
 import javax.cache.integration.*;
 import javax.sql.*;
-import java.net.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -44,11 +43,11 @@ import java.util.concurrent.atomic.*;
  */
 public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     /**
-     * Query cache by type.
+     * Entry mapping description.
      */
-    protected static class QueryCache {
+    protected static class EntryMapping {
         /** Database dialect. */
-        protected final BasicJdbcDialect dialect;
+        protected final JdbcDialect dialect;
 
         /** Select all items query. */
         protected final String loadCacheQry;
@@ -89,7 +88,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         /**
          * @param typeMetadata Type metadata.
          */
-        public QueryCache(BasicJdbcDialect dialect, GridCacheQueryTypeMetadata typeMetadata) {
+        public EntryMapping(JdbcDialect dialect, GridCacheQueryTypeMetadata typeMetadata) {
             this.dialect = dialect;
 
             this.typeMetadata = typeMetadata;
@@ -221,17 +220,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     /** Execute. */
     protected ExecutorService exec;
 
-    /** Paths to xml with type mapping description. */
-    protected Collection<String> typeMetadataPaths;
-
     /** Type mapping description. */
     protected Collection<GridCacheQueryTypeMetadata> typeMetadata;
 
     /** Cache with query by type. */
-    protected Map<Object, QueryCache> entryQtyCache;
+    protected Map<Object, EntryMapping> typeMeta;
 
     /** Database dialect. */
-    protected BasicJdbcDialect dialect;
+    protected JdbcDialect dialect;
 
     /** Max workers thread count. These threads are responsible for execute query. */
     protected int maxPoolSz = Runtime.getRuntime().availableProcessors();
@@ -240,12 +236,51 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     protected int batchSz = DFLT_BATCH_SIZE;
 
     /**
+     * Get field value from object.
+     *
+     * @param typeName Type name.
+     * @param fieldName Field name.
+     * @param obj Cache object.
+     * @return Field value from object.
+     */
+    @Nullable protected abstract Object extractField(String typeName, String fieldName, Object obj)
+        throws CacheException;
+
+    /**
+     * Construct object from query result.
+     *
+     * @param <R> Type of result object.
+     * @param typeName Type name.
+     * @param fields Fields descriptors.
+     * @param rs ResultSet.
+     * @return Constructed object.
+     */
+    protected abstract <R> R buildObject(String typeName, Collection<GridCacheQueryTypeDescriptor> fields, ResultSet rs)
+        throws CacheLoaderException;
+
+    /**
+     * Extract type key from object.
+     *
+     * @param key Key object.
+     * @return Type key.
+     * @throws CacheException If failed to extract type key.
+     */
+    protected abstract Object typeId(Object key) throws CacheException;
+
+    /**
+     * Build cache for mapped types.
+     *
+     * @throws CacheException If failed to initialize.
+     */
+    protected abstract void buildTypeCache() throws CacheException;
+
+    /**
      * Perform dialect resolution.
      *
      * @return The resolved dialect.
-     * @throws IgniteCheckedException Indicates problems accessing the metadata.
+     * @throws CacheException Indicates problems accessing the metadata.
      */
-    protected BasicJdbcDialect resolveDialect() throws IgniteCheckedException {
+    protected JdbcDialect resolveDialect() throws CacheException {
         Connection conn = null;
 
         String dbProductName = null;
@@ -256,10 +291,10 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             dbProductName = conn.getMetaData().getDatabaseProductName();
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed access to metadata for detect database dialect.", e);
+            throw new CacheException("Failed access to metadata for detect database dialect.", e);
         }
         finally {
-            closeConnection(conn);
+            U.closeQuiet(conn);
         }
 
         if ("H2".equals(dbProductName))
@@ -283,49 +318,23 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     /**
      * Initializes store.
      *
-     * @throws IgniteCheckedException If failed to initialize.
+     * @throws CacheException If failed to initialize.
      */
-    protected void init() throws IgniteCheckedException {
+    protected void init() throws CacheException {
         if (initLatch.getCount() > 0) {
             if (initGuard.compareAndSet(false, true)) {
                 if (log.isDebugEnabled())
                     log.debug("Initializing cache store.");
 
                 if (dataSrc == null && F.isEmpty(connUrl))
-                    throw new IgniteCheckedException("Failed to initialize cache store (connection is not provided).");
+                    throw new CacheException("Failed to initialize cache store (connection is not provided).");
 
                 if (dialect == null)
                     dialect = resolveDialect();
 
                 try {
-                    if (typeMetadata == null) {
-                        if (typeMetadataPaths == null)
-                            throw new IgniteCheckedException(
-                                "Failed to initialize cache store (metadata paths is not provided).");
-
-// TODO: IGNITE-32 Replace with reading from config.
-//                        GridSpringProcessor spring = SPRING.create(false);
-
-                        Collection<GridCacheQueryTypeMetadata> typeMeta = new ArrayList<>();
-
-                        for (String path : typeMetadataPaths) {
-                            URL url = U.resolveGridGainUrl(path);
-// TODO: IGNITE-32 Replace with reading from config.
-//                            if (url != null) {
-//                                Map<String, Object> beans = spring.loadBeans(url, GridCacheQueryTypeMetadata.class).
-//                                    get(GridCacheQueryTypeMetadata.class);
-//
-//                                if (beans != null)
-//                                    for (Object bean : beans.values())
-//                                        if (bean instanceof GridCacheQueryTypeMetadata)
-//                                            typeMeta.add((GridCacheQueryTypeMetadata)bean);
-//                            }
-//                            else
-                                log.warning("Failed to resolve metadata path: " + path);
-                        }
-
-                        setTypeMetadata(typeMeta);
-                    }
+                    if (typeMetadata == null)
+                        throw new CacheException("Failed to initialize cache store (mappping description is not provided).");
 
                     exec = Executors.newFixedThreadPool(maxPoolSz);
 
@@ -338,26 +347,19 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 }
             }
             else
-                U.await(initLatch);
+                try {
+                    if (initLatch.getCount() > 0)
+                        initLatch.await();
+                }
+                catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+
+                    throw new CacheException(e);
+                }
         }
 
         if (!initOk)
-            throw new IgniteCheckedException("Cache store was not properly initialized.");
-    }
-
-    /**
-     * Closes allocated resources depending on transaction status.
-     *
-     * @param tx Active transaction, if any.
-     * @param conn Allocated connection.
-     * @param st Created statement,
-     */
-    protected void end(@Nullable IgniteTx tx, @Nullable Connection conn, @Nullable Statement st) {
-        U.closeQuiet(st);
-
-        if (tx == null)
-            // Close connection right away if there is no transaction.
-            closeConnection(conn);
+            throw new CacheException("Cache store was not properly initialized.");
     }
 
     /**
@@ -377,29 +379,23 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /**
-     * Closes connection.
-     *
-     * @param conn Connection to close.
-     */
-    protected void closeConnection(@Nullable Connection conn) {
-        U.closeQuiet(conn);
-    }
-
-    /**
-     * @param tx Cache transaction.
      * @return Connection.
      * @throws SQLException In case of error.
      */
-    protected Connection connection(@Nullable IgniteTx tx) throws SQLException {
-        if (tx != null) {
-            Connection conn = null;// TODO: IGNITE-32 FIXME tx.meta(ATTR_CONN);
+    protected Connection connection() throws SQLException {
+        CacheStoreSession ses = session();
+
+        if (ses.transaction() != null) {
+            Map<String, Connection> prop = ses.properties();
+
+            Connection conn = prop.get(ATTR_CONN);
 
             if (conn == null) {
                 conn = openConnection(false);
 
-                // Store connection in transaction metadata, so it can be accessed
-                // for other operations on the same transaction.
-                // TODO: IGNITE-32 FIXME tx.addMeta(ATTR_CONN, conn);
+                // Store connection in session, so it can be accessed
+                // for other operations on the same session.
+                prop.put(ATTR_CONN, conn);
             }
 
             return conn;
@@ -409,83 +405,30 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             return openConnection(true);
     }
 
-    /** {@inheritDoc} */
-    public void txEnd(IgniteTx tx, boolean commit) throws IgniteCheckedException {
-        init();
+    /**
+     * Closes connection.
+     *
+     * @param conn Connection to close.
+     */
+    protected void closeConnection(@Nullable Connection conn) {
+        CacheStoreSession ses = session();
 
-        Connection conn = null; // TODO: IGNITE-32 FIXME tx.removeMeta(ATTR_CONN);
-
-        if (conn != null) {
-            try {
-                if (commit)
-                    conn.commit();
-                else
-                    conn.rollback();
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException(
-                    "Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
-            }
-            finally {
-                closeConnection(conn);
-            }
-        }
-
-        if (log.isDebugEnabled())
-            log.debug("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
+        // Close connection right away if there is no transaction.
+        if (ses.transaction() == null)
+            U.closeQuiet(conn);
     }
 
     /**
-     * Extract database column names from {@link GridCacheQueryTypeDescriptor}.
+     * Closes allocated resources depending on transaction status.
      *
-     * @param dsc collection of {@link GridCacheQueryTypeDescriptor}.
+     * @param conn Allocated connection.
+     * @param st Created statement,
      */
-    protected static Collection<String> databaseColumns(Collection<GridCacheQueryTypeDescriptor> dsc) {
-        return F.transform(dsc, new C1<GridCacheQueryTypeDescriptor, String>() {
-            /** {@inheritDoc} */
-            @Override public String apply(GridCacheQueryTypeDescriptor desc) {
-                return desc.getDbName();
-            }
-        });
+    protected void end(@Nullable Connection conn, @Nullable Statement st) {
+        U.closeQuiet(st);
+
+        closeConnection(conn);
     }
-
-    /**
-     * Get field value from object.
-     *
-     * @param typeName Type name.
-     * @param fieldName Field name.
-     * @param obj Cache object.
-     * @return Field value from object.
-     */
-    @Nullable protected abstract Object extractField(String typeName, String fieldName, Object obj)
-        throws IgniteCheckedException;
-
-    /**
-     * Construct object from query result.
-     *
-     * @param <R> Type of result object.
-     * @param typeName Type name.
-     * @param fields Fields descriptors.
-     * @param rs ResultSet.
-     * @return Constructed object.
-     */
-    protected abstract <R> R buildObject(String typeName, Collection<GridCacheQueryTypeDescriptor> fields, ResultSet rs)
-        throws IgniteCheckedException;
-
-    /**
-     * Extract type key from object.
-     *
-     * @param key Key object.
-     * @return Type key.
-     */
-    protected abstract Object typeKey(K key);
-
-    /**
-     * Build cache for mapped types.
-     *
-     * @throws IgniteCheckedException If failed to initialize.
-     */
-    protected abstract void buildTypeCache() throws IgniteCheckedException;
 
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
@@ -498,40 +441,40 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
             Collection<Future<?>> futs = new ArrayList<>();
 
-            for (final QueryCache type : entryQtyCache.values())
+            for (final EntryMapping type : typeMeta.values())
                 futs.add(exec.submit(new Callable<Void>() {
                     @Override public Void call() throws Exception {
-                        Connection conn = null;
+                    Connection conn = null;
+
+                    try {
+                        PreparedStatement stmt = null;
 
                         try {
-                            PreparedStatement stmt = null;
+                            conn = connection();
 
-                            try {
-                                conn = connection(null);
+                            stmt = conn.prepareStatement(type.loadCacheQry);
 
-                                stmt = conn.prepareStatement(type.loadCacheQry);
+                            ResultSet rs = stmt.executeQuery();
 
-                                ResultSet rs = stmt.executeQuery();
+                            while (rs.next()) {
+                                K key = buildObject(type.keyType(), type.keyDescriptors(), rs);
+                                V val = buildObject(type.valueType(), type.valueDescriptors(), rs);
 
-                                while (rs.next()) {
-                                    K key = buildObject(type.keyType(), type.keyDescriptors(), rs);
-                                    V val = buildObject(type.valueType(), type.valueDescriptors(), rs);
-
-                                    clo.apply(key, val);
-                                }
+                                clo.apply(key, val);
                             }
-                            catch (SQLException e) {
-                                throw new IgniteCheckedException("Failed to load cache", e);
-                            }
-                            finally {
-                                U.closeQuiet(stmt);
-                            }
+                        }
+                        catch (SQLException e) {
+                            throw new IgniteCheckedException("Failed to load cache", e);
                         }
                         finally {
-                            closeConnection(conn);
+                            U.closeQuiet(stmt);
                         }
+                    }
+                    finally {
+                        U.closeQuiet(conn);
+                    }
 
-                        return null;
+                    return null;
                     }
                 }));
 
@@ -543,86 +486,57 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         }
     }
 
-    /**
-     * @param stmt Prepare statement.
-     * @param i Start index for parameters.
-     * @param type Type description.
-     * @param key Key object.
-     * @return Next index for parameters.
-     */
-    protected int fillKeyParameters(PreparedStatement stmt, int i, QueryCache type,
-        K key) throws IgniteCheckedException {
-        for (GridCacheQueryTypeDescriptor field : type.keyDescriptors()) {
-            Object fieldVal = extractField(type.keyType(), field.getJavaName(), key);
+    /** {@inheritDoc} */
+    @Override public void txEnd(boolean commit) throws CacheWriterException {
+        CacheStoreSession ses = session();
+
+        IgniteTx tx = ses.transaction();
+
+        Connection conn = ses.<String, Connection>properties().remove(ATTR_CONN);
+
+
+        if (conn != null) {
+            assert tx != null;
 
             try {
-                if (fieldVal != null)
-                    stmt.setObject(i++, fieldVal);
+                if (commit)
+                    conn.commit();
                 else
-                    stmt.setNull(i++, field.getDbType());
+                    conn.rollback();
             }
             catch (SQLException e) {
-                throw new IgniteCheckedException("Failed to set statement parameter name: " + field.getDbName(), e);
+                throw new CacheWriterException(
+                    "Failed to end transaction [xid=" + tx.xid() + ", commit=" + commit + ']', e);
+            }
+            finally {
+                U.closeQuiet(conn);
             }
         }
 
-        return i;
-    }
-
-    /**
-     * @param stmt Prepare statement.
-     * @param type Type description.
-     * @param key Key object.
-     * @return Next index for parameters.
-     */
-    protected int fillKeyParameters(PreparedStatement stmt, QueryCache type, K key) throws IgniteCheckedException {
-        return fillKeyParameters(stmt, 1, type, key);
-    }
-
-    /**
-     * @param stmt Prepare statement.
-     * @param i Start index for parameters.
-     * @param type Type description.
-     * @param val Value object.
-     * @return Next index for parameters.
-     */
-    protected int fillValueParameters(PreparedStatement stmt, int i, QueryCache type, V val)
-        throws IgniteCheckedException {
-        for (GridCacheQueryTypeDescriptor field : type.uniqValFields) {
-            Object fieldVal = extractField(type.valueType(), field.getJavaName(), val);
-
-            try {
-                if (fieldVal != null)
-                    stmt.setObject(i++, fieldVal);
-                else
-                    stmt.setNull(i++, field.getDbType());
-            }
-            catch (SQLException e) {
-                throw new IgniteCheckedException("Failed to set statement parameter name: " + field.getDbName(), e);
-            }
-        }
-
-        return i;
+        if (tx != null && log.isDebugEnabled())
+            log.debug("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
     }
 
     /** {@inheritDoc} */
-    @Nullable public V load(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
+    @Nullable @Override public V load(K key) throws CacheLoaderException {
+        assert key != null;
+
         init();
 
-        QueryCache type = entryQtyCache.get(typeKey(key));
+        EntryMapping type = typeMeta.get(typeId(key));
 
         if (type == null)
-            throw new IgniteCheckedException("Failed to find mapping description for type: " + key.getClass());
+            throw new CacheLoaderException("Failed to find store mapping description for key: " + key);
 
         if (log.isDebugEnabled())
-            log.debug("Start load value from db by key: " + key);
+            log.debug("Start load value from database by key: " + key);
 
         Connection conn = null;
 
         PreparedStatement stmt = null;
 
         try {
-            conn = connection(tx);
+            conn = connection();
 
             stmt = conn.prepareStatement(type.loadQrySingle);
 
@@ -634,143 +548,108 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 return buildObject(type.valueType(), type.valueDescriptors(), rs);
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to load object by key: " + key, e);
+            throw new CacheLoaderException("Failed to load object by key: " + key, e);
         }
         finally {
-            end(tx, conn, stmt);
+            end(conn, stmt);
         }
 
         return null;
     }
 
-    /**
-     * Loads all values for given keys with same type and passes every value to the provided closure.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, null otherwise.
-     * @param qry Query cache for type.
-     * @param keys Collection of keys to load.
-     * @param c Closure to call for every loaded element.
-     * @throws IgniteCheckedException If load failed.
-     */
-    protected void loadAll(@Nullable IgniteTx tx, QueryCache qry, Collection<? extends K> keys,
-        IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
-        init();
-
-        Connection conn = null;
-
-        PreparedStatement stmt = null;
-
-        try {
-            conn = connection(tx);
-
-            stmt = conn.prepareStatement(qry.loadQuery(keys.size()));
-
-            int i = 1;
-
-            for (K key : keys) {
-                for (GridCacheQueryTypeDescriptor field : qry.keyDescriptors()) {
-                    Object fieldVal = extractField(qry.keyType(), field.getJavaName(), key);
-
-                    if (fieldVal != null)
-                        stmt.setObject(i++, fieldVal);
-                    else
-                        stmt.setNull(i++, field.getDbType());
-                }
-            }
-
-            ResultSet rs = stmt.executeQuery();
-
-            while (rs.next()) {
-                K key = buildObject(qry.keyType(), qry.keyDescriptors(), rs);
-                V val = buildObject(qry.valueType(), qry.valueDescriptors(), rs);
-
-                c.apply(key, val);
-            }
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to load objects", e);
-        }
-        finally {
-            end(tx, conn, stmt);
-        }
-    }
-
     /** {@inheritDoc} */
-    public void loadAll(@Nullable final IgniteTx tx, Collection<? extends K> keys,
-        final IgniteBiInClosure<K, V> c) throws IgniteCheckedException {
+    @Override public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
         assert keys != null;
 
         init();
 
-        Map<QueryCache, Collection<K>> splittedKeys = U.newHashMap(entryQtyCache.size());
+        Connection conn = null;
+        try {
+            conn = connection();
 
-        final Collection<Future<?>> futs = new ArrayList<>();
+            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(typeMeta.size());
 
-        for (K key : keys) {
-            final QueryCache qry = entryQtyCache.get(typeKey(key));
+            Collection<Future<Map<K, V>>> futs = new ArrayList<>();
 
-            Collection<K> batch = splittedKeys.get(qry);
+            int cnt = 0;
 
-            if (batch == null)
-                splittedKeys.put(qry, batch = new ArrayList<>());
+            for (K key : keys) {
+                Object typeId = typeId(key);
 
-            batch.add(key);
+                final EntryMapping m = typeMeta.get(typeId);
 
-            if (batch.size() == qry.maxKeysPerStmt) {
-                final Collection<K> p = splittedKeys.remove(qry);
+                if (m == null)
+                    throw new CacheWriterException("Failed to find store mapping description for key: " + key);
 
-                futs.add(exec.submit(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        loadAll(tx, qry, p, c);
+                LoadWorker<K, V> worker = workers.get(typeId);
 
-                        return null;
-                    }
-                }));
+                if (worker == null)
+                    workers.put(typeId, worker = new LoadWorker<>(conn, m));
+
+                worker.keys.add(key);
+
+                if (worker.keys.size() == m.maxKeysPerStmt)
+                    futs.add(exec.submit(workers.remove(typeId)));
+
+                cnt ++;
             }
+
+            for (LoadWorker<K, V> worker : workers.values())
+                futs.add(exec.submit(worker));
+
+            Map<K, V> res = U.newHashMap(cnt);
+
+            for (Future<Map<K, V>> fut : futs)
+                res.putAll(U.get(fut));
+
+            return res;
         }
-
-        for (final Map.Entry<QueryCache, Collection<K>> entry : splittedKeys.entrySet())
-            futs.add(exec.submit(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    loadAll(tx, entry.getKey(), entry.getValue(), c);
-
-                    return null;
-                }
-            }));
-
-        for (Future<?> fut : futs)
-            U.get(fut);
+        catch (SQLException e) {
+            throw new CacheWriterException("Failed to open connection", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheWriterException("Failed to load entries from database", e);
+        }
+        finally {
+            closeConnection(conn);
+        }
     }
 
     /** {@inheritDoc} */
-    public void put(@Nullable IgniteTx tx, K key, V val) throws IgniteCheckedException {
+    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
+        assert entry != null;
+
         init();
 
-        QueryCache type = entryQtyCache.get(typeKey(key));
+        K key = entry.getKey();
+
+        EntryMapping type = typeMeta.get(typeId(key));
 
         if (type == null)
-            throw new IgniteCheckedException("Failed to find metadata for type: " + key.getClass());
+            throw new CacheWriterException("Failed to find store mapping description for entry: " + entry);
 
         if (log.isDebugEnabled())
-            log.debug("Start put value in db: (" + key + ", " + val);
+            log.debug("Start write entry to database: " + entry);
 
         Connection conn = null;
 
         PreparedStatement stmt = null;
 
         try {
-            conn = connection(tx);
+            conn = connection();
 
             if (dialect.hasMerge()) {
                 stmt = conn.prepareStatement(type.mergeQry);
 
                 int i = fillKeyParameters(stmt, type, key);
 
-                fillValueParameters(stmt, i, type, val);
+                fillValueParameters(stmt, i, type, entry.getValue());
 
                 stmt.executeUpdate();
             }
             else {
+                V val = entry.getValue();
+
                 stmt = conn.prepareStatement(type.updQry);
 
                 int i = fillValueParameters(stmt, 1, type, val);
@@ -791,122 +670,133 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             }
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to put object by key: " + key, e);
+            throw new CacheWriterException("Failed to write entry to database: " + entry, e);
         }
         finally {
-            end(tx, conn, stmt);
+            end(conn, stmt);
         }
     }
 
-    /**
-     * Stores given key value pairs in persistent storage.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, null otherwise.
-     * @param qry Query cache for type.
-     * @param map Values to store.
-     * @throws IgniteCheckedException If store failed.
-     */
     /** {@inheritDoc} */
-    protected void putAll(@Nullable IgniteTx tx, QueryCache qry, Iterable<Map.Entry<? extends K, ? extends V>> map)
-        throws IgniteCheckedException {
-        assert map != null;
+    @Override public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> entries)
+        throws CacheWriterException {
+        assert entries != null;
 
         init();
 
         Connection conn = null;
 
-        PreparedStatement stmt = null;
-
         try {
-            conn = connection(tx);
+            conn = connection();
 
-            stmt = conn.prepareStatement(qry.mergeQry);
+            if (dialect.hasMerge()) {
+                Map<Object, WriteWorker> workers = U.newHashMap(typeMeta.size());
 
-            int cnt = 0;
+                Collection<Future<?>> futs = new ArrayList<>();
 
-            for (Map.Entry<? extends K, ? extends V> entry : map) {
-                int i = fillKeyParameters(stmt, qry, entry.getKey());
+                for (Cache.Entry<? extends K, ? extends V> entry : entries) {
+                    Object typeId = typeId(entry.getKey());
 
-                fillValueParameters(stmt, i, qry, entry.getValue());
+                    final EntryMapping m = typeMeta.get(typeId);
 
-                stmt.addBatch();
+                    if (m == null)
+                        throw new CacheWriterException("Failed to find store mapping description for key: " +
+                            entry.getKey());
 
-                if (cnt++ % batchSz == 0)
-                    stmt.executeBatch();
+                    WriteWorker worker = workers.get(typeId);
+
+                    if (worker == null)
+                        workers.put(typeId, worker = new WriteWorker(conn, m));
+
+                    worker.entries.add(entry);
+
+                    if (worker.entries.size() == batchSz)
+                        futs.add(exec.submit(workers.remove(typeId)));
+                }
+
+                for (WriteWorker worker : workers.values())
+                    futs.add(exec.submit(worker));
+
+                for (Future<?> fut : futs)
+                    U.get(fut);
             }
+            else {
+                Map<Object, T2<PreparedStatement, PreparedStatement>> stmtByType = U.newHashMap(typeMeta.size());
 
-            if (cnt % batchSz != 0)
-                stmt.executeBatch();
+                for (Cache.Entry<? extends K, ? extends V> entry : entries) {
+                    Object typeId = typeId(entry.getKey());
+
+                    final EntryMapping m = typeMeta.get(typeId);
+
+                    if (m == null)
+                        throw new CacheWriterException("Failed to find store mapping description for key: " +
+                            entry.getKey());
+
+                    T2<PreparedStatement, PreparedStatement> stmts = stmtByType.get(typeId);
+
+                    if (stmts == null)
+                        stmtByType.put(typeId,
+                            stmts = new T2<>(conn.prepareStatement(m.updQry), conn.prepareStatement(m.insQry)));
+
+                    PreparedStatement stmt = stmts.get1();
+
+                    assert stmt != null;
+
+                    int i = fillValueParameters(stmt, 1, m, entry.getValue());
+
+                    fillKeyParameters(stmt, i, m, entry.getKey());
+
+                    if (stmt.executeUpdate() == 0) {
+                        stmt = stmts.get2();
+
+                        assert stmt != null;
+
+                        i = fillKeyParameters(stmt, m, entry.getKey());
+
+                        fillValueParameters(stmt, i, m, entry.getValue());
+
+                        stmt.executeUpdate();
+                    }
+                }
+
+                for (T2<PreparedStatement, PreparedStatement> stmts :  stmtByType.values()) {
+                    U.closeQuiet(stmts.get1());
+
+                    U.closeQuiet(stmts.get2());
+                }
+            }
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to put objects", e);
+            throw new CacheWriterException("Failed to open connection", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheWriterException("Failed to write values into database", e);
         }
         finally {
-            end(tx, conn, stmt);
+            closeConnection(conn);
         }
     }
 
     /** {@inheritDoc} */
-    public void putAll(@Nullable final IgniteTx tx, Map<? extends K, ? extends V> map)
-        throws IgniteCheckedException {
-        assert map != null;
+    @Override public void delete(Object key) throws CacheWriterException {
+        assert key != null;
 
         init();
 
-        Map<Object, Collection<Map.Entry<? extends K, ? extends V>>> keyByType = U.newHashMap(entryQtyCache.size());
-
-        if (dialect.hasMerge()) {
-            for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
-                Object typeKey = typeKey(entry.getKey());
-
-                Collection<Map.Entry<? extends K, ? extends V>> batch = keyByType.get(typeKey);
-
-                if (batch == null)
-                    keyByType.put(typeKey, batch = new ArrayList<>());
-
-                batch.add(entry);
-            }
-
-            final Collection<Future<?>> futs = new ArrayList<>();
-
-            for (final Map.Entry<Object, Collection<Map.Entry<? extends K, ? extends V>>> e : keyByType.entrySet()) {
-                final QueryCache qry = entryQtyCache.get(e.getKey());
-
-                futs.add(exec.submit(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                        putAll(tx, qry, e.getValue());
-
-                        return null;
-                    }
-                }));
-            }
-
-            for (Future<?> fut : futs)
-                U.get(fut);
-        }
-        else
-            for (Map.Entry<? extends K, ? extends V> e : map.entrySet())
-                put(tx, e.getKey(), e.getValue());
-    }
-
-    /** {@inheritDoc} */
-    public void remove(@Nullable IgniteTx tx, K key) throws IgniteCheckedException {
-        init();
-
-        QueryCache type = entryQtyCache.get(typeKey(key));
+        EntryMapping type = typeMeta.get(typeId(key));
 
         if (type == null)
-            throw new IgniteCheckedException("Failed to find metadata for type: " + key.getClass());
+            throw new CacheWriterException("Failed to find store mapping description for key: " + key);
 
         if (log.isDebugEnabled())
-            log.debug("Start remove value from db by key: " + key);
+            log.debug("Start remove value from database by key: " + key);
 
         Connection conn = null;
 
         PreparedStatement stmt = null;
 
         try {
-            conn = connection(tx);
+            conn = connection();
 
             stmt = conn.prepareStatement(type.remQry);
 
@@ -915,83 +805,136 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             stmt.executeUpdate();
         }
         catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to load object by key: " + key, e);
+            throw new CacheWriterException("Failed to remove value from database by key: " + key, e);
         }
         finally {
-            end(tx, conn, stmt);
-        }
-    }
-
-    /**
-     * Removes all vales identified by given keys from persistent storage.
-     *
-     * @param tx Cache transaction, if write-behind is not enabled, null otherwise.
-     * @param qry Query cache for type.
-     * @param keys Collection of keys to remove.
-     * @throws IgniteCheckedException If remove failed.
-     */
-    protected void removeAll(@Nullable IgniteTx tx, QueryCache qry, Collection<? extends K> keys)
-        throws IgniteCheckedException {
-        assert keys != null && !keys.isEmpty();
-
-        init();
-
-        if (log.isDebugEnabled())
-            log.debug("Start remove values by keys: " + Arrays.toString(keys.toArray()));
-
-        Connection conn = null;
-
-        PreparedStatement stmt = null;
-
-        try {
-            conn = connection(tx);
-
-            stmt = conn.prepareStatement(qry.remQry);
-
-            int cnt = 0;
-
-            for (K key : keys) {
-                fillKeyParameters(stmt, qry, key);
-
-                stmt.addBatch();
-
-                if (cnt++ % batchSz == 0)
-                    stmt.executeBatch();
-            }
-
-            if (cnt % batchSz != 0)
-                stmt.executeBatch();
-        }
-        catch (SQLException e) {
-            throw new IgniteCheckedException("Failed to remove values by keys.", e);
-        }
-        finally {
-            end(tx, conn, stmt);
+            end(conn, stmt);
         }
     }
 
     /** {@inheritDoc} */
-    public void removeAll(@Nullable IgniteTx tx, Collection<? extends K> keys) throws IgniteCheckedException {
+    @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
         assert keys != null;
 
-        Map<Object, Collection<K>> keyByType = U.newHashMap(entryQtyCache.size());
+        Connection conn = null;
 
-        for (K key : keys) {
-            Object typeKey = typeKey(key);
+        try {
+            conn = connection();
 
-            Collection<K> batch = keyByType.get(typeKey);
+            Collection<Future<?>> futs = new ArrayList<>();
 
-            if (batch == null)
-                keyByType.put(typeKey, batch = new ArrayList<>());
+            Map<Object, DeleteWorker> workers = U.newHashMap(typeMeta.size());
 
-            batch.add(key);
+            for (Object key : keys) {
+                Object typeId = typeId(key);
+
+                final EntryMapping m = typeMeta.get(typeId);
+
+                if (m == null)
+                    throw new CacheWriterException("Failed to find store mapping description for key: " + key);
+
+                DeleteWorker worker = workers.get(typeId);
+
+                if (worker == null)
+                    workers.put(typeId, worker = new DeleteWorker(conn, m));
+
+                worker.keys.add(key);
+
+                if (worker.keys.size() == batchSz)
+                    futs.add(exec.submit(workers.remove(typeId)));
+            }
+
+            for (DeleteWorker worker : workers.values())
+                futs.add(exec.submit(worker));
+
+            for (Future<?> fut : futs)
+                U.get(fut);
+        }
+        catch (SQLException e) {
+            throw new CacheWriterException("Failed to open connection", e);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheWriterException("Failed to remove values from database", e);
+        }
+        finally {
+            closeConnection(conn);
+        }
+    }
+
+    /**
+     * Extract database column names from {@link GridCacheQueryTypeDescriptor}.
+     *
+     * @param dsc collection of {@link GridCacheQueryTypeDescriptor}.
+     */
+    protected static Collection<String> databaseColumns(Collection<GridCacheQueryTypeDescriptor> dsc) {
+        return F.transform(dsc, new C1<GridCacheQueryTypeDescriptor, String>() {
+            /** {@inheritDoc} */
+            @Override public String apply(GridCacheQueryTypeDescriptor desc) {
+                return desc.getDbName();
+            }
+        });
+    }
+
+    /**
+     * @param stmt Prepare statement.
+     * @param i Start index for parameters.
+     * @param type Type description.
+     * @param key Key object.
+     * @return Next index for parameters.
+     */
+    protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping type,
+        Object key) throws CacheException {
+        for (GridCacheQueryTypeDescriptor field : type.keyDescriptors()) {
+            Object fieldVal = extractField(type.keyType(), field.getJavaName(), key);
+
+            try {
+                if (fieldVal != null)
+                    stmt.setObject(i++, fieldVal);
+                else
+                    stmt.setNull(i++, field.getDbType());
+            }
+            catch (SQLException e) {
+                throw new CacheException("Failed to set statement parameter name: " + field.getDbName(), e);
+            }
         }
 
-        for (Map.Entry<Object, Collection<K>> entry : keyByType.entrySet()) {
-            QueryCache qry = entryQtyCache.get(entry.getKey());
+        return i;
+    }
 
-            removeAll(tx, qry, entry.getValue());
+    /**
+     * @param stmt Prepare statement.
+     * @param type Type description.
+     * @param key Key object.
+     * @return Next index for parameters.
+     */
+    protected int fillKeyParameters(PreparedStatement stmt, EntryMapping type, Object key) throws CacheException {
+        return fillKeyParameters(stmt, 1, type, key);
+    }
+
+    /**
+     * @param stmt Prepare statement.
+     * @param i Start index for parameters.
+     * @param type Type description.
+     * @param val Value object.
+     * @return Next index for parameters.
+     */
+    protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping type, Object val)
+        throws CacheWriterException {
+        for (GridCacheQueryTypeDescriptor field : type.uniqValFields) {
+            Object fieldVal = extractField(type.valueType(), field.getJavaName(), val);
+
+            try {
+                if (fieldVal != null)
+                    stmt.setObject(i++, fieldVal);
+                else
+                    stmt.setNull(i++, field.getDbType());
+            }
+            catch (SQLException e) {
+                throw new CacheWriterException("Failed to set statement parameter name: " + field.getDbName(), e);
+            }
         }
+
+        return i;
     }
 
     /**
@@ -1051,22 +994,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /**
-     * @return Paths to xml with type mapping description.
-     */
-    public Collection<String> getTypeMetadataPaths() {
-        return typeMetadataPaths;
-    }
-
-    /**
-     * Set paths to xml with type mapping description.
-     *
-     * @param typeMetadataPaths Paths to xml.
-     */
-    public void setTypeMetadataPaths(Collection<String> typeMetadataPaths) {
-        this.typeMetadataPaths = typeMetadataPaths;
-    }
-
-    /**
      * Set type mapping description.
      *
      * @param typeMetadata Type mapping description.
@@ -1080,7 +1007,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      *
      * @return Database dialect.
      */
-    public BasicJdbcDialect getDialect() {
+    public JdbcDialect getDialect() {
         return dialect;
     }
 
@@ -1089,7 +1016,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      *
      * @param dialect Database dialect.
      */
-    public void setDialect(BasicJdbcDialect dialect) {
+    public void setDialect(JdbcDialect dialect) {
         this.dialect = dialect;
     }
 
@@ -1129,32 +1056,128 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         this.batchSz = batchSz;
     }
 
-    @Override public void txEnd(boolean commit) throws CacheWriterException {
-        // TODO: SPRINT-32 CODE: implement.
+    private class LoadWorker<K1, V1> implements Callable<Map<K1, V1>> {
+        private final Connection conn;
+
+        private final Collection<K1> keys;
+
+        private final EntryMapping m;
+
+        private LoadWorker(Connection conn, EntryMapping m) {
+            this.conn = conn;
+            keys = new ArrayList<>(batchSz);
+            this.m = m;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<K1, V1> call() throws Exception {
+            PreparedStatement stmt = null;
+
+            try {
+                stmt = conn.prepareStatement(m.loadQuery(keys.size()));
+
+                int i = 1;
+
+                for (Object key : keys)
+                    for (GridCacheQueryTypeDescriptor field : m.keyDescriptors()) {
+                        Object fieldVal = extractField(m.keyType(), field.getJavaName(), key);
+
+                        if (fieldVal != null)
+                            stmt.setObject(i++, fieldVal);
+                        else
+                            stmt.setNull(i++, field.getDbType());
+                    }
+
+                ResultSet rs = stmt.executeQuery();
+
+                Map<K1, V1> entries = U.newHashMap(keys.size());
+
+                while (rs.next()) {
+                    K1 key = buildObject(m.keyType(), m.keyDescriptors(), rs);
+                    V1 val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+
+                    entries.put(key, val);
+                }
+
+                return entries;
+            }
+            finally {
+                U.closeQuiet(stmt);
+            }
+        }
     }
 
-    @Override public V load(K k) throws CacheLoaderException {
-        return null; // TODO: SPRINT-32 CODE: implement.
+    private class WriteWorker implements Callable<Void> {
+        private final Connection conn;
+
+        private final Collection<Cache.Entry<?, ?>> entries;
+
+        private final EntryMapping m;
+
+        private WriteWorker(Connection conn, EntryMapping m) {
+            this.conn = conn;
+            entries = new ArrayList<>(batchSz);
+            this.m = m;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            PreparedStatement stmt = null;
+
+            try {
+                stmt = conn.prepareStatement(m.mergeQry);
+
+                for (Cache.Entry<?, ?> entry : entries) {
+                    int i = fillKeyParameters(stmt, m, entry.getKey());
+
+                    fillValueParameters(stmt, i, m, entry.getValue());
+
+                    stmt.addBatch();
+                }
+
+                stmt.executeBatch();
+            }
+            finally {
+                U.closeQuiet(stmt);
+            }
+
+            return null;
+        }
     }
 
-    @Override public Map<K, V> loadAll(Iterable<? extends K> iterable) throws CacheLoaderException {
-        return null; // TODO: SPRINT-32 CODE: implement.
-    }
+    private class DeleteWorker implements Callable<Void> {
+        private final Connection conn;
 
-    @Override public void write(Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
-        // TODO: SPRINT-32 CODE: implement.
-    }
+        private final Collection<Object> keys;
 
-    @Override
-    public void writeAll(Collection<Cache.Entry<? extends K, ? extends V>> collection) throws CacheWriterException {
-        // TODO: SPRINT-32 CODE: implement.
-    }
+        private final EntryMapping m;
 
-    @Override public void delete(Object o) throws CacheWriterException {
-        // TODO: SPRINT-32 CODE: implement.
-    }
+        private DeleteWorker(Connection conn, EntryMapping m) {
+            this.conn = conn;
+            keys = new ArrayList<>(batchSz);
+            this.m = m;
+        }
 
-    @Override public void deleteAll(Collection<?> collection) throws CacheWriterException {
-        // TODO: SPRINT-32 CODE: implement.
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            PreparedStatement stmt = null;
+
+            try {
+                stmt = conn.prepareStatement(m.remQry);
+
+                for (Object key : keys) {
+                    fillKeyParameters(stmt, m, key);
+
+                    stmt.addBatch();
+                }
+
+                stmt.executeBatch();
+            }
+            finally {
+                U.closeQuiet(stmt);
+            }
+
+            return null;
+        }
     }
 }

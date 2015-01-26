@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Represents a dialect of SQL implemented by a particular RDBMS.
  */
-public class BasicJdbcDialect {
+public class BasicJdbcDialect implements JdbcDialect {
     /** Default max query parameters count. */
     protected static final int DFLT_MAX_PARAMS_CNT = 2000;
 
@@ -145,29 +145,13 @@ public class BasicJdbcDialect {
         return sb.toString();
     }
 
-    /**
-     * Construct load cache query.
-     *
-     * @param schema Database schema name.
-     * @param tblName Database table name.
-     * @param uniqCols Database unique value columns.
-     * @return Load cache query.
-     */
-    public String loadCacheQuery(String schema, String tblName, Iterable<String> uniqCols) {
+    /** {@inheritDoc} */
+    @Override public String loadCacheQuery(String schema, String tblName, Iterable<String> uniqCols) {
         return String.format("SELECT %s FROM %s.%s", mkString(uniqCols, ","), schema, tblName);
     }
 
-    /**
-     * Construct load query.
-     *
-     * @param schema Database schema name.
-     * @param tblName Database table name.
-     * @param keyCols Database key columns.
-     * @param cols Selected columns.
-     * @param keyCnt Key count.
-     * @return Load query.
-     */
-    public String loadQuery(String schema, String tblName, Collection<String> keyCols, Iterable<String> cols,
+    /** {@inheritDoc} */
+    @Override public String loadQuery(String schema, String tblName, Collection<String> keyCols, Iterable<String> cols,
         int keyCnt) {
         assert !keyCols.isEmpty();
 
@@ -176,30 +160,18 @@ public class BasicJdbcDialect {
         return String.format("SELECT %s FROM %s.%s WHERE %s", mkString(cols, ","), schema, tblName, params);
     }
 
-    /**
-     * Construct insert query.
-     *
-     * @param schema Database schema name.
-     * @param tblName Database table name.
-     * @param keyCols Database key columns.
-     * @param valCols Database value columns.
-     */
-    public String insertQuery(String schema, String tblName, Collection<String> keyCols, Collection<String> valCols) {
+    /** {@inheritDoc} */
+    @Override public String insertQuery(String schema, String tblName, Collection<String> keyCols,
+        Collection<String> valCols) {
         Collection<String> cols = F.concat(false, keyCols, valCols);
 
         return String.format("INSERT INTO %s.%s(%s) VALUES(%s)", schema, tblName, mkString(cols, ","),
             repeat("?", cols.size(), "", ",", ""));
     }
 
-    /**
-     * Construct update query.
-     *
-     * @param schema Database schema name.
-     * @param tblName Database table name.
-     * @param keyCols Database key columns.
-     * @param valCols Database value columns.
-     */
-    public String updateQuery(String schema, String tblName, Collection<String> keyCols, Iterable<String> valCols) {
+    /** {@inheritDoc} */
+    @Override public String updateQuery(String schema, String tblName, Collection<String> keyCols,
+        Iterable<String> valCols) {
         String params = mkString(valCols, new C1<String, String>() {
             @Override public String apply(String s) {
                 return s + "=?";
@@ -209,35 +181,19 @@ public class BasicJdbcDialect {
         return String.format("UPDATE %s.%s SET %s WHERE %s", schema, tblName, params, where(keyCols, 1));
     }
 
-    /**
-     * @return {@code True} if database support merge operation.
-     */
-    public boolean hasMerge() {
+    /** {@inheritDoc} */
+    @Override public boolean hasMerge() {
         return false;
     }
 
-    /**
-     * Construct merge query.
-     *
-     * @param schema Database schema name.
-     * @param tblName Database table name.
-     * @param keyCols Database key columns.
-     * @param uniqCols Database unique value columns.
-     * @return Put query.
-     */
-    public String mergeQuery(String schema, String tblName, Collection<String> keyCols, Collection<String> uniqCols) {
+    /** {@inheritDoc} */
+    @Override public String mergeQuery(String schema, String tblName, Collection<String> keyCols,
+        Collection<String> uniqCols) {
         return "";
     }
 
-    /**
-     * Construct remove query.
-     *
-     * @param schema Database schema name.
-     * @param tblName Database table name.
-     * @param keyCols Database key columns.
-     * @return Remove query.
-     */
-    public String removeQuery(String schema, String tblName, Iterable<String> keyCols) {
+    /** {@inheritDoc} */
+    @Override public String removeQuery(String schema, String tblName, Iterable<String> keyCols) {
         String whereParams = mkString(keyCols, new C1<String, String>() {
             @Override public String apply(String s) {
                 return s + "=?";
@@ -247,12 +203,8 @@ public class BasicJdbcDialect {
         return String.format("DELETE FROM %s.%s WHERE %s", schema, tblName, whereParams);
     }
 
-    /**
-     * Get max query parameters count.
-     *
-     * @return Max query parameters count.
-     */
-    public int getMaxParamsCnt() {
+    /** {@inheritDoc} */
+    @Override public int getMaxParamsCnt() {
         return maxParamsCnt;
     }
 

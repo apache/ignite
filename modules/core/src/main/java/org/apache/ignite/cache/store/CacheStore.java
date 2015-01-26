@@ -166,7 +166,7 @@ public abstract class CacheStore<K, V> implements CacheLoader<K, V>, CacheWriter
      *
      * @return Session for current cache operation.
      */
-    @Nullable public CacheStoreSession session() {
+    public CacheStoreSession session() {
         return ses;
     }
 
