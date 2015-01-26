@@ -15,11 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.lang
+package org.apache.ignite.scalar.lang
 
 import org.apache.ignite.lang.IgniteReducer
 
-import collection._
+import scala.collection._
 
 /**
  * Peer deploy aware adapter for Java's `GridReducer`.

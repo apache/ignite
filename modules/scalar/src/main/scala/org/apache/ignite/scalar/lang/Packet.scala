@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar
+package org.apache.ignite.scalar
 
 /**
  * Contains Scala side adapters for implicits conversion.

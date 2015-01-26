@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.product;
+package org.apache.ignite.internal.product;
 
 import org.jetbrains.annotations.*;
 

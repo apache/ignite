@@ -1245,19 +1245,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        cache = cache.enableAsync();
+        IgniteCache<String, Integer> asyncCache = cache.enableAsync();
 
-        assertNull(cache.invoke("key1", INCR_PROCESSOR));
+        assertNull(asyncCache.invoke("key1", INCR_PROCESSOR));
 
-        IgniteFuture<?> fut0 = cache.future();
+        IgniteFuture<?> fut0 = asyncCache.future();
 
-        assertNull(cache.invoke("key2", INCR_PROCESSOR));
+        assertNull(asyncCache.invoke("key2", INCR_PROCESSOR));
 
-        IgniteFuture<?> fut1 = cache.future();
+        IgniteFuture<?> fut1 = asyncCache.future();
 
-        assertNull(cache.invoke("key3", RMV_PROCESSOR));
+        assertNull(asyncCache.invoke("key3", RMV_PROCESSOR));
 
-        IgniteFuture<?> fut2 = cache.future();
+        IgniteFuture<?> fut2 = asyncCache.future();
 
         fut0.get();
         fut1.get();

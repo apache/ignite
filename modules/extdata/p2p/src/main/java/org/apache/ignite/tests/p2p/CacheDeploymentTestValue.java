@@ -22,5 +22,6 @@ import java.io.*;
 /**
  * Value object for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestValue implements Serializable {
+public class CacheDeploymentTestValue implements Serializable {
+    // No-op.
 }

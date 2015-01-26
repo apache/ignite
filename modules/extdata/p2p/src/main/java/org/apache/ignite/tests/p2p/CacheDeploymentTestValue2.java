@@ -15,20 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mbean;
-
-import java.lang.annotation.*;
+package org.apache.ignite.tests.p2p;
 
 /**
- * Provides description for MBean classes and methods.
+ * Second test value for deployment.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE, ElementType.METHOD})
-public @interface IgniteMBeanDescription {
-    /**
-     *
-     * Description for Mbean.
-     */
-    @SuppressWarnings({"JavaDoc"}) public String value();
+public class CacheDeploymentTestValue2 {
+    // No-op.
 }

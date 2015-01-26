@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import javax.cache.configuration.*;
-import javax.cache.spi.*;
 import java.net.*;
 import java.util.*;
 
 /**
- *
+ * Implementation of JSR-107 {@link javax.cache.spi.CachingProvider}.
  */
-public class IgniteCachingProvider implements CachingProvider {
+public class CachingProvider implements javax.cache.spi.CachingProvider {
     /** */
     private static final URI DEFAULT_URI;
 
@@ -60,10 +59,10 @@ public class IgniteCachingProvider implements CachingProvider {
     public static final Properties DFLT_PROPS = new Properties();
 
     /** */
-    private final Map<ClassLoader, Map<URI, IgniteCacheManager>> cacheManagers = new WeakHashMap<>();
+    private final Map<ClassLoader, Map<URI, CacheManager>> cacheManagers = new WeakHashMap<>();
 
     /** {@inheritDoc} */
-    @Override public CacheManager getCacheManager(@Nullable URI uri, ClassLoader clsLdr, Properties props) {
+    @Override public javax.cache.CacheManager getCacheManager(@Nullable URI uri, ClassLoader clsLdr, Properties props) {
         if (uri == null)
             uri = getDefaultURI();
 
@@ -71,7 +70,7 @@ public class IgniteCachingProvider implements CachingProvider {
             clsLdr = getDefaultClassLoader();
 
         synchronized (cacheManagers) {
-            Map<URI, IgniteCacheManager> uriMap = cacheManagers.get(clsLdr);
+            Map<URI, CacheManager> uriMap = cacheManagers.get(clsLdr);
 
             if (uriMap == null) {
                 uriMap = new HashMap<>();
@@ -79,10 +78,10 @@ public class IgniteCachingProvider implements CachingProvider {
                 cacheManagers.put(clsLdr, uriMap);
             }
 
-            IgniteCacheManager mgr = uriMap.get(uri);
+            CacheManager mgr = uriMap.get(uri);
 
             if (mgr == null || mgr.isClosed()) {
-                mgr = new IgniteCacheManager(uri, this, clsLdr, props);
+                mgr = new CacheManager(uri, this, clsLdr, props);
 
                 uriMap.put(uri, mgr);
             }
@@ -107,24 +106,24 @@ public class IgniteCachingProvider implements CachingProvider {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheManager getCacheManager(URI uri, ClassLoader clsLdr) {
+    @Override public javax.cache.CacheManager getCacheManager(URI uri, ClassLoader clsLdr) {
         return getCacheManager(uri, clsLdr, getDefaultProperties());
     }
 
     /** {@inheritDoc} */
-    @Override public CacheManager getCacheManager() {
+    @Override public javax.cache.CacheManager getCacheManager() {
         return getCacheManager(getDefaultURI(), getDefaultClassLoader());
     }
 
     /**
      * @param cache Cache.
      */
-    public CacheManager findManager(IgniteCache<?,?> cache) {
+    public javax.cache.CacheManager findManager(IgniteCache<?,?> cache) {
         Ignite ignite = cache.unwrap(Ignite.class);
 
         synchronized (cacheManagers) {
-            for (Map<URI, IgniteCacheManager> map : cacheManagers.values()) {
-                for (IgniteCacheManager manager : map.values()) {
+            for (Map<URI, CacheManager> map : cacheManagers.values()) {
+                for (CacheManager manager : map.values()) {
                     if (manager.isManagedIgnite(ignite))
                         return manager;
                 }
@@ -136,25 +135,25 @@ public class IgniteCachingProvider implements CachingProvider {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        Collection<IgniteCacheManager> mgrs = new ArrayList<>();
+        Collection<CacheManager> mgrs = new ArrayList<>();
 
         synchronized (cacheManagers) {
-            for (Map<URI, IgniteCacheManager> uriMap : cacheManagers.values())
+            for (Map<URI, CacheManager> uriMap : cacheManagers.values())
                 mgrs.addAll(uriMap.values());
 
             cacheManagers.clear();
         }
 
-        for (IgniteCacheManager mgr : mgrs)
+        for (CacheManager mgr : mgrs)
             mgr.close();
     }
 
     /** {@inheritDoc} */
     @Override public void close(ClassLoader clsLdr) {
-        Collection<IgniteCacheManager> mgrs;
+        Collection<CacheManager> mgrs;
 
         synchronized (cacheManagers) {
-            Map<URI, IgniteCacheManager> uriMap = cacheManagers.remove(clsLdr);
+            Map<URI, CacheManager> uriMap = cacheManagers.remove(clsLdr);
 
             if (uriMap == null)
                 return;
@@ -162,16 +161,16 @@ public class IgniteCachingProvider implements CachingProvider {
             mgrs = uriMap.values();
         }
 
-        for (IgniteCacheManager mgr : mgrs)
+        for (CacheManager mgr : mgrs)
             mgr.close();
     }
 
     /** {@inheritDoc} */
     @Override public void close(URI uri, ClassLoader clsLdr) {
-        IgniteCacheManager mgr;
+        CacheManager mgr;
 
         synchronized (cacheManagers) {
-            Map<URI, IgniteCacheManager> uriMap = cacheManagers.get(clsLdr);
+            Map<URI, CacheManager> uriMap = cacheManagers.get(clsLdr);
 
             if (uriMap == null)
                 return;

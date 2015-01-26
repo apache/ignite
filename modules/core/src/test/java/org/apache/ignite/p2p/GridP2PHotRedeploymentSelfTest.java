@@ -31,7 +31,7 @@ import java.util.*;
 @GridCommonTest(group = "P2P")
 public class GridP2PHotRedeploymentSelfTest extends GridCommonAbstractTest {
     /** Task name. */
-    private static final String TASK_NAME = "org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1";
+    private static final String TASK_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1";
 
     /** Current deployment mode. Used in {@link #getConfiguration(String)}. */
     private IgniteDeploymentMode depMode;
