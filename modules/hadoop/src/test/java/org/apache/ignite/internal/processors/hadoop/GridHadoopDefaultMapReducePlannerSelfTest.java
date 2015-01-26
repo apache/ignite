@@ -1016,6 +1016,11 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
+        @Override public GridHadoop hadoop() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public ClusterNode localNode() {
             return null;
         }

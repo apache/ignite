@@ -13,7 +13,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.marshaller.IgniteMarshaller;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
@@ -196,11 +195,6 @@ public class GridTestIgnite implements Ignite {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteFs> fileSystems() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridHadoop hadoop() {
         return null;
     }
 

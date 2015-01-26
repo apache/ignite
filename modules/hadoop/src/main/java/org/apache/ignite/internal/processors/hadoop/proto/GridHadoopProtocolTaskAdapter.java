@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.proto;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -87,7 +88,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<Gr
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() throws IgniteCheckedException {
-            return run(jobCtx, ignite.hadoop(), args);
+            return run(jobCtx, ((GridEx)ignite).hadoop(), args);
         }
     }
 
