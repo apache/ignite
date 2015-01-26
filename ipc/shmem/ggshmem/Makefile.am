@@ -11,7 +11,7 @@ lib_LTLIBRARIES = libggshmem.la
 # Build information for each library
 
 # Sources for ggshmem
-libggshmem_la_SOURCES = org_gridgain_grid_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp
+libggshmem_la_SOURCES = org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp
 
 # Linker options libTestProgram
 libggshmem_la_LDFLAGS =
