@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.

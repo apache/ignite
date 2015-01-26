@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
-import org.gridgain.scalar._
-import scalar._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+
 import scala.math._
 
 /**

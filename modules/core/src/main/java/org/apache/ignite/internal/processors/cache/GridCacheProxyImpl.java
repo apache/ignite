@@ -24,7 +24,7 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -346,6 +346,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return delegate.containsKey(key);
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return delegate.containsKeyAsync(key);
         }
         finally {
             gate.leave(prev);

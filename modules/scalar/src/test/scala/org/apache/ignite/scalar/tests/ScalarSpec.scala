@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.tests
+package org.apache.ignite.scalar.tests
 
-import org.gridgain.scalar._
-import org.scalatest._
-import junit.JUnitRunner
+import org.apache.ignite.scalar.scalar
 import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
 
 /**
  *
