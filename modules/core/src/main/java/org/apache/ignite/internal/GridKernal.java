@@ -31,7 +31,7 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.plugin.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;

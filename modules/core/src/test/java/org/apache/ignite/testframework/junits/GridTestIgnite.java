@@ -17,7 +17,7 @@ import org.apache.ignite.hadoop.*;
 import org.apache.ignite.marshaller.IgniteMarshaller;
 import org.apache.ignite.plugin.*;
 import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.internal.product.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.product;
+package org.apache.ignite.lang;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
