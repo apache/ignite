@@ -18,8 +18,8 @@
 package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.cache.GridCache
-import org.gridgain.scalar.scalar
-import scalar._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 
 /**
  * This example demonstrates the simplest code that populates the distributed cache

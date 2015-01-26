@@ -18,6 +18,7 @@
 package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
@@ -29,7 +30,10 @@ import java.util.*;
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode, Object> {
+public class CacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Object> {
+    /** Number of puts. */
+    private static final int PUT_CNT = 100;
+
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
         @Nullable ClusterNode node) throws IgniteCheckedException {
@@ -38,9 +42,14 @@ public class GridCacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() {
-                    X.println("Executing GridCacheDeploymentTestTask2 job on node " +
+                @Override public Object execute() throws IgniteCheckedException {
+                    X.println("Executing CacheDeploymentTestTask1 job on node " +
                         ignite.cluster().localNode().id());
+
+                    GridCache<String, CacheDeploymentTestValue> cache = ignite.cache(null);
+
+                    for (int i = 0; i < PUT_CNT; i++)
+                        cache.putx("1" + i, new CacheDeploymentTestValue());
 
                     return null;
                 }

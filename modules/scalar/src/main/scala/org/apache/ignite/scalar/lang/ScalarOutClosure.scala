@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.lang
+package org.apache.ignite.scalar.lang
+
+import org.apache.ignite.internal.util.lang.GridPeerDeployAwareAdapter
+import org.apache.ignite.lang.IgniteOutClosure
 
 import java.util.concurrent.Callable
-import org.apache.ignite.lang.IgniteOutClosure
-import org.apache.ignite.internal.util.lang.GridPeerDeployAwareAdapter
 
 /**
  * Peer deploy aware adapter for Java's `GridOutClosure`.

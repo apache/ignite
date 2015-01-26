@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.scalar.lang
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.internal.util.lang.IgniteClosure2X
+import java.lang.annotation.*;
 
 /**
- * Wrapping Scala function for `GridClosure2X`.
+ * Provides description for MBean classes and methods.
  */
-class ScalarClosure2XFunction[T1, T2, R](val inner: IgniteClosure2X[T1, T2, R]) extends ((T1, T2) => R) {
-    assert(inner != null)
-
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface IgniteMBeanDescription {
     /**
-     * Delegates to passed in grid closure.
+     *
+     * Description for Mbean.
      */
-    def apply(t1: T1, t2: T2): R = {
-        inner.applyx(t1, t2)
-    }
+    @SuppressWarnings({"JavaDoc"}) public String value();
 }

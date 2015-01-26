@@ -15,10 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.p2p;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Second test value for deployment.
+ * @param <T> Type for iterator.
+ * @param <V> Type for cache query future.
  */
-public class GridCacheDeploymentTestValue2 {
+public abstract class CacheIteratorConverter <T, V> {
+    /**
+     * Converts class V to class T.
+     *
+     * @param v Item to convert.
+     * @return Converted item.
+     */
+    protected abstract T convert(V v);
+
+    /**
+     * Removes item.
+     *
+     * @param item Item to remove.
+     */
+    protected abstract void remove(T item);
 }

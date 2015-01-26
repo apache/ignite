@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -27,7 +27,7 @@ import java.text.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.product.IgniteProduct} implementation.
+ * {@link org.apache.ignite.internal.product.IgniteProduct} implementation.
  */
 public class GridProductImpl implements IgniteProduct, Externalizable {
     /** */

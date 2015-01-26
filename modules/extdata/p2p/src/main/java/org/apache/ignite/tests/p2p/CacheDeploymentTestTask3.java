@@ -18,7 +18,6 @@
 package org.apache.ignite.tests.p2p;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
@@ -30,31 +29,28 @@ import java.util.*;
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Object> {
-    /** Number of puts. */
-    private static final int PUT_CNT = 100;
-
+public class CacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode, String>, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable ClusterNode node) throws IgniteCheckedException {
+        @Nullable T2<ClusterNode, String> tup) throws IgniteCheckedException {
+        final String val = tup.getValue();
+
         return F.asMap(
-            new ComputeJobAdapter() {
-                @IgniteInstanceResource
-                private Ignite ignite;
+                new ComputeJobAdapter() {
+                    @IgniteInstanceResource
+                    private Ignite ignite;
 
-                @Override public Object execute() throws IgniteCheckedException {
-                    X.println("Executing GridCacheDeploymentTestTask1 job on node " +
-                        ignite.cluster().localNode().id());
+                    @Override public Object execute() throws IgniteCheckedException {
+                        X.println("Executing CacheDeploymentTestTask3 job on node " +
+                                ignite.cluster().localNode().id());
 
-                    GridCache<String, GridCacheDeploymentTestValue> cache = ignite.cache(null);
+                        ignite.<String, CacheDeploymentTestValue>cache(null).putx(val,
+                                new CacheDeploymentTestValue());
 
-                    for (int i = 0; i < PUT_CNT; i++)
-                        cache.putx("1" + i, new GridCacheDeploymentTestValue());
-
-                    return null;
-                }
-            },
-            node
+                        return null;
+                    }
+                },
+                tup.get1()
         );
     }
 
