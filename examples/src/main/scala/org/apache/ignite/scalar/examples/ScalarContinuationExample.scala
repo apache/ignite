@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.compute.ComputeJobContext
-import org.apache.ignite.lang.{IgniteFuture, IgniteClosure}
+import org.apache.ignite.lang.{IgniteClosure, IgniteFuture}
 import org.apache.ignite.resources.IgniteJobContextResource
-import org.gridgain.scalar._
-import scalar._
-import java.math._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
+
+import java.math._
 import java.util
 
 /**

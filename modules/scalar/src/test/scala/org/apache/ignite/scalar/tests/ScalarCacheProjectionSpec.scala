@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.tests
+package org.apache.ignite.scalar.tests
 
-import org.gridgain.scalar._
-import scalar._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+import org.junit.runner.RunWith
 import org.scalatest.FlatSpec
 import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
 
 /**
  * Test for using grid.cache(..).projection(...) from scala code.
