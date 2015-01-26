@@ -15,18 +15,20 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar
+package org.apache.ignite.scalar
 
-import java.net.URL
 import org.apache.ignite.cache.GridCache
 import org.apache.ignite.cache.query.{CacheQuerySqlField, CacheQueryTextField}
-import org.apache.ignite.internal.GridProductImpl
-import org.apache.ignite.{IgniteState, IgniteDataLoader, Ignition, Ignite}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
+import org.apache.ignite.internal.GridProductImpl
+import org.apache.ignite.{Ignite, IgniteDataLoader, IgniteState, Ignition}
 import org.jetbrains.annotations.Nullable
+
+import java.net.URL
 import java.util.UUID
-import annotation.meta.field
+
+import scala.annotation.meta.field
 
 /**
  * {{{
@@ -67,7 +69,7 @@ import annotation.meta.field
  * Scalar needs to be imported in a proper way so that necessary objects and implicit
  * conversions got available in the scope:
  * <pre name="code" class="scala">
- * import org.gridgain.scalar._
+ * import org.apache.ignite.scalar._
  * import scalar._
  * </pre>
  * This way you import object `scalar` as well as all methods declared or inherited in that

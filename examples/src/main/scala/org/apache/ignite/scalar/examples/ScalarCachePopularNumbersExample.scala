@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
-import javax.cache.processor.{MutableEntry, EntryProcessor}
-
-import org.apache.ignite.dataload.IgniteDataLoadCacheUpdater
+import org.apache.ignite.IgniteCheckedException
 import org.apache.ignite.examples.datagrid.CacheNodeStartup
-import org.apache.ignite.{IgniteCache, IgniteCheckedException}
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 
-import java.util
 import java.util.Timer
-import java.util.Map.Entry
-
-import org.gridgain.scalar.scalar
-import org.gridgain.scalar.scalar._
 
 import scala.util.Random
 

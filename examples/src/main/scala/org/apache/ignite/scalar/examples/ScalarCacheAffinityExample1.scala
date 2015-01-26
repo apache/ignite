@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
+import org.apache.ignite._
 import org.apache.ignite.cache.CacheName
 import org.apache.ignite.cache.affinity.CacheAffinityKeyMapped
-import org.gridgain.scalar.scalar
-import scalar._
-import org.apache.ignite._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 import org.jetbrains.annotations.Nullable
+
 import java.util.concurrent.Callable
 
 /**
