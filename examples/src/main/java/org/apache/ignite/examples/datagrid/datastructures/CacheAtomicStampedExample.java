@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.examples.datagrid.*;
 import org.apache.ignite.lang.*;
 

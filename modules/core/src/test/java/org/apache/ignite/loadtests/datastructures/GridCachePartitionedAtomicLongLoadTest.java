@@ -20,7 +20,6 @@ package org.apache.ignite.loadtests.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;

@@ -20,7 +20,6 @@ package org.apache.ignite.examples.misc.client.memcache;
 import net.spy.memcached.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 
 import java.io.*;
 import java.net.*;

@@ -58,8 +58,11 @@ public class GridCacheUtils {
     /**  Hadoop syste cache name. */
     public static final String SYS_CACHE_HADOOP_MR = "gg-hadoop-mr-sys-cache";
 
-    /** Security system cache name. */
+    /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
+
+    /** Atomics system cache name. */
+    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-cache";
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
@@ -1522,10 +1525,18 @@ public class GridCacheUtils {
 
     /**
      * @param cacheName Cache name.
+     * @return {@code True} if this is security system cache.
+     */
+    public static boolean isAtomicsCache(String cacheName) {
+        return ATOMICS_CACHE_NAME.equals(cacheName);
+    }
+
+    /**
+     * @param cacheName Cache name.
      * @return {@code True} if system cache.
      */
     public static boolean isSystemCache(String cacheName) {
-        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName);
+        return isUtilityCache(cacheName) || isHadoopSystemCache(cacheName) || isAtomicsCache(cacheName);
     }
 
     /**

@@ -1852,7 +1852,11 @@ public class GridGainEx {
 
             CacheConfiguration[] cacheCfgs = cfg.getCacheConfiguration();
 
-            boolean hasHadoop = IgniteComponentType.HADOOP.inClassPath();
+            final boolean hasHadoop = IgniteComponentType.HADOOP.inClassPath();
+
+            final boolean hasAtomics = cfg.getAtomicConfiguration() != null;
+
+            final boolean clientDisco = discoSpi instanceof TcpClientDiscoverySpi;
 
             CacheConfiguration[] copies;
 
@@ -1867,32 +1871,58 @@ public class GridGainEx {
                         throw new IgniteCheckedException("Cache name cannot be \"" + CU.SYS_CACHE_HADOOP_MR +
                             "\" because it is reserved for internal purposes.");
 
+                    if (CU.isAtomicsCache(ccfg.getName()))
+                        throw new IgniteCheckedException("Cache name cannot be \"" + CU.ATOMICS_CACHE_NAME +
+                            "\" because it is reserved for internal purposes.");
+
                     if (CU.isUtilityCache(ccfg.getName()))
                         throw new IgniteCheckedException("Cache name cannot start with \"" + CU.UTILITY_CACHE_NAME +
                             "\" because this prefix is reserved for internal purposes.");
                 }
 
-                copies = new CacheConfiguration[cacheCfgs.length + (hasHadoop ? 2 : 1)];
+                int addCacheCnt = 1; // Always add utility cache.
+
+                if (hasHadoop)
+                    addCacheCnt++;
+
+                if (hasAtomics)
+                    addCacheCnt++;
+
+                copies = new CacheConfiguration[cacheCfgs.length + addCacheCnt];
 
                 int cloneIdx = 1;
 
                 if (hasHadoop)
                     copies[cloneIdx++] = CU.hadoopSystemCache();
 
+                if (hasAtomics)
+                    copies[cloneIdx++] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
+
                 for (CacheConfiguration ccfg : cacheCfgs)
                     copies[cloneIdx++] = new CacheConfiguration(ccfg);
             }
-            else if (hasHadoop) {
-                // Populate system caches
-                copies = new CacheConfiguration[hasHadoop ? 2 : 1];
+            else {
+                int cacheCnt = 1; // Always add utility cache.
 
-                copies[1] = CU.hadoopSystemCache();
+                if (hasHadoop)
+                    cacheCnt++;
+
+                if (hasAtomics)
+                    cacheCnt++;
+
+                copies = new CacheConfiguration[cacheCnt];
+
+                int cacheIdx = 1;
+
+                if (hasHadoop)
+                    copies[cacheIdx] = CU.hadoopSystemCache();
+
+                if (hasAtomics)
+                    copies[cacheIdx] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
             }
-            else
-                copies = new CacheConfiguration[1];
 
             // Always add utility cache.
-            copies[0] = utilitySystemCache(discoSpi instanceof TcpClientDiscoverySpi);
+            copies[0] = utilitySystemCache(clientDisco);
 
             myCfg.setCacheConfiguration(copies);
 
@@ -2066,7 +2096,7 @@ public class GridGainEx {
          * @param client If {@code true} creates client-only cache configuration.
          * @return Utility system cache configuration.
          */
-        private CacheConfiguration utilitySystemCache(boolean client) {
+        private static CacheConfiguration utilitySystemCache(boolean client) {
             CacheConfiguration cache = new CacheConfiguration();
 
             cache.setName(CU.UTILITY_CACHE_NAME);
@@ -2082,6 +2112,28 @@ public class GridGainEx {
                 cache.setDistributionMode(CLIENT_ONLY);
 
             return cache;
+        }
+
+        /**
+         * Creates cache configuration for atomic data structures.
+         *
+         * @param cfg Atomic configuration.
+         * @param client If {@code true} creates client-only cache configuration.
+         * @return Cache configuration for atomic data structures.
+         */
+        private static CacheConfiguration atomicsSystemCache(IgniteAtomicConfiguration cfg, boolean client) {
+            CacheConfiguration ccfg = new CacheConfiguration();
+
+            ccfg.setName(CU.ATOMICS_CACHE_NAME);
+
+            ccfg.setCacheMode(cfg.isReplicated() ? REPLICATED : PARTITIONED);
+
+            if (!cfg.isReplicated())
+                ccfg.setBackups(cfg.getBackups());
+
+            ccfg.setDistributionMode(client ? NEAR_ONLY : NEAR_PARTITIONED);
+
+            return ccfg;
         }
 
         /**

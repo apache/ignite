@@ -319,6 +319,57 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteCheckedException {
+        assert g != null;
+
+        return g.atomicSequence(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
+        throws IgniteCheckedException {
+        assert g != null;
+
+        return g.atomicLong(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
+        @Nullable T initVal,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        assert g != null;
+
+        return g.atomicReference(name, initVal, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name,
+        @Nullable T initVal,
+        @Nullable S initStamp,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        assert g != null;
+
+        return g.atomicStamped(name, initVal, initStamp, create);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteCountDownLatch countDownLatch(String name,
+        int cnt,
+        boolean autoDel,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        assert g != null;
+
+        return g.countDownLatch(name, cnt, autoDel, create);
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
         g.close();
     }

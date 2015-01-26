@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.util.typedef.*;
 
 import java.util.*;

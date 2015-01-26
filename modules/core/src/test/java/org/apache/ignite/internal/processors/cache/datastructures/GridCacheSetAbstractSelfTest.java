@@ -24,6 +24,7 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -96,7 +97,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < gridCount(); i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            GridCacheDataStructuresManager ds = grid.internalCache(null).context().dataStructures();
+            CacheDataStructuresProcessor ds = grid.internalCache(null).context().dataStructures();
 
             Map map = GridTestUtils.getFieldValue(ds, "setsMap");
 

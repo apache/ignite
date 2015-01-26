@@ -300,6 +300,78 @@ public interface Ignite extends AutoCloseable {
     public Collection<IgniteStreamer> streamers();
 
     /**
+     * Will get an atomic sequence from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Sequence name.
+     * @param initVal Initial value for sequence. If sequence already cached, {@code initVal} will be ignored.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Sequence for the given name.
+     * @throws IgniteCheckedException If sequence could not be fetched or created.
+     */
+    @Nullable public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
+        throws IgniteCheckedException;
+
+    /**
+     * Will get a atomic long from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Name of atomic long.
+     * @param initVal Initial value for atomic long. If atomic long already cached, {@code initVal}
+     *        will be ignored.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic long.
+     * @throws IgniteCheckedException If atomic long could not be fetched or created.
+     */
+    @Nullable public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
+        throws IgniteCheckedException;
+
+    /**
+     * Will get a atomic reference from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic reference name.
+     * @param initVal Initial value for atomic reference. If atomic reference already cached,
+     *      {@code initVal} will be ignored.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic reference for the given name.
+     * @throws IgniteCheckedException If atomic reference could not be fetched or created.
+     */
+    @Nullable public <T> IgniteAtomicReference<T> atomicReference(String name, @Nullable T initVal, boolean create)
+        throws IgniteCheckedException;
+
+    /**
+     * Will get a atomic stamped from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Atomic stamped name.
+     * @param initVal Initial value for atomic stamped. If atomic stamped already cached,
+     *      {@code initVal} will be ignored.
+     * @param initStamp Initial stamp for atomic stamped. If atomic stamped already cached,
+     *      {@code initStamp} will be ignored.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Atomic stamped for the given name.
+     * @throws IgniteCheckedException If atomic stamped could not be fetched or created.
+     */
+    @Nullable public <T, S> IgniteAtomicStamped<T, S> atomicStamped(String name, @Nullable T initVal,
+        @Nullable S initStamp, boolean create) throws IgniteCheckedException;
+
+    /**
+     * Gets or creates count down latch. If count down latch is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name and count parameter.
+     *
+     * @param name Name of the latch.
+     * @param cnt Count for new latch creation.
+     * @param autoDel {@code True} to automatically delete latch from cache
+     *      when its count reaches zero.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Count down latch for the given name.
+     * @throws IgniteCheckedException If operation failed.
+     */
+    @Nullable public IgniteCountDownLatch countDownLatch(String name, int cnt, boolean autoDel, boolean create)
+        throws IgniteCheckedException;
+
+    /**
      * Gets an instance of deployed Ignite plugin.
      *
      * @param name Plugin name.

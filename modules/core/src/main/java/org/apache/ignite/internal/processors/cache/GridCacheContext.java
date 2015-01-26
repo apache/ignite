@@ -23,6 +23,7 @@ import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -33,7 +34,6 @@ import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.managers.swapspace.*;
-import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -118,7 +118,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheEvictionManager<K, V> evictMgr;
 
     /** Data structures manager. */
-    private GridCacheDataStructuresManager<K, V> dataStructuresMgr;
+    private CacheDataStructuresProcessor<K, V> dataStructuresMgr;
 
     /** Eager TTL manager. */
     private GridCacheTtlManager<K, V> ttlMgr;
@@ -230,7 +230,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
-        GridCacheDataStructuresManager<K, V> dataStructuresMgr,
+        CacheDataStructuresProcessor<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
         CacheJtaManagerAdapter<K, V> jtaMgr) {
@@ -886,7 +886,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Data structures manager.
      */
-    public GridCacheDataStructuresManager<K, V> dataStructures() {
+    public CacheDataStructuresProcessor<K, V> dataStructures() {
         return dataStructuresMgr;
     }
 
