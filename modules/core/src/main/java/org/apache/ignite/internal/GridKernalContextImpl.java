@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.processors.streamer.*;
@@ -263,6 +264,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
+    private CacheDataStructuresProcessor dataStructuresProc;
+
+    /** */
+    @GridToStringExclude
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
@@ -450,6 +455,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
             qryProc = (GridQueryProcessor)comp;
+        else if (comp instanceof CacheDataStructuresProcessor)
+            dataStructuresProc = (CacheDataStructuresProcessor)comp;
         else
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
@@ -704,6 +711,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridQueryProcessor query() {
         return qryProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheDataStructuresProcessor dataStructures() {
+        return dataStructuresProc;
     }
 
     /** {@inheritDoc} */

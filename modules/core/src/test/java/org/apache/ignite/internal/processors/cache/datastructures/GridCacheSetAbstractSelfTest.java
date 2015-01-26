@@ -97,13 +97,13 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < gridCount(); i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            CacheDataStructuresProcessor ds = grid.internalCache(null).context().dataStructures();
-
-            Map map = GridTestUtils.getFieldValue(ds, "setsMap");
+            Map map = GridTestUtils.getFieldValue(grid.context().dataStructures(), "setsMap");
 
             assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
 
-            map = GridTestUtils.getFieldValue(ds, "setDataMap");
+            CacheDataStructuresManager dsMgr = grid.internalCache(null).context().dataStructures();
+
+            map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
             assertEquals("Set data not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
         }

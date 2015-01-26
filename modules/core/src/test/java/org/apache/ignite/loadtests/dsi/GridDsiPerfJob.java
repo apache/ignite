@@ -303,11 +303,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private long getId() throws IgniteCheckedException {
-        GridCache<Object, Object> cache = ignite.cache(cacheName);
-
-        assert cache != null;
-
-        IgniteAtomicSequence seq = cache.dataStructures().atomicSequence("ID", 0, true);
+        IgniteAtomicSequence seq = ignite.atomicSequence("ID", 0, true);
 
         return seq.incrementAndGet();
     }

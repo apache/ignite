@@ -34,13 +34,20 @@ public class GridCachePartitionedSequenceMultiNodeSelfTest extends GridCacheSequ
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setBackups(1);
+        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
+
+        cfg.setAtomicConfiguration(atomicCfg);
+
         // Default cache configuration.
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setDistributionMode(NEAR_PARTITIONED);
 

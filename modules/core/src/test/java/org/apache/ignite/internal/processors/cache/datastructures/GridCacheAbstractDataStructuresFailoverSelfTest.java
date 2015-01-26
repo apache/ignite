@@ -19,23 +19,29 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Failover tests for cache data structures.
  */
-public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends GridCommonAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
 
@@ -51,21 +57,41 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
     /** */
     private static final int TOP_CHANGE_THREAD_CNT = 3;
 
+    /** */
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    /**
+     * @return Cache mode.
+     */
+    protected abstract CacheMode cacheMode();
+
+    /**
+     * @return Grids count to start.
+     */
+    public int gridCount() {
         return 3;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPreloadMode(SYNC);
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
+
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(cacheMode());
+
+        cfg.setAtomicConfiguration(atomicCfg);
 
         return cfg;
     }
@@ -97,17 +123,17 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      */
     public void testAtomicLongTopologyChange() throws Exception {
         try {
-            cache().dataStructures().atomicLong(STRUCTURE_NAME, 10, true);
+            grid(0).atomicLong(STRUCTURE_NAME, 10, true);
 
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 10, true).get() == 10;
+            assert g.atomicLong(STRUCTURE_NAME, 10, true).get() == 10;
 
-            assert g.cache(null).dataStructures().atomicLong(STRUCTURE_NAME, 10, true).addAndGet(10) == 20;
+            assert g.atomicLong(STRUCTURE_NAME, 10, true).addAndGet(10) == 20;
 
             stopGrid(NEW_GRID_NAME);
 
-            assert cache().dataStructures().atomicLong(STRUCTURE_NAME, 10, true).get() == 20;
+            assert grid(0).atomicLong(STRUCTURE_NAME, 10, true).get() == 20;
         }
         finally {
             cache().dataStructures().removeAtomicLong(STRUCTURE_NAME);
@@ -785,19 +811,14 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testAtomicSequenceTopologyChange() throws Exception {
-        try {
-            cache().dataStructures().atomicSequence(STRUCTURE_NAME, 10, true);
-
+        try (IgniteAtomicSequence s = grid().atomicSequence(STRUCTURE_NAME, 10, true)) {
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            assert g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 10, false).get() == 1010;
+            assert g.atomicSequence(STRUCTURE_NAME, 10, false).get() == 1010;
 
-            assert g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 10, false).addAndGet(10) == 1020;
+            assert g.atomicSequence(STRUCTURE_NAME, 10, false).addAndGet(10) == 1020;
 
             stopGrid(NEW_GRID_NAME);
-        }
-        finally {
-            cache().dataStructures().removeAtomicSequence(STRUCTURE_NAME);
         }
     }
 
@@ -805,9 +826,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testAtomicSequenceConstantTopologyChange() throws Exception {
-        try {
-            IgniteAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
-
+        try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 1, true)) {
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
@@ -817,8 +836,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                             try {
                                 Ignite g = startGrid(name);
 
-                                assertTrue(g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1, false).
-                                    get() > 0);
+                                assertTrue(g.atomicSequence(STRUCTURE_NAME, 1, false).get() > 0);
                             }
                             finally {
                                 if (i != TOP_CHANGE_CNT - 1)
@@ -845,9 +863,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             }
 
             fut.get();
-        }
-        finally {
-            cache().dataStructures().removeAtomicSequence(STRUCTURE_NAME);
         }
     }
 
@@ -887,8 +902,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
                     private Ignite g;
 
                     @Override public Object call() throws Exception {
-                        IgniteAtomicSequence seq = g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1,
-                            true);
+                        IgniteAtomicSequence seq = g.atomicSequence(STRUCTURE_NAME, 1, true);
 
                         assert seq != null;
 
@@ -907,9 +921,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
      * @throws Exception If failed.
      */
     public void testAtomicSequenceConstantMultipleTopologyChange() throws Exception {
-        try {
-            IgniteAtomicSequence s = cache().dataStructures().atomicSequence(STRUCTURE_NAME, 1, true);
-
+        try (IgniteAtomicSequence s = grid(0).atomicSequence(STRUCTURE_NAME, 1, true)) {
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
                 @Override public void apply() {
                     try {
@@ -924,8 +936,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
 
                                     Ignite g = startGrid(name);
 
-                                    assertTrue(g.cache(null).dataStructures().atomicSequence(STRUCTURE_NAME, 1, false)
-                                        .get() > 0);
+                                    assertTrue(g.atomicSequence(STRUCTURE_NAME, 1, false).get() > 0);
                                 }
                             }
                             finally {
@@ -954,9 +965,6 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Gr
             }
 
             fut.get();
-        }
-        finally {
-            cache().dataStructures().removeAtomicSequence(STRUCTURE_NAME);
         }
     }
 

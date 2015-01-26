@@ -151,7 +151,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
     public void testMarshalling() throws Exception {
         String seqName = UUID.randomUUID().toString();
 
-        final IgniteAtomicSequence seq = grid(0).cache(null).dataStructures().atomicSequence(seqName, 0, true);
+        final IgniteAtomicSequence seq = grid(0).atomicSequence(seqName, 0, true);
 
         grid(1).compute().run(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
@@ -207,7 +207,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
             if (log.isInfoEnabled())
                 log.info("Running IncrementAndGetJob on node: " + ignite.cluster().localNode().id());
 
-            IgniteAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence(seqName, 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence(seqName, 0, true);
 
             assert seq != null;
 
@@ -261,7 +261,7 @@ public abstract class GridCacheSequenceMultiNodeAbstractSelfTest extends GridCom
             if (log.isInfoEnabled())
                 log.info("Running GetAndIncrementJob on node: " + ignite.cluster().localNode().id());
 
-            IgniteAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence(seqName, 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence(seqName, 0, true);
 
             assert seq != null;
 

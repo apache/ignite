@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -638,7 +639,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
             GridCacheQueryManager qryMgr = queryManager(cfg);
             GridCacheContinuousQueryManager contQryMgr = new GridCacheContinuousQueryManager();
-            CacheDataStructuresProcessor dataStructuresMgr = new CacheDataStructuresProcessor();
+            CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
             GridCacheTtlManager ttlMgr = new GridCacheTtlManager();
             GridCacheDrManager drMgr = ctx.createComponent(GridCacheDrManager.class);
 
@@ -1148,10 +1149,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             "Transaction manager lookup", locAttr.transactionManagerLookupClassName(),
                             rmtAttr.transactionManagerLookupClassName(), false);
 
-                        CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "atomicSequenceReserveSize",
-                            "Atomic sequence reserve size", locAttr.sequenceReserveSize(),
-                            rmtAttr.sequenceReserveSize(), false);
-
                         CU.checkAttributeMismatch(log, rmtAttr.cacheName(), rmt, "defaultLockTimeout",
                             "Default lock timeout", locAttr.defaultLockTimeout(), rmtAttr.defaultLockTimeout(), false);
 
@@ -1644,6 +1641,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public <K, V> GridCache<K, V> utilityCache() {
         return cache(CU.UTILITY_CACHE_NAME);
+    }
+
+    /**
+     * Gets utility cache.
+     *
+     * @return Utility cache.
+     */
+    public <K, V> GridCache<K, V> atomicsCache() {
+        return cache(CU.ATOMICS_CACHE_NAME);
     }
 
     /**

@@ -17,21 +17,32 @@
 
 package org.apache.ignite.configuration;
 
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.cache.*;
+
+import static org.apache.ignite.cache.CacheMode.*;
+
 /**
- *
+ * Configuration for atomic data structures.
  */
 public class IgniteAtomicConfiguration {
     /** */
     public static final int DFLT_BACKUPS = 0;
 
     /** */
-    public static final boolean DFLT_REPLICATED = false;
+    public static final CacheMode DFLT_CACHE_MODE = PARTITIONED;
+
+    /** Default atomic sequence reservation size. */
+    public static final int DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE = 1000;
+
+    /** Default batch size for all cache's sequences. */
+    private int seqReserveSize = DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE;
+
+    /** Cache mode. */
+    private CacheMode cacheMode = DFLT_CACHE_MODE;
 
     /** */
     private int backups = DFLT_BACKUPS;
-
-    /** */
-    private boolean replicated = DFLT_REPLICATED;
 
     public int getBackups() {
         return backups;
@@ -41,11 +52,36 @@ public class IgniteAtomicConfiguration {
         this.backups = backups;
     }
 
-    public boolean isReplicated() {
-        return replicated;
+    public CacheMode getCacheMode() {
+        return cacheMode;
     }
 
-    public void setReplicated(boolean replicated) {
-        this.replicated = replicated;
+    public void setCacheMode(CacheMode cacheMode) {
+        this.cacheMode = cacheMode;
+    }
+
+    /**
+     * Gets default number of sequence values reserved for {@link IgniteAtomicSequence} instances. After
+     * a certain number has been reserved, consequent increments of sequence will happen locally,
+     * without communication with other nodes, until the next reservation has to be made.
+     * <p>
+     * Default value is {@link #DFLT_ATOMIC_SEQUENCE_RESERVE_SIZE}.
+     *
+     * @return Atomic sequence reservation size.
+     */
+    public int getAtomicSequenceReserveSize() {
+        return seqReserveSize;
+    }
+
+    /**
+     * Sets default number of sequence values reserved for {@link IgniteAtomicSequence} instances. After a certain
+     * number has been reserved, consequent increments of sequence will happen locally, without communication with other
+     * nodes, until the next reservation has to be made.
+     *
+     * @param seqReserveSize Atomic sequence reservation size.
+     * @see #getAtomicSequenceReserveSize()
+     */
+    public void setAtomicSequenceReserveSize(int seqReserveSize) {
+        this.seqReserveSize = seqReserveSize;
     }
 }

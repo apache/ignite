@@ -31,21 +31,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  */
 public class GridCachePartitionedSequenceApiSelfTest extends GridCacheSequenceApiSelfAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteAtomicConfiguration atomicConfiguration() {
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
 
-        // Default cache configuration.
-        CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
+        atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setBackups(1);
+        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 
-        dfltCacheCfg.setCacheMode(PARTITIONED);
-        dfltCacheCfg.setBackups(1);
-        dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
-        dfltCacheCfg.setAtomicityMode(TRANSACTIONAL);
-        dfltCacheCfg.setDistributionMode(NEAR_PARTITIONED);
-
-        cfg.setCacheConfiguration(dfltCacheCfg);
-
-        return cfg;
+        return atomicCfg;
     }
 }

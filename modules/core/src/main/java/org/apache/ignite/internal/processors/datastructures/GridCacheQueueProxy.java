@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -36,9 +37,9 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Deserialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<GridCacheContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridCacheContext, String>>() {
-            @Override protected IgniteBiTuple<GridCacheContext, String> initialValue() {
+    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
+        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
+            @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
                 return F.t2();
             }
         };
@@ -706,15 +707,15 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(cctx);
+        out.writeObject(cctx.kernalContext());
         U.writeString(out, name());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<GridCacheContext, String> t = stash.get();
+        IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-        t.set1((GridCacheContext)in.readObject());
+        t.set1((GridKernalContext)in.readObject());
         t.set2(U.readString(in));
     }
 
@@ -726,7 +727,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<GridCacheContext, String> t = stash.get();
+            IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
             return t.get1().dataStructures().queue(t.get2(), 0, false, false);
         }

@@ -99,6 +99,13 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
         c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setAtomicSequenceReserveSize(100000);
+        atomicCfg.setCacheMode(mode);
+
+        c.setAtomicConfiguration(atomicCfg);
+
         if (cacheOn) {
             CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -109,7 +116,6 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
             cc.setEvictNearSynchronized(false);
             cc.setSwapEnabled(false);
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setAtomicSequenceReserveSize(100000);
             cc.setPreloadMode(NONE);
 
             c.setCacheConfiguration(cc);
@@ -145,7 +151,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             Ignite srvr1 = startGrid("server1");
 
-            srvr1.cache(null).dataStructures().atomicSequence("ID", 0, true);
+            srvr1.atomicSequence("ID", 0, true);
 
             startGrid("server2");
 
@@ -663,7 +669,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
          * @throws IgniteCheckedException If failed.
          */
         private long getId() throws IgniteCheckedException {
-            IgniteAtomicSequence seq = ignite.cache(null).dataStructures().atomicSequence("ID", 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence("ID", 0, true);
+
             return seq.incrementAndGet();
         }
 

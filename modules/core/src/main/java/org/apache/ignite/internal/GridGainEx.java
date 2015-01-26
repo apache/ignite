@@ -1425,6 +1425,7 @@ public class GridGainEx {
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
+            myCfg.setAtomicConfiguration(cfg.getAtomicConfiguration());
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 
@@ -2125,13 +2126,21 @@ public class GridGainEx {
             CacheConfiguration ccfg = new CacheConfiguration();
 
             ccfg.setName(CU.ATOMICS_CACHE_NAME);
+            ccfg.setAtomicityMode(TRANSACTIONAL);
+            ccfg.setSwapEnabled(false);
+            ccfg.setQueryIndexEnabled(false);
+            ccfg.setPreloadMode(SYNC);
+            ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-            ccfg.setCacheMode(cfg.isReplicated() ? REPLICATED : PARTITIONED);
+            ccfg.setCacheMode(cfg.getCacheMode());
 
-            if (!cfg.isReplicated())
+            if (cfg.getCacheMode() == PARTITIONED) {
                 ccfg.setBackups(cfg.getBackups());
 
-            ccfg.setDistributionMode(client ? NEAR_ONLY : NEAR_PARTITIONED);
+                ccfg.setDistributionMode(client ? NEAR_ONLY : NEAR_PARTITIONED);
+            }
+            else
+                ccfg.setDistributionMode(client ? NEAR_ONLY : PARTITIONED_ONLY);
 
             return ccfg;
         }

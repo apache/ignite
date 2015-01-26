@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.plugin.*;
@@ -438,6 +439,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Time source.
      */
     public GridClockSource timeSource();
+
+    /**
+     * Gets data structures processor.
+     *
+     * @return Data structures processor.
+     */
+    public CacheDataStructuresProcessor dataStructures();
 
     /**
      * Sets segmented flag to {@code true} when node is stopped due to segmentation issues.

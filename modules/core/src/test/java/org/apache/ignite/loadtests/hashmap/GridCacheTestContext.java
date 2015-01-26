@@ -20,12 +20,12 @@ package org.apache.ignite.loadtests.hashmap;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.dr.os.*;
 import org.apache.ignite.internal.processors.cache.jta.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.testframework.junits.*;
 
 import java.util.*;
@@ -64,7 +64,7 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             new GridCacheLocalQueryManager<K, V>(),
             new GridCacheContinuousQueryManager<K, V>(),
             new GridCacheAffinityManager<K, V>(),
-            new CacheDataStructuresProcessor<K, V>(),
+            new CacheDataStructuresManager<K, V>(),
             new GridCacheTtlManager<K, V>(),
             new GridOsCacheDrManager<K, V>(),
             new CacheNoopJtaManager<K, V>());

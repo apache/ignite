@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import org.apache.ignite.*;
 
+import java.io.*;
+
 /**
  * This interface provides a rich API for working with distributed atomic sequence.
  * <p>
@@ -52,12 +54,12 @@ import org.apache.ignite.*;
  * <h1 class="header">Creating Distributed Atomic Sequence</h1>
  * Instance of distributed atomic sequence can be created by calling the following method:
  * <ul>
- *     <li>{@link org.apache.ignite.cache.datastructures.CacheDataStructures#atomicSequence(String, long, boolean)}</li>
+ *     <li>{@link Ignite#atomicSequence(String, long, boolean)}</li>
  * </ul>
  * @see org.apache.ignite.cache.datastructures.CacheDataStructures#atomicSequence(String, long, boolean)
  * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeAtomicSequence(String)
  */
-public interface IgniteAtomicSequence {
+public interface IgniteAtomicSequence extends Closeable {
     /**
      * Name of atomic sequence.
      *
@@ -127,4 +129,9 @@ public interface IgniteAtomicSequence {
      * @return {@code true} if atomic sequence was removed from cache, {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Removes atomic sequence.
+     */
+    @Override void close();
 }

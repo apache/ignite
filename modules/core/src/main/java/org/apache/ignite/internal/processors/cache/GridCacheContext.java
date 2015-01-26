@@ -23,6 +23,7 @@ import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
@@ -118,7 +119,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private GridCacheEvictionManager<K, V> evictMgr;
 
     /** Data structures manager. */
-    private CacheDataStructuresProcessor<K, V> dataStructuresMgr;
+    private CacheDataStructuresManager<K, V> dataStructuresMgr;
 
     /** Eager TTL manager. */
     private GridCacheTtlManager<K, V> ttlMgr;
@@ -230,7 +231,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheQueryManager<K, V> qryMgr,
         GridCacheContinuousQueryManager<K, V> contQryMgr,
         GridCacheAffinityManager<K, V> affMgr,
-        CacheDataStructuresProcessor<K, V> dataStructuresMgr,
+        CacheDataStructuresManager<K, V> dataStructuresMgr,
         GridCacheTtlManager<K, V> ttlMgr,
         GridCacheDrManager<K, V> drMgr,
         CacheJtaManagerAdapter<K, V> jtaMgr) {
@@ -886,7 +887,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Data structures manager.
      */
-    public CacheDataStructuresProcessor<K, V> dataStructures() {
+    public CacheDataStructuresManager<K, V> dataStructures() {
         return dataStructuresMgr;
     }
 

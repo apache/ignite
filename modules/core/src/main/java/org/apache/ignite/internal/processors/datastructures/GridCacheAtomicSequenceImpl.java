@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -45,9 +46,9 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
     private static final long serialVersionUID = 0L;
 
     /** De-serialization stash. */
-    private static final ThreadLocal<IgniteBiTuple<GridCacheContext, String>> stash =
-        new ThreadLocal<IgniteBiTuple<GridCacheContext, String>>() {
-            @Override protected IgniteBiTuple<GridCacheContext, String> initialValue() {
+    private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
+        new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
+            @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
                 return F.t2();
             }
         };
@@ -108,18 +109,24 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      * @param key Sequence key.
      * @param seqView Sequence projection.
      * @param ctx CacheContext.
+     * @param batchSize Sequence batch size.
      * @param locVal Local counter.
      * @param upBound Upper bound.
      */
-    public GridCacheAtomicSequenceImpl(String name, GridCacheInternalKey key,
+    public GridCacheAtomicSequenceImpl(String name,
+        GridCacheInternalKey key,
         CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView,
-        GridCacheContext ctx, long locVal, long upBound) {
+        GridCacheContext ctx,
+        int batchSize,
+        long locVal,
+        long upBound)
+    {
         assert key != null;
         assert seqView != null;
         assert ctx != null;
         assert locVal <= upBound;
 
-        batchSize = ctx.config().getAtomicSequenceReserveSize();
+        this.batchSize = batchSize;
         this.ctx = ctx;
         this.key = key;
         this.seqView = seqView;
@@ -388,6 +395,19 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
         return rmvd;
     }
 
+    /** {@inheritDoc} */
+    @Override public void close() {
+        try {
+            if (rmvd)
+                return;
+
+            ctx.kernalContext().dataStructures().removeSequence(name);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      * Method returns callable for execution all update operations in async and sync mode.
      *
@@ -477,15 +497,15 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(ctx);
+        out.writeObject(ctx.kernalContext());
         out.writeUTF(name);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        IgniteBiTuple<GridCacheContext, String> t = stash.get();
+        IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-        t.set1((GridCacheContext)in.readObject());
+        t.set1((GridKernalContext)in.readObject());
         t.set2(in.readUTF());
     }
 
@@ -497,7 +517,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     private Object readResolve() throws ObjectStreamException {
         try {
-            IgniteBiTuple<GridCacheContext, String> t = stash.get();
+            IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
             return t.get1().dataStructures().sequence(t.get2(), 0L, false);
         }

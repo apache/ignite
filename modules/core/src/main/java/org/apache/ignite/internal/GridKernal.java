@@ -752,6 +752,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
                 IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)), attrs);
             startProcessor(ctx, new GridServiceProcessor(ctx), attrs);
+            startProcessor(ctx, new CacheDataStructuresProcessor(ctx), attrs);
 
             // Start plugins.
             for (PluginProvider provider : ctx.plugins().allProviders()) {
@@ -2235,18 +2236,18 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /**
      * Whether or not SMTP is configured. Note that SMTP is considered configured if
-     * SMTP host is provided in configuration (see {@link org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()}.
+     * SMTP host is provided in configuration (see {@link IgniteConfiguration#getSmtpHost()}.
      * <p>
      * If SMTP is not configured all emails notifications will be disabled.
      *
      * @return {@code True} if SMTP is configured - {@code false} otherwise.
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpFromEmail()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPassword()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPort()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpUsername()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpSsl()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpStartTls()
+     * @see IgniteConfiguration#getSmtpFromEmail()
+     * @see IgniteConfiguration#getSmtpHost()
+     * @see IgniteConfiguration#getSmtpPassword()
+     * @see IgniteConfiguration#getSmtpPort()
+     * @see IgniteConfiguration#getSmtpUsername()
+     * @see IgniteConfiguration#isSmtpSsl()
+     * @see IgniteConfiguration#isSmtpStartTls()
      * @see #sendAdminEmailAsync(String, String, boolean)
      */
     @Override public boolean isSmtpEnabled() {
@@ -2529,7 +2530,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      *      completes ok and its result value is {@code true} email was successfully sent. In all
      *      other cases - sending process has failed.
      * @see #isSmtpEnabled()
-     * @see org.apache.ignite.configuration.IgniteConfiguration#getAdminEmails()
+     * @see IgniteConfiguration#getAdminEmails()
      */
     @Override public IgniteFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
         A.notNull(subj, "subj");
@@ -3229,13 +3230,27 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicSequence atomicSequence(String name, long initVal, boolean create)
         throws IgniteCheckedException {
-        return null;
+        guard();
+
+        try {
+            return ctx.dataStructures().sequence(name, initVal, create);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteAtomicLong atomicLong(String name, long initVal, boolean create)
         throws IgniteCheckedException {
-        return null;
+        guard();
+
+        try {
+            return ctx.dataStructures().atomicLong(name, initVal, create);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
@@ -3243,7 +3258,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         @Nullable T initVal,
         boolean create)
         throws IgniteCheckedException {
-        return null;
+        guard();
+
+        try {
+            return ctx.dataStructures().atomicReference(name, initVal, create);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
@@ -3251,7 +3273,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         @Nullable T initVal,
         @Nullable S initStamp,
         boolean create) throws IgniteCheckedException {
-        return null;
+        guard();
+
+        try {
+            return ctx.dataStructures().atomicStamped(name, initVal, initStamp, create);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /** {@inheritDoc} */
@@ -3259,7 +3288,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         int cnt,
         boolean autoDel,
         boolean create) throws IgniteCheckedException {
-        return null;
+        guard();
+
+        try {
+            return ctx.dataStructures().countDownLatch(name, cnt, autoDel, create);
+        }
+        finally {
+            unguard();
+        }
     }
 
     /**
@@ -3270,7 +3306,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @return Created component.
      * @throws IgniteCheckedException If failed to create component.
      */
-    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx) throws IgniteCheckedException {
+    private static <T extends GridComponent> T createComponent(Class<T> cls, GridKernalContext ctx)
+        throws IgniteCheckedException {
         assert cls.isInterface() : cls;
 
         T comp = ctx.plugins().createComponent(cls);

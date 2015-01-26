@@ -56,11 +56,9 @@ public class GridCacheMultiNodeDataStructureTest {
      * @throws IgniteCheckedException If failed.
      */
     private static void sample(Ignite g, String cacheName) throws IgniteCheckedException {
-        GridCache<Long, Object> cache = g.cache(cacheName);
+        IgniteAtomicLong atomicLong = g.atomicLong("keygen", 0, true);
 
-        IgniteAtomicLong atomicLong = cache.dataStructures().atomicLong("keygen", 0, true);
-
-        IgniteAtomicSequence seq = cache.dataStructures().atomicSequence("keygen", 0, true);
+        IgniteAtomicSequence seq = g.atomicSequence("keygen", 0, true);
 
         seq.incrementAndGet();
         seq.incrementAndGet();

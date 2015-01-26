@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -52,6 +53,14 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setBackups(1);
+        atomicCfg.setAtomicSequenceReserveSize(10);
+
+        c.setAtomicConfiguration(atomicCfg);
+
         c.getTransactionsConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionsConfiguration().setDefaultTxIsolation(REPEATABLE_READ);
 
@@ -64,7 +73,6 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
         cc.setEvictionPolicy(new CacheLruEvictionPolicy<>(1000));
         cc.setBackups(1);
         cc.setAffinity(new CacheConsistentHashAffinityFunction(true));
-        cc.setAtomicSequenceReserveSize(10);
         cc.setEvictSynchronized(true);
         cc.setEvictNearSynchronized(true);
 
@@ -105,7 +113,7 @@ public class GridCachePartitionedAtomicLongLoadTest extends GridCommonAbstractTe
 
             assert cache != null;
 
-            IgniteAtomicSequence seq = cache.dataStructures().atomicSequence("SEQUENCE", 0, true);
+            IgniteAtomicSequence seq = ignite.atomicSequence("SEQUENCE", 0, true);
 
             long start = System.currentTimeMillis();
 

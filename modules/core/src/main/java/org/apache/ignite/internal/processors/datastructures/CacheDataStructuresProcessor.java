@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -41,7 +43,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
@@ -50,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  * Manager of data structures.
  */
-public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAdapter<K, V> {
+public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /** Initial capacity. */
     private static final int INITIAL_CAPACITY = 10;
 
@@ -103,21 +104,64 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     private boolean initFlag;
 
     /** Set keys used for set iteration. */
-    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap
+        = new ConcurrentHashMap8<>();
 
     /** Sets map. */
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
+    /** */
+    private GridCacheContext atomicsCtx;
+
+    /** */
+    private final IgniteAtomicConfiguration cfg;
+
     /**
-     * Default constructor.
+     * @param ctx Context.
      */
-    public CacheDataStructuresProcessor() {
+    public CacheDataStructuresProcessor(GridKernalContext ctx) {
+        super(ctx);
+
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
         queuesMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
         setsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+
+        cfg = ctx.config().getAtomicConfiguration();
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void start() throws IgniteCheckedException {
+        super.start();
+
+        if (cfg != null) {
+            GridCache atomicsCache = ctx.cache().atomicsCache();
+
+            assert atomicsCache != null;
+
+            dsView = atomicsCache.projection(GridCacheInternal.class, GridCacheInternal.class).flagsOn(CLONE);
+
+            cntDownLatchView = atomicsCache.projection
+                (GridCacheInternalKey.class, GridCacheCountDownLatchValue.class).flagsOn(CLONE);
+
+            atomicLongView = atomicsCache.projection
+                (GridCacheInternalKey.class, GridCacheAtomicLongValue.class).flagsOn(CLONE);
+
+            atomicRefView = atomicsCache.projection
+                (GridCacheInternalKey.class, GridCacheAtomicReferenceValue.class).flagsOn(CLONE);
+
+            atomicStampedView = atomicsCache.projection
+                (GridCacheInternalKey.class, GridCacheAtomicStampedValue.class).flagsOn(CLONE);
+
+            seqView = atomicsCache.projection
+                (GridCacheInternalKey.class, GridCacheAtomicSequenceValue.class).flagsOn(CLONE);
+
+            atomicsCtx = ctx.cache().internalCache(CU.ATOMICS_CACHE_NAME).context();
+        }
+    }
+
+    /*
+    TODO IGNITE-6
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() {
         try {
@@ -151,10 +195,20 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
             initLatch.countDown();
         }
     }
+    */
 
     /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        super.onKernalStop0(cancel);
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        initFlag = true;
+
+        initLatch.countDown();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStop(boolean cancel) {
+        super.onKernalStop(cancel);
 
         busyLock.block();
 
@@ -184,7 +238,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
-        checkTransactionalWithNear();
+        checkAtomicsConfiguration();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -197,7 +251,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
 
             return CU.outTx(new Callable<IgniteAtomicSequence>() {
                 @Override public IgniteAtomicSequence call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
                             GridCacheAtomicSequenceValue.class);
 
@@ -214,8 +268,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             return null;
 
                         // We should use offset because we already reserved left side of range.
-                        long off = cctx.config().getAtomicSequenceReserveSize() > 1 ?
-                            cctx.config().getAtomicSequenceReserveSize() - 1 : 1;
+                        long off = cfg.getAtomicSequenceReserveSize() > 1 ? cfg.getAtomicSequenceReserveSize() - 1 : 1;
 
                         long upBound;
                         long locCntr;
@@ -241,8 +294,13 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                         dsView.putx(key, seqVal);
 
                         // Only one thread can be in the transaction scope and create sequence.
-                        seq = new GridCacheAtomicSequenceImpl(name, key, seqView, cctx,
-                            locCntr, upBound);
+                        seq = new GridCacheAtomicSequenceImpl(name,
+                            key,
+                            seqView,
+                            atomicsCtx,
+                            cfg.getAtomicSequenceReserveSize(),
+                            locCntr,
+                            upBound);
 
                         dsMap.put(key, seq);
 
@@ -258,7 +316,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                         throw e;
                     }
                 }
-            }, cctx);
+            }, atomicsCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get sequence by name: " + name, e);
@@ -274,8 +332,6 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      */
     public final boolean removeSequence(String name) throws IgniteCheckedException {
         waitInitialization();
-
-        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -301,7 +357,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
-        checkTransactionalWithNear();
+        checkAtomicsConfiguration();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -313,8 +369,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return atomicLong;
 
             return CU.outTx(new Callable<IgniteAtomicLong>() {
-                @Override public IgniteAtomicLong call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                @Override
+                public IgniteAtomicLong call() throws Exception {
+                    try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
 
@@ -336,7 +393,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             dsView.putx(key, val);
                         }
 
-                        a = new GridCacheAtomicLongImpl(name, key, atomicLongView, cctx);
+                        a = new GridCacheAtomicLongImpl(name, key, atomicLongView, atomicsCtx);
 
                         dsMap.put(key, a);
 
@@ -352,7 +409,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                         throw e;
                     }
                 }
-            }, cctx);
+            }, atomicsCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get atomic long by name: " + name, e);
@@ -368,8 +425,6 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      */
     public final boolean removeAtomicLong(String name) throws IgniteCheckedException {
         waitInitialization();
-
-        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -396,7 +451,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
-        checkTransactionalWithNear();
+        checkAtomicsConfiguration();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -408,8 +463,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return atomicRef;
 
             return CU.outTx(new Callable<IgniteAtomicReference<T>>() {
-                @Override public IgniteAtomicReference<T> call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                @Override
+                public IgniteAtomicReference<T> call() throws Exception {
+                    try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicReferenceValue val = cast(dsView.get(key),
                             GridCacheAtomicReferenceValue.class);
 
@@ -432,7 +488,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             dsView.putx(key, val);
                         }
 
-                        ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, cctx);
+                        ref = new GridCacheAtomicReferenceImpl(name, key, atomicRefView, atomicsCtx);
 
                         dsMap.put(key, ref);
 
@@ -448,7 +504,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                         throw e;
                     }
                 }
-            }, cctx);
+            }, atomicsCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get atomic reference by name: " + name, e);
@@ -464,8 +520,6 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      */
     public final boolean removeAtomicReference(String name) throws IgniteCheckedException {
         waitInitialization();
-
-        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -494,7 +548,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         final S initStamp, final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
-        checkTransactionalWithNear();
+        checkAtomicsConfiguration();
 
         final GridCacheInternalKeyImpl key = new GridCacheInternalKeyImpl(name);
 
@@ -506,8 +560,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return atomicStamped;
 
             return CU.outTx(new Callable<IgniteAtomicStamped<T, S>>() {
-                @Override public IgniteAtomicStamped<T, S> call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                @Override
+                public IgniteAtomicStamped<T, S> call() throws Exception {
+                    try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicStampedValue val = cast(dsView.get(key),
                             GridCacheAtomicStampedValue.class);
 
@@ -530,7 +585,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             dsView.putx(key, val);
                         }
 
-                        stmp = new GridCacheAtomicStampedImpl(name, key, atomicStampedView, cctx);
+                        stmp = new GridCacheAtomicStampedImpl(name, key, atomicStampedView, atomicsCtx);
 
                         dsMap.put(key, stmp);
 
@@ -546,7 +601,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                         throw e;
                     }
                 }
-            }, cctx);
+            }, atomicsCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get atomic stamped by name: " + name, e);
@@ -562,8 +617,6 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      */
     public final boolean removeAtomicStamped(String name) throws IgniteCheckedException {
         waitInitialization();
-
-        checkTransactionalWithNear();
 
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
@@ -589,6 +642,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         final boolean create) throws IgniteCheckedException {
         waitInitialization();
 
+        // TODO IGNITE-6
+        return null;
+        /*
         checkSupportsQueue();
 
         // Non collocated mode enabled only for PARTITIONED cache.
@@ -602,6 +658,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return queue0(name, cap, collocMode, create);
             }
         }, cctx);
+        */
     }
 
     /**
@@ -615,7 +672,11 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-    private <T> IgniteQueue<T> queue0(final String name, final int cap, boolean colloc, final boolean create)
+    private <T> IgniteQueue<T> queue0(GridCacheContext cctx,
+        final String name,
+        final int cap,
+        boolean colloc,
+        final boolean create)
         throws IgniteCheckedException {
         GridCacheQueueHeaderKey key = new GridCacheQueueHeaderKey(name);
 
@@ -715,6 +776,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     public final boolean removeQueue(final String name, final int batchSize) throws IgniteCheckedException {
         waitInitialization();
 
+        // TODO IGNITE-6
+        return false;
+        /*
         checkSupportsQueue();
 
         if (cctx.atomic())
@@ -725,15 +789,17 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return removeQueue0(name, batchSize);
             }
         }, cctx);
+        */
     }
 
     /**
+     * @param cctx Cache context.
      * @param name Queue name.
      * @param batchSize Batch size.
      * @return {@code True} if queue was removed.
      * @throws IgniteCheckedException If failed.
      */
-    private boolean removeQueue0(String name, final int batchSize) throws IgniteCheckedException {
+    private boolean removeQueue0(GridCacheContext cctx, String name, final int batchSize) throws IgniteCheckedException {
         GridCacheQueueHeader hdr = queueHdrView.remove(new GridCacheQueueHeaderKey(name));
 
         if (hdr == null)
@@ -774,7 +840,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
 
         waitInitialization();
 
-        checkTransactionalWithNear();
+        checkAtomicsConfiguration();
 
         final GridCacheInternalKey key = new GridCacheInternalKeyImpl(name);
 
@@ -787,7 +853,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
 
             return CU.outTx(new Callable<IgniteCountDownLatch>() {
                     @Override public IgniteCountDownLatch call() throws Exception {
-                        try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheCountDownLatchValue val = cast(dsView.get(key),
                                 GridCacheCountDownLatchValue.class);
 
@@ -810,7 +876,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             }
 
                             latch = new GridCacheCountDownLatchImpl(name, val.get(), val.initialCount(),
-                                val.autoDelete(), key, cntDownLatchView, cctx);
+                                val.autoDelete(), key, cntDownLatchView, atomicsCtx);
 
                             dsMap.put(key, latch);
 
@@ -826,7 +892,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             throw e;
                         }
                     }
-                }, cctx);
+                }, atomicsCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to get count down latch by name: " + name, e);
@@ -843,15 +909,13 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     public boolean removeCountDownLatch(final String name) throws IgniteCheckedException {
         waitInitialization();
 
-        checkTransactionalWithNear();
-
         try {
             return CU.outTx(
                 new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
                         GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-                        try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             // Check correctness type of removable object.
                             GridCacheCountDownLatchValue val =
                                 cast(dsView.get(key), GridCacheCountDownLatchValue.class);
@@ -878,8 +942,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                         }
                     }
                 },
-                cctx
-            );
+                atomicsCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to remove count down latch by name: " + name, e);
@@ -898,7 +961,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         return CU.outTx(
             new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    try (IgniteTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteTx tx = CU.txStartInternal(atomicsCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.
                         R val = cast(dsView.get(key), cls);
 
@@ -919,7 +982,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                     }
                 }
             },
-            cctx
+            atomicsCtx
         );
     }
 
@@ -928,8 +991,11 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      *
      * @param tx Committed transaction.
      */
-    public void onTxCommitted(IgniteTxEx<K, V> tx) {
-        if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
+    public <K, V> void onTxCommitted(IgniteTxEx<K, V> tx) {
+        if (atomicsCtx == null)
+            return;
+
+        if (!atomicsCtx.isDht() && tx.internal() && (!atomicsCtx.isColocated() || atomicsCtx.isReplicated())) {
             try {
                 waitInitialization();
             }
@@ -961,7 +1027,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                             latch0.onUpdate(val.get());
 
                             if (val.get() == 0 && val.autoDelete()) {
-                                entry.cached().markObsolete(cctx.versions().next());
+                                entry.cached().markObsolete(atomicsCtx.versions().next());
 
                                 dsMap.remove(key);
 
@@ -999,45 +1065,25 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
             U.await(initLatch);
 
         if (!initFlag)
-            throw new IgniteCheckedException("DataStructures manager was not properly initialized for cache: " +
-                cctx.cache().name());
+            throw new IgniteCheckedException("DataStructures processor was not properly initialized.");
     }
 
     /**
-     * @return {@code True} if cache is transactional with near cache enabled.
+     * @param cctx Cache context.
+     * @return {@code True} if {@link IgniteQueue} can be used with current cache configuration.
      */
-    private boolean transactionalWithNear() {
-        return cctx.transactional() && (CU.isNearEnabled(cctx) || cctx.isReplicated() || cctx.isLocal());
-    }
-
-
-    /**
-     * @return {@code True} if {@link org.apache.ignite.IgniteQueue} can be used with current cache configuration.
-     */
-    private boolean supportsQueue() {
+    private boolean supportsQueue(GridCacheContext cctx) {
         return !(cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK);
     }
 
     /**
-     * @throws IgniteCheckedException If {@link org.apache.ignite.IgniteQueue} can not be used with current cache configuration.
+     * @param cctx Cache context.
+     * @throws IgniteCheckedException If {@link IgniteQueue} can not be used with current cache configuration.
      */
-    private void checkSupportsQueue() throws IgniteCheckedException {
+    private void checkSupportsQueue(GridCacheContext cctx) throws IgniteCheckedException {
         if (cctx.atomic() && !cctx.isLocal() && cctx.config().getAtomicWriteOrderMode() == CLOCK)
             throw new IgniteCheckedException("IgniteQueue can not be used with ATOMIC cache with CLOCK write order mode" +
                 " (change write order mode to PRIMARY in configuration)");
-    }
-
-    /**
-     * @throws IgniteCheckedException If cache is not transactional with near cache enabled.
-     */
-    private void checkTransactionalWithNear() throws IgniteCheckedException {
-        if (cctx.atomic())
-            throw new IgniteCheckedException("Data structures require CacheAtomicityMode.TRANSACTIONAL atomicity mode " +
-                "(change atomicity mode from ATOMIC to TRANSACTIONAL in configuration)");
-
-        if (!cctx.isReplicated() && !cctx.isLocal() && !CU.isNearEnabled(cctx))
-            throw new IgniteCheckedException("Cache data structures can not be used with near cache disabled on cache: " +
-                cctx.cache().name());
     }
 
     /**
@@ -1053,6 +1099,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         throws IgniteCheckedException {
         waitInitialization();
 
+        // TODO IGNITE-6.
+        return null;
+        /*
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean collocMode = cctx.cache().configuration().getCacheMode() != PARTITIONED || collocated;
 
@@ -1064,6 +1113,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return set0(name, collocMode, create);
             }
         }, cctx);
+        */
     }
 
     /**
@@ -1076,6 +1126,9 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     public boolean removeSet(final String name) throws IgniteCheckedException {
         waitInitialization();
 
+        // TODO IGNITE-6.
+        return false;
+        /*
         if (cctx.atomic())
             return removeSet0(name);
 
@@ -1084,72 +1137,11 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
                 return removeSet0(name);
             }
         }, cctx);
+        */
     }
 
     /**
-     * Entry update callback.
-     *
-     * @param key Key.
-     * @param rmv {@code True} if entry was removed.
-     */
-    public void onEntryUpdated(K key, boolean rmv) {
-        if (key instanceof GridCacheSetItemKey)
-            onSetItemUpdated((GridCacheSetItemKey)key, rmv);
-    }
-
-    /**
-     * Partition evicted callback.
-     *
-     * @param part Partition number.
-     */
-    public void onPartitionEvicted(int part) {
-        GridCacheAffinityManager aff = cctx.affinity();
-
-        for (GridConcurrentHashSet<GridCacheSetItemKey> set : setDataMap.values()) {
-            Iterator<GridCacheSetItemKey> iter = set.iterator();
-
-            while (iter.hasNext()) {
-                GridCacheSetItemKey key = iter.next();
-
-                if (aff.partition(key) == part)
-                    iter.remove();
-            }
-        }
-    }
-
-    /**
-     * @param id Set ID.
-     * @return Data for given set.
-     */
-    @Nullable public GridConcurrentHashSet<GridCacheSetItemKey> setData(IgniteUuid id) {
-        return setDataMap.get(id);
-    }
-
-    /**
-     * @param key Set item key.
-     * @param rmv {@code True} if item was removed.
-     */
-    private void onSetItemUpdated(GridCacheSetItemKey key, boolean rmv) {
-        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(key.setId());
-
-        if (set == null) {
-            if (rmv)
-                return;
-
-            GridConcurrentHashSet<GridCacheSetItemKey> old = setDataMap.putIfAbsent(key.setId(),
-                set = new GridConcurrentHashSet<>());
-
-            if (old != null)
-                set = old;
-        }
-
-        if (rmv)
-            set.remove(key);
-        else
-            set.add(key);
-    }
-
-    /**
+     * @param cctx Cache context.
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
@@ -1157,7 +1149,12 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private <T> IgniteSet<T> set0(String name, boolean collocated, boolean create) throws IgniteCheckedException {
+    @Nullable private <T> IgniteSet<T> set0(GridCacheContext cctx,
+        String name,
+        boolean collocated,
+        boolean create)
+        throws IgniteCheckedException
+    {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCacheSetHeader hdr;
@@ -1192,12 +1189,13 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     }
 
     /**
+     * @param cctx Cache context.
      * @param name Set name.
      * @return {@code True} if set was removed.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private boolean removeSet0(String name) throws IgniteCheckedException {
+    private boolean removeSet0(GridCacheContext cctx, String name) throws IgniteCheckedException {
         GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
         GridCache cache = cctx.cache();
@@ -1246,7 +1244,7 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
         else {
             blockSet(hdr.id());
 
-            removeSetData(hdr.id(), 0);
+            removeSetData(cctx, hdr.id(), 0);
         }
 
         return true;
@@ -1264,12 +1262,13 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     }
 
     /**
+     * @param cctx Cache context.
      * @param setId Set ID.
      * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    private void removeSetData(IgniteUuid setId, long topVer) throws IgniteCheckedException {
+    private void removeSetData(GridCacheContext cctx, IgniteUuid setId, long topVer) throws IgniteCheckedException {
         boolean loc = cctx.isLocal();
 
         GridCacheAffinityManager aff = cctx.affinity();
@@ -1417,8 +1416,17 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Data structure manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Data structure processor memory stats [grid=" + ctx.gridName() +
+            ", cache=" + (atomicsCtx != null ? atomicsCtx.name() : null) + ']');
         X.println(">>>   dsMapSize: " + dsMap.size());
+    }
+
+    /**
+     * @throws IgniteException If atomics configuration is not provided.
+     */
+    private void checkAtomicsConfiguration() throws IgniteException {
+        if (cfg == null)
+            throw new IgniteException("Atomic data structure can be created, need to provide IgniteAtomicConfiguration.");
     }
 
     /**
@@ -1487,11 +1495,12 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
 
         /** {@inheritDoc} */
         @Override public Void call() throws IgniteCheckedException {
-            GridCacheAdapter cache = ((GridKernal) ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter cache = ((GridKernal)ignite).context().cache().internalCache(cacheName);
 
             assert cache != null;
 
-            cache.context().dataStructures().blockSet(setId);
+            // TODO IGNITE-6
+            // cache.context().dataStructures().blockSet(setId);
 
             return null;
         }
@@ -1559,7 +1568,8 @@ public final class CacheDataStructuresProcessor<K, V> extends GridCacheManagerAd
 
             assert cache != null;
 
-            cache.context().dataStructures().removeSetData(setId, topVer);
+            // TODO IGNITE-6
+            // cache.context().dataStructures().removeSetData(setId, topVer);
 
             return null;
         }

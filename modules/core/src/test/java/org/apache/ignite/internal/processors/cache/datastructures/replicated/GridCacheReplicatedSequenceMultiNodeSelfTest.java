@@ -32,12 +32,18 @@ public class GridCacheReplicatedSequenceMultiNodeSelfTest extends GridCacheSeque
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(REPLICATED);
+        atomicCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
+
+        cfg.setAtomicConfiguration(atomicCfg);
+
         // Default cache configuration.
         CacheConfiguration dfltCacheCfg = defaultCacheConfiguration();
 
         dfltCacheCfg.setCacheMode(REPLICATED);
         dfltCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        dfltCacheCfg.setAtomicSequenceReserveSize(BATCH_SIZE);
 
         cfg.setCacheConfiguration(dfltCacheCfg);
 

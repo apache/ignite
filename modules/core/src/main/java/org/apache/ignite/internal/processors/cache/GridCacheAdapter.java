@@ -154,9 +154,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     /** Queries impl. */
     private CacheQueries<K, V> qry;
 
-    /** Data structures impl. */
-    private CacheDataStructures dataStructures;
-
     /** Affinity impl. */
     private CacheAffinity<K> aff;
 
@@ -264,7 +261,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         init();
 
         qry = new GridCacheQueriesImpl<>(ctx, null);
-        dataStructures = new GridCacheDataStructuresImpl<>(ctx);
         aff = new GridCacheAffinityImpl<>(ctx);
     }
 
@@ -356,7 +352,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public CacheDataStructures dataStructures() {
-        return dataStructures;
+        // TODO IGNITE-6.
+        return null;
     }
 
     /** {@inheritDoc} */
