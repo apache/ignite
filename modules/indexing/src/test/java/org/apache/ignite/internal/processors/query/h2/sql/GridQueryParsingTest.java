@@ -16,7 +16,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.gridgain.grid.kernal.processors.query.h2.sql.*;
 import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
