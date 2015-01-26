@@ -110,9 +110,9 @@ public class PojoField {
         List<String> objects = classNames(Boolean.class, Byte.class, Short.class, Integer.class,
             Long.class, Float.class, Double.class, BigDecimal.class);
 
+        NOT_NULL_NUM_CONVERSIONS.addAll(primitives);
         NOT_NULL_NUM_CONVERSIONS.addAll(objects);
 
-        NULL_NUM_CONVERSIONS.addAll(primitives);
         NULL_NUM_CONVERSIONS.addAll(objects);
 
         for (Class<?> cls : JAVA_TYPES)

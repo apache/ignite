@@ -206,22 +206,14 @@ public class SchemaLoadApp extends Application {
                 return null;
             }
 
-            private CheckBoxTreeItem<String> addCheckBoxTreeItem(CheckBoxTreeItem<String> parent, String text) {
-                CheckBoxTreeItem<String> item = new CheckBoxTreeItem<>(text);
-
-                item.setSelected(true);
-                item.setExpanded(true);
-
-                parent.getChildren().add(item);
-
-                return item;
-            }
-
             /** {@inheritDoc} */
             @Override protected void succeeded() {
                 super.succeeded();
 
                 pojosTbl.setItems(pojos);
+
+                if (!pojos.isEmpty())
+                    pojosTbl.getSelectionModel().select(pojos.get(0));
 
                 unlockUI(connLayerPnl, connPnl, nextBtn);
 
@@ -1061,12 +1053,16 @@ public class SchemaLoadApp extends Application {
             if (!empty) {
                 setText(item);
 
-                PojoField pojo = (PojoField)getTableRow().getItem();
+                TableRow row = getTableRow();
 
-                if (pojo != null) {
-                    comboBox.setItems(pojo.conversions());
+                if (row != null) {
+                    PojoField pojo = (PojoField)row.getItem();
 
-                    comboBox.getSelectionModel().select(pojo.javaTypeName());
+                    if (pojo != null) {
+                        comboBox.setItems(pojo.conversions());
+
+                        comboBox.getSelectionModel().select(pojo.javaTypeName());
+                    }
                 }
             }
         }
