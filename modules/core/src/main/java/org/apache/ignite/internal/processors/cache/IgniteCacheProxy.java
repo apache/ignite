@@ -100,7 +100,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMxBean mxBean() {
+    @Override public CacheMetricsMXBean mxBean() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

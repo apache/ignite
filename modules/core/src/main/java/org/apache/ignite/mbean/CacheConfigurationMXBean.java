@@ -23,7 +23,7 @@ import javax.cache.management.*;
  *  A management bean for cache. It provides configuration information.
  */
 @IgniteMBeanDescription("MBean that provides configuration information.")
-public interface CacheConfigurationMxBean extends CacheMXBean {
+public interface CacheConfigurationMXBean extends CacheMXBean {
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Key type.")
     String getKeyType();

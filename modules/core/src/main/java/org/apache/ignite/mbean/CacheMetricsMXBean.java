@@ -31,7 +31,7 @@ import javax.cache.management.*;
  * This interface defines JMX view on {@link IgniteCache}.
  */
 @IgniteMBeanDescription("MBean that provides access to cache descriptor.")
-public interface CacheMetricsMxBean extends CacheStatisticsMXBean, CacheMetrics {
+public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMetrics {
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Clear statistics.")
     public void clear();

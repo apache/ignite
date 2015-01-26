@@ -151,7 +151,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     protected CacheMetricsAdapter metrics;
 
     /** Cache mxBean. */
-    protected CacheMetricsMxBean mxBean;
+    protected CacheMetricsMXBean mxBean;
 
     /** Logger. */
     protected IgniteLogger log;
@@ -232,7 +232,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         metrics = new CacheMetricsAdapter(ctx);
 
-        mxBean = new CacheMetricsMxBeanImpl(this);
+        mxBean = new CacheMetricsMXBeanImpl(this);
 
         IgniteFsConfiguration[] ggfsCfgs = gridCfg.getGgfsConfiguration();
 
@@ -3402,7 +3402,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheMetricsMxBean mxBean() {
+    @Override public CacheMetricsMXBean mxBean() {
         return mxBean;
     }
 

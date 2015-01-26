@@ -23,7 +23,7 @@ import org.apache.ignite.mbean.*;
 /**
  * Management bean that provides access to {@link IgniteCache IgniteCache}.
  */
-class CacheMetricsMxBeanImpl implements CacheMetricsMxBean {
+class CacheMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** Cache. */
     private GridCacheAdapter<?, ?> cache;
 
@@ -32,7 +32,7 @@ class CacheMetricsMxBeanImpl implements CacheMetricsMxBean {
      *
      * @param cache Cache.
      */
-    CacheMetricsMxBeanImpl(GridCacheAdapter<?, ?> cache) {
+    CacheMetricsMXBeanImpl(GridCacheAdapter<?, ?> cache) {
         assert cache != null;
 
         this.cache = cache;

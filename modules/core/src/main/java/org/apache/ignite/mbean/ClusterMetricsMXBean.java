@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.*;
  * MBean for local node metrics.
  */
 @IgniteMBeanDescription("MBean that provides access to all local node metrics.")
-public interface ClusterMetricsMxBean extends ClusterMetrics {
+public interface ClusterMetricsMXBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Last update time of this node metrics.")
     public long getLastUpdateTime();
@@ -237,5 +237,4 @@ public interface ClusterMetricsMxBean extends ClusterMetrics {
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Start time of the grid node in milliseconds.")
     @Override long getNodeStartTime();
-
 }
