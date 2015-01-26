@@ -95,21 +95,6 @@ public class PojoGenerator {
         return javaTypeName.startsWith("java.lang.") ? javaTypeName.substring(10) : javaTypeName;
     }
 
-    private static String equals(PojoField field) {
-        if (field.primitive()) {
-            String javaType = javaTypeName(field);
-
-            if ("double".equals(javaType))
-                return "if (Double.compare(%1$s, that.%1$s) != 0)";
-            else if ("float".equals(javaType))
-                return "if (Float.compare(%1$s, that.%1$s) != 0)";
-            else
-                return "if (%1$s != that.%1$s)";
-        }
-        else
-            return "if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)";
-    }
-
     /**
      * Generate java class code.
      *

@@ -16,6 +16,11 @@
     -fx-focus-color: gray;
 }
 
+.combo-box-base  {
+    -fx-font-size: 14;
+    -fx-focus-color: gray;
+}
+
 .text-field {
     -fx-font-size: 14;
     -fx-background-color: -fx-text-box-border, -fx-control-inner-background, -fx-control-inner-background;
