@@ -366,7 +366,7 @@ public class SchemaLoadApp extends Application {
      * @return Header pane with title label.
      */
     private Pane createHeaderPane() {
-        titleLb = new Label("");
+        titleLb = label("");
         titleLb.setId("banner");
 
         BorderPane bp = borderPane(null, hBox(10, true, titleLb), null, null, hBox(0, true, imageView("ignite", 48)));
@@ -626,14 +626,14 @@ public class SchemaLoadApp extends Application {
         TableColumn<PojoDescriptor, Boolean> useCol = customColumn("Schema / Table", "use",
             "If checked then this table will be used for XML and POJOs generation", PojoDescriptorCell.cellFactory());
 
-        TableColumn<PojoDescriptor, String> keyClsCol = textColumn("Key Class", "keyClassName", "Key class name",
+        TableColumn<PojoDescriptor, String> keyClsCol = textColumn("Key Class Name", "keyClassName", "Key class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
                     return checkClassName(rowVal, newVal, true);
                 }
             });
 
-        TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class", "valueClassName", "Value class name",
+        TableColumn<PojoDescriptor, String> valClsCol = textColumn("Value Class Name", "valueClassName", "Value class name",
             new TextColumnValidator<PojoDescriptor>() {
                 @Override public boolean valid(PojoDescriptor rowVal, String newVal) {
                     return checkClassName(rowVal, newVal, false);
@@ -710,65 +710,41 @@ public class SchemaLoadApp extends Application {
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
 
-        regexPnl.add(new Label("Replace Java name for selected or all tables:"), 4);
+        regexPnl.add(label("Replace \"Key class name\", \"Value class name\" or  \"Java name\" for selected tables:"), 4);
+
         regexTf = regexPnl.addLabeled("  Regexp:", textField("Regular expression. For example: (\\w+)"));
-        replaceTf = regexPnl.addLabeled("  Replace with:", textField("Replace text. For example: $1_Suffix"));
 
-        final Button renBtn = button("Rename", "Replace Java names by provided regular expression for current table",
-            new EventHandler<ActionEvent>() {
-                @Override public void handle(ActionEvent evt) {
-                    if (curPojo == null) {
-                        MessageBox.warningDialog(owner, "Please select table to rename Java names!");
+        replaceTf = regexPnl.addLabeled("  Replace with:", textField("Replace text. For example: $1_SomeText"));
 
-                        return;
-                    }
-
-                    if (checkInput(regexTf, false, "Regular expression should not be empty!"))
-                        return;
-
-                    String regex = regexTf.getText();
-
-                    String replace = replaceTf.getText();
-
-                    try {
-                        for (PojoField field : curPojo.fields())
-                            field.javaName(field.javaName().replaceAll(regex, replace));
-                    }
-                    catch (Exception e) {
-                        MessageBox.errorDialog(owner, "Failed to rename Java names!", e);
-                    }
-                }
-            });
-        renBtn.setDisable(true);
-
-        final Button revertBtn = button("Revert", "Revert changes to Java names for current table", new EventHandler<ActionEvent>() {
-            @Override public void handle(ActionEvent evt) {
-                if (curPojo != null)
-                    curPojo.revertJavaNames();
-                else
-                    MessageBox.warningDialog(owner, "Please select table to revert changes to Java names!");
-            }
-        });
-        revertBtn.setDisable(true);
+        final ComboBox<String> replaceCb = regexPnl.addLabeled("  Replace:", comboBox("Replacement target",
+            "Key class names", "Value class names", "Java names"));
 
         regexPnl.add(buttonsPane(Pos.BOTTOM_RIGHT, false,
-            renBtn,
-            button("Rename All", "Replace Java names by provided regular expression for all selected tables",
+            button("Rename Selected", "Replaces each substring of this string that matches the given regular expression" +
+                    " with the given replacement.",
                 new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent evt) {
                         if (checkInput(regexTf, false, "Regular expression should not be empty!"))
                             return;
 
+                        String sel = replaceCb.getSelectionModel().getSelectedItem();
+
+                        boolean renFields = "Java names".equals(sel);
+
+                        String src = (renFields ? "fields" : "tables");
+
+                        String target = "\"" + sel +"\"";
+
                         Collection<PojoDescriptor> selItems = selectedItems();
 
                         if (selItems.isEmpty()) {
-                            MessageBox.warningDialog(owner, "Please select tables to rename Java names!");
+                            MessageBox.warningDialog(owner, "Please select " + src + " to rename " + target + "!");
 
                             return;
                         }
 
-                        if (!MessageBox.confirmDialog(owner,
-                            "Are you sure you want to rename Java names in all selected tables?"))
+                        if (!MessageBox.confirmDialog(owner, "Are you sure you want to rename " + target +
+                            " for all selected " + src + "?"))
                             return;
 
                         String regex = regexTf.getText();
@@ -781,30 +757,37 @@ public class SchemaLoadApp extends Application {
                                     field.javaName(field.javaName().replaceAll(regex, replace));
                         }
                         catch (Exception e) {
-                            MessageBox.errorDialog(owner, "Failed to rename Java names!", e);
+                            MessageBox.errorDialog(owner, "Failed to rename " + target + "!", e);
                         }
                     }
                 }),
-            revertBtn,
-            button("Revert All", "Revert changes to Java names for all selected tables", new EventHandler<ActionEvent>() {
+            button("Reset Selected", "Revert changes for selected items to initial values", new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
                     Collection<PojoDescriptor> selItems = selectedItems();
 
+                    String sel = replaceCb.getSelectionModel().getSelectedItem();
+
+                    boolean renFields = "Java names".equals(sel);
+
+                    String src = (renFields ? "fields" : "tables");
+
+                    String target = "\"" + sel +"\"";
+
                     if (selItems.isEmpty()) {
-                        MessageBox.warningDialog(owner, "Please select tables to revert Java names!");
+                        MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
 
                         return;
                     }
 
                     if (!MessageBox.confirmDialog(owner,
-                        "Are you sure you want to revert Java names for all selected tables?"))
+                        "Are you sure you want to revert " + target + " for all selected " + src + "?"))
                         return;
 
                     for (PojoDescriptor pojo : selItems)
                         pojo.revertJavaNames();
                 }
             })
-        ), 4);
+        ), 2);
 
         pojosTbl.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<PojoDescriptor>() {
             @Override public void changed(ObservableValue<? extends PojoDescriptor> val,
@@ -816,18 +799,12 @@ public class SchemaLoadApp extends Application {
                     fieldsTbl.getSelectionModel().select(0);
 
                     keyValPnl.setDisable(false);
-
-                    renBtn.setDisable(false);
-                    revertBtn.setDisable(false);
                 }
                 else {
                     curPojo = null;
                     fieldsTbl.setItems(NO_FIELDS);
 
                     keyValPnl.setDisable(true);
-
-                    renBtn.setDisable(true);
-                    revertBtn.setDisable(true);
                 }
             }
         });

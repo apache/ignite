@@ -20,6 +20,7 @@ package org.apache.ignite.schema.ui;
 import com.sun.javafx.scene.control.skin.*;
 import javafx.application.*;
 import javafx.beans.value.*;
+import javafx.collections.*;
 import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
@@ -181,6 +182,16 @@ public class Controls {
     }
 
     /**
+     * Create label.
+     *
+     * @param text Label text.
+     * @return New {@code Label} instance.
+     */
+    public static Label label(String text) {
+        return new Label(text);
+    }
+
+    /**
      * Create button with text only.
      *
      * @param text Button text.
@@ -295,6 +306,23 @@ public class Controls {
         tooltip(pf, tip);
 
         return pf;
+    }
+
+    /**
+     * Create combo box.
+     * @param tip Tooltip text.
+     * @param items Combo box items.
+     * @return New {@code ComboBox} instance.
+     */
+    public static ComboBox<String> comboBox(String tip, String... items) {
+        ComboBox<String> cb = new ComboBox<>(FXCollections.observableArrayList(items));
+
+        cb.setMaxWidth(Double.MAX_VALUE);
+        cb.getSelectionModel().select(0);
+
+        tooltip(cb, tip);
+
+        return cb;
     }
 
     /**
