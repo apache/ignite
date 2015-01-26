@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.cache;
 
-import org.apache.ignite.cache.*;
+import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.mxbean.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
-import javax.cache.spi.*;
 import javax.management.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
 /**
- *
+ * Implementation of JSR-107 {@link javax.cache.CacheManager}.
  */
-public class IgniteCacheManager implements CacheManager {
+public class CacheManager implements javax.cache.CacheManager {
     /** */
     private final Map<String, IgniteBiTuple<Ignite, IgniteCacheMXBean>> igniteMap = new HashMap<>();
 
@@ -58,7 +58,7 @@ public class IgniteCacheManager implements CacheManager {
      * @param clsLdr Class loader.
      * @param props Properties.
      */
-    public IgniteCacheManager(URI uri, CachingProvider cachingProvider, ClassLoader clsLdr, Properties props) {
+    public CacheManager(URI uri, CachingProvider cachingProvider, ClassLoader clsLdr, Properties props) {
         this.uri = uri;
         this.cachingProvider = cachingProvider;
         this.clsLdr = clsLdr;

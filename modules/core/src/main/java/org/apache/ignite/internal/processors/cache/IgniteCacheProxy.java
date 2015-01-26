@@ -753,11 +753,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheManager getCacheManager() {
+    @Override public javax.cache.CacheManager getCacheManager() {
         // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
-            IgniteCachingProvider.class.getName(),
-            IgniteCachingProvider.class.getClassLoader());
+        CachingProvider provider = (CachingProvider)Caching.getCachingProvider(
+            CachingProvider.class.getName(),
+            CachingProvider.class.getClassLoader());
 
         if (provider == null)
             return null;
@@ -820,27 +820,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return F.iterator(delegate, new C1<CacheEntry<K, V>, Entry<K, V>>() {
-                @Override public Entry<K, V> apply(final CacheEntry<K, V> e) {
-                    return new Entry<K, V>() {
-                        @Override public K getKey() {
-                            return e.getKey();
-                        }
-
-                        @Override public V getValue() {
-                            return e.getValue();
-                        }
-
-                        @Override public <T> T unwrap(Class<T> clazz) {
-                            throw new IllegalArgumentException();
-                        }
-                    };
-                }
-            }, false);
+            return ((GridCacheAdapter)delegate).igniteIterator(prj);
         }
         finally {
             gate.leave(prev);

@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.eviction.random;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.mxbean.*;
+import java.lang.annotation.*;
 
 /**
- * MBean for {@code random} eviction policy.
+ * Provides description for MBean classes and methods.
  */
-@IgniteMBeanDescription("MBean for random cache eviction policy.")
-public interface CacheRandomEvictionPolicyMBean {
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface IgniteMBeanDescription {
     /**
-     * Gets maximum allowed cache size.
      *
-     * @return Maximum allowed cache size.
+     * Description for Mbean.
      */
-    @IgniteMBeanDescription("Maximum allowed cache size.")
-    public int getMaxSize();
-
-    /**
-     * Sets maximum allowed cache size.
-     *
-     * @param max Maximum allowed cache size.
-     */
-    @IgniteMBeanDescription("Sets maximum allowed cache size.")
-    public void setMaxSize(int max);
+    @SuppressWarnings({"JavaDoc"}) public String value();
 }
