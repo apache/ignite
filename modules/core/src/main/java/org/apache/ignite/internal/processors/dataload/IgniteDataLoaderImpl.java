@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
