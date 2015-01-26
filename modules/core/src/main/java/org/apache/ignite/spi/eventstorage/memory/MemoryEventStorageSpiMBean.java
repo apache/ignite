@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.eventstorage.memory;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
