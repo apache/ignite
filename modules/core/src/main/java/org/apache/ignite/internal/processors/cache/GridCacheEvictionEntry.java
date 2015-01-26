@@ -411,19 +411,17 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public boolean lock(long timeout) throws IgniteCheckedException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> lockAsync(long timeout) {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public void unlock() throws IgniteCheckedException {
         throw unsupported();
     }
 

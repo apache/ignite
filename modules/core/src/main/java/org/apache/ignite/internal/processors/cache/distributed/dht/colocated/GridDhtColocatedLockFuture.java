@@ -18,13 +18,10 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
-import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -34,6 +31,8 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -92,9 +91,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     @GridToStringExclude
     private IgniteLogger log;
 
-    /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
-
     /** Transaction. */
     @GridToStringExclude
     private GridNearTxLocal<K, V> tx;
@@ -127,7 +123,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param retval Flag to return value or not.
      * @param timeout Lock acquisition timeout.
      * @param accessTtl TTL for read operation.
-     * @param filter Filter.
      */
     public GridDhtColocatedLockFuture(
         GridCacheContext<K, V> cctx,
@@ -136,8 +131,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         boolean read,
         boolean retval,
         long timeout,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        long accessTtl) {
         super(cctx.kernalContext(), CU.boolReducer());
 
         assert keys != null;
@@ -149,7 +143,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         this.retval = retval;
         this.timeout = timeout;
         this.accessTtl = accessTtl;
-        this.filter = filter;
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
 
@@ -439,30 +432,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         err.compareAndSet(null, t instanceof GridCacheLockTimeoutException ? null : t);
     }
 
-    /**
-     * @param cached Entry to check.
-     * @return {@code True} if filter passed.
-     */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
-        try {
-            if (!cctx.isAll(cached, filter)) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter didn't pass for entry (will fail lock): " + cached);
-
-                onFailed(true);
-
-                return false;
-            }
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            onError(e);
-
-            return false;
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
@@ -695,15 +664,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                         try {
                             entry = cctx.colocated().entryExx(key, topVer, true);
 
-                            if (!cctx.isAll(entry, filter)) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Entry being locked did not pass filter (will not lock): " + entry);
-
-                                onComplete(false, false);
-
-                                return;
-                            }
-
                             assert loc ^ entry.detached() : "Invalid entry [loc=" + loc + ", entry=" + entry + ']';
 
                             GridCacheMvccCandidate<K> cand = addEntry(entry);
@@ -846,9 +806,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         final Collection<K> mappedKeys = map.distributedKeys();
         final ClusterNode node = map.node();
 
-        if (filter != null && filter.length != 0)
-            req.filter(filter, cctx);
-
         if (node.isLocal())
             lockLocally(mappedKeys, req.topologyVersion(), mappings);
         else {
@@ -919,8 +876,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
             keys,
             read,
             timeout,
-            accessTtl,
-            filter);
+            accessTtl);
 
         // Add new future.
         add(new GridEmbeddedFuture<>(
@@ -1035,15 +991,6 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         GridDistributedCacheEntry<K, V> entry = cctx.colocated().entryExx(key, topVer, false);
 
         assert !entry.detached();
-
-        if (!cctx.isAll(entry, filter)) {
-            if (log.isDebugEnabled())
-                log.debug("Entry being locked did not pass filter (will not lock): " + entry);
-
-            onComplete(false, false);
-
-            return false;
-        }
 
         GridCacheMvccCandidate<K> cand = addEntry(entry);
 

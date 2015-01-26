@@ -67,21 +67,19 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean retval,
         IgniteTxIsolation isolation,
         boolean isInvalidate,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter
+        long accessTtl
     ) {
         assert tx != null;
 
-        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, accessTtl, filter);
+        return lockAllAsync(keys, timeout, tx, isInvalidate, isRead, retval, isolation, accessTtl);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
         // Return value flag is true because we choose to bring values for explicit locks.
-        return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, -1L, filter);
+        return lockAllAsync(keys, timeout, tx, false, false, /*retval*/true, null, -1L);
     }
 
     /**
@@ -93,7 +91,6 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param retval Flag to return value.
      * @param isolation Transaction isolation.
      * @param accessTtl TTL for read operation.
-     * @param filter Optional filter.
      * @return Future for locks.
      */
     protected abstract IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
@@ -103,8 +100,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
         boolean isRead,
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter);
+        long accessTtl);
 
     /**
      * @param key Key to remove.

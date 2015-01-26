@@ -289,19 +289,17 @@ public class GridCacheMockEntry<K, V> extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public boolean lock(long timeout) throws IgniteCheckedException {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> lockAsync(long timeout) {
         return new GridFinishedFuture<>(null, false);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void unlock() throws IgniteCheckedException {
         // No-op.
     }
 

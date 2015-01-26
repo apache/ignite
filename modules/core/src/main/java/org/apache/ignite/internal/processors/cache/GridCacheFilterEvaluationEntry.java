@@ -323,19 +323,17 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
-        throws IgniteCheckedException {
+    @Override public boolean lock(long timeout) throws IgniteCheckedException {
         throw new UnsupportedOperationException("lock");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> lockAsync(long timeout) {
         throw new UnsupportedOperationException("lockAsync");
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void unlock() throws IgniteCheckedException {
         throw new UnsupportedOperationException("unlock");
     }
 

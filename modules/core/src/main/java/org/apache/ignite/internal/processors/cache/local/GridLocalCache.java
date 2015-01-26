@@ -18,13 +18,12 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -101,86 +100,69 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean retval,
         IgniteTxIsolation isolation,
         boolean invalidate,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return lockAllAsync(keys, timeout, tx, filter);
+        long accessTtl) {
+        return lockAllAsync(keys, timeout, tx);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().localTx();
 
-        return lockAllAsync(keys, timeout, tx, filter);
+        return lockAllAsync(keys, timeout, tx);
     }
 
     /**
      * @param keys Keys.
      * @param timeout Timeout.
      * @param tx Transaction.
-     * @param filter Filter.
      * @return Future.
      */
     public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
-        @Nullable IgniteTxLocalEx<K, V> tx, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        @Nullable IgniteTxLocalEx<K, V> tx) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), true);
 
-        GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout, filter);
+        GridLocalLockFuture<K, V> fut = new GridLocalLockFuture<>(ctx, keys, tx, this, timeout);
 
-        try {
-            for (K key : keys) {
-                while (true) {
-                    GridLocalCacheEntry<K, V> entry = null;
+        for (K key : keys) {
+            while (true) {
+                GridLocalCacheEntry<K, V> entry = null;
 
-                    try {
-                        entry = entryExx(key);
+                try {
+                    entry = entryExx(key);
 
-                        if (!ctx.isAll(entry, filter)) {
-                            fut.onFailed();
+                    // Removed exception may be thrown here.
+                    GridCacheMvccCandidate<K> cand = fut.addEntry(entry);
 
-                            return fut;
-                        }
+                    if (cand == null && fut.isDone())
+                        return fut;
 
-                        // Removed exception may be thrown here.
-                        GridCacheMvccCandidate<K> cand = fut.addEntry(entry);
-
-                        if (cand == null && fut.isDone())
-                            return fut;
-
-                        break;
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        if (log().isDebugEnabled())
-                            log().debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
-                    }
+                    break;
+                }
+                catch (GridCacheEntryRemovedException ignored) {
+                    if (log().isDebugEnabled())
+                        log().debug("Got removed entry in lockAsync(..) method (will retry): " + entry);
                 }
             }
-
-            if (!ctx.mvcc().addFuture(fut))
-                fut.onError(new IgniteCheckedException("Duplicate future ID (internal error): " + fut));
-
-            // Must have future added prior to checking locks.
-            fut.checkLocks();
-
-            return fut;
         }
-        catch (IgniteCheckedException e) {
-            fut.onError(e);
 
-            return fut;
-        }
+        if (!ctx.mvcc().addFuture(fut))
+            fut.onError(new IgniteCheckedException("Duplicate future ID (internal error): " + fut));
+
+        // Must have future added prior to checking locks.
+        fut.checkLocks();
+
+        return fut;
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
+    @Override public void unlockAll(Collection<? extends K> keys) throws IgniteCheckedException {
         long topVer = ctx.affinity().affinityTopologyVersion();
 
         for (K key : keys) {
             GridLocalCacheEntry<K, V> entry = peekExx(key);
 
-            if (entry != null && ctx.isAll(entry, filter)) {
+            if (entry != null) {
                 entry.releaseLocal();
 
                 ctx.evicts().touch(entry, topVer);

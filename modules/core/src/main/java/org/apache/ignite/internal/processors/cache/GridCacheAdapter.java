@@ -553,7 +553,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
      * @param accessTtl TTL for read operation.
-     * @param filter Optional filter.
      * @return Locks future.
      */
     public abstract IgniteFuture<Boolean> txLockAsync(
@@ -564,8 +563,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         boolean retval,
         IgniteTxIsolation isolation,
         boolean invalidate,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter);
+        long accessTtl);
 
     /**
      * Post constructor initialization for subclasses.
@@ -3206,23 +3204,22 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(K key, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public boolean lock(K key, long timeout) throws IgniteCheckedException {
         A.notNull(key, "key");
 
-        return lockAll(Collections.singletonList(key), timeout, filter);
+        return lockAll(Collections.singletonList(key), timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout)
+        throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
         if (keyCheck)
             validateCacheKeys(keys);
 
-        IgniteFuture<Boolean> fut = lockAllAsync(keys, timeout, filter);
+        IgniteFuture<Boolean> fut = lockAllAsync(keys, timeout);
 
         boolean isInterrupted = false;
 
@@ -3244,25 +3241,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> lockAsync(K key, long timeout) {
         A.notNull(key, "key");
 
         if (keyCheck)
             validateCacheKey(key);
 
-        return lockAllAsync(Collections.singletonList(key), timeout, filter);
+        return lockAllAsync(Collections.singletonList(key), timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(K key, IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public void unlock(K key)
         throws IgniteCheckedException {
         A.notNull(key, "key");
 
         if (keyCheck)
             validateCacheKey(key);
 
-        unlockAll(Collections.singletonList(key), filter);
+        unlockAll(Collections.singletonList(key));
     }
 
     /** {@inheritDoc} */

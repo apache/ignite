@@ -18,15 +18,14 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -80,9 +79,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     @GridToStringExclude
     private IgniteLogger log;
 
-    /** Filter. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filter;
-
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
@@ -102,15 +98,13 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      * @param tx Transaction.
      * @param cache Underlying cache.
      * @param timeout Lock acquisition timeout.
-     * @param filter Filter.
      */
     GridLocalLockFuture(
         GridCacheContext<K, V> cctx,
         Collection<? extends K> keys,
         IgniteTxLocalEx<K, V> tx,
         GridLocalCache<K, V> cache,
-        long timeout,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        long timeout) {
         super(cctx.kernalContext());
 
         assert keys != null;
@@ -119,7 +113,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
         this.cctx = cctx;
         this.cache = cache;
         this.timeout = timeout;
-        this.filter = filter;
         this.tx = tx;
 
         threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
@@ -204,8 +197,7 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
      */
     private boolean locked(GridCacheEntryEx<K, V> cached) throws GridCacheEntryRemovedException {
         // Reentry-aware check.
-        return (cached.lockedLocally(lockVer) || (cached.lockedByThread(threadId))) &&
-            filter(cached); // If filter failed, lock is failed.
+        return (cached.lockedLocally(lockVer) || (cached.lockedByThread(threadId)));
     }
 
     /**
@@ -276,30 +268,6 @@ public final class GridLocalLockFuture<K, V> extends GridFutureAdapter<Boolean>
     void onError(Throwable t) {
         if (err.compareAndSet(null, t))
             onFailed();
-    }
-
-    /**
-     * @param cached Entry to check.
-     * @return {@code True} if filter passed.
-     */
-    private boolean filter(GridCacheEntryEx<K, V> cached) {
-        try {
-            if (!cctx.isAll(cached, filter)) {
-                if (log.isDebugEnabled())
-                    log.debug("Filter didn't pass for entry (will fail lock): " + cached);
-
-                onFailed();
-
-                return false;
-            }
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            onError(e);
-
-            return false;
-        }
     }
 
     /**

@@ -592,26 +592,25 @@ public class GridCacheContinuousQueryEntry<K, V> implements CacheEntry<K, V>, Gr
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public boolean lock(long timeout)
         throws IgniteCheckedException {
         assert impl != null;
 
-        return impl.lock(timeout, filter);
+        return impl.lock(timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<Boolean> lockAsync(long timeout) {
         assert impl != null;
 
-        return impl.lockAsync(timeout, filter);
+        return impl.lockAsync(timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+    @Override public void unlock() throws IgniteCheckedException {
         assert impl != null;
 
-        impl.unlock(filter);
+        impl.unlock();
     }
 
     /** {@inheritDoc} */

@@ -632,8 +632,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
             read,
             /*retval*/false,
             isolation,
-            accessTtl,
-            CU.<K, V>empty());
+            accessTtl);
 
         return new GridEmbeddedFuture<>(
             fut,

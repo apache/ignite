@@ -643,20 +643,18 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        return proxy.lock(key, timeout, filter);
+    @Override public boolean lock(long timeout) throws IgniteCheckedException {
+        return proxy.lock(key, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return proxy.lockAsync(key, timeout, filter);
+    @Override public IgniteFuture<Boolean> lockAsync(long timeout) {
+        return proxy.lockAsync(key, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        proxy.unlock(key, filter);
+    @Override public void unlock() throws IgniteCheckedException {
+        proxy.unlock(key);
     }
 
     /** {@inheritDoc} */

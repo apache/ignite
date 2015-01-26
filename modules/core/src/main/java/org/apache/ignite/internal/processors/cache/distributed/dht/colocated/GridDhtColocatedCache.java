@@ -374,8 +374,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         boolean isRead,
         boolean retval,
         @Nullable IgniteTxIsolation isolation,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        long accessTtl) {
         assert tx == null || tx instanceof GridNearTxLocal;
 
         GridNearTxLocal<K, V> txx = (GridNearTxLocal<K, V>)tx;
@@ -386,8 +385,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             isRead,
             retval,
             timeout,
-            accessTtl,
-            filter);
+            accessTtl);
 
         // Future will be added to mvcc only if it was mapped to remote nodes.
         fut.map();
@@ -408,8 +406,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -424,11 +421,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             for (K key : keys) {
                 GridDistributedCacheEntry<K, V> entry = peekExx(key);
-
-                CacheEntry<K, V> cacheEntry = entry == null ? entry(key) : entry.wrap(false);
-
-                if (!ctx.isAll(cacheEntry, filter))
-                    break; // While.
 
                 GridCacheMvccCandidate lock = ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), key, null);
 
@@ -597,7 +589,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param txRead Tx read.
      * @param timeout Lock timeout.
      * @param accessTtl TTL for read operation.
-     * @param filter filter Optional filter.
      * @return Lock future.
      */
     IgniteFuture<Exception> lockAllAsync(
@@ -609,8 +600,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final Collection<K> keys,
         final boolean txRead,
         final long timeout,
-        final long accessTtl,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
+        final long accessTtl
     ) {
         assert keys != null;
 
@@ -630,8 +620,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     keys,
                     txRead,
                     timeout,
-                    accessTtl,
-                    filter);
+                    accessTtl);
             }
             catch (IgniteCheckedException e) {
                 return new GridFinishedFuture<>(ctx.kernalContext(), e);
@@ -652,8 +641,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                             keys,
                             txRead,
                             timeout,
-                            accessTtl,
-                            filter);
+                            accessTtl);
                     }
                 },
                 ctx.kernalContext());
@@ -670,7 +658,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param txRead Tx read.
      * @param timeout Lock timeout.
      * @param accessTtl TTL for read operation.
-     * @param filter filter Optional filter.
      * @return Lock future.
      */
     private IgniteFuture<Exception> lockAllAsync0(
@@ -682,8 +669,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         final Collection<K> keys,
         final boolean txRead,
         final long timeout,
-        final long accessTtl,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        final long accessTtl) {
         int cnt = keys.size();
 
         if (tx == null) {
@@ -697,7 +683,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 tx,
                 threadId,
                 accessTtl,
-                filter);
+                CU.<K, V>empty());
 
             // Add before mapping.
             if (!ctx.mvcc().addFuture(fut))

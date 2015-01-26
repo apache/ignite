@@ -3629,7 +3629,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assert passed;
 
-            cache().unlockAll(F.asList("key1", "key2"), F.<CacheEntry<String, Integer>>alwaysTrue());
+            cache().unlockAll(F.asList("key1", "key2"));
 
             for (int i = 0; i < 100; i++) {
                 boolean sleep = false;
@@ -3652,46 +3652,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assert !cache(i).entry("key1").isLocked();
                 assert !cache(i).entry("key2").isLocked();
             }
-        }
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    @SuppressWarnings("BusyWait")
-    public void testUnlockFilteredEntry() throws Exception {
-        if (lockingEnabled()) {
-            cache().put("key1", 1);
-            cache().put("key2", 100);
-
-            CacheEntry<String, Integer> e1 = cache().entry("key1");
-            CacheEntry<String, Integer> e2 = cache().entry("key2");
-
-            assert e1 != null;
-            assert e2 != null;
-
-            assert !e1.isLocked();
-            assert !e2.isLocked();
-
-            e1.lock(0);
-            e2.lock(0);
-
-            assert e1.isLocked();
-            assert e2.isLocked();
-
-            e1.unlock(F.<CacheEntry<String, Integer>>alwaysFalse());
-            e2.unlock(F.<CacheEntry<String, Integer>>alwaysTrue());
-
-            for (int i = 0; i < 100; i++)
-                if (e2.isLocked())
-                    Thread.sleep(10);
-                else
-                    break;
-
-            assert e1.isLocked();
-            assert !e2.isLocked();
-
-            cache().unlockAll(F.asList("key1", "key2"), F.<CacheEntry<String, Integer>>alwaysTrue());
         }
     }
 

@@ -413,8 +413,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean isRead,
         boolean retval,
         IgniteTxIsolation isolation,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        long accessTtl) {
         GridNearLockFuture<K, V> fut = new GridNearLockFuture<>(ctx,
             keys,
             (GridNearTxLocal<K, V>)tx,
@@ -422,7 +421,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             retval,
             timeout,
             accessTtl,
-            filter);
+            CU.<K, V>empty());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);
@@ -464,7 +463,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(Collection<? extends K> keys, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public void unlockAll(Collection<? extends K> keys) {
         if (keys.isEmpty())
             return;
 
@@ -480,9 +479,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             for (K key : keys) {
                 while (true) {
                     GridDistributedCacheEntry<K, V> entry = peekExx(key);
-
-                    if (entry == null || !ctx.isAll(entry.wrap(false), filter))
-                        break; // While.
 
                     try {
                         GridCacheMvccCandidate<K> cand = entry.candidate(ctx.nodeId(), Thread.currentThread().getId());

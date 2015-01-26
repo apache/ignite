@@ -477,14 +477,12 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      *
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
-     * @param filter Optional filter to validate prior to acquiring the lock.
      * @return {@code True} if all filters passed and lock was acquired,
      *      {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
-    public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
-        throws IgniteCheckedException;
+    public boolean lock(long timeout) throws IgniteCheckedException;
 
     /**
      * Asynchronously acquires lock on a cached object associated with this entry
@@ -501,14 +499,12 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      *
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
-     * @param filter Optional filter to validate prior to acquiring the lock.
      * @return Future for the lock operation. The future will return {@code true}
      *      whenever all filters pass and locks are acquired before timeout is expired,
      *      {@code false} otherwise.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
-    public IgniteFuture<Boolean> lockAsync(long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteFuture<Boolean> lockAsync(long timeout);
 
     /**
      * Unlocks this entry only if current thread owns the lock. If optional filter
@@ -523,11 +519,10 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
      * This method is not available if any of the following flags are set on projection:
      * {@link org.apache.ignite.internal.processors.cache.CacheFlag#LOCAL}, {@link org.apache.ignite.internal.processors.cache.CacheFlag#READ}.
      *
-     * @param filter Optional filter that needs to pass prior to unlock taking effect.
      * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If flags validation failed.
      */
-    public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+    public void unlock() throws IgniteCheckedException;
 
     /**
      * Checks whether entry is currently present in cache or not. If entry is not in

@@ -1659,9 +1659,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public IgniteFuture<?> removeAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
 
     /**
-     * Synchronously acquires lock on a cached object with given
-     * key only if the passed in filter (if any) passes. This method
-     * together with filter check will be executed as one atomic operation.
+     * Synchronously acquires lock on a cached object with given key.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -1675,19 +1673,15 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration), {@code -1} for immediate failure if
      *      lock cannot be acquired immediately).
-     * @param filter Optional filter to validate prior to acquiring the lock.
-     * @return {@code True} if all filters passed and lock was acquired,
+     * @return {@code True} if lock was acquired,
      *      {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws CacheFlagException If flags validation failed.
      */
-    public boolean lock(K key, long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
-        throws IgniteCheckedException;
+    public boolean lock(K key, long timeout) throws IgniteCheckedException;
 
     /**
-     * Asynchronously acquires lock on a cached object with given
-     * key only if the passed in filter (if any) passes. This method
-     * together with filter check will be executed as one atomic operation.
+     * Asynchronously acquires lock on a cached object with given key.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -1701,19 +1695,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration, {@code -1} for immediate failure if
      *      lock cannot be acquired immediately).
-     * @param filter Optional filter to validate prior to acquiring the lock.
      * @return Future for the lock operation. The future will return {@code true}
-     *      whenever all filters pass and locks are acquired before timeout is expired,
+     *      whenever locks are acquired before timeout is expired,
      *      {@code false} otherwise.
      * @throws CacheFlagException If flags validation failed.
      */
-    public IgniteFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteFuture<Boolean> lockAsync(K key, long timeout);
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
-     * together with filter check will be executed as one atomic operation.
-     * If at least one filter validation failed, no locks will be acquired.
+     * will be executed as one atomic operation.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -1726,20 +1717,15 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
-     * @param filter Optional filter that needs to atomically pass in order for the locks
-     *      to be acquired.
-     * @return {@code True} if all filters passed and locks were acquired before
-     *      timeout has expired, {@code false} otherwise.
+     * @return {@code True} if locks were acquired before timeout has expired, {@code false} otherwise.
      * @throws IgniteCheckedException If lock acquisition resulted in error.
      * @throws CacheFlagException If flags validation failed.
      */
-    public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+    public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout) throws IgniteCheckedException;
 
     /**
      * All or nothing synchronous lock for passed in keys. This method
-     * together with filter check will be executed as one atomic operation.
-     * If at least one filter validation failed, no locks will be acquired.
+     * will be executed as one atomic operation.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -1752,20 +1738,16 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
      *      ({@code '0'} for no expiration).
-     * @param filter Optional filter that needs to atomically pass in order for the locks
-     *      to be acquired.
      * @return Future for the collection of locks. The future will return
-     *      {@code true} if all filters passed and locks were acquired before
+     *      {@code true} if locks were acquired before
      *      timeout has expired, {@code false} otherwise.
      * @throws CacheFlagException If flags validation failed.
      */
-    public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter);
+    public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout);
 
     /**
-     * Unlocks given key only if current thread owns the lock. If optional filter
-     * will not pass, then unlock will not happen. If the key being unlocked was
-     * never locked by current thread, then this method will do nothing.
+     * Unlocks given key only if current thread owns the lock. If the key being unlocked
+     * was never locked by current thread, then this method will do nothing.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -1776,17 +1758,15 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
      * @param key Key to unlock.
-     * @param filter Optional filter that needs to pass prior to unlock taking effect.
      * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws CacheFlagException If flags validation failed.
      */
-    public void unlock(K key, IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+    public void unlock(K key) throws IgniteCheckedException;
 
     /**
      * Unlocks given keys only if current thread owns the locks. Only the keys
-     * that have been locked by calling thread and pass through the filter (if any)
-     * will be unlocked. If none of the key locks is owned by current thread, then
-     * this method will do nothing.
+     * that have been locked by calling thread. If none of the key locks is owned
+     * by current thread, then this method will do nothing.
      * <h2 class="header">Transactions</h2>
      * Locks are not transactional and should not be used from within transactions. If you do
      * need explicit locking within transaction, then you should use
@@ -1797,13 +1777,10 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * {@link CacheFlag#LOCAL}, {@link CacheFlag#READ}.
      *
      * @param keys Keys to unlock.
-     * @param filter Optional filter which needs to pass for individual entries
-     *      to be unlocked.
      * @throws IgniteCheckedException If unlock execution resulted in error.
      * @throws CacheFlagException If flags validation failed.
      */
-    public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException;
+    public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
      * Checks if any node owns a lock for this key.

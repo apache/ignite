@@ -21,16 +21,16 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.portables.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.processors.cache.query.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.portables.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
@@ -1172,38 +1172,34 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lock(K key, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
-        return cache.lock(key, timeout, and(filter, false));
+    @Override public boolean lock(K key, long timeout) throws IgniteCheckedException {
+        return cache.lock(key, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(K key, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return cache.lockAsync(key, timeout, and(filter, false));
+    @Override public IgniteFuture<Boolean> lockAsync(K key, long timeout) {
+        return cache.lockAsync(key, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        return cache.lockAll(keys, timeout, and(filter, false));
+    @Override public boolean lockAll(@Nullable Collection<? extends K> keys, long timeout)
+        throws IgniteCheckedException {
+        return cache.lockAll(keys, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
-        return cache.lockAllAsync(keys, timeout, and(filter, false));
+    @Override public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout) {
+        return cache.lockAllAsync(keys, timeout);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlock(K key, IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        cache.unlock(key, and(filter, false));
+    @Override public void unlock(K key) throws IgniteCheckedException {
+        cache.unlock(key);
     }
 
     /** {@inheritDoc} */
-    @Override public void unlockAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) throws IgniteCheckedException {
-        cache.unlockAll(keys, and(filter, false));
+    @Override public void unlockAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        cache.unlockAll(keys);
     }
 
     /** {@inheritDoc} */

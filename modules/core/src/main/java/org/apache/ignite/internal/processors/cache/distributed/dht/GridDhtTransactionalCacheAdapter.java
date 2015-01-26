@@ -520,7 +520,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         // Group lock can be only started from local node, so we never start group lock transaction on remote node.
-        IgniteFuture<?> f = lockAllAsync(ctx, nearNode, req, null);
+        IgniteFuture<?> f = lockAllAsync(ctx, nearNode, req);
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
@@ -556,8 +556,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isRead,
         boolean retval,
         IgniteTxIsolation isolation,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        long accessTtl) {
         return lockAllAsyncInternal(keys,
             timeout,
             txx,
@@ -565,8 +564,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             isRead,
             retval,
             isolation,
-            accessTtl,
-            filter);
+            accessTtl);
     }
 
     /**
@@ -580,7 +578,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param retval Return value flag.
      * @param isolation Transaction isolation.
      * @param accessTtl TTL for read operation.
-     * @param filter Optional filter.
      * @return Lock future.
      */
     public GridDhtFuture<Boolean> lockAllAsyncInternal(@Nullable Collection<? extends K> keys,
@@ -590,8 +587,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         boolean isRead,
         boolean retval,
         IgniteTxIsolation isolation,
-        long accessTtl,
-        IgnitePredicate<CacheEntry<K, V>>[] filter) {
+        long accessTtl) {
         if (keys == null || keys.isEmpty())
             return new GridDhtFinishedFuture<>(ctx.kernalContext(), true);
 
@@ -610,7 +606,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             tx,
             tx.threadId(),
             accessTtl,
-            filter);
+            CU.<K, V>empty());
 
         for (K key : keys) {
             if (key == null)
@@ -661,14 +657,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param cacheCtx Cache context.
      * @param nearNode Near node.
      * @param req Request.
-     * @param filter0 Filter.
      * @return Future.
      */
     public IgniteFuture<GridNearLockResponse<K, V>> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         final ClusterNode nearNode,
-        final GridNearLockRequest<K, V> req,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter0) {
+        final GridNearLockRequest<K, V> req) {
         final List<K> keys = req.keys();
 
         IgniteFuture<Object> keyFut = null;
@@ -694,8 +688,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     if (exx != null)
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
-                    IgnitePredicate<CacheEntry<K, V>>[] filter = filter0;
-
                     // Set message into thread context.
                     GridDhtTxLocal<K, V> tx = null;
 
@@ -712,8 +704,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                         final List<GridCacheEntryEx<K, V>> entries = new ArrayList<>(cnt);
 
                         // Unmarshal filter first.
-                        if (filter == null)
-                            filter = req.filter();
+                        IgnitePredicate<CacheEntry<K, V>>[] filter = req.filter();
 
                         GridDhtLockFuture<K, V> fut = null;
 

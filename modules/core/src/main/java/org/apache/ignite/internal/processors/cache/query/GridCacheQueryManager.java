@@ -2775,18 +2775,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public boolean lock(long timeout, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public boolean lock(long timeout) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> lockAsync(long timeout,
-            @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public IgniteFuture<Boolean> lockAsync(long timeout) {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
-        @Override public void unlock(IgnitePredicate<CacheEntry<K, V>>... filter) {
+        @Override public void unlock() {
             throw new UnsupportedOperationException();
         }
 
