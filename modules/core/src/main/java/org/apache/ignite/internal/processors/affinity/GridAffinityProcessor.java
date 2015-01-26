@@ -451,7 +451,18 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (F.isEmpty(nodes))
             throw new IgniteCheckedException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
 
-        return nodes.iterator().next();
+        Collection<ClusterNode> primaryNodes = new HashSet<>();
+
+        for (ClusterNode n : nodes) {
+            if (aff.assignment.primaryPartitions(n.id()).contains(part))
+                primaryNodes.add(n);
+
+        }
+
+        if (F.isEmpty(primaryNodes))
+            throw new IgniteCheckedException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
+
+        return primaryNodes.iterator().next();
     }
 
     /** {@inheritDoc} */
@@ -582,7 +593,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return affinityCache(cacheName, topologyVersion()).assignment.primaryPartitions(n.id()).contains(key);
+                return affinityCache(cacheName, topologyVersion())
+                    .assignment.primaryPartitions(n.id()).contains(partition(key));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -597,7 +609,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return affinityCache(cacheName, topologyVersion()).assignment.backupPartitions(n.id()).contains(key);
+                return affinityCache(cacheName, topologyVersion())
+                    .assignment.backupPartitions(n.id()).contains(partition(key));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -702,7 +715,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return GridAffinityProcessor.this.mapKeysToNodes(keys);
+                return GridAffinityProcessor.this.mapKeysToNodes(cacheName, keys);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -717,7 +730,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return GridAffinityProcessor.this.mapKeyToNode(key);
+                //return affinityCache(cacheName, topologyVersion()).assignment.get()
+                return GridAffinityProcessor.this.mapKeyToNode(cacheName, key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
