@@ -17,8 +17,6 @@
 
 package org.apache.ignite.cluster;
 
-import java.io.*;
-
 /**
  * This class represents runtime information on a node. Apart from obvious
  * statistical value, this information is used for implementation of
