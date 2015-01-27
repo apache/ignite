@@ -271,7 +271,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 cctx.io().sendOrderedMessage(
                     node,
                     topic,
-                    cctx.io().messageId(topic, nodeId),
                     res,
                     timeout > 0 ? timeout : Long.MAX_VALUE);
 
@@ -319,28 +318,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void removeQueryResult(@Nullable UUID sndId, long reqId) {
-        super.removeQueryResult(sndId, reqId);
-
-        if (sndId != null) {
-            Object topic = topic(sndId, reqId);
-
-            cctx.io().removeMessageId(topic);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void removeFieldsQueryResult(@Nullable UUID sndId, long reqId) {
-        super.removeFieldsQueryResult(sndId, reqId);
-
-        if (sndId != null) {
-            Object topic = topic(sndId, reqId);
-
-            cctx.io().removeMessageId(topic);
-        }
     }
 
     /**
