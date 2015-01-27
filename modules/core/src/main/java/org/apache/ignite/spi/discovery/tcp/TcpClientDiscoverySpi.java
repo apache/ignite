@@ -1061,7 +1061,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Socket sock0 = sock;
 
                     if (sock0 != null) {
-                        msg.setMetrics(ignite.configuration().getNodeId(), metricsProvider.getMetrics());
+                        msg.setMetrics(ignite.configuration().getNodeId(), metricsProvider.metrics());
 
                         try {
                             writeToSocket(sock0, msg);
