@@ -53,7 +53,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
 
         // Metrics.
-        suite.addTestSuite(GridDiscoveryMetricsHelperSelfTest.class);
+        suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
 
         // Unsafe.
         suite.addTestSuite(GridUnsafeMemorySelfTest.class);

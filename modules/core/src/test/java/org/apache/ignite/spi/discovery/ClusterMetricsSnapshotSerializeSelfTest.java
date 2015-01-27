@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.io.*;
@@ -27,68 +28,44 @@ import java.util.*;
  * Grid discovery metrics test.
  */
 @GridCommonTest(group = "Utils")
-public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
+public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int METRICS_COUNT = 500;
-
-    /** */
-    public GridDiscoveryMetricsHelperSelfTest() {
+    public ClusterMetricsSnapshotSerializeSelfTest() {
         super(false /*don't start grid*/);
     }
 
     /** */
     public void testMetricsSize() {
-        byte[] data = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] data = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
         // Test serialization.
-        int off = DiscoveryMetricsHelper.serialize(data, 0, createMetrics());
+        int off = ClusterMetricsSnapshot.serialize(data, 0, createMetrics());
 
-        assert off == DiscoveryMetricsHelper.METRICS_SIZE;
+        assert off == ClusterMetricsSnapshot.METRICS_SIZE;
 
         // Test deserialization.
-        ClusterMetrics res = DiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterMetrics res = ClusterMetricsSnapshot.deserialize(data, 0);
 
         assert res != null;
     }
 
     /** */
     public void testSerialization() {
-        byte[] data = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] data = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
         ClusterMetrics metrics1 = createMetrics();
 
         // Test serialization.
-        int off = DiscoveryMetricsHelper.serialize(data, 0, metrics1);
+        int off = ClusterMetricsSnapshot.serialize(data, 0, metrics1);
 
-        assert off == DiscoveryMetricsHelper.METRICS_SIZE;
+        assert off == ClusterMetricsSnapshot.METRICS_SIZE;
 
         // Test deserialization.
-        ClusterMetrics metrics2 = DiscoveryMetricsHelper.deserialize(data, 0);
+        ClusterMetrics metrics2 = ClusterMetricsSnapshot.deserialize(data, 0);
 
         assert metrics2 != null;
 
         assert metrics1.equals(metrics2);
-    }
-
-    /**
-     * @throws IOException If I/O error occurs.
-     */
-    public void testMultipleMetricsSerialization() throws IOException {
-        Map<UUID, ClusterMetrics> metrics = new HashMap<>(METRICS_COUNT);
-
-        for (int i = 0; i < METRICS_COUNT; i++)
-            metrics.put(UUID.randomUUID(), createMetrics());
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream(1024 * 1024);
-
-        ObjectOutputStream oos = new ObjectOutputStream(bos);
-
-        oos.writeObject(metrics);
-
-        oos.close();
-
-        info(">>> Size of metrics map <UUID, GridNodeMetrics> in KB [metricsCount=" + METRICS_COUNT +
-            ", size=" + bos.size() / 1024.0 + ']');
     }
 
     /**

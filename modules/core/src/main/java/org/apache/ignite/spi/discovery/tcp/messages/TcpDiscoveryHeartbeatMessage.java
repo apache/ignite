@@ -18,15 +18,13 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.spi.discovery.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.spi.discovery.DiscoveryMetricsHelper.*;
 
 /**
  * Heartbeat message.
@@ -199,9 +197,9 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
     private static byte[] serializeMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
-        byte[] buf = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] buf = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
-        serialize(buf, 0, metrics);
+        ClusterMetricsSnapshot.serialize(buf, 0, metrics);
 
         return buf;
     }
@@ -215,12 +213,12 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         assert nodeId != null;
         assert metrics != null;
 
-        byte[] buf = new byte[16 + DiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] buf = new byte[16 + ClusterMetricsSnapshot.METRICS_SIZE];
 
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
-        serialize(buf, 16, metrics);
+        ClusterMetricsSnapshot.serialize(buf, 16, metrics);
 
         return buf;
     }
@@ -257,7 +255,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
          * @return Deserialized metrics.
          */
         public ClusterMetrics metrics() {
-            return deserialize(metrics, 0);
+            return ClusterMetricsSnapshot.deserialize(metrics, 0);
         }
 
         /**
@@ -268,7 +266,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
                 @Override public T2<UUID, ClusterMetrics> apply(byte[] bytes) {
                     UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
 
-                    return new T2<>(nodeId, deserialize(bytes, 16));
+                    return new T2<>(nodeId, ClusterMetricsSnapshot.deserialize(bytes, 16));
                 }
             });
         }

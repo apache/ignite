@@ -396,9 +396,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         byte[] mtr = null;
 
         if (metrics != null) {
-            mtr = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+            mtr = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
-            DiscoveryMetricsHelper.serialize(mtr, 0, metrics);
+            ClusterMetricsSnapshot.serialize(mtr, 0, metrics);
         }
 
         U.writeByteArray(out, mtr);
@@ -425,7 +425,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = DiscoveryMetricsHelper.deserialize(mtr, 0);
+            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
         order = in.readLong();
         intOrder = in.readLong();
