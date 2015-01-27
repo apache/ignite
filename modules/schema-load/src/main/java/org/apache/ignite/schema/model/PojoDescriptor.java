@@ -127,6 +127,9 @@ public class PojoDescriptor {
 
         this.fields = FXCollections.observableList(fields);
 
+        for (PojoField field : fields)
+            field.owner(this);
+
         this.typeMeta = typeMeta;
     }
 
@@ -193,7 +196,7 @@ public class PojoDescriptor {
     }
 
     /**
-     * @param includeKeys If {@code true} include key fields into list of value fields.
+     * @param includeKeys {@code true} if key fields should be included into value class.
      * @return Collection of value fields.
      */
     public Collection<PojoField> valueFields(boolean includeKeys) {

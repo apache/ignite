@@ -25,6 +25,7 @@ import javafx.event.*;
 import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
+import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
@@ -1100,6 +1101,15 @@ public class SchemaLoadApp extends Application {
 
                         ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
                         ch.selectedProperty().bindBidirectional(pojo.useProperty());
+
+                        ch.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                            @Override public void handle(MouseEvent evt) {
+                                TableView<PojoDescriptor> view = getTableView();
+
+                                view.getSelectionModel().select(getIndex());
+                                view.requestFocus();
+                            }
+                        });
 
                         Pane pnl = new HBox();
 

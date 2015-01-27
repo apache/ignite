@@ -18,6 +18,7 @@
 package org.apache.ignite.schema.model;
 
 import javafx.beans.property.*;
+import javafx.beans.value.*;
 import javafx.collections.*;
 import org.apache.ignite.cache.query.*;
 
@@ -71,6 +72,9 @@ public class PojoField {
 
     /** Field type descriptor. */
     private final CacheQueryTypeDescriptor desc;
+
+    /** Field owner. */
+    private PojoDescriptor owner;
 
     /**
      * @param clss List of classes to get class names.
@@ -180,6 +184,18 @@ public class PojoField {
         conversions = conversions(dbType, nullable, javaNamePrev);
 
         this.desc = desc;
+
+        ak.addListener(new ChangeListener<Boolean>() {
+            @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                if (newVal && owner != null) {
+                    keyProperty().set(true);
+
+                    for (PojoField field : owner.fields())
+                        if (field != PojoField.this && field.affinityKey())
+                            field.ak.set(false);
+                }
+            }
+        });
     }
 
     /**
@@ -272,10 +288,24 @@ public class PojoField {
     }
 
     /**
+     * @param owner New field owner.
+     */
+    public void owner(PojoDescriptor owner) {
+        this.owner = owner;
+    }
+
+    /**
      * @return {@code true} if this field belongs to primary key.
      */
     public boolean key() {
         return key.get();
+    }
+
+    /**
+     * @return {@code true} if this field is an affinity key.
+     */
+    public boolean affinityKey() {
+        return ak.get();
     }
 
     /**

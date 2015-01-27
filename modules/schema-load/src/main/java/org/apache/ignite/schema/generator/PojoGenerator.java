@@ -109,15 +109,19 @@ public class PojoGenerator {
     /**
      * Generate java class code.
      *
+     * @param pojo POJO descriptor.
+     * @param key {@code true} if key class should be generated.
      * @param pkg Package name.
-     * @param type Type name.
-     * @param fields POJO fields.
-     * @param constructor If {@code true} then generate empty and full constructors.
+     * @param pkgFolder Folder where to save generated class.
+     * @param constructor {@code true} if empty and full constructors should be generated.
+     * @param includeKeys {@code true} if key fields should be included into value class.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If failed to write generated code into file.
      */
-    private static void generateCode(String pkg, String type, Collection<PojoField> fields,
-        File pkgFolder, boolean constructor, ConfirmCallable askOverwrite) throws IOException {
+    private static void generateCode(PojoDescriptor pojo, boolean key, String pkg, File pkgFolder,
+        boolean constructor, boolean includeKeys, ConfirmCallable askOverwrite) throws IOException {
+        String type = key ? pojo.keyClassName() : pojo.valueClassName();
+
         File out = new File(pkgFolder, type + ".java");
 
         if (out.exists()) {
@@ -171,11 +175,17 @@ public class PojoGenerator {
         add1(src, "private static final long serialVersionUID = 0L;");
         add0(src, "");
 
+        Collection<PojoField> fields = key ? pojo.keyFields() : pojo.valueFields(includeKeys);
+
         // Generate fields declaration.
         for (PojoField field : fields) {
             String fldName = field.javaName();
 
             add1(src, "/** Value for " + fldName + ". */");
+
+            if (key && field.affinityKey())
+                add1(src, "@CacheAffinityKeyMapped");
+
             add1(src, "private " + javaTypeName(field) + " " + fldName + ";");
             add0(src, "");
         }
@@ -382,10 +392,11 @@ public class PojoGenerator {
     /**
      * Generate source code for type by its metadata.
      *
-     * @param pojo Type metadata.
+     * @param pojo POJO descriptor.
      * @param outFolder Output folder.
      * @param pkg Types package.
-     * @param constructor If {@code true} then generate empty and full constructors.
+     * @param constructor {@code true} if empty and full constructors should be generated.
+     * @param includeKeys {@code true} if key fields should be included into value class.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      * @throws IOException If failed to write generated code into file.
      */
@@ -397,8 +408,8 @@ public class PojoGenerator {
         if (!pkgFolder.exists() && !pkgFolder.mkdirs())
             throw new IOException("Failed to create folders for package: " + pkg);
 
-        generateCode(pkg, pojo.keyClassName(), pojo.keyFields(), pkgFolder, constructor, askOverwrite);
+        generateCode(pojo, true, pkg, pkgFolder, constructor, false, askOverwrite);
 
-        generateCode(pkg, pojo.valueClassName(), pojo.valueFields(includeKeys), pkgFolder, constructor, askOverwrite);
+        generateCode(pojo, false, pkg, pkgFolder, constructor, includeKeys, askOverwrite);
     }
 }
