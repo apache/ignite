@@ -469,33 +469,26 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        enterBusy();
+        gate.enter();
 
         try {
-            gate.enter();
+            if (cctx.transactional()) {
+                CU.outTx(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        delegate.close();
 
-            try {
-                if (cctx.transactional()) {
-                    CU.outTx(new Callable<Void>() {
-                        @Override public Void call() throws Exception {
-                            delegate.close();
-
-                            return null;
-                        }
-                    }, cctx);
-                }
-                else
-                    delegate.close();
+                        return null;
+                    }
+                }, cctx);
             }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException(e);
-            }
-            finally {
-                gate.leave();
-            }
+            else
+                delegate.close();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
-            leaveBusy();
+            gate.leave();
         }
     }
 

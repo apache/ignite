@@ -65,6 +65,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         //suite.addTest(new TestSuite(GridCachePartitionedQueueCreateMultiNodeSelfTest.class));
         //suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedNoBackupsSetSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedCountDownLatchSelfTest.class));
 

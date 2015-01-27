@@ -24,7 +24,7 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.datastructures.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -34,17 +34,14 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Cache set tests.
  */
-public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstractTest {
     /** */
-    private static final String SET_NAME = "testSet";
+    protected static final String SET_NAME = "testSet";
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -52,12 +49,25 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
+    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
+        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+
+        if (colCfg.getCacheMode() == PARTITIONED)
+            colCfg.setBackups(1);
+
+        return colCfg;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        cache().dataStructures().removeSet(SET_NAME);
+        IgniteSet<Object> set = grid(0).set(SET_NAME, null, false);
+
+        if (set != null)
+            set.close();
 
         waitSetResourcesCleared();
 
-        assertNull(cache().dataStructures().set(SET_NAME, false, false));
+        assertNull(grid(0).set(SET_NAME, null, false));
 
         super.afterTest();
     }
@@ -101,11 +111,15 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
 
-            CacheDataStructuresManager dsMgr = grid.internalCache(null).context().dataStructures();
+            for (GridCache cache : grid.caches()) {
+                CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
 
-            map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
+                map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
-            assertEquals("Set data not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
+                assertEquals("Set data not removed [grid=" + i + ", cache=" + cache.name() + ", map=" + map + ']',
+                    0,
+                    map.size());
+            }
         }
     }
 
@@ -116,46 +130,15 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = 0; i < gridCount(); i++) {
             GridKernal grid = (GridKernal) grid(i);
 
-            GridCacheQueryManager queries = grid.internalCache(null).context().queries();
+            for (GridCache cache : grid.caches()) {
+                GridCacheQueryManager queries = grid.internalCache(cache.name()).context().queries();
 
-            Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
+                Map map = GridTestUtils.getFieldValue(queries, GridCacheQueryManager.class, "qryIters");
 
-            for (Object obj : map.values())
-                assertEquals("Iterators not removed for grid " + i, 0, ((Map) obj).size());
+                for (Object obj : map.values())
+                    assertEquals("Iterators not removed for grid " + i, 0, ((Map) obj).size());
+            }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        if (cacheMode() == PARTITIONED) {
-            CacheConfiguration ccfg1 = cacheConfiguration(gridName);
-
-            CacheConfiguration ccfg2 = cacheConfiguration(gridName);
-
-            ccfg2.setName("noBackupsCache");
-            ccfg2.setBackups(0);
-
-            cfg.setCacheConfiguration(ccfg1, ccfg2);
-        }
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setPreloadMode(SYNC);
-        ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -183,14 +166,22 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      */
     private void testCreateRemove(boolean collocated) throws Exception {
         for (int i = 0; i < gridCount(); i++)
-            assertNull(cache(i).dataStructures().set(SET_NAME, collocated, false));
+            assertNull(grid(i).set(SET_NAME, null, false));
 
-        IgniteSet<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        IgniteCollectionConfiguration colCfg0 = collectionConfiguration();
+
+        colCfg0.setCollocated(collocated);
+
+        IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg0, true);
 
         assertNotNull(set0);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = cache().dataStructures().set(SET_NAME, collocated, true);
+            IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+            colCfg.setCollocated(collocated);
+
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, colCfg, true);
 
             assertNotNull(set);
             assertTrue(set.isEmpty());
@@ -198,17 +189,32 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             assertEquals(SET_NAME, set.name());
 
-            if (cacheMode() == PARTITIONED)
+            if (collectionCacheMode() == PARTITIONED)
                 assertEquals(collocated, set.collocated());
         }
 
-        assertTrue(cache().dataStructures().removeSet(SET_NAME));
+        set0.close();
 
-        for (int i = 0; i < gridCount(); i++) {
-            assertNull(cache(i).dataStructures().set(SET_NAME, collocated, false));
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    for (int i = 0; i < gridCount(); i++) {
+                        if (grid(i).set(SET_NAME, null, false) != null)
+                            return false;
+                    }
 
-            assertFalse(cache(i).dataStructures().removeSet(SET_NAME));
-        }
+                    return true;
+                }
+                catch (Exception e) {
+                    fail("Unexpected exception: " + e);
+
+                    return true;
+                }
+            }
+        }, 1000);
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull(grid(i).set(SET_NAME, null, false));
     }
 
     /**
@@ -230,11 +236,16 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     private void testApi(boolean collocated) throws Exception {
-        assertNotNull(cache().dataStructures().set(SET_NAME, collocated, true));
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        assertNotNull(grid(0).set(SET_NAME, colCfg, true));
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
+            assertNotNull(set);
             assertFalse(set.contains(1));
             assertEquals(0, set.size());
             assertTrue(set.isEmpty());
@@ -242,12 +253,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         // Add, isEmpty.
 
-        assertTrue(cache().dataStructures().set(SET_NAME, collocated, false).add(1));
+        assertTrue(grid(0).set(SET_NAME, null, false).add(1));
 
         for (int i = 0; i < gridCount(); i++) {
-            assertEquals(0, cache(i).size());
-
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(1, set.size());
             assertFalse(set.isEmpty());
@@ -260,10 +269,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         // Remove.
 
-        assertTrue(cache().dataStructures().set(SET_NAME, collocated, true).remove(1));
+        assertTrue(grid(0).set(SET_NAME, null, false).remove(1));
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(0, set.size());
             assertTrue(set.isEmpty());
@@ -281,7 +290,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         final int ITEMS = 100;
 
         for (int i = 0; i < ITEMS; i++) {
-            assertTrue(cache(i % gridCount()).dataStructures().set(SET_NAME, collocated, false).add(i));
+            assertTrue(grid(i % gridCount()).set(SET_NAME, null, false).add(i));
 
             col1.add(i);
             col2.add(i);
@@ -290,7 +299,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         col2.add(ITEMS);
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(ITEMS, set.size());
             assertTrue(set.containsAll(col1));
@@ -300,7 +309,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         // To array.
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertArrayContent(set.toArray(), ITEMS);
             assertArrayContent(set.toArray(new Integer[ITEMS]), ITEMS);
@@ -313,10 +322,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         for (int i = ITEMS - 10; i < ITEMS; i++)
             rmvCol.add(i);
 
-        assertTrue(cache().dataStructures().set(SET_NAME, collocated, false).removeAll(rmvCol));
+        assertTrue(grid(0).set(SET_NAME, null, false).removeAll(rmvCol));
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertFalse(set.removeAll(rmvCol));
 
@@ -329,10 +338,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         // Add all.
 
-        assertTrue(cache().dataStructures().set(SET_NAME, collocated, false).addAll(rmvCol));
+        assertTrue(grid(0).set(SET_NAME, null, false).addAll(rmvCol));
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(ITEMS, set.size());
 
@@ -344,10 +353,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         // Retain all.
 
-        assertTrue(cache().dataStructures().set(SET_NAME, collocated, false).retainAll(rmvCol));
+        assertTrue(grid(0).set(SET_NAME, null, false).retainAll(rmvCol));
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(rmvCol.size(), set.size());
 
@@ -362,10 +371,10 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         // Clear.
 
-        cache().dataStructures().set(SET_NAME, collocated, false).clear();
+        grid(0).set(SET_NAME, null, false).clear();
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(0, set.size());
             assertTrue(set.isEmpty());
@@ -393,10 +402,14 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      */
     @SuppressWarnings("deprecation")
     private void testIterator(boolean collocated) throws Exception {
-        final IgniteSet<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertFalse(set.iterator().hasNext());
         }
@@ -404,14 +417,14 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         int cnt = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             for (int j = 0; j < 100; j++)
                 assertTrue(set.add(cnt++));
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertSetContent(set, cnt);
         }
@@ -437,7 +450,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         set0.clear();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertFalse(set.iterator().hasNext());
         }
@@ -457,7 +470,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            Set<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            Set<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertEquals(i % 2 != 0, set.contains(i));
         }
@@ -483,7 +496,11 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      */
     @SuppressWarnings({"BusyWait", "ErrorNotRethrown"})
     private void testIteratorClose(boolean collocated) throws Exception {
-        IgniteSet<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
         for (int i = 0; i < 5000; i++)
             assertTrue(set0.add(i));
@@ -514,7 +531,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         int idx = gridCount() > 1 ? 1 : 0;
 
-        cache(idx).dataStructures().removeSet(SET_NAME);
+        grid(idx).set(SET_NAME, null, false).close();
 
         for (int i = 0; i < 10; i++) {
             try {
@@ -569,10 +586,14 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     private void testNodeJoinsAndLeaves(boolean collocated) throws Exception {
-        if (cacheMode() == LOCAL)
+        if (collectionCacheMode() == LOCAL)
             return;
 
-        Set<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        Set<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
         final int ITEMS = 10_000;
 
@@ -582,12 +603,12 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         startGrid(gridCount());
 
         try {
-            IgniteSet<Integer> set1 = cache().dataStructures().set(SET_NAME, collocated, false);
+            IgniteSet<Integer> set1 = grid(0).set(SET_NAME, null, false);
 
             assertNotNull(set1);
 
             for (int i = 0; i < gridCount() + 1; i++) {
-                IgniteSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+                IgniteSet<Integer> set = grid(i).set(SET_NAME, null, false);
 
                 assertEquals(ITEMS, set.size());
 
@@ -599,47 +620,9 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         }
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertSetContent(set, ITEMS);
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCollocation() throws Exception {
-        if (cacheMode() != PARTITIONED)
-            return;
-
-        final String setName = SET_NAME + "testCollocation";
-
-        Set<Integer> set0 = grid(0).cache("noBackupsCache").dataStructures().set(setName, true, true);
-
-        try {
-            for (int i = 0; i < 1000; i++)
-                assertTrue(set0.add(i));
-
-            assertEquals(1000, set0.size());
-
-            UUID setNodeId = null;
-
-            for (int i = 0; i < gridCount(); i++) {
-                GridKernal grid = (GridKernal)grid(i);
-
-                Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    grid.context().cache().internalCache("noBackupsCache").map().allEntries0().iterator();
-
-                if (entries.hasNext()) {
-                    if (setNodeId == null)
-                        setNodeId = grid.localNode().id();
-                    else
-                        fail("For collocated set all items should be stored on single node.");
-                }
-            }
-        }
-        finally {
-            grid(0).cache("noBackupsCache").dataStructures().removeSet(setName);
         }
     }
 
@@ -654,7 +637,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     public void testMultithreadedCollocated() throws Exception {
-        if (cacheMode() != PARTITIONED)
+        if (collectionCacheMode() != PARTITIONED)
             return;
 
         testMultithreaded(true);
@@ -665,7 +648,11 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     private void testMultithreaded(final boolean collocated) throws Exception {
-        Set<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        Set<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
         assertNotNull(set0);
 
@@ -680,9 +667,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
             futs.add(GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    GridCache cache = grid(idx).cache(null);
-
-                    IgniteSet<Integer> set = cache.dataStructures().set(SET_NAME, collocated, false);
+                    IgniteSet<Integer> set = grid(idx).set(SET_NAME, null, false);
 
                     assertNotNull(set);
 
@@ -749,14 +734,18 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      */
     @SuppressWarnings("WhileLoopReplaceableByForEach")
     private void testCleanup(boolean collocated) throws Exception {
-        final Set<Integer> set0 = cache().dataStructures().set(SET_NAME, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        final IgniteSet<Integer> set0 = grid(0).set(SET_NAME, colCfg, true);
 
         assertNotNull(set0);
 
         final Collection<Set<Integer>> sets = new ArrayList<>();
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteSet<Integer> set = cache(i).dataStructures().set(SET_NAME, collocated, false);
+            IgniteSet<Integer> set = grid(i).set(SET_NAME, null, false);
 
             assertNotNull(set);
 
@@ -795,7 +784,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
                 }
             }, 5, "set-add-thread");
 
-            assertTrue(grid(0).cache(null).dataStructures().removeSet(SET_NAME));
+            set0.close();
         }
         finally {
             stop.set(true);
@@ -805,9 +794,11 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         int cnt = 0;
 
+        GridCacheContext cctx = GridTestUtils.getFieldValue(set0, "cctx");
+
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((GridKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx<Object, Object> entry = entries.next();
@@ -837,14 +828,14 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     public void testSerialization() throws Exception {
-        final IgniteSet<Integer> set = cache().dataStructures().set(SET_NAME, false, true);
+        final IgniteSet<Integer> set = grid(0).set(SET_NAME, collectionConfiguration(), true);
 
         assertNotNull(set);
 
         for (int i = 0; i < 10; i++)
             set.add(i);
 
-        Collection<Integer> c = grid(0).compute().broadcast(new Callable<Integer>() {
+        Collection<Integer> c = grid(0).compute().broadcast(new IgniteCallable<Integer>() {
             @Override public Integer call() throws Exception {
                 assertEquals(SET_NAME, set.name());
 

@@ -88,10 +88,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /** Cache contains only entry {@code GridCacheSequenceValue}.  */
     private CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
 
-    /** Set keys used for set iteration. */
-    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap
-        = new ConcurrentHashMap8<>();
-
     /** Sets map. */
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
@@ -1086,7 +1082,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         else {
             blockSet(hdr.id());
 
-            removeSetData(cctx, hdr.id(), 0);
+            cctx.dataStructures().removeSetData(hdr.id(), 0);
         }
 
         return true;
@@ -1104,59 +1100,12 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cctx Cache context.
-     * @param setId Set ID.
-     * @param topVer Topology version.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private void removeSetData(GridCacheContext cctx, IgniteUuid setId, long topVer) throws IgniteCheckedException {
-        boolean loc = cctx.isLocal();
-
-        GridCacheAffinityManager aff = cctx.affinity();
-
-        if (!loc) {
-            aff.affinityReadyFuture(topVer).get();
-
-            cctx.preloader().syncFuture().get();
-        }
-
-        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
-
-        if (set == null)
-            return;
-
-        GridCache cache = cctx.cache();
-
-        final int BATCH_SIZE = 100;
-
-        Collection<GridCacheSetItemKey> keys = new ArrayList<>(BATCH_SIZE);
-
-        for (GridCacheSetItemKey key : set) {
-           if (!loc && !aff.primary(cctx.localNode(), key, topVer))
-               continue;
-
-            keys.add(key);
-
-            if (keys.size() == BATCH_SIZE) {
-                retryRemoveAll(cache, keys);
-
-                keys.clear();
-            }
-        }
-
-        if (!keys.isEmpty())
-            retryRemoveAll(cache, keys);
-
-        setDataMap.remove(setId);
-    }
-
-    /**
+     * @param log Logger.
      * @param call Callable.
      * @return Callable result.
-     * @throws IgniteCheckedException If all retrys failed.
+     * @throws IgniteCheckedException If all retries failed.
      */
-    <R> R retry(Callable<R> call) throws IgniteCheckedException {
+    public static <R> R retry(IgniteLogger log, Callable<R> call) throws IgniteCheckedException {
         try {
             int cnt = 0;
 
@@ -1194,26 +1143,9 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
-        return retry(new Callable<T>() {
+        return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.remove(key);
-            }
-        });
-    }
-
-    /**
-     * @param cache Cache.
-     * @param keys Keys to remove.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
-        throws IgniteCheckedException {
-        retry(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                cache.removeAll(keys);
-
-                return null;
             }
         });
     }
@@ -1228,7 +1160,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
         throws IgniteCheckedException {
-        return retry(new Callable<T>() {
+        return retry(log, new Callable<T>() {
             @Nullable @Override public T call() throws Exception {
                 return (T)cache.putIfAbsent(key, val);
             }
@@ -1401,7 +1333,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
             gate.enter();
 
             try {
-                ((GridKernal)ignite).context().dataStructures().removeSetData(cache.context(), setId, topVer);
+                cache.context().dataStructures().removeSetData(setId, topVer);
             }
             finally {
                 gate.leave();

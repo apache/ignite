@@ -51,6 +51,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** Cache. */
     private final GridCache<GridCacheSetItemKey, Boolean> cache;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /** Set name. */
     private final String name;
 
@@ -79,6 +82,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         collocated = hdr.collocated();
 
         cache = ctx.cache();
+
+        log = ctx.logger(GridCacheSetImpl.class);
 
         hdrPart = ctx.affinity().partition(new GridCacheSetHeaderKey(name));
     }
@@ -117,7 +122,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             qry.projection(ctx.grid().forNodes(nodes));
 
-            Iterable<Integer> col = (Iterable<Integer>) qry.execute(new SumReducer()).get();
+            Iterable<Integer> col = (Iterable<Integer>)qry.execute(new SumReducer()).get();
 
             int sum = 0;
 
@@ -382,7 +387,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      */
     private <R> R retry(Callable<R> call) {
         try {
-            return (R)ctx.kernalContext().dataStructures().retry(call);
+            return CacheDataStructuresProcessor.retry(log, call);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

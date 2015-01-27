@@ -221,6 +221,53 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     }
 
     /**
+     * @param setId Set ID.
+     * @param topVer Topology version.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void removeSetData(IgniteUuid setId, long topVer) throws IgniteCheckedException {
+        boolean loc = cctx.isLocal();
+
+        GridCacheAffinityManager aff = cctx.affinity();
+
+        if (!loc) {
+            aff.affinityReadyFuture(topVer).get();
+
+            cctx.preloader().syncFuture().get();
+        }
+
+        GridConcurrentHashSet<GridCacheSetItemKey> set = setDataMap.get(setId);
+
+        if (set == null)
+            return;
+
+        GridCache cache = cctx.cache();
+
+        final int BATCH_SIZE = 100;
+
+        Collection<GridCacheSetItemKey> keys = new ArrayList<>(BATCH_SIZE);
+
+        for (GridCacheSetItemKey key : set) {
+            if (!loc && !aff.primary(cctx.localNode(), key, topVer))
+                continue;
+
+            keys.add(key);
+
+            if (keys.size() == BATCH_SIZE) {
+                retryRemoveAll(cache, keys);
+
+                keys.clear();
+            }
+        }
+
+        if (!keys.isEmpty())
+            retryRemoveAll(cache, keys);
+
+        setDataMap.remove(setId);
+    }
+
+    /**
      * @param key Set item key.
      * @param rmv {@code True} if item was removed.
      */
@@ -242,6 +289,23 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
             set.remove(key);
         else
             set.add(key);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param keys Keys to remove.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    private void retryRemoveAll(final GridCache cache, final Collection<GridCacheSetItemKey> keys)
+        throws IgniteCheckedException {
+        CacheDataStructuresProcessor.retry(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.removeAll(keys);
+
+                return null;
+            }
+        });
     }
 
     /**
