@@ -261,8 +261,6 @@ public class DatabaseMetadataParser {
 
                 List<PojoDescriptor> children = new ArrayList<>();
 
-                System.out.println(schema);
-
                 try (ResultSet tbls = dbMeta.getTables(catalog, schema, "%", null)) {
                     while (tbls.next()) {
                         if ("TABLE".equals(tbls.getString(4)))
