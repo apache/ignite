@@ -113,6 +113,7 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
         checkIsBackupOrPrimary(testAff, aff);
         checkMapKeyToNode(testAff, aff);
         checkMapKeysToNodes(testAff, aff);
+        checkMapPartitionToNode(testAff, aff);
         checkMapPartitionsToNodes(testAff, aff);
     }
 
@@ -152,7 +153,7 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
     }
 
     /**
-     * Check mapKeyToNode, mapKeyToPrimaryAndBackups, mapPartitionToPrimaryAndBackups and mapPartitionToNode methods.
+     * Check mapKeyToNode, mapKeyToPrimaryAndBackups methods.
      */
     private void checkMapKeyToNode(CacheAffinity testAff, CacheAffinity aff) {
         for (int i = 0; i < 10000; i++) {
@@ -160,7 +161,12 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
 
             checkEqualCollection(testAff.mapKeyToPrimaryAndBackups(i), aff.mapKeyToPrimaryAndBackups(i));
         }
+    }
 
+    /**
+     * Check mapPartitionToPrimaryAndBackups and mapPartitionToNode methods.
+     */
+    private void checkMapPartitionToNode(CacheAffinity testAff, CacheAffinity aff) {
         assertEquals(aff.partitions(), testAff.partitions());
 
         for (int part = 0; part < aff.partitions(); ++part) {
