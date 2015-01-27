@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import com.beust.jcommander.internal.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
@@ -30,7 +29,6 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
-import org.jetbrains.annotations.Nullable;
 
 import javax.cache.expiry.*;
 import java.util.*;
@@ -547,7 +545,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     public void testMultiLocks() throws Exception {
         IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        Collection<Integer> keys = Lists.newArrayList(1, 2, 3);
+        Collection<Integer> keys = Arrays.asList(1, 2, 3);
 
         Lock lock = cache.lockAll(keys);
 

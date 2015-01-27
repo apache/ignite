@@ -17,22 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import com.beust.jcommander.internal.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.distributed.dht.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -385,8 +383,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         IgniteCache<Integer, String> cache1 = ignite1.jcache(null);
         IgniteCache<Integer, String> cache2 = ignite2.jcache(null);
 
-        Collection<Integer> keys1 = Lists.newArrayList(1, 2, 3);
-        Collection<Integer> keys2 = Lists.newArrayList(2, 3, 4);
+        Collection<Integer> keys1 = Arrays.asList(1, 2, 3);
+        Collection<Integer> keys2 = Arrays.asList(2, 3, 4);
 
         Lock lock1_1 = cache1.lockAll(keys1);
         Lock lock2_2 = cache2.lockAll(keys2);
