@@ -31,7 +31,8 @@ import java.util.*;
 /**
  * {@link org.apache.ignite.IgniteMessaging} implementation.
  */
-public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessaging> implements IgniteMessaging, Externalizable {
+public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessaging>
+    implements IgniteMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -158,7 +159,8 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessagi
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException {
+    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p)
+        throws IgniteCheckedException {
         A.notNull(p, "p");
 
         guard();
