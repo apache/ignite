@@ -165,7 +165,7 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
 
         verify(ioMgr).sendOrderedMessage(
             argThat(new IsEqualCollection(F.asList(locNode, rmtNode))),
-            eq(GridTopic.TOPIC_COMM_USER), anyLong(),
+            eq(GridTopic.TOPIC_COMM_USER),
             any(GridIoUserMessage.class),
             eq(GridIoPolicy.PUBLIC_POOL),
             eq(123L),
