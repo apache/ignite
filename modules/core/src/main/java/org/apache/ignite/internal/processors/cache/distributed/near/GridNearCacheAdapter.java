@@ -171,9 +171,15 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public IgniteFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        IgniteTxEx<K, V> tx, @Nullable UUID subjId, String taskName,
-        IgniteBiInClosure<K, V> vis) {
+    @Override public IgniteFuture<Object> readThroughAllAsync(
+        Collection<? extends K> keys,
+        boolean reload,
+        boolean skipVals,
+        IgniteTxEx<K, V> tx,
+        @Nullable UUID subjId,
+        String taskName,
+        IgniteBiInClosure<K, V> vis
+    ) {
         return (IgniteFuture)loadAsync(tx,
             keys,
             reload,
@@ -181,7 +187,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             subjId,
             taskName,
             true,
-            null);
+            null,
+            skipVals);
     }
 
     /** {@inheritDoc} */
@@ -260,7 +267,9 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable ExpiryPolicy expiryPlc) {
+        @Nullable ExpiryPolicy expiryPlc,
+        boolean skipVal
+    ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(ctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -280,7 +289,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             subjId,
             taskName,
             deserializePortable,
-            expiry);
+            expiry,
+            skipVal);
 
         // init() will register future for responses if future has remote mappings.
         fut.init();
@@ -421,11 +431,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @Override public Collection<V> primaryValues(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         return new GridCacheValueCollection<>(ctx, entrySet(filter), ctx.vararg(F.<K, V>cachePrimary()));
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean containsKey(K key, IgnitePredicate<CacheEntry<K, V>> filter) {
-        return super.containsKey(key, filter) || dht().containsKey(key, filter);
     }
 
     /** {@inheritDoc} */
@@ -691,7 +696,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             return new EntryIterator(nearSet.iterator(),
                 F.iterator0(dhtSet, false, new P1<CacheEntry<K, V>>() {
                     @Override public boolean apply(CacheEntry<K, V> e) {
-                        return !GridNearCacheAdapter.super.containsKey(e.getKey(), null);
+                        return !GridNearCacheAdapter.super.containsKey(e.getKey());
                     }
                 }));
         }

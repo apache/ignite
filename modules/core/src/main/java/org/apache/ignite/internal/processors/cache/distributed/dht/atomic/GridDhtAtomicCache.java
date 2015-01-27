@@ -268,7 +268,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
         final String taskName,
-        final boolean deserializePortable
+        final boolean deserializePortable,
+        final boolean skipVals
     ) {
         GridCacheProjectionImpl<K, V> prj = ctx.projectionPerCall();
 
@@ -286,7 +287,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     subjId0,
                     taskName,
                     deserializePortable,
-                    expiryPlc);
+                    expiryPlc,
+                    skipVals);
             }
         });
     }
@@ -841,6 +843,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      * @return Get future.
      */
     private IgniteFuture<Map<K, V>> getAllAsync0(@Nullable Collection<? extends K> keys,
@@ -849,7 +852,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable ExpiryPolicy expiryPlc) {
+        @Nullable ExpiryPolicy expiryPlc,
+        boolean skipVals) {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
@@ -961,7 +965,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskName,
             deserializePortable,
-            expiry);
+            expiry,
+            skipVals);
 
         fut.init();
 

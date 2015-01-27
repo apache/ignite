@@ -99,7 +99,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
         String taskName,
-        final boolean deserializePortable
+        final boolean deserializePortable,
+        final boolean skipVals
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -112,7 +113,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable));
+                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, skipVals));
                 }
             });
         }
@@ -128,7 +129,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializePortable,
-            prj != null ? prj.expiry() : null);
+            prj != null ? prj.expiry() : null,
+            skipVals);
     }
 
     /**
@@ -143,7 +145,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable Collection<? extends K> keys,
         boolean readThrough,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals) {
         assert tx != null;
 
         GridNearGetFuture<K, V> fut = new GridNearGetFuture<>(ctx,
@@ -155,7 +158,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
             deserializePortable,
-            expiryPlc);
+            expiryPlc,
+            skipVals);
 
         // init() will register future for responses if it has remote mappings.
         fut.init();

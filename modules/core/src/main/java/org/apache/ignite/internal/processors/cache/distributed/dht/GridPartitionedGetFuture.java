@@ -98,6 +98,9 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
 
+    /** Skip values flag. */
+    private boolean skipVals;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -117,6 +120,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -128,7 +132,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals
     ) {
         super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
 
@@ -144,6 +149,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.deserializePortable = deserializePortable;
         this.taskName = taskName;
         this.expiryPlc = expiryPlc;
+        this.skipVals = skipVals;
 
         futId = IgniteUuid.randomUuid();
 
@@ -318,7 +324,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         deserializePortable,
-                        expiryPlc);
+                        expiryPlc,
+                        skipVals);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -370,7 +377,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     topVer,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
-                    expiryPlc != null ? expiryPlc.forAccess() : -1L);
+                    expiryPlc != null ? expiryPlc.forAccess() : -1L,
+                    skipVals);
 
                 add(fut); // Append new future.
 

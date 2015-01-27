@@ -334,12 +334,8 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public ConcurrentMap<K, V> toMap();
 
     /**
-     * Returns {@code true} if this cache contains a mapping for the specified
-     * key.
-     *
-     * @param key key whose presence in this map is to be tested.
-     * @return {@code true} if this map contains a mapping for the specified key.
-     * @throws NullPointerException if the key is {@code null}.
+     * @param key Key.
+     * @return {@code True} if cache contains mapping for a given key.
      */
     public boolean containsKey(K key);
 
@@ -348,6 +344,12 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @return Future.
      */
     public IgniteFuture<Boolean> containsKeyAsync(K key);
+
+    /**
+     * @param keys Keys to check.
+     * @return Future.
+     */
+    public IgniteFuture<Map<K, Boolean>> containsKeysAsync(Collection<? extends K> keys);
 
     /**
      * Returns {@code true} if this cache contains given value.

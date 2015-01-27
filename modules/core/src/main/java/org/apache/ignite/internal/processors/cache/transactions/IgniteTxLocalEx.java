@@ -73,7 +73,8 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
-        boolean deserializePortable);
+        boolean deserializePortable,
+        boolean skipVals);
 
     /**
      * @param cacheCtx Cache context.
@@ -166,6 +167,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param keys Keys.
      * @param c Closure.
      * @param deserializePortable Deserialize portable flag.
+     * @param skipVals Skip values flag.
      * @return Future with {@code True} value if loading took place.
      */
     public IgniteFuture<Boolean> loadMissing(
@@ -174,5 +176,6 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
         boolean async,
         Collection<? extends K> keys,
         boolean deserializePortable,
+        boolean skipVals,
         IgniteBiInClosure<K, V> c);
 }

@@ -243,7 +243,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
             Object e = cache1.peek(key);
 
             if (e != null)
-                assert cache2.containsKey(key, null) : "Cache2 does not contain key: " + key;
+                assert cache2.containsKey(key) : "Cache2 does not contain key: " + key;
         }
     }
 

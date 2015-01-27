@@ -58,6 +58,9 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
     /** Read through flag. */
     private boolean readThrough;
 
+    /** Skip values flag. Used for {@code containsKey} method. */
+    private boolean skipVals;
+
     /** */
     @GridToStringExclude
     @GridDirectMap(keyType = byte[].class, valueType = boolean.class)
@@ -92,6 +95,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      * @param keys Keys.
      * @param readThrough Read through flag.
      * @param reload Reload flag.
+     * @param skipVals Skip values flag. When false, only boolean values will be returned indicating whether
+     *      cache entry has a value.
      * @param topVer Topology version.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
@@ -108,7 +113,8 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         long topVer,
         UUID subjId,
         int taskNameHash,
-        long accessTtl
+        long accessTtl,
+        boolean skipVals
     ) {
         assert futId != null;
         assert miniId != null;
@@ -126,6 +132,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
+        this.skipVals = skipVals;
     }
 
     /**
@@ -182,6 +189,14 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
      */
     public boolean readThrough() {
         return readThrough;
+    }
+
+    /**
+     * @return Skip values flag. If true, boolean values indicating whether cache entry has a value will be
+     *      returned as future result.
+     */
+    public boolean skipValues() {
+        return skipVals;
     }
 
     /**
@@ -246,6 +261,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
         _clone.keys = keys;
         _clone.reload = reload;
         _clone.readThrough = readThrough;
+        _clone.skipVals = skipVals;
         _clone.keyBytes = keyBytes;
         _clone.topVer = topVer;
         _clone.subjId = subjId;
@@ -361,6 +377,11 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
+            case 13:
+                if (!commState.putBoolean(skipVals))
+                    return false;
+
+                commState.idx++;
         }
 
         return true;
@@ -497,6 +518,13 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
                 commState.idx++;
 
+            case 13:
+                if (buf.remaining() < 1)
+                    return false;
+
+                skipVals = commState.getBoolean();
+
+                commState.idx++;
         }
 
         return true;

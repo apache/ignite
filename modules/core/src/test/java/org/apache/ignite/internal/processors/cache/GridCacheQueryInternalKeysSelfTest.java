@@ -85,7 +85,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
                     assertNotNull(g);
 
                     assertTrue("Affinity node doesn't contain internal key [key=" + internalKey + ", node=" + n + ']',
-                        ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht().containsKey(internalKey, null));
+                        ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht().containsKey(internalKey));
                 }
             }
         }

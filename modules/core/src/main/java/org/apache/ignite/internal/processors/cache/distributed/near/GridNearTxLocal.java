@@ -81,7 +81,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     private boolean colocatedLocallyMapped;
 
     /** Info for entries accessed locally in optimistic transaction. */
-    private Map<IgniteTxKey, IgniteCacheExpiryPolicy> accessMap;
+    private Map<IgniteTxKey<K>, IgniteCacheExpiryPolicy> accessMap;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -283,6 +283,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         boolean async,
         final Collection<? extends K> keys,
         boolean deserializePortable,
+        boolean skipVals,
         final IgniteBiInClosure<K, V> c
     ) {
         if (cacheCtx.isNear()) {
@@ -290,7 +291,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 keys,
                 readThrough,
                 deserializePortable,
-                accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
+                accessPolicy(cacheCtx, keys),
+                skipVals).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
                     try {
                         Map<K, V> map = f.get();
@@ -319,7 +321,8 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 CU.subjectId(this, cctx),
                 resolveTaskName(),
                 deserializePortable,
-                accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
+                accessPolicy(cacheCtx, keys),
+                skipVals).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                     @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
                         try {
                             Map<K, V> map = f.get();
@@ -342,7 +345,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         else {
             assert cacheCtx.isLocal();
 
-            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, c);
+            return super.loadMissing(cacheCtx, readThrough, async, keys, deserializePortable, skipVals, c);
         }
     }
 
@@ -1170,10 +1173,11 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
-        IgniteTxKey key,
-        @Nullable ExpiryPolicy expiryPlc)
-    {
+    @Override protected IgniteCacheExpiryPolicy accessPolicy(
+        GridCacheContext ctx,
+        IgniteTxKey<K> key,
+        @Nullable ExpiryPolicy expiryPlc
+    ) {
         assert optimistic();
 
         if (expiryPlc == null)
@@ -1202,7 +1206,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      */
     private IgniteCacheExpiryPolicy accessPolicy(GridCacheContext<K, V> cacheCtx, Collection<? extends K> keys) {
         if (accessMap != null) {
-            for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
+            for (Map.Entry<IgniteTxKey<K>, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
                 if (e.getKey().cacheId() == cacheCtx.cacheId() && keys.contains(e.getKey().key()))
                     return e.getValue();
             }
@@ -1218,7 +1222,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         if (accessMap != null) {
             assert optimistic();
 
-            for (Map.Entry<IgniteTxKey, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
+            for (Map.Entry<IgniteTxKey<K>, IgniteCacheExpiryPolicy> e : accessMap.entrySet()) {
                 if (e.getValue().entries() != null) {
                     GridCacheContext cctx0 = cctx.cacheContext(e.getKey().cacheId());
 

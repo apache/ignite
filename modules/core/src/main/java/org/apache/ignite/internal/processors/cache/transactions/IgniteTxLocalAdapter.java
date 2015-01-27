@@ -309,6 +309,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         boolean async,
         final Collection<? extends K> keys,
         boolean deserializePortable,
+        boolean skipVals,
         final IgniteBiInClosure<K, V> c
     ) {
         if (!async) {
@@ -1025,7 +1026,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /**
      * Checks if there is a cached or swapped value for
-     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean)} method.
+     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, boolean)} method.
      *
      * @param cacheCtx Cache context.
      * @param keys Key to enlist.
@@ -1274,9 +1275,11 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param expiryPlc Expiry policy.
      * @return Expiry policy wrapper for entries accessed locally in optimistic transaction.
      */
-    protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
-        IgniteTxKey key,
-        @Nullable ExpiryPolicy expiryPlc) {
+    protected IgniteCacheExpiryPolicy accessPolicy(
+        GridCacheContext ctx,
+        IgniteTxKey<K> key,
+        @Nullable ExpiryPolicy expiryPlc
+    ) {
         return null;
     }
 
@@ -1301,7 +1304,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /**
      * Loads all missed keys for
-     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean)} method.
+     * {@link #getAllAsync(GridCacheContext, Collection, GridCacheEntryEx, boolean, boolean)} method.
      *
      * @param cacheCtx Cache context.
      * @param map Return map.
@@ -1315,7 +1318,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final Map<K, V> map,
         final Map<K, GridCacheVersion> missedMap,
         @Nullable final Collection<K> redos,
-        final boolean deserializePortable
+        final boolean deserializePortable,
+        boolean skipVals
     ) {
         assert redos != null || pessimistic();
 
@@ -1327,7 +1331,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         return new GridEmbeddedFuture<>(cctx.kernalContext(),
             loadMissing(
                 cacheCtx,
-                true, false, missedMap.keySet(), deserializePortable, new CI2<K, V>() {
+                true, false, missedMap.keySet(), deserializePortable, skipVals, new CI2<K, V>() {
                 /** */
                 private GridCacheVersion nextVer;
 
@@ -1483,7 +1487,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
-        final boolean deserializePortable) {
+        final boolean deserializePortable,
+        final boolean skipVals) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
 
@@ -1619,7 +1624,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         }
 
                         if (!missed.isEmpty() && (cacheCtx.isReplicated() || cacheCtx.isLocal()))
-                            return checkMissed(cacheCtx, retMap, missed, null, deserializePortable);
+                            return checkMissed(cacheCtx, retMap, missed, null, deserializePortable, skipVals);
 
                         return new GridFinishedFuture<>(cctx.kernalContext(), Collections.<K, V>emptyMap());
                     }
@@ -1678,7 +1683,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     return new GridEmbeddedFuture<>(
                         cctx.kernalContext(),
                         // First future.
-                        checkMissed(cacheCtx, retMap, missed, redos, deserializePortable),
+                        checkMissed(cacheCtx, retMap, missed, redos, deserializePortable, skipVals),
                         // Closure that returns another future, based on result from first.
                         new PMC<Map<K, V>>() {
                             @Override public IgniteFuture<Map<K, V>> postMiss(Map<K, V> map) {
@@ -1690,7 +1695,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     log.debug("Starting to future-recursively get values for keys: " + redos);
 
                                 // Future recursion.
-                                return getAllAsync(cacheCtx, redos, null, deserializePortable);
+                                return getAllAsync(cacheCtx, redos, null, deserializePortable, skipVals);
                             }
                         },
                         // Finalize.
@@ -2031,6 +2036,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                             true,
                                             F.asList(key),
                                             deserializePortables(cacheCtx),
+                                            false,
                                             new CI2<K, V>() {
                                                 @Override public void apply(K k, V v) {
                                                     if (log.isDebugEnabled())
@@ -2167,10 +2173,11 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             IgniteFuture<Boolean> fut = loadMissing(
                 cacheCtx,
-                true,
-                true,
+                /*read through*/true,
+                /*async*/true,
                 missedForInvoke,
                 deserializePortables(cacheCtx),
+                /*skip values*/false,
                 new CI2<K, V>() {
                     @Override public void apply(K key, V val) {
                         if (log.isDebugEnabled())

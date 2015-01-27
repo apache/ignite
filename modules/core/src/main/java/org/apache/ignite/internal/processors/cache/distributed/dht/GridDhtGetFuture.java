@@ -94,6 +94,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Expiry policy. */
     private IgniteCacheExpiryPolicy expiryPlc;
 
+    /** Skip values flag. */
+    private boolean skipVals;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -114,6 +117,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param taskNameHash Task name hash code.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
+     * @param skipVals Skip values flag.
      */
     public GridDhtGetFuture(
         GridCacheContext<K, V> cctx,
@@ -127,7 +131,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc) {
+        @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        boolean skipVals
+    ) {
         super(cctx.kernalContext(), CU.<GridCacheEntryInfo<K, V>>collectionsReducer());
 
         assert reader != null;
@@ -145,6 +151,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.deserializePortable = deserializePortable;
         this.taskNameHash = taskNameHash;
         this.expiryPlc = expiryPlc;
+        this.skipVals = skipVals;
 
         futId = IgniteUuid.randomUuid();
 
@@ -345,6 +352,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             if (reload && cctx.readThrough() && cctx.store().configured()) {
                 fut = cache().reloadAllAsync(keys.keySet(),
                     true,
+                    skipVals,
                     subjId,
                     taskName);
             }
@@ -355,13 +363,15 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         subjId,
                         taskName,
                         deserializePortable,
-                        expiryPlc);
+                        expiryPlc,
+                        skipVals);
                 }
                 else {
                     fut = tx.getAllAsync(cctx,
                         keys.keySet(),
                         null,
-                        deserializePortable);
+                        deserializePortable,
+                        skipVals);
                 }
             }
         }
@@ -379,6 +389,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         if (reload && cctx.readThrough() && cctx.store().configured()) {
                             return cache().reloadAllAsync(keys.keySet(),
                                 true,
+                                skipVals,
                                 subjId,
                                 taskName);
                         }
@@ -389,13 +400,14 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     subjId,
                                     taskName,
                                     deserializePortable,
-                                    expiryPlc);
+                                    expiryPlc, skipVals);
                             }
                             else {
                                 return tx.getAllAsync(cctx,
                                     keys.keySet(),
                                     null,
-                                    deserializePortable);
+                                    deserializePortable,
+                                    skipVals);
                             }
                         }
                     }

@@ -609,17 +609,22 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
-        return cache.containsKey(key, entryFilter(true));
+        return cache.containsKey(key);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
-        return cache.containsKeyAsync(key, entryFilter(false));
+        return cache.containsKeyAsync(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<Map<K, Boolean>> containsKeysAsync(Collection<? extends K> keys) {
+        return cache.containsKeysAsync(keys);
     }
 
     /** {@inheritDoc} */
     @Override public boolean containsValue(V val) {
-        return cache.containsValue(val, entryFilter(true));
+        return cache.containsValue(val);
     }
 
     /** {@inheritDoc} */
@@ -1275,7 +1280,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public @Nullable ExpiryPolicy expiry() {
+    @Nullable @Override public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 

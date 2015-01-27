@@ -476,7 +476,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             ctx.readThrough(),
             ctx.hasFlag(CLONE),
             taskName,
-            deserializePortable);
+            deserializePortable,
+            false);
 
         return m.get(key);
     }
@@ -494,7 +495,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             ctx.readThrough(),
             ctx.hasFlag(CLONE),
             taskName,
-            deserializePortable);
+            deserializePortable,
+            false);
     }
 
 
@@ -507,7 +509,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
         final String taskName,
-        final boolean deserializePortable
+        final boolean deserializePortable,
+        final boolean skipVals
     ) {
         ctx.denyOnFlag(LOCAL);
 
@@ -517,7 +520,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         return asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
-                return getAllInternal(keys, swapOrOffheap, storeEnabled, clone, taskName, deserializePortable);
+                return getAllInternal(keys, swapOrOffheap, storeEnabled, clone, taskName, deserializePortable, skipVals);
             }
         });
     }
@@ -540,7 +543,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean storeEnabled,
         boolean clone,
         String taskName,
-        boolean deserializePortable) throws IgniteCheckedException {
+        boolean deserializePortable,
+        boolean skipVals
+    ) throws IgniteCheckedException {
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
 
         if (F.isEmpty(keys))
@@ -631,7 +636,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry).get();
+        return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry, skipVals)
+            .get();
     }
 
     /** {@inheritDoc} */

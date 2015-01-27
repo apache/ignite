@@ -322,7 +322,8 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             subjId,
             taskName,
             true,
-            null).get().get(key);
+            null,
+            false).get().get(key);
     }
 
     /**
