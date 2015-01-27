@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.eviction.ggfs;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

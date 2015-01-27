@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mbean;
+package org.apache.ignite.mxbean;
 
 import javax.management.*;
 import java.util.*;

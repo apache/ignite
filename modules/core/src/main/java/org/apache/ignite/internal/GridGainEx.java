@@ -30,7 +30,7 @@ import org.apache.ignite.logger.java.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
@@ -1966,7 +1966,7 @@ public class GridGainEx {
             }
 
             // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK)) {
+            if (!IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK, false)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {

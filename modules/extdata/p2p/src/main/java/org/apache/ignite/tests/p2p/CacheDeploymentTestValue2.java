@@ -15,20 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mbean;
-
-import java.lang.annotation.*;
+package org.apache.ignite.tests.p2p;
 
 /**
- * Provides MBean method parameters names.
+ * Second test value for deployment.
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD})
-public @interface IgniteMBeanParametersNames {
-    /**
-     *
-     * Array of parameter names in MBean.
-     */
-    @SuppressWarnings({"JavaDoc"}) public String[] value();
+public class CacheDeploymentTestValue2 {
+    // No-op.
 }

@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.cache.CacheProjection
-import org.gridgain.scalar.scalar
-import org.gridgain.scalar.scalar._
-import scala.collection.JavaConversions._
-import scala.StringBuilder
-import java.util.ConcurrentModificationException
-import java.util
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 import org.jdk8.backport.ThreadLocalRandom8
+
+import java.util
+import java.util.ConcurrentModificationException
+
+import scala.collection.JavaConversions._
 
 /**
  * <a href="http://en.wikipedia.org/wiki/Snowflake_schema">Snowflake Schema</a> is a logical

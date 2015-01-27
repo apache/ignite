@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
-import org.gridgain.scalar.scalar
-import scalar._
-import scala.util.control.Breaks._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+
 import java.util
+
+import scala.util.control.Breaks._
 
 /**
  * Prime Number calculation example based on Scalar.

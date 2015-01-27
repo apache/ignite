@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Test task for P2P deployment tests.
  */
-public class GridSingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Integer> {
+public class SingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, Integer> {
     /**
      * {@inheritDoc}
      */
@@ -36,7 +36,7 @@ public class GridSingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, In
         Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
         for (int i = 0; i < arg; i++)
-            jobs.add(new GridSingleSplitTestJob(1));
+            jobs.add(new SingleSplitTestJob(1));
 
         return jobs;
     }
@@ -60,11 +60,11 @@ public class GridSingleSplitTestTask extends ComputeTaskSplitAdapter<Integer, In
      * Test job for P2P deployment tests.
      */
     @SuppressWarnings("PublicInnerClass")
-    public static final class GridSingleSplitTestJob extends ComputeJobAdapter {
+    public static final class SingleSplitTestJob extends ComputeJobAdapter {
         /**
          * @param args Job arguments.
          */
-        public GridSingleSplitTestJob(Integer args) {
+        public SingleSplitTestJob(Integer args) {
             super(args);
         }
 

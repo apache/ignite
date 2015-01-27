@@ -29,28 +29,23 @@ import java.util.*;
 /**
  * Test task for {@code GridCacheDeploymentSelfTest}.
  */
-public class GridCacheDeploymentTestTask3 extends ComputeTaskAdapter<T2<ClusterNode, String>, Object> {
+public class CacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable T2<ClusterNode, String> tup) throws IgniteCheckedException {
-        final String val = tup.getValue();
-
+        @Nullable ClusterNode node) throws IgniteCheckedException {
         return F.asMap(
-                new ComputeJobAdapter() {
-                    @IgniteInstanceResource
-                    private Ignite ignite;
+            new ComputeJobAdapter() {
+                @IgniteInstanceResource
+                private Ignite ignite;
 
-                    @Override public Object execute() throws IgniteCheckedException {
-                        X.println("Executing GridCacheDeploymentTestTask3 job on node " +
-                                ignite.cluster().localNode().id());
+                @Override public Object execute() {
+                    X.println("Executing CacheDeploymentTestTask2 job on node " +
+                        ignite.cluster().localNode().id());
 
-                        ignite.<String, GridCacheDeploymentTestValue>cache(null).putx(val,
-                                new GridCacheDeploymentTestValue());
-
-                        return null;
-                    }
-                },
-                tup.get1()
+                    return null;
+                }
+            },
+            node
         );
     }
 

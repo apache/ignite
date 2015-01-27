@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.tests
+package org.apache.ignite.scalar.tests
 
-import org.apache.ignite.events.{IgniteEventType, IgniteEvent}
+import org.apache.ignite.events.IgniteEvent
+import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.lang.IgnitePredicate
-import org.gridgain.scalar._
-import scalar._
-import org.scalatest.matchers._
-import org.scalatest._
-import junit.JUnitRunner
-import IgniteEventType._
-import collection.JavaConversions._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+import scala.collection.JavaConversions._
 
 /**
  * Scalar cache test.

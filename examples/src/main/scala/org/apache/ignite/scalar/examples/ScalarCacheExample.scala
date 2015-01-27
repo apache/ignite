@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.examples
+package org.apache.ignite.scalar.examples
 
 import org.apache.ignite.cache.CacheEntry
-import org.apache.ignite.events.{IgniteEventType, IgniteEvent}
+import org.apache.ignite.events.IgniteEvent
+import org.apache.ignite.events.IgniteEventType._
 import org.apache.ignite.lang.IgnitePredicate
-import org.gridgain.scalar.scalar
-import scalar._
-import IgniteEventType._
-import collection.JavaConversions._
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
+
+import scala.collection.JavaConversions._
 
 /**
  * Demonstrates basic In-Memory Data Grid operations with Scalar.

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.util.mbeans;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.testframework.junits.common.*;
 import javax.management.*;
 

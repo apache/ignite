@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.internal.managers.collision.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -363,7 +362,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
         ctx.io().sendOrderedMessage(
             taskNode,
             topic, // Job topic.
-            ctx.io().nextMessageId(topic, taskNode.id()),
             req,
             SYSTEM_POOL,
             timeout,
@@ -1305,14 +1303,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
                 // Send response to designated job topic.
                 // Always go through communication to preserve order.
-                long msgId = ctx.io().nextMessageId(topic, sndNode.id());
-
-                ctx.io().removeMessageId(topic);
-
                 ctx.io().sendOrderedMessage(
                     sndNode,
                     topic,
-                    msgId,
                     jobRes,
                     req.isInternal() ? MANAGEMENT_POOL : SYSTEM_POOL,
                     timeout,
@@ -1567,9 +1560,6 @@ public class GridJobProcessor extends GridProcessorAdapter {
             if (worker.getSession().isFullSupport()) {
                 // Unregister session request listener for this jobs.
                 ctx.io().removeMessageListener(worker.getJobTopic());
-
-                // Unregister message IDs used for sending.
-                ctx.io().removeMessageId(worker.getTaskTopic());
             }
         }
 
