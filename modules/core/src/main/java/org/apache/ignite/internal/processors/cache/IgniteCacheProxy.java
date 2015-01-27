@@ -189,7 +189,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public Lock lockAll(final Collection<? extends K> keys) {
-        return new CacheLockImpl<>(delegate, keys);
+        return new CacheLockImpl<>(gate, delegate, prj, keys);
     }
 
     /** {@inheritDoc} */
