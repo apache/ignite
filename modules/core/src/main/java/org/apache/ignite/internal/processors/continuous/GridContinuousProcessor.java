@@ -1143,7 +1143,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         ctx.io().sendOrderedMessage(
                             node,
                             orderedTopic,
-                            ctx.io().nextMessageId(orderedTopic, node.id()),
                             msg,
                             SYSTEM_POOL,
                             0,
