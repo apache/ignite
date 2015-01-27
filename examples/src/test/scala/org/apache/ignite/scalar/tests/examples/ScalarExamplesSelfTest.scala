@@ -97,11 +97,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
-    def testScalarStartStopExample() {
-        ScalarStartStopExample.main(EMPTY_ARGS)
-    }
-
-    /** */
     def testScalarTaskExample() {
         ScalarTaskExample.main(EMPTY_ARGS)
     }
