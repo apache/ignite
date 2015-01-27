@@ -489,7 +489,7 @@ public class SchemaLoadApp extends Application {
             if (jdbcDrvJarPath.isEmpty())
                 throw new IllegalStateException("Driver jar file name is not specified");
 
-            File drvJar = new File(jdbcDrvJarTf.getText());
+            File drvJar = new File(jdbcDrvJarPath);
 
             if (!drvJar.exists())
                 throw new IllegalStateException("Driver jar file is not found");
@@ -520,7 +520,12 @@ public class SchemaLoadApp extends Application {
         if (!pwd.isEmpty())
             info.put("password", pwd);
 
-        return drv.connect(jdbcUrlTf.getText(), info);
+        Connection conn = drv.connect(jdbcUrlTf.getText(), info);
+
+        if (conn == null)
+            throw new IllegalStateException("Connection was not established (JDBC driver returned null value).");
+
+        return conn;
     }
 
     /**
