@@ -25,7 +25,7 @@ import java.lang.annotation.*;
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
-public @interface IgniteMBeanParametersDescriptions {
+public @interface IgniteMXBeanParametersDescriptions {
     /**
      *
      * Array of descriptions for parameters.

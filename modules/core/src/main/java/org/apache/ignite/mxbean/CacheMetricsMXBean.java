@@ -25,221 +25,221 @@ import javax.cache.management.*;
 /**
  * This interface defines JMX view on {@link IgniteCache}.
  */
-@IgniteMBeanDescription("MBean that provides access to cache descriptor.")
+@IgniteMXBeanDescription("MBean that provides access to cache descriptor.")
 public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, CacheMetrics {
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Clear statistics.")
+    @IgniteMXBeanDescription("Clear statistics.")
     public void clear();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of hits.")
+    @IgniteMXBeanDescription("Number of hits.")
     public long getCacheHits();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Percentage of successful hits.")
+    @IgniteMXBeanDescription("Percentage of successful hits.")
     public float getCacheHitPercentage();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of misses.")
+    @IgniteMXBeanDescription("Number of misses.")
     public long getCacheMisses();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Percentage of accesses that failed to find anything.")
+    @IgniteMXBeanDescription("Percentage of accesses that failed to find anything.")
     public float getCacheMissPercentage();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of gets.")
+    @IgniteMXBeanDescription("Number of gets.")
     public long getCacheGets();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of puts.")
+    @IgniteMXBeanDescription("Number of puts.")
     public long getCachePuts();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of removals.")
+    @IgniteMXBeanDescription("Number of removals.")
     public long getCacheRemovals();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of eviction entries.")
+    @IgniteMXBeanDescription("Number of eviction entries.")
     public long getCacheEvictions();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Average time to execute get.")
+    @IgniteMXBeanDescription("Average time to execute get.")
     public float getAverageGetTime();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Average time to execute put.")
+    @IgniteMXBeanDescription("Average time to execute put.")
     public float getAveragePutTime();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Average time to execute remove.")
+    @IgniteMXBeanDescription("Average time to execute remove.")
     public float getAverageRemoveTime();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Average time to commit transaction.")
+    @IgniteMXBeanDescription("Average time to commit transaction.")
     public float getAverageTxCommitTime();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Average time to rollback transaction.")
+    @IgniteMXBeanDescription("Average time to rollback transaction.")
     public float getAverageTxRollbackTime();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of transaction commits.")
+    @IgniteMXBeanDescription("Number of transaction commits.")
     public long getCacheTxCommits();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of transaction rollback.")
+    @IgniteMXBeanDescription("Number of transaction rollback.")
     public long getCacheTxRollbacks();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Cache name.")
+    @IgniteMXBeanDescription("Cache name.")
     public String name();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of entries that was swapped to disk.")
+    @IgniteMXBeanDescription("Number of entries that was swapped to disk.")
     public long getOverflowSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of entries stored in off-heap memory.")
+    @IgniteMXBeanDescription("Number of entries stored in off-heap memory.")
     public long getOffHeapEntriesCount();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Memory size allocated in off-heap.")
+    @IgniteMXBeanDescription("Memory size allocated in off-heap.")
     public long getOffHeapAllocatedSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of non-null values in the cache.")
+    @IgniteMXBeanDescription("Number of non-null values in the cache.")
     public int getSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Number of keys in the cache (possibly with null values).")
+    @IgniteMXBeanDescription("Number of keys in the cache (possibly with null values).")
     public int getKeySize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True if cache is empty.")
+    @IgniteMXBeanDescription("True if cache is empty.")
     public boolean isEmpty();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Current size of evict queue.")
+    @IgniteMXBeanDescription("Current size of evict queue.")
     public int getDhtEvictQueueCurrentSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction per-thread map size.")
+    @IgniteMXBeanDescription("Transaction per-thread map size.")
     public int getTxThreadMapSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction per-Xid map size.")
+    @IgniteMXBeanDescription("Transaction per-Xid map size.")
     public int getTxXidMapSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction committed queue size.")
+    @IgniteMXBeanDescription("Transaction committed queue size.")
     public int getTxCommitQueueSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction prepared queue size.")
+    @IgniteMXBeanDescription("Transaction prepared queue size.")
     public int getTxPrepareQueueSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction start version counts map size.")
+    @IgniteMXBeanDescription("Transaction start version counts map size.")
     public int getTxStartVersionCountsSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction committed ID map size.")
+    @IgniteMXBeanDescription("Transaction committed ID map size.")
     public int getTxCommittedVersionsSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction rolled back ID map size.")
+    @IgniteMXBeanDescription("Transaction rolled back ID map size.")
     public int getTxRolledbackVersionsSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT per-thread map size.")
+    @IgniteMXBeanDescription("Transaction DHT per-thread map size.")
     public int getTxDhtThreadMapSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT per-Xid map size.")
+    @IgniteMXBeanDescription("Transaction DHT per-Xid map size.")
     public int getTxDhtXidMapSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT committed queue size.")
+    @IgniteMXBeanDescription("Transaction DHT committed queue size.")
     public int getTxDhtCommitQueueSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT prepared queue size.")
+    @IgniteMXBeanDescription("Transaction DHT prepared queue size.")
     public int getTxDhtPrepareQueueSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT start version counts map size.")
+    @IgniteMXBeanDescription("Transaction DHT start version counts map size.")
     public int getTxDhtStartVersionCountsSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT committed ID map size.")
+    @IgniteMXBeanDescription("Transaction DHT committed ID map size.")
     public int getTxDhtCommittedVersionsSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Transaction DHT rolled back ID map size.")
+    @IgniteMXBeanDescription("Transaction DHT rolled back ID map size.")
     public int getTxDhtRolledbackVersionsSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True if write-behind is enabled for this cache.")
+    @IgniteMXBeanDescription("True if write-behind is enabled for this cache.")
     public boolean isWriteBehindEnabled();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Size of internal buffer that triggers flush procedure.")
+    @IgniteMXBeanDescription("Size of internal buffer that triggers flush procedure.")
     public int getWriteBehindFlushSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Count of flush threads.")
+    @IgniteMXBeanDescription("Count of flush threads.")
     public int getWriteBehindFlushThreadCount();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Flush frequency interval in milliseconds.")
+    @IgniteMXBeanDescription("Flush frequency interval in milliseconds.")
     public long getWriteBehindFlushFrequency();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Maximum size of batch for similar operations.")
+    @IgniteMXBeanDescription("Maximum size of batch for similar operations.")
     public int getWriteBehindStoreBatchSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Count of cache overflow events since write-behind cache has started.")
+    @IgniteMXBeanDescription("Count of cache overflow events since write-behind cache has started.")
     public int getWriteBehindTotalCriticalOverflowCount();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Count of cache overflow events since write-behind cache has started.")
+    @IgniteMXBeanDescription("Count of cache overflow events since write-behind cache has started.")
     public int getWriteBehindCriticalOverflowCount();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Count of cache cache entries that are currently in retry state.")
+    @IgniteMXBeanDescription("Count of cache cache entries that are currently in retry state.")
     public int getWriteBehindErrorRetryCount();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Count of cache entries that are waiting to be flushed.")
+    @IgniteMXBeanDescription("Count of cache entries that are waiting to be flushed.")
     public int getWriteBehindBufferSize();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Key type.")
+    @IgniteMXBeanDescription("Key type.")
     public String getKeyType();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("Value type.")
+    @IgniteMXBeanDescription("Value type.")
     public String getValueType();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True if the cache is store by value.")
+    @IgniteMXBeanDescription("True if the cache is store by value.")
     public boolean isStoreByValue();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True if statistics collection is enabled.")
+    @IgniteMXBeanDescription("True if statistics collection is enabled.")
     public boolean isStatisticsEnabled();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True if management is enabled.")
+    @IgniteMXBeanDescription("True if management is enabled.")
     public boolean isManagementEnabled();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True when a cache is in read-through mode.")
+    @IgniteMXBeanDescription("True when a cache is in read-through mode.")
     public boolean isReadThrough();
 
     /** {@inheritDoc} */
-    @IgniteMBeanDescription("True when a cache is in write-through mode.")
+    @IgniteMXBeanDescription("True when a cache is in write-through mode.")
     public boolean isWriteThrough();
 }

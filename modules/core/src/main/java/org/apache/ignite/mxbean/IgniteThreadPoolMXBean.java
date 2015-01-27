@@ -20,14 +20,14 @@ package org.apache.ignite.mxbean;
 /**
  * MBean that provides access to information about executor service.
  */
-@IgniteMBeanDescription("MBean that provides access to information about executor service.")
-public interface IgniteThreadPoolMBean {
+@IgniteMXBeanDescription("MBean that provides access to information about executor service.")
+public interface IgniteThreadPoolMXBean {
     /**
      * Returns the approximate number of threads that are actively executing tasks.
      *
      * @return The number of threads.
      */
-    @IgniteMBeanDescription("Approximate number of threads that are actively executing tasks.")
+    @IgniteMXBeanDescription("Approximate number of threads that are actively executing tasks.")
     public int getActiveCount();
 
     /**
@@ -38,7 +38,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return The number of tasks.
      */
-    @IgniteMBeanDescription("Approximate total number of tasks that have completed execution.")
+    @IgniteMXBeanDescription("Approximate total number of tasks that have completed execution.")
     public long getCompletedTaskCount();
 
     /**
@@ -46,7 +46,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return The core number of threads.
      */
-    @IgniteMBeanDescription("The core number of threads.")
+    @IgniteMXBeanDescription("The core number of threads.")
     public int getCorePoolSize();
 
     /**
@@ -55,7 +55,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return The number of threads.
      */
-    @IgniteMBeanDescription("Largest number of threads that have ever simultaneously been in the pool.")
+    @IgniteMXBeanDescription("Largest number of threads that have ever simultaneously been in the pool.")
     public int getLargestPoolSize();
 
     /**
@@ -63,7 +63,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return The maximum allowed number of threads.
      */
-    @IgniteMBeanDescription("The maximum allowed number of threads.")
+    @IgniteMXBeanDescription("The maximum allowed number of threads.")
     public int getMaximumPoolSize();
 
     /**
@@ -71,7 +71,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return The number of threads.
      */
-    @IgniteMBeanDescription("Current number of threads in the pool.")
+    @IgniteMXBeanDescription("Current number of threads in the pool.")
     public int getPoolSize();
 
     /**
@@ -82,7 +82,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return The number of tasks.
      */
-    @IgniteMBeanDescription("Approximate total number of tasks that have been scheduled for execution.")
+    @IgniteMXBeanDescription("Approximate total number of tasks that have been scheduled for execution.")
     public long getTaskCount();
 
     /**
@@ -91,7 +91,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return Current size of the execution queue.
      */
-    @IgniteMBeanDescription("Current size of the execution queue.")
+    @IgniteMXBeanDescription("Current size of the execution queue.")
     public int getQueueSize();
 
     /**
@@ -100,7 +100,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return Keep alive time.
      */
-    @IgniteMBeanDescription("Thread keep-alive time, which is the amount of time which threads in excess of " +
+    @IgniteMXBeanDescription("Thread keep-alive time, which is the amount of time which threads in excess of " +
         "the core pool size may remain idle before being terminated.")
     public long getKeepAliveTime();
 
@@ -109,7 +109,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return {@code True} if this executor has been shut down.
      */
-    @IgniteMBeanDescription("True if this executor has been shut down.")
+    @IgniteMXBeanDescription("True if this executor has been shut down.")
     public boolean isShutdown();
 
     /**
@@ -119,7 +119,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return {@code True} if all tasks have completed following shut down.
      */
-    @IgniteMBeanDescription("True if all tasks have completed following shut down.")
+    @IgniteMXBeanDescription("True if all tasks have completed following shut down.")
     public boolean isTerminated();
 
     /**
@@ -131,7 +131,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return {@code True} if terminating but not yet terminated.
      */
-    @IgniteMBeanDescription("True if terminating but not yet terminated.")
+    @IgniteMXBeanDescription("True if terminating but not yet terminated.")
     public boolean isTerminating();
 
     /**
@@ -139,7 +139,7 @@ public interface IgniteThreadPoolMBean {
      *
      * @return Class name of current rejection handler.
      */
-    @IgniteMBeanDescription("Class name of current rejection handler.")
+    @IgniteMXBeanDescription("Class name of current rejection handler.")
     public String getRejectedExecutionHandlerClass();
 
     /**
@@ -147,6 +147,6 @@ public interface IgniteThreadPoolMBean {
      *
      * @return Class name of thread factory used to create new threads.
      */
-    @IgniteMBeanDescription("Class name of thread factory used to create new threads.")
+    @IgniteMXBeanDescription("Class name of thread factory used to create new threads.")
     public String getThreadFactoryClass();
 }

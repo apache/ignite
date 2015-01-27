@@ -106,7 +106,7 @@ import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBean {
+public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1434,7 +1434,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 "Kernal",
                 getClass().getSimpleName(),
                 this,
-                IgniteMBean.class);
+                IgniteMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered kernal MBean: " + kernalMBean);
@@ -1499,8 +1499,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 cfg.getGridName(),
                 "Thread Pools",
                 name,
-                new IgniteThreadPoolMBeanAdapter(exec),
-                IgniteThreadPoolMBean.class);
+                new IgniteThreadPoolMXBeanAdapter(exec),
+                IgniteThreadPoolMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + res);

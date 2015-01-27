@@ -85,7 +85,6 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             8/*received bytes count*/ +
             4/*outbound messages queue size*/;
 
-
     /** */
     private long lastUpdateTime = -1;
 
@@ -240,6 +239,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      * Create empty snapshot.
      */
     public ClusterMetricsSnapshot() {
+        // No-op.
     }
 
     /**

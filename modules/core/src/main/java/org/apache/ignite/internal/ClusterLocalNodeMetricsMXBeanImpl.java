@@ -25,9 +25,6 @@ import org.apache.ignite.mxbean.*;
  * Local node metrics MBean.
  */
 public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetricsMXBean {
-    /** */
-    private static final long serialVersionUID = 0L;
-
     /** Grid node. */
     private final ClusterNode node;
 

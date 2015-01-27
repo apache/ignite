@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.typedef.*;
 /**
  * Management bean that provides access to {@link org.apache.ignite.Ignition}.
  */
-public class IgnitionMBeanAdapter implements IgnitionMBean {
+public class IgnitionMXBeanAdapter implements IgnitionMXBean {
     /** {@inheritDoc} */
     @Override public String getState() {
         return G.state().toString();

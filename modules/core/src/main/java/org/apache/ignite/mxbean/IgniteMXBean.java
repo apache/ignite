@@ -23,14 +23,14 @@ import java.util.*;
 /**
  * This interface defines JMX view on kernal.
  */
-@IgniteMBeanDescription("MBean that provides access to Kernal information.")
-public interface IgniteMBean {
+@IgniteMXBeanDescription("MBean that provides access to Kernal information.")
+public interface IgniteMXBean {
     /**
      * Gets file path of the license.
      *
      * @return File path of the license.
      */
-    @IgniteMBeanDescription("File path of the license.")
+    @IgniteMXBeanDescription("File path of the license.")
     public String getLicenseFilePath();
 
     /**
@@ -38,7 +38,7 @@ public interface IgniteMBean {
      *
      * @return String presentation of the version.
      */
-    @IgniteMBeanDescription("String presentation of the Ignite version.")
+    @IgniteMXBeanDescription("String presentation of the Ignite version.")
     public String getFullVersion();
 
     /**
@@ -46,7 +46,7 @@ public interface IgniteMBean {
      *
      * @return Copyright statement for GridGain product.
      */
-    @IgniteMBeanDescription("Copyright statement for GridGain product.")
+    @IgniteMXBeanDescription("Copyright statement for GridGain product.")
     public String getCopyright();
 
     /**
@@ -54,7 +54,7 @@ public interface IgniteMBean {
      *
      * @return String presentation of the kernal start timestamp.
      */
-    @IgniteMBeanDescription("String presentation of the kernal start timestamp.")
+    @IgniteMXBeanDescription("String presentation of the kernal start timestamp.")
     public String getStartTimestampFormatted();
 
     /**
@@ -62,7 +62,7 @@ public interface IgniteMBean {
      *
      * @return String presentation of up-time for the kernal.
      */
-    @IgniteMBeanDescription("String presentation of up-time for the kernal.")
+    @IgniteMXBeanDescription("String presentation of up-time for the kernal.")
     public String getUpTimeFormatted();
 
     /**
@@ -70,7 +70,7 @@ public interface IgniteMBean {
      *
      * @return Start timestamp of the kernal.
      */
-    @IgniteMBeanDescription("Start timestamp of the kernal.")
+    @IgniteMXBeanDescription("Start timestamp of the kernal.")
     public long getStartTimestamp();
 
     /**
@@ -78,7 +78,7 @@ public interface IgniteMBean {
      *
      * @return Up-time of the kernal.
      */
-    @IgniteMBeanDescription("Up-time of the kernal.")
+    @IgniteMXBeanDescription("Up-time of the kernal.")
     public long getUpTime();
 
     /**
@@ -90,7 +90,7 @@ public interface IgniteMBean {
      *
      * @return User defined attributes for this node.
      */
-    @IgniteMBeanDescription("Collection of formatted user-defined attributes added to this node.")
+    @IgniteMXBeanDescription("Collection of formatted user-defined attributes added to this node.")
     public Collection<String> getUserAttributesFormatted();
 
     /**
@@ -98,7 +98,7 @@ public interface IgniteMBean {
      *
      * @return Logger that is used in grid.
      */
-    @IgniteMBeanDescription("Formatted instance of logger that is in grid.")
+    @IgniteMXBeanDescription("Formatted instance of logger that is in grid.")
     public String getGridLoggerFormatted();
 
     /**
@@ -106,7 +106,7 @@ public interface IgniteMBean {
      *
      * @return Thread pool implementation that is used in grid.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured thread pool that is used in grid.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured thread pool that is used in grid.")
     public String getExecutorServiceFormatted();
 
     /**
@@ -114,7 +114,7 @@ public interface IgniteMBean {
      *
      * @return GridGain installation home.
      */
-    @IgniteMBeanDescription("GridGain installation home folder.")
+    @IgniteMXBeanDescription("GridGain installation home folder.")
     public String getGridGainHome();
 
     /**
@@ -122,7 +122,7 @@ public interface IgniteMBean {
      *
      * @return MBean server instance.
      */
-    @IgniteMBeanDescription("Formatted instance of MBean server instance.")
+    @IgniteMXBeanDescription("Formatted instance of MBean server instance.")
     public String getMBeanServerFormatted();
 
     /**
@@ -130,7 +130,7 @@ public interface IgniteMBean {
      *
      * @return Unique identifier for this node within grid.
      */
-    @IgniteMBeanDescription("Unique identifier for this node within grid.")
+    @IgniteMXBeanDescription("Unique identifier for this node within grid.")
     public UUID getLocalNodeId();
 
     /**
@@ -145,7 +145,7 @@ public interface IgniteMBean {
      * @return {@code true} if peer class loading is enabled, {@code false}
      *      otherwise.
      */
-    @IgniteMBeanDescription("Whether or not peer class loading (a.k.a. P2P class loading) is enabled.")
+    @IgniteMXBeanDescription("Whether or not peer class loading (a.k.a. P2P class loading) is enabled.")
     public boolean isPeerClassLoadingEnabled();
 
     /**
@@ -155,7 +155,7 @@ public interface IgniteMBean {
      * @return {@code toString()} representation of all lifecycle beans configured
      *      with GridGain.
      */
-    @IgniteMBeanDescription("String representation of lifecycle beans.")
+    @IgniteMXBeanDescription("String representation of lifecycle beans.")
     public Collection<String> getLifecycleBeansFormatted();
 
     /**
@@ -165,12 +165,12 @@ public interface IgniteMBean {
      * @return {@code true} if specified checkpoint was indeed removed, {@code false}
      *      otherwise.
      */
-    @IgniteMBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
+    @IgniteMXBeanDescription("This method allows manually remove the checkpoint with given key. Return true " +
         "if specified checkpoint was indeed removed, false otherwise.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanParametersNames(
         "key"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "Checkpoint key to remove."
     )
     public boolean removeCheckpoint(String key);
@@ -182,12 +182,12 @@ public interface IgniteMBean {
      *      details on string formatting.
      * @return Whether or not node is alive.
      */
-    @IgniteMBeanDescription("Pings node with given node ID to see whether it is alive. " +
+    @IgniteMXBeanDescription("Pings node with given node ID to see whether it is alive. " +
         "Returns whether or not node is alive.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanParametersNames(
         "nodeId"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "String presentation of node ID. See java.util.UUID class for details."
     )
     public boolean pingNode(String nodeId);
@@ -206,11 +206,11 @@ public interface IgniteMBean {
      *      class name should be used as task's name.
      * @throws JMException Thrown if undeploy failed.
      */
-    @IgniteMBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanDescription("Makes the best attempt to undeploy a task from the whole grid.")
+    @IgniteMXBeanParametersNames(
         "taskName"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "Name of the task to undeploy."
     )
     public void undeployTaskFromGrid(String taskName) throws JMException;
@@ -224,15 +224,15 @@ public interface IgniteMBean {
      * @return Task return value (assumed of {@code java.lang.String} type).
      * @throws JMException Thrown in case when execution failed.
      */
-    @IgniteMBeanDescription("A shortcut method that executes given task assuming single " +
+    @IgniteMXBeanDescription("A shortcut method that executes given task assuming single " +
         "String argument and String return type. Returns Task return value (assumed of String type).")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanParametersNames(
         {
             "taskName",
             "arg"
         }
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         {
             "Name of the task to execute.",
             "Single task execution argument (can be null)."
@@ -246,12 +246,12 @@ public interface IgniteMBean {
      * @param host Host name or IP address of the node to ping.
      * @return Whether or not node is alive.
      */
-    @IgniteMBeanDescription("Pings node with given host name to see if it is alive. " +
+    @IgniteMXBeanDescription("Pings node with given host name to see if it is alive. " +
         "Returns whether or not node is alive.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanParametersNames(
         "host"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "Host name or IP address of the node to ping."
     )
     public boolean pingNodeByAddress(String host);
@@ -261,7 +261,7 @@ public interface IgniteMBean {
      *
      * @return Grid discovery SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of configured discovery SPI implementation.")
+    @IgniteMXBeanDescription("Formatted instance of configured discovery SPI implementation.")
     public String getDiscoverySpiFormatted();
 
     /**
@@ -269,7 +269,7 @@ public interface IgniteMBean {
      *
      * @return Grid communication SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured SPI communication implementation.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured SPI communication implementation.")
     public String getCommunicationSpiFormatted();
 
     /**
@@ -277,7 +277,7 @@ public interface IgniteMBean {
      *
      * @return Grid deployment SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured deployment SPI implementation.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured deployment SPI implementation.")
     public String getDeploymentSpiFormatted();
 
     /**
@@ -285,7 +285,7 @@ public interface IgniteMBean {
      *
      * @return Grid checkpoint SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of configured checkpoint SPI implementation.")
+    @IgniteMXBeanDescription("Formatted instance of configured checkpoint SPI implementation.")
     public String getCheckpointSpiFormatted();
 
     /**
@@ -293,7 +293,7 @@ public interface IgniteMBean {
      *
      * @return Grid collision SPI implementations.
      */
-    @IgniteMBeanDescription("Formatted instance of configured collision SPI implementations.")
+    @IgniteMXBeanDescription("Formatted instance of configured collision SPI implementations.")
     public String getCollisionSpiFormatted();
 
     /**
@@ -301,7 +301,7 @@ public interface IgniteMBean {
      *
      * @return Grid swapspace SPI implementations.
      */
-    @IgniteMBeanDescription("Formatted instance of configured swapspace SPI implementations.")
+    @IgniteMXBeanDescription("Formatted instance of configured swapspace SPI implementations.")
     public String getSwapSpaceSpiFormatted();
 
     /**
@@ -309,7 +309,7 @@ public interface IgniteMBean {
      *
      * @return Grid event SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured event SPI implementation.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured event SPI implementation.")
     public String getEventStorageSpiFormatted();
 
     /**
@@ -317,7 +317,7 @@ public interface IgniteMBean {
      *
      * @return Grid failover SPI implementations.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured failover SPI implementations.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured failover SPI implementations.")
     public String getFailoverSpiFormatted();
 
     /**
@@ -325,7 +325,7 @@ public interface IgniteMBean {
      *
      * @return Grid load balancing SPI implementations.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured load balancing SPI implementations.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured load balancing SPI implementations.")
     public String getLoadBalancingSpiFormatted();
 
     /**
@@ -333,7 +333,7 @@ public interface IgniteMBean {
      *
      * @return Grid authentication SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured authentication SPI implementation.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured authentication SPI implementation.")
     public String getAuthenticationSpiFormatted();
 
     /**
@@ -341,7 +341,7 @@ public interface IgniteMBean {
      *
      * @return Grid secure session SPI implementation.
      */
-    @IgniteMBeanDescription("Formatted instance of fully configured secure session SPI implementation.")
+    @IgniteMXBeanDescription("Formatted instance of fully configured secure session SPI implementation.")
     public String getSecureSessionSpiFormatted();
 
     /**
@@ -349,7 +349,7 @@ public interface IgniteMBean {
      *
      * @return OS information.
      */
-    @IgniteMBeanDescription("OS information.")
+    @IgniteMXBeanDescription("OS information.")
     public String getOsInformation();
 
     /**
@@ -357,7 +357,7 @@ public interface IgniteMBean {
      *
      * @return JDK information.
      */
-    @IgniteMBeanDescription("JDK information.")
+    @IgniteMXBeanDescription("JDK information.")
     public String getJdkInformation();
 
     /**
@@ -365,7 +365,7 @@ public interface IgniteMBean {
      *
      * @return OS user name.
      */
-    @IgniteMBeanDescription("OS user name.")
+    @IgniteMXBeanDescription("OS user name.")
     public String getOsUser();
 
     /**
@@ -373,7 +373,7 @@ public interface IgniteMBean {
      *
      * @return VM name.
      */
-    @IgniteMBeanDescription("VM name.")
+    @IgniteMXBeanDescription("VM name.")
     public String getVmName();
 
     /**
@@ -381,6 +381,6 @@ public interface IgniteMBean {
      *
      * @return Optional kernal instance name.
      */
-    @IgniteMBeanDescription("Optional kernal instance name.")
+    @IgniteMXBeanDescription("Optional kernal instance name.")
     public String getInstanceName();
 }
