@@ -15,29 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store;
-
-import org.apache.ignite.transactions.*;
-import org.jetbrains.annotations.*;
-
-import java.util.*;
+package org.apache.ignite.interop;
 
 /**
- * Session for store.
+ * Interop configuration marker interface.
  */
-public interface CacheStoreSession {
+public interface InteropConfiguration {
     /**
-     * @return Transaction belonging to current session.
+     * Create configuration copy.
+     *
+     * @return Copy.
      */
-    @Nullable public IgniteTx transaction();
-
-    /**
-     * @return Current session properties.
-     */
-    public <K, V> Map<K, V> properties();
-
-    /**
-     * @return Cache name.
-     */
-    @Nullable public String cacheName();
+    public InteropConfiguration copy();
 }
