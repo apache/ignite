@@ -64,7 +64,7 @@ public class PojoField {
     /** List of possible java type conversions. */
     private final ObservableList<String> conversions;
 
-    /** Field type desctiptor. */
+    /** Field type descriptor. */
     private final CacheQueryTypeDescriptor desc;
 
     /**

@@ -335,7 +335,6 @@ public class PojoGenerator {
 
                         tempVar = true;
                         break;
-
                 }
             }
             else
