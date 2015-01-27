@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar
+package org.apache.ignite.scalar
 
 import org.apache.ignite.Ignite
-import org.apache.ignite.cache.{CacheEntry, GridCache, CacheProjection}
+import org.apache.ignite.cache._
 import org.apache.ignite.cluster.ClusterGroup
 import org.apache.ignite.compute.ComputeJob
-import org.apache.ignite.lang._
-import org.gridgain.scalar.lang._
-import org.gridgain.scalar.pimps._
-import org.jetbrains.annotations._
-import collection._
-import scala.util.control.Breaks._
-import java.util.concurrent._
-import java.util.TimerTask
 import org.apache.ignite.internal.util.lang._
-import scala.Tuple2
+import org.apache.ignite.lang._
+import org.apache.ignite.scalar.lang._
+import org.apache.ignite.scalar.pimps._
+import org.jetbrains.annotations._
+
+import java.util.TimerTask
+import java.util.concurrent._
+
+import scala.collection._
+import scala.util.control.Breaks._
 
 /**
  * ==Overview==

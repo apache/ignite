@@ -15,19 +15,21 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.tests
+package org.apache.ignite.scalar.tests
 
 import org.apache.ignite.Ignition
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.messaging.MessagingListenActor
-import org.gridgain.scalar._
-import scalar._
-import org.scalatest._
-import junit.JUnitRunner
-import collection.JavaConversions._
-import java.util.UUID
+import org.apache.ignite.scalar.scalar
+import org.apache.ignite.scalar.scalar._
 import org.junit.runner.RunWith
+import org.scalatest._
+import org.scalatest.junit.JUnitRunner
+
+import java.util.UUID
+
+import scala.collection.JavaConversions._
 
 /**
  * Scalar cache test.

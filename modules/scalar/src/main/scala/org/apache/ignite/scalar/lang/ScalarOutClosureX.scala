@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.lang
+package org.apache.ignite.scalar.lang
 
 import org.apache.ignite._
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX

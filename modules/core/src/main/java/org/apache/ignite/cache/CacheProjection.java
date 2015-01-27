@@ -344,6 +344,12 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
     public boolean containsKey(K key);
 
     /**
+     * @param key Key.
+     * @return Future.
+     */
+    public IgniteFuture<Boolean> containsKeyAsync(K key);
+
+    /**
      * Returns {@code true} if this cache contains given value.
      *
      * @param val Value to check.
