@@ -275,8 +275,6 @@ public class GridIpcSharedMemoryNativeLoader {
             sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
         }
 
-        System.out.println("Digest(in hex format):: " + sb.toString());
-
         return md5Bytes;
     }
 

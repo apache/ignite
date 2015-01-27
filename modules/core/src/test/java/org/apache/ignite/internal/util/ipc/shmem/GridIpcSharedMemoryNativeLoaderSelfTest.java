@@ -1,42 +1,37 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import junit.framework.TestCase;
+import org.apache.ignite.internal.util.GridJavaProcess;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Collections;
 
 public class GridIpcSharedMemoryNativeLoaderSelfTest extends TestCase {
-    private static final String DEFAULT_TMP_DIR = System.getProperty("java.io.tmpdir");
-    public static final String TMP_DIR_FOR_TEST = System.getProperty("user.home");
-    public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(GridIpcSharedMemoryNativeLoader.libFileName());
-
     //TODO linux specific
     public void testLoadIfLibFileWasCorrupted() throws Exception {
-        try {
-            System.setProperty("java.io.tmpdir", TMP_DIR_FOR_TEST);
+        Process ps = GridJavaProcess.exec(LoadIfLibFileWasCorruptedTestRunner.class, null, null, null, null, Collections.<String>emptyList(), null).getProcess();
 
-            createCorruptedLibFile();
+        readStreams(ps);
+        int code = ps.waitFor();
 
-            GridIpcSharedMemoryNativeLoader.load();
-        } finally {
-            System.setProperty("java.io.tmpdir", DEFAULT_TMP_DIR);
-        }
+        assertEquals("Returned code have to be 0.", 0, code);
     }
 
-    private void createCorruptedLibFile() throws IOException {
-        File loadedFile = new File(System.getProperty("java.io.tmpdir"), LOADED_LIB_FILE_NAME);
+    private void readStreams(Process proc) throws IOException {
+        BufferedReader stdOut = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+        String s;
+        while ((s = stdOut.readLine()) != null) {
+            System.out.println("OUT>>>>>> " + s);
+        }
 
-        if (loadedFile.exists())
-            assertTrue("Could not delete libggshem file.",loadedFile.delete());
-        loadedFile.deleteOnExit();
+        BufferedReader errOut = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+        while ((s = errOut.readLine()) != null) {
+            System.out.println("ERR>>>>>> " + s);
+        }
 
-        assertTrue("Could not create new file.", loadedFile.createNewFile());
-
-        try (FileOutputStream out = new FileOutputStream(loadedFile)){
-            out.write("Corrupted information.\n".getBytes());
-        };
     }
 
     public void testMD5Calculation() throws Exception {
