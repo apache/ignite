@@ -17,14 +17,17 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridProductImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.*;
-import java.net.*;
-import java.nio.channels.*;
-import java.util.*;
+import java.net.URL;
+import java.nio.channels.FileLock;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * Shared memory native loader.
@@ -209,7 +212,7 @@ public class GridIpcSharedMemoryNativeLoader {
         InputStream is = null;
 
         try {
-            if (!target.exists()) {
+            if (!target.exists() || ! haveEqualMD5(target, src)) {
                 is = src.openStream();
 
                 if (is != null) {
@@ -232,7 +235,7 @@ public class GridIpcSharedMemoryNativeLoader {
 
             return true;
         }
-        catch (IOException | UnsatisfiedLinkError | InterruptedException e) {
+        catch (IOException | UnsatisfiedLinkError | InterruptedException | NoSuchAlgorithmException e) {
             errs.add(e);
         }
         finally {
@@ -242,4 +245,48 @@ public class GridIpcSharedMemoryNativeLoader {
 
         return false;
     }
+
+    private static boolean haveEqualMD5(File target, URL src) throws NoSuchAlgorithmException, IOException {
+        String targetMD5 = calculateMD5(new FileInputStream(target));
+        String srcMD5 = calculateMD5(src.openStream());
+
+        return targetMD5.equals(srcMD5);
+    }
+
+    static byte[] calculateMD5Digest(InputStream input) throws NoSuchAlgorithmException, IOException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        InputStream fis = new BufferedInputStream(input);
+        byte[] dataBytes = new byte[1024];
+
+        int nread = 0;
+
+        while ((nread = fis.read(dataBytes)) != -1) {
+            md.update(dataBytes, 0, nread);
+        };
+
+        byte[] md5Bytes = md.digest();
+
+        //convert the byte to hex format
+        StringBuffer sb = new StringBuffer("");
+        for (int i = 0; i < md5Bytes.length; i++) {
+            sb.append(Integer.toString((md5Bytes[i] & 0xff) + 0x100, 16).substring(1));
+        }
+
+        System.out.println("Digest(in hex format):: " + sb.toString());
+
+        return md5Bytes;
+    }
+
+    static String calculateMD5(InputStream input) throws NoSuchAlgorithmException, IOException {
+        byte[] md5Bytes = calculateMD5Digest(input);
+
+        //convert the byte to hex format
+        StringBuffer sb = new StringBuffer("");
+        for (int i = 0; i < md5Bytes.length; i++) {
+            sb.append(Integer.toString((md5Bytes[i] & 0xff) + 0x100, 16).substring(1));
+        }
+
+        return sb.toString();
+    }
+
 }

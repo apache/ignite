@@ -2,6 +2,7 @@ package org.apache.ignite.internal.util.ipc.shmem;
 
 import junit.framework.TestCase;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -9,28 +10,23 @@ import java.io.IOException;
 public class GridIpcSharedMemoryNativeLoaderSelfTest extends TestCase {
     private static final String DEFAULT_TMP_DIR = System.getProperty("java.io.tmpdir");
     public static final String TMP_DIR_FOR_TEST = System.getProperty("user.home");
-    public static final String LOADED_FILE_NAME = System.mapLibraryName(GridIpcSharedMemoryNativeLoader.libFileName());
-
-    @Override
-    public void setUp() throws Exception {
-        System.setProperty("java.io.tmpdir", TMP_DIR_FOR_TEST);
-    }
-
-    @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
-        System.setProperty("java.io.tmpdir", DEFAULT_TMP_DIR);
-    }
+    public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(GridIpcSharedMemoryNativeLoader.libFileName());
 
     //TODO linux specific
     public void testLoadIfLibFileWasCorrupted() throws Exception {
-        createCorruptedLibFile();
+        try {
+            System.setProperty("java.io.tmpdir", TMP_DIR_FOR_TEST);
 
-        GridIpcSharedMemoryNativeLoader.load();
+            createCorruptedLibFile();
+
+            GridIpcSharedMemoryNativeLoader.load();
+        } finally {
+            System.setProperty("java.io.tmpdir", DEFAULT_TMP_DIR);
+        }
     }
 
     private void createCorruptedLibFile() throws IOException {
-        File loadedFile = new File(System.getProperty("java.io.tmpdir"), LOADED_FILE_NAME);
+        File loadedFile = new File(System.getProperty("java.io.tmpdir"), LOADED_LIB_FILE_NAME);
 
         if (loadedFile.exists())
             assertTrue("Could not delete libggshem file.",loadedFile.delete());
@@ -41,5 +37,11 @@ public class GridIpcSharedMemoryNativeLoaderSelfTest extends TestCase {
         try (FileOutputStream out = new FileOutputStream(loadedFile)){
             out.write("Corrupted information.\n".getBytes());
         };
+    }
+
+    public void testMD5Calculation() throws Exception {
+        String md5 = GridIpcSharedMemoryNativeLoader.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
+
+        assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
     }
 }
