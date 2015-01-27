@@ -17,9 +17,10 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -66,13 +67,11 @@ import java.util.concurrent.*;
  * Instances of distributed cache queues can be created by calling the following method
  * on {@link org.apache.ignite.cache.datastructures.CacheDataStructures} API:
  * <ul>
- *     <li>{@link org.apache.ignite.cache.datastructures.CacheDataStructures#queue(String, int, boolean, boolean)}</li>
+ *     <li>{@link Ignite#queue(String, IgniteCollectionConfiguration, int, boolean)}</li>
  * </ul>
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#queue(String, int, boolean, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeQueue(String)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeQueue(String, int)
+ * @see Ignite#queue(String, IgniteCollectionConfiguration, int, boolean)
  */
-public interface IgniteQueue<T> extends BlockingQueue<T> {
+public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
     /**
      * Gets queue name.
      *
@@ -179,4 +178,9 @@ public interface IgniteQueue<T> extends BlockingQueue<T> {
      * @return {@code true} if queue was removed from cache {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Removes this queue.
+     */
+    @Override public void close();
 }

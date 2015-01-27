@@ -28,7 +28,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 public class GridCacheReplicatedDataStructuresFailoverSelfTest
     extends GridCacheAbstractDataStructuresFailoverSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
+    @Override protected CacheMode atomicsCacheMode() {
         return REPLICATED;
     }
 }

@@ -41,21 +41,33 @@ public class IgniteAtomicConfiguration {
     /** Cache mode. */
     private CacheMode cacheMode = DFLT_CACHE_MODE;
 
-    /** */
+    /** Number of backups. */
     private int backups = DFLT_BACKUPS;
 
+    /**
+     * @return
+     */
     public int getBackups() {
         return backups;
     }
 
+    /**
+     * @param backups
+     */
     public void setBackups(int backups) {
         this.backups = backups;
     }
 
+    /**
+     * @return
+     */
     public CacheMode getCacheMode() {
         return cacheMode;
     }
 
+    /**
+     * @param cacheMode
+     */
     public void setCacheMode(CacheMode cacheMode) {
         this.cacheMode = cacheMode;
     }

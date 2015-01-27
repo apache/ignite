@@ -43,6 +43,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheLocalAtomicSetSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalQueueApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalCountDownLatchSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceMultiNodeSelfTest.class));
@@ -52,6 +53,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheReplicatedSetSelfTest.class));
         // TODO: GG-5306
         // suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheReplicatedCountDownLatchSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSequenceMultiNodeSelfTest.class));
@@ -64,6 +66,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         //suite.addTest(new TestSuite(GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedSetSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedCountDownLatchSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSetFailoverSelfTest.class));
@@ -80,8 +83,9 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         // TODO: GG-4807 Uncomment when fix
         // suite.addTest(new TestSuite(GridCacheQueueMultiNodeConsistencySelfTest.class));
 
-        suite.addTest(new TestSuite(GridCacheCountDownLatchSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheAtomicLongApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalAtomicLongApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCachePartitionedAtomicLongApiSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheReplicatedAtomicLongApiSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedAtomicSequenceMultiThreadedTest.class));
 

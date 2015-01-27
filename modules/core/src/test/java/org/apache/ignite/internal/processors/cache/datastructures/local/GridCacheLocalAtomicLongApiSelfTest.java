@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.internal.processors.cache.datastructures.local;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -23,12 +23,11 @@ import org.apache.ignite.internal.processors.cache.datastructures.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Failover tests for cache data structures.
+ *
  */
-public class GridCachePartitionedDataStructuresFailoverSelfTest
-    extends GridCacheAbstractDataStructuresFailoverSelfTest {
+public class GridCacheLocalAtomicLongApiSelfTest extends GridCacheAtomicLongApiAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
-        return PARTITIONED;
+        return LOCAL;
     }
 }

@@ -372,6 +372,44 @@ public interface Ignite extends AutoCloseable {
         throws IgniteCheckedException;
 
     /**
+     * Will get a named queue from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     * If queue is present in cache already, queue properties will not be changed. Use
+     * collocation for {@link CacheMode#PARTITIONED} caches if you have lots of relatively
+     * small queues as it will make fetching, querying, and iteration a lot faster. If you have
+     * few very large queues, then you should consider turning off collocation as they simply
+     * may not fit in a single node's memory. However note that in this case
+     * to get a single element off the queue all nodes may have to be queried.
+     *
+     * @param name Name of queue.
+     * @param cfg Queue configuration.
+     * @param cap Capacity of queue, {@code 0} for unbounded queue.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Queue with given properties.
+     * @throws IgniteCheckedException If remove failed.
+     */
+    @Nullable public <T> IgniteQueue<T> queue(String name,
+        IgniteCollectionConfiguration cfg,
+        int cap,
+        boolean create)
+        throws IgniteCheckedException;
+
+    /**
+     * Will get a named set from cache and create one if it has not been created yet and {@code create} flag
+     * is {@code true}.
+     *
+     * @param name Set name.
+     * @param cfg Set configuration.
+     * @param create Flag indicating whether set should be created if does not exist.
+     * @return Set with given properties.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg,
+        boolean create)
+        throws IgniteCheckedException;
+
+    /**
      * Gets an instance of deployed Ignite plugin.
      *
      * @param name Plugin name.

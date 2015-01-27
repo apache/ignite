@@ -663,6 +663,31 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void close() {
+        gate.enter();
+
+        try {
+            if (cctx.transactional()) {
+                CU.outTx(new Callable<Void>() {
+                    @Override public Void call() throws Exception {
+                        delegate.close();
+
+                        return null;
+                    }
+                }, cctx);
+            }
+            else
+                delegate.close();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+        finally {
+            gate.leave();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public String name() {
         return delegate.name();
     }
@@ -729,7 +754,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
         try {
             IgniteBiTuple<GridKernalContext, String> t = stash.get();
 
-            return t.get1().dataStructures().queue(t.get2(), 0, false, false);
+            return t.get1().dataStructures().queue(t.get2(), null, 0, false);
         }
         catch (IgniteCheckedException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

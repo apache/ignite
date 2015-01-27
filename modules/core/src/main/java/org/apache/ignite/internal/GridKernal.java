@@ -3298,6 +3298,38 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         }
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        IgniteCollectionConfiguration cfg,
+        int cap,
+        boolean create) throws IgniteCheckedException
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().queue(name, cfg, cap, create);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        guard();
+
+        try {
+            return ctx.dataStructures().set(name, cfg, create);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /**
      * Creates optional component.
      *

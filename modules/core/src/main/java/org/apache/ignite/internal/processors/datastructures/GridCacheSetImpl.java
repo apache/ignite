@@ -325,6 +325,19 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /** {@inheritDoc} */
+    @Override public void close() {
+        try {
+            if (rmvd)
+                return;
+
+            ctx.kernalContext().dataStructures().removeSet(ctx, name);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<T> iterator0() {
         try {
@@ -360,6 +373,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             throw new IgniteException(e);
         }
     }
+
+
+
     /**
      * @param call Callable.
      * @return Callable result.

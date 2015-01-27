@@ -78,6 +78,13 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
         cfg.setCacheConfiguration(cacheCfg);
 
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(PARTITIONED);
+        atomicCfg.setBackups(1);
+
+        cfg.setAtomicConfiguration(atomicCfg);
+
         return cfg;
     }
 
@@ -170,7 +177,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Test {@link GridCacheInternalKey}/{@link org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue}.
+     * Test {@link GridCacheInternalKey}/{@link GridCacheAtomicLongValue}.
      * @param name Name.
      * @throws Exception If failed.
      */
@@ -211,7 +218,7 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
 
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
-            IgniteAtomicLong atomic = grid(i).cache(null).dataStructures().atomicLong(name, 0, true);
+            IgniteAtomicLong atomic = grid(i).atomicLong(name, 0, true);
 
             long val = atomic.get();
 
@@ -285,9 +292,9 @@ public class GridCachePartitionedNodeRestartTxSelfTest extends GridCommonAbstrac
             assert PARTITIONED == grid(i).cache(null).configuration().getCacheMode();
 
         // Init cache data.
-        grid(0).cache(null).dataStructures().atomicLong(key, 0, true).getAndSet(INIT_GRID_NUM);
+        grid(0).atomicLong(key, 0, true).getAndSet(INIT_GRID_NUM);
 
-        assert INIT_GRID_NUM == grid(0).cache(null).dataStructures().atomicLong(key, 0, true).get();
+        assertEquals(INIT_GRID_NUM, grid(0).atomicLong(key, 0, true).get());
 
         stopGrid(0);
     }

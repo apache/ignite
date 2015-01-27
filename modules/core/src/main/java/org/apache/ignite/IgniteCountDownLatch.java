@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.*;
 
+import java.io.*;
 import java.util.concurrent.*;
 
 /**
@@ -30,11 +31,9 @@ import java.util.concurrent.*;
  * counted down to zero first.
  * <h1 class="header">Creating Distributed Count Down Latch</h1>
  * Instance of cache count down latch can be created by calling the following method:
- * {@link org.apache.ignite.cache.datastructures.CacheDataStructures#countDownLatch(String, int, boolean, boolean)}.
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#countDownLatch(String, int, boolean, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeCountDownLatch(String)
+ * {@link Ignite#countDownLatch(String, int, boolean, boolean)}.
  */
-public interface IgniteCountDownLatch {
+public interface IgniteCountDownLatch extends Closeable {
     /**
      * Gets name of the latch.
      *
@@ -223,4 +222,9 @@ public interface IgniteCountDownLatch {
      * @return {@code True} if latch was removed from cache, {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Removes this count down latch.
+     */
+    @Override public void close();
 }

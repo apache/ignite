@@ -256,5 +256,24 @@ public class GridTestIgnite implements Ignite {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteQueue<T> queue(String name,
+        IgniteCollectionConfiguration cfg,
+        int cap,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public <T> IgniteSet<T> set(String name,
+        IgniteCollectionConfiguration cfg,
+        boolean create)
+        throws IgniteCheckedException
+    {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {}
 }

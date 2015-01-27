@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import org.apache.ignite.*;
 
+import java.io.*;
+
 /**
  * This interface provides a rich API for working with distributed atomic reference.
  * <p>
@@ -44,12 +46,11 @@ import org.apache.ignite.*;
  * <h1 class="header">Creating Distributed Atomic Reference</h1>
  * Instance of distributed atomic reference can be created by calling the following method:
  * <ul>
- *     <li>{@link org.apache.ignite.cache.datastructures.CacheDataStructures#atomicReference(String, Object, boolean)}</li>
+ *     <li>{@link Ignite#atomicReference(String, Object, boolean)}</li>
  * </ul>
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#atomicReference(String, Object, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeAtomicReference(String)
+ * @see Ignite#atomicReference(String, Object, boolean)
  */
-public interface IgniteAtomicReference<T> {
+public interface IgniteAtomicReference<T> extends Closeable {
     /**
      * Name of atomic reference.
      *
@@ -90,4 +91,9 @@ public interface IgniteAtomicReference<T> {
      * @return {@code true} if an atomic reference was removed from cache, {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Removes this atomic reference.
+     */
+    @Override public void close();
 }

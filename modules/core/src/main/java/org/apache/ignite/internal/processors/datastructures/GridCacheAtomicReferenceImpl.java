@@ -157,6 +157,19 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         return rmvd;
     }
 
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (rmvd)
+            return;
+
+        try {
+            ctx.kernalContext().dataStructures().removeAtomicReference(name);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      * Method make wrapper predicate for existing value.
      *
@@ -194,10 +207,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private Callable<Boolean> internalSet(final T val) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-
-                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
@@ -215,8 +225,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                     U.error(log, "Failed to set value [val=" + val + ", atomicReference=" + this + ']', e);
 
                     throw e;
-                } finally {
-                    tx.close();
                 }
             }
         };
@@ -234,9 +242,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         final IgniteClosure<T, T> newValClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
 
                     if (ref == null)
@@ -262,8 +268,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                         newValClos + ", atomicReference" + this + ']', e);
 
                     throw e;
-                } finally {
-                    tx.close();
                 }
             }
         };

@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.affinity.*;
-import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -33,15 +31,13 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Queue failover test.
  */
-public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest extends GridCacheAbstractSelfTest {
+public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final String QUEUE_NAME = "FailoverQueueTest";
 
@@ -85,31 +81,17 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheStore<?, ?> cacheStore() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
-
-        ccfg.setBackups(1);
-        ccfg.setAtomicWriteOrderMode(PRIMARY);
-        ccfg.setSwapEnabled(false);
-        ccfg.setQueryIndexEnabled(false);
-        ccfg.setCacheStoreFactory(null);
-
-        return ccfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
+    @Override protected CacheMode collectionCacheMode() {
         return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
+    @Override IgniteCollectionConfiguration collectionConfiguration() {
+        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+
+        colCfg.setBackups(1);
+
+        return colCfg;
     }
 
     /**
@@ -131,12 +113,16 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testAddFailover(boolean collocated) throws Exception {
-        IgniteQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, colCfg, 0,true);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
 
-        int primaryNode = primaryQueueNode();
+        int primaryNode = primaryQueueNode(queue);
 
         int testNodeIdx = -1;
 
@@ -148,7 +134,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         log.info("Test node: " + testNodeIdx) ;
         log.info("Header primary node: " + primaryNode) ;
 
-        queue = grid(testNodeIdx).cache(null).dataStructures().queue(QUEUE_NAME, 0, collocated, false);
+        queue = grid(testNodeIdx).queue(QUEUE_NAME, null, 0, false);
 
         assertNotNull(queue);
 
@@ -176,7 +162,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         IgniteFuture<?> fut = startNodeKiller(stop, new AtomicInteger(), killIdxs);
 
-        final int ITEMS = (atomicityMode() == ATOMIC) ? 10_000 : 3000;
+        final int ITEMS = (collectionCacheAtomicityMode() == ATOMIC) ? 10_000 : 3000;
 
         try {
             for (int i = 0; i < ITEMS; i++) {
@@ -224,12 +210,16 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @throws Exception If failed.
      */
     private void testPollFailover(boolean collocated) throws Exception {
-        IgniteQueue<Integer> queue = cache().dataStructures().queue(QUEUE_NAME, 0, collocated, true);
+        IgniteCollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setCollocated(collocated);
+
+        IgniteQueue<Integer> queue = grid(0).queue(QUEUE_NAME, colCfg, 0, true);
 
         assertNotNull(queue);
         assertEquals(0, queue.size());
 
-        int primaryNode = primaryQueueNode();
+        int primaryNode = primaryQueueNode(queue);
 
         int testNodeIdx = -1;
 
@@ -241,11 +231,11 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         log.info("Test node: " + testNodeIdx) ;
         log.info("Primary node: " + primaryNode) ;
 
-        queue = grid(testNodeIdx).cache(null).dataStructures().queue(QUEUE_NAME, 0, collocated, false);
+        queue = grid(testNodeIdx).queue(QUEUE_NAME, null, 0, false);
 
         assertNotNull(queue);
 
-        testPollFailover(queue, Arrays.asList(primaryQueueNode())); // Kill queue header's primary node .
+        testPollFailover(queue, Arrays.asList(primaryQueueNode(queue))); // Kill queue header's primary node .
 
         List<Integer> killIdxs = new ArrayList<>();
 
@@ -265,7 +255,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     private void testPollFailover(IgniteQueue<Integer> queue, final List<Integer> killIdxs) throws Exception {
         assert !killIdxs.isEmpty();
 
-        final int ITEMS = atomicityMode() == ATOMIC && !queue.collocated() ? 10_000 : 3000;
+        final int ITEMS = collectionCacheAtomicityMode() == ATOMIC && !queue.collocated() ? 10_000 : 3000;
 
         for (int i = 0; i < ITEMS; i++) {
             assertTrue(queue.add(i));
@@ -292,7 +282,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
             for (int i = 0; i < pollNum; i++) {
                 Integer e = queue.poll();
 
-                if (atomicityMode() == ATOMIC) {
+                if (collectionCacheAtomicityMode() == ATOMIC) {
                     if (e == null || e != exp) {
                         log.info("Unexpected data [expected=" + i + ", actual=" + e + ']');
 
@@ -318,7 +308,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         fut.get();
 
-        if (atomicityMode() == ATOMIC)
+        if (collectionCacheAtomicityMode() == ATOMIC)
             assertTrue("Too many errors for atomic cache: " + err, err <= stopCnt.get());
 
         assertNull(queue.poll());
@@ -333,7 +323,8 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop, final AtomicInteger killCnt,
+    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop,
+        final AtomicInteger killCnt,
         final List<Integer> killIdxs) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -361,14 +352,17 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /**
+     * @param queue Queue.
      * @return Primary node for queue's header.
      */
-    private int primaryQueueNode() {
-        CacheAffinity<Object> aff = grid(0).cache(null).affinity();
+    private int primaryQueueNode(IgniteQueue queue) {
+        GridCacheContext cctx = GridTestUtils.getFieldValue(queue, "cctx");
+
+        GridCacheAffinityManager aff = cctx.affinity();
 
         for (int i = 0; i < gridCount(); i++) {
-            for (GridCacheEntryEx e : ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0()) {
-                if (aff.isPrimary(grid(i).localNode(), e.key()) && e.key() instanceof GridCacheQueueHeaderKey)
+            for (GridCacheEntryEx e : ((GridKernal)grid(i)).context().cache().internalCache(cctx.name()).map().allEntries0()) {
+                if (aff.primary(grid(i).localNode(), e.key(), -1) && e.key() instanceof GridCacheQueueHeaderKey)
                     return i;
             }
         }

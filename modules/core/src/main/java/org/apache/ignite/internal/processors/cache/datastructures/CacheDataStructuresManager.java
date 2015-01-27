@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  *
@@ -34,6 +40,146 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
     /** Set keys used for set iteration. */
     private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<GridCacheSetItemKey>> setDataMap =
         new ConcurrentHashMap8<>();
+
+    /** Queue header view.  */
+    private CacheProjection<GridCacheQueueHeaderKey, GridCacheQueueHeader> queueHdrView;
+
+    /** Query notifying about queue update. */
+    private GridCacheContinuousQueryAdapter queueQry;
+
+    /** Queue query creation guard. */
+    private final AtomicBoolean queueQryGuard = new AtomicBoolean();
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** Init latch. */
+    private final CountDownLatch initLatch = new CountDownLatch(1);
+
+    /** Init flag. */
+    private boolean initFlag;
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        try {
+            queueHdrView = cctx.cache().projection(GridCacheQueueHeaderKey.class, GridCacheQueueHeader.class);
+
+            initFlag = true;
+        }
+        finally {
+            initLatch.countDown();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        busyLock.block();
+
+        if (queueQry != null) {
+            try {
+                queueQry.close();
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Failed to cancel queue header query.", e);
+            }
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If thread is interrupted or manager
+     *     was not successfully initialized.
+     */
+    private void waitInitialization() throws IgniteCheckedException {
+        if (initLatch.getCount() > 0)
+            U.await(initLatch);
+
+        if (!initFlag)
+            throw new IgniteCheckedException("DataStructures processor was not properly initialized.");
+    }
+
+    /**
+     * @param name Queue name.
+     * @param cap Capacity.
+     * @param colloc Collocated flag.
+     * @param create Create flag.
+     * @return Queue header.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    @Nullable public GridCacheQueueHeader queue(final String name,
+        final int cap,
+        boolean colloc,
+        final boolean create)
+        throws IgniteCheckedException
+    {
+        waitInitialization();
+
+        cctx.gate().enter();
+
+        try {
+            GridCacheQueueHeaderKey key = new GridCacheQueueHeaderKey(name);
+
+            GridCacheQueueHeader hdr;
+
+            if (create) {
+                hdr = new GridCacheQueueHeader(IgniteUuid.randomUuid(), cap, colloc, 0, 0, null);
+
+                GridCacheQueueHeader old = queueHdrView.putIfAbsent(key, hdr);
+
+                if (old != null) {
+                    if (old.capacity() != cap || old.collocated() != colloc)
+                        throw new IgniteCheckedException("Failed to create queue, queue with the same name but different " +
+                            "configuration already exists [name=" + name + ']');
+
+                    hdr = old;
+                }
+            }
+            else
+                hdr = queueHdrView.get(key);
+
+            if (hdr == null)
+                return null;
+
+            if (queueQryGuard.compareAndSet(false, true)) {
+                queueQry = (GridCacheContinuousQueryAdapter)cctx.cache().queries().createContinuousQuery();
+
+                queueQry.filter(new QueueHeaderPredicate());
+
+                queueQry.localCallback(new IgniteBiPredicate<UUID, Collection<GridCacheContinuousQueryEntry>>() {
+                    @Override public boolean apply(UUID id, Collection<GridCacheContinuousQueryEntry> entries) {
+                        if (!busyLock.enterBusy())
+                            return false;
+
+                        try {
+                            for (GridCacheContinuousQueryEntry e : entries) {
+                                GridCacheQueueHeaderKey key = (GridCacheQueueHeaderKey)e.getKey();
+                                GridCacheQueueHeader hdr = (GridCacheQueueHeader)e.getValue();
+                                GridCacheQueueHeader oldHdr = (GridCacheQueueHeader)e.getOldValue();
+
+                                cctx.kernalContext().dataStructures().onQueueUpdated(key, hdr, oldHdr);
+                            }
+
+                            return true;
+                        }
+                        finally {
+                            busyLock.leaveBusy();
+                        }
+                    }
+                });
+
+                queueQry.execute(cctx.isLocal() || cctx.isReplicated() ? cctx.grid().forLocal() : null,
+                    true,
+                    false,
+                    false,
+                    true);
+            }
+
+            return hdr;
+        }
+        finally {
+            cctx.gate().leave();
+        }
+    }
 
     /**
      * Entry update callback.
@@ -96,5 +242,35 @@ public class CacheDataStructuresManager<K, V> extends GridCacheManagerAdapter<K,
             set.remove(key);
         else
             set.add(key);
+    }
+
+    /**
+     * Predicate for queue continuous query.
+     */
+    private static class QueueHeaderPredicate implements IgniteBiPredicate, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * Required by {@link Externalizable}.
+         */
+        public QueueHeaderPredicate() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Object key, Object val) {
+            return key instanceof GridCacheQueueHeaderKey;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) {
+            // No-op.
+        }
     }
 }

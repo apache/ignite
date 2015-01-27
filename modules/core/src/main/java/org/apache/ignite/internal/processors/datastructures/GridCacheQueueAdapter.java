@@ -329,19 +329,14 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @Override public void clear(int batchSize) throws IgniteException {
         A.ensure(batchSize >= 0, "Batch size cannot be negative: " + batchSize);
 
-        try {
-            IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id));
+        IgniteBiTuple<Long, Long> t = (IgniteBiTuple<Long, Long>)cache.invoke(queueKey, new ClearProcessor(id));
 
-            if (t == null)
-                return;
+        if (t == null)
+            return;
 
-            checkRemoved(t.get1());
+        checkRemoved(t.get1());
 
-            removeKeys(cache, id, queueName, collocated, t.get1(), t.get2(), batchSize);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
-        }
+        removeKeys(id, queueName, collocated, t.get1(), t.get2(), batchSize);
     }
 
     /** {@inheritDoc} */
@@ -371,24 +366,21 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
-     * @param cache Cache.
      * @param id Queue unique ID.
      * @param name Queue name.
      * @param collocated Collocation flag.
      * @param startIdx Start item index.
      * @param endIdx End item index.
      * @param batchSize Batch size.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    static void removeKeys(IgniteCache cache,
+    private void removeKeys(
         IgniteUuid id,
         String name,
         boolean collocated,
         long startIdx,
         long endIdx,
         int batchSize)
-        throws IgniteCheckedException
     {
         Set<GridCacheQueueItemKey> keys = new HashSet<>(batchSize > 0 ? batchSize : 10);
 
@@ -510,6 +502,27 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         return itemKey(id, queueName, collocated(), idx);
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    public void close() {
+        if (rmvd)
+            return;
+
+        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.getAndRemove(new GridCacheQueueHeaderKey(queueName));
+
+        rmvd = true;
+
+        if (hdr == null || hdr.empty())
+            return;
+
+        removeKeys(hdr.id(),
+            queueName,
+            hdr.collocated(),
+            hdr.head(),
+            hdr.tail(),
+            0);
+    }
+
     /**
      * @param id Queue unique ID.
      * @param queueName Queue name.
@@ -532,6 +545,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     }
 
     /**
+     *
      */
     private class QueueIterator implements Iterator<T> {
         /** */

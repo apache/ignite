@@ -23,10 +23,9 @@ import org.apache.ignite.internal.processors.cache.datastructures.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Failover tests for cache data structures.
+ *
  */
-public class GridCachePartitionedDataStructuresFailoverSelfTest
-    extends GridCacheAbstractDataStructuresFailoverSelfTest {
+public class GridCachePartitionedAtomicLongApiSelfTest extends GridCacheAtomicLongApiAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return PARTITIONED;

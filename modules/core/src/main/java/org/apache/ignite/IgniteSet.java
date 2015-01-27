@@ -17,8 +17,9 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 
+import java.io.*;
 import java.util.*;
 
 /**
@@ -32,10 +33,9 @@ import java.util.*;
  * (governed by {@code collocated} parameter). {@code Non-collocated} mode is provided only
  * for partitioned caches. If {@code collocated} parameter is {@code true}, then all set items
  * will be collocated on one node, otherwise items will be distributed through all grid nodes.
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#set(String, boolean, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeSet(String)
+ * @see Ignite#set(String, IgniteCollectionConfiguration, boolean)
  */
-public interface IgniteSet<T> extends Set<T> {
+public interface IgniteSet<T> extends Set<T>, Closeable {
     /**
      * Gets set name.
      *
@@ -58,4 +58,9 @@ public interface IgniteSet<T> extends Set<T> {
      * @return {@code True} if set was removed from cache {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Removes this set.
+     */
+    @Override public void close();
 }

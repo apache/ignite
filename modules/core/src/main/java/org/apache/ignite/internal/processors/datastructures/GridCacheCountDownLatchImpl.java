@@ -103,8 +103,14 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
      * @param latchView Latch projection.
      * @param ctx Cache context.
      */
-    public GridCacheCountDownLatchImpl(String name, int cnt, int initCnt, boolean autoDel, GridCacheInternalKey key,
-        CacheProjection<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView, GridCacheContext ctx) {
+    public GridCacheCountDownLatchImpl(String name,
+        int cnt,
+        int initCnt,
+        boolean autoDel,
+        GridCacheInternalKey key,
+        CacheProjection<GridCacheInternalKey, GridCacheCountDownLatchValue> latchView,
+        GridCacheContext ctx)
+    {
         assert name != null;
         assert cnt >= 0;
         assert initCnt >= 0;
@@ -220,9 +226,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
-
-                            try {
+                            try (IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
 
                                 if (val == null) {
@@ -237,9 +241,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                                 tx.commit();
 
                                 return new CountDownLatch(val.get());
-                            }
-                            finally {
-                                tx.close();
                             }
                         }
                     },
@@ -258,6 +259,19 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
             if (internalLatch == null)
                 throw new IgniteCheckedException("Internal latch has not been properly initialized.");
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (rmvd)
+            return;
+
+        try {
+            ctx.kernalContext().dataStructures().removeCountDownLatch(name);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
     }
 
@@ -319,9 +333,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
         /** {@inheritDoc} */
         @Override public Integer call() throws Exception {
-            IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ);
-
-            try {
+            try (IgniteTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                 GridCacheCountDownLatchValue latchVal = latchView.get(key);
 
                 if (latchVal == null) {
@@ -351,9 +363,6 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 tx.commit();
 
                 return retVal;
-            }
-            finally {
-                tx.close();
             }
         }
     }

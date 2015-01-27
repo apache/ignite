@@ -196,6 +196,19 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         return rmvd;
     }
 
+    /** {@inheritDoc} */
+    @Override public void close() {
+        if (rmvd)
+            return;
+
+        try {
+            ctx.kernalContext().dataStructures().removeAtomicStamped(name);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      * Method make wrapper closure for existing value.
      *
@@ -220,10 +233,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private Callable<Boolean> internalSet(final T val, final S stamp) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-
-                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
                     if (stmp == null)
@@ -241,8 +251,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                     U.error(log, "Failed to set [val=" + val + ", stamp=" + stamp + ", atomicStamped=" + this + ']', e);
 
                     throw e;
-                } finally {
-                    tx.close();
                 }
             }
         };
@@ -263,9 +271,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         final IgniteClosure<S, S> newStampClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
-
-                try {
+                try (IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
 
                     if (stmp == null)
@@ -292,8 +298,6 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
                         ", atomicStamped=" + this + ']', e);
 
                     throw e;
-                } finally {
-                    tx.close();
                 }
             }
         };

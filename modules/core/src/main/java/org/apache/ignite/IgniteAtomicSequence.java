@@ -56,8 +56,7 @@ import java.io.*;
  * <ul>
  *     <li>{@link Ignite#atomicSequence(String, long, boolean)}</li>
  * </ul>
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#atomicSequence(String, long, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeAtomicSequence(String)
+ * @see Ignite#atomicSequence(String, long, boolean)
  */
 public interface IgniteAtomicSequence extends Closeable {
     /**
@@ -131,7 +130,7 @@ public interface IgniteAtomicSequence extends Closeable {
     public boolean removed();
 
     /**
-     * Removes atomic sequence.
+     * Removes this atomic sequence.
      */
-    @Override void close();
+    @Override public void close();
 }

@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import org.apache.ignite.*;
 
+import java.io.*;
+
 /**
  * This interface provides a rich API for working with distributedly cached atomic long value.
  * <p>
@@ -57,12 +59,11 @@ import org.apache.ignite.*;
  * <h1 class="header">Creating Distributed Atomic Long</h1>
  * Instance of distributed atomic long can be created by calling the following method:
  * <ul>
- *     <li>{@link org.apache.ignite.cache.datastructures.CacheDataStructures#atomicLong(String, long, boolean)}</li>
+ *     <li>{@link Ignite#atomicLong(String, long, boolean)}</li>
  * </ul>
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#atomicLong(String, long, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeAtomicLong(String)
+ * @see Ignite#atomicLong(String, long, boolean)
  */
-public interface IgniteAtomicLong {
+public interface IgniteAtomicLong extends Closeable {
     /**
      * Name of atomic long.
      *
@@ -154,4 +155,9 @@ public interface IgniteAtomicLong {
      * @return {@code true} if atomic was removed from cache, {@code false} in other case.
      */
     public boolean removed();
+
+    /**
+     * Removes this atomic long.
+     */
+    @Override public void close();
 }

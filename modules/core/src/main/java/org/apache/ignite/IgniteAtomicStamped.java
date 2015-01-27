@@ -20,6 +20,8 @@ package org.apache.ignite;
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 
+import java.io.*;
+
 /**
  * This interface provides a rich API for working with distributed atomic stamped value.
  * <p>
@@ -53,12 +55,11 @@ import org.apache.ignite.lang.*;
  * <h1 class="header">Creating Distributed Atomic Stamped</h1>
  * Instance of distributed atomic stamped can be created by calling the following method:
  * <ul>
- *     <li>{@link org.apache.ignite.cache.datastructures.CacheDataStructures#atomicLong(String, long, boolean)}</li>
+ *     <li>{@link Ignite#atomicLong(String, long, boolean)}</li>
  * </ul>
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#atomicStamped(String, Object, Object, boolean)
- * @see org.apache.ignite.cache.datastructures.CacheDataStructures#removeAtomicStamped(String)
+ * @see Ignite#atomicStamped(String, Object, Object, boolean)
  */
-public interface IgniteAtomicStamped<T, S> {
+public interface IgniteAtomicStamped<T, S> extends Closeable {
     /**
      * Name of atomic stamped.
      *
@@ -118,4 +119,9 @@ public interface IgniteAtomicStamped<T, S> {
      * @return {@code true} if atomic stamped was removed from cache, {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Removes this atomic stamped.
+     */
+    @Override public void close();
 }
