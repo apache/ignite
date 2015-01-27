@@ -289,7 +289,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
             return cacheCtx.nearTx().txLoadAsync(this,
                 keys,
                 readThrough,
-                CU.<K, V>empty(),
                 deserializePortable,
                 accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
@@ -320,7 +319,6 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
                 CU.subjectId(this, cctx),
                 resolveTaskName(),
                 deserializePortable,
-                null,
                 accessPolicy(cacheCtx, keys)).chain(new C1<IgniteFuture<Map<K, V>>, Boolean>() {
                     @Override public Boolean apply(IgniteFuture<Map<K, V>> f) {
                         try {

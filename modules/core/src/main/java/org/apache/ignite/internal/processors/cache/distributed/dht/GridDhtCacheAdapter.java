@@ -477,13 +477,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgnitePredicate[], IgniteCacheExpiryPolicy)}
+     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, boolean, long, UUID, int, boolean, IgniteCacheExpiryPolicy)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
      * @param forcePrimary {@inheritDoc}
      * @param skipTx {@inheritDoc}
-     * @param filter {@inheritDoc}
      * @return {@inheritDoc}
      */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(
@@ -493,8 +492,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter
+        boolean deserializePortable
     ) {
         return getAllAsync(keys,
             true,
@@ -504,15 +502,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializePortable,
             forcePrimary,
-            null,
-            filter);
+            null);
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public V reload(K key)
         throws IgniteCheckedException {
         try {
-            return super.reload(key, filter);
+            return super.reload(key);
         }
         catch (GridDhtInvalidPartitionException ignored) {
             return null;
@@ -525,7 +522,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
-     * @param filter Optional filter.
      * @param expiry Expiry policy.
      * @return Get future.
      */
@@ -534,7 +530,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiry
         ) {
         return getAllAsync(keys,
@@ -545,8 +540,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             taskName,
             deserializePortable,
             false,
-            expiry,
-            filter);
+            expiry);
     }
 
     /**
@@ -559,7 +553,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param deserializePortable Deserialize portable flag.
-     * @param filter Optional filter.
      * @param expiry Expiry policy.
      * @return DHT future.
      */
@@ -572,7 +565,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiry) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -582,7 +574,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             reload,
             /*tx*/null,
             topVer,
-            filter,
             subjId,
             taskNameHash,
             deserializePortable,
@@ -614,7 +605,6 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.subjectId(),
                 req.taskNameHash(),
                 false,
-                req.filter(),
                 expiryPlc);
 
         fut.listenAsync(new CI1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>>() {

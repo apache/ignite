@@ -1206,7 +1206,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                         /*subjId*/subjId,
                         /**closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                         resolveTaskName(),
-                        CU.<K, V>empty(),
                         null);
 
                 boolean modified = false;

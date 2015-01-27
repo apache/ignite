@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
@@ -81,9 +80,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
-    /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -120,7 +116,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
      * @param forcePrimary If {@code true} get will be performed on primary node even if
      *      called on backup node.
      * @param tx Transaction.
-     * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
@@ -133,7 +128,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         boolean reload,
         boolean forcePrimary,
         @Nullable IgniteTxLocalEx<K, V> tx,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -148,7 +142,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
         this.readThrough = readThrough;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
-        this.filters = filters;
         this.tx = tx;
         this.subjId = subjId;
         this.taskName = taskName;
@@ -325,7 +318,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         deserializePortable,
-                        filters,
                         expiryPlc);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
@@ -382,7 +374,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     readThrough,
                     reload,
                     topVer,
-                    filters,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L);
@@ -439,7 +430,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                         subjId,
                         null,
                         taskName,
-                        filters,
                         expiryPlc);
 
                 ClusterNode primary = null;
@@ -465,7 +455,6 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 subjId,
                                 null,
                                 taskName,
-                                filters,
                                 expiryPlc);
 
                             // Entry was not in memory or in swap, so we remove it from cache.
@@ -528,7 +517,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                     // Don't add reader if transaction acquires lock anyway to avoid deadlock.
                     boolean addRdr = tx == null || tx.optimistic();
 
-                    if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(key))
+                    if (!addRdr && tx.readCommitted() && !tx.writeSet().contains(cctx.txKey(key)))
                         addRdr = true;
 
                     LinkedHashMap<K, Boolean> old = mappings.get(primary);

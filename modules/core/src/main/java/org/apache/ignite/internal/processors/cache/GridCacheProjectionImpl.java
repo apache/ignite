@@ -634,37 +634,37 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public V reload(K key) throws IgniteCheckedException {
-        return cache.reload(key, entryFilter(false));
+        return cache.reload(key);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> reloadAsync(K key) {
-        return cache.reloadAsync(key, entryFilter(false));
+        return cache.reloadAsync(key);
     }
 
     /** {@inheritDoc} */
     @Override public void reloadAll() throws IgniteCheckedException {
-        cache.reloadAll(entryFilter(false));
+        cache.reloadAll();
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> reloadAllAsync() {
-        return cache.reloadAllAsync(entryFilter(false));
+        return cache.reloadAllAsync();
     }
 
     /** {@inheritDoc} */
     @Override public void reloadAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        cache.reloadAll(keys, entryFilter(false));
+        cache.reloadAll(keys);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.reloadAllAsync(keys, entryFilter(false));
+        return cache.reloadAllAsync(keys);
     }
 
     /** {@inheritDoc} */
     @Override public V get(K key) throws IgniteCheckedException {
-        return cache.get(key, deserializePortables(), entryFilter(false));
+        return cache.get(key, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -675,7 +675,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(K key) {
-        return cache.getAsync(key, deserializePortables(), entryFilter(false));
+        return cache.getAsync(key, deserializePortables());
     }
 
     /** {@inheritDoc} */
@@ -725,12 +725,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
-        return cache.getAll(keys, deserializePortables(), entryFilter(false));
+        return cache.getAll(keys, deserializePortables());
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
-        return cache.getAllAsync(keys, deserializePortables(), entryFilter(false));
+        return cache.getAllAsync(keys, deserializePortables());
     }
 
     /** {@inheritDoc} */

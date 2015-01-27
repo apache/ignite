@@ -102,6 +102,13 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         }
     }
 
+    /**
+     * @return Proxied transaction.
+     */
+    public IgniteTxEx<K, V> tx() {
+        return tx;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteUuid xid() {
         return tx.xid();

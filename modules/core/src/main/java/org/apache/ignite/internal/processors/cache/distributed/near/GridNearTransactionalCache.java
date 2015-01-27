@@ -99,8 +99,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
         String taskName,
-        final boolean deserializePortable,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
+        final boolean deserializePortable
     ) {
         ctx.denyOnFlag(LOCAL);
         ctx.checkSecurity(GridSecurityPermission.CACHE_READ);
@@ -113,7 +112,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
                 @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
-                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
+                    return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable));
                 }
             });
         }
@@ -126,7 +125,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             keys,
             false,
             forcePrimary,
-            filter,
             subjId,
             taskName,
             deserializePortable,
@@ -137,7 +135,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
-     * @param filter Filter.
      * @param deserializePortable Deserialize portable flag.
      * @param expiryPlc Expiry policy.
      * @return Future.
@@ -145,7 +142,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
         @Nullable Collection<? extends K> keys,
         boolean readThrough,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean deserializePortable,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         assert tx != null;
@@ -156,7 +152,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             false,
             false,
             tx,
-            filter,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
             deserializePortable,

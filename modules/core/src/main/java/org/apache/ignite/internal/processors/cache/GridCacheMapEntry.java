@@ -610,15 +610,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
      * @param tx Transaction.
      * @param key Key.
      * @param reload flag.
-     * @param filter Filter.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @return Read value.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable protected V readThrough(@Nullable IgniteTxEx<K, V> tx, K key, boolean reload,
-        IgnitePredicate<CacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
+    @Nullable protected V readThrough(@Nullable IgniteTxEx<K, V> tx, K key, boolean reload, UUID subjId,
+        String taskName) throws IgniteCheckedException {
         return cctx.store().loadFromStore(tx, key);
     }
 
@@ -634,7 +633,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expirePlc)
         throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
         cctx.denyOnFlag(LOCAL);
@@ -643,14 +641,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             readSwap,
             readThrough,
             evt,
-            failFast,
             unmarshal,
             updateMetrics,
             tmp,
             subjId,
             transformClo,
             taskName,
-            filter,
             expirePlc);
     }
 
@@ -660,16 +656,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         boolean readSwap,
         boolean readThrough,
         boolean evt,
-        boolean failFast,
         boolean unmarshal,
         boolean updateMetrics,
         boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
-        throws IgniteCheckedException, GridCacheEntryRemovedException, GridCacheFilterFailedException {
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         // Disable read-through if there is no store.
         if (readThrough && !cctx.readThrough())
             readThrough = false;
@@ -678,10 +672,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         V old;
         V ret = null;
-
-        if (!F.isEmptyOrNulls(filter) && !cctx.isAll(
-            (new GridCacheFilterEvaluationEntry<>(key, rawGetOrUnmarshal(true), this, true)), filter))
-            return CU.<V>failed(failFast);
 
         GridCacheVersion startVer;
 
@@ -824,30 +814,9 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        // Check before load.
-        if (!cctx.isAll(this, filter))
-            return CU.<V>failed(failFast, ret);
-
-        if (ret != null) {
+        if (ret != null)
             // If return value is consistent, then done.
-            if (F.isEmptyOrNulls(filter) || version().equals(startVer))
-                return ret;
-
-            // Try again (recursion).
-            return innerGet0(tx,
-                readSwap,
-                readThrough,
-                false,
-                failFast,
-                unmarshal,
-                updateMetrics,
-                tmp,
-                subjId,
-                transformClo,
-                taskName,
-                filter,
-                expiryPlc);
-        }
+            return ret;
 
         boolean loadedFromStore = false;
 
@@ -864,20 +833,16 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                 }
             }
 
-            ret = readThrough(tx0, key, false, filter, subjId, taskName);
+            ret = readThrough(tx0, key, false, subjId, taskName);
 
             loadedFromStore = true;
         }
-
-        boolean match = false;
 
         synchronized (this) {
             long ttl = ttlExtras();
 
             // If version matched, set value.
             if (startVer.equals(ver)) {
-                match = true;
-
                 if (ret != null) {
                     // Detach value before index update.
                     if (cctx.portableEnabled())
@@ -912,28 +877,12 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             }
         }
 
-        if (F.isEmptyOrNulls(filter) || match)
-            return ret;
-
-        // Try again (recursion).
-        return innerGet0(tx,
-            readSwap,
-            readThrough,
-            false,
-            failFast,
-            unmarshal,
-            updateMetrics,
-            tmp,
-            subjId,
-            transformClo,
-            taskName,
-            filter,
-            expiryPlc);
+        return ret;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "TooBroadScope"})
-    @Nullable @Override public final V innerReload(IgnitePredicate<CacheEntry<K, V>>[] filter)
+    @Nullable @Override public final V innerReload()
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         cctx.denyOnFlag(READ);
 
@@ -955,75 +904,65 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         String taskName = cctx.kernalContext().job().currentTaskName();
 
         // Check before load.
-        if (cctx.isAll(this, filter)) {
-            V ret = readThrough(null, key, true, filter, cctx.localNodeId(), taskName);
+        V ret = readThrough(null, key, true, cctx.localNodeId(), taskName);
 
-            boolean touch = false;
+        boolean touch = false;
 
-            try {
-                synchronized (this) {
-                    long ttl = ttlExtras();
+        try {
+            synchronized (this) {
+                long ttl = ttlExtras();
 
-                    // Generate new version.
-                    GridCacheVersion nextVer = cctx.versions().nextForLoad(ver);
+                // Generate new version.
+                GridCacheVersion nextVer = cctx.versions().nextForLoad(ver);
 
-                    // If entry was loaded during read step.
-                    if (wasNew && !isNew())
-                        // Map size was updated on entry creation.
-                        return ret;
+                // If entry was loaded during read step.
+                if (wasNew && !isNew())
+                    // Map size was updated on entry creation.
+                    return ret;
 
-                    // If version matched, set value.
-                    if (startVer.equals(ver)) {
-                        releaseSwap();
+                // If version matched, set value.
+                if (startVer.equals(ver)) {
+                    releaseSwap();
 
-                        V old = rawGetOrUnmarshalUnlocked(false);
+                    V old = rawGetOrUnmarshalUnlocked(false);
 
-                        long expTime = toExpireTime(ttl);
+                    long expTime = toExpireTime(ttl);
 
-                        // Detach value before index update.
-                        if (cctx.portableEnabled())
-                            ret = (V)cctx.kernalContext().portable().detachPortable(ret);
+                    // Detach value before index update.
+                    if (cctx.portableEnabled())
+                        ret = (V)cctx.kernalContext().portable().detachPortable(ret);
 
-                        // Update indexes.
-                        if (ret != null) {
-                            updateIndex(ret, null, expTime, nextVer, old);
+                    // Update indexes.
+                    if (ret != null) {
+                        updateIndex(ret, null, expTime, nextVer, old);
 
-                            if (cctx.deferredDelete() && !isInternal() && !detached() && deletedUnlocked())
-                                deletedUnlocked(false);
-                        }
-                        else {
-                            clearIndex(old);
-
-                            if (cctx.deferredDelete() && !isInternal() && !detached() && !deletedUnlocked())
-                                deletedUnlocked(true);
-                        }
-
-                        update(ret, null, expTime, ttl, nextVer);
-
-                        touch = true;
-
-                        // If value was set - return, otherwise try again.
-                        return ret;
+                        if (cctx.deferredDelete() && !isInternal() && !detached() && deletedUnlocked())
+                            deletedUnlocked(false);
                     }
-                }
+                    else {
+                        clearIndex(old);
 
-                if (F.isEmptyOrNulls(filter)) {
+                        if (cctx.deferredDelete() && !isInternal() && !detached() && !deletedUnlocked())
+                            deletedUnlocked(true);
+                    }
+
+                    update(ret, null, expTime, ttl, nextVer);
+
                     touch = true;
 
+                    // If value was set - return, otherwise try again.
                     return ret;
                 }
             }
-            finally {
-                if (touch)
-                    cctx.evicts().touch(this, cctx.affinity().affinityTopologyVersion());
-            }
 
-            // Recursion.
-            return innerReload(filter);
+            touch = true;
+
+            return ret;
         }
-
-        // If filter didn't pass.
-        return null;
+        finally {
+            if (touch)
+                cctx.evicts().touch(this, cctx.affinity().affinityTopologyVersion());
+        }
     }
 
     /**
@@ -1425,7 +1364,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
             if (needVal && old == null && (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
-                old = readThrough(null, key, false, CU.<K, V>empty(), subjId, taskName);
+                old = readThrough(null, key, false, subjId, taskName);
 
                 // Detach value before index update.
                 if (cctx.portableEnabled())
@@ -1765,7 +1704,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             GridCacheValueBytes oldBytes = valueBytesUnlocked();
 
             if (needVal && old == null && (cctx.readThrough() && (op == GridCacheOperation.TRANSFORM || cctx.loadPreviousValue()))) {
-                old = readThrough(null, key, false, CU.<K, V>empty(), subjId, taskName);
+                old = readThrough(null, key, false, subjId, taskName);
 
                 // Detach value before index update.
                 if (cctx.portableEnabled())
@@ -1796,7 +1735,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             expiryPlc.ttlUpdated(key,
                                 getOrMarshalKeyBytes(),
                                 version(),
-                                hasReaders() ? ((GridDhtCacheEntry) this).readers() : null);
+                                hasReaders() ? ((GridDhtCacheEntry<K, V>)this).readers() : null);
                         }
                     }
 

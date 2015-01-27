@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -77,9 +76,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     /** Transaction. */
     private IgniteTxLocalEx<K, V> tx;
 
-    /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -114,7 +110,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @param reload Reload flag.
      * @param tx Transaction.
      * @param topVer Topology version.
-     * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param deserializePortable Deserialize portable flag.
@@ -129,7 +124,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         boolean reload,
         @Nullable IgniteTxLocalEx<K, V> tx,
         long topVer,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         int taskNameHash,
         boolean deserializePortable,
@@ -145,7 +139,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         this.keys = keys;
         this.readThrough = readThrough;
         this.reload = reload;
-        this.filters = filters;
         this.tx = tx;
         this.topVer = topVer;
         this.subjId = subjId;
@@ -353,8 +346,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 fut = cache().reloadAllAsync(keys.keySet(),
                     true,
                     subjId,
-                    taskName,
-                    filters);
+                    taskName);
             }
             else {
                 if (tx == null) {
@@ -363,15 +355,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                         subjId,
                         taskName,
                         deserializePortable,
-                        filters,
                         expiryPlc);
                 }
                 else {
                     fut = tx.getAllAsync(cctx,
                         keys.keySet(),
                         null,
-                        deserializePortable,
-                        filters);
+                        deserializePortable);
                 }
             }
         }
@@ -390,8 +380,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             return cache().reloadAllAsync(keys.keySet(),
                                 true,
                                 subjId,
-                                taskName,
-                                filters);
+                                taskName);
                         }
                         else {
                             if (tx == null) {
@@ -400,15 +389,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                     subjId,
                                     taskName,
                                     deserializePortable,
-                                    filters,
                                     expiryPlc);
                             }
                             else {
                                 return tx.getAllAsync(cctx,
                                     keys.keySet(),
                                     null,
-                                    deserializePortable,
-                                    filters);
+                                    deserializePortable);
                             }
                         }
                     }

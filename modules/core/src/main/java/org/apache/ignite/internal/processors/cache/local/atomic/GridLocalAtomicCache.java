@@ -466,14 +466,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
 
     @SuppressWarnings("unchecked")
-    @Override @Nullable public V get(K key, boolean deserializePortable,
-        @Nullable IgnitePredicate<CacheEntry<K, V>> filter) throws IgniteCheckedException {
+    @Override @Nullable public V get(K key, boolean deserializePortable) throws IgniteCheckedException {
         ctx.denyOnFlag(LOCAL);
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         Map<K, V> m = getAllInternal(Collections.singleton(key),
-            filter != null ? new IgnitePredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
             ctx.hasFlag(CLONE),
@@ -485,15 +483,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public final Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable,
-        IgnitePredicate<CacheEntry<K, V>> filter)
+    @Override public final Map<K, V> getAll(Collection<? extends K> keys, boolean deserializePortable)
         throws IgniteCheckedException {
         ctx.denyOnFlag(LOCAL);
 
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllInternal(keys,
-            filter != null ? new IgnitePredicate[]{filter} : null,
             ctx.isSwapOrOffheapEnabled(),
             ctx.readThrough(),
             ctx.hasFlag(CLONE),
@@ -511,8 +507,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable final GridCacheEntryEx<K, V> entry,
         @Nullable UUID subjId,
         final String taskName,
-        final boolean deserializePortable,
-        @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
+        final boolean deserializePortable
     ) {
         ctx.denyOnFlag(LOCAL);
 
@@ -522,7 +517,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
         return asyncOp(new Callable<Map<K, V>>() {
             @Override public Map<K, V> call() throws Exception {
-                return getAllInternal(keys, filter, swapOrOffheap, storeEnabled, clone, taskName, deserializePortable);
+                return getAllInternal(keys, swapOrOffheap, storeEnabled, clone, taskName, deserializePortable);
             }
         });
     }
@@ -531,7 +526,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * Entry point to all public API get methods.
      *
      * @param keys Keys to remove.
-     * @param filter Filter.
      * @param swapOrOffheap {@code True} if swap of off-heap storage are enabled.
      * @param storeEnabled Store enabled flag.
      * @param clone {@code True} if returned values should be cloned.
@@ -542,7 +536,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      */
     @SuppressWarnings("ConstantConditions")
     private Map<K, V> getAllInternal(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         boolean swapOrOffheap,
         boolean storeEnabled,
         boolean clone,
@@ -593,7 +586,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             subjId,
                             null,
                             taskName,
-                            filter,
                             expiry);
 
                         if (v != null)
@@ -639,7 +631,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             return map;
         }
 
-        return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry, filter).get();
+        return getAllAsync(keys, true, null, false, subjId, taskName, deserializePortable, false, expiry).get();
     }
 
     /** {@inheritDoc} */
@@ -980,7 +972,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      * @param filter Optional filter.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @throws org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException If update failed.
+     * @throws CachePartialUpdateCheckedException If update failed.
      * @return Results map for invoke operation.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "unchecked"})
@@ -1056,7 +1048,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             subjId,
                             entryProcessor,
                             taskName,
-                            CU.<K, V>empty(),
                             null);
 
                         CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(entry.key(), old);
@@ -1157,7 +1148,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                CU.<K, V>empty(),
                                 null);
 
                             val = ctx.config().getInterceptor().onBeforePut(entry.key(), old, val);
@@ -1188,7 +1178,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 subjId,
                                 null,
                                 taskName,
-                                CU.<K, V>empty(),
                                 null);
 
                             IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor().onBeforeRemove(

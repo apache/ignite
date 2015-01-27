@@ -172,13 +172,12 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public IgniteFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        IgniteTxEx<K, V> tx, IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
+        IgniteTxEx<K, V> tx, @Nullable UUID subjId, String taskName,
         IgniteBiInClosure<K, V> vis) {
         return (IgniteFuture)loadAsync(tx,
             keys,
             reload,
             false,
-            filter,
             subjId,
             taskName,
             true,
@@ -186,21 +185,19 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public void reloadAll(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
-        dht().reloadAll(keys, filter);
+    @Override public void reloadAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        dht().reloadAll(keys);
 
-        super.reloadAll(keys, filter);
+        super.reloadAll(keys);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
-        fut.add(super.reloadAllAsync(keys, filter));
-        fut.add(dht().reloadAllAsync(keys, filter));
+        fut.add(super.reloadAllAsync(keys));
+        fut.add(dht().reloadAllAsync(keys));
 
         fut.markInitialized();
 
@@ -209,18 +206,18 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public V reload(K key, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter)
+    @Override public V reload(K key)
         throws IgniteCheckedException {
         V val;
 
         try {
-            val = dht().reload(key, filter);
+            val = dht().reload(key);
         }
         catch (GridDhtInvalidPartitionException ignored) {
             return null;
         }
 
-        V nearVal = super.reload(key, filter);
+        V nearVal = super.reload(key);
 
         return val == null ? nearVal : val;
     }
@@ -245,25 +242,11 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         return fut;
     }
 
-    /** {@inheritDoc} */
-    @SuppressWarnings({"unchecked"})
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>> filter) {
-        GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
-
-        fut.add(super.reloadAllAsync());
-        fut.add(dht().reloadAllAsync(filter));
-
-        fut.markInitialized();
-
-        return fut;
-    }
-
     /**
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param reload Reload flag.
      * @param forcePrimary Force primary flag.
-     * @param filter Filter.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
@@ -274,7 +257,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -295,7 +277,6 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             reload,
             forcePrimary,
             txx,
-            filter,
             subjId,
             taskName,
             deserializePortable,

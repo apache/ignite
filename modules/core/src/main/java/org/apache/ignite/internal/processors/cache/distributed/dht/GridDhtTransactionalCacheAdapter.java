@@ -1008,7 +1008,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             CU.subjectId(tx, ctx.shared()),
                                             null,
                                             tx != null ? tx.resolveTaskName() : null,
-                                            CU.<K, V>empty(),
                                             null);
 
                                     assert e.lockedBy(mappedVer) ||

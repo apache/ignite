@@ -412,13 +412,12 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
         UUID subjId,
         Object transformClo,
         String taskName,
-        IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc) {
         return val;
     }
 
     /** @inheritDoc */
-    @Override public V innerReload(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public V innerReload() {
         return val;
     }
 

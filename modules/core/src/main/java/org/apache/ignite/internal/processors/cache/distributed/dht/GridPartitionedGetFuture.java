@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
@@ -78,9 +77,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     /** Version. */
     private GridCacheVersion ver;
 
-    /** Filters. */
-    private IgnitePredicate<CacheEntry<K, V>>[] filters;
-
     /** Logger. */
     private IgniteLogger log;
 
@@ -117,7 +113,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param reload Reload flag.
      * @param forcePrimary If {@code true} then will force network trip to primary node even
      *          if called on backup node.
-     * @param filters Filters.
      * @param subjId Subject ID.
      * @param taskName Task name.
      * @param deserializePortable Deserialize portable flag.
@@ -130,7 +125,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filters,
         @Nullable UUID subjId,
         String taskName,
         boolean deserializePortable,
@@ -146,7 +140,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
         this.readThrough = readThrough;
         this.reload = reload;
         this.forcePrimary = forcePrimary;
-        this.filters = filters;
         this.subjId = subjId;
         this.deserializePortable = deserializePortable;
         this.taskName = taskName;
@@ -325,7 +318,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                         subjId,
                         taskName == null ? 0 : taskName.hashCode(),
                         deserializePortable,
-                        filters,
                         expiryPlc);
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
@@ -376,7 +368,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     readThrough,
                     reload,
                     topVer,
-                    filters,
                     subjId,
                     taskName == null ? 0 : taskName.hashCode(),
                     expiryPlc != null ? expiryPlc.forAccess() : -1L);
@@ -439,7 +430,6 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                                 subjId,
                                 null,
                                 taskName,
-                                filters,
                                 expiryPlc);
 
                             colocated.context().evicts().touch(entry, topVer);
