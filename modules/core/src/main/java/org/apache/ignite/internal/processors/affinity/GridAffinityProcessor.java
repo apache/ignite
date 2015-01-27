@@ -544,11 +544,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             return res;
         }
     }
+
     /**
      * Grid cache affinity.
      */
     private class CacheAffinityProxy<K> implements CacheAffinity<K> {
-        /** */
+        /** Cache name. */
         private final String cacheName;
 
         /**
