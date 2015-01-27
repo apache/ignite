@@ -166,7 +166,8 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
         for (int part = 0; part < aff.partitions(); ++part) {
             assertEquals(testAff.mapPartitionToNode(part).id(), aff.mapPartitionToNode(part).id());
 
-            checkEqualCollection(testAff.mapPartitionToPrimaryAndBackups(part), aff.mapKeyToPrimaryAndBackups(part));
+            checkEqualCollection(testAff.mapPartitionToPrimaryAndBackups(part),
+                aff.mapPartitionToPrimaryAndBackups(part));
         }
     }
 
