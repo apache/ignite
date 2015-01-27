@@ -17,11 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.*;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
+import javax.cache.processor.*;
 
 /**
  * Partitioned atomic cache metrics test.

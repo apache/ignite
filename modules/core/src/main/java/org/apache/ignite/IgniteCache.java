@@ -435,7 +435,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
         Object... args);
 
     /**
-     * Gets metrics (statistics) for this cache.
+     * Gets snapshot metrics (statistics) for this cache.
      *
      * @return Cache metrics.
      */

@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import javax.cache.configuration.CompleteConfiguration;
 import java.util.concurrent.atomic.*;
 
 /**
