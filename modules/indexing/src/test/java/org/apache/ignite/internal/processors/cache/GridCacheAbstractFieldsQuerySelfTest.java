@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
 import java.io.*;
 import java.util.*;
 
@@ -177,102 +178,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     protected abstract int gridCount();
 
     /** @throws Exception If failed. */
-    public void testCacheMetaData() throws Exception {
-        // Create data structure to test filtering of internal objects.
-        grid(0).cache(null).dataStructures().atomicLong("LONG", 0, true);
-
-        Collection<GridCacheSqlMetadata> metas =
-            ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).sqlMetadata();
-
-        assert metas != null;
-        assertEquals("Invalid meta: " + metas, 3, metas.size());
-
-        boolean wasNull = false;
-        boolean wasNamed = false;
-        boolean wasEmpty = false;
-
-        for (GridCacheSqlMetadata meta : metas) {
-            if (meta.cacheName() == null) {
-                Collection<String> types = meta.types();
-
-                assert types != null;
-                assert types.size() == 4;
-                assert types.contains("Person");
-                assert types.contains("Organization");
-                assert types.contains("String");
-                assert types.contains("Integer");
-
-                assert CacheAffinityKey.class.getName().equals(meta.keyClass("Person"));
-                assert String.class.getName().equals(meta.keyClass("Organization"));
-                assert String.class.getName().equals(meta.keyClass("String"));
-
-                assert Person.class.getName().equals(meta.valueClass("Person"));
-                assert Organization.class.getName().equals(meta.valueClass("Organization"));
-                assert String.class.getName().equals(meta.valueClass("String"));
-
-                Map<String, String> fields = meta.fields("Person");
-
-                assert fields != null;
-                assert fields.size() == 5;
-                assert CacheAffinityKey.class.getName().equals(fields.get("_KEY"));
-                assert Person.class.getName().equals(fields.get("_VAL"));
-                assert String.class.getName().equals(fields.get("NAME"));
-                assert int.class.getName().equals(fields.get("AGE"));
-                assert int.class.getName().equals(fields.get("ORGID"));
-
-                fields = meta.fields("Organization");
-
-                assert fields != null;
-                assert fields.size() == 4;
-                assert String.class.getName().equals(fields.get("_KEY"));
-                assert Organization.class.getName().equals(fields.get("_VAL"));
-                assert int.class.getName().equals(fields.get("ID"));
-                assert String.class.getName().equals(fields.get("NAME"));
-
-                fields = meta.fields("String");
-
-                assert fields != null;
-                assert fields.size() == 2;
-                assert String.class.getName().equals(fields.get("_KEY"));
-                assert String.class.getName().equals(fields.get("_VAL"));
-
-                fields = meta.fields("Integer");
-
-                assert fields != null;
-                assert fields.size() == 2;
-                assert Integer.class.getName().equals(fields.get("_KEY"));
-                assert Integer.class.getName().equals(fields.get("_VAL"));
-
-                Collection<GridCacheSqlIndexMetadata> indexes = meta.indexes("Person");
-
-                assertEquals(2, indexes.size());
-
-                wasNull = true;
-            }
-            else if (CACHE.equals(meta.cacheName()))
-                wasNamed = true;
-            else if (EMPTY_CACHE.equals(meta.cacheName())) {
-                assert meta.types().isEmpty();
-
-                wasEmpty = true;
-            }
-        }
-
-        assert wasNull;
-        assert wasNamed;
-        assert wasEmpty;
-    }
-
-    /** @throws Exception If failed. */
     public void testExecute() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
-            "select _KEY, name, age from Person");
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select _KEY, name, age from Person"));
 
-        CacheQueryFuture<List<?>> fut = qry.execute();
-
-        assert metadata(fut) == null;
-
-        List<List<?>> res = new ArrayList<>(fut.get());
+        List<List<?>> res = new ArrayList<>(qry.getAll());
 
         assert res != null;
 
@@ -315,14 +225,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testExecuteWithArguments() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery(
-            "select _KEY, name, age from Person where age > ?");
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select _KEY, name, age from Person where age > ?", 30));
 
-        CacheQueryFuture<List<?>> fut = qry.execute(30);
-
-        assert metadata(fut) == null;
-
-        List<List<?>> res = new ArrayList<>(fut.get());
+        List<List<?>> res = new ArrayList<>(qry.getAll());
 
         assert res != null;
 
@@ -359,215 +265,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     }
 
     /** @throws Exception If failed. */
-    public void testExecuteWithMetaData() throws Exception {
-        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
-            "select p._KEY, p.name, p.age, o.name " +
-                "from Person p, Organization o where p.orgId = o.id",
-            true);
-
-        CacheQueryFuture<List<?>> fut = qry.execute();
-
-        List<GridQueryFieldMetadata> meta = metadata(fut);
-
-        assert meta != null;
-        assert meta.size() == 4;
-
-        Iterator<GridQueryFieldMetadata> metaIt = meta.iterator();
-
-        assert metaIt != null;
-        assert metaIt.hasNext();
-
-        GridQueryFieldMetadata field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "_KEY".equals(field.fieldName());
-        assert Object.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "NAME".equals(field.fieldName());
-        assert String.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "AGE".equals(field.fieldName());
-        assert Integer.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "ORGANIZATION".equals(field.typeName());
-        assert "NAME".equals(field.fieldName());
-        assert String.class.getName().equals(field.fieldTypeName());
-
-        assert !metaIt.hasNext();
-
-        List<List<?>> res = new ArrayList<>(fut.get());
-
-        dedup(res);
-
-        assertEquals(3, res.size());
-
-        Collections.sort(res, new Comparator<List<?>>() {
-            @Override public int compare(List<?> row1, List<?> row2) {
-                return ((Integer)row1.get(2)).compareTo((Integer)row2.get(2));
-            }
-        });
-
-        int cnt = 0;
-
-        for (List<?> row : res) {
-            assert row.size() == 4;
-
-            if (cnt == 0) {
-                assert new CacheAffinityKey<>("p1", "o1").equals(row.get(0));
-                assert "John White".equals(row.get(1));
-                assert row.get(2).equals(25);
-                assert "A".equals(row.get(3));
-            }
-            else if (cnt == 1) {
-                assert new CacheAffinityKey<>("p2", "o1").equals(row.get(0));
-                assert "Joe Black".equals(row.get(1));
-                assert row.get(2).equals(35);
-                assert "A".equals(row.get(3));
-            }
-            if (cnt == 2) {
-                assert new CacheAffinityKey<>("p3", "o2").equals(row.get(0));
-                assert "Mike Green".equals(row.get(1));
-                assert row.get(2).equals(40);
-                assert "B".equals(row.get(3));
-            }
-
-            cnt++;
-        }
-
-        assert cnt == 3;
-    }
-
-    /** @throws Exception If failed. */
     public void testSelectAllJoined() throws Exception {
-        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
-            "select * from Person p, Organization o where p.orgId = o.id",
-            true);
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select * from Person p, Organization o where p.orgId = o.id"));
 
-        CacheQueryFuture<List<?>> fut = qry.execute();
-
-        List<GridQueryFieldMetadata> meta = metadata(fut);
-
-        assert meta != null;
-        assert meta.size() == 9;
-
-        Iterator<GridQueryFieldMetadata> metaIt = meta.iterator();
-
-        assert metaIt != null;
-        assert metaIt.hasNext();
-
-        GridQueryFieldMetadata field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "_KEY".equals(field.fieldName());
-        assert Object.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "_VAL".equals(field.fieldName());
-        assert Object.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "NAME".equals(field.fieldName());
-        assert String.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "AGE".equals(field.fieldName());
-        assert Integer.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "ORGID".equals(field.fieldName());
-        assert Integer.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "ORGANIZATION".equals(field.typeName());
-        assert "_KEY".equals(field.fieldName());
-        assert String.class.getName().equals(field.fieldTypeName()) : field.fieldTypeName();
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "ORGANIZATION".equals(field.typeName());
-        assert "_VAL".equals(field.fieldName());
-        assert Object.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "ORGANIZATION".equals(field.typeName());
-        assert "ID".equals(field.fieldName());
-        assert Integer.class.getName().equals(field.fieldTypeName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "ORGANIZATION".equals(field.typeName());
-        assert "NAME".equals(field.fieldName());
-        assert String.class.getName().equals(field.fieldTypeName());
-
-        assert !metaIt.hasNext();
-
-        List<List<?>> res = new ArrayList<>(fut.get());
+        List<List<?>> res = new ArrayList<>(qry.getAll());
 
         dedup(res);
 
@@ -626,27 +328,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testEmptyResult() throws Exception {
-        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
-            "select name from Person where age = 0", true);
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select name from Person where age = 0"));
 
-        CacheQueryFuture<List<?>> fut = qry.execute();
-
-        assert fut != null;
-
-        List<GridQueryFieldMetadata> meta = metadata(fut);
-
-        assert meta != null;
-        assert meta.size() == 1;
-
-        GridQueryFieldMetadata field = F.first(meta);
-
-        assert field != null;
-        assert "PUBLIC".equals(field.schemaName());
-        assert "PERSON".equals(field.typeName());
-        assert "NAME".equals(field.fieldName());
-        assert String.class.getName().equals(field.fieldTypeName());
-
-        Collection<List<?>> res = fut.get();
+        Collection<List<?>> res = qry.getAll();
 
         assert res != null;
         assert res.isEmpty();
@@ -654,9 +339,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testQueryString() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select * from String");
+        QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(new QuerySqlPredicate<>("select * from String"));
 
-        Collection<List<?>> res = qry.execute().get();
+        Collection<List<?>> res = qry.getAll();
 
         assert res != null;
         assert res.size() == 1;
@@ -671,54 +356,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testQueryIntegersWithJoin() throws Exception {
-        CacheQuery<List<?>> qry = ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).createSqlFieldsQuery(
-            "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100", true)
-            .projection(grid(0));
+        QueryCursor<List<?>> qry = grid(0).jcache(null).queryFields(new QuerySqlPredicate<>(
+            "select i._KEY, i._VAL, j._KEY, j._VAL from Integer i join Integer j where i._VAL >= 100"));
 
-        CacheQueryFuture<List<?>> fut = qry.execute();
-
-        List<GridQueryFieldMetadata> meta = metadata(fut);
-
-        assert meta != null;
-        assert meta.size() == 4;
-
-        Iterator<GridQueryFieldMetadata> metaIt = meta.iterator();
-
-        assert metaIt.hasNext();
-
-        GridQueryFieldMetadata field = metaIt.next();
-
-        assert field != null;
-        assert "INTEGER".equals(field.typeName());
-        assert "_KEY".equals(field.fieldName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "INTEGER".equals(field.typeName());
-        assert "_VAL".equals(field.fieldName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "INTEGER".equals(field.typeName());
-        assert "_KEY".equals(field.fieldName());
-
-        assert metaIt.hasNext();
-
-        field = metaIt.next();
-
-        assert field != null;
-        assert "INTEGER".equals(field.typeName());
-        assert "_VAL".equals(field.fieldName());
-
-        assert !metaIt.hasNext();
-
-        Collection<List<?>> res = fut.get();
+        Collection<List<?>> res = qry.getAll();
 
         assert res != null;
 
@@ -739,11 +380,11 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testPagination() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select * from Integer");
+        // Query with page size 20.
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+                .queryFields(new QuerySqlPredicate<>("select * from Integer", 20, new Object[0]));
 
-        qry.pageSize(20);
-
-        List<List<?>> res = new ArrayList<>(qry.execute().get());
+        List<List<?>> res = new ArrayList<>(qry.getAll());
 
         dedup(res);
 
@@ -761,14 +402,14 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testNamedCache() throws Exception {
-        GridCache<Integer, Integer> cache = grid(0).cache(CACHE);
+        IgniteCache<Integer, Integer> cache = grid(0).jcache(CACHE);
 
         for (int i = 0; i < 200; i++)
-            assert cache.putx(i, i);
+            cache.put(i, i);
 
-        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from Integer").projection(grid(0));
+        QueryCursor<List<?>> qry = cache.queryFields(new QuerySqlPredicate<Integer, Integer>("select * from Integer"));
 
-        Collection<List<?>> res = qry.execute().get();
+        Collection<List<?>> res = qry.getAll();
 
         assert res != null;
         assert res.size() == (cacheMode() == REPLICATED ? 200 * gridCount() : 200);
@@ -776,88 +417,33 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void _testNoPrimitives() throws Exception { // TODO
-        GridCache<Object, Object> cache = grid(0).cache(CACHE_NO_PRIMITIVES);
+        IgniteCache<Object, Object> cache = grid(0).jcache(CACHE_NO_PRIMITIVES);
 
-        assert cache.putx("key", "val");
+        cache.put("key", "val");
 
-        Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
+        QueryCursor<List<?>> qry = cache.queryFields(new QuerySqlPredicate<>("select * from String"));
 
-        assertEquals(1, metas.size());
+        assert qry.getAll().isEmpty();
 
-        assert F.first(metas).types().isEmpty() : "Non empty types: " + F.first(metas).types();
-
-        CacheQuery<List<?>> qry = cache.queries().createSqlFieldsQuery("select * from String");
-
-        assert qry.execute().get().isEmpty();
-
-        cache.removeAll(F.<CacheEntry<Object, Object>>alwaysTrue());
+        cache.removeAll();
     }
 
     /** @throws Exception If failed. */
     public void _testComplexKeys() throws Exception { // TODO
-        GridCache<PersonKey, Person> cache = grid(0).cache(CACHE_COMPLEX_KEYS);
+        IgniteCache<Object, Object> cache = grid(0).jcache(CACHE_COMPLEX_KEYS);
 
         UUID id = UUID.randomUUID();
 
         PersonKey key = new PersonKey(id);
         Person val = new Person("John", 20, 1);
 
-        assert cache.putx(key, val);
+        cache.put(key, val);
 
-        Collection<GridCacheSqlMetadata> metas = ((GridCacheQueriesEx<?, ?>)cache.queries()).sqlMetadata();
-
-        assertEquals(1, metas.size());
-
-        GridCacheSqlMetadata meta = F.first(metas);
-
-        assertEquals(CACHE_COMPLEX_KEYS, meta.cacheName());
-
-        Collection<String> types = meta.types();
-
-        assertEquals(1, types.size());
-        assert types.contains("Person");
-
-        assertEquals(PersonKey.class.getName(), meta.keyClass("Person"));
-        assertEquals(Person.class.getName(), meta.valueClass("Person"));
-
-        Map<String, String> fields = meta.fields("Person");
-
-        assertEquals(6, fields.size());
-
-        int cnt = 0;
-
-        for (Map.Entry<String, String> e : fields.entrySet()) {
-            if (cnt == 0) {
-                assertEquals("_KEY", e.getKey());
-                assertEquals(PersonKey.class.getName(), e.getValue());
-            }
-            else if (cnt == 1) {
-                assertEquals("_VAL", e.getKey());
-                assertEquals(Person.class.getName(), e.getValue());
-            }
-            else if (cnt == 2) {
-                assertEquals("ID", e.getKey());
-                assertEquals(UUID.class.getName(), e.getValue());
-            }
-            else if (cnt == 3) {
-                assertEquals("NAME", e.getKey());
-                assertEquals(String.class.getName(), e.getValue());
-            }
-            else if (cnt == 4) {
-                assertEquals("AGE", e.getKey());
-                assertEquals(int.class.getName(), e.getValue());
-            }
-            else if (cnt == 5) {
-                assertEquals("ORGID", e.getKey());
-                assertEquals(int.class.getName(), e.getValue());
-            }
-
-            cnt++;
-        }
-
-        Collection<List<?>> res = cache.queries().createSqlFieldsQuery("select * from Person").execute().get();
+        Collection<List<?>> res = cache.queryFields(new QuerySqlPredicate<>("select * from Person")).getAll();
 
         assertEquals(1, res.size());
+
+        int cnt = 0;
 
         for (Collection<?> row : res) {
             cnt = 0;
@@ -880,7 +466,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
             }
         }
 
-        cache.removeAll(F.<CacheEntry<PersonKey, Person>>alwaysTrue());
+        cache.removeAll();
     }
 
     /** @throws Exception If failed. */
@@ -898,20 +484,12 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void testPaginationIterator(@Nullable String cacheName) throws Exception {
-        CacheQuery<List<?>> q = grid(0).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
-            "Integer")
-            .projection(grid(0));
-
-        q.pageSize(10);
-        q.keepAll(false);
-
-        CacheQueryFuture<List<?>> f = q.execute();
+        QueryCursor<List<?>> qry = grid(0).jcache(cacheName)
+            .queryFields(new QuerySqlPredicate<>("select _key, _val from Integer", 10, new Object[0]));
 
         int cnt = 0;
 
-        List<?> row;
-
-        while ((row = f.next()) != null) {
+        for (List<?> row : qry) {
             assertEquals(2, row.size());
             assertEquals(row.get(0), row.get(1));
             assertTrue((Integer)row.get(0) >= 0 && (Integer)row.get(0) < 200);
@@ -923,10 +501,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         assertEquals(size, cnt);
 
-        assertTrue(f.isDone());
-
         if (cacheMode() != LOCAL)
-            assertTrue(f.get().size() < size);
+            assertTrue(qry.getAll().size() < size);
     }
 
     /** @throws Exception If failed. */
@@ -962,8 +538,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         dedup(list);
 
         Collections.sort(list, new Comparator<List<?>>() {
-            @Override public int compare(List<?> r1, List<?> r2) {
-                return ((Integer)r1.get(0)).compareTo((Integer)r2.get(0));
+            @Override
+            public int compare(List<?> r1, List<?> r2) {
+                return ((Integer) r1.get(0)).compareTo((Integer) r2.get(0));
             }
         });
 
@@ -1019,7 +596,7 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
     /** @throws Exception If failed. */
     public void testEmptyGrid() throws Exception {
         CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select name, " +
-            "age from Person where age = 25");
+                "age from Person where age = 25");
 
         List<?> res = F.first(qry.execute().get());
 
@@ -1047,8 +624,9 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         dedup(list);
 
         Collections.sort(list, new Comparator<List<?>>() {
-            @Override public int compare(List<?> r1, List<?> r2) {
-                return ((Integer)r1.get(0)).compareTo((Integer)r2.get(0));
+            @Override
+            public int compare(List<?> r1, List<?> r2) {
+                return ((Integer) r1.get(0)).compareTo((Integer) r2.get(0));
             }
         });
 
