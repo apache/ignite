@@ -21,15 +21,12 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -37,27 +34,27 @@ import java.util.concurrent.*;
 /**
  * Queue multi node tests.
  */
-public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCommonAbstractTest {
+public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends IgniteCollectionAbstractTest {
     /** */
     protected static final int GRID_CNT = 4;
-
-    /** */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     protected static final int RETRIES = 133;
 
     /** */
-    private static final int QUEUE_CAPACITY = 100000;
+    private static final int QUEUE_CAPACITY = 100_000;
 
     /** */
     private static CountDownLatch lthTake;
 
-    /**
-     * Constructs test.
-     */
-    protected GridCacheQueueRotativeMultiNodeAbstractTest() {
-        super(/* don't start grid */ false);
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -79,11 +76,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(spi);
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }
@@ -96,8 +89,8 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     public void testPutRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-            true, true);
+        IgniteQueue<Integer> queue =
+            grid(0).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
 
         assertTrue(queue.isEmpty());
 
@@ -105,14 +98,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            forLocal(grid(i)).call(new PutJob(queueName, RETRIES));
+            forLocal(grid(i)).call(new PutJob(queueName, collocatedCollectionConfiguration(), RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
                 stopGrid(i);
         }
 
-        queue = grid((GRID_CNT * 3) - 1).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY, true, false);
+        queue = grid((GRID_CNT * 3) - 1).queue(queueName, null, 0, false);
 
         assertEquals(RETRIES * GRID_CNT * 2, queue.size());
     }
@@ -125,8 +118,8 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
     public void testPutTakeRotativeNodes() throws Exception {
         String queueName = UUID.randomUUID().toString();
 
-        IgniteQueue<Integer> queue = grid(0).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-            true, true);
+        IgniteQueue<Integer> queue =
+                grid(0).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
 
         assertTrue(queue.isEmpty());
 
@@ -134,14 +127,14 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         for (int i = GRID_CNT; i < GRID_CNT * 3; i++) {
             startGrid(i);
 
-            forLocal(grid(i)).call(new PutTakeJob(queueName, RETRIES));
+            forLocal(grid(i)).call(new PutTakeJob(queueName, collocatedCollectionConfiguration(), RETRIES));
 
             // last node must be alive.
             if (i < (GRID_CNT * 3) - 1)
                 stopGrid(i);
         }
 
-        queue = grid((GRID_CNT * 3) - 1).cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY, true, false);
+        queue = grid((GRID_CNT * 3) - 1).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
 
         assertEquals(0, queue.size());
     }
@@ -156,15 +149,15 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
         final String queueName = UUID.randomUUID().toString();
 
-        final IgniteQueue<Integer> queue = grid(0).cache(null).dataStructures()
-            .queue(queueName, QUEUE_CAPACITY, true, true);
+        final IgniteQueue<Integer> queue =
+                grid(0).queue(queueName, collocatedCollectionConfiguration(), QUEUE_CAPACITY, true);
 
         assertTrue(queue.isEmpty());
 
         Thread th = new Thread(new Runnable() {
             @Override public void run() {
                 try {
-                    assert grid(1).compute().call(new TakeJob(queueName));
+                    assert grid(1).compute().call(new TakeJob(queueName, collocatedCollectionConfiguration()));
                 }
                 catch (IgniteCheckedException e) {
                     error(e.getMessage(), e);
@@ -206,12 +199,17 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** */
         private final int retries;
 
+        /** */
+        private final IgniteCollectionConfiguration colCfg;
+
         /**
          * @param queueName Queue name.
+         * @param colCfg Collection configuration.
          * @param retries  Number of operations.
          */
-        PutJob(String queueName, int retries) {
+        PutJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
             this.queueName = queueName;
+            this.colCfg = colCfg;
             this.retries = retries;
         }
 
@@ -221,8 +219,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
-                .queue(queueName, QUEUE_CAPACITY, true, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
 
             assertNotNull(queue);
 
@@ -235,63 +232,6 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PutJob.class, this);
-        }
-    }
-
-    /**
-     * Test job putting data to queue.
-     */
-    protected static class GetJob implements IgniteCallable<Integer> {
-        /** */
-        @GridToStringExclude
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** Queue name. */
-        private final String queueName;
-
-        /** */
-        private final int retries;
-
-        /** */
-        private final String expVal;
-
-        /**
-         * @param queueName Queue name.
-         * @param retries  Number of operations.
-         * @param expVal Expected value.
-         */
-        GetJob(String queueName, int retries, String expVal) {
-            this.queueName = queueName;
-            this.retries = retries;
-            this.expVal = expVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer call() throws IgniteCheckedException {
-            assertNotNull(ignite);
-
-            ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
-
-            IgniteQueue<String> queue = ignite.cache(null).dataStructures()
-                .queue(queueName, QUEUE_CAPACITY, true, true);
-
-            assertNotNull(queue);
-
-            assertEquals(1, queue.size());
-
-            for (int i = 0; i < retries; i++) {
-                assertEquals(expVal, queue.peek());
-
-                assertEquals(expVal, queue.element());
-            }
-
-            return queue.size();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(GetJob.class, this);
         }
     }
 
@@ -310,12 +250,16 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** */
         private final int retries;
 
+        /** */
+        private final IgniteCollectionConfiguration colCfg;
+
         /**
          * @param queueName Queue name.
          * @param retries  Number of operations.
          */
-        PutTakeJob(String queueName, int retries) {
+        PutTakeJob(String queueName, IgniteCollectionConfiguration colCfg, int retries) {
             this.queueName = queueName;
+            this.colCfg = colCfg;
             this.retries = retries;
         }
 
@@ -325,8 +269,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
-                .queue(queueName, QUEUE_CAPACITY, true, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
 
             assertNotNull(queue);
 
@@ -360,11 +303,16 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
         /** Queue name. */
         private final String queueName;
 
+        /** */
+        private final IgniteCollectionConfiguration colCfg;
+
         /**
          * @param queueName Queue name.
+         * @param colCfg Collection configuration.
          */
-        TakeJob(String queueName) {
+        TakeJob(String queueName, IgniteCollectionConfiguration colCfg) {
             this.queueName = queueName;
+            this.colCfg = colCfg;
         }
 
         /** {@inheritDoc} */
@@ -373,8 +321,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + ']');
 
-            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
-                .queue(queueName, QUEUE_CAPACITY, true, true);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
 
             assertNotNull(queue);
 
@@ -421,14 +368,13 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            IgniteQueue<Integer> queue = ignite.cache(null).dataStructures()
-                .queue(queueName, QUEUE_CAPACITY, true, false);
+            IgniteQueue<Integer> queue = ignite.queue(queueName, null, 0, false);
 
             assert queue != null;
 
             assert queue.capacity() == QUEUE_CAPACITY;
 
-            assert ignite.cache(null).dataStructures().removeQueue(queueName);
+            queue.close();
 
             return true;
         }
