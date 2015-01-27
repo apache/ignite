@@ -61,6 +61,8 @@ public class GridIpcSharedMemoryNativeLoader {
         return name.replaceAll("\\W+", "_");
     }
 
+    static String libFileName(){return LIB_NAME;}
+
     /**
      * @return Platform.
      */
