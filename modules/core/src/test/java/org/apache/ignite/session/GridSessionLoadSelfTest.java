@@ -86,7 +86,7 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkSessionLoad() throws Exception {
-        final Ignite ignite = grid(1);
+        final Ignite ignite = grid(0);
 
         assert ignite != null;
         assert ignite.cluster().nodes().size() == 2;
@@ -95,15 +95,18 @@ public class GridSessionLoadSelfTest extends GridCommonAbstractTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
+                ComputeTaskFuture f = null;
+
                 try {
                     for (int i = 0; i < EXEC_CNT; i++)
                         assertEquals(Boolean.TRUE,
-                            executeAsync(ignite.compute().withName("task-name"),
+                            (f = executeAsync(ignite.compute().withName("task-name"),
                                 SessionLoadTestTask.class,
-                                ignite.cluster().nodes().size() * 2).get(20000));
+                                ignite.cluster().nodes().size() * 2)).get(20000));
                 }
                 catch (Exception e) {
-                    U.error(log, "Test failed.", e);
+                    U.error(log, "Task failed: " +
+                        f != null ? f.getTaskSession().getId() : "N/A", e);
 
                     throw e;
                 }
