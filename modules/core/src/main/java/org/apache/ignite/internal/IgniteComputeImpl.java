@@ -49,7 +49,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     private UUID subjId;
 
     /** */
-    private IgniteAsyncSupportAdapter asyncSup;
+    private IgniteAsyncSupportAdapter<IgniteAsyncSupport> asyncSup;
 
     /**
      * Required by {@link Externalizable}.

@@ -22,9 +22,12 @@ import org.apache.ignite.*;
 /**
  * Adapter for {@link IgniteAsyncSupport}.
  */
-public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
+public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteFuture<?>> curFut;
+
+    /** */
+    protected volatile T asyncInstance;
 
     /**
      * Default constructor.
@@ -37,12 +40,30 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
      * @param async Async enabled flag.
      */
     public IgniteAsyncSupportAdapter(boolean async) {
-        if (async)
+        if (async) {
             curFut = new ThreadLocal<>();
+
+            asyncInstance = (T)this;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport enableAsync() {
+    @Override public T enableAsync() {
+        T res = asyncInstance;
+
+        if (res == null) {
+            res = createAsyncInstance();
+
+            asyncInstance = res;
+        }
+
+        return res;
+    }
+
+    /**
+     * Creates component with asynchronous mode enabled.
+     */
+    protected T createAsyncInstance() {
         throw new UnsupportedOperationException();
     }
 
