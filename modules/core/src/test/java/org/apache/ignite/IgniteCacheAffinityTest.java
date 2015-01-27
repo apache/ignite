@@ -12,6 +12,10 @@ import org.apache.ignite.internal.processors.cache.*;
 import javax.cache.*;
 import java.util.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+
 /**
  * Tests for {@link org.apache.ignite.internal.processors.affinity.GridAffinityProcessor.CacheAffinityProxy}.
  */
@@ -20,13 +24,13 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
     private int GRID_COUNT = 3;
 
     /** Cache name */
-    private final String CACHE1 = "ConsistentCache";
+    private final String CACHE1 = "ConsistentHash";
 
     /** Cache name */
-    private final String CACHE2 = "PartitionFairCache";
+    private final String CACHE2 = "Fair";
 
     /** Cache name */
-    private final String CACHE3 = "RendezvousCache";
+    private final String CACHE3 = "Rendezvous";
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -61,46 +65,23 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
+        return PARTITIONED;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.TRANSACTIONAL;
+        return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
     @Override protected CacheDistributionMode distributionMode() {
-        return CacheDistributionMode.NEAR_PARTITIONED;
+        return NEAR_PARTITIONED;
     }
 
     /**
      * Throws Exception if failed.
      */
     public void testAffinity() throws Exception {
-        if (cacheMode().equals(CacheMode.LOCAL)) {
-            info("Test is not applied for local cache.");
-
-            return;
-        }
-
-        GridCache<String, Integer> cache0 = grid(1).cache(null);
-        GridCache<String, Integer> cache1 = grid(1).cache(CACHE1);
-        GridCache<String, Integer> cache2 = grid(1).cache(CACHE2);
-        GridCache<String, Integer> cache3 = grid(1).cache(CACHE3);
-
-        for (int i = 0; i < 10; ++i)
-            cache0.put(Integer.toString(i), i);
-
-        for (int i = 10; i < 20; ++i)
-            cache1.put(Integer.toString(i), i);
-
-        for (int i = 20; i < 30; ++i)
-            cache2.put(Integer.toString(i), i);
-
-        for (int i = 30; i < 40; ++i)
-            cache3.put(Integer.toString(i), i);
-
         checkAffinity();
 
         stopGrid(gridCount() - 1);
@@ -145,6 +126,10 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
      * Check mapKeyToNode, mapKeyToPrimaryAndBackups and mapPartitionToNode methods.
      */
     private void checkMapKeyToNode(CacheAffinity testAff, IgniteCache jcache, CacheAffinity aff) {
+        for (int i = 0; i < 10000; i++) {
+
+        }
+        
         Iterator<Cache.Entry> iter = jcache.iterator();
 
         while (iter.hasNext()) {
