@@ -185,7 +185,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         List<CA> q;
 
         synchronized (undeploys) {
-            q = undeploys.remove(ctx.namexx());
+            q = undeploys.remove(ctx.name());
         }
 
         if (q == null)
@@ -212,14 +212,12 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         if (log.isDebugEnabled())
             log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
 
-        for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-            synchronized (undeploys) {
-                List<CA> queue = new ArrayList<>();
+        synchronized (undeploys) {
+            for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
+                List<CA> queue = undeploys.get(cacheCtx.name());
 
-                if (undeploys.containsKey(cacheCtx.namexx()))
-                    queue = undeploys.get(cacheCtx.namexx());
-                else
-                    undeploys.put(cacheCtx.namexx(), queue);
+                if (queue == null)
+                    undeploys.put(cacheCtx.name(), queue = new ArrayList<>());
 
                 queue.add(new CA() {
                     @Override
