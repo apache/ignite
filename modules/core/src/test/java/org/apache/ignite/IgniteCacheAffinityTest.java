@@ -9,7 +9,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.cache.*;
 
-import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -98,90 +97,31 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
      * Check CacheAffinityProxy methods.
      */
     private void checkAffinity() {
-        checkGridAffinity(grid(0).affinity(null), grid(1).jcache(null), grid(1).cache(null));
-
-        checkGridAffinity(grid(0).affinity(CACHE1), grid(1).jcache(CACHE1), grid(1).cache(CACHE1));
-
-        checkGridAffinity(grid(0).affinity(CACHE2), grid(1).jcache(CACHE2), grid(1).cache(CACHE2));
-
-        checkGridAffinity(grid(0).affinity(CACHE3), grid(1).jcache(CACHE3), grid(1).cache(CACHE3));
+        checkAffinity(grid(0).affinity(null), grid(1).cache(null).affinity());
+        checkAffinity(grid(0).affinity(CACHE1), grid(1).cache(CACHE1).affinity());
+        checkAffinity(grid(0).affinity(CACHE2), grid(1).cache(CACHE2).affinity());
+        checkAffinity(grid(0).affinity(CACHE3), grid(1).cache(CACHE3).affinity());
     }
 
     /**
      * @param testAff Cache affinity to test.
-     * @param jcache Ignite cache.
-     * @param cache Cache.
+     * @param aff Cache affinity.
      */
-    private void checkGridAffinity(CacheAffinity testAff, IgniteCache jcache, GridCache cache) {
-        checkAffinityKey(testAff, jcache, cache.affinity());
-
-        checkPartitions(testAff, cache.affinity());
-
-        checkIsBackupOrPrimary(testAff, jcache, cache.affinity());
-
-        checkMapKeyToNode(testAff, jcache, cache.affinity());
-    }
-
-    /**
-     * Check mapKeyToNode, mapKeyToPrimaryAndBackups and mapPartitionToNode methods.
-     */
-    private void checkMapKeyToNode(CacheAffinity testAff, IgniteCache jcache, CacheAffinity aff) {
-        for (int i = 0; i < 10000; i++) {
-
-        }
-        
-        Iterator<Cache.Entry> iter = jcache.iterator();
-
-        while (iter.hasNext()) {
-            Cache.Entry entry = iter.next();
-
-            UUID node1 = testAff.mapKeyToNode(entry.getKey()).id();
-            UUID node2 = aff.mapKeyToNode(entry.getKey()).id();
-
-            assertEquals(node1, node2);
-
-            Collection<ClusterNode> nodes1 = testAff.mapKeyToPrimaryAndBackups(entry.getKey());
-            Collection<ClusterNode> nodes2 = aff.mapKeyToPrimaryAndBackups(entry.getKey());
-
-            checkEqualCollection(nodes1, nodes2);
-
-            int part = aff.partition(entry.getKey());
-
-            assertEquals(testAff.mapPartitionToNode(part).id(), aff.mapPartitionToNode(part).id());
-        }
+    private void checkAffinity(CacheAffinity testAff, CacheAffinity aff) {
+        checkAffinityKey(testAff, aff);
+        checkPartitions(testAff, aff);
+        checkIsBackupOrPrimary(testAff, aff);
+        checkMapKeyToNode(testAff, aff);
+        checkMapKeysToNodes(testAff, aff);
+        checkMapPartitionsToNodes(testAff, aff);
     }
 
     /**
      * Check affinityKey method.
      */
-    private void checkAffinityKey(CacheAffinity testAff, IgniteCache jcache, CacheAffinity aff) {
-        Iterator<Cache.Entry> iter = jcache.iterator();
-
-        while (iter.hasNext()) {
-            Cache.Entry entry = iter.next();
-
-            assertEquals(testAff.affinityKey(entry.getKey()), (aff.affinityKey(entry.getKey())));
-        }
-    }
-
-    /**
-     * Check isBackup, isPrimary and isPrimaryOrBackup methods.
-     */
-    private void checkIsBackupOrPrimary(CacheAffinity testAff, IgniteCache jcache, CacheAffinity aff) {
-
-        Iterator<Cache.Entry> iter = jcache.iterator();
-
-        while (iter.hasNext()) {
-            Cache.Entry entry = iter.next();
-
-            for (ClusterNode n : nodes()) {
-                assertEquals(testAff.isBackup(n, entry.getKey()), aff.isBackup(n, entry.getKey()));
-
-                assertEquals(testAff.isPrimary(n, entry.getKey()), aff.isPrimary(n, entry.getKey()));
-
-                assertEquals(testAff.isPrimaryOrBackup(n, entry.getKey()), aff.isPrimaryOrBackup(n, entry.getKey()));
-            }
-        }
+    private void checkAffinityKey(CacheAffinity testAff,CacheAffinity aff) {
+        for (int i = 0; i < 10000; i++)
+            assertEquals(testAff.affinityKey(i), aff.affinityKey(i));
     }
 
     /**
@@ -198,9 +138,66 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
     }
 
     /**
+     * Check isBackup, isPrimary and isPrimaryOrBackup methods.
+     */
+    private void checkIsBackupOrPrimary(CacheAffinity testAff, CacheAffinity aff) {
+        for (int i = 0; i < 10000; i++)
+            for (ClusterNode n : nodes()) {
+                assertEquals(testAff.isBackup(n, i), aff.isBackup(n, i));
+
+                assertEquals(testAff.isPrimary(n, i), aff.isPrimary(n, i));
+
+                assertEquals(testAff.isPrimaryOrBackup(n, i), aff.isPrimaryOrBackup(n, i));
+            }
+    }
+
+    /**
+     * Check mapKeyToNode, mapKeyToPrimaryAndBackups, mapPartitionToPrimaryAndBackups and mapPartitionToNode methods.
+     */
+    private void checkMapKeyToNode(CacheAffinity testAff, CacheAffinity aff) {
+        for (int i = 0; i < 10000; i++) {
+            assertEquals(testAff.mapKeyToNode(i).id(), aff.mapKeyToNode(i).id());
+
+            checkEqualCollection(testAff.mapKeyToPrimaryAndBackups(i), aff.mapKeyToPrimaryAndBackups(i));
+        }
+
+        assertEquals(aff.partitions(), testAff.partitions());
+
+        for (int part = 0; part < aff.partitions(); ++part) {
+            assertEquals(testAff.mapPartitionToNode(part).id(), aff.mapPartitionToNode(part).id());
+
+            checkEqualCollection(testAff.mapPartitionToPrimaryAndBackups(part), aff.mapKeyToPrimaryAndBackups(part));
+        }
+    }
+
+    /**
+     * Check mapKeysToNodes methods.
+     */
+    private void checkMapKeysToNodes(CacheAffinity testAff, CacheAffinity aff) {
+        List<Integer> keys = new ArrayList<>(10000);
+
+        for (int i = 0; i < 10000; ++i)
+            keys.add(i);
+
+        checkEqualMaps(testAff.mapKeysToNodes(keys), aff.mapKeysToNodes(keys));
+    }
+
+    /**
+     * Check mapPartitionsToNodes methods.
+     */
+    private void checkMapPartitionsToNodes(CacheAffinity testAff, CacheAffinity aff) {
+        List<Integer> parts = new ArrayList<>(aff.partitions());
+
+        for (int i = 0; i < aff.partitions(); ++i)
+            parts.add(i);
+
+        checkEqualPartitionMaps(testAff.mapPartitionsToNodes(parts), aff.mapPartitionsToNodes(parts));
+    }
+
+    /**
      * Check equal arrays.
      */
-    private void checkEqualIntArray(int[] arr1, int[] arr2) {
+    private static void checkEqualIntArray(int[] arr1, int[] arr2) {
         assertEquals(arr1.length, arr2.length);
 
         Collection<Integer> col1 = new HashSet<>();
@@ -220,26 +217,43 @@ public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
     /**
      * Check equal collections.
      */
-    private void checkEqualCollection(Collection<ClusterNode> col1, Collection<ClusterNode> col2) {
-        Collection<ClusterNode> colCopy1 = new HashSet<>(col1);
+    private static void checkEqualCollection(Collection<ClusterNode> col1, Collection<ClusterNode> col2) {
+        assertEquals(col1.size(), col2.size());
 
-        for (ClusterNode node : col2) {
-            assertTrue(colCopy1.contains(node));
-            colCopy1.remove(node);
+        for (ClusterNode node : col1)
+            assertTrue(col2.contains(node));
+    }
+
+    /**
+     * Check equal maps.
+     */
+    private static void checkEqualMaps(Map<ClusterNode, Collection> map1, Map<ClusterNode, Collection> map2) {
+        assertEquals(map1.size(), map2.size());
+
+        for (ClusterNode node : map1.keySet()) {
+            assertTrue(map2.containsKey(node));
+
+            assertEquals(map1.get(node).size(), map2.get(node).size());
         }
+    }
 
-        assertEquals(0, colCopy1.size());
+    /**
+     * Check equal maps.
+     */
+    private static void checkEqualPartitionMaps(Map<Integer, ClusterNode> map1, Map<Integer, ClusterNode> map2) {
+        assertEquals(map1.size(), map2.size());
+
+        for (Integer i : map1.keySet()) {
+            assertTrue(map2.containsKey(i));
+
+            assertEquals(map1.get(i), map2.get(i));
+        }
     }
 
     /**
      * @return Cluster nodes.
      */
     private Collection<ClusterNode> nodes() {
-        Set<ClusterNode> nodes = new HashSet<>();
-
-        for (int i = 0; i < gridCount(); ++i)
-            nodes.addAll(grid(i).nodes());
-
-        return nodes;
+        return grid(0).nodes();
     }
 }
