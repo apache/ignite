@@ -569,6 +569,8 @@ public class GridDhtPartitionDemandPool<K, V> {
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
             GridDhtPartitionsExchangeFuture<K, V> exchFut) throws InterruptedException, IgniteCheckedException {
+            GridDhtPartitionTopology<K, V> top = cctx.dht().topology();
+
             cntr++;
 
             d.topic(topic(cntr));
@@ -690,7 +692,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             int p = e.getKey();
 
                             if (cctx.affinity().localNode(p, topVer)) {
-                                GridDhtLocalPartition<K, V> part = cctx.dht().topology().localPartition(p, topVer, true);
+                                GridDhtLocalPartition<K, V> part = top.localPartition(p, topVer, true);
 
                                 assert part != null;
 
@@ -734,7 +736,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         if (last) {
                                             remaining.remove(p);
 
-                                            cctx.dht().topology().own(part);
+                                            top.own(part);
 
                                             if (log.isDebugEnabled())
                                                 log.debug("Finished preloading partition: " + part);

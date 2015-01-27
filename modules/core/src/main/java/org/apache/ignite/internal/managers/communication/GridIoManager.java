@@ -1177,8 +1177,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         boolean ordered,
         long timeout,
         boolean skipOnTimeout
-    )
-        throws IgniteCheckedException {
+    ) throws IgniteCheckedException {
         assert nodes != null;
         assert topic != null;
         assert msg != null;
