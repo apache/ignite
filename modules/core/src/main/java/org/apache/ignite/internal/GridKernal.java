@@ -19,6 +19,7 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.*;
@@ -3226,6 +3227,16 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
         Ignition.stop(gridName, true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K> CacheAffinity<K> affinity(String cacheName) {
+        GridCacheAdapter<K, ?> cache = ctx.cache().internalCache(cacheName);
+
+        if (cache != null)
+            return cache.affinity();
+
+        return ctx.affinity().affinityProxy(cacheName);
     }
 
     /**
