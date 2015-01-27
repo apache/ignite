@@ -272,4 +272,39 @@ class CacheMetricsMXBeanImpl implements CacheMetricsMXBean {
     @Override public long getCacheTxRollbacks() {
         return cache.metrics0().getCacheTxRollbacks();
     }
+
+    /** {@inheritDoc} */
+    @Override public String getKeyType() {
+        return cache.metrics0().getKeyType();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getValueType() {
+        return cache.metrics0().getValueType();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStoreByValue() {
+        return cache.metrics0().isStoreByValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStatisticsEnabled() {
+        return cache.metrics0().isStatisticsEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isManagementEnabled() {
+        return cache.metrics0().isManagementEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isReadThrough() {
+        return cache.metrics0().isReadThrough();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWriteThrough() {
+        return cache.metrics0().isWriteThrough();
+    }
 }

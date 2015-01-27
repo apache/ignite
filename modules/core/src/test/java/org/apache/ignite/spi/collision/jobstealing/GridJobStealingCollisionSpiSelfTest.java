@@ -85,7 +85,7 @@ public class GridJobStealingCollisionSpiSelfTest extends GridSpiAbstractTest<Job
 
         rmtNode.setAttribute(U.spiAttribute(getSpi(), WAIT_JOBS_THRESHOLD_NODE_ATTR), getWaitJobsThreshold());
 
-        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setCurrentWaitingJobs(2);
 

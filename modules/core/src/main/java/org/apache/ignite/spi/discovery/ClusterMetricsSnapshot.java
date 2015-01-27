@@ -18,21 +18,21 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.internal.managers.discovery.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.jetbrains.annotations.*;
 
-import java.io.*;
+import java.util.*;
+
+import static java.lang.Math.*;
 
 /**
- * Adapter for {@link GridLocalMetrics} interface.
+ * Implementation for {@link ClusterMetrics} interface.
  * <p>
  * Note that whenever adding or removing metric parameters, care
  * must be taken to update {@link DiscoveryMetricsHelper} as well.
  */
-public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private long lastUpdateTime = -1;
 
@@ -112,9 +112,6 @@ public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
     private int availProcs = -1;
 
     /** */
-    private long totalPhysicalMemory = -1;
-
-    /** */
     private double load = -1;
 
     /** */
@@ -185,6 +182,122 @@ public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
 
     /** */
     private int outMesQueueSize = -1;
+
+    /**
+     * Create empty snapshot.
+     */
+    public ClusterMetricsSnapshot() {
+    }
+
+    /**
+     * Create metrics for given cluster group.
+     *
+     * @param p Projection to get metrics for.
+     */
+    public ClusterMetricsSnapshot(ClusterGroup p) {
+        assert p != null;
+
+        Collection<ClusterNode> nodes = p.nodes();
+
+        int size = nodes.size();
+
+        curJobWaitTime = Long.MAX_VALUE;
+
+        for (ClusterNode node : nodes) {
+            ClusterMetrics m = node.metrics();
+
+            lastUpdateTime = max(lastUpdateTime, node.metrics().getLastUpdateTime());
+
+            curActiveJobs += m.getCurrentActiveJobs();
+            maxActiveJobs = max(maxActiveJobs, m.getCurrentActiveJobs());
+            avgActiveJobs += m.getCurrentActiveJobs();
+            totalExecutedJobs += m.getTotalExecutedJobs();
+
+            totalExecTasks += m.getTotalExecutedTasks();
+
+            totalCancelledJobs += m.getTotalCancelledJobs();
+            curCancelledJobs += m.getCurrentCancelledJobs();
+            maxCancelledJobs = max(maxCancelledJobs, m.getCurrentCancelledJobs());
+            avgCancelledJobs += m.getCurrentCancelledJobs();
+
+            totalRejectedJobs += m.getTotalRejectedJobs();
+            curRejectedJobs += m.getCurrentRejectedJobs();
+            maxRejectedJobs = max(maxRejectedJobs, m.getCurrentRejectedJobs());
+            avgRejectedJobs += m.getCurrentRejectedJobs();
+
+            curWaitingJobs += m.getCurrentJobWaitTime();
+            maxWaitingJobs = max(maxWaitingJobs, m.getCurrentWaitingJobs());
+            avgWaitingJobs += m.getCurrentWaitingJobs();
+
+            maxJobExecTime = max(maxJobExecTime, m.getMaximumJobExecuteTime());
+            avgJobExecTime += m.getAverageJobExecuteTime();
+            curJobExecTime += m.getCurrentJobExecuteTime();
+
+            curJobWaitTime = min(curJobWaitTime, m.getCurrentJobWaitTime());
+            maxJobWaitTime = max(maxJobWaitTime, m.getCurrentJobWaitTime());
+            avgJobWaitTime += m.getCurrentJobWaitTime();
+
+            daemonThreadCnt += m.getCurrentDaemonThreadCount();
+
+            peakThreadCnt = max(peakThreadCnt, m.getCurrentThreadCount());
+            threadCnt += m.getCurrentThreadCount();
+            startedThreadCnt += m.getTotalStartedThreadCount();
+
+            curIdleTime += m.getCurrentIdleTime();
+            totalIdleTime += m.getTotalIdleTime();
+
+            heapCommitted += m.getHeapMemoryCommitted();
+
+            heapUsed += m.getHeapMemoryUsed();
+
+            heapMax = max(heapMax, m.getHeapMemoryMaximum());
+
+            heapInit += m.getHeapMemoryInitialized();
+
+            nonHeapCommitted += m.getNonHeapMemoryCommitted();
+
+            nonHeapUsed += m.getNonHeapMemoryUsed();
+
+            nonHeapMax = max(nonHeapMax, m.getNonHeapMemoryMaximum());
+
+            nonHeapInit += m.getNonHeapMemoryInitialized();
+
+            upTime = max(upTime, m.getUpTime());
+
+            lastDataVer = max(lastDataVer, m.getLastDataVersion());
+
+            sentMsgsCnt += m.getSentMessagesCount();
+            sentBytesCnt += m.getSentBytesCount();
+            rcvdMsgsCnt += m.getReceivedMessagesCount();
+            rcvdBytesCnt += m.getReceivedBytesCount();
+            outMesQueueSize += m.getOutboundMessagesQueueSize();
+
+            avgLoad += m.getCurrentCpuLoad();
+            availProcs += m.getTotalCpus();
+        }
+
+        curJobExecTime /= size;
+
+        avgActiveJobs /= size;
+        avgCancelledJobs /= size;
+        avgRejectedJobs /= size;
+        avgWaitingJobs /= size;
+        avgJobExecTime /= size;
+        avgJobWaitTime /= size;
+        avgLoad /= size;
+
+        if (!F.isEmpty(nodes)) {
+            ClusterMetrics oldestNodeMetrics = oldest(nodes).metrics();
+
+            nodeStartTime = oldestNodeMetrics.getNodeStartTime();
+            startTime = oldestNodeMetrics.getStartTime();
+        }
+
+        Map<String, Collection<ClusterNode>> neighborhood = U.neighborhood(nodes);
+
+        gcLoad = gcCpus(neighborhood);
+        load = cpus(neighborhood);
+    }
 
     /** {@inheritDoc} */
     @Override public long getLastUpdateTime() {
@@ -893,114 +1006,52 @@ public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
         this.outMesQueueSize = outMesQueueSize;
     }
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(maxActiveJobs);
-        out.writeInt(curActiveJobs);
-        out.writeFloat(avgActiveJobs);
-        out.writeInt(maxWaitingJobs);
-        out.writeInt(curWaitingJobs);
-        out.writeFloat(avgWaitingJobs);
-        out.writeInt(maxCancelledJobs);
-        out.writeInt(curCancelledJobs);
-        out.writeFloat(avgCancelledJobs);
-        out.writeInt(maxRejectedJobs);
-        out.writeInt(curRejectedJobs);
-        out.writeFloat(avgRejectedJobs);
-        out.writeInt(totalExecutedJobs);
-        out.writeInt(totalCancelledJobs);
-        out.writeInt(totalRejectedJobs);
-        out.writeLong(maxJobWaitTime);
-        out.writeLong(curJobWaitTime);
-        out.writeDouble(avgJobWaitTime);
-        out.writeLong(maxJobExecTime);
-        out.writeLong(curJobExecTime);
-        out.writeDouble(avgJobExecTime);
-        out.writeInt(totalExecTasks);
-        out.writeLong(curIdleTime);
-        out.writeLong(totalIdleTime);
-        out.writeInt(availProcs);
-        out.writeLong(totalPhysicalMemory);
-        out.writeDouble(load);
-        out.writeDouble(avgLoad);
-        out.writeDouble(gcLoad);
-        out.writeLong(heapInit);
-        out.writeLong(heapUsed);
-        out.writeLong(heapCommitted);
-        out.writeLong(heapMax);
-        out.writeLong(nonHeapInit);
-        out.writeLong(nonHeapUsed);
-        out.writeLong(nonHeapCommitted);
-        out.writeLong(nonHeapMax);
-        out.writeLong(upTime);
-        out.writeLong(startTime);
-        out.writeLong(nodeStartTime);
-        out.writeInt(threadCnt);
-        out.writeInt(peakThreadCnt);
-        out.writeLong(startedThreadCnt);
-        out.writeInt(daemonThreadCnt);
-        out.writeLong(lastDataVer);
-        out.writeInt(sentMsgsCnt);
-        out.writeLong(sentBytesCnt);
-        out.writeInt(rcvdMsgsCnt);
-        out.writeLong(rcvdBytesCnt);
-        out.writeInt(outMesQueueSize);
+    private static int cpus(Map<String, Collection<ClusterNode>> neighborhood) {
+        int cpus = 0;
+
+        for (Collection<ClusterNode> nodes : neighborhood.values()) {
+            ClusterNode first = F.first(nodes);
+
+            // Projection can be empty if all nodes in it failed.
+            if (first != null)
+                cpus += first.metrics().getTotalCpus();
+        }
+
+        return cpus;
     }
 
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException {
-        lastUpdateTime = U.currentTimeMillis();
+    private static int gcCpus(Map<String, Collection<ClusterNode>> neighborhood) {
+        int cpus = 0;
 
-        maxActiveJobs = in.readInt();
-        curActiveJobs = in.readInt();
-        avgActiveJobs = in.readFloat();
-        maxWaitingJobs = in.readInt();
-        curWaitingJobs = in.readInt();
-        avgWaitingJobs = in.readFloat();
-        maxCancelledJobs = in.readInt();
-        curCancelledJobs = in.readInt();
-        avgCancelledJobs = in.readFloat();
-        maxRejectedJobs = in.readInt();
-        curRejectedJobs = in.readInt();
-        avgRejectedJobs = in.readFloat();
-        totalExecutedJobs = in.readInt();
-        totalCancelledJobs = in.readInt();
-        totalRejectedJobs = in.readInt();
-        maxJobWaitTime = in.readLong();
-        curJobWaitTime = in.readLong();
-        avgJobWaitTime = in.readDouble();
-        maxJobExecTime = in.readLong();
-        curJobExecTime = in.readLong();
-        avgJobExecTime = in.readDouble();
-        totalExecTasks = in.readInt();
-        curIdleTime = in.readLong();
-        totalIdleTime = in.readLong();
-        availProcs = in.readInt();
-        totalPhysicalMemory = in.readLong();
-        load = in.readDouble();
-        avgLoad = in.readDouble();
-        gcLoad = in.readDouble();
-        heapInit = in.readLong();
-        heapUsed = in.readLong();
-        heapCommitted = in.readLong();
-        heapMax = in.readLong();
-        nonHeapInit = in.readLong();
-        nonHeapUsed = in.readLong();
-        nonHeapCommitted = in.readLong();
-        nonHeapMax = in.readLong();
-        upTime = in.readLong();
-        startTime = in.readLong();
-        nodeStartTime = in.readLong();
-        threadCnt = in.readInt();
-        peakThreadCnt = in.readInt();
-        startedThreadCnt = in.readLong();
-        daemonThreadCnt = in.readInt();
-        lastDataVer = in.readLong();
-        sentMsgsCnt = in.readInt();
-        sentBytesCnt = in.readLong();
-        rcvdMsgsCnt = in.readInt();
-        rcvdBytesCnt = in.readLong();
-        outMesQueueSize = in.readInt();
+        for (Collection<ClusterNode> nodes : neighborhood.values()) {
+            ClusterNode first = F.first(nodes);
+
+            // Projection can be empty if all nodes in it failed.
+            if (first != null)
+                cpus += first.metrics().getCurrentGcCpuLoad();
+        }
+
+        return cpus;
+    }
+
+    /**
+     * Gets the oldest node in given collection.
+     *
+     * @param nodes Nodes.
+     * @return Oldest node or {@code null} if collection is empty.
+     */
+    @Nullable private static ClusterNode oldest(Collection<ClusterNode> nodes) {
+        long min = Long.MAX_VALUE;
+
+        ClusterNode oldest = null;
+
+        for (ClusterNode n : nodes)
+            if (n.order() < min) {
+                min = n.order();
+                oldest = n;
+            }
+
+        return oldest;
     }
 
     /** {@inheritDoc} */
@@ -1016,11 +1067,10 @@ public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        DiscoveryMetricsAdapter other = (DiscoveryMetricsAdapter)obj;
+        ClusterMetricsSnapshot other = (ClusterMetricsSnapshot)obj;
 
         return
             availProcs == other.availProcs &&
-            totalPhysicalMemory == other.totalPhysicalMemory &&
             curActiveJobs == other.curActiveJobs &&
             curCancelledJobs == other.curCancelledJobs &&
             curIdleTime == other.curIdleTime &&
@@ -1063,6 +1113,6 @@ public class DiscoveryMetricsAdapter implements ClusterMetrics, Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DiscoveryMetricsAdapter.class, this);
+        return S.toString(ClusterMetricsSnapshot.class, this);
     }
 }

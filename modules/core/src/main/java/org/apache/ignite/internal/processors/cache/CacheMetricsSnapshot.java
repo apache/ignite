@@ -20,15 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
-import java.io.*;
-
 /**
  * Metrics snapshot.
  */
-class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+class CacheMetricsSnapshot implements CacheMetrics {
     /** Number of reads. */
     private long reads = 0;
 
@@ -161,6 +156,27 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Total count of entries in cache store internal buffer. */
     private int writeBehindBufferSize;
 
+    /** */
+    private String keyType;
+
+    /** */
+    private String valueType;
+
+    /** */
+    private boolean isStoreByValue;
+
+    /** */
+    private boolean isStatisticsEnabled;
+
+    /** */
+    private boolean isManagementEnabled;
+
+    /** */
+    private boolean isReadThrough;
+
+    /** */
+    private boolean isWriteThrough;
+
     /**
      * Create snapshot for given metrics.
      *
@@ -213,6 +229,14 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         writeBehindCriticalOverflowCount = m.getWriteBehindCriticalOverflowCount();
         writeBehindErrorRetryCount = m.getWriteBehindErrorRetryCount();
         writeBehindBufferSize = m.getWriteBehindBufferSize();
+
+        keyType = m.getKeyType();
+        valueType = m.getValueType();
+        isStoreByValue = m.isStoreByValue();
+        isStatisticsEnabled = m.isStatisticsEnabled();
+        isManagementEnabled = m.isManagementEnabled();
+        isReadThrough = m.isReadThrough();
+        isWriteThrough = m.isWriteThrough();
     }
 
     /** {@inheritDoc} */
@@ -453,103 +477,38 @@ class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(reads);
-        out.writeLong(puts);
-        out.writeLong(hits);
-        out.writeLong(misses);
-        out.writeLong(txCommits);
-        out.writeLong(txRollbacks);
-        out.writeLong(removes);
-        out.writeLong(evicts);
-
-        out.writeFloat(putAvgTimeNanos);
-        out.writeFloat(getAvgTimeNanos);
-        out.writeFloat(removeAvgTimeNanos);
-        out.writeFloat(commitAvgTimeNanos);
-        out.writeFloat(rollbackAvgTimeNanos);
-
-        out.writeObject(cacheName);
-        out.writeLong(overflowSize);
-        out.writeLong(offHeapEntriesCount);
-        out.writeLong(offHeapAllocatedSize);
-        out.writeInt(size);
-        out.writeInt(keySize);
-        out.writeBoolean(isEmpty);
-        out.writeInt(dhtEvictQueueCurrentSize);
-        out.writeInt(txThreadMapSize);
-        out.writeInt(txXidMapSize);
-        out.writeInt(txCommitQueueSize);
-        out.writeInt(txPrepareQueueSize);
-        out.writeInt(txStartVersionCountsSize);
-        out.writeInt(txCommittedVersionsSize);
-        out.writeInt(txRolledbackVersionsSize);
-        out.writeInt(txDhtThreadMapSize);
-        out.writeInt(txDhtXidMapSize);
-        out.writeInt(txDhtCommitQueueSize);
-        out.writeInt(txDhtPrepareQueueSize);
-        out.writeInt(txDhtStartVersionCountsSize);
-        out.writeInt(txDhtCommittedVersionsSize);
-        out.writeInt(txDhtRolledbackVersionsSize);
-        out.writeBoolean(isWriteBehindEnabled);
-        out.writeInt(writeBehindFlushSize);
-        out.writeInt(writeBehindFlushThreadCount);
-        out.writeLong(writeBehindFlushFrequency);
-        out.writeInt(writeBehindStoreBatchSize);
-        out.writeInt(writeBehindTotalCriticalOverflowCount);
-        out.writeInt(writeBehindCriticalOverflowCount);
-        out.writeInt(writeBehindErrorRetryCount);
-        out.writeInt(writeBehindBufferSize);
+    @Override public String getKeyType() {
+        return keyType;
     }
 
     /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        reads = in.readLong();
-        puts = in.readLong();
-        hits = in.readLong();
-        misses = in.readLong();
-        txCommits = in.readLong();
-        txRollbacks = in.readLong();
-        removes = in.readLong();
-        evicts = in.readLong();
+    @Override public String getValueType() {
+        return valueType;
+    }
 
-        putAvgTimeNanos = in.readFloat();
-        getAvgTimeNanos = in.readFloat();
-        removeAvgTimeNanos = in.readFloat();
-        commitAvgTimeNanos = in.readFloat();
-        rollbackAvgTimeNanos = in.readFloat();
+    /** {@inheritDoc} */
+    @Override public boolean isStoreByValue() {
+        return isStoreByValue;
+    }
 
-        cacheName = (String)in.readObject();
-        overflowSize = in.readLong();
-        offHeapEntriesCount = in.readLong();
-        offHeapAllocatedSize = in.readLong();
-        size = in.readInt();
-        keySize = in.readInt();
-        isEmpty = in.readBoolean();
-        dhtEvictQueueCurrentSize = in.readInt();
-        txThreadMapSize = in.readInt();
-        txXidMapSize = in.readInt();
-        txCommitQueueSize = in.readInt();
-        txPrepareQueueSize = in.readInt();
-        txStartVersionCountsSize = in.readInt();
-        txCommittedVersionsSize = in.readInt();
-        txRolledbackVersionsSize = in.readInt();
-        txDhtThreadMapSize = in.readInt();
-        txDhtXidMapSize = in.readInt();
-        txDhtCommitQueueSize = in.readInt();
-        txDhtPrepareQueueSize = in.readInt();
-        txDhtStartVersionCountsSize = in.readInt();
-        txDhtCommittedVersionsSize = in.readInt();
-        txDhtRolledbackVersionsSize = in.readInt();
-        isWriteBehindEnabled = in.readBoolean();
-        writeBehindFlushSize = in.readInt();
-        writeBehindFlushThreadCount = in.readInt();
-        writeBehindFlushFrequency = in.readLong();
-        writeBehindStoreBatchSize = in.readInt();
-        writeBehindTotalCriticalOverflowCount = in.readInt();
-        writeBehindCriticalOverflowCount = in.readInt();
-        writeBehindErrorRetryCount = in.readInt();
-        writeBehindBufferSize = in.readInt();
+    /** {@inheritDoc} */
+    @Override public boolean isStatisticsEnabled() {
+        return isStatisticsEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isManagementEnabled() {
+        return isManagementEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isReadThrough() {
+        return isReadThrough;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWriteThrough() {
+        return isWriteThrough;
     }
 
     /** {@inheritDoc} */

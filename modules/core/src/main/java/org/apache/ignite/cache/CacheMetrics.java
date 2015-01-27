@@ -17,9 +17,14 @@
 
 package org.apache.ignite.cache;
 
+import org.apache.ignite.*;
+
+import javax.cache.*;
+import javax.cache.integration.*;
+
 /**
  * Cache metrics used to obtain statistics on cache itself.
- * Use {@link org.apache.ignite.IgniteCache#metrics()} to obtain metrics for a cache.
+ * Use {@link IgniteCache#metrics()} to obtain metrics for a cache.
  */
 public interface CacheMetrics {
     /**
@@ -34,14 +39,14 @@ public interface CacheMetrics {
      *
      * @return the percentage of successful hits, as a decimal e.g 75.
      */
-    float getCacheHitPercentage();
+    public float getCacheHitPercentage();
 
     /**
      * A miss is a get request that is not satisfied.
      *
      * @return the number of misses
      */
-    long getCacheMisses();
+    public long getCacheMisses();
 
     /**
      * Returns the percentage of cache accesses that did not find a requested entry
@@ -49,7 +54,7 @@ public interface CacheMetrics {
      *
      * @return the percentage of accesses that failed to find anything
      */
-    float getCacheMissPercentage();
+    public float getCacheMissPercentage();
 
     /**
      * The total number of requests to the cache. This will be equal to the sum of
@@ -57,14 +62,14 @@ public interface CacheMetrics {
      *
      * @return the number of gets
      */
-    long getCacheGets();
+    public long getCacheGets();
 
     /**
      * The total number of puts to the cache.
      *
      * @return the number of puts
      */
-    long getCachePuts();
+    public long getCachePuts();
 
     /**
      * The total number of removals from the cache. This does not include evictions,
@@ -72,7 +77,7 @@ public interface CacheMetrics {
      *
      * @return the number of removals
      */
-    long getCacheRemovals();
+    public long getCacheRemovals();
 
     /**
      * The total number of evictions from the cache. An eviction is a removal
@@ -81,28 +86,28 @@ public interface CacheMetrics {
      *
      * @return the number of evictions
      */
-    long getCacheEvictions();
+    public long getCacheEvictions();
 
     /**
      * The mean time to execute gets.
      *
      * @return the time in µs
      */
-    float getAverageGetTime();
+    public float getAverageGetTime();
 
     /**
      * The mean time to execute puts.
      *
      * @return the time in µs
      */
-    float getAveragePutTime();
+    public float getAveragePutTime();
 
     /**
      * The mean time to execute removes.
      *
      * @return the time in µs
      */
-    float getAverageRemoveTime();
+    public float getAverageRemoveTime();
 
 
     /**
@@ -363,4 +368,88 @@ public interface CacheMetrics {
      * @return Total count of entries in cache store internal buffer.
      */
     public int getWriteBehindBufferSize();
+
+    /**
+     * Determines the required type of keys for this {@link Cache}, if any.
+     *
+     * @return the fully qualified class name of the key type,
+     * or "java.lang.Object" if the type is undefined.
+     */
+    public String getKeyType();
+
+    /**
+     * Determines the required type of values for this {@link Cache}, if any.
+     *
+     * @return the fully qualified class name of the value type,
+     *         or "java.lang.Object" if the type is undefined.
+     */
+    public String getValueType();
+
+    /**
+     * Whether storeByValue {@code true} or storeByReference {@code false}.
+     * When {@code true}, both keys and values are stored by value.
+     * <p>
+     * When {@code false}, both keys and values are stored by reference.
+     * Caches stored by reference are capable of mutation by any threads holding
+     * the reference. The effects are:
+     * <ul>
+     * <li>if the key is mutated, then the key may not be retrievable or
+     * removable</li>
+     * <li>if the value is mutated, then all threads in the JVM can potentially
+     * observe those mutations, subject to the normal Java Memory Model rules.</li>
+     * </ul>
+     * Storage by reference only applies to the local heap. If an entry is moved off
+     * heap it will need to be transformed into a representation. Any mutations that
+     * occur after transformation may not be reflected in the cache.
+     * <p>
+     * When a cache is storeByValue, any mutation to the key or value does not affect
+     * the key of value stored in the cache.
+     * <p>
+     * The default value is {@code true}.
+     *
+     * @return true if the cache is store by value
+     */
+    public boolean isStoreByValue();
+
+    /**
+     * Checks whether statistics collection is enabled in this cache.
+     * <p>
+     * The default value is {@code false}.
+     *
+     * @return true if statistics collection is enabled
+     */
+    public boolean isStatisticsEnabled();
+
+    /**
+     * Checks whether management is enabled on this cache.
+     * <p>
+     * The default value is {@code false}.
+     *
+     * @return true if management is enabled
+     */
+    public boolean isManagementEnabled();
+
+    /**
+     * Determines if a {@link Cache} should operate in read-through mode.
+     * <p>
+     * The default value is {@code false}
+     *
+     * @return {@code true} when a {@link Cache} is in
+     *         "read-through" mode.
+     * @see CacheLoader
+     */
+    public boolean isReadThrough();
+
+    /**
+     * Determines if a {@link Cache} should operate in "write-through"
+     * mode.
+     * <p>
+     * will appropriately cause the configured {@link CacheWriter} to be invoked.
+     * <p>
+     * The default value is {@code false}
+     *
+     * @return {@code true} when a {@link Cache} is in "write-through" mode.
+     * @see CacheWriter
+     */
+    public boolean isWriteThrough();
 }

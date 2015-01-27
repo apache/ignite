@@ -30,8 +30,6 @@ import static java.lang.Math.*;
  * Implementation for {@link org.apache.ignite.cluster.ClusterMetrics ClusterNodeMetrics} interface.
  */
 class ClusterMetricsImpl implements ClusterMetrics {
-    /** */
-    private static final long serialVersionUID = 0L;
 
     /** */
     private int totalExecutedTask;

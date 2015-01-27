@@ -95,7 +95,7 @@ public class GridDiscoveryMetricsHelperSelfTest extends GridCommonAbstractTest {
      * @return Test metrics.
      */
     private ClusterMetrics createMetrics() {
-        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setAvailableProcessors(1);
         metrics.setAverageActiveJobs(2);

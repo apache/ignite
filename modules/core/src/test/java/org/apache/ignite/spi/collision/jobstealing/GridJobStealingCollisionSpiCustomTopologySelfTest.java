@@ -82,7 +82,7 @@ public class GridJobStealingCollisionSpiCustomTopologySelfTest extends
         addSpiDependency(rmtNode1);
         addSpiDependency(rmtNode2);
 
-        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setCurrentWaitingJobs(2);
 

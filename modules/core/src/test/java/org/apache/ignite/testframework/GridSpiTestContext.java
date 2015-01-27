@@ -139,8 +139,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param activeJobs Active jobs count.
      * @return Metrics adapter.
      */
-    private DiscoveryMetricsAdapter createMetrics(int waitingJobs, int activeJobs) {
-        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
+    private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setCurrentWaitingJobs(waitingJobs);
         metrics.setCurrentActiveJobs(activeJobs);

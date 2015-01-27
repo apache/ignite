@@ -37,7 +37,7 @@ import java.io.*;
  * that comes with JDK as it also provides ability to view any node parameter
  * as a graph.
  */
-public interface ClusterMetrics extends Serializable {
+public interface ClusterMetrics {
     /**
      * Gets last update time of this node metrics.
      *

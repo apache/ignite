@@ -160,7 +160,7 @@ public final class DiscoveryMetricsHelper {
     public static ClusterMetrics deserialize(byte[] data, int off) {
         int start = off;
 
-        DiscoveryMetricsAdapter metrics = new DiscoveryMetricsAdapter();
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setLastUpdateTime(U.currentTimeMillis());
 

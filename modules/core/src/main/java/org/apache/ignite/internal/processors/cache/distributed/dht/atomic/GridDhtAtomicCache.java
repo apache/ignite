@@ -154,7 +154,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        CacheMetricsAdapter m = new CacheMetricsAdapter(ctx);
+        CacheMetricsImpl m = new CacheMetricsImpl(ctx);
 
         if (ctx.dht().near() != null)
             m.delegate(ctx.dht().near().metrics0());

@@ -22,12 +22,13 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.configuration.CompleteConfiguration;
 import java.util.concurrent.atomic.*;
 
 /**
  * Adapter for cache metrics.
  */
-public class CacheMetricsAdapter implements CacheMetrics {
+public class CacheMetricsImpl implements CacheMetrics {
     /** */
     private static final long NANOS_IN_MICROSECOND = 1000L;
 
@@ -72,7 +73,7 @@ public class CacheMetricsAdapter implements CacheMetrics {
 
     /** Cache metrics. */
     @GridToStringExclude
-    private transient CacheMetricsAdapter delegate;
+    private transient CacheMetricsImpl delegate;
 
     /** Cache context. */
     private GridCacheContext<?, ?> cctx;
@@ -88,7 +89,7 @@ public class CacheMetricsAdapter implements CacheMetrics {
      *
      * @param cctx Cache context.
      */
-    public CacheMetricsAdapter(GridCacheContext<?, ?> cctx) {
+    public CacheMetricsImpl(GridCacheContext<?, ?> cctx) {
         assert cctx != null;
 
         this.cctx = cctx;
@@ -105,7 +106,7 @@ public class CacheMetricsAdapter implements CacheMetrics {
     /**
      * @param delegate Metrics to delegate to.
      */
-    public void delegate(CacheMetricsAdapter delegate) {
+    public void delegate(CacheMetricsImpl delegate) {
         this.delegate = delegate;
     }
 
@@ -545,7 +546,42 @@ public class CacheMetricsAdapter implements CacheMetrics {
     }
 
     /** {@inheritDoc} */
+    @Override public String getKeyType() {
+        return cctx.config().getKeyType().getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getValueType() {
+        return cctx.config().getValueType().getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isReadThrough() {
+        return cctx.config().isReadThrough();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isWriteThrough() {
+        return cctx.config().isWriteThrough();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStoreByValue() {
+        return cctx.config().isStoreByValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStatisticsEnabled() {
+        return cctx.config().isStatisticsEnabled();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isManagementEnabled() {
+        return cctx.config().isManagementEnabled();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(CacheMetricsAdapter.class, this);
+        return S.toString(CacheMetricsImpl.class, this);
     }
 }

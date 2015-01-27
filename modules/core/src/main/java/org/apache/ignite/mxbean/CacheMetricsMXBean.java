@@ -26,7 +26,7 @@ import javax.cache.management.*;
  * This interface defines JMX view on {@link IgniteCache}.
  */
 @IgniteMBeanDescription("MBean that provides access to cache descriptor.")
-public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMetrics {
+public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMXBean, CacheMetrics {
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Clear statistics.")
     public void clear();
@@ -214,4 +214,32 @@ public interface CacheMetricsMXBean extends CacheStatisticsMXBean, CacheMetrics 
     /** {@inheritDoc} */
     @IgniteMBeanDescription("Count of cache entries that are waiting to be flushed.")
     public int getWriteBehindBufferSize();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Key type.")
+    public String getKeyType();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("Value type.")
+    public String getValueType();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("True if the cache is store by value.")
+    public boolean isStoreByValue();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("True if statistics collection is enabled.")
+    public boolean isStatisticsEnabled();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("True if management is enabled.")
+    public boolean isManagementEnabled();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("True when a cache is in read-through mode.")
+    public boolean isReadThrough();
+
+    /** {@inheritDoc} */
+    @IgniteMBeanDescription("True when a cache is in write-through mode.")
+    public boolean isWriteThrough();
 }
