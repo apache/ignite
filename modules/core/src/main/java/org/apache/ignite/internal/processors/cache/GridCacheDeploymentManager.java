@@ -53,7 +53,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private volatile ClassLoader globalLdr;
 
     /** Undeploys. */
-    private final ConcurrentMap<String, ConcurrentLinkedQueue<CA>> undeploys = new ConcurrentHashMap8<>();
+    private final Map<String, List<CA>> undeploys = new HashMap<>();
 
     /** Per-thread deployment context. */
     private ConcurrentMap<IgniteUuid, CachedDeploymentInfo<K, V>> deps = new ConcurrentHashMap8<>();
@@ -182,12 +182,16 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     public void unwind(GridCacheContext ctx) {
         int cnt = 0;
 
-        ConcurrentLinkedQueue<CA> q = undeploys.get(ctx.namexx());
+        List<CA> q;
+
+        synchronized (undeploys) {
+            q = undeploys.remove(ctx.namexx());
+        }
 
         if (q == null)
             return;
 
-        for (CA c = q.poll(); c != null; c = q.poll()) {
+        for (CA c : q) {
             c.apply();
 
             cnt++;
@@ -209,14 +213,21 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             log.debug("Received onUndeploy() request [ldr=" + ldr + ", cctx=" + cctx + ']');
 
         for (final GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
-            undeploys.putIfAbsent(cacheCtx.namexx(), new ConcurrentLinkedQueue<CA>());
+            synchronized (undeploys) {
+                List<CA> queue = new ArrayList<>();
 
-            undeploys.get(cacheCtx.namexx()).add(new CA() {
-                @Override
-                public void apply() {
-                    onUndeploy0(ldr, cacheCtx);
-                }
-            });
+                if (undeploys.containsKey(cacheCtx.namexx()))
+                    queue = undeploys.get(cacheCtx.namexx());
+                else
+                    undeploys.put(cacheCtx.namexx(), queue);
+
+                queue.add(new CA() {
+                    @Override
+                    public void apply() {
+                        onUndeploy0(ldr, cacheCtx);
+                    }
+                });
+            }
         }
 
         for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts()) {
