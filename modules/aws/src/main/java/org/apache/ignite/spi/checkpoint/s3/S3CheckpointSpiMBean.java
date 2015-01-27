@@ -23,37 +23,37 @@ import org.apache.ignite.spi.*;
 /**
  * Management bean for {@link S3CheckpointSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to S3 checkpoint SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to S3 checkpoint SPI configuration.")
 public interface S3CheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets S3 bucket name to use.
      *
      * @return S3 bucket name to use.
      */
-    @IgniteMBeanDescription("S3 bucket name.")
+    @IgniteMXBeanDescription("S3 bucket name.")
     public String getBucketName();
 
     /**
      * @return S3 access key.
      */
-    @IgniteMBeanDescription("S3 access key.")
+    @IgniteMXBeanDescription("S3 access key.")
     public String getAccessKey();
 
     /**
      * @return HTTP proxy host.
      */
-    @IgniteMBeanDescription("HTTP proxy host.")
+    @IgniteMXBeanDescription("HTTP proxy host.")
     public String getProxyHost();
 
     /**
      * @return HTTP proxy port
      */
-    @IgniteMBeanDescription("HTTP proxy port.")
+    @IgniteMXBeanDescription("HTTP proxy port.")
     public int getProxyPort();
 
     /**
      * @return HTTP proxy user name.
      */
-    @IgniteMBeanDescription("HTTP proxy user name.")
+    @IgniteMXBeanDescription("HTTP proxy user name.")
     public String getProxyUsername();
 }

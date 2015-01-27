@@ -473,12 +473,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 dht.removeIfObsolete(key);
                         }
 
-                        if (v != null)
-                            near.metrics0().onRead(true);
+                        if (v != null) {
+                            if (cctx.cache().configuration().isStatisticsEnabled())
+                                near.metrics0().onRead(true);
+                        }
                         else {
                             primary = cctx.affinity().primary(key, topVer);
 
-                            if (!primary.isLocal())
+                            if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled())
                                 near.metrics0().onRead(false);
                         }
                     }

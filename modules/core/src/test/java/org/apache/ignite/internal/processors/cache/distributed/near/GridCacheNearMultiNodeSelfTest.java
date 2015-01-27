@@ -211,8 +211,18 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** @param cnt Count. */
-    private void mapKeys(int cnt) {
+    private Map<UUID, T2<Set<Integer>, Set<Integer>>> mapKeys(int cnt) {
         CacheAffinity<Object> aff = affinity(0);
+
+        //Mapping primary and backup keys on node
+        Map<UUID, T2<Set<Integer>, Set<Integer>>> map = new HashMap<>();
+
+        for (int i = 0; i < GRID_CNT; i++) {
+            GridEx grid = grid(i);
+
+            map.put(grid.cluster().localNode().id(), new T2<Set<Integer>, Set<Integer>>(new HashSet<Integer>(),
+                new HashSet<Integer>()));
+        }
 
         for (int key = 1; key <= cnt; key++) {
             Integer part = aff.partition(key);
@@ -223,41 +233,35 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             ClusterNode primary = F.first(nodes);
 
-            Set<Integer> keys = primary.addMetaIfAbsent("primary", F.<Integer>newSet());
-
-            assert keys != null;
-
-            keys.add(key);
+            map.get(primary.id()).get1().add(key);
 
             if (mapDebug)
                 info("Mapped key to primary node [key=" + key + ", node=" + U.toShortString(primary));
 
             for (ClusterNode n : nodes) {
                 if (n != primary) {
-                    keys = n.addMetaIfAbsent("backups", F.<Integer>newSet());
-
-                    assert keys != null;
-
-                    keys.add(key);
+                    map.get(n.id()).get2().add(key);
 
                     if (mapDebug)
                         info("Mapped key to backup node [key=" + key + ", node=" + U.toShortString(n));
                 }
             }
         }
+
+        return map;
     }
 
-    /** Test mappings. */
+    /**  Test mappings. */
     public void testMappings() {
         mapDebug = false;
 
         int cnt = 100000;
 
-        mapKeys(cnt);
+        Map<UUID, T2<Set<Integer>, Set<Integer>>> map = mapKeys(cnt);
 
         for (ClusterNode n : grid(0).nodes()) {
-            Set<Integer> primary = n.meta("primary");
-            Set<Integer> backups = n.meta("backups");
+            Set<Integer> primary = map.get(n.id()).get1();
+            Set<Integer> backups = map.get(n.id()).get2();
 
             if (backups == null)
                 backups = Collections.emptySet();
@@ -340,7 +344,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         int cnt = 10;
 
-        mapKeys(cnt);
+        Map<UUID, T2<Set<Integer>, Set<Integer>>> mapKeys = mapKeys(cnt);
 
         for (int key = 1; key <= cnt; key++) {
             String s = near.get(key);
@@ -359,7 +363,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
             assert n != null;
 
-            assert ((Collection)n.meta("primary")).contains(key);
+            assert mapKeys.get(n.id()).get1().contains(key);
 
             GridCache<Integer, String> dhtCache = dht(G.ignite(n.id()));
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -102,7 +103,7 @@ class GridAffinityAssignment implements Serializable {
     public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
-        return set == null ? Collections.<Integer>emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? Collections.<Integer>emptySet() : set;
     }
 
     /**
@@ -114,7 +115,7 @@ class GridAffinityAssignment implements Serializable {
     public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
-        return set == null ? Collections.<Integer>emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? Collections.<Integer>emptySet() : set;
     }
 
     /**
@@ -164,5 +165,10 @@ class GridAffinityAssignment implements Serializable {
             return false;
 
         return topVer == ((GridAffinityAssignment)o).topVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridAffinityAssignment.class, this, super.toString());
     }
 }

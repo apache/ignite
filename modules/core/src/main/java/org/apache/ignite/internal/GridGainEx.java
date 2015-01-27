@@ -95,7 +95,7 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
  * often started and stopped by grid loaders. Grid loaders can be found in
- * {@link org.gridgain.grid.startup} package, for example:
+ * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@code GridCommandLineStartup}</li>
  * <li>{@code GridServletStartup}</li>
@@ -1421,7 +1421,7 @@ public class GridGainEx {
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
-            myCfg.setDotNetConfiguration(cfg.getDotNetConfiguration());
+            myCfg.setInteropConfiguration(cfg.getInteropConfiguration());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
@@ -2295,7 +2295,7 @@ public class GridGainEx {
 
                 if (data == null) {
                     try {
-                        IgnitionMBean mbean = new IgnitionMBeanAdapter();
+                        IgnitionMXBean mbean = new IgnitionMXBeanAdapter();
 
                         ObjectName objName = U.makeMBeanName(
                             null,
@@ -2313,7 +2313,7 @@ public class GridGainEx {
                                 "Kernal",
                                 Ignition.class.getSimpleName(),
                                 mbean,
-                                IgnitionMBean.class
+                                IgnitionMXBean.class
                             );
 
                             data = new GridMBeanServerData(objName);

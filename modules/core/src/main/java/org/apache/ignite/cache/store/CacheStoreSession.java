@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 import java.util.*;
 
 /**
- *
+ * Session for store.
  */
 public interface CacheStoreSession {
     /**

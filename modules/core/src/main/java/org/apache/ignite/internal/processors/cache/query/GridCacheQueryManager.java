@@ -31,14 +31,21 @@ import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.task.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.resources.*;
+import org.apache.ignite.spi.*;
+import org.apache.ignite.spi.indexing.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -47,8 +54,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryType.*;
 
@@ -58,7 +65,7 @@ import static org.apache.ignite.internal.processors.cache.query.GridCacheQueryTy
 @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
 public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** */
-    protected GridQueryProcessor idxProc;
+    protected GridQueryProcessor qryProc;
 
     /** */
     private String space;
@@ -85,7 +92,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        idxProc = cctx.kernalContext().query();
+        qryProc = cctx.kernalContext().query();
         space = cctx.name();
         maxIterCnt = cctx.config().getMaximumQueryIteratorCount();
 
@@ -172,7 +179,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to get size (grid is stopping).");
 
         try {
-            return idxProc.size(space, valType);
+            return qryProc.size(space, valType);
         }
         finally {
             leaveBusy();
@@ -200,7 +207,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return idxProc.rebuildIndexes(space, typeName);
+            return qryProc.rebuildIndexes(space, typeName);
         }
         finally {
             leaveBusy();
@@ -217,7 +224,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
         try {
-            return idxProc.rebuildAllIndexes();
+            return qryProc.rebuildAllIndexes();
         }
         finally {
             leaveBusy();
@@ -269,7 +276,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.onSwap(space, key);
+            qryProc.onSwap(space, key);
         }
         finally {
             leaveBusy();
@@ -289,7 +296,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.onUnswap(space, key, val, valBytes);
+            qryProc.onUnswap(space, key, val, valBytes);
         }
         finally {
             leaveBusy();
@@ -331,7 +338,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (val == null)
                 val = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
 
-            idxProc.store(space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
+            qryProc.store(space, key, keyBytes, val, valBytes, CU.versionToBytes(ver), expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -356,7 +363,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.remove(space, key);
+            qryProc.remove(space, key);
         }
         finally {
             invalidateResultCache();
@@ -375,7 +382,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            idxProc.onUndeploy(space, ldr);
+            qryProc.onUndeploy(space, ldr);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -484,7 +491,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SQL,
+                            org.apache.ignite.cache.query.CacheQueryType.SQL,
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -495,7 +502,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = idxProc.query(space, qry.clause(), F.asList(args),
+                    iter = qryProc.query(space, qry.clause(), F.asList(args),
                         qry.queryClassName(), filter(qry));
 
                     break;
@@ -506,7 +513,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Scan query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.SCAN,
+                            org.apache.ignite.cache.query.CacheQueryType.SCAN,
                             cctx.namex(),
                             null,
                             null,
@@ -527,7 +534,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "Full text query executed.",
                             EVT_CACHE_QUERY_EXECUTED,
-                            CacheQueryType.FULL_TEXT,
+                            org.apache.ignite.cache.query.CacheQueryType.FULL_TEXT,
                             cctx.namex(),
                             qry.queryClassName(),
                             qry.clause(),
@@ -538,7 +545,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             taskName));
                     }
 
-                    iter = idxProc.queryText(space, qry.clause(), qry.queryClassName(), filter(qry));
+                    iter = qryProc.queryText(space, qry.clause(), qry.queryClassName(), filter(qry));
 
                     break;
 
@@ -601,7 +608,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SQL fields query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SQL_FIELDS,
+                    org.apache.ignite.cache.query.CacheQueryType.SQL_FIELDS,
                     cctx.namex(),
                     null,
                     qry.clause(),
@@ -633,7 +640,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     cctx.localNode(),
                     "SPI query executed.",
                     EVT_CACHE_QUERY_EXECUTED,
-                    CacheQueryType.SPI,
+                    org.apache.ignite.cache.query.CacheQueryType.SPI,
                     cctx.namex(),
                     null,
                     null,
@@ -657,7 +664,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 assert qry.type() == SQL_FIELDS;
 
-                GridQueryFieldsResult qryRes = idxProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
+                GridQueryFieldsResult qryRes = qryProc.queryFields(space, qry.clause(), F.asList(args), filter(qry));
 
                 res.metaData(qryRes.metaData());
 
@@ -756,8 +763,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridIterator<IgniteBiTuple<K, V>> heapIt = new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
             private IgniteBiTuple<K, V> next;
 
-            private Iterator<K> iter = qry.includeBackups() || cctx.isReplicated() ?
-                prj.keySet().iterator() : prj.primaryKeySet().iterator();
+            private Iterator<K> iter = prj.keySet().iterator();
+
             {
                 advance();
             }
@@ -1065,7 +1072,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                             cctx.localNode(),
                             "SQL fields query result set row read.",
                             EVT_CACHE_QUERY_OBJECT_READ,
-                            CacheQueryType.SQL_FIELDS,
+                            org.apache.ignite.cache.query.CacheQueryType.SQL_FIELDS,
                             cctx.namex(),
                             null,
                             qry.clause(),
@@ -1252,7 +1259,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "SQL query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    CacheQueryType.SQL,
+                                    org.apache.ignite.cache.query.CacheQueryType.SQL,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1275,7 +1282,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Full text query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    CacheQueryType.FULL_TEXT,
+                                    org.apache.ignite.cache.query.CacheQueryType.FULL_TEXT,
                                     cctx.namex(),
                                     qry.queryClassName(),
                                     qry.clause(),
@@ -1298,7 +1305,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                                     cctx.localNode(),
                                     "Scan query entry read.",
                                     EVT_CACHE_QUERY_OBJECT_READ,
-                                    CacheQueryType.SCAN,
+                                    org.apache.ignite.cache.query.CacheQueryType.SCAN,
                                     cctx.namex(),
                                     null,
                                     null,
@@ -1907,7 +1914,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                     for (GridQueryTypeDescriptor type : types) {
                         // Filter internal types (e.g., data structures).
-                        if (type.name().startsWith("Cache"))
+                        if (type.name().startsWith("GridCache"))
                             continue;
 
                         names.add(type.name());

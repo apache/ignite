@@ -1141,8 +1141,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             assert metrics != null;
 
             return new GridFinishedFuture<Object>(ctx, new GridCacheRestMetrics(
-                metrics.createTime(), metrics.readTime(), metrics.writeTime(),
-                metrics.reads(), metrics.writes(), metrics.hits(), metrics.misses()));
+                (int)metrics.getCacheGets(),
+                (int)(metrics.getCacheRemovals() + metrics.getCachePuts()),
+                (int)metrics.getCacheHits(),
+                (int)metrics.getCacheMisses())
+            );
         }
     }
 }

@@ -31,7 +31,7 @@ import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.dotnet.*;
+import org.apache.ignite.interop.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
@@ -389,8 +389,8 @@ public class IgniteConfiguration {
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
-    /** Configuration for .Net nodes. */
-    private GridDotNetConfiguration dotNetCfg;
+    /** Interop configuration. */
+    private InteropConfiguration interopCfg;
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -589,6 +589,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
+        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
         jettyPath = cfg.getRestJettyPath();
         licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
@@ -656,8 +657,6 @@ public class IgniteConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        dotNetCfg = cfg.getDotNetConfiguration() == null ?
-            null : new GridDotNetConfiguration(cfg.getDotNetConfiguration());
     }
 
     /**
@@ -3122,19 +3121,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns configuration for .Net nodes.
-     * @return Configuration for .Net nodes.
+     * Gets interop configuration.
+     *
+     * @return Interop configuration.
      */
-    @Nullable public GridDotNetConfiguration getDotNetConfiguration() {
-        return dotNetCfg;
+    @Nullable public InteropConfiguration getInteropConfiguration() {
+        return interopCfg;
     }
 
     /**
-     * Sets configuration for .Net nodes.
-     * @param dotNetCfg Configuration for .Net nodes
+     * Sets interop configuration.
+     *
+     * @param interopCfg Interop configuration.
      */
-    public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
-        this.dotNetCfg = dotNetCfg;
+    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
+        this.interopCfg = interopCfg;
     }
 
     /**

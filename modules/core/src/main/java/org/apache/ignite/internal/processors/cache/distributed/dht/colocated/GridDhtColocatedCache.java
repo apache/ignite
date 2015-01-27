@@ -279,7 +279,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*read-through*/false,
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
-                                /**update-metrics*/true,
+                                /**update-metrics*/false,
                                 /*event*/true,
                                 /*temporary*/false,
                                 subjId,
@@ -332,6 +332,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 if (!success)
                     break;
+                else
+                    ctx.cache().metrics0().onRead(true);
             }
 
             if (success) {

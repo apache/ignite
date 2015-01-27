@@ -22,14 +22,14 @@ import org.apache.ignite.mxbean.*;
 /**
  * Streamer stage MBean.
  */
-@IgniteMBeanDescription("MBean that provides access to streamer stage description and metrics.")
+@IgniteMXBeanDescription("MBean that provides access to streamer stage description and metrics.")
 public interface StreamerStageMBean {
     /**
      * Gets stage name.
      *
      * @return Stage name.
      */
-    @IgniteMBeanDescription("Stage name.")
+    @IgniteMXBeanDescription("Stage name.")
     public String getName();
 
     /**
@@ -37,7 +37,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage class name.
      */
-    @IgniteMBeanDescription("Stage class name.")
+    @IgniteMXBeanDescription("Stage class name.")
     public String getStageClassName();
 
     /**
@@ -45,7 +45,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage minimum execution time.
      */
-    @IgniteMBeanDescription("Stage minimum execution time.")
+    @IgniteMXBeanDescription("Stage minimum execution time.")
     public long getMinimumExecutionTime();
 
     /**
@@ -53,7 +53,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage maximum execution time.
      */
-    @IgniteMBeanDescription("Stage maximum execution time.")
+    @IgniteMXBeanDescription("Stage maximum execution time.")
     public long getMaximumExecutionTime();
 
     /**
@@ -61,7 +61,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage average execution time.
      */
-    @IgniteMBeanDescription("Stage average execution time.")
+    @IgniteMXBeanDescription("Stage average execution time.")
     public long getAverageExecutionTime();
 
     /**
@@ -69,7 +69,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage minimum waiting time.
      */
-    @IgniteMBeanDescription("Stage minimum waiting time.")
+    @IgniteMXBeanDescription("Stage minimum waiting time.")
     public long getMinimumWaitingTime();
 
     /**
@@ -77,7 +77,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage maximum waiting time.
      */
-    @IgniteMBeanDescription("Stage maximum waiting time.")
+    @IgniteMXBeanDescription("Stage maximum waiting time.")
     public long getMaximumWaitingTime();
 
     /**
@@ -85,7 +85,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage average waiting time.
      */
-    @IgniteMBeanDescription("Stage average waiting time.")
+    @IgniteMXBeanDescription("Stage average waiting time.")
     public long getAverageWaitingTime();
 
     /**
@@ -93,7 +93,7 @@ public interface StreamerStageMBean {
      *
      * @return Number of times this stage was executed.
      */
-    @IgniteMBeanDescription("Number of times this stage was executed.")
+    @IgniteMXBeanDescription("Number of times this stage was executed.")
     public long getTotalExecutionCount();
 
     /**
@@ -101,7 +101,7 @@ public interface StreamerStageMBean {
      *
      * @return Stage failure count.
      */
-    @IgniteMBeanDescription("Stage failure count.")
+    @IgniteMXBeanDescription("Stage failure count.")
     public int getFailuresCount();
 
     /**
@@ -109,6 +109,6 @@ public interface StreamerStageMBean {
      *
      * @return {@code True} if stage is executing now.
      */
-    @IgniteMBeanDescription("Whether stage is currently being executed.")
+    @IgniteMXBeanDescription("Whether stage is currently being executed.")
     public boolean isExecuting();
 }
