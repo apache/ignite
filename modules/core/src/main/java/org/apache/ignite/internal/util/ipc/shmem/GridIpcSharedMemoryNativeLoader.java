@@ -24,7 +24,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.*;
 import java.net.URL;
 import java.nio.channels.FileLock;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -250,44 +249,11 @@ public class GridIpcSharedMemoryNativeLoader {
         try (InputStream targetIS = new FileInputStream(target);
              InputStream srcIS = src.openStream()){
 
-            String targetMD5 = calculateMD5(targetIS);
-            String srcMD5 = calculateMD5(srcIS);
+            String targetMD5 = U.calculateMD5(targetIS);
+            String srcMD5 = U.calculateMD5(srcIS);
 
             return targetMD5.equals(srcMD5);
         }
-    }
-
-    static byte[] calculateMD5Digest(InputStream input) throws NoSuchAlgorithmException, IOException {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        InputStream fis = new BufferedInputStream(input);
-        byte[] dataBytes = new byte[1024];
-
-        int nread;
-        while ((nread = fis.read(dataBytes)) != -1) {
-            md.update(dataBytes, 0, nread);
-        }
-
-        byte[] md5Bytes = md.digest();
-
-        //convert the byte to hex format
-        StringBuilder sb = new StringBuilder("");
-        for (byte md5Byte : md5Bytes) {
-            sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
-        }
-
-        return md5Bytes;
-    }
-
-    static String calculateMD5(InputStream input) throws NoSuchAlgorithmException, IOException {
-        byte[] md5Bytes = calculateMD5Digest(input);
-
-        //convert the byte to hex format
-        StringBuilder sb = new StringBuilder();
-        for (byte md5Byte : md5Bytes) {
-            sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
-        }
-
-        return sb.toString();
     }
 
 }

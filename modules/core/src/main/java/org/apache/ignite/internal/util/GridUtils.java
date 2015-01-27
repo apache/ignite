@@ -9097,4 +9097,38 @@ public abstract class GridUtils {
 
         return list;
     }
+
+    public static byte[] calculateMD5Digest(InputStream input) throws NoSuchAlgorithmException, IOException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        InputStream fis = new BufferedInputStream(input);
+        byte[] dataBytes = new byte[1024];
+
+        int nread;
+        while ((nread = fis.read(dataBytes)) != -1) {
+            md.update(dataBytes, 0, nread);
+        }
+
+        byte[] md5Bytes = md.digest();
+
+        //convert the byte to hex format
+        StringBuilder sb = new StringBuilder("");
+        for (byte md5Byte : md5Bytes) {
+            sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
+        }
+
+        return md5Bytes;
+    }
+
+    public static String calculateMD5(InputStream input) throws NoSuchAlgorithmException, IOException {
+        byte[] md5Bytes = calculateMD5Digest(input);
+
+        //convert the byte to hex format
+        StringBuilder sb = new StringBuilder();
+        for (byte md5Byte : md5Bytes) {
+            sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
+        }
+
+        return sb.toString();
+    }
+
 }

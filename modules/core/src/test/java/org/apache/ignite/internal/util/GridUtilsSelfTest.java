@@ -17,26 +17,30 @@
 
 package org.apache.ignite.internal.util;
 
-import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.http.*;
-import org.apache.ignite.testframework.junits.*;
-import org.apache.ignite.testframework.junits.common.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
+import org.apache.ignite.testframework.junits.GridTestKernalContext;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.common.GridCommonTest;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.lang.annotation.*;
-import java.math.*;
-import java.net.*;
-import java.nio.*;
+import java.math.BigInteger;
+import java.net.InetSocketAddress;
+import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Grid utils tests.
@@ -688,6 +692,13 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(ips.get(ips.size() - 2).getAddress().isLoopbackAddress());
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
+    }
+
+
+    public void testMD5Calculation() throws Exception {
+        String md5 = GridUtils.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
+
+        assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
     }
 
     /**
