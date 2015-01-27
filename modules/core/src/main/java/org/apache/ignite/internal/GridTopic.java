@@ -85,7 +85,10 @@ public enum GridTopic {
     TOPIC_TIME_SYNC,
 
     /** */
-    TOPIC_HADOOP;
+    TOPIC_HADOOP,
+
+    /** */
+    TOPIC_QUERY;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();
