@@ -415,7 +415,7 @@ public class Controls {
      * @return New {@code TableColumn} instance.
      */
     public static <S> TableColumn<S, Boolean> booleanColumn(String colName, String propName, String tip) {
-        TableColumn<S, Boolean> col = tableColumn(colName, propName, tip, 70, 70, true);
+        TableColumn<S, Boolean> col = tableColumn(colName, propName, tip, 50, 50, true);
 
         col.setCellFactory(CheckBoxTableCellEx.<S>cellFactory());
 

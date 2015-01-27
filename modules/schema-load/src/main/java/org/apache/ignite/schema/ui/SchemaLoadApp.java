@@ -642,8 +642,14 @@ public class SchemaLoadApp extends Application {
 
         pojosTbl = tableView("Tables not found in database", useCol, keyClsCol, valClsCol);
 
+        TableColumn<PojoField, Boolean> useFldCol = booleanColumn("Use", "use",
+            "If checked then this field will used for XML and POJO generation");
+
         TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
             "If checked then this field will be part of key object");
+
+        TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
+            "If checked then this field will be marked with @CacheAffinityKeyMapped annotation in generated POJO");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -667,7 +673,7 @@ public class SchemaLoadApp extends Application {
             "Field java type in POJO class", JavaTypeCell.cellFactory());
 
         final TableView<PojoField> fieldsTbl = tableView("Select table to see table columns",
-            keyCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
+            useFldCol, keyCol, akCol, dbNameCol, dbTypeNameCol, javaNameCol, javaTypeNameCol);
 
         genPnl.add(splitPane(pojosTbl, fieldsTbl, 0.6), 3);
 
@@ -851,8 +857,8 @@ public class SchemaLoadApp extends Application {
 
         primaryStage.setScene(scene(rootPane));
 
-        primaryStage.setWidth(600);
-        primaryStage.setMinWidth(600);
+        primaryStage.setWidth(650);
+        primaryStage.setMinWidth(650);
 
         primaryStage.setHeight(650);
         primaryStage.setMinHeight(650);

@@ -31,8 +31,14 @@ import static java.sql.Types.*;
  * Field descriptor with properties for JavaFX GUI bindings.
  */
 public class PojoField {
+    /** If this field should be used for code generation. */
+    private final BooleanProperty use;
+
     /** If this field belongs to primary key. */
     private final BooleanProperty key;
+
+    /** If this field is an affinity key. */
+    private final BooleanProperty ak;
 
     /** If this field initially belongs to primary key. */
     private final boolean keyPrev;
@@ -150,7 +156,11 @@ public class PojoField {
     public PojoField(boolean key, CacheQueryTypeDescriptor desc, boolean nullable) {
         keyPrev = key;
 
+        use = new SimpleBooleanProperty(true);
+
         this.key = new SimpleBooleanProperty(key);
+
+        ak = new SimpleBooleanProperty(false);
 
         javaNamePrev = desc.getJavaName();
 
@@ -350,10 +360,24 @@ public class PojoField {
     }
 
     /**
+     * @return Boolean property support for {@code use} property.
+     */
+    public BooleanProperty useProperty() {
+        return use;
+    }
+
+    /**
      * @return Boolean property support for {@code key} property.
      */
     public BooleanProperty keyProperty() {
         return key;
+    }
+
+    /**
+     * @return Boolean property support for {@code affinityKey} property.
+     */
+    public BooleanProperty affinityKeyProperty() {
+        return ak;
     }
 
     /**

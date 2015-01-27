@@ -75,32 +75,33 @@ public class DatabaseMetadataParser {
      * Convert JDBC data type to java type.
      *
      * @param type JDBC SQL data type.
+     * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
      * @return Java data type.
      */
-    private static Class<?> dataType(int type) {
+    private static Class<?> dataType(int type, boolean nullable) {
         switch (type) {
             case BIT:
             case BOOLEAN:
-                return Boolean.class;
+                return nullable ? Boolean.class : boolean.class;
 
             case TINYINT:
-                return Byte.class;
+                return nullable ? Byte.class : byte.class;
 
             case SMALLINT:
-                return Short.class;
+                return nullable ? Short.class : short.class;
 
             case INTEGER:
-                return Integer.class;
+                return nullable ? Integer.class : int.class;
 
             case BIGINT:
-                return Long.class;
+                return nullable ? Long.class : int.class;
 
             case REAL:
-                return Float.class;
+                return nullable ? Float.class : float.class;
 
             case FLOAT:
             case DOUBLE:
-                return Double.class;
+                return nullable ? Double.class : double.class;
 
             case NUMERIC:
             case DECIMAL:
@@ -191,7 +192,7 @@ public class DatabaseMetadataParser {
 
                 String javaName = toJavaFieldName(dbName);
 
-                Class<?> javaType = dataType(dbType);
+                Class<?> javaType = dataType(dbType, nullable);
 
                 CacheQueryTypeDescriptor desc = new CacheQueryTypeDescriptor(javaName, javaType, dbName, dbType);
 
