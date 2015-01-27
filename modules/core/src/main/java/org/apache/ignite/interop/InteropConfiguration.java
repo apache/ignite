@@ -15,31 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.transactions;
-
-import org.jetbrains.annotations.*;
+package org.apache.ignite.interop;
 
 /**
- * Transaction concurrency control. See {@link IgniteTx} for more information
- * on transaction concurrency controls.
+ * Interop configuration marker interface.
  */
-public enum IgniteTxConcurrency {
-    /** Optimistic concurrency control. */
-    OPTIMISTIC,
-
-    /** Pessimistic concurrency control. */
-    PESSIMISTIC;
-
-    /** Enum values. */
-    private static final IgniteTxConcurrency[] VALS = values();
-
+public interface InteropConfiguration {
     /**
-     * Efficiently gets enumerated value from its ordinal.
+     * Create configuration copy.
      *
-     * @param ord Ordinal value.
-     * @return Enumerated value or {@code null} if ordinal out of range.
+     * @return Copy.
      */
-    @Nullable public static IgniteTxConcurrency fromOrdinal(int ord) {
-        return ord >= 0 && ord < VALS.length ? VALS[ord] : null;
-    }
+    public InteropConfiguration copy();
 }
