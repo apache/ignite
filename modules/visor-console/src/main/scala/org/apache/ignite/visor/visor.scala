@@ -2522,10 +2522,10 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            m.getTotalHosts.toString.padTo(4, ' ') + pipe +
-            m.getTotalNodes.toString.padTo(4, ' ') + pipe +
+            GridUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
+            grid.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
-            bar(m.getAverageCpuLoad, m.getAverageHeapMemoryUsed / m.getAverageHeapMemoryMaximum) + pipe
+            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
         )
     }
 
