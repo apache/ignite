@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.discovery;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 

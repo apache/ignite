@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.internal.product.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.streamer.window.*;
 import org.apache.ignite.internal.executor.*;

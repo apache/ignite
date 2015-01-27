@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.license;
 
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.product.*;
+import org.apache.ignite.internal.product.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -29,7 +29,7 @@ public interface GridLicenseProcessor extends GridProcessor {
      * Upload the new license into the current node.
      *
      * @param licTxt The string representation of the license file.
-     * @throws org.apache.ignite.product.IgniteProductLicenseException Thrown if validation check failed for specified license or
+     * @throws org.apache.ignite.internal.product.IgniteProductLicenseException Thrown if validation check failed for specified license or
      *      license can not be updated because configured license URL use non-file scheme.
      * @see org.apache.ignite.configuration.IgniteConfiguration#getLicenseUrl()
      */
@@ -43,7 +43,7 @@ public interface GridLicenseProcessor extends GridProcessor {
     /**
      * This method is called periodically by the GridGain to check the license conformance.
      *
-     * @throws org.apache.ignite.product.IgniteProductLicenseException Thrown in case of any license violation.
+     * @throws org.apache.ignite.internal.product.IgniteProductLicenseException Thrown in case of any license violation.
      */
     public void checkLicense() throws IgniteProductLicenseException;
 

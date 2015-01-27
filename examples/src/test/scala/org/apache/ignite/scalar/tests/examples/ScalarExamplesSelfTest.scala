@@ -17,11 +17,10 @@
 
 package org.apache.ignite.scalar.tests.examples
 
-import org.apache.ignite.scalar.examples.{ScalarCacheQueryExample, ScalarCacheAffinitySimpleExample}
-import org.gridgain.scalar.examples._
-import org.gridgain.scalar.scalar
-import org.scalatest.junit.JUnitSuiteLike
+import org.apache.ignite.scalar.examples._
+import org.apache.ignite.scalar.scalar
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest
+import org.scalatest.junit.JUnitSuiteLike
 
 /**
  * Scalar examples self test.
@@ -95,11 +94,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     /** */
     def testScalarScheduleCallableExample() {
         ScalarScheduleExample.main(EMPTY_ARGS)
-    }
-
-    /** */
-    def testScalarStartStopExample() {
-        ScalarStartStopExample.main(EMPTY_ARGS)
     }
 
     /** */

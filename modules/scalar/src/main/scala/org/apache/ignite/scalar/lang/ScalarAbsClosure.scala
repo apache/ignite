@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.lang
+package org.apache.ignite.scalar.lang
 
-import org.apache.ignite.lang.IgniteRunnable
 import org.apache.ignite.internal.util.lang.GridPeerDeployAwareAdapter
+import org.apache.ignite.lang.IgniteRunnable
 
 /**
  * Peer deploy aware adapter for Java's `GridRunnable`.
