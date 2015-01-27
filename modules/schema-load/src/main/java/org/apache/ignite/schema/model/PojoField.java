@@ -22,7 +22,6 @@ import javafx.collections.*;
 import org.apache.ignite.cache.query.*;
 
 import java.math.*;
-import java.net.*;
 import java.util.*;
 
 import static java.sql.Types.*;
@@ -108,7 +107,7 @@ public class PojoField {
         BigDecimal.class,
         String.class,
         java.sql.Date.class, java.sql.Time.class, java.sql.Timestamp.class,
-        java.lang.reflect.Array.class, Void.class, URL.class, Object.class};
+        Object.class};
 
     /** */
     private static final Map<String, Class<?>> classesMap = new HashMap<>();

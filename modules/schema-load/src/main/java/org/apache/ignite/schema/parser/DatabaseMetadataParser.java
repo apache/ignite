@@ -23,7 +23,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.model.*;
 
 import java.math.*;
-import java.net.*;
 import java.sql.*;
 import java.util.*;
 
@@ -124,21 +123,7 @@ public class DatabaseMetadataParser {
             case TIMESTAMP:
                 return java.sql.Timestamp.class;
 
-            case BINARY:
-            case VARBINARY:
-            case LONGVARBINARY:
-            case ARRAY:
-            case BLOB:
-            case CLOB:
-            case NCLOB:
-                return java.lang.reflect.Array.class;
-
-            case NULL:
-                return Void.class;
-
-            case DATALINK:
-                return URL.class;
-
+            // BINARY, VARBINARY, LONGVARBINARY, ARRAY, BLOB, CLOB, NCLOB, NULL, DATALINK
             // OTHER, JAVA_OBJECT, DISTINCT, STRUCT, REF, ROWID, SQLXML
             default:
                 return Object.class;
@@ -276,11 +261,12 @@ public class DatabaseMetadataParser {
 
                 List<PojoDescriptor> children = new ArrayList<>();
 
+                System.out.println(schema);
+
                 try (ResultSet tbls = dbMeta.getTables(catalog, schema, "%", null)) {
                     while (tbls.next()) {
-                        String tbl = tbls.getString(3);
-
-                        children.add(parseTable(parent, dbMeta, catalog, schema, tbl));
+                        if ("TABLE".equals(tbls.getString(4)))
+                            children.add(parseTable(parent, dbMeta, catalog, schema, tbls.getString(3)));
                     }
                 }
 
