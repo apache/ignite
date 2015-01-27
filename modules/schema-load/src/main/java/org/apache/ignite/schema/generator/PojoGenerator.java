@@ -68,6 +68,17 @@ public class PojoGenerator {
     }
 
     /**
+     * Add line to source code with two indents.
+     *
+     * @param src Source code.
+     * @param fmt Code line with format placeholders.
+     * @param args Format arguments.
+     */
+    private static void add2Fmt(Collection<String> src, String fmt, Object... args) {
+        add2(src, String.format(fmt, args));
+    }
+
+    /**
      * Add line to source code with three indents.
      *
      * @param src Source code.
@@ -121,6 +132,7 @@ public class PojoGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
+        // License.
         add0(src, "/*");
         add0(src, " * Licensed to the Apache Software Foundation (ASF) under one or more");
         add0(src, " * contributor license agreements.  See the NOTICE file distributed with");
@@ -137,17 +149,17 @@ public class PojoGenerator {
         add0(src, " * See the License for the specific language governing permissions and");
         add0(src, " * limitations under the License.");
         add0(src, " */");
-
         add0(src, "");
 
+        // Package.
         add0(src, "package " + pkg + ";");
-
         add0(src, "");
 
+        // Imports.
         add0(src, "import java.io.*;");
-
         add0(src, "");
 
+        // Class.
         add0(src, "/**");
         add0(src, " * " + type + " definition.");
         add0(src, " *");
@@ -157,10 +169,9 @@ public class PojoGenerator {
 
         add1(src, "/** */");
         add1(src, "private static final long serialVersionUID = 0L;");
-
         add0(src, "");
 
-        // Fields.
+        // Generate fields declaration.
         for (PojoField field : fields) {
             String fldName = field.javaName();
 
@@ -169,7 +180,7 @@ public class PojoGenerator {
             add0(src, "");
         }
 
-        // Constructors.
+        // Generate constructors.
         if (constructor) {
             add1(src, "/**");
             add1(src, " * Empty constructor.");
@@ -195,14 +206,13 @@ public class PojoGenerator {
             add1(src, ") {");
 
             for (PojoField field : fields)
-                add2(src, String.format("this.%1$s = %1$s;", field.javaName()));
+                add2Fmt(src, "this.%1$s = %1$s;", field.javaName());
 
             add1(src, "}");
-
             add0(src, "");
         }
 
-        // Methods.
+        // Generate getters and setters methods.
         for (PojoField field : fields) {
             String fldName = field.javaName();
 
@@ -218,7 +228,6 @@ public class PojoGenerator {
             add1(src, "public " + fldType + " get" + mtdName + "() {");
             add2(src, "return " + fldName + ";");
             add1(src, "}");
-
             add0(src, "");
 
             add1(src, "/**");
@@ -229,42 +238,43 @@ public class PojoGenerator {
             add1(src, "public void set" + mtdName + "(" + fldType + " " + fldName + ") {");
             add2(src, "this." + fldName + " = " + fldName + ";");
             add1(src, "}");
-
             add0(src, "");
         }
 
+        // Generate equals() method.
         add1(src, "/** {@inheritDoc} */");
         add1(src, "@Override public boolean equals(Object o) {");
         add2(src, "if (this == o)");
         add3(src, "return true;");
-
         add0(src, "");
 
         add2(src, "if (!(o instanceof " + type + "))");
         add3(src, "return false;");
-
         add0(src, "");
 
-        add2(src, String.format("%1$s that = (%1$s)o;", type));
+        add2Fmt(src, "%1$s that = (%1$s)o;", type);
 
         for (PojoField field : fields) {
             add0(src, "");
 
-            String javaType = javaTypeName(field);
+            String javaName = field.javaName();
 
             if (field.primitive()) {
-                String fmt = "if (%1$s != that.%1$s)";
+                switch (field.javaTypeName()) {
+                    case "float":
+                        add2Fmt(src, "if (Float.compare(%1$s, that.%1$s) != 0)", javaName);
+                        break;
 
-                if ("double".equals(javaType))
-                    fmt = "if (Double.compare(%1$s, that.%1$s) != 0)";
-                else if ("float".equals(javaType))
-                    fmt = "if (Float.compare(%1$s, that.%1$s) != 0)";
+                    case "double":
+                        add2Fmt(src, "if (Double.compare(%1$s, that.%1$s) != 0)", javaName);
+                        break;
 
-                add2(src, String.format(fmt, field.javaName()));
+                    default:
+                        add2Fmt(src, "if (%1$s != that.%1$s)", javaName);
+                }
             }
             else
-                add2(src, String.format("if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)",
-                    field.javaName()));
+                add2Fmt(src, "if (%1$s != null ? !%1$s.equals(that.%1$s) : that.%1$s != null)", javaName);
 
             add3(src, "return false;");
         }
@@ -272,46 +282,84 @@ public class PojoGenerator {
         add0(src, "");
         add2(src, "return true;");
         add1(src, "}");
-
         add0(src, "");
 
+        // Generate hashCode() method.
         add1(src, "/** {@inheritDoc} */");
         add1(src, "@Override public int hashCode() {");
 
-// TODO sort by keys, primitives, other
-//        int result;
-//        long temp;
-//        result = id;
-//        result = 31 * result + id2;
-//        temp = Double.doubleToLongBits(sum);
-//        result = 31 * result + (int)(temp ^ (temp >>> 32));
-//        result = 31 * result + (int)(id3 ^ (id3 >>> 32));
-//        result = 31 * result + (sum3 != +0.0f ? Float.floatToIntBits(sum3) : 0);
+        List<String> hash = new ArrayList<>(fields.size() * 2);
 
-        Iterator<PojoField> it = fields.iterator();
+        boolean first = true;
+        boolean tempVar = false;
 
-        add2(src, String.format("int res = %1$s != null ? %1$s.hashCode() : 0;", it.next().javaName()));
+        for (PojoField field : fields) {
+            String javaName = field.javaName();
 
-        if (it.hasNext()) {
-            add0(src, "");
+            if (!first)
+                add0(hash, "");
 
-            while (it.hasNext())
-                add2(src, String.format("res = 31 * res + (%1$s != null ? %1$s.hashCode() : 0);",
-                    it.next().javaName()));
+            if (field.primitive()) {
+                switch (field.javaTypeName()) {
+                    case "boolean":
+                        add2Fmt(hash, first ? "int res = %s ? 1 : 0;" : "res = 31 * res + (%s ? 1 : 0);", javaName);
+                        break;
+
+                    case "byte":
+                    case "short":
+                    case "int":
+                        add2Fmt(hash, first ? "int res = %s;" : "res = 31 * res + %s;", javaName);
+                        break;
+
+                    case "long":
+                        add2Fmt(hash, first
+                            ? "int res = (int)(%1$s ^ (%1$s >>> 32));"
+                            : "res = 31 * res + (int)(%1$s ^ (%1$s >>> 32));", javaName);
+                        break;
+
+                    case "float":
+                        add2Fmt(hash, first
+                            ? "int res = %1$s != +0.0f ? Float.floatToIntBits(%1$s) : 0;"
+                            : "res = 31 * res + (%1$s != +0.0f ? Float.floatToIntBits(%1$s) : 0);", javaName);
+                        break;
+
+                    case "double":
+                        add2Fmt(hash, (tempVar ? "ig_hash_temp" : "long ig_hash_temp") +
+                            " = Double.doubleToLongBits(%s);", javaName);
+
+                        add2(hash, "");
+
+                        add2Fmt(hash, first
+                            ? "int res = (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));"
+                            : "res = 31 * res + (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));", javaName);
+
+                        tempVar = true;
+                        break;
+
+                }
+            }
+            else
+                add2Fmt(hash, first ? "int res = %1$s != null ? %1$s.hashCode() : 0;"
+                    : "res = 31 * res + (%1$s != null ? %1$s.hashCode() : 0);", javaName);
+
+            first = false;
         }
+
+        for (String line : hash)
+            add0(src, line);
 
         add0(src, "");
         add2(src, "return res;");
         add1(src, "}");
-
         add0(src, "");
 
+        // Generate toString() method.
         add1(src, "/** {@inheritDoc} */");
         add1(src, "@Override public String toString() {");
 
-        it = fields.iterator();
+        Iterator<PojoField> it = fields.iterator();
 
-        add2(src, String.format("return \"%1$s [%2$s=\" + %2$s +", type, it.next().javaName()));
+        add2Fmt(src, "return \"%1$s [%2$s=\" + %2$s +", type, it.next().javaName());
 
         while (it.hasNext())
             add3(src, String.format("\", %1$s=\" + %1$s +", it.next().javaName()));
@@ -321,6 +369,7 @@ public class PojoGenerator {
 
         add0(src, "}");
 
+        // Write generated code to file.
         try (Writer writer = new BufferedWriter(new FileWriter(out))) {
             for (String line : src)
                 writer.write(line + '\n');

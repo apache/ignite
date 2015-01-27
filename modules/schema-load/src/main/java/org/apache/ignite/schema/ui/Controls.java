@@ -310,6 +310,7 @@ public class Controls {
 
     /**
      * Create combo box.
+     *
      * @param tip Tooltip text.
      * @param items Combo box items.
      * @return New {@code ComboBox} instance.
@@ -590,7 +591,9 @@ public class Controls {
                 });
 
                 tf.setOnKeyReleased(new EventHandler<KeyEvent>() {
-                    @Override public void handle(KeyEvent evt) {}
+                    @Override public void handle(KeyEvent evt) {
+                        // No-op to overwrite JavaFX implementation.
+                    }
                 });
 
                 // Special hack for editable TextFieldTableCell.

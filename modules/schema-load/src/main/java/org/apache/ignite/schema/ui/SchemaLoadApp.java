@@ -735,7 +735,7 @@ public class SchemaLoadApp extends Application {
 
                         String src = (renFields ? "fields" : "tables");
 
-                        String target = "\"" + sel +"\"";
+                        String target = "\"" + sel + "\"";
 
                         Collection<PojoDescriptor> selItems = selectedItems();
 
@@ -773,7 +773,7 @@ public class SchemaLoadApp extends Application {
 
                     String src = (renFields ? "fields" : "tables");
 
-                    String target = "\"" + sel +"\"";
+                    String target = "\"" + sel + "\"";
 
                     if (selItems.isEmpty()) {
                         MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
