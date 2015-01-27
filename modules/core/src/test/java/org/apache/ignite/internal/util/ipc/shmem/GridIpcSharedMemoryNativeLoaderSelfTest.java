@@ -9,9 +9,11 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 
 public class GridIpcSharedMemoryNativeLoaderSelfTest extends TestCase {
-    //TODO linux specific
-    public void testLoadIfLibFileWasCorrupted() throws Exception {
-        Process ps = GridJavaProcess.exec(LoadIfLibFileWasCorruptedTestRunner.class, null, null, null, null, Collections.<String>emptyList(), null).getProcess();
+
+    public void testLoadWithCorruptedLibFile() throws Exception {
+        if (System.getProperty("os.name").toLowerCase().trim().startsWith("win")) return;
+
+        Process ps = GridJavaProcess.exec(LoadWithCorruptedLibFileTestRunner.class, null, null, null, null, Collections.<String>emptyList(), null).getProcess();
 
         readStreams(ps);
         int code = ps.waitFor();

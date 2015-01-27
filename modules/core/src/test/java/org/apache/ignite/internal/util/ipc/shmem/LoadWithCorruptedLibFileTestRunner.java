@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class LoadIfLibFileWasCorruptedTestRunner {
+public class LoadWithCorruptedLibFileTestRunner {
     public static final String TMP_DIR_FOR_TEST = System.getProperty("user.home");
     public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(GridIpcSharedMemoryNativeLoader.libFileName());
 
