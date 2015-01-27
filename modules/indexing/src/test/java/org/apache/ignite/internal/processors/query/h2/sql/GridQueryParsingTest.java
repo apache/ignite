@@ -9,13 +9,19 @@
 
 package org.apache.ignite.internal.processors.query.h2.sql;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.h2.command.*;
 import org.h2.command.dml.*;
 import org.h2.engine.*;
@@ -24,23 +30,64 @@ import org.h2.jdbc.*;
 import java.io.*;
 import java.util.*;
 
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+
 /**
  *
  */
-public class GridQueryParsingTest extends GridCacheAbstractQuerySelfTest {
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
+public class GridQueryParsingTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** */
+    private static Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.REPLICATED;
+    @SuppressWarnings("unchecked")
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setIpFinder(ipFinder);
+
+        c.setDiscoverySpi(disco);
+
+        GridQueryConfiguration idxCfg = new GridQueryConfiguration();
+
+        c.setQueryConfiguration(idxCfg);
+
+        c.setMarshaller(new IgniteOptimizedMarshaller(true));
+
+        // Cache.
+        CacheConfiguration cc = defaultCacheConfiguration();
+
+        cc.setCacheMode(CacheMode.PARTITIONED);
+        cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+        cc.setDistributionMode(PARTITIONED_ONLY);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
+        cc.setPreloadMode(SYNC);
+        cc.setSwapEnabled(false);
+
+        CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
+
+        qcfg.setIndexPrimitiveKey(true);
+        qcfg.setIndexFixedTyping(true);
+
+        cc.setQueryConfiguration(qcfg);
+
+        c.setCacheConfiguration(cc);
+
+        return c;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+    /** */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        ignite = startGrid();
 
         GridCache cache = ignite.cache(null);
 

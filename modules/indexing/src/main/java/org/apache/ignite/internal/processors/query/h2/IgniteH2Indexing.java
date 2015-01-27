@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.future.GridFinishedFutureEx;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
@@ -1110,7 +1111,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (log.isDebugEnabled())
             log.debug("Starting cache query index...");
 
-        if (ctx != null) { // This is allowed in some tests.
+        if (ctx == null) // This is allowed in some tests.
+            marshaller = new IgniteOptimizedMarshaller();
+        else {
             this.ctx = ctx;
 
             nodeId = ctx.localNodeId();
