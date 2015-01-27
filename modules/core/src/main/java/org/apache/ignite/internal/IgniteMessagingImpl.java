@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.IgniteMessaging} implementation.
+ * {@link IgniteMessaging} implementation.
  */
 public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessaging>
     implements IgniteMessaging, Externalizable {

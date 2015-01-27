@@ -29,7 +29,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.IgniteEvents} implementation.
+ * {@link IgniteEvents} implementation.
  */
 public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
     /** */

@@ -27,7 +27,7 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
     protected ThreadLocal<IgniteFuture<?>> curFut;
 
     /** */
-    protected volatile T asyncInstance;
+    private volatile T asyncInstance;
 
     /**
      * Default constructor.
@@ -54,7 +54,12 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
         if (res == null) {
             res = createAsyncInstance();
 
-            asyncInstance = res;
+            synchronized (IgniteAsyncSupportAdapter.class) {
+                if (asyncInstance != null)
+                    return asyncInstance;
+
+                asyncInstance = res;
+            }
         }
 
         return res;
