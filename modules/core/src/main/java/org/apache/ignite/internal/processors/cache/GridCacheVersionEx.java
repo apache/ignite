@@ -26,6 +26,10 @@ public class GridCacheVersionEx extends GridCacheVersion {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    @SuppressWarnings({"NonConstantFieldWithUpperCaseName", "AbbreviationUsage", "UnusedDeclaration"})
+    private static Object GG_CLASS_ID;
+
     /** DR version. */
     private GridCacheVersion drVer;
 
@@ -75,6 +79,11 @@ public class GridCacheVersionEx extends GridCacheVersion {
     /** {@inheritDoc} */
     @Override public GridCacheVersion drVersion() {
         return drVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Object ggClassId() {
+        return GG_CLASS_ID;
     }
 
     /** {@inheritDoc} */

@@ -25,6 +25,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
@@ -36,6 +37,7 @@ import org.apache.ignite.internal.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -967,28 +969,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param arg Optional argument.
      * @return Job.
      */
-    @SuppressWarnings("IfMayBeConditional")
-    private <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
+    private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
-        if (job instanceof ComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
-                    return job.apply(arg);
-                }
-
-                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
-                    ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
-                    return job.apply(arg);
-                }
-            };
-        }
+        return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
     }
 
     /**
@@ -997,38 +981,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param c Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings("IfMayBeConditional")
-    private ComputeJob job(final Callable<?> c) {
+    private static <R> ComputeJob job(final Callable<R> c) {
         A.notNull(c, "job");
 
-        if (c instanceof ComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                @Override public Object execute() {
-                    try {
-                        return c.call();
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException(e);
-                    }
-                }
-
-                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
-                    ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new ComputeJobAdapter() {
-                @Override public Object execute() {
-                    try {
-                        return c.call();
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            };
-        }
+        return c instanceof ComputeJobMasterLeaveAware ? new C2MLA<>(c) : new C2<>(c);
     }
 
     /**
@@ -1039,54 +995,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings(value = {"IfMayBeConditional", "UnusedDeclaration"})
-    private ComputeJob job(final Callable<?> c, @Nullable final String cacheName, final Object affKey) {
+    private static <R> ComputeJob job(final Callable<R> c, @Nullable final String cacheName, final Object affKey) {
         A.notNull(c, "job");
 
-        if (c instanceof ComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                /** */
-                @CacheName
-                private final String cn = cacheName;
-
-                /** */
-                @CacheAffinityKeyMapped
-                private final Object ak = affKey;
-
-                @Override public Object execute() {
-                    try {
-                        return c.call();
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException(e);
-                    }
-                }
-
-                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
-                    ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new ComputeJobAdapter() {
-                /** */
-                @CacheName
-                private final String cn = cacheName;
-
-                /** */
-                @CacheAffinityKeyMapped
-                private final Object ak = affKey;
-
-                @Override public Object execute() {
-                    try {
-                        return c.call();
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException(e);
-                    }
-                }
-            };
-        }
+        return c instanceof ComputeJobMasterLeaveAware ? new C3MLA<>(c, cacheName, affKey) :
+            new C3<>(c, cacheName, affKey);
     }
 
     /**
@@ -1095,32 +1008,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param r Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings("IfMayBeConditional")
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
-        if (r instanceof ComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
-                    r.run();
-
-                    return null;
-                }
-
-                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
-                    ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new ComputeJobAdapter() {
-                @Nullable @Override public Object execute() {
-                    r.run();
-
-                    return null;
-                }
-            };
-        }
+       return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
     }
 
     /**
@@ -1131,48 +1022,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param affKey Affinity key.
      * @return Grid job made out of closure.
      */
-    @SuppressWarnings(value = {"IfMayBeConditional", "UnusedDeclaration"})
-    private ComputeJob job(final Runnable r, @Nullable final String cacheName, final Object affKey) {
+    private static ComputeJob job(final Runnable r, @Nullable final String cacheName, final Object affKey) {
         A.notNull(r, "job");
 
-        if (r instanceof ComputeJobMasterLeaveAware) {
-            return new GridMasterLeaveAwareComputeJobAdapter() {
-                /** */
-                @CacheName
-                private final String cn = cacheName;
-
-                /** */
-                @CacheAffinityKeyMapped
-                private final Object ak = affKey;
-
-                @Nullable @Override public Object execute() {
-                    r.run();
-
-                    return null;
-                }
-
-                @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
-                    ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
-                }
-            };
-        }
-        else {
-            return new ComputeJobAdapter() {
-                /** */
-                @CacheName
-                private final String cn = cacheName;
-
-                /** */
-                @CacheAffinityKeyMapped
-                private final Object ak = affKey;
-
-                @Nullable @Override public Object execute() {
-                    r.run();
-
-                    return null;
-                }
-            };
-        }
+        return r instanceof ComputeJobMasterLeaveAware ? new C5MLA(r, cacheName, affKey) : new C5(r, cacheName, affKey);
     }
 
     /** */
@@ -1739,6 +1592,459 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public Collection<R> reduce(List<ComputeJobResult> res) {
             return F.jobResults(res);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C1<T, R> implements ComputeJob, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        protected IgniteClosure<T, R> job;
+
+        /** */
+        @GridToStringInclude
+        private T arg;
+
+        /**
+         *
+         */
+        public C1(){
+            // No-op.
+        }
+
+        /**
+         * @param job Job.
+         * @param arg Argument.
+         */
+        public C1(IgniteClosure<T, R> job, T arg) {
+            this.job = job;
+            this.arg = arg;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object execute() {
+            return job.apply(arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(job);
+            out.writeObject(arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            job = (IgniteClosure<T, R>)in.readObject();
+            arg = (T)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C1.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C1MLA<T, R> extends C1<T, R> implements ComputeJobMasterLeaveAware {
+        /**
+         *
+         */
+        public C1MLA() {
+            super();
+        }
+
+        /**
+         * @param job Job.
+         * @param arg Argument.
+         */
+        public C1MLA(IgniteClosure<T, R> job, T arg) {
+            super(job, arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+            ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C1MLA.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C2<R> implements ComputeJob, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        protected Callable<R> c;
+
+        /**
+         *
+         */
+        public C2(){
+            // No-op.
+        }
+
+        /**
+         * @param c Callable.
+         */
+        public C2(Callable<R> c) {
+            this.c = c;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object execute() {
+            try {
+                return c.call();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(c);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            c = (Callable<R>)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C2.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware{
+        /**
+         *
+         */
+        public C2MLA() {
+            super();
+        }
+
+        /**
+         * @param c Callable.
+         */
+        public C2MLA(Callable<R> c) {
+            super(c);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+            ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C2MLA.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C3<R> implements ComputeJob, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        @CacheName
+        private String cn;
+
+        /** */
+        @CacheAffinityKeyMapped
+        private Object ak;
+
+
+        /** */
+        protected Callable<R> c;
+
+        /**
+         *
+         */
+        public C3(){
+            // No-op.
+        }
+
+        /**
+         * @param c Callable.
+         * @param cacheName Cache name.
+         * @param affKey Affinity key.
+         */
+        public C3(Callable<R> c, @Nullable String cacheName, Object affKey) {
+            this.cn = cacheName;
+            this.ak = affKey;
+            this.c = c;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object execute() {
+            try {
+                return c.call();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(cn);
+            out.writeObject(ak);
+            out.writeObject(c);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cn = (String)in.readObject();
+            ak = in.readObject();
+            c = (Callable<R>)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C3.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C3MLA<R> extends C3<R> implements ComputeJobMasterLeaveAware{
+        /**
+         *
+         */
+        public C3MLA() {
+            super();
+        }
+
+        /**
+         * @param c Callable.
+         * @param cacheName Cache name.
+         * @param affKey Affinity key.
+         */
+        public C3MLA(Callable<R> c, @Nullable String cacheName, Object affKey) {
+            super(c, cacheName, affKey);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+            ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C3MLA.class, this, super.toString());
+        }
+    }
+
+    /**
+     */
+    private static class C4 implements ComputeJob, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        protected Runnable r;
+
+        /**
+         *
+         */
+        public C4(){
+            // No-op.
+        }
+
+        /**
+         * @param r Runnable.
+         */
+        public C4(Runnable r) {
+            this.r = r;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object execute() {
+            r.run();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(r);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            r = (Runnable)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C4.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C4MLA extends C4 implements ComputeJobMasterLeaveAware{
+        /**
+         *
+         */
+        public C4MLA() {
+            super();
+        }
+
+        /**
+         * @param r Runnable.
+         */
+        public C4MLA(Runnable r) {
+            super(r);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+            ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C4MLA.class, this, super.toString());
+        }
+    }
+
+    /**
+     */
+    private static class C5 implements ComputeJob, Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        @CacheName
+        private String cn;
+
+        /** */
+        @CacheAffinityKeyMapped
+        private Object ak;
+
+        /** */
+        protected Runnable r;
+
+        /**
+         *
+         */
+        public C5(){
+            // No-op.
+        }
+
+        /**
+         * @param r Runnable.
+         * @param cacheName Cache name.
+         * @param affKey Affinity key.
+         */
+        public C5(Runnable r, @Nullable String cacheName, Object affKey) {
+            this.cn = cacheName;
+            this.ak = affKey;
+            this.r = r;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object execute() {
+            r.run();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeObject(cn);
+            out.writeObject(ak);
+            out.writeObject(r);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            cn = (String)in.readObject();
+            ak = in.readObject();
+            r = (Runnable)in.readObject();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C5.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C5MLA extends C5 implements ComputeJobMasterLeaveAware{
+        /**
+         *
+         */
+        public C5MLA() {
+            super();
+        }
+
+        /**
+         * @param r Runnable.
+         * @param cacheName Cache name.
+         * @param affKey Affinity key.
+         */
+        public C5MLA(Runnable r, @Nullable String cacheName, Object affKey) {
+            super(r, cacheName, affKey);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) throws IgniteCheckedException {
+            ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C5MLA.class, this, super.toString());
         }
     }
 }
