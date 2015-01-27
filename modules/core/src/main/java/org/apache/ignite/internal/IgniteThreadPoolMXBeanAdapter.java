@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal;
 
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.mxbean.*;
 
 import java.util.concurrent.*;
 
 /**
- * Adapter for {@link org.apache.ignite.mxbean.IgniteThreadPoolMBean} which delegates all method calls to the underlying
+ * Adapter for {@link IgniteThreadPoolMXBean} which delegates all method calls to the underlying
  * {@link ExecutorService} instance.
  */
-public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {
+public class IgniteThreadPoolMXBeanAdapter implements IgniteThreadPoolMXBean {
     /** */
     private final ExecutorService exec;
 
@@ -34,7 +35,7 @@ public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {
      *
      * @param exec Executor service
      */
-    public IgniteThreadPoolMBeanAdapter(ExecutorService exec) {
+    public IgniteThreadPoolMXBeanAdapter(ExecutorService exec) {
         assert exec != null;
 
         this.exec = exec;
@@ -42,72 +43,52 @@ public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {
 
     /** {@inheritDoc} */
     @Override public int getActiveCount() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getActiveCount() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public long getCompletedTaskCount() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getCompletedTaskCount() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getCorePoolSize() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getCorePoolSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getLargestPoolSize() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getLargestPoolSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getMaximumPoolSize() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getMaximumPoolSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getPoolSize() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getPoolSize() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public long getTaskCount() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getTaskCount() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public int getQueueSize() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ? ((ThreadPoolExecutor)exec).getQueue().size() : -1;
     }
 
     /** {@inheritDoc} */
     @Override public long getKeepAliveTime() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor ?
             ((ThreadPoolExecutor)exec).getKeepAliveTime(TimeUnit.MILLISECONDS) : -1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isShutdown() {
-        assert exec != null;
-
         return exec.isShutdown();
     }
 
@@ -118,15 +99,11 @@ public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {
 
     /** {@inheritDoc} */
     @Override public boolean isTerminating() {
-        assert exec != null;
-
         return exec instanceof ThreadPoolExecutor && ((ThreadPoolExecutor) exec).isTerminating();
     }
 
     /** {@inheritDoc} */
     @Override public String getRejectedExecutionHandlerClass() {
-        assert exec != null;
-
         if (!(exec instanceof ThreadPoolExecutor))
             return "";
 
@@ -137,13 +114,16 @@ public class IgniteThreadPoolMBeanAdapter implements IgniteThreadPoolMBean {
 
     /** {@inheritDoc} */
     @Override public String getThreadFactoryClass() {
-        assert exec != null;
-
         if (!(exec instanceof ThreadPoolExecutor))
             return "";
 
         ThreadFactory factory = ((ThreadPoolExecutor)exec).getThreadFactory();
 
         return factory == null ? "" : factory.getClass().getName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteThreadPoolMXBeanAdapter.class, this, super.toString());
     }
 }

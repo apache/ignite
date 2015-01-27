@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.mxbean;
+package org.apache.ignite.internal.mxbean;
 
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.mxbean.*;
+
 import javax.management.*;
 import java.lang.reflect.*;
 import java.util.*;
@@ -26,7 +28,7 @@ import java.util.*;
  * Extension of standard Java MBean. Overrides some hooks to return
  * annotation based descriptions.
  */
-public class IgniteStandardMBean extends StandardMBean {
+public class IgniteStandardMXBean extends StandardMBean {
     /**
      * Objects maps from primitive classes to primitive object classes.
      */
@@ -64,7 +66,7 @@ public class IgniteStandardMBean extends StandardMBean {
      *    if the given {@code implementation} does not implement the
      *    specified interface.
      */
-    public <T> IgniteStandardMBean(T implementation, Class<T> mbeanInterface)
+    public <T> IgniteStandardMXBean(T implementation, Class<T> mbeanInterface)
         throws NotCompliantMBeanException {
         super(implementation, mbeanInterface);
     }
@@ -80,7 +82,7 @@ public class IgniteStandardMBean extends StandardMBean {
             Method mtd = findMethod(getMBeanInterface(), methodName, new Class[]{});
 
             if (mtd != null) {
-                IgniteMBeanDescription desc = mtd.getAnnotation(IgniteMBeanDescription.class);
+                IgniteMXBeanDescription desc = mtd.getAnnotation(IgniteMXBeanDescription.class);
 
                 if (desc != null) {
                     str = desc.value();
@@ -108,7 +110,7 @@ public class IgniteStandardMBean extends StandardMBean {
         String str = super.getDescription(info);
 
         // Return either default one or given by annotation.
-        IgniteMBeanDescription desc = U.getAnnotation(getMBeanInterface(), IgniteMBeanDescription.class);
+        IgniteMXBeanDescription desc = U.getAnnotation(getMBeanInterface(), IgniteMXBeanDescription.class);
 
         if (desc != null) {
             str = desc.value();
@@ -131,7 +133,7 @@ public class IgniteStandardMBean extends StandardMBean {
         try {
             Method m = getMethod(info);
 
-            IgniteMBeanDescription desc = m.getAnnotation(IgniteMBeanDescription.class);
+            IgniteMXBeanDescription desc = m.getAnnotation(IgniteMXBeanDescription.class);
 
             if (desc != null) {
                 str = desc.value();
@@ -158,7 +160,7 @@ public class IgniteStandardMBean extends StandardMBean {
         try {
             Method m = getMethod(op);
 
-            IgniteMBeanParametersDescriptions decsAnn = m.getAnnotation(IgniteMBeanParametersDescriptions.class);
+            IgniteMXBeanParametersDescriptions decsAnn = m.getAnnotation(IgniteMXBeanParametersDescriptions.class);
 
             if (decsAnn != null) {
                 assert decsAnn.value() != null;
@@ -188,7 +190,7 @@ public class IgniteStandardMBean extends StandardMBean {
         try {
             Method m = getMethod(op);
 
-            IgniteMBeanParametersNames namesAnn = m.getAnnotation(IgniteMBeanParametersNames.class);
+            IgniteMXBeanParametersNames namesAnn = m.getAnnotation(IgniteMXBeanParametersNames.class);
 
             if (namesAnn != null) {
                 assert namesAnn.value() != null;

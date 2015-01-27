@@ -20,15 +20,15 @@ package org.apache.ignite.mxbean;
 /**
  * This interface defines JMX view on {@link org.apache.ignite.Ignition}.
  */
-@IgniteMBeanDescription("MBean that provides access to grid life-cycle operations.")
-public interface IgnitionMBean {
+@IgniteMXBeanDescription("MBean that provides access to grid life-cycle operations.")
+public interface IgnitionMXBean {
     /**
      * Gets state of default grid instance.
      *
      * @return State of default grid instance.
      * @see org.apache.ignite.Ignition#state()
      */
-    @IgniteMBeanDescription("State of default grid instance.")
+    @IgniteMXBeanDescription("State of default grid instance.")
     public String getState();
 
     /**
@@ -38,11 +38,11 @@ public interface IgnitionMBean {
      * @return State of grid instance with given name.
      * @see org.apache.ignite.Ignition#state(String)
      */
-    @IgniteMBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanDescription("Gets state for a given grid instance. Returns state of grid instance with given name.")
+    @IgniteMXBeanParametersNames(
         "name"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "Name of grid instance."
     )
     public String getState(String name);
@@ -58,12 +58,12 @@ public interface IgnitionMBean {
      *      {@code false} otherwise (if it was not started).
      * @see org.apache.ignite.Ignition#stop(boolean)
      */
-    @IgniteMBeanDescription("Stops default grid instance. Return true if default grid instance was " +
+    @IgniteMXBeanDescription("Stops default grid instance. Return true if default grid instance was " +
         "indeed stopped, false otherwise (if it was not started).")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanParametersNames(
         "cancel"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "If true then all jobs currently executing on default grid will be cancelled."
     )
     public boolean stop(boolean cancel);
@@ -87,14 +87,14 @@ public interface IgnitionMBean {
      *      not found).
      * @see org.apache.ignite.Ignition#stop(String, boolean)
      */
-    @IgniteMBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
+    @IgniteMXBeanDescription("Stops grid by name. Cancels running jobs if cancel is true. Returns true if named " +
         "grid instance was indeed found and stopped, false otherwise.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanParametersNames(
         {
             "name",
             "cancel"
         })
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         {
             "Grid instance name to stop.",
             "Whether or not running jobs should be cancelled."
@@ -117,11 +117,11 @@ public interface IgnitionMBean {
      *      up to the actual job to exit from execution
      * @see org.apache.ignite.Ignition#stopAll(boolean)
      */
-    @IgniteMBeanDescription("Stops all started grids.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanDescription("Stops all started grids.")
+    @IgniteMXBeanParametersNames(
         "cancel"
     )
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         "If true then all jobs currently executing on all grids will be cancelled."
     )
     public void stopAll(boolean cancel);
@@ -135,13 +135,13 @@ public interface IgnitionMBean {
      *      up to the actual job to exit from execution
      * @see org.apache.ignite.Ignition#stopAll(boolean)
      */
-    @IgniteMBeanDescription("Restart JVM.")
-    @IgniteMBeanParametersNames(
+    @IgniteMXBeanDescription("Restart JVM.")
+    @IgniteMXBeanParametersNames(
         {
             "cancel",
             "wait"
         })
-    @IgniteMBeanParametersDescriptions(
+    @IgniteMXBeanParametersDescriptions(
         {
             "If true then all jobs currently executing on default grid will be cancelled.",
             "If true then method will wait for all task being executed until they finish their execution."

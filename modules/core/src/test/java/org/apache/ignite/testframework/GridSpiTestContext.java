@@ -20,10 +20,10 @@ package org.apache.ignite.testframework;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.*;
-import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
@@ -139,8 +139,8 @@ public class GridSpiTestContext implements IgniteSpiContext {
      * @param activeJobs Active jobs count.
      * @return Metrics adapter.
      */
-    private DiscoveryNodeMetricsAdapter createMetrics(int waitingJobs, int activeJobs) {
-        DiscoveryNodeMetricsAdapter metrics = new DiscoveryNodeMetricsAdapter();
+    private ClusterMetricsSnapshot createMetrics(int waitingJobs, int activeJobs) {
+        ClusterMetricsSnapshot metrics = new ClusterMetricsSnapshot();
 
         metrics.setCurrentWaitingJobs(waitingJobs);
         metrics.setCurrentActiveJobs(activeJobs);

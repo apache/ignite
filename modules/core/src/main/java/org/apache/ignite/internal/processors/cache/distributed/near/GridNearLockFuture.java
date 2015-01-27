@@ -1063,7 +1063,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                                     null,
                                                     inTx() ? tx.resolveTaskName() : null);
 
-                                            cctx.cache().metrics0().onRead(oldVal != null);
+                                            if (cctx.cache().configuration().isStatisticsEnabled())
+                                                cctx.cache().metrics0().onRead(oldVal != null);
                                         }
 
                                         if (log.isDebugEnabled())
@@ -1424,7 +1425,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         null,
                                         inTx() ? tx.resolveTaskName() : null);
 
-                                cctx.cache().metrics0().onRead(false);
+                                if (cctx.cache().configuration().isStatisticsEnabled())
+                                    cctx.cache().metrics0().onRead(false);
                             }
 
                             if (log.isDebugEnabled())

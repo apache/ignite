@@ -19,21 +19,19 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.mxbean.*;
 
 /**
  * Local node metrics MBean.
  */
-public class ClusterLocalNodeMetrics implements ClusterNodeMetricsMBean {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetricsMXBean {
     /** Grid node. */
     private final ClusterNode node;
 
     /**
      * @param node Node to manage.
      */
-    public ClusterLocalNodeMetrics(ClusterNode node) {
+    public ClusterLocalNodeMetricsMXBeanImpl(ClusterNode node) {
         assert node != null;
 
         this.node = node;
@@ -306,6 +304,6 @@ public class ClusterLocalNodeMetrics implements ClusterNodeMetricsMBean {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(ClusterLocalNodeMetrics.class, this);
+        return S.toString(ClusterLocalNodeMetricsMXBeanImpl.class, this);
     }
 }

@@ -99,12 +99,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** Caches stop sequence. */
     private final Deque<GridCacheAdapter<?, ?>> stopSeq;
 
-    /** MBean server. */
-    private final MBeanServer mBeanSrv;
-
-    /** Cache MBeans. */
-    private final Collection<ObjectName> cacheMBeans = new LinkedList<>();
-
     /** Transaction interface implementation. */
     private IgniteTransactionsImpl transactions;
 
@@ -122,8 +116,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         sysCaches = new HashSet<>();
         stopSeq = new LinkedList<>();
-
-        mBeanSrv = ctx.config().getMBeanServer();
     }
 
     /**
@@ -891,21 +883,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             jCacheProxies.put(e.getKey(), new IgniteCacheProxy(cache.context(), cache, null, false));
         }
 
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            try {
-                ObjectName mb = U.registerCacheMBean(mBeanSrv, ctx.gridName(), cache.name(), "Cache",
-                    new GridCacheMBeanAdapter(cache.context()), CacheMBean.class);
-
-                cacheMBeans.add(mb);
-
-                if (log.isDebugEnabled())
-                    log.debug("Registered cache MBean: " + mb);
-            }
-            catch (JMException ex) {
-                U.error(log, "Failed to register cache MBean.", ex);
-            }
-        }
-
         // Internal caches which should not be returned to user.
         for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
             GridCacheAdapter cache = e.getValue();
@@ -1384,20 +1361,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Override public void onKernalStop(boolean cancel) {
         if (ctx.config().isDaemon())
             return;
-
-        if (!F.isEmpty(cacheMBeans)) {
-            for (ObjectName mb : cacheMBeans) {
-                try {
-                    mBeanSrv.unregisterMBean(mb);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Unregistered cache MBean: " + mb);
-                }
-                catch (JMException e) {
-                    U.error(log, "Failed to unregister cache MBean: " + mb, e);
-                }
-            }
-        }
 
         for (GridCacheAdapter<?, ?> cache : stopSeq) {
             GridCacheContext ctx = cache.context();

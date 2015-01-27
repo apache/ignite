@@ -106,7 +106,7 @@ import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBean {
+public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -959,7 +959,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
                 @Override protected void safeRun() {
                     if (log.isInfoEnabled()) {
-                        ClusterNodeMetrics m = localNode().metrics();
+                        ClusterMetrics m = localNode().metrics();
 
                         double cpuLoadPct = m.getCurrentCpuLoad() * 100;
                         double avgCpuLoadPct = m.getAverageCpuLoad() * 100;
@@ -980,11 +980,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                         try {
                             ClusterMetrics metrics = metrics();
 
-                            hosts = metrics.getTotalHosts();
-                            nodes = metrics.getTotalNodes();
+                            Collection<ClusterNode> nodes0 = nodes();
+
+                            hosts = U.neighborhood(nodes0).size();
+                            nodes = nodes0.size();
                             cpus = metrics.getTotalCpus();
                         }
                         catch (IgniteCheckedException ignore) {
+                            // No-op.
                         }
 
                         int pubPoolActiveThreads = 0;
@@ -1431,7 +1434,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 "Kernal",
                 getClass().getSimpleName(),
                 this,
-                IgniteMBean.class);
+                IgniteMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered kernal MBean: " + kernalMBean);
@@ -1445,7 +1448,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
     /** @throws IgniteCheckedException If registration failed. */
     private void registerLocalNodeMBean() throws IgniteCheckedException {
-        ClusterNodeMetricsMBean mbean = new ClusterLocalNodeMetrics(ctx.discovery().localNode());
+        ClusterLocalNodeMetricsMXBean mbean = new ClusterLocalNodeMetricsMXBeanImpl(ctx.discovery().localNode());
 
         try {
             locNodeMBean = U.registerMBean(
@@ -1454,7 +1457,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 "Kernal",
                 mbean.getClass().getSimpleName(),
                 mbean,
-                ClusterNodeMetricsMBean.class);
+                ClusterLocalNodeMetricsMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered local node MBean: " + locNodeMBean);
@@ -1496,8 +1499,8 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                 cfg.getGridName(),
                 "Thread Pools",
                 name,
-                new IgniteThreadPoolMBeanAdapter(exec),
-                IgniteThreadPoolMBean.class);
+                new IgniteThreadPoolMXBeanAdapter(exec),
+                IgniteThreadPoolMXBean.class);
 
             if (log.isDebugEnabled())
                 log.debug("Registered executor service MBean: " + res);

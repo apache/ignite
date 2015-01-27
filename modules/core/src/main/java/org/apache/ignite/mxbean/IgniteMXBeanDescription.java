@@ -15,15 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.mxbean;
 
-import org.apache.ignite.cluster.*;
-import org.apache.ignite.mxbean.*;
+import java.lang.annotation.*;
 
 /**
- * MBean for local node metrics.
+ * Provides description for MBean classes and methods.
  */
-@IgniteMBeanDescription("MBean that provides access to all local node metrics.")
-public interface ClusterNodeMetricsMBean extends ClusterNodeMetrics {
-    // No-op.
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+public @interface IgniteMXBeanDescription {
+    /**
+     *
+     * Description for Mbean.
+     */
+    @SuppressWarnings({"JavaDoc"}) public String value();
 }
