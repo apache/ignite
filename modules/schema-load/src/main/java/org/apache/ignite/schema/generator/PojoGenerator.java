@@ -370,6 +370,7 @@ public class PojoGenerator {
         add1(src, "}");
 
         add0(src, "}");
+        add0(src, "");
 
         // Write generated code to file.
         try (Writer writer = new BufferedWriter(new FileWriter(out))) {
