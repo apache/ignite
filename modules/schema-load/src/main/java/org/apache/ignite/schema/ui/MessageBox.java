@@ -232,7 +232,8 @@ public class MessageBox extends ModalDialog {
      * @param e Optional exception to show.
      */
     public static void errorDialog(Stage owner, String msg, Throwable e) {
-        showDialog(owner, MessageType.ERROR,
-            (e != null && e.getMessage() != null) ? msg + "\n" + e.getMessage() : msg, false);
+        String exMsg = e != null ? (e.getMessage() != null ? e.getMessage() : e.getClass().getName()) : null;
+
+        showDialog(owner, MessageType.ERROR, exMsg != null ? msg + "\n" + exMsg : msg, false);
     }
 }

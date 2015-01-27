@@ -211,8 +211,17 @@ public class DatabaseMetadataParser {
 
         try (ResultSet idxs = dbMeta.getIndexInfo(catalog, schema, tbl, false, true)) {
             while (idxs.next()) {
-                String idx = toJavaFieldName(idxs.getString(6));
-                String col = toJavaFieldName(idxs.getString(9));
+                String idxName = idxs.getString(6);
+
+                String colName = idxs.getString(9);
+
+                if (idxName == null || colName == null)
+                    continue;
+
+                String idx = toJavaFieldName(idxName);
+
+                String col = toJavaFieldName(colName);
+
                 String askOrDesc = idxs.getString(10);
 
                 LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> idxCols = groups.get(idx);
