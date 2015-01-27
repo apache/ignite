@@ -1714,7 +1714,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
                     U.quiet(false, "  ^-- Logging to file '" +  fileName + '\'');
 
                 U.quiet(false,
-                    "  ^-- To see **FULL** console log here add -DGRIDGAIN_QUIET=false or \"-v\" to ggstart.{sh|bat}",
+                    "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ggstart.{sh|bat}",
                     "");
             }
 

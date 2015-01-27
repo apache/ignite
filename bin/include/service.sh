@@ -65,8 +65,8 @@ case "$1" in
         checkJava
 
         # And run.
-        $JAVA $JVM_OPTS -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-        -DGRIDGAIN_PROG_NAME="$0" -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
+        $JAVA $JVM_OPTS -DIGNITE_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+        -DIGNITE_PROG_NAME="$0" -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
 
         # Write process id.
         echo $! >$PIDFILE

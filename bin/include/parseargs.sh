@@ -33,14 +33,14 @@
 
 CONFIG=${DEFAULT_CONFIG}
 INTERACTIVE="0"
-QUIET="-DGRIDGAIN_QUIET=true"
+QUIET="-DIGNITE_QUIET=true"
 JVM_XOPTS=""
 
 while [ $# -gt 0 ]
 do
     case "$1" in
         -i) INTERACTIVE="1";;
-        -v) QUIET="-DGRIDGAIN_QUIET=false";;
+        -v) QUIET="-DIGNITE_QUIET=false";;
         -J*) JVM_XOPTS="$JVM_XOPTS ${1:2}";;
         *) CONFIG="$1";;
     esac

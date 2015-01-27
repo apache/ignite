@@ -42,7 +42,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public final class GridVmNodesStarter {
     /** Name of the system property defining name of command line program. */
-    private static final String GRIDGAIN_PROG_NAME = "GRIDGAIN_PROG_NAME";
+    private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** */
     private static final String GRID_NAME_PREF = "gg-vm-grid-";
@@ -99,7 +99,7 @@ public final class GridVmNodesStarter {
         if (errMsg != null)
             echo("ERROR: " + errMsg);
 
-        String runner = System.getProperty(GRIDGAIN_PROG_NAME, "randggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "randggstart.{sh|bat}");
 
         int space = runner.indexOf(' ');
 

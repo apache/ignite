@@ -228,7 +228,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        // If GRIDGAIN_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
+        // If IGNITE_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
         // configuration. Used for testing purposes.
         String overrideMcastGrp = System.getProperty(GG_OVERRIDE_MCAST_GRP);
 

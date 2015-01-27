@@ -268,7 +268,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
                 srvPort = Integer.valueOf(srvPortStr);
             }
             catch (NumberFormatException ignore) {
-                throw new IgniteCheckedException("Failed to start Jetty server because GRIDGAIN_JETTY_PORT system property " +
+                throw new IgniteCheckedException("Failed to start Jetty server because IGNITE_JETTY_PORT system property " +
                     "cannot be cast to integer: " + srvPortStr);
             }
 

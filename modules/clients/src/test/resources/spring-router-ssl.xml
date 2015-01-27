@@ -55,7 +55,7 @@
         <property name="targetMethod" value="putAll"/>
         <property name="arguments">
             <map>
-                <entry key="GRIDGAIN_JETTY_PORT" value="12400"/>
+                <entry key="IGNITE_JETTY_PORT" value="12400"/>
             </map>
         </property>
     </bean>

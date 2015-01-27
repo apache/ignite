@@ -1965,7 +1965,7 @@ public class GridGainEx {
                     grid = null;
             }
 
-            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
+            // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
             if (!IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK, false)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {

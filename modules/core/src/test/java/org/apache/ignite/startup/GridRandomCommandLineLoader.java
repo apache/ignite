@@ -47,7 +47,7 @@ import static org.apache.ignite.IgniteState.*;
  */
 public final class GridRandomCommandLineLoader {
     /** Name of the system property defining name of command line program. */
-    private static final String GRIDGAIN_PROG_NAME = "GRIDGAIN_PROG_NAME";
+    private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** Copyright text. Ant processed. */
     private static final String COPYRIGHT = "Copyright (C) 2014 GridGain Systems.";
@@ -125,7 +125,7 @@ public final class GridRandomCommandLineLoader {
         if (errMsg != null)
             echo("ERROR: " + errMsg);
 
-        String runner = System.getProperty(GRIDGAIN_PROG_NAME, "randggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "randggstart.{sh|bat}");
 
         int space = runner.indexOf(' ');
 

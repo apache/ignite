@@ -106,13 +106,13 @@ trap restoreSttySettings INT
 case $osname in
     Darwin*)
         "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" \
-        -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DGRIDGAIN_PROG_NAME="$0" \
-        -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
+        -DIGNITE_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DIGNITE_PROG_NAME="$0" \
+        -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
         org.apache.ignite.visor.commands.VisorConsole
     ;;
     *)
-        "$JAVA" ${JVM_OPTS} ${QUIET} -DGRIDGAIN_UPDATE_NOTIFIER=false \
-        -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DGRIDGAIN_PROG_NAME="$0" -DGRIDGAIN_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
+        "$JAVA" ${JVM_OPTS} ${QUIET} -DIGNITE_UPDATE_NOTIFIER=false \
+        -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DIGNITE_PROG_NAME="$0" -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
         ${JVM_XOPTS} -cp "${CP}" \
         org.apache.ignite.visor.commands.VisorConsole
     ;;

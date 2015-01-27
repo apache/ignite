@@ -43,7 +43,7 @@ echo Wait 60 seconds while nodes started.
 ping -n 60 127.0.0.1 > NUL
 
 rem Disable hostname verification for self-signed certificates.
-set JVM_OPTS=%JVM_OPTS% -DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true
+set JVM_OPTS=%JVM_OPTS% -DIGNITE_DISABLE_HOSTNAME_VERIFIER=true
 
 FOR /L %%G IN (1,1,1) DO start "Router #%%G" /low /MIN cmd /C "%BIN_PATH%\ggrouter.bat -v %CONFIG_DIR%\spring-router.xml >> %GG_HOME%\work\log\router-%%G.log 2>&1"
 FOR /L %%G IN (1,1,1) DO start "SSL Router #%%G" /low /MIN cmd /C "%BIN_PATH%\ggrouter.bat -v %CONFIG_DIR%\spring-router-ssl.xml >> %GG_HOME%\work\log\router-ssl-%%G.log 2>&1"

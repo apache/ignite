@@ -82,7 +82,7 @@ echo Start Router: ${LOG_FILE}
 nohup /bin/bash $BIN_PATH/ggrouter.sh $CONFIG_DIR/spring-router.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 
 # Disable hostname verification for self-signed certificates.
-export JVM_OPTS="${JVM_OPTS} -DGRIDGAIN_DISABLE_HOSTNAME_VERIFIER=true"
+export JVM_OPTS="${JVM_OPTS} -DIGNITE_DISABLE_HOSTNAME_VERIFIER=true"
 
 LOG_FILE=${GG_HOME}/work/log/router-ssl.log
 echo Start Router SSL: ${LOG_FILE}

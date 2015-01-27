@@ -285,10 +285,10 @@ public abstract class GridUtils {
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** GridGain Logging Directory. */
-    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_LOG_DIR);
+    public static final String IGNITE_LOG_DIR = System.getenv(GG_LOG_DIR);
 
     /** GridGain Work Directory. */
-    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
+    public static final String IGNITE_WORK_DIR = System.getenv(GG_WORK_DIR);
 
     /** Clock timer. */
     private static Thread timer;
@@ -8487,8 +8487,8 @@ public abstract class GridUtils {
 
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
-                else if (!F.isEmpty(GRIDGAIN_WORK_DIR))
-                    workDir = new File(GRIDGAIN_WORK_DIR);
+                else if (!F.isEmpty(IGNITE_WORK_DIR))
+                    workDir = new File(IGNITE_WORK_DIR);
                 else if (!F.isEmpty(userGgHome))
                     workDir = new File(userGgHome, "work");
                 else {

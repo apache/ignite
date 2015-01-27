@@ -128,7 +128,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
 
         if (metrics.snapshotsQueues == null)
             throw new IgniteCheckedException("Invalid concurrency level configured " +
-                "(is 'GRIDGAIN_JOBS_METRICS_CONCURRENCY_LEVEL' system property properly set?).");
+                "(is 'IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL' system property properly set?).");
 
         if (log.isDebugEnabled())
             log.debug("Job metrics processor started [histSize=" + histSize +
