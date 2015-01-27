@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.expiry.*;
+import javax.swing.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -55,8 +56,8 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -209,40 +210,55 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     /**
      *
      */
-    public void testInterruptLockWithTimeout() throws InterruptedException {
+    public void testInterruptLockWithTimeout() throws Exception {
         final IgniteCache<Integer, String> cache = ignite.jcache(null);
 
-        Lock lock2 = cache.lock(2);
+        startGrid(1);
 
-        lock2.lock();
+        try {
+            final List<Integer> keys = primaryKeys(grid(1).jcache(null), 2, 1);
 
-        final AtomicBoolean isOk = new AtomicBoolean(false);
+            Lock lock1 = cache.lock(keys.get(1));
 
-        Thread t = new Thread(new Runnable() {
-            @Override public void run() {
-                try {
-                    cache.lockAll(Arrays.asList(1, 2)).tryLock(5000, MILLISECONDS);
+            lock1.lock();
+
+            final AtomicBoolean isOk = new AtomicBoolean(false);
+
+            Thread t = new Thread(new Runnable() {
+                @Override public void run() {
+                    try {
+                        cache.lockAll(Arrays.asList(keys.get(0), keys.get(1))).tryLock(50000, MILLISECONDS);
+                    }
+                    catch (InterruptedException ignored) {
+                        isOk.set(true);
+                    }
                 }
-                catch (InterruptedException ignored) {
-                    isOk.set(true);
-                }
-            }
-        });
+            });
 
-        t.start();
+            t.start();
 
-        Thread.sleep(100);
+            JOptionPane.showConfirmDialog(null, "wait");
+            Thread.sleep(100);
 
-        t.interrupt();
+            t.interrupt();
 
-        t.join();
+            t.join();
 
-        lock2.unlock();
+            lock1.unlock();
 
-        assertFalse(cache.isLocalLocked(1, false));
-        assertFalse(cache.isLocalLocked(2, false));
+            Thread.sleep(1000);
 
-        assertTrue(isOk.get());
+            assertFalse(cache.isLocalLocked(keys.get(0), false));
+            assertFalse(cache.isLocalLocked(keys.get(1), false));
+
+            assertFalse(grid(1).jcache(null).isLocalLocked(keys.get(0), false));
+            assertFalse(grid(1).jcache(null).isLocalLocked(keys.get(1), false));
+
+            assertTrue(isOk.get());
+        }
+        finally {
+            stopGrid(1);
+        }
     }
 
     /**

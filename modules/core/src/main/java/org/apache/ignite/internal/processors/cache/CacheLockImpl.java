@@ -30,9 +30,15 @@ import java.util.concurrent.locks.*;
 /**
  *
  */
-class CacheLockImpl<K> implements Lock {
+class CacheLockImpl<K, V> implements Lock {
+    /** Gateway. */
+    private final GridCacheGateway<K, V> gate;
+
     /** */
-    private final GridCacheProjectionEx<K, ?> delegate;
+    private final GridCacheProjectionEx<K, V> delegate;
+
+    /** Projection. */
+    private final GridCacheProjectionImpl<K, V> prj;
 
     /** */
     private final Collection<? extends K> keys;
@@ -44,17 +50,22 @@ class CacheLockImpl<K> implements Lock {
     private volatile Thread lockedThread;
 
     /**
+     * @param gate Gate.
      * @param delegate Delegate.
+     * @param prj Projection.
      * @param keys Keys.
      */
-    CacheLockImpl(GridCacheProjectionEx<K, ?> delegate, Collection<? extends K> keys) {
+    CacheLockImpl(GridCacheGateway<K, V> gate, GridCacheProjectionEx<K, V> delegate, GridCacheProjectionImpl<K, V> prj,
+        Collection<? extends K> keys) {
+        this.gate = gate;
         this.delegate = delegate;
+        this.prj = prj;
         this.keys = keys;
     }
 
     /** {@inheritDoc} */
     @Override public void lock() {
-        //cctx.readlock();
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             delegate.lockAll(keys, 0);
@@ -65,7 +76,7 @@ class CacheLockImpl<K> implements Lock {
             throw new CacheException(e.getMessage(), e);
         }
         finally {
-            //cctx.readunlock();
+            gate.leave(prev);
         }
     }
 
@@ -87,6 +98,8 @@ class CacheLockImpl<K> implements Lock {
 
     /** {@inheritDoc} */
     @Override public boolean tryLock() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
         try {
             boolean res = delegate.lockAll(keys, -1);
 
@@ -98,6 +111,9 @@ class CacheLockImpl<K> implements Lock {
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
         }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -107,6 +123,8 @@ class CacheLockImpl<K> implements Lock {
 
         if (time <= 0)
             return tryLock();
+
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
             IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
@@ -142,10 +160,15 @@ class CacheLockImpl<K> implements Lock {
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
         }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void unlock() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
         try {
             if (lockedThread != Thread.currentThread()) {
                 throw new IllegalStateException("Failed to unlock keys (did current thread acquire lock " +
@@ -163,6 +186,9 @@ class CacheLockImpl<K> implements Lock {
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
+        }
+        finally {
+            gate.leave(prev);
         }
     }
 
