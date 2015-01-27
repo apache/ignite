@@ -33,15 +33,12 @@ public abstract class IgniteCacheAffinityAbstractTest extends IgniteCacheAbstrac
         CacheConfiguration cache1 = cacheConfiguration(null);
         cache1.setName(CACHE1);
 
-        if (gridName.contains("0")) {
+        if (gridName.contains("0"))
             cfg.setCacheConfiguration();
-        }
-        else if (gridName.contains("1")) {
+        else if (gridName.contains("1"))
             cfg.setCacheConfiguration(cache0);
-        }
-        else {
+        else
             cfg.setCacheConfiguration(cache0, cache1);
-        }
 
         return cfg;
     }
@@ -230,7 +227,7 @@ public abstract class IgniteCacheAffinityAbstractTest extends IgniteCacheAbstrac
     /**
      * @return Cluster nodes.
      */
-    Collection<ClusterNode> nodes() {
+    private Collection<ClusterNode> nodes() {
         Set<ClusterNode> nodes = new HashSet<>();
 
         for (int i = 0; i < gridCount(); ++i)
