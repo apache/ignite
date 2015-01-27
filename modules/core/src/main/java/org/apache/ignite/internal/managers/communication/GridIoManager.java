@@ -964,6 +964,33 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     }
 
     /**
+     * @param nodeId Destination node.
+     * @param topic Topic to send the message to.
+     * @param msg Message to send.
+     * @param plc Type of processing.
+     * @param timeout Timeout to keep a message on receiving queue.
+     * @param skipOnTimeout Whether message can be skipped on timeout.
+     * @throws IgniteCheckedException Thrown in case of any errors.
+     */
+    public void sendOrderedMessage(
+        UUID nodeId,
+        Object topic,
+        GridTcpCommunicationMessageAdapter msg,
+        GridIoPolicy plc,
+        long timeout,
+        boolean skipOnTimeout
+    ) throws IgniteCheckedException {
+        assert timeout > 0 || skipOnTimeout;
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new IgniteCheckedException("Failed to send message to node (has node left grid?): " + nodeId);
+
+        send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout);
+    }
+
+    /**
      * @param nodes Destination nodes.
      * @param topic Topic to send the message to.
      * @param msg Message to send.
