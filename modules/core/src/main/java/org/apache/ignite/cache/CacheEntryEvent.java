@@ -23,7 +23,7 @@ import org.apache.ignite.cache.query.*;
 import javax.cache.event.*;
 
 /**
- *
+ * Implementation of {@link org.apache.ignite.cache.CacheEntryEvent}.
  */
 public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
     /** */
