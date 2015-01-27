@@ -42,7 +42,7 @@
         <property name="generate_statistics">true</property>
 
         <!-- Specify GridGain as L2 cache provider. -->
-        <property name="cache.region.factory_class">org.gridgain.grid.cache.hibernate.GridHibernateRegionFactory</property>
+        <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.GridHibernateRegionFactory</property>
 
         <!-- Specify the name of the grid, that will be used for second level caching. -->
         <property name="org.gridgain.hibernate.grid_name">hibernate-grid</property>

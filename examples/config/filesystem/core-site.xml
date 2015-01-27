@@ -31,12 +31,12 @@
     <property>
         <!-- FS driver class for the 'ggfs://' URIs. -->
         <name>fs.ggfs.impl</name>
-        <value>org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
     <property>
         <!-- FS driver class for the 'ggfs://' URIs in Hadoop2.x -->
         <name>fs.AbstractFileSystem.ggfs.impl</name>
-        <value>org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem</value>
+        <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 </configuration>

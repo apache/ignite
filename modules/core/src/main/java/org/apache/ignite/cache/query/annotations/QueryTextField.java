@@ -22,8 +22,8 @@ import java.lang.annotation.*;
 /**
  * Annotation for fields or getters to be indexed for full text
  * search using {@code H2 TEXT} indexing. For more information
- * refer to {@link org.gridgain.grid.cache.query.GridCacheQuery} documentation.
- * @see org.gridgain.grid.cache.query.GridCacheQuery
+ * refer to {@link org.apache.ignite.cache.query.CacheQuery} documentation.
+ * @see org.apache.ignite.cache.query.CacheQuery
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
