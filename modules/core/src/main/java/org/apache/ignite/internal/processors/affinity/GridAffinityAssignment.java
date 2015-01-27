@@ -103,7 +103,7 @@ class GridAffinityAssignment implements Serializable {
     public Set<Integer> primaryPartitions(UUID nodeId) {
         Set<Integer> set = primary.get(nodeId);
 
-        return set == null ? Collections.<Integer>emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? Collections.<Integer>emptySet() : set;
     }
 
     /**
@@ -115,7 +115,7 @@ class GridAffinityAssignment implements Serializable {
     public Set<Integer> backupPartitions(UUID nodeId) {
         Set<Integer> set = backup.get(nodeId);
 
-        return set == null ? Collections.<Integer>emptySet() : Collections.unmodifiableSet(set);
+        return set == null ? Collections.<Integer>emptySet() : set;
     }
 
     /**

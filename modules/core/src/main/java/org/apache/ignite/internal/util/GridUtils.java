@@ -6245,6 +6245,15 @@ public abstract class GridUtils {
         return arr;
     }
 
+    public static int[] addAll(int[] arr1, int[] arr2) {
+        int[] all = new int[arr1.length + arr2.length];
+
+        System.arraycopy(arr1, 0, all, 0, arr1.length);
+        System.arraycopy(arr2, 0, all, arr1.length, arr2.length);
+
+        return all;
+    }
+
     /**
      * Converts array of integers into list.
      *

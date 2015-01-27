@@ -77,7 +77,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
             // Clean up affinity functions if such cache no more exists.
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
-                Collection<String> caches = new HashSet<>();
+                final Collection<String> caches = new HashSet<>();
 
                 for (ClusterNode clusterNode : ((IgniteDiscoveryEvent)evt).topologyNodes())
                     caches.addAll(U.cacheNames(clusterNode));
@@ -495,6 +495,20 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             this.portableEnabled = portableEnabled;
         }
 
+        /**
+         * @return Cache affinity function.
+         */
+        private CacheAffinityFunction affFunc() {
+            return affFunc;
+        }
+
+        /**
+         * @return Affinity assignment.
+         */
+        private GridAffinityAssignment assignment() {
+            return assignment;
+        }
+
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(AffinityInfo.class, this);
@@ -567,7 +581,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return cache().affFunc.partitions();
+                return cache().affFunc().partitions();
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -582,7 +596,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return cache().affFunc.partition(key);
+                return cache().affFunc().partition(key);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -597,8 +611,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return cache()
-                    .assignment.primaryPartitions(n.id()).contains(partition(key));
+                return cache().assignment().primaryPartitions(n.id()).contains(partition(key));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -608,17 +621,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
         }
 
-        private AffinityInfo cache() throws IgniteCheckedException {
-            return affinityCache(cacheName, topologyVersion());
-        }
-
         /** {@inheritDoc} */
         @Override public boolean isBackup(ClusterNode n, K key) {
             ctx.gateway().readLock();
 
             try {
-                return cache()
-                    .assignment.backupPartitions(n.id()).contains(partition(key));
+                return cache().assignment().backupPartitions(n.id()).contains(partition(key));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -645,7 +653,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                Set<Integer> parts = cache().assignment.primaryPartitions(n.id());
+                Set<Integer> parts = cache().assignment().primaryPartitions(n.id());
 
                 return U.toIntArray(parts);
             }
@@ -662,7 +670,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                Set<Integer> parts = cache().assignment.backupPartitions(n.id());
+                Set<Integer> parts = cache().assignment().backupPartitions(n.id());
 
                 return U.toIntArray(parts);
             }
@@ -679,21 +687,12 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                Collection<Integer> parts = new HashSet<>();
+                GridAffinityAssignment assignment = cache().assignment();
 
-                AffinityInfo affInfo = cache();
+                int[] primary = U.toIntArray(assignment.primaryPartitions(n.id()));
+                int[] backup = U.toIntArray(assignment.backupPartitions(n.id()));
 
-                for (int partsCnt = affInfo.affFunc.partitions(), part = 0; part < partsCnt; part++) {
-                    for (ClusterNode affNode : affInfo.assignment.get(part)) {
-                        if (n.id().equals(affNode.id())) {
-                            parts.add(part);
-
-                            break;
-                        }
-                    }
-                }
-
-                return U.toIntArray(parts);
+                return U.addAll(primary, backup);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -769,7 +768,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return F.first(cache().assignment.get(part));
+                return F.first(cache().assignment().get(part));
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -803,7 +802,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             ctx.gateway().readLock();
 
             try {
-                return cache().assignment.get(part);
+                return cache().assignment().get(part);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -811,6 +810,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             finally {
                 ctx.gateway().readUnlock();
             }
+        }
+
+        /**
+         * @return Affinity info for current topology version.
+         */
+        private AffinityInfo cache() throws IgniteCheckedException {
+            return affinityCache(cacheName, topologyVersion());
         }
 
         /**
