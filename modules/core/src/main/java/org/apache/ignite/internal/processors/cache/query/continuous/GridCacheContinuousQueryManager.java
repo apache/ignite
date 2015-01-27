@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -75,16 +74,6 @@ public class GridCacheContinuousQueryManager<K, V> extends GridCacheManagerAdapt
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (intLsnrCnt.get() > 0 || lsnrCnt.get() > 0) {
-            Collection<ClusterNode> nodes = cctx.discovery().cacheNodes(cctx.name(), -1);
-
-            for (ClusterNode n : nodes) {
-                if (!n.version().greaterThanEqual(6, 2, 0))
-                    throw new IgniteCheckedException("Rolling update is not supported for continuous queries " +
-                        "for versions below 6.2.0");
-            }
-        }
-
         Iterable<CacheEntryListenerConfiguration<K, V>> lsnrCfgs = cctx.config().getCacheEntryListenerConfigurations();
 
         if (lsnrCfgs != null) {
