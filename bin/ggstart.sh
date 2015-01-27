@@ -61,7 +61,7 @@ CP="${GRIDGAIN_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
-RESTART_SUCCESS_FILE="${GRIDGAIN_HOME}/work/gridgain_success_${RANDOM_NUMBER}"
+RESTART_SUCCESS_FILE="${GRIDGAIN_HOME}/work/ignite_success_${RANDOM_NUMBER}"
 RESTART_SUCCESS_OPT="-DGRIDGAIN_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 
 #
