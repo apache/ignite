@@ -79,6 +79,9 @@ public class SchemaLoadApp extends Application {
     private PasswordField pwdTf;
 
     /** */
+    private ComboBox<String> parseCb;
+
+    /** */
     private GridPaneEx connPnl;
 
     /** */
@@ -192,13 +195,17 @@ public class SchemaLoadApp extends Application {
     private void fill() {
         lockUI(connLayerPnl, connPnl, nextBtn);
 
+        final String jdbcDrvJarPath = jdbcDrvJarTf.getText().trim();
+
+        final boolean tblsOnly = parseCb.getSelectionModel().getSelectedIndex() == 0;
+
         Runnable task = new Task<Void>() {
             /** {@inheritDoc} */
             @Override protected Void call() throws Exception {
                 long started = System.currentTimeMillis();
 
-                try (Connection conn = connect()) {
-                    pojos = DatabaseMetadataParser.parse(conn);
+                try (Connection conn = connect(jdbcDrvJarPath)) {
+                    pojos = DatabaseMetadataParser.parse(conn/*, tblsOnly*/);
                 }
 
                 perceptualDelay(started);
@@ -274,6 +281,7 @@ public class SchemaLoadApp extends Application {
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
                             pojosTbl.getSelectionModel().select(pojo);
+                            pojosTbl.scrollTo(pojosTbl.getSelectionModel().getSelectedIndex());
                         }
                     });
 
@@ -467,18 +475,17 @@ public class SchemaLoadApp extends Application {
     /**
      * Connect to database.
      *
+     * @param jdbcDrvJarPath Path to JDBC driver.
      * @return Connection to database.
      * @throws SQLException if connection failed.
      */
-    private Connection connect() throws SQLException {
+    private Connection connect(String jdbcDrvJarPath) throws SQLException {
         String drvCls = jdbcDrvClsTf.getText();
 
         Driver drv = drivers.get(drvCls);
 
         if (drv == null) {
-            String path = jdbcDrvJarTf.getText().trim();
-
-            if (path.isEmpty())
+            if (jdbcDrvJarPath.isEmpty())
                 throw new IllegalStateException("Driver jar file name is not specified");
 
             File drvJar = new File(jdbcDrvJarTf.getText());
@@ -555,6 +562,8 @@ public class SchemaLoadApp extends Application {
         userTf = connPnl.addLabeled("User:", textField("User name"), 2);
 
         pwdTf = connPnl.addLabeled("Password:", passwordField("User password"), 2);
+
+        parseCb = connPnl.addLabeled("Parse:", comboBox("Type of tables to parse", "Tables only", "Tables and Views"), 2);
 
         connLayerPnl = stackPane(connPnl);
 
