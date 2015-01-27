@@ -307,6 +307,9 @@ public class PojoGenerator {
 
                     case "byte":
                     case "short":
+                        add2Fmt(hash, first ? "int res = (int)%s;" : "res = 31 * res + (int)%s;", javaName);
+                        break;
+
                     case "int":
                         add2Fmt(hash, first ? "int res = %s;" : "res = 31 * res + %s;", javaName);
                         break;
@@ -327,7 +330,7 @@ public class PojoGenerator {
                         add2Fmt(hash, (tempVar ? "ig_hash_temp" : "long ig_hash_temp") +
                             " = Double.doubleToLongBits(%s);", javaName);
 
-                        add2(hash, "");
+                        add0(hash, "");
 
                         add2Fmt(hash, first
                             ? "int res = (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));"
