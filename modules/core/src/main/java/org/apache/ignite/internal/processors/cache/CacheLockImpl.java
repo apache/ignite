@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -54,6 +54,8 @@ class CacheLockImpl<K> implements Lock {
 
     /** {@inheritDoc} */
     @Override public void lock() {
+        //cctx.readlock();
+
         try {
             delegate.lockAll(keys, 0);
 
@@ -61,6 +63,9 @@ class CacheLockImpl<K> implements Lock {
         }
         catch (IgniteCheckedException e) {
             throw new CacheException(e.getMessage(), e);
+        }
+        finally {
+            //cctx.readunlock();
         }
     }
 
@@ -70,9 +75,9 @@ class CacheLockImpl<K> implements Lock {
     private void incrementLockCounter() {
         assert (lockedThread == null && cntr == 0) || (lockedThread == Thread.currentThread() && cntr > 0);
 
-        lockedThread = Thread.currentThread();
-
         cntr++;
+
+        lockedThread = Thread.currentThread();
     }
 
     /** {@inheritDoc} */
@@ -139,34 +144,12 @@ class CacheLockImpl<K> implements Lock {
         }
     }
 
-    /**
-     *
-     */
-    private boolean isKeysLocked() {
-        for (K key : keys) {
-            if (delegate.isLocked(key))
-                return true;
-        }
-
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public void unlock() {
         try {
-            Thread lockedThread = this.lockedThread;
-
             if (lockedThread != Thread.currentThread()) {
-                if (lockedThread == null) {
-                    if (isKeysLocked()) {
-                        throw new IllegalStateException("Failed to unlock keys, looks like lock has been obtain on " +
-                            "another instance of Lock, that was returned by IgniteCache.lock(key). You have to call " +
-                            "lock() and unlock() methods on the same instance of Lock [keys=" + keys + ']');
-                    }
-                } else {
-                    throw new IllegalStateException("Failed to unlock cache keys, keys are locked by another thread " +
-                        "any threads [keys=" + keys + ", lockOwnerThread=" + lockedThread.getName() + ']');
-                }
+                throw new IllegalStateException("Failed to unlock keys (did current thread acquire lock " +
+                    "with this lock instance?).");
             }
 
             assert cntr > 0;
@@ -174,7 +157,7 @@ class CacheLockImpl<K> implements Lock {
             cntr--;
 
             if (cntr == 0)
-                this.lockedThread = null;
+                lockedThread = null;
 
             delegate.unlockAll(keys);
         }
@@ -186,5 +169,10 @@ class CacheLockImpl<K> implements Lock {
     /** {@inheritDoc} */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(CacheLockImpl.class, this);
     }
 }
