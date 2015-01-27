@@ -149,7 +149,7 @@ public class ClientConnectionConfiguration {
     }
 
     /**
-     * Sets path, either absolute or relative to {@code GRIDGAIN_HOME}, to {@code JETTY}
+     * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
      * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      *
@@ -160,7 +160,7 @@ public class ClientConnectionConfiguration {
     }
 
     /**
-     * Gets path, either absolute or relative to {@code GRIDGAIN_HOME}, to {@code Jetty}
+     * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      * <p>
@@ -473,7 +473,7 @@ public class ClientConnectionConfiguration {
      * a log file, file path is checked against this list. If requested file is not located in any
      * sub-folder of these folders, request is not processed.
      * <p>
-     * By default, list consists of a single {@code GRIDGAIN_HOME} folder. If {@code GRIDGAIN_HOME}
+     * By default, list consists of a single {@code IGNITE_HOME} folder. If {@code IGNITE_HOME}
      * could not be detected and property is not specified, no restrictions applied.
      *
      * @return Array of folders that are allowed be read by remote clients.

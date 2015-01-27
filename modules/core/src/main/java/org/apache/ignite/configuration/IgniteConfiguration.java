@@ -674,7 +674,7 @@ public class IgniteConfiguration {
      * Gets custom license file URL to be used instead of default license file location.
      *
      * @return Custom license file URL or {@code null} to use the default
-     *      {@code $GRIDGAIN_HOME}-related location.
+     *      {@code $IGNITE_HOME}-related location.
      */
     public String getLicenseUrl() {
         return licUrl;
@@ -1348,8 +1348,8 @@ public class IgniteConfiguration {
 
     /**
      * Should return GridGain installation home folder. If not provided, the system will check
-     * {@code GRIDGAIN_HOME} system property and environment variable in that order. If
-     * {@code GRIDGAIN_HOME} still could not be obtained, then grid will not start and exception
+     * {@code IGNITE_HOME} system property and environment variable in that order. If
+     * {@code IGNITE_HOME} still could not be obtained, then grid will not start and exception
      * will be thrown.
      *
      * @return GridGain installation home or {@code null} to make the system attempt to
@@ -1373,10 +1373,10 @@ public class IgniteConfiguration {
 
     /**
      * Gets GridGain work folder. If not provided, the method will use work folder under
-     * {@code GRIDGAIN_HOME} specified by {@link IgniteConfiguration#setGridGainHome(String)} or
-     * {@code GRIDGAIN_HOME} environment variable or system property.
+     * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setGridGainHome(String)} or
+     * {@code IGNITE_HOME} environment variable or system property.
      * <p>
-     * If {@code GRIDGAIN_HOME} is not provided, then system temp folder is used.
+     * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
      *
      * @return GridGain work folder or {@code null} to make the system attempt to infer it automatically.
      * @see IgniteConfiguration#getGridGainHome()
@@ -2315,7 +2315,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets path, either absolute or relative to {@code GRIDGAIN_HOME}, to {@code JETTY}
+     * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
      * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      *
@@ -2328,7 +2328,7 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets path, either absolute or relative to {@code GRIDGAIN_HOME}, to {@code Jetty}
+     * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      * <p>
@@ -2700,7 +2700,7 @@ public class IgniteConfiguration {
      * a log file, file path is checked against this list. If requested file is not located in any
      * sub-folder of these folders, request is not processed.
      * <p>
-     * By default, list consists of a single {@code GRIDGAIN_HOME} folder. If {@code GRIDGAIN_HOME}
+     * By default, list consists of a single {@code IGNITE_HOME} folder. If {@code IGNITE_HOME}
      * could not be detected and property is not specified, no restrictions applied.
      *
      * @return Array of folders that are allowed be read by remote clients.

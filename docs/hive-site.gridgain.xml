@@ -22,7 +22,7 @@
     with GridGain In-Memory Accelerator.
 
     You can replace '$HIVE_HOME/conf/hive-site.xml' file with this one or
-    run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop
+    run script '$IGNITE_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop
     and Hive client setup.
 -->
 <configuration>

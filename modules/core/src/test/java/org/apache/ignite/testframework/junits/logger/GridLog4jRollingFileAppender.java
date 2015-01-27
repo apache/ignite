@@ -83,7 +83,7 @@ public class GridLog4jRollingFileAppender extends RollingFileAppender implements
 
         this.nodeId = nodeId;
 
-        if (fileName != null) { // fileName could be null if GRIDGAIN_HOME is not defined.
+        if (fileName != null) { // fileName could be null if IGNITE_HOME is not defined.
             if (baseFileName == null)
                 baseFileName = fileName;
 

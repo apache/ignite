@@ -43,30 +43,30 @@ if %ERRORLEVEL% equ 0 goto checkGridGainHome1
     echo %0, ERROR: You can also download latest JDK at: http://java.sun.com/getjava
 goto error_finish
 
-:: Check GRIDGAIN_HOME.
+:: Check IGNITE_HOME.
 :checkGridGainHome1
-if not "%GRIDGAIN_HOME%" == "" goto checkGridGainHome2
+if not "%IGNITE_HOME%" == "" goto checkGridGainHome2
     pushd "%~dp0"/..
-    set GRIDGAIN_HOME=%CD%
+    set IGNITE_HOME=%CD%
     popd
 
 :checkGridGainHome2
-:: Strip double quotes from GRIDGAIN_HOME
-set GRIDGAIN_HOME=%GRIDGAIN_HOME:"=%
+:: Strip double quotes from IGNITE_HOME
+set IGNITE_HOME=%IGNITE_HOME:"=%
 
-:: remove all trailing slashes from GRIDGAIN_HOME.
-if %GRIDGAIN_HOME:~-1,1% == \ goto removeTrailingSlash
-if %GRIDGAIN_HOME:~-1,1% == / goto removeTrailingSlash
+:: remove all trailing slashes from IGNITE_HOME.
+if %IGNITE_HOME:~-1,1% == \ goto removeTrailingSlash
+if %IGNITE_HOME:~-1,1% == / goto removeTrailingSlash
 goto checkGridGainHome3
 
 :removeTrailingSlash
-set GRIDGAIN_HOME=%GRIDGAIN_HOME:~0,-1%
+set IGNITE_HOME=%IGNITE_HOME:~0,-1%
 goto checkGridGainHome2
 
 :checkGridGainHome3
-if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
-    echo %0, ERROR: GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid.
-    echo Please create GRIDGAIN_HOME environment variable pointing to location of
+if exist "%IGNITE_HOME%\config" goto checkGridGainHome4
+    echo %0, ERROR: GridGain installation folder is not found or IGNITE_HOME environment variable is not valid.
+    echo Please create IGNITE_HOME environment variable pointing to location of
     echo GridGain installation folder.
     goto error_finish
 
@@ -75,13 +75,13 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
-set SCRIPTS_HOME=%GRIDGAIN_HOME%\bin
+set SCRIPTS_HOME=%IGNITE_HOME%\bin
 
 :: Remove trailing spaces
 for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
 
 if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
-    echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
+    echo %0, WARN: IGNITE_HOME environment variable may be pointing to wrong folder: %IGNITE_HOME%
 
 :run
 
@@ -90,7 +90,7 @@ if /i "%SCRIPTS_HOME%\" == "%~dp0" goto run
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
-set CP=%GRIDGAIN_HOME%\bin\include\visor-common\*;%GRIDGAIN_HOME%\bin\include\visorcmd\*;%GRIDGAIN_LIBS%
+set CP=%IGNITE_HOME%\bin\include\visor-common\*;%IGNITE_HOME%\bin\include\visorcmd\*;%GRIDGAIN_LIBS%
 
 ::
 :: Parse command line parameters.

@@ -2380,16 +2380,16 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     }
 
     /**
-     * Prints out VM arguments and GRIDGAIN_HOME in info mode.
+     * Prints out VM arguments and IGNITE_HOME in info mode.
      *
      * @param rtBean Java runtime bean.
      */
     private void ackVmArguments(RuntimeMXBean rtBean) {
         assert log != null;
 
-        // Ack GRIDGAIN_HOME and VM arguments.
+        // Ack IGNITE_HOME and VM arguments.
         if (log.isInfoEnabled()) {
-            log.info("GRIDGAIN_HOME=" + cfg.getGridGainHome());
+            log.info("IGNITE_HOME=" + cfg.getGridGainHome());
             log.info("VM arguments: " + rtBean.getInputArguments());
         }
     }

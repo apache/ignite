@@ -190,7 +190,7 @@ public final class GridVmNodesStarter {
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
-                ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
+                ". Note that this path should be either absolute path or a relative path to IGNITE_HOME.");
 
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);

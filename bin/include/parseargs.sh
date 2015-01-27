@@ -27,7 +27,7 @@
 # DEFAULT_CONFIG
 #
 # Can be used like:
-#       . "${GRIDGAIN_HOME}"/bin/include/parseargs.sh
+#       . "${IGNITE_HOME}"/bin/include/parseargs.sh
 # in other scripts to parse common command lines parameters.
 #
 

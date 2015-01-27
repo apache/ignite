@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.GridProductImpl.*;
  * parameter which is Spring XML configuration file path. You can run this class from command
  * line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${GRIDGAIN_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})
@@ -164,7 +164,7 @@ public final class CommandLineStartup {
                 X.error(
                     "    -i              - interactive mode (choose configuration file from list).",
                     "    path            - path to Spring XML configuration file.",
-                    "                      Path can be absolute or relative to GRIDGAIN_HOME.",
+                    "                      Path can be absolute or relative to IGNITE_HOME.",
                     " ",
                     "Spring file should contain one bean definition of Java type",
                     "'org.gridgain.grid.GridConfiguration'. Note that bean will be",

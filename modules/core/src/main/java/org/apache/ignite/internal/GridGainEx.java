@@ -401,7 +401,7 @@ public class GridGainEx {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
@@ -414,7 +414,7 @@ public class GridGainEx {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @param springCtx Optional Spring application context, possibly {@code null}.
@@ -431,7 +431,7 @@ public class GridGainEx {
         if (url != null)
             return start(DFLT_CFG, null, springCtx);
 
-        U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
+        U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): " + DFLT_CFG);
 
         return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx)).grid();
     }
@@ -582,7 +582,7 @@ public class GridGainEx {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return loadConfigurations(url);
@@ -808,7 +808,7 @@ public class GridGainEx {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return url;
@@ -1353,7 +1353,7 @@ public class GridGainEx {
             if (ggHome == null)
                 ggHome = U.getGridGainHome();
             else
-                // If user provided GRIDGAIN_HOME - set it as a system property.
+                // If user provided IGNITE_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);

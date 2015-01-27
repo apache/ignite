@@ -86,7 +86,7 @@ private case class Result(
  *         If current count of nodes is equal to this number and '-r' flag is not set, then nothing will happen.
  *     -g=<path>
  *         Path to GridGain installation folder.
- *         If not defined, GRIDGAIN_HOME environment variable must be set on remote hosts.
+ *         If not defined, IGNITE_HOME environment variable must be set on remote hosts.
  *     -c=<path>
  *         Path to configuration file (relative to GridGain home).
  *         If not provided, default GridGain configuration is used.
@@ -376,7 +376,7 @@ object VisorStartCommand {
             ),
             "-g=<path>" -> List(
                 "Path to GridGain installation folder.",
-                "If not defined, GRIDGAIN_HOME environment variable must be set on remote hosts."
+                "If not defined, IGNITE_HOME environment variable must be set on remote hosts."
             ),
             "-c=<path>" -> List(
                 "Path to configuration file (relative to GridGain home).",

@@ -30,7 +30,7 @@
     Note that GridGain jars must be in Apache Hadoop client classpath to work
     with this configuration.
 
-    Run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
+    Run script '$IGNITE_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
 -->
 
 <configuration>

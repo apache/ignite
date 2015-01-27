@@ -17,15 +17,15 @@
 #
 # Import common functions.
 #
-if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")" # Will be removed in release.
-    else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
+if [ "${IGNITE_HOME}" = "" ];
+    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";IGNITE_HOME_TMP="$(dirname "${IGNITE_HOME_TMP}")" # Will be removed in release.
+    else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
 
 #
 # Set SCRIPTS_HOME - base path to scripts.
 #
-SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/bin"
+SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
 
@@ -35,7 +35,7 @@ source "${SCRIPTS_HOME}"/include/functions.sh
 checkJava
 
 #
-# Discover GRIDGAIN_HOME environment variable.
+# Discover IGNITE_HOME environment variable.
 #
 setGridGainHome
 
@@ -49,7 +49,7 @@ setGridGainHome
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${GRIDGAIN_HOME}/bin/include/visor-common/*${SEP}${GRIDGAIN_HOME}/bin/include/visorcmd/*${SEP}${GRIDGAIN_LIBS}"
+CP="${IGNITE_HOME}/bin/include/visor-common/*${SEP}${IGNITE_HOME}/bin/include/visorcmd/*${SEP}${GRIDGAIN_LIBS}"
 
 #
 # JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
@@ -106,13 +106,13 @@ trap restoreSttySettings INT
 case $osname in
     Darwin*)
         "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" \
-        -DIGNITE_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DIGNITE_PROG_NAME="$0" \
+        -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" -DIGNITE_PROG_NAME="$0" \
         -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED ${JVM_XOPTS} -cp "${CP}" \
         org.apache.ignite.visor.commands.VisorConsole
     ;;
     *)
         "$JAVA" ${JVM_OPTS} ${QUIET} -DIGNITE_UPDATE_NOTIFIER=false \
-        -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" -DIGNITE_PROG_NAME="$0" -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
+        -DIGNITE_HOME="${IGNITE_HOME}" -DIGNITE_PROG_NAME="$0" -DIGNITE_DEPLOYMENT_MODE_OVERRIDE=ISOLATED \
         ${JVM_XOPTS} -cp "${CP}" \
         org.apache.ignite.visor.commands.VisorConsole
     ;;

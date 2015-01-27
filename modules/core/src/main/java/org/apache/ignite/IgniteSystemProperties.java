@@ -46,7 +46,7 @@ public final class IgniteSystemProperties {
     public static final String GG_DAEMON = "IGNITE_DAEMON";
 
     /** Defines GridGain installation folder. */
-    public static final String GG_HOME = "GRIDGAIN_HOME";
+    public static final String GG_HOME = "IGNITE_HOME";
 
     /** If this system property is set to {@code false} - no shutdown hook will be set. */
     public static final String GG_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";

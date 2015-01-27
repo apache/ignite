@@ -39,7 +39,7 @@ public class VisorBasicConfiguration implements Serializable {
     /** Grid name. */
     private String gridName;
 
-    /** GRIDGAIN_HOME determined at startup. */
+    /** IGNITE_HOME determined at startup. */
     private String ggHome;
 
     /** Local host value used. */
@@ -151,14 +151,14 @@ public class VisorBasicConfiguration implements Serializable {
     }
 
     /**
-     * @return GRIDGAIN_HOME determined at startup.
+     * @return IGNITE_HOME determined at startup.
      */
     @Nullable public String ggHome() {
         return ggHome;
     }
 
     /**
-     * @param ggHome New GRIDGAIN_HOME determined at startup.
+     * @param ggHome New IGNITE_HOME determined at startup.
      */
     public void ggHome(@Nullable String ggHome) {
         this.ggHome = ggHome;

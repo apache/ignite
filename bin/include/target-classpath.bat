@@ -16,16 +16,16 @@
 :: Target class path resolver.
 ::
 :: Can be used like:
-::       call "%GRIDGAIN_HOME%\os\bin\include\target-classpath.bat"
+::       call "%IGNITE_HOME%\os\bin\include\target-classpath.bat"
 :: in other scripts to set classpath using libs from target folder.
 ::
 :: Will be excluded in release.
 
 @echo off
 
-for /D %%F in (%GRIDGAIN_HOME%\os\modules\*) do if not %%F == "%GRIDGAIN_HOME%\os\modules" call :includeToClassPath %%F
+for /D %%F in (%IGNITE_HOME%\os\modules\*) do if not %%F == "%IGNITE_HOME%\os\modules" call :includeToClassPath %%F
 
-for /D %%F in (%GRIDGAIN_HOME%\modules\*) do if not %%F == "%GRIDGAIN_HOME%\modules" call :includeToClassPath %%F
+for /D %%F in (%IGNITE_HOME%\modules\*) do if not %%F == "%IGNITE_HOME%\modules" call :includeToClassPath %%F
 
 goto :eof
 

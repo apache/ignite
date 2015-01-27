@@ -68,8 +68,8 @@ import java.util.*;
  * </pre>
  * A grid instance with Spring configuration above can be started as following. Note that
  * you do not need to pass path to Spring XML file if you are using
- * {@code GRIDGAIN_HOME/config/default-config.xml}. Also note, that the path can be
- * absolute or relative to GRIDGAIN_HOME.
+ * {@code IGNITE_HOME/config/default-config.xml}. Also note, that the path can be
+ * absolute or relative to IGNITE_HOME.
  * <pre name="code" class="java">
  * ...
  * GridGain.start("/path/to/spring/xml/file.xml");
@@ -264,7 +264,7 @@ public class Ignition {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.

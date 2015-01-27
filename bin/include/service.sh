@@ -41,7 +41,7 @@ case "$1" in
         DEFAULT_CONFIG="default-config.xml"
 
         # Is needed for setenv
-        SCRIPTS_HOME=${GRIDGAIN_HOME}/bin
+        SCRIPTS_HOME=${IGNITE_HOME}/bin
 
         # Load GridGain functions.
         source "${SCRIPTS_HOME}/include/functions.sh"
@@ -56,7 +56,7 @@ case "$1" in
         fi
 
         # Resolve config directory.
-        GRIDGAIN_CONF_DIR=${GRIDGAIN_CONF_DIR-"${GRIDGAIN_HOME}/config"}
+        GRIDGAIN_CONF_DIR=${GRIDGAIN_CONF_DIR-"${IGNITE_HOME}/config"}
 
         # Resolve full config path.
         [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$GRIDGAIN_CONF_DIR/$DEFAULT_CONFIG"
@@ -65,7 +65,7 @@ case "$1" in
         checkJava
 
         # And run.
-        $JAVA $JVM_OPTS -DIGNITE_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
+        $JAVA $JVM_OPTS -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
         -DIGNITE_PROG_NAME="$0" -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
 
         # Write process id.

@@ -36,10 +36,10 @@ import java.util.jar.*;
  */
 public class OptimizedClassNamesGenerator {
     /** Defines GridGain installation folder. */
-    public static final String GG_HOME_SYS_PROP = "GRIDGAIN_HOME";
+    public static final String GG_HOME_SYS_PROP = "IGNITE_HOME";
 
     /** Defines GridGain installation folder.  */
-    public static final String GG_HOME_ENV_VAR = "GRIDGAIN_HOME";
+    public static final String GG_HOME_ENV_VAR = "IGNITE_HOME";
 
     /** File name to generate. */
     public static final String FILE_NAME = "optimized-classnames.properties";
@@ -305,10 +305,10 @@ public class OptimizedClassNamesGenerator {
     }
 
     /**
-     * Retrieves {@code GRIDGAIN_HOME} property. The property is retrieved from system
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
      * properties or from environment in that order.
      *
-     * @return {@code GRIDGAIN_HOME} property.
+     * @return {@code IGNITE_HOME} property.
      */
     private static String home() {
         String home = System.getProperty(GG_HOME_SYS_PROP);

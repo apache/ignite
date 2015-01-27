@@ -66,7 +66,7 @@
     -->
     <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
         <param name="Threshold" value="DEBUG"/>
-        <param name="File" value="${GRIDGAIN_HOME}/work/log/gridgain.log"/>
+        <param name="File" value="${IGNITE_HOME}/work/log/gridgain.log"/>
         <param name="Append" value="true"/>
         <param name="MaxFileSize" value="10MB"/>
         <param name="MaxBackupIndex" value="10"/>

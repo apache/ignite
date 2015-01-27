@@ -123,7 +123,7 @@ import java.lang.annotation.*;
  * <ul>
  * <li>
  *      JVM configuration should include:
- *      {@code -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar}
+ *      {@code -javaagent:${IGNITE_HOME}/libs/aspectjweaver-1.7.2.jar}
  * </li>
  * <li>
  *      META-INF/aop.xml file should be created and specified on the classpath.

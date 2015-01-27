@@ -72,7 +72,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 accessibleFolders.add(new File(accessiblePath));
         }
         else if (log.isDebugEnabled())
-            log.debug("Neither restAccessibleFolders nor GRIDGAIN_HOME properties are not set, will not restrict " +
+            log.debug("Neither restAccessibleFolders nor IGNITE_HOME properties are not set, will not restrict " +
                 "log files access");
     }
 

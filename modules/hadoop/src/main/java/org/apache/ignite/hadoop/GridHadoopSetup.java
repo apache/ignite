@@ -75,7 +75,7 @@ public class GridHadoopSetup {
     private static void configureHadoop() {
         String gridgainHome = U.getGridGainHome();
 
-        println("GRIDGAIN_HOME is set to '" + gridgainHome + "'.");
+        println("IGNITE_HOME is set to '" + gridgainHome + "'.");
 
         checkGridGainHome(gridgainHome);
 
@@ -300,7 +300,7 @@ public class GridHadoopSetup {
             Path gg = Paths.get(ggHome);
 
             if (!jar.startsWith(gg))
-                exit("GridGain JAR files are not under GRIDGAIN_HOME.", null);
+                exit("GridGain JAR files are not under IGNITE_HOME.", null);
         }
         catch (Exception e) {
             exit(e.getMessage(), e);

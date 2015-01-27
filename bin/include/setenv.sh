@@ -16,18 +16,18 @@
 
 #
 # Exports GRIDGAIN_LIBS variable containing classpath for GridGain.
-# Expects GRIDGAIN_HOME to be set.
+# Expects IGNITE_HOME to be set.
 # Can be used like:
-#       . "${GRIDGAIN_HOME}"/bin/include/setenv.sh
+#       . "${IGNITE_HOME}"/bin/include/setenv.sh
 # in other scripts to set classpath using exported GRIDGAIN_LIBS variable.
 #
 
 #
-# Check GRIDGAIN_HOME.
+# Check IGNITE_HOME.
 #
-if [ "${GRIDGAIN_HOME}" = "" ]; then
+if [ "${IGNITE_HOME}" = "" ]; then
     echo $0", ERROR: GridGain installation folder is not found."
-    echo "Please create GRIDGAIN_HOME variable pointing to location of"
+    echo "Please create IGNITE_HOME variable pointing to location of"
     echo "GridGain installation folder."
 
     exit 1
@@ -41,26 +41,26 @@ SEP=":";
 case "`uname`" in
     MINGW*)
         SEP=";";
-        export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+        export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
         ;;
     CYGWIN*)
         SEP=";";
-        export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+        export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
         ;;
 esac
 
 #
 # Libraries included in classpath.
 #
-GRIDGAIN_LIBS="${GRIDGAIN_HOME}/libs/*"
+GRIDGAIN_LIBS="${IGNITE_HOME}/libs/*"
 
-for file in ${GRIDGAIN_HOME}/libs/*
+for file in ${IGNITE_HOME}/libs/*
 do
-    if [ -d ${file} ] && [ "${file}" != "${GRIDGAIN_HOME}"/libs/optional ]; then
+    if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
         GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/*
     fi
 
-    if [ -d ${file} ] && [ "${file}" == "${GRIDGAIN_HOME}"/libs/gridgain-hadoop ]; then
+    if [ -d ${file} ] && [ "${file}" == "${IGNITE_HOME}"/libs/gridgain-hadoop ]; then
         HADOOP_EDITION=1
     fi
 done

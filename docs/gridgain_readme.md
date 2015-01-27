@@ -25,7 +25,7 @@ Enterprise Features:
 * GUI Management & Monitoring
 
 ## 2. GridGain Installation
-GridGain distribution comes in a ZIP file that simply needs to be unzipped, and `GRIDGAIN_HOME` environment variable
+GridGain distribution comes in a ZIP file that simply needs to be unzipped, and `IGNITE_HOME` environment variable
 can optionally be set to point to it.
 
 There are no additional steps required for GridGain installation in such multi machine setup.
@@ -35,7 +35,7 @@ Installation requirements:
 1. Windows, Linux, or MacOS environment.
 2. Java 7 or 8 (latest update is advisable).
 3. Point `JAVA_HOME` environment variable to your JDK or JRE installation.
-4. Optional: point `GRIDGAIN_HOME` environment variable to the GridGain installation folder.
+4. Optional: point `IGNITE_HOME` environment variable to the GridGain installation folder.
 
 ### 2.1 Check GridGain Installation
 

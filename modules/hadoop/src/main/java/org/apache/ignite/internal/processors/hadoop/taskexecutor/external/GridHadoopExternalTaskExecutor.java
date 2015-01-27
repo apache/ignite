@@ -303,7 +303,7 @@ public class GridHadoopExternalTaskExecutor extends GridHadoopTaskExecutorAdapte
 
         meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
         meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea", "-XX:+UseConcMarkSweepGC", "-XX:+CMSClassUnloadingEnabled",
-            "-DGRIDGAIN_HOME=" + U.getGridGainHome()));
+            "-DIGNITE_HOME=" + U.getGridGainHome()));
 
         return meta;
     }

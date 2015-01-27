@@ -163,7 +163,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
 
     /**
      * Specifies a name of the file which lists all class names to be optimized.
-     * The file path can either be absolute path, relative to {@code GRIDGAIN_HOME},
+     * The file path can either be absolute path, relative to {@code IGNITE_HOME},
      * or specify a resource file on the class path.
      * <p>
      * The format of the file is class name per line, like this:

@@ -644,13 +644,13 @@ public final class GridTestUtils {
      */
     @SuppressWarnings({"ProhibitedExceptionThrown"})
     public static String getGridGainHome() throws Exception {
-        String ggHome = System.getProperty("GRIDGAIN_HOME");
+        String ggHome = System.getProperty("IGNITE_HOME");
 
         if (ggHome == null)
-            ggHome = System.getenv("GRIDGAIN_HOME");
+            ggHome = System.getenv("IGNITE_HOME");
 
         if (ggHome == null)
-            throw new Exception("GRIDGAIN_HOME parameter must be set either as system or environment variable.");
+            throw new Exception("IGNITE_HOME parameter must be set either as system or environment variable.");
 
         File dir = new File(ggHome);
 
@@ -792,10 +792,10 @@ public final class GridTestUtils {
 
     /**
      * Gets file representing the path passed in. First the check is made if path is absolute.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}. If both checks fail,
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}. If both checks fail,
      * then {@code null} is returned, otherwise file representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path, or {@code null} if file cannot be resolved.

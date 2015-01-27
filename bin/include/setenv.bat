@@ -15,9 +15,9 @@
 
 ::
 :: Exports GRIDGAIN_LIBS variable containing classpath for GridGain.
-:: Expects GRIDGAIN_HOME to be set.
+:: Expects IGNITE_HOME to be set.
 :: Can be used like:
-::      call %GRIDGAIN_HOME%\bin\include\setenv.bat
+::      call %IGNITE_HOME%\bin\include\setenv.bat
 :: in other scripts to set classpath using exported GRIDGAIN_LIBS variable.
 ::
 
@@ -27,21 +27,21 @@
 :: set USER_LIBS=
 
 ::
-:: Check GRIDGAIN_HOME.
+:: Check IGNITE_HOME.
 ::
-if defined GRIDGAIN_HOME goto run
+if defined IGNITE_HOME goto run
     echo %0, ERROR: GridGain installation folder is not found.
-    echo Please create GRIDGAIN_HOME environment variable pointing to location of
+    echo Please create IGNITE_HOME environment variable pointing to location of
     echo GridGain installation folder.
 goto :eof
 
 :run
 :: The following libraries are required for GridGain.
-set GRIDGAIN_LIBS=%GRIDGAIN_HOME%\libs\*
+set GRIDGAIN_LIBS=%IGNITE_HOME%\libs\*
 
-for /D %%F in (%GRIDGAIN_HOME%\libs\*) do if not "%%F" == "%GRIDGAIN_HOME%\libs\optional" call :concat %%F\*
+for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
-if exist %GRIDGAIN_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
+if exist %IGNITE_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
 
 if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
 

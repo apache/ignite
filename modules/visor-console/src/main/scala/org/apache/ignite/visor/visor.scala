@@ -116,7 +116,7 @@ trait VisorTag
  * Visor console provides monitoring capabilities for GridGain.
  *
  * ==Usage==
- * GridGain ships with `GRIDGAIN_HOME/bin/ggvisorcmd.{sh|bat}` script that starts Visor console.
+ * GridGain ships with `IGNITE_HOME/bin/ggvisorcmd.{sh|bat}` script that starts Visor console.
  *
  * Just type:<ex>help</ex> in Visor console to get help and get started.
  */
@@ -200,8 +200,8 @@ object visor extends VisorTag {
 
     /** Default log file path. */
     /**
-     * Default log file path. Note that this path is relative to `GRIDGAIN_HOME/work` folder
-     * if `GRIDGAIN_HOME` system or environment variable specified, otherwise it is relative to
+     * Default log file path. Note that this path is relative to `IGNITE_HOME/work` folder
+     * if `IGNITE_HOME` system or environment variable specified, otherwise it is relative to
      * `work` folder under system `java.io.tmpdir` folder.
      */
     private final val DFLT_LOG_PATH = "visor/visor-log"

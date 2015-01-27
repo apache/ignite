@@ -2337,15 +2337,15 @@ public abstract class GridUtils {
      * @param e Exception.
      */
     private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve GRIDGAIN_HOME automatically for class codebase " +
+        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
             "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
     }
 
     /**
-     * Retrieves {@code GRIDGAIN_HOME} property. The property is retrieved from system
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
      * properties or from environment in that order.
      *
-     * @return {@code GRIDGAIN_HOME} property.
+     * @return {@code IGNITE_HOME} property.
      */
     @Nullable public static String getGridGainHome() {
         GridTuple<String> ggHomeTup = ggHome;
@@ -2405,18 +2405,18 @@ public abstract class GridUtils {
             ggHome0 = ggHomeTup.get();
 
         if (ggHome0 != null && !ggHome0.equals(path))
-            throw new IgniteException("Failed to set GRIDGAIN_HOME after it has been already resolved " +
+            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
                 "[ggHome=" + ggHome0 + ", newGgHome=" + path + ']');
     }
 
     /**
      * Gets file associated with path.
      * <p>
-     * First check if path is relative to {@code GRIDGAIN_HOME}.
+     * First check if path is relative to {@code IGNITE_HOME}.
      * If not, check if path is absolute.
      * If all checks fail, then {@code null} is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
@@ -2425,7 +2425,7 @@ public abstract class GridUtils {
         assert path != null;
 
         /*
-         * 1. Check relative to GRIDGAIN_HOME specified in configuration, if any.
+         * 1. Check relative to IGNITE_HOME specified in configuration, if any.
          */
 
         String home = getGridGainHome();
@@ -2459,11 +2459,11 @@ public abstract class GridUtils {
     /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
@@ -2476,11 +2476,11 @@ public abstract class GridUtils {
     /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
