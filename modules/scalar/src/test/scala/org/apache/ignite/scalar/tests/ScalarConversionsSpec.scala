@@ -15,17 +15,17 @@
  * limitations under the License.
  */
 
-package org.gridgain.scalar.tests
+package org.apache.ignite.scalar.tests
 
-import org.apache.ignite.lang._
-import org.scalatest.FlatSpec
-import org.scalatest.matchers.ShouldMatchers
-import org.gridgain.scalar._
-import scalar._
-import java.util.concurrent.atomic._
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
 import org.apache.ignite.internal.util.lang._
+import org.apache.ignite.lang._
+import org.apache.ignite.scalar.scalar._
+import org.junit.runner.RunWith
+import org.scalatest.FlatSpec
+import org.scalatest.junit.JUnitRunner
+import org.scalatest.matchers.ShouldMatchers
+
+import java.util.concurrent.atomic._
 
 /**
  *

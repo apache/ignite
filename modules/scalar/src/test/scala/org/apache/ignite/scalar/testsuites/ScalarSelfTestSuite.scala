@@ -17,9 +17,9 @@
 
 package org.apache.ignite.scalar.testsuites
 
-import org.scalatest._
-import org.gridgain.scalar.tests._
+import org.apache.ignite.scalar.tests._
 import org.junit.runner.RunWith
+import org.scalatest._
 import org.scalatest.junit.JUnitRunner
 
 /**

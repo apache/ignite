@@ -102,6 +102,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
+    @IgniteAsyncSupported
     public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
@@ -125,6 +126,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *      {@link CacheStore#loadCache(IgniteBiInClosure, Object...)} method.
      * @throws CacheException If loading failed.
      */
+    @IgniteAsyncSupported
     public void localLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws CacheException;
 
     /**
@@ -156,6 +158,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @throws CacheException If put operation failed.
      * @throws org.apache.ignite.internal.processors.cache.CacheFlagException If projection flags validation failed.
      */
+    @IgniteAsyncSupported
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
@@ -291,6 +294,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param peekModes Optional peek modes. If not provided, then total cache size is returned.
      * @return Cache size across all nodes.
      */
+    @IgniteAsyncSupported
     public int size(CachePeekMode... peekModes) throws CacheException;
 
     /**
@@ -309,6 +313,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * will be returned for {@link EntryProcessor}s that return a
      * <code>null</code> value for a key.
      */
+    @IgniteAsyncSupported
     <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map, Object... args);
 
     /**
@@ -349,4 +354,78 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Projection for portable objects.
      */
     public <K1, V1> IgniteCache<K1, V1> keepPortable();
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V get(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public Map<K, V> getAll(Set<? extends K> keys);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean containsKey(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void put(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V getAndPut(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void putAll(Map<? extends K, ? extends V> map);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean putIfAbsent(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean remove(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean remove(K key, V oldVal);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V getAndRemove(K key);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean replace(K key, V oldVal, V newVal);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public boolean replace(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public V getAndReplace(K key, V val);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void removeAll(Set<? extends K> keys);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void removeAll();
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public void clear();
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments);
+
+    /** {@inheritDoc} */
+    @IgniteAsyncSupported
+    @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
+        EntryProcessor<K, V, T> entryProcessor,
+        Object... args);
 }

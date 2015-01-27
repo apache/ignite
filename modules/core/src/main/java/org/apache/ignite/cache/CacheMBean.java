@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 
 /**
  * This interface defines JMX view on {@link GridCache}.

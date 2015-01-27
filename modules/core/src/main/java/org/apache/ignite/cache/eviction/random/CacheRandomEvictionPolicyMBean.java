@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.eviction.random;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 
 /**
  * MBean for {@code random} eviction policy.
