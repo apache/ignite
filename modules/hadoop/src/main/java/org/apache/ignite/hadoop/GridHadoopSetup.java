@@ -36,9 +36,9 @@ public class GridHadoopSetup {
     public static final String WINUTILS_EXE = "winutils.exe";
 
     /** */
-    private static final FilenameFilter GRIDGAIN_JARS = new FilenameFilter() {
+    private static final FilenameFilter IGNITE_JARS = new FilenameFilter() {
         @Override public boolean accept(File dir, String name) {
-            return name.startsWith("gridgain-") && name.endsWith(".jar");
+            return name.startsWith("ignite-") && name.endsWith(".jar");
         }
     };
 
@@ -195,7 +195,7 @@ public class GridHadoopSetup {
         if (!jarsLinksCorrect) {
             if (ask("GridGain JAR files are not found in Hadoop 'lib' directory. " +
                 "Create appropriate symbolic links?")) {
-                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(GRIDGAIN_JARS);
+                File[] oldGridGainJarFiles = hadoopCommonLibDir.listFiles(IGNITE_JARS);
 
                 if (oldGridGainJarFiles.length > 0 && ask("The Hadoop 'lib' directory contains JARs from other GridGain " +
                     "installation. They must be deleted to continue. Continue?")) {
@@ -271,7 +271,7 @@ public class GridHadoopSetup {
         if (!folder.exists())
             exit("Folder '" + folder.getAbsolutePath() + "' is not found.", null);
 
-        jarFiles.addAll(Arrays.asList(folder.listFiles(GRIDGAIN_JARS)));
+        jarFiles.addAll(Arrays.asList(folder.listFiles(IGNITE_JARS)));
     }
 
     /**
