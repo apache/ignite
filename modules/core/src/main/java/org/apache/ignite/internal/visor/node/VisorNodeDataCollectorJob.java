@@ -129,10 +129,10 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                 long start0 = U.currentTimeMillis();
 
                 try {
-                    Collection<GridIpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
+                    Collection<IpcServerEndpoint> endPoints = ggfsProc.endpoints(ggfs.name());
 
                     if (endPoints != null) {
-                        for (GridIpcServerEndpoint ep : endPoints)
+                        for (IpcServerEndpoint ep : endPoints)
                             if (ep.isManagement())
                                 res.ggfsEndpoints().add(new VisorGgfsEndpoint(ggfs.name(), g.name(),
                                     ep.getHost(), ep.getPort()));

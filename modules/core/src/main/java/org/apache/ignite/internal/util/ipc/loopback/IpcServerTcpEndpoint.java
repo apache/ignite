@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Server loopback IPC endpoint.
  */
-public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
+public class IpcServerTcpEndpoint implements IpcServerEndpoint {
     /** Default endpoint port number. */
     public static final int DFLT_IPC_PORT = 10500;
 
@@ -52,7 +52,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (port <= 0 || port >= 0xffff)
-            throw new GridIpcEndpointBindException("Port value is illegal: " + port);
+            throw new IpcEndpointBindException("Port value is illegal: " + port);
 
         try {
             srvSock = new ServerSocket();
@@ -68,17 +68,17 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
             if (srvSock != null)
                 U.closeQuiet(srvSock);
 
-            throw new GridIpcEndpointBindException("Failed to bind loopback IPC endpoint (is port already in " +
+            throw new IpcEndpointBindException("Failed to bind loopback IPC endpoint (is port already in " +
                 "use?): " + port, e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public GridIpcEndpoint accept() throws IgniteCheckedException {
+    @Override public IpcEndpoint accept() throws IgniteCheckedException {
         try {
             Socket sock = srvSock.accept();
 
-            return new GridIpcClientTcpEndpoint(sock);
+            return new IpcClientTcpEndpoint(sock);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -134,7 +134,7 @@ public class GridIpcServerTcpEndpoint implements GridIpcServerEndpoint {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIpcServerTcpEndpoint.class, this);
+        return S.toString(IpcServerTcpEndpoint.class, this);
     }
 
     /**

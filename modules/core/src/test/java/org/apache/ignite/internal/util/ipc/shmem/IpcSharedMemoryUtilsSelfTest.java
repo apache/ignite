@@ -31,7 +31,7 @@ public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
     }
 
     /**
@@ -58,7 +58,7 @@ public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
 
         String tok = tokFile.getAbsolutePath();
 
-        GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
+        IpcSharedMemorySpace space = new IpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
             false, log);
 
         info("Space: " + space);

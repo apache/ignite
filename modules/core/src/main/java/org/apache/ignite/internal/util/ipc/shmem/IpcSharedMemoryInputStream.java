@@ -25,9 +25,9 @@ import java.io.*;
 /**
  *
  */
-public class GridIpcSharedMemoryInputStream extends InputStream {
+public class IpcSharedMemoryInputStream extends InputStream {
     /** */
-    private final GridIpcSharedMemorySpace in;
+    private final IpcSharedMemorySpace in;
 
     /** Stream instance is not thread-safe so we can cache buffer. */
     private byte[] buf = new byte[1];
@@ -35,7 +35,7 @@ public class GridIpcSharedMemoryInputStream extends InputStream {
     /**
      * @param in Space.
      */
-    public GridIpcSharedMemoryInputStream(GridIpcSharedMemorySpace in) {
+    public IpcSharedMemoryInputStream(IpcSharedMemorySpace in) {
         assert in != null;
 
         this.in = in;
@@ -94,6 +94,6 @@ public class GridIpcSharedMemoryInputStream extends InputStream {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIpcSharedMemoryInputStream.class, this);
+        return S.toString(IpcSharedMemoryInputStream.class, this);
     }
 }

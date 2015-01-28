@@ -19,29 +19,31 @@ package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
 
+import java.io.*;
+
 /**
- * Represents exception occurred during IPC endpoint binding.
+ * GGFS IPC endpoint used for point-to-point communication.
  */
-public class GridIpcEndpointBindException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface IpcEndpoint extends Closeable {
+    /**
+     * Gets input stream associated with this IPC endpoint.
+     *
+     * @return IPC input stream.
+     * @throws IgniteCheckedException If error occurred.
+     */
+    public InputStream inputStream() throws IgniteCheckedException;
 
     /**
-     * Constructor.
+     * Gets output stream associated with this IPC endpoint.
      *
-     * @param msg Message.
+     * @return IPC output stream.
+     * @throws IgniteCheckedException If error occurred.
      */
-    public GridIpcEndpointBindException(String msg) {
-        super(msg);
-    }
+    public OutputStream outputStream() throws IgniteCheckedException;
 
     /**
-     * Constructor.
-     *
-     * @param msg Message.
-     * @param cause Cause.
+     * Closes endpoint. Note that IPC endpoint may acquire native resources so it must be always closed
+     * once it is not needed.
      */
-    public GridIpcEndpointBindException(String msg, Throwable cause) {
-        super(msg, cause);
-    }
+    @Override public void close();
 }

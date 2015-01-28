@@ -23,14 +23,14 @@ import org.apache.ignite.internal.util.ipc.*;
 /**
  *
  */
-public class GridIpcSharedMemoryFakeClient {
+public class IpcSharedMemoryFakeClient {
     /**
      * @param args Args.
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception{
-        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
-        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
-        GridIpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
+        IpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
+        IpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
+        IpcEndpointFactory.connectEndpoint("shmem:10500", new IgniteJavaLogger());
     }
 }

@@ -25,7 +25,7 @@ import java.io.*;
 /**
  * IPC server endpoint that is capable for client connections accepting.
  */
-public interface GridIpcServerEndpoint extends Closeable {
+public interface IpcServerEndpoint extends Closeable {
     /**
      * Accepts client IPC connection. After client connection is accepted, it can be used
      * for IPC. This method will block until client connects to IPC server endpoint.
@@ -33,7 +33,7 @@ public interface GridIpcServerEndpoint extends Closeable {
      * @return Accepted client connection.
      * @throws IgniteCheckedException If accept failed and the endpoint is not usable anymore.
      */
-    public GridIpcEndpoint accept() throws IgniteCheckedException;
+    public IpcEndpoint accept() throws IgniteCheckedException;
 
     /**
      * Starts configured endpoint implementation.

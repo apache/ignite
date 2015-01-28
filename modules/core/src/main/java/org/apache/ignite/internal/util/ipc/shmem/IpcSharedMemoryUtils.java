@@ -27,7 +27,7 @@ import java.util.*;
 
 /**
  * NOTE: Native library should be loaded, before methods of this class are called. Native library is loaded with: {@link
- * GridIpcSharedMemoryNativeLoader#load()}.
+ * IpcSharedMemoryNativeLoader#load()}.
  */
 public class IpcSharedMemoryUtils {
     /**
@@ -84,10 +84,10 @@ public class IpcSharedMemoryUtils {
      * @param timeout Operation timeout.
      * @return Read bytes count.
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native long readSharedMemory(long shMemPtr, byte dest[], long dOff, long size, long timeout)
-        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, IpcSharedMemoryOperationTimedoutException;
 
     /**
      * @param shmemPtr Shared memory pointer.
@@ -115,10 +115,10 @@ public class IpcSharedMemoryUtils {
      * @param timeout Operation timeout.
      * @return Read bytes count.
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native long readSharedMemoryByteBuffer(long shMemPtr, ByteBuffer dest, long dOff, long size, long timeout)
-        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, IpcSharedMemoryOperationTimedoutException;
 
     /**
      * @param shMemPtr Shared memory pointer
@@ -127,10 +127,10 @@ public class IpcSharedMemoryUtils {
      * @param size Size.
      * @param timeout Operation timeout.
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native void writeSharedMemory(long shMemPtr, byte src[], long sOff, long size, long timeout)
-        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, IpcSharedMemoryOperationTimedoutException;
 
     /**
      * @param shMemPtr Shared memory pointer
@@ -139,10 +139,10 @@ public class IpcSharedMemoryUtils {
      * @param size Size.
      * @param timeout Operation timeout.
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     static native void writeSharedMemoryByteBuffer(long shMemPtr, ByteBuffer src, long sOff, long size, long timeout)
-        throws IgniteCheckedException, GridIpcSharedMemoryOperationTimedoutException;
+        throws IgniteCheckedException, IpcSharedMemoryOperationTimedoutException;
 
     /** @return PID of the current process (-1 on error). */
     public static int pid() {

@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
 /**
  *
  */
-public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
+public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int DATA_LEN = 1024 * 1024;
 
@@ -49,7 +49,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
     }
 
     /**
@@ -64,13 +64,13 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("Array length: " + DATA.length);
 
-        final AtomicReference<GridIpcSharedMemorySpace> spaceRef = new AtomicReference<>();
+        final AtomicReference<IpcSharedMemorySpace> spaceRef = new AtomicReference<>();
 
         IgniteFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings("TooBroadScope")
                 @Override public Object call() throws Exception {
-                    try (GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, 0, 0, 128, false,
+                    try (IpcSharedMemorySpace space = new IpcSharedMemorySpace(tok, 0, 0, 128, false,
                         log)) {
                         spaceRef.set(space);
 
@@ -101,13 +101,13 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
             new Callable<Object>() {
                 @SuppressWarnings({"TooBroadScope", "StatementWithEmptyBody"})
                 @Override public Object call() throws Exception {
-                    GridIpcSharedMemorySpace inSpace;
+                    IpcSharedMemorySpace inSpace;
 
                     while ((inSpace = spaceRef.get()) == null) {
                         // No-op;
                     }
 
-                    try (GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, 0, 0, 128, true,
+                    try (IpcSharedMemorySpace space = new IpcSharedMemorySpace(tok, 0, 0, 128, true,
                         inSpace.sharedMemoryId(), log)) {
                         byte[] buf = new byte[DATA_LEN];
 
@@ -158,7 +158,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("IDs in the system: " + ids);
 
-        GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
+        IpcSharedMemorySpace space = new IpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
             false, log);
 
         ids = IpcSharedMemoryUtils.sharedMemoryIds();
@@ -195,10 +195,10 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("Using token file: " + tok);
 
-        GridIpcSharedMemorySpace spaceOut = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
+        IpcSharedMemorySpace spaceOut = new IpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
             false, log);
 
-        try (GridIpcSharedMemorySpace spaceIn = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0,
+        try (IpcSharedMemorySpace spaceIn = new IpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0,
             128, true, spaceOut.sharedMemoryId(), log)) {
             // Write some data to the space, but avoid blocking.
             spaceOut.write(DATA, 0, 16, 0);
@@ -233,10 +233,10 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("Using token file: " + tok);
 
-        try (GridIpcSharedMemorySpace spaceOut = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(),
+        try (IpcSharedMemorySpace spaceOut = new IpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(),
             IpcSharedMemoryUtils.pid(), 128, false, log)) {
 
-            try (GridIpcSharedMemorySpace spaceIn = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(),
+            try (IpcSharedMemorySpace spaceIn = new IpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(),
                 IpcSharedMemoryUtils.pid(), 128, true, spaceOut.sharedMemoryId(), log)) {
                 // Write some data to the space, but avoid blocking.
                 spaceOut.write(DATA, 0, 16, 0);

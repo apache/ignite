@@ -34,7 +34,7 @@ import java.util.concurrent.*;
 /**
  * Test shared memory endpoints crash detection.
  */
-public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTest {
+public class IpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstractTest {
     /** Timeout in ms between read/write attempts in busy-wait loops. */
     public static final int RW_SLEEP_TIMEOUT = 50;
 
@@ -42,7 +42,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
     }
 
     /**
@@ -52,7 +52,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
         U.setWorkDirectory(null, U.getGridGainHome());
 
         // Run server endpoint.
-        GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint();
+        IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
 
         new GridTestResources().inject(srv);
 
@@ -67,7 +67,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
 
             Collection<Integer> shmemIdsAfterInteractions = null;
 
-            // Give server endpoint some time to make resource clean up. See GridIpcSharedMemoryServerEndpoint.GC_FREQ.
+            // Give server endpoint some time to make resource clean up. See IpcSharedMemoryServerEndpoint.GC_FREQ.
             for (int i = 0; i < 12; i++) {
                 shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
@@ -115,7 +115,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
         ProcessStartResult srvStartRes = startSharedMemoryTestServer();
 
         try {
-            // Give server endpoint some time to make resource clean up. See GridIpcSharedMemoryServerEndpoint.GC_FREQ.
+            // Give server endpoint some time to make resource clean up. See IpcSharedMemoryServerEndpoint.GC_FREQ.
             for (int i = 0; i < 12; i++) {
                 shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
@@ -158,7 +158,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Launches GridGgfsSharedMemoryTestServer and GridGgfsSharedMemoryTestClient.
+     * Launches GgfsSharedMemoryTestServer and GgfsSharedMemoryTestClient.
      * After successful connection kills firstly server and secondly client.
      *
      * @return Collection of shared memory IDs created while client-server interactions.
@@ -188,7 +188,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Launches GridGgfsSharedMemoryTestServer and connects to it with client endpoint.
+     * Launches GgfsSharedMemoryTestServer and connects to it with client endpoint.
      * After couple of reads-writes kills the server and checks client throws correct exception.
      *
      * @return List of shared memory IDs created while client-server interactions.
@@ -199,15 +199,15 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
         ProcessStartResult srvStartRes = startSharedMemoryTestServer();
 
         Collection<Integer> shmemIds = new ArrayList<>();
-        GridIpcSharedMemoryClientEndpoint client = null;
+        IpcSharedMemoryClientEndpoint client = null;
 
         int interactionsCntBeforeSrvKilling = 5;
         int i = 1;
 
         try {
             // Run client endpoint.
-            client = (GridIpcSharedMemoryClientEndpoint)GridIpcEndpointFactory.connectEndpoint(
-                "shmem:" + GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log);
+            client = (IpcSharedMemoryClientEndpoint) IpcEndpointFactory.connectEndpoint(
+                    "shmem:" + IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log);
 
             OutputStream os = client.outputStream();
 
@@ -259,11 +259,11 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
      * @throws Exception In case of any exception happen.
      */
     @SuppressWarnings({"BusyWait", "TypeMayBeWeakened"})
-    private Collection<Integer> interactWithClient(GridIpcSharedMemoryServerEndpoint srv, boolean killClient)
+    private Collection<Integer> interactWithClient(IpcSharedMemoryServerEndpoint srv, boolean killClient)
         throws Exception {
         ProcessStartResult clientStartRes = startSharedMemoryTestClient();
 
-        GridIpcSharedMemoryClientEndpoint clientEndpoint = (GridIpcSharedMemoryClientEndpoint)srv.accept();
+        IpcSharedMemoryClientEndpoint clientEndpoint = (IpcSharedMemoryClientEndpoint)srv.accept();
 
         Collection<Integer> shmemIds = new ArrayList<>();
         InputStream is = null;
@@ -322,9 +322,9 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Starts {@code GridGgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
+     * Starts {@code GgfsSharedMemoryTestClient}. The method doesn't wait while client being started.
      *
-     * @return Start result of the {@code GridGgfsSharedMemoryTestClient}.
+     * @return Start result of the {@code GgfsSharedMemoryTestClient}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestClient() throws Exception {
@@ -339,14 +339,14 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
 
         /** Process. */
         GridJavaProcess proc = GridJavaProcess.exec(
-            GridGgfsSharedMemoryTestClient.class, null,
+            GgfsSharedMemoryTestClient.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String s) {
                     info("Client process prints: " + s);
 
-                    if (s.startsWith(GridGgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
-                        res.shmemIds(s.substring(GridGgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
+                    if (s.startsWith(GgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX)) {
+                        res.shmemIds(s.substring(GgfsSharedMemoryTestClient.SHMEM_IDS_MSG_PREFIX.length()));
 
                         readyLatch.countDown();
                     }
@@ -371,9 +371,9 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
     }
 
     /**
-     * Starts {@code GridGgfsSharedMemoryTestServer}. The method waits while server being started.
+     * Starts {@code GgfsSharedMemoryTestServer}. The method waits while server being started.
      *
-     * @return Start result of the {@code GridGgfsSharedMemoryTestServer}.
+     * @return Start result of the {@code GgfsSharedMemoryTestServer}.
      * @throws Exception In case of any exception happen.
      */
     private ProcessStartResult startSharedMemoryTestServer() throws Exception {
@@ -381,7 +381,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
         final CountDownLatch isKilledLatch = new CountDownLatch(1);
 
         GridJavaProcess proc = GridJavaProcess.exec(
-            GridGgfsSharedMemoryTestServer.class, null,
+            GgfsSharedMemoryTestServer.class, null,
             log,
             new CI1<String>() {
                 @Override public void apply(String str) {

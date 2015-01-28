@@ -25,18 +25,18 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.util.*;
 
 /**
- * Grid GridIpcServerEndpoint configuration deserializer.
+ * Grid IpcServerEndpoint configuration deserializer.
  */
-public class GridIpcServerEndpointDeserializer {
+public class IpcServerEndpointDeserializer {
     /**
      * Deserializes IPC server endpoint config into concrete
-     * instance of {@link GridIpcServerEndpoint}.
+     * instance of {@link IpcServerEndpoint}.
      *
      * @param endpointCfg Map with properties of the IPC server endpoint config.
-     * @return Deserialized instance of {@link GridIpcServerEndpoint}.
+     * @return Deserialized instance of {@link IpcServerEndpoint}.
      * @throws IgniteCheckedException If any problem with configuration properties setting has happened.
      */
-    public static GridIpcServerEndpoint deserialize(Map<String,String> endpointCfg) throws IgniteCheckedException {
+    public static IpcServerEndpoint deserialize(Map<String,String> endpointCfg) throws IgniteCheckedException {
         A.notNull(endpointCfg, "endpointCfg");
 
         String endpointType = endpointCfg.get("type");
@@ -46,14 +46,14 @@ public class GridIpcServerEndpointDeserializer {
 
         switch (endpointType) {
             case "shmem": {
-                GridIpcSharedMemoryServerEndpoint endpoint = new GridIpcSharedMemoryServerEndpoint();
+                IpcSharedMemoryServerEndpoint endpoint = new IpcSharedMemoryServerEndpoint();
 
                 endpoint.setupConfiguration(endpointCfg);
 
                 return endpoint;
             }
             case "tcp": {
-                GridIpcServerTcpEndpoint endpoint = new GridIpcServerTcpEndpoint();
+                IpcServerTcpEndpoint endpoint = new IpcServerTcpEndpoint();
 
                 endpoint.setupConfiguration(endpointCfg);
 

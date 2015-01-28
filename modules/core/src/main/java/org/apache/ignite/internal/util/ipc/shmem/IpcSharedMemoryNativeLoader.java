@@ -31,7 +31,7 @@ import java.util.*;
  * Shared memory native loader.
  */
 @SuppressWarnings("ErrorNotRethrown")
-public class GridIpcSharedMemoryNativeLoader {
+public class IpcSharedMemoryNativeLoader {
     /** Loaded flag. */
     private static volatile boolean loaded;
 
@@ -92,7 +92,7 @@ public class GridIpcSharedMemoryNativeLoader {
         if (loaded)
             return;
 
-        synchronized (GridIpcSharedMemoryNativeLoader.class) {
+        synchronized (IpcSharedMemoryNativeLoader.class) {
             if (loaded)
                 return;
 
@@ -106,7 +106,7 @@ public class GridIpcSharedMemoryNativeLoader {
      * @throws IgniteCheckedException If failed.
      */
     private static void doLoad() throws IgniteCheckedException {
-        assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
+        assert Thread.holdsLock(IpcSharedMemoryNativeLoader.class);
 
         Collection<Throwable> errs = new ArrayList<>();
 
@@ -181,7 +181,7 @@ public class GridIpcSharedMemoryNativeLoader {
      * @return {@code True} if library was found and loaded.
      */
     private static boolean extractAndLoad(Collection<Throwable> errs, String rsrcPath) {
-        ClassLoader clsLdr = U.detectClassLoader(GridIpcSharedMemoryNativeLoader.class);
+        ClassLoader clsLdr = U.detectClassLoader(IpcSharedMemoryNativeLoader.class);
 
         URL rsrc = clsLdr.getResource(rsrcPath);
 

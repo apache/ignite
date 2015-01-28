@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  *
  */
-public class GridIpcSharedMemoryNodeStartup {
+public class IpcSharedMemoryNodeStartup {
     /**
      * @param args Args.
      * @throws Exception If failed.

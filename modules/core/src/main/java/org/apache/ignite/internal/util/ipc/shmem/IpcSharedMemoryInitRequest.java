@@ -22,7 +22,7 @@ import java.io.*;
 /**
  *
  */
-public class GridIpcSharedMemoryInitRequest implements Externalizable {
+public class IpcSharedMemoryInitRequest implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,14 +32,14 @@ public class GridIpcSharedMemoryInitRequest implements Externalizable {
     /**
      * @param pid PID of the {@code client} party.
      */
-    public GridIpcSharedMemoryInitRequest(int pid) {
+    public IpcSharedMemoryInitRequest(int pid) {
         this.pid = pid;
     }
 
     /**
      * Required by {@code Externalizable}.
      */
-    public GridIpcSharedMemoryInitRequest() {
+    public IpcSharedMemoryInitRequest() {
         // No-op.
     }
 
@@ -62,6 +62,6 @@ public class GridIpcSharedMemoryInitRequest implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridIpcSharedMemoryInitRequest [pid=" + pid + ']';
+        return "IpcSharedMemoryInitRequest [pid=" + pid + ']';
     }
 }

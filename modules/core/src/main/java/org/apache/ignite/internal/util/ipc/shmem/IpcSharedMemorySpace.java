@@ -31,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  *
  */
 @SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions"})
-public class GridIpcSharedMemorySpace implements Closeable {
+public class IpcSharedMemorySpace implements Closeable {
     /** Debug flag (enable for testing). */
     private static final boolean DEBUG = Boolean.getBoolean(GG_IPC_SHMEM_SPACE_DEBUG);
 
@@ -79,11 +79,11 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param parent Parent logger.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
-        IgniteLogger parent) throws IgniteCheckedException {
+    public IpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
+                                IgniteLogger parent) throws IgniteCheckedException {
         assert size > 0 : "Size cannot be less than 1 byte";
 
-        log = parent.getLogger(GridIpcSharedMemorySpace.class);
+        log = parent.getLogger(IpcSharedMemorySpace.class);
 
         opSize = size;
 
@@ -114,11 +114,11 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param parent Logger.
      * @throws IgniteCheckedException If failed.
      */
-    public GridIpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
-        int shmemId, IgniteLogger parent) throws IgniteCheckedException {
+    public IpcSharedMemorySpace(String tokFileName, int writerPid, int readerPid, int size, boolean reader,
+                                int shmemId, IgniteLogger parent) throws IgniteCheckedException {
         assert size > 0 : "Size cannot be less than 1 byte";
 
-        log = parent.getLogger(GridIpcSharedMemorySpace.class);
+        log = parent.getLogger(IpcSharedMemorySpace.class);
 
         opSize = size;
         isReader = reader;
@@ -138,10 +138,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param len Length.
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     public void write(byte[] buf, int off, int len, long timeout) throws IgniteCheckedException,
-        GridIpcSharedMemoryOperationTimedoutException {
+            IpcSharedMemoryOperationTimedoutException {
         assert buf != null;
         assert len > 0;
         assert buf.length >= off + len;
@@ -168,10 +168,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param len Length.
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     public void write(ByteBuffer buf, int off, int len, long timeout) throws IgniteCheckedException,
-        GridIpcSharedMemoryOperationTimedoutException {
+            IpcSharedMemoryOperationTimedoutException {
         assert buf != null;
         assert len > 0;
         assert buf.limit() >= off + len;
@@ -200,10 +200,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
      * @return Read bytes count.
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     public int read(byte[] buf, int off, int len, long timeout) throws IgniteCheckedException,
-        GridIpcSharedMemoryOperationTimedoutException{
+            IpcSharedMemoryOperationTimedoutException {
         assert buf != null;
         assert len > 0;
         assert buf.length >= off + len;
@@ -232,10 +232,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
      * @param timeout Operation timeout in milliseconds ({@code 0} to wait forever).
      * @return Read bytes count.
      * @throws IgniteCheckedException If space has been closed.
-     * @throws GridIpcSharedMemoryOperationTimedoutException If operation times out.
+     * @throws IpcSharedMemoryOperationTimedoutException If operation times out.
      */
     public int read(ByteBuffer buf, int off, int len, long timeout) throws IgniteCheckedException,
-        GridIpcSharedMemoryOperationTimedoutException{
+            IpcSharedMemoryOperationTimedoutException {
         assert buf != null;
         assert len > 0;
         assert buf.capacity() >= off + len;
@@ -369,6 +369,6 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIpcSharedMemorySpace.class, this, "closed", closed.get());
+        return S.toString(IpcSharedMemorySpace.class, this, "closed", closed.get());
     }
 }

@@ -15,15 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.ipc;
+package org.apache.ignite.internal.util.ipc.shmem.benchmark;
+
+import java.io.*;
 
 /**
- * IPC endpoint type.
+ *
  */
-public enum GridIpcEndpointType {
-    /** TCP loopback socket. Supported on all platforms. */
-    TCP_LOOPBACK,
+interface IpcSharedMemoryBenchmarkParty {
+    /** */
+    public static final int DFLT_SPACE_SIZE = 512 * 1024;
 
-    /** Shared memory region. Supported on POSIX-compliant OSes. */
-    SHARED_MEMORY
+    /** */
+    public static final int DFLT_BUF_SIZE = 8 * 1024;
+
+    /** */
+    public static final String DFLT_TOKEN =
+        new File(System.getProperty("java.io.tmpdir"), "benchmark").getAbsolutePath();
 }

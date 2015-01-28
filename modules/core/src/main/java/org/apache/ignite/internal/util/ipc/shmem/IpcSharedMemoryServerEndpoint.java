@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Server shared memory IPC endpoint.
  */
-public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint {
+public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Troubleshooting public wiki page. */
     public static final String TROUBLESHOOTING_URL = "http://bit.ly/GridGain-Troubleshooting";
 
@@ -118,11 +118,11 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     private volatile boolean closed;
 
     /** Spaces opened on with this endpoint. */
-    private final Collection<GridIpcSharedMemoryClientEndpoint> endpoints =
+    private final Collection<IpcSharedMemoryClientEndpoint> endpoints =
         new GridConcurrentHashSet<>();
 
     /** Use this constructor when dependencies could be injected with {@link GridResourceProcessor#injectGeneric(Object)}. */
-    public GridIpcSharedMemoryServerEndpoint() {
+    public IpcSharedMemoryServerEndpoint() {
         // No-op.
     }
 
@@ -133,7 +133,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      * @param locNodeId Node id.
      * @param gridName Grid name.
      */
-    public GridIpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
         this.log = log;
         this.locNodeId = locNodeId;
         this.gridName = gridName;
@@ -146,27 +146,27 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
 
         pid = IpcSharedMemoryUtils.pid();
 
         if (pid == -1)
-            throw new GridIpcEndpointBindException("Failed to get PID of the current process.");
+            throw new IpcEndpointBindException("Failed to get PID of the current process.");
 
         if (size <= 0)
-            throw new GridIpcEndpointBindException("Space size should be positive: " + size);
+            throw new IpcEndpointBindException("Space size should be positive: " + size);
 
         String tokDirPath = this.tokDirPath;
 
         if (F.isEmpty(tokDirPath))
-            throw new GridIpcEndpointBindException("Token directory path is empty.");
+            throw new IpcEndpointBindException("Token directory path is empty.");
 
         tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + IpcSharedMemoryUtils.pid();
 
         tokDir = U.resolveWorkDirectory(tokDirPath, false);
 
         if (port <= 0 || port >= 0xffff)
-            throw new GridIpcEndpointBindException("Port value is illegal: " + port);
+            throw new IpcEndpointBindException("Port value is illegal: " + port);
 
         try {
             srvSock = new ServerSocket();
@@ -178,7 +178,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             // Although empty socket constructor never throws exception, close it just in case.
             U.closeQuiet(srvSock);
 
-            throw new GridIpcEndpointBindException("Failed to bind shared memory IPC endpoint (is port already " +
+            throw new IpcEndpointBindException("Failed to bind shared memory IPC endpoint (is port already " +
                 "in use?): " + port, e);
         }
 
@@ -193,7 +193,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
     /** {@inheritDoc} */
     @SuppressWarnings("ErrorNotRethrown")
-    @Override public GridIpcEndpoint accept() throws IgniteCheckedException {
+    @Override public IpcEndpoint accept() throws IgniteCheckedException {
         while (!Thread.currentThread().isInterrupted()) {
             Socket sock = null;
 
@@ -209,14 +209,14 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
                 ObjectOutputStream out = new ObjectOutputStream(sock.getOutputStream());
 
-                GridIpcSharedMemorySpace inSpace = null;
+                IpcSharedMemorySpace inSpace = null;
 
-                GridIpcSharedMemorySpace outSpace = null;
+                IpcSharedMemorySpace outSpace = null;
 
                 boolean err = true;
 
                 try {
-                    GridIpcSharedMemoryInitRequest req = (GridIpcSharedMemoryInitRequest)in.readObject();
+                    IpcSharedMemoryInitRequest req = (IpcSharedMemoryInitRequest)in.readObject();
 
                     if (log.isDebugEnabled())
                         log.debug("Processing request: " + req);
@@ -236,7 +236,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                     if (log.isDebugEnabled())
                         log.debug("Created token files: " + p);
 
-                    inSpace = new GridIpcSharedMemorySpace(
+                    inSpace = new IpcSharedMemorySpace(
                         file1,
                         req.pid(),
                         pid,
@@ -244,7 +244,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                         true,
                         log);
 
-                    outSpace = new GridIpcSharedMemorySpace(
+                    outSpace = new IpcSharedMemorySpace(
                         file2,
                         pid,
                         req.pid(),
@@ -252,10 +252,10 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                         false,
                         log);
 
-                    GridIpcSharedMemoryClientEndpoint ret = new GridIpcSharedMemoryClientEndpoint(inSpace, outSpace,
+                    IpcSharedMemoryClientEndpoint ret = new IpcSharedMemoryClientEndpoint(inSpace, outSpace,
                         log);
 
-                    out.writeObject(new GridIpcSharedMemoryInitResponse(file2, outSpace.sharedMemoryId(),
+                    out.writeObject(new IpcSharedMemoryInitResponse(file2, outSpace.sharedMemoryId(),
                         file1, inSpace.sharedMemoryId(), pid, size));
 
                     err = !in.readBoolean();
@@ -283,7 +283,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
                     sendErrorResponse(out, e);
                 }
-                catch (GridIpcOutOfSystemResourcesException e) {
+                catch (IpcOutOfSystemResourcesException e) {
                     if (!omitOutOfResourcesWarn)
                         LT.warn(log, null, OUT_OF_RESOURCES_MSG);
 
@@ -346,7 +346,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
      */
     private void sendErrorResponse(ObjectOutput out, Exception err) {
         try {
-            out.writeObject(new GridIpcSharedMemoryInitResponse(err));
+            out.writeObject(new IpcSharedMemoryInitResponse(err));
         }
         catch (IOException e) {
             U.error(log, "Failed to send error response to client.", e);
@@ -460,7 +460,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIpcSharedMemoryServerEndpoint.class, this);
+        return S.toString(IpcSharedMemoryServerEndpoint.class, this);
     }
 
     /**
@@ -563,7 +563,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                 if (log.isDebugEnabled())
                     log.debug("Processing local spaces.");
 
-                for (GridIpcSharedMemoryClientEndpoint e : endpoints) {
+                for (IpcSharedMemoryClientEndpoint e : endpoints) {
                     if (log.isDebugEnabled())
                         log.debug("Processing endpoint: " + e);
 

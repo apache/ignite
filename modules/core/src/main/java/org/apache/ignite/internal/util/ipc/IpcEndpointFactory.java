@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.ipc.shmem.*;
 /**
  * Ggfs endpoint factory for inter-process communication.
  */
-public class GridIpcEndpointFactory {
+public class IpcEndpointFactory {
     /**
      * Connects to open server IPC endpoint.
      *
@@ -34,7 +34,7 @@ public class GridIpcEndpointFactory {
      * @return Connected client endpoint.
      * @throws IgniteCheckedException If failed to establish connection.
      */
-    public static GridIpcEndpoint connectEndpoint(String endpointAddr, IgniteLogger log) throws IgniteCheckedException {
+    public static IpcEndpoint connectEndpoint(String endpointAddr, IgniteLogger log) throws IgniteCheckedException {
         A.notNull(endpointAddr, "endpointAddr");
 
         String[] split = endpointAddr.split(":");
@@ -54,8 +54,8 @@ public class GridIpcEndpointFactory {
             port = -1;
 
         return "shmem".equalsIgnoreCase(split[0]) ?
-            connectSharedMemoryEndpoint(port > 0 ? port : GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log) :
-            connectTcpEndpoint(split[0], port > 0 ? port : GridIpcServerTcpEndpoint.DFLT_IPC_PORT);
+            connectSharedMemoryEndpoint(port > 0 ? port : IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, log) :
+            connectTcpEndpoint(split[0], port > 0 ? port : IpcServerTcpEndpoint.DFLT_IPC_PORT);
     }
 
     /**
@@ -66,8 +66,8 @@ public class GridIpcEndpointFactory {
      * @return Connected client endpoint.
      * @throws IgniteCheckedException If connection failed.
      */
-    private static GridIpcEndpoint connectTcpEndpoint(String host, int port) throws IgniteCheckedException {
-       return new GridIpcClientTcpEndpoint(host, port);
+    private static IpcEndpoint connectTcpEndpoint(String host, int port) throws IgniteCheckedException {
+       return new IpcClientTcpEndpoint(host, port);
     }
 
     /**
@@ -78,7 +78,7 @@ public class GridIpcEndpointFactory {
      * @return Connected client endpoint.
      * @throws IgniteCheckedException If connection failed.
      */
-    private static GridIpcEndpoint connectSharedMemoryEndpoint(int port, IgniteLogger log) throws IgniteCheckedException {
-        return new GridIpcSharedMemoryClientEndpoint(port, log);
+    private static IpcEndpoint connectSharedMemoryEndpoint(int port, IgniteLogger log) throws IgniteCheckedException {
+        return new IpcSharedMemoryClientEndpoint(port, log);
     }
 }

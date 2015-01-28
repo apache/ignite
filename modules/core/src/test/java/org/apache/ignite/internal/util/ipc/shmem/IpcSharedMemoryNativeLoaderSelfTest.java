@@ -7,7 +7,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 import java.util.*;
 
-public class GridIpcSharedMemoryNativeLoaderSelfTest extends TestCase {
+public class IpcSharedMemoryNativeLoaderSelfTest extends TestCase {
 
     public void testLoadWithCorruptedLibFile() throws Exception {
         if (U.isWindows())

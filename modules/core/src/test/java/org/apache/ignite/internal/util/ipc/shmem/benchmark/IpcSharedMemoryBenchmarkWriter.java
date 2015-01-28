@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
 /**
  *
  */
-public class GridIpcSharedMemoryBenchmarkWriter implements GridIpcSharedMemoryBenchmarkParty {
+public class IpcSharedMemoryBenchmarkWriter implements IpcSharedMemoryBenchmarkParty {
     /** Large send buffer size. */
     public static final int SRC_BUFFER_SIZE = 512 * 1024 * 1024;
 
@@ -42,7 +42,7 @@ public class GridIpcSharedMemoryBenchmarkWriter implements GridIpcSharedMemoryBe
      * @throws IgniteCheckedException If failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
 
         int nThreads = args.length > 0 ? Integer.parseInt(args[0]) : 1;
 
@@ -80,11 +80,11 @@ public class GridIpcSharedMemoryBenchmarkWriter implements GridIpcSharedMemoryBe
 
             new Thread(new Runnable() {
                 @Override public void run() {
-                    GridIpcEndpoint client = null;
+                    IpcEndpoint client = null;
 
                     try {
-                        client = GridIpcEndpointFactory.connectEndpoint("shmem:" +
-                            GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
+                        client = IpcEndpointFactory.connectEndpoint("shmem:" +
+                                IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
 
                         OutputStream space = client.outputStream();
 

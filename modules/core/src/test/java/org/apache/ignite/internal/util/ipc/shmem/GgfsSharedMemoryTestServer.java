@@ -17,60 +17,55 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.logger.java.*;
+import org.apache.ignite.internal.util.ipc.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.testframework.junits.*;
 
 import java.io.*;
 
 /**
- * Test-purposed app launching {@link GridIpcSharedMemoryClientEndpoint} and designed
+ * Test-purposed app launching {@link IpcSharedMemoryServerEndpoint} and designed
  * to be used with conjunction to {@link GridJavaProcess}.
  */
-public class GridGgfsSharedMemoryTestClient {
-    /**
-     * Internal protocol message prefix saying that the next text in the outputted line
-     * are comma-separated shared memory ids.
-     */
-    static final String SHMEM_IDS_MSG_PREFIX = "SHMEM_IDS_MSG_PREFIX";
-
-    /**
-     * @param args Args.
-     */
+public class GgfsSharedMemoryTestServer {
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
-    public static void main(String[] args) {
-        X.println("Starting client ...");
+    public static void main(String[] args) throws IgniteCheckedException {
+        System.out.println("Starting server ...");
+
+        U.setWorkDirectory(null, U.getGridGainHome());
 
         // Tell our process PID to the wrapper.
         X.println(GridJavaProcess.PID_MSG_PREFIX + U.jvmPid());
 
-        OutputStream os = null;
+        InputStream is = null;
 
         try {
-            GridIpcSharedMemoryClientEndpoint client = (GridIpcSharedMemoryClientEndpoint)GridIpcEndpointFactory.connectEndpoint(
-                "shmem:" + GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT, new IgniteJavaLogger());
+            IpcServerEndpoint srv = new IpcSharedMemoryServerEndpoint();
 
-            os = client.outputStream();
+            new GridTestResources().inject(srv);
 
-            // Tell our shmem ids.
-            X.println(SHMEM_IDS_MSG_PREFIX + client.inSpace().sharedMemoryId() + "," +
-                client.outSpace().sharedMemoryId());
+            srv.start();
+
+            IpcEndpoint clientEndpoint = srv.accept();
+
+            is = clientEndpoint.inputStream();
 
             for (;;) {
-                X.println("Write: 123");
+                X.println("Before read.");
 
-                os.write(123);
+                is.read();
 
-                Thread.sleep(GridIpcSharedMemoryCrashDetectionSelfTest.RW_SLEEP_TIMEOUT);
+                Thread.sleep(IpcSharedMemoryCrashDetectionSelfTest.RW_SLEEP_TIMEOUT);
             }
         }
         catch (Exception e) {
             e.printStackTrace();
         }
         finally {
-            U.closeQuiet(os);
+            U.closeQuiet(is);
         }
     }
 }

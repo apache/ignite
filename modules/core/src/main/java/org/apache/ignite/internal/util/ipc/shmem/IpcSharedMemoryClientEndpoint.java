@@ -27,18 +27,18 @@ import java.net.*;
 /**
  * IPC endpoint based on shared memory space.
  */
-public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
+public class IpcSharedMemoryClientEndpoint implements IpcEndpoint {
     /** In space. */
-    private final GridIpcSharedMemorySpace inSpace;
+    private final IpcSharedMemorySpace inSpace;
 
     /** Out space. */
-    private final GridIpcSharedMemorySpace outSpace;
+    private final IpcSharedMemorySpace outSpace;
 
     /** In space. */
-    private final GridIpcSharedMemoryInputStream in;
+    private final IpcSharedMemoryInputStream in;
 
     /** Out space. */
-    private final GridIpcSharedMemoryOutputStream out;
+    private final IpcSharedMemoryOutputStream out;
 
     /** */
     private boolean checkIn = true;
@@ -59,18 +59,18 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @param outSpace Out space.
      * @param parent Parent logger.
      */
-    public GridIpcSharedMemoryClientEndpoint(GridIpcSharedMemorySpace inSpace, GridIpcSharedMemorySpace outSpace,
-        IgniteLogger parent) {
+    public IpcSharedMemoryClientEndpoint(IpcSharedMemorySpace inSpace, IpcSharedMemorySpace outSpace,
+                                         IgniteLogger parent) {
         assert inSpace != null;
         assert outSpace != null;
 
-        log = parent.getLogger(GridIpcSharedMemoryClientEndpoint.class);
+        log = parent.getLogger(IpcSharedMemoryClientEndpoint.class);
 
         this.inSpace = inSpace;
         this.outSpace = outSpace;
 
-        in = new GridIpcSharedMemoryInputStream(inSpace);
-        out = new GridIpcSharedMemoryOutputStream(outSpace);
+        in = new IpcSharedMemoryInputStream(inSpace);
+        out = new IpcSharedMemoryOutputStream(outSpace);
 
         checker = null;
     }
@@ -83,7 +83,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @param parent Parent logger.
      * @throws IgniteCheckedException If connection fails.
      */
-    public GridIpcSharedMemoryClientEndpoint(int port, IgniteLogger parent) throws IgniteCheckedException {
+    public IpcSharedMemoryClientEndpoint(int port, IgniteLogger parent) throws IgniteCheckedException {
         this(port, 0, parent);
     }
 
@@ -97,14 +97,14 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      * @throws IgniteCheckedException If connection fails.
      */
     @SuppressWarnings({"CallToThreadStartDuringObjectConstruction", "ErrorNotRethrown"})
-    public GridIpcSharedMemoryClientEndpoint(int port, int timeout, IgniteLogger parent) throws IgniteCheckedException {
+    public IpcSharedMemoryClientEndpoint(int port, int timeout, IgniteLogger parent) throws IgniteCheckedException {
         assert port > 0;
         assert port < 0xffff;
 
-        log = parent.getLogger(GridIpcSharedMemoryClientEndpoint.class);
+        log = parent.getLogger(IpcSharedMemoryClientEndpoint.class);
 
-        GridIpcSharedMemorySpace inSpace = null;
-        GridIpcSharedMemorySpace outSpace = null;
+        IpcSharedMemorySpace inSpace = null;
+        IpcSharedMemorySpace outSpace = null;
 
         Socket sock = new Socket();
 
@@ -112,7 +112,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
         boolean clear = true;
 
         try {
-            GridIpcSharedMemoryNativeLoader.load();
+            IpcSharedMemoryNativeLoader.load();
 
             sock.connect(new InetSocketAddress("127.0.0.1", port), timeout);
 
@@ -121,11 +121,11 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
 
             int pid = IpcSharedMemoryUtils.pid();
 
-            out.writeObject(new GridIpcSharedMemoryInitRequest(pid));
+            out.writeObject(new IpcSharedMemoryInitRequest(pid));
 
             ObjectInputStream in = new ObjectInputStream(sock.getInputStream());
 
-            GridIpcSharedMemoryInitResponse res = (GridIpcSharedMemoryInitResponse)in.readObject();
+            IpcSharedMemoryInitResponse res = (IpcSharedMemoryInitResponse)in.readObject();
 
             err = res.error();
 
@@ -134,14 +134,14 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
 
                 assert inTokFileName != null;
 
-                inSpace = new GridIpcSharedMemorySpace(inTokFileName, res.pid(), pid, res.size(), true,
+                inSpace = new IpcSharedMemorySpace(inTokFileName, res.pid(), pid, res.size(), true,
                     res.inSharedMemoryId(), log);
 
                 String outTokFileName = res.outTokenFileName();
 
                 assert outTokFileName != null;
 
-                outSpace = new GridIpcSharedMemorySpace(outTokFileName, pid, res.pid(), res.size(), false,
+                outSpace = new IpcSharedMemorySpace(outTokFileName, pid, res.pid(), res.size(), false,
                     res.outSharedMemoryId(), log);
 
                 // This is success ACK.
@@ -180,8 +180,8 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
         this.inSpace = inSpace;
         this.outSpace = outSpace;
 
-        in = new GridIpcSharedMemoryInputStream(inSpace);
-        out = new GridIpcSharedMemoryOutputStream(outSpace);
+        in = new IpcSharedMemoryInputStream(inSpace);
+        out = new IpcSharedMemoryOutputStream(outSpace);
 
         checker = new Thread(new AliveChecker());
 
@@ -275,7 +275,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      *
      * @return In space.
      */
-    GridIpcSharedMemorySpace inSpace() {
+    IpcSharedMemorySpace inSpace() {
         return inSpace;
     }
 
@@ -284,12 +284,12 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
      *
      * @return Out space.
      */
-    GridIpcSharedMemorySpace outSpace() {
+    IpcSharedMemorySpace outSpace() {
         return outSpace;
     }
 
     /** @param space Space to close. */
-    private void closeSpace(GridIpcSharedMemorySpace space) {
+    private void closeSpace(IpcSharedMemorySpace space) {
         assert space != null;
 
         space.forceClose();
@@ -306,7 +306,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIpcSharedMemoryClientEndpoint.class, this);
+        return S.toString(IpcSharedMemoryClientEndpoint.class, this);
     }
 
     /**

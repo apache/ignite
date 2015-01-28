@@ -6,14 +6,14 @@ import java.io.IOException;
 
 public class LoadWithCorruptedLibFileTestRunner {
     public static final String TMP_DIR_FOR_TEST = System.getProperty("user.home");
-    public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(GridIpcSharedMemoryNativeLoader.LIB_NAME);
+    public static final String LOADED_LIB_FILE_NAME = System.mapLibraryName(IpcSharedMemoryNativeLoader.LIB_NAME);
 
     public static void main(String[] args) throws Exception {
         System.setProperty("java.io.tmpdir", TMP_DIR_FOR_TEST);
 
         createCorruptedLibFile();
 
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
     }
 
     private static void createCorruptedLibFile() throws IOException {

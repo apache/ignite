@@ -27,7 +27,7 @@ import java.net.*;
 /**
  * Loopback IPC endpoint based on socket.
  */
-public class GridIpcClientTcpEndpoint implements GridIpcEndpoint {
+public class IpcClientTcpEndpoint implements IpcEndpoint {
     /** Client socket. */
     private Socket clientSock;
 
@@ -36,7 +36,7 @@ public class GridIpcClientTcpEndpoint implements GridIpcEndpoint {
      *
      * @param clientSock Connected client socket.
      */
-    public GridIpcClientTcpEndpoint(Socket clientSock) {
+    public IpcClientTcpEndpoint(Socket clientSock) {
         assert clientSock != null;
 
         this.clientSock = clientSock;
@@ -49,7 +49,7 @@ public class GridIpcClientTcpEndpoint implements GridIpcEndpoint {
      * @param host Host.
      * @throws IgniteCheckedException If connection fails.
      */
-    public GridIpcClientTcpEndpoint(String host, int port) throws IgniteCheckedException {
+    public IpcClientTcpEndpoint(String host, int port) throws IgniteCheckedException {
         clientSock = new Socket();
 
         try {

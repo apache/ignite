@@ -21,10 +21,10 @@ import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Thrown when IPC operation (such as {@link GridIpcSharedMemorySpace#wait(long)})
- * has timed out.
+ * Thrown when IPC runs out of system resources (for example, no more free shared memory is
+ * available in operating system).
  */
-public class GridIpcSharedMemoryOperationTimedoutException extends IgniteCheckedException {
+public class IpcOutOfSystemResourcesException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,7 +33,7 @@ public class GridIpcSharedMemoryOperationTimedoutException extends IgniteChecked
      *
      * @param msg Error message.
      */
-    public GridIpcSharedMemoryOperationTimedoutException(String msg) {
+    public IpcOutOfSystemResourcesException(String msg) {
         super(msg);
     }
 
@@ -43,7 +43,7 @@ public class GridIpcSharedMemoryOperationTimedoutException extends IgniteChecked
      *
      * @param cause Non-null throwable cause.
      */
-    public GridIpcSharedMemoryOperationTimedoutException(Throwable cause) {
+    public IpcOutOfSystemResourcesException(Throwable cause) {
         super(cause);
     }
 
@@ -53,7 +53,7 @@ public class GridIpcSharedMemoryOperationTimedoutException extends IgniteChecked
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public GridIpcSharedMemoryOperationTimedoutException(String msg, @Nullable Throwable cause) {
+    public IpcOutOfSystemResourcesException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

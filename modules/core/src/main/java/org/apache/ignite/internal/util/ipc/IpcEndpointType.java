@@ -17,33 +17,13 @@
 
 package org.apache.ignite.internal.util.ipc;
 
-import org.apache.ignite.*;
-
-import java.io.*;
-
 /**
- * GGFS IPC endpoint used for point-to-point communication.
+ * IPC endpoint type.
  */
-public interface GridIpcEndpoint extends Closeable {
-    /**
-     * Gets input stream associated with this IPC endpoint.
-     *
-     * @return IPC input stream.
-     * @throws IgniteCheckedException If error occurred.
-     */
-    public InputStream inputStream() throws IgniteCheckedException;
+public enum IpcEndpointType {
+    /** TCP loopback socket. Supported on all platforms. */
+    TCP_LOOPBACK,
 
-    /**
-     * Gets output stream associated with this IPC endpoint.
-     *
-     * @return IPC output stream.
-     * @throws IgniteCheckedException If error occurred.
-     */
-    public OutputStream outputStream() throws IgniteCheckedException;
-
-    /**
-     * Closes endpoint. Note that IPC endpoint may acquire native resources so it must be always closed
-     * once it is not needed.
-     */
-    @Override public void close();
+    /** Shared memory region. Supported on POSIX-compliant OSes. */
+    SHARED_MEMORY
 }

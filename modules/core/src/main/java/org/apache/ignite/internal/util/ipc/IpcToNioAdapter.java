@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.*;
  * communications.
  *
  * Note that this class consumes an entire thread inside {@link #serve()} method
- * in order to serve one {@link GridIpcEndpoint}.
+ * in order to serve one {@link IpcEndpoint}.
  */
-public class GridIpcToNioAdapter<T> {
+public class IpcToNioAdapter<T> {
     /** */
-    private final GridIpcEndpoint endp;
+    private final IpcEndpoint endp;
 
     /** */
     private final GridNioFilterChain<T> chain;
@@ -63,8 +63,8 @@ public class GridIpcToNioAdapter<T> {
      * @param lsnr Listener.
      * @param filters Filters.
      */
-    public GridIpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, GridIpcEndpoint endp,
-        GridNioMessageWriter msgWriter, GridNioServerListener<T> lsnr, GridNioFilter... filters) {
+    public IpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, IpcEndpoint endp,
+                           GridNioMessageWriter msgWriter, GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         assert metricsLsnr != null;
         assert msgWriter != null;
 
@@ -194,7 +194,7 @@ public class GridIpcToNioAdapter<T> {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<?> onSessionWrite(GridNioSession ses, Object msg) {
-            assert ses == GridIpcToNioAdapter.this.ses;
+            assert ses == IpcToNioAdapter.this.ses;
 
             return send((GridTcpCommunicationMessageAdapter)msg);
         }
@@ -227,9 +227,9 @@ public class GridIpcToNioAdapter<T> {
 
         /** {@inheritDoc} */
         @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) {
-            assert ses == GridIpcToNioAdapter.this.ses;
+            assert ses == IpcToNioAdapter.this.ses;
 
-            boolean closed = GridIpcToNioAdapter.this.ses.setClosed();
+            boolean closed = IpcToNioAdapter.this.ses.setClosed();
 
             if (closed)
                 endp.close();

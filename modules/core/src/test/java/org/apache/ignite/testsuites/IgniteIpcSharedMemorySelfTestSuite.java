@@ -31,10 +31,10 @@ public class IgniteIpcSharedMemorySelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite IPC Shared Memory Test Suite.");
 
-        suite.addTest(new TestSuite(GridIpcSharedMemorySpaceSelfTest.class));
+        suite.addTest(new TestSuite(IpcSharedMemorySpaceSelfTest.class));
         suite.addTest(new TestSuite(IpcSharedMemoryUtilsSelfTest.class));
-        suite.addTest(new TestSuite(GridIpcSharedMemoryCrashDetectionSelfTest.class));
-        suite.addTest(new TestSuite(GridIpcSharedMemoryNativeLoaderSelfTest.class));
+        suite.addTest(new TestSuite(IpcSharedMemoryCrashDetectionSelfTest.class));
+        suite.addTest(new TestSuite(IpcSharedMemoryNativeLoaderSelfTest.class));
 
         return suite;
     }

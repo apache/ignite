@@ -15,45 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.ipc.shmem;
+package org.apache.ignite.internal.util.ipc;
 
 import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
 
 /**
- * Thrown when IPC runs out of system resources (for example, no more free shared memory is
- * available in operating system).
+ * Represents exception occurred during IPC endpoint binding.
  */
-public class GridIpcOutOfSystemResourcesException extends IgniteCheckedException {
+public class IpcEndpointBindException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception with given error message.
+     * Constructor.
      *
-     * @param msg Error message.
+     * @param msg Message.
      */
-    public GridIpcOutOfSystemResourcesException(String msg) {
+    public IpcEndpointBindException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates new exception with given throwable as a cause and
-     * source of error message.
+     * Constructor.
      *
-     * @param cause Non-null throwable cause.
+     * @param msg Message.
+     * @param cause Cause.
      */
-    public GridIpcOutOfSystemResourcesException(Throwable cause) {
-        super(cause);
-    }
-
-    /**
-     * Creates new exception with given error message and optional nested exception.
-     *
-     * @param msg Error message.
-     * @param cause Optional nested exception (can be {@code null}).
-     */
-    public GridIpcOutOfSystemResourcesException(String msg, @Nullable Throwable cause) {
+    public IpcEndpointBindException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

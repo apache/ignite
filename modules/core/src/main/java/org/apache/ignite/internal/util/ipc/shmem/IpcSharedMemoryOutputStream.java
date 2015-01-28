@@ -25,14 +25,14 @@ import java.io.*;
 /**
  *
  */
-public class GridIpcSharedMemoryOutputStream extends OutputStream {
+public class IpcSharedMemoryOutputStream extends OutputStream {
     /** */
-    private final GridIpcSharedMemorySpace out;
+    private final IpcSharedMemorySpace out;
 
     /**
      * @param out Space.
      */
-    public GridIpcSharedMemoryOutputStream(GridIpcSharedMemorySpace out) {
+    public IpcSharedMemoryOutputStream(IpcSharedMemorySpace out) {
         assert out != null;
 
         this.out = out;
@@ -75,6 +75,6 @@ public class GridIpcSharedMemoryOutputStream extends OutputStream {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridIpcSharedMemoryOutputStream.class, this);
+        return S.toString(IpcSharedMemoryOutputStream.class, this);
     }
 }

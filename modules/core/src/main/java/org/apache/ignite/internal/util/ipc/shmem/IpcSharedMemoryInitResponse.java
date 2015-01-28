@@ -25,7 +25,7 @@ import java.io.*;
 /**
  *
  */
-public class GridIpcSharedMemoryInitResponse implements Externalizable {
+public class IpcSharedMemoryInitResponse implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -60,8 +60,8 @@ public class GridIpcSharedMemoryInitResponse implements Externalizable {
      * @param pid PID of the {@code server} party.
      * @param size Size.
      */
-    public GridIpcSharedMemoryInitResponse(String inTokFileName, int inSharedMemId, String outTokFileName,
-        int outSharedMemId, int pid, int size) {
+    public IpcSharedMemoryInitResponse(String inTokFileName, int inSharedMemId, String outTokFileName,
+                                       int outSharedMemId, int pid, int size) {
         this.inTokFileName = inTokFileName;
         this.inSharedMemId = inSharedMemId;
         this.outTokFileName = outTokFileName;
@@ -75,14 +75,14 @@ public class GridIpcSharedMemoryInitResponse implements Externalizable {
      *
      * @param err Error cause.
      */
-    public GridIpcSharedMemoryInitResponse(Exception err) {
+    public IpcSharedMemoryInitResponse(Exception err) {
         this.err = err;
     }
 
     /**
      * Required by {@code Externalizable}.
      */
-    public GridIpcSharedMemoryInitResponse() {
+    public IpcSharedMemoryInitResponse() {
         // No-op.
     }
 
@@ -160,7 +160,7 @@ public class GridIpcSharedMemoryInitResponse implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "GridIpcSharedMemoryInitResponse [err=" + err +
+        return "IpcSharedMemoryInitResponse [err=" + err +
             ", inTokFileName=" + inTokFileName +
             ", inSharedMemId=" + inSharedMemId +
             ", outTokFileName=" + outTokFileName +

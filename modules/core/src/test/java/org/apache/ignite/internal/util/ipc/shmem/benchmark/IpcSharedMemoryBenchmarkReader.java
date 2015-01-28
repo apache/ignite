@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.*;
 /**
  *
  */
-public class GridIpcSharedMemoryBenchmarkReader implements GridIpcSharedMemoryBenchmarkParty {
+public class IpcSharedMemoryBenchmarkReader implements IpcSharedMemoryBenchmarkParty {
     /** Destination buffer size. */
     public static final int DST_BUFFER_SIZE = 512 * 1024 * 1024;
 
@@ -43,7 +43,7 @@ public class GridIpcSharedMemoryBenchmarkReader implements GridIpcSharedMemoryBe
      * @throws IgniteCheckedException If failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        GridIpcSharedMemoryNativeLoader.load();
+        IpcSharedMemoryNativeLoader.load();
 
         int nThreads = (args.length > 0 ? Integer.parseInt(args[0]) : 1);
 
@@ -76,13 +76,13 @@ public class GridIpcSharedMemoryBenchmarkReader implements GridIpcSharedMemoryBe
             }
         });
 
-        try (GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint()) {
+        try (IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint()) {
             new GridTestResources().inject(srv);
 
             srv.start();
 
             for (int i = 0; i < nThreads; i++) {
-                final GridIpcEndpoint endPnt = srv.accept();
+                final IpcEndpoint endPnt = srv.accept();
 
                 new Thread(new Runnable() {
                     @Override
