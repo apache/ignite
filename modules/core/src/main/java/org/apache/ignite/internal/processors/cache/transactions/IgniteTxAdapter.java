@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -546,8 +547,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport enableAsync() {
-        throw new UnsupportedOperationException("enableAsync() should not be called on IgniteTxAdapter directly.");
+    @Override public IgniteAsyncSupport withAsync() {
+        throw new UnsupportedOperationException("withAsync() should not be called on IgniteTxAdapter directly.");
     }
 
     /** {@inheritDoc} */
@@ -1513,7 +1514,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport enableAsync() {
+        @Override public IgniteAsyncSupport withAsync() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

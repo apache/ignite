@@ -147,7 +147,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             checkValue(key, 63);
 
-            IgniteCache<Integer, Integer> asyncCache = cache.enableAsync();
+            IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
             assertTrue(asyncCache.isAsync());
 
@@ -398,7 +398,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
         for (Integer key : keys)
             checkValue(key, null);
 
-        IgniteCache<Integer, Integer> asyncCache = cache.enableAsync();
+        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
         assertTrue(asyncCache.isAsync());
 

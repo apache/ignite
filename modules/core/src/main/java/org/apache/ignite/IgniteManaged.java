@@ -356,5 +356,5 @@ public interface IgniteManaged extends IgniteAsyncSupport {
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged enableAsync();
+    @Override public IgniteManaged withAsync();
 }

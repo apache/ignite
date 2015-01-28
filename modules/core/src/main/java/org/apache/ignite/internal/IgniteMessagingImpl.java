@@ -19,19 +19,20 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.IgniteMessaging} implementation.
+ * {@link IgniteMessaging} implementation.
  */
-public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements IgniteMessaging, Externalizable {
+public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter<IgniteMessaging>
+    implements IgniteMessaging, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -158,7 +159,8 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p) throws IgniteCheckedException {
+    @Override public UUID remoteListen(@Nullable Object topic, IgniteBiPredicate<UUID, ?> p)
+        throws IgniteCheckedException {
         A.notNull(p, "p");
 
         guard();
@@ -195,7 +197,7 @@ public class IgniteMessagingImpl extends IgniteAsyncSupportAdapter implements Ig
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteMessaging enableAsync() {
+    @Override protected IgniteMessaging createAsyncInstance() {
         return new IgniteMessagingImpl(ctx, prj, true);
     }
 

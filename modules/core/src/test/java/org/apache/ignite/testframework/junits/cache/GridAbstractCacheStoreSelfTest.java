@@ -541,7 +541,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport enableAsync() {
+        @Override public IgniteAsyncSupport withAsync() {
             throw new UnsupportedOperationException();
         }
 

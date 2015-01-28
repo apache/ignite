@@ -341,5 +341,5 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
         long maxRangeLen, @Nullable T arg) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public IgniteFs enableAsync();
+    @Override public IgniteFs withAsync();
 }

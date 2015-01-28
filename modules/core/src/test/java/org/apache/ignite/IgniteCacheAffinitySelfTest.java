@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests for {@link org.apache.ignite.internal.processors.affinity.GridAffinityProcessor.CacheAffinityProxy}.
  */
-public class IgniteCacheAffinityTest extends IgniteCacheAbstractTest {
+public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     /** Initial grid count. */
     private int GRID_COUNT = 3;
 

@@ -30,6 +30,7 @@ import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Main entry point for all <b>Data Grid APIs.</b> You can get a named cache by calling {@link Ignite#cache(String)}
@@ -65,7 +66,7 @@ import java.util.concurrent.*;
  */
 public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
-    public @Override IgniteCache<K, V> enableAsync();
+    public @Override IgniteCache<K, V> withAsync();
 
     /** {@inheritDoc} */
     public @Override <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);
@@ -162,48 +163,43 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Nullable public V getAndPutIfAbsent(K key, V val) throws CacheException;
 
     /**
-     * Return a {@link CacheLock} instance associated with passed key.
+     * Creates a {@link Lock} instance associated with passed key.
      * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     * Returned lock does not support {@link Lock#newCondition()} method,
+     * other methods defined in {@link Lock} are supported.
      *
      * @param key Key for lock.
      * @return New lock instance associated with passed key.
-     * @see CacheLock#lock()
-     * @see CacheLock#tryLock(long, TimeUnit)
+     * @see Lock#lock()
+     * @see Lock#tryLock(long, TimeUnit)
      */
-    public CacheLock lock(K key);
+    public Lock lock(K key);
 
     /**
-     * Return a {@link CacheLock} instance associated with passed keys.
+     * Creates a {@link Lock} instance associated with passed keys.
      * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
+     * Returned lock does not support {@link Lock#newCondition()} method,
+     * other methods defined in {@link Lock} are supported.
      *
      * @param keys Keys for lock.
      * @return New lock instance associated with passed key.
-     * @see CacheLock#lock()
-     * @see CacheLock#tryLock(long, TimeUnit)
+     * @see Lock#lock()
+     * @see Lock#tryLock(long, TimeUnit)
      */
-    public CacheLock lockAll(Collection<? extends K> keys);
+    public Lock lockAll(Collection<? extends K> keys);
 
     /**
-     * Checks if any node owns a lock for this key.
+     * Checks if specified key is locked.
      * <p>
      * This is a local in-VM operation and does not involve any network trips
      * or access to persistent storage in any way.
      *
      * @param key Key to check.
+     * @param byCurrThread If {@code true} method will check that current thread owns a lock on this key, other vise
+     *     will check that any thread on any node owns a lock on this key.
      * @return {@code True} if lock is owned by some node.
      */
-    public boolean isLocked(K key);
-
-    /**
-     * Checks if current thread owns a lock on this key.
-     * <p>
-     * This is a local in-VM operation and does not involve any network trips
-     * or access to persistent storage in any way.
-     *
-     * @param key Key to check.
-     * @return {@code True} if key is locked by current thread.
-     */
-    public boolean isLockedByThread(K key);
+    public boolean isLocalLocked(K key, boolean byCurrThread);
 
     public QueryCursor<Entry<K, V>> query(QueryPredicate<K, V> filter);
 

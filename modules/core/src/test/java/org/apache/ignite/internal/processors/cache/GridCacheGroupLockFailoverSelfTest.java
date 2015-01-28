@@ -320,7 +320,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         throws IgniteCheckedException {
         ClusterGroup prj = master.cluster().forPredicate(workerNodesFilter);
 
-        IgniteCompute comp = master.compute(prj).enableAsync();
+        IgniteCompute comp = master.compute(prj).withAsync();
 
         comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);
 
