@@ -224,9 +224,13 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             final AtomicBoolean isOk = new AtomicBoolean(false);
 
+            final CountDownLatch latch = new CountDownLatch(1);
+
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
+                        latch.countDown();
+
                         cache.lockAll(Arrays.asList(keys.get(0), keys.get(1))).tryLock(50000, MILLISECONDS);
                     }
                     catch (InterruptedException ignored) {
@@ -237,8 +241,9 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
 
             t.start();
 
-            JOptionPane.showConfirmDialog(null, "wait");
-            Thread.sleep(100);
+            latch.await();
+
+            Thread.sleep(300);
 
             t.interrupt();
 
