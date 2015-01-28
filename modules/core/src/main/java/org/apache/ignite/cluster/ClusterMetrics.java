@@ -17,523 +17,620 @@
 
 package org.apache.ignite.cluster;
 
-import java.io.*;
-
 /**
- * This interface defines cumulative metrics for the projection. Projection metrics are
- * defined as combined total, min, max, and average measurements from participating nodes'
- * metrics. Projection metrics are obtained by calling {@link ClusterGroup#metrics()}
- * method.
+ * This class represents runtime information on a node. Apart from obvious
+ * statistical value, this information is used for implementation of
+ * load balancing, failover, and collision SPIs. For example, collision SPI
+ * in combination with fail-over SPI could check if other nodes don't have
+ * any active or waiting jobs and fail-over some jobs to those nodes.
  * <p>
- * Note that these metrics already represent the current snapshot and can change from call
- * to call. If projection is dynamic the metrics snapshot will also change with changes
- * in participating nodes.
- * @see ClusterNodeMetrics
- * @see ClusterGroup#metrics()
+ * Node metrics for any node can be accessed via {@link org.apache.ignite.cluster.ClusterNode#metrics()}
+ * method. Keep in mind that there will be a certain network delay (usually
+ * equal to heartbeat delay) for the accuracy of node metrics. However, when accessing
+ * metrics on local node {@link org.apache.ignite.IgniteCluster#localNode() Grid.localNode().getMetrics()}
+ * the metrics are always accurate and up to date.
+ * <p>
+ * Local node metrics are registered as {@code MBean} and can be accessed from
+ * any JMX management console. The simplest way is to use standard {@code jconsole}
+ * that comes with JDK as it also provides ability to view any node parameter
+ * as a graph.
  */
-public interface ClusterMetrics extends Serializable {
+public interface ClusterMetrics {
     /**
-     * Gets minimum number of active jobs that concurrently run on nodes in the projection.
+     * Gets last update time of this node metrics.
      *
-     * @return Minimum number of active jobs.
+     * @return Last update time.
      */
-    public int getMinimumActiveJobs();
+    public long getLastUpdateTime();
 
     /**
-     * Gets maximum number of active jobs that concurrently run on nodes in the projection.
+     * Gets maximum number of jobs that ever ran concurrently on this node.
+     * Note that this different from {@link #getTotalExecutedJobs()}
+     * metric and only reflects maximum number of jobs that ran at the same time.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Maximum number of active jobs.
+     * @return Maximum number of jobs that ever ran concurrently on this node.
      */
     public int getMaximumActiveJobs();
 
     /**
-     * Gets average number of active jobs that concurrently run nodes in the projection.
+     * Gets number of currently active jobs concurrently executing on the node.
+     *
+     * @return Number of currently active jobs concurrently executing on the node.
+     */
+    public int getCurrentActiveJobs();
+
+    /**
+     * Gets average number of active jobs concurrently executing on the node.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
      * @return Average number of active jobs.
      */
     public float getAverageActiveJobs();
 
     /**
-     * Gets minimum number of cancelled jobs that concurrently run on nodes in the projection.
-     *
-     * @return Minimum number of cancelled jobs.
-     */
-    public int getMinimumCancelledJobs();
-
-    /**
-     * Gets maximum number of cancelled jobs that concurrently run on nodes in the projection.
-     *
-     * @return Maximum number of cancelled jobs.
-     */
-    public int getMaximumCancelledJobs();
-
-    /**
-     * Gets average number of cancelled jobs that concurrently run nodes in the projection.
-     *
-     * @return Average number of cancelled jobs.
-     */
-    public float getAverageCancelledJobs();
-
-    /**
-     * Gets minimum number of rejected jobs that concurrently run on nodes in the projection.
-     *
-     * @return Minimum number of rejected jobs.
-     */
-    public int getMinimumRejectedJobs();
-
-    /**
-     * Gets maximum number of rejected jobs that concurrently run on nodes in the projection.
-     *
-     * @return Maximum number of rejected jobs.
-     */
-    public int getMaximumRejectedJobs();
-
-    /**
-     * Gets average number of rejected jobs that concurrently run nodes in the projection.
-     *
-     * @return Average number of rejected jobs.
-     */
-    public float getAverageRejectedJobs();
-
-    /**
-     * Gets minimum number of waiting jobs that concurrently run on nodes in the projection.
-     *
-     * @return Minimum number of waiting jobs.
-     */
-    public int getMinimumWaitingJobs();
-
-    /**
-     * Gets maximum number of waiting jobs that concurrently run on nodes in the projection.
+     * Gets maximum number of waiting jobs this node had.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
      * @return Maximum number of waiting jobs.
      */
     public int getMaximumWaitingJobs();
 
     /**
-     * Gets average number of waiting jobs that concurrently run nodes in the projection.
+     * Gets number of queued jobs currently waiting to be executed.
+     *
+     * @return Number of queued jobs currently waiting to be executed.
+     */
+    public int getCurrentWaitingJobs();
+
+    /**
+     * Gets average number of waiting jobs this node had queued.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
      * @return Average number of waiting jobs.
      */
     public float getAverageWaitingJobs();
 
     /**
-     * Gets minimum job execution time for nodes in the projection.
+     * Gets maximum number of jobs rejected at once during a single collision resolution
+     * operation.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Minimum job execution time.
+     * @return Maximum number of jobs rejected at once.
      */
-    public long getMinimumJobExecuteTime();
+    public int getMaximumRejectedJobs();
 
     /**
-     * Gets maximum job execution time for nodes in the projection.
+     * Gets number of jobs rejected after more recent collision resolution operation.
      *
-     * @return Maximum job execution time.
+     * @return Number of jobs rejected after more recent collision resolution operation.
      */
-    public long getMaximumJobExecuteTime();
+    public int getCurrentRejectedJobs();
 
     /**
-     * Gets average job execution time for nodes in the projection.
+     * Gets average number of jobs this node rejects during collision resolution operations.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of grid configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Average job execution time.
+     * @return Average number of jobs this node rejects during collision resolution operations.
      */
-    public double getAverageJobExecuteTime();
+    public float getAverageRejectedJobs();
 
     /**
-     * Gets minimum job wait time for nodes in the projection.
+     * Gets total number of jobs this node rejects during collision resolution operations since node startup.
+     * <p>
+     * <b>Note:</b> Unlike most of other aggregation metrics this metric is not calculated over history
+     * but over the entire node life.
      *
-     * @return Minimum job wait time.
+     * @return Total number of jobs this node rejects during collision resolution
+     *      operations since node startup.
      */
-    public long getMinimumJobWaitTime();
+    public int getTotalRejectedJobs();
 
     /**
-     * Gets maximum job wait time for nodes in the projection.
+     * Gets maximum number of cancelled jobs this node ever had running
+     * concurrently.
      *
-     * @return Maximum job wait time.
+     * @return Maximum number of cancelled jobs.
+     */
+    public int getMaximumCancelledJobs();
+
+    /**
+     * Gets number of cancelled jobs that are still running. Just like
+     * regular java threads, jobs will receive cancel notification, but
+     * it's ultimately up to the job itself to gracefully exit.
+     *
+     * @return Number of cancelled jobs that are still running.
+     */
+    public int getCurrentCancelledJobs();
+
+    /**
+     * Gets average number of cancelled jobs this node ever had running
+     * concurrently.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
+     *
+     * @return Average number of cancelled jobs.
+     */
+    public float getAverageCancelledJobs();
+
+    /**
+     * Gets number of cancelled jobs since node startup.
+     * <p>
+     * <b>Note:</b> Unlike most of other aggregation metrics this metric is not calculated over history
+     * but over the entire node life.
+     *
+     * @return Total number of cancelled jobs since node startup.
+     */
+    public int getTotalCancelledJobs();
+
+    /**
+     * Gets total number of jobs handled by the node since node startup.
+     * <p>
+     * <b>Note:</b> Unlike most of other aggregation metrics this metric is not calculated over history
+     * but over the entire node life.
+     *
+     * @return Total number of jobs handled by the node since node startup.
+     */
+    public int getTotalExecutedJobs();
+
+    /**
+     * Gets maximum time a job ever spent waiting in a queue to be executed.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
+     *
+     * @return Maximum waiting time.
      */
     public long getMaximumJobWaitTime();
 
     /**
-     * Gets average job wait time for nodes in the projection.
+     * Gets current time an oldest jobs has spent waiting to be executed.
+     *
+     * @return Current wait time of oldest job.
+     */
+    public long getCurrentJobWaitTime();
+
+    /**
+     * Gets average time jobs spend waiting in the queue to be executed.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
      * @return Average job wait time.
      */
     public double getAverageJobWaitTime();
 
     /**
-     * Gets minimum number of daemon threads for nodes in the projection.
+     * Gets time it took to execute the longest job on the node.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Minimum daemon thread count.
+     * @return Time it took to execute the longest job on the node.
      */
-    public int getMinimumDaemonThreadCount();
+    public long getMaximumJobExecuteTime();
 
     /**
-     * Gets maximum number of daemon threads for nodes in the projection.
+     * Gets longest time a current job has been executing for.
      *
-     * @return Maximum daemon thread count.
+     * @return Longest time a current job has been executing for.
      */
-    public int getMaximumDaemonThreadCount();
+    public long getCurrentJobExecuteTime();
 
     /**
-     * Gets average number of daemon threads for nodes in the projection.
+     * Gets average time a job takes to execute on the node.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Average daemon thread count.
+     * @return Average job execution time.
      */
-    public float getAverageDaemonThreadCount();
+    public double getAverageJobExecuteTime();
 
     /**
-     * Gets minimum number of threads for nodes in the projection.
+     * Gets total number of tasks handled by the node.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Minimum thread count.
+     * @return Total number of jobs handled by the node.
      */
-    public int getMinimumThreadCount();
+    public int getTotalExecutedTasks();
 
     /**
-     * Gets maximum number of threads for nodes in the projection.
+     * Gets total time this node spent executing jobs.
      *
-     * @return Maximum thread count.
+     * @return Total time this node spent executing jobs.
      */
-    public int getMaximumThreadCount();
+    public long getTotalBusyTime();
 
     /**
-     * Gets average number of threads for nodes in the projection.
+     * Gets total time this node spent idling (not executing any jobs).
      *
-     * @return Average thread count.
+     * @return Gets total time this node spent idling.
      */
-    public float getAverageThreadCount();
+    public long getTotalIdleTime();
 
     /**
-     * Gets minimum idle time for nodes in the projection.
+     * Gets time this node spend idling since executing last job.
      *
-     * @return Minimum idle time.
+     * @return Time this node spend idling since executing last job.
      */
-    public long getMinimumIdleTime();
+    public long getCurrentIdleTime();
 
     /**
-     * Gets maximum idle time for nodes in the projection.
+     * Gets percentage of time this node is busy executing jobs vs. idling.
      *
-     * @return Maximum idle time.
+     * @return Percentage of time this node is busy (value is less than
+     *      or equal to {@code 1} and greater than or equal to {@code 0})
      */
-    public long getMaximumIdleTime();
+    public float getBusyTimePercentage();
 
     /**
-     * Gets average idle time for nodes in the projection.
+     * Gets percentage of time this node is idling vs. executing jobs.
      *
-     * @return Average idle time.
-     */
-    public double getAverageIdleTime();
-
-    /**
-     * Gets percentage of time nodes in this projection are idling vs. executing jobs.
-     *
-     * @return Percentage of time nodes in this projection are idle (value is less than
-     *      or equal to {@code 1} and greater than or equal to {@code 0}).
+     * @return Percentage of time this node is idle (value is less than
+     *      or equal to {@code 1} and greater than or equal to {@code 0})
      */
     public float getIdleTimePercentage();
 
     /**
-     * Gets minimum busy time for nodes in the projection.
+     * Returns the number of CPUs available to the Java Virtual Machine.
+     * This method is equivalent to the {@link Runtime#availableProcessors()}
+     * method.
+     * <p>
+     * Note that this value may change during successive invocations of the
+     * virtual machine.
      *
-     * @return Minimum busy time.
-     */
-    public float getMinimumBusyTimePercentage();
-
-    /**
-     * Gets maximum busy time for nodes in the projection.
-     *
-     * @return Maximum busy time.
-     */
-    public float getMaximumBusyTimePercentage();
-
-    /**
-     * Gets average busy time for nodes in the projection.
-     *
-     * @return Average busy time.
-     */
-    public float getAverageBusyTimePercentage();
-
-    /**
-     * Gets minimum CPU load for nodes in the projection.
-     *
-     * @return Minimum CPU load.
-     */
-    public double getMinimumCpuLoad();
-
-    /**
-     * Gets maximum CPU load for nodes in the projection.
-     *
-     * @return Maximum CPU load.
-     */
-    public double getMaximumCpuLoad();
-
-    /**
-     * Gets average CPU load for nodes in the projection.
-     *
-     * @return Average CPU load in <code>[0, 1]</code> range.
-     */
-    public double getAverageCpuLoad();
-
-    /**
-     * Gets minimum amount of committed heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of committed heap memory.
-     */
-    public long getMinimumHeapMemoryCommitted();
-
-    /**
-     * Gets maximum amount of committed heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of committed heap memory.
-     */
-    public long getMaximumHeapMemoryCommitted();
-
-    /**
-     * Gets average amount of committed heap memory for nodes in the projection.
-     *
-     * @return Average amount of committed heap memory.
-     */
-    public double getAverageHeapMemoryCommitted();
-
-    /**
-     * Gets minimum amount of used heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of used heap memory.
-     */
-    public long getMinimumHeapMemoryUsed();
-
-    /**
-     * Gets maximum amount of used heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of used heap memory.
-     */
-    public long getMaximumHeapMemoryUsed();
-
-    /**
-     * Gets average amount of used heap memory for nodes in the projection.
-     *
-     * @return Average amount of used heap memory.
-     */
-    public double getAverageHeapMemoryUsed();
-
-    /**
-     * Gets minimum amount of maximum heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of maximum heap memory.
-     */
-    public long getMinimumHeapMemoryMaximum();
-
-    /**
-     * Gets maximum amount of maximum heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of used heap memory.
-     */
-    public long getMaximumHeapMemoryMaximum();
-
-    /**
-     * Gets minimum amount of maximum heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of maximum heap memory.
-     */
-    public double getAverageHeapMemoryMaximum();
-
-    /**
-     * Gets minimum amount of initialized heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of initialized heap memory.
-     */
-    public long getMinimumHeapMemoryInitialized();
-
-    /**
-     * Gets maximum amount of initialized heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of initialized heap memory.
-     */
-    public long getMaximumHeapMemoryInitialized();
-
-    /**
-     * Gets average amount of initialized heap memory for nodes in the projection.
-     *
-     * @return Average amount of initialized heap memory.
-     */
-    public double getAverageHeapMemoryInitialized();
-
-    /**
-     * Gets minimum amount of committed non-heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of committed non-heap memory.
-     */
-    public long getMinimumNonHeapMemoryCommitted();
-
-    /**
-     * Gets maximum amount of committed non-heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of committed non-heap memory.
-     */
-    public long getMaximumNonHeapMemoryCommitted();
-
-    /**
-     * Gets average amount of committed non-heap memory for nodes in the projection.
-     *
-     * @return Average amount of committed non-heap memory.
-     */
-    public double getAverageNonHeapMemoryCommitted();
-
-    /**
-     * Gets minimum amount of used non-heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of used non-heap memory.
-     */
-    public long getMinimumNonHeapMemoryUsed();
-
-    /**
-     * Gets maximum amount of used non-heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of used non-heap memory.
-     */
-    public long getMaximumNonHeapMemoryUsed();
-
-    /**
-     * Gets average amount of used non-heap memory for nodes in the projection.
-     *
-     * @return Average amount of used non-heap memory.
-     */
-    public double getAverageNonHeapMemoryUsed();
-
-    /**
-     * Gets minimum amount of maximum non-heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of maximum non-heap memory.
-     */
-    public long getMinimumNonHeapMemoryMaximum();
-
-    /**
-     * Gets maximum amount of maximum non-heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of maximum non-heap memory.
-     */
-    public long getMaximumNonHeapMemoryMaximum();
-
-    /**
-     * Gets average amount of maximum non-heap memory for nodes in the projection.
-     *
-     * @return Average amount of maximum non-heap memory.
-     */
-    public double getAverageNonHeapMemoryMaximum();
-
-    /**
-     * Gets minimum amount of initialized non-heap memory for nodes in the projection.
-     *
-     * @return Minimum amount of initialized non-heap memory.
-     */
-    public long getMinimumNonHeapMemoryInitialized();
-
-    /**
-     * Gets maximum amount of initialized non-heap memory for nodes in the projection.
-     *
-     * @return Maximum amount of initialized non-heap memory.
-     */
-    public long getMaximumNonHeapMemoryInitialized();
-
-    /**
-     * Gets average amount of initialized non-heap memory for nodes in the projection.
-     *
-     * @return Average amount of initialized non-heap memory.
-     */
-    public double getAverageNonHeapMemoryInitialized();
-
-    /**
-     * Gets start time of the youngest node in the projection.
-     *
-     * @return Youngest node start time.
-     */
-    public long getYoungestNodeStartTime();
-
-    /**
-     * Gets start time of the oldest node in the projection.
-     *
-     * @return Oldest node start time.
-     */
-    public long getOldestNodeStartTime();
-
-    /**
-     * Gets minimum up time for nodes in the projection.
-     *
-     * @return Minimum up time.
-     */
-    public long getMinimumUpTime();
-
-    /**
-     * Gets maximum up time for nodes in the projection.
-     *
-     * @return Maximum up time.
-     */
-    public long getMaximumUpTime();
-
-    /**
-     * Gets average up time for nodes in the projection.
-     *
-     * @return Average up time.
-     */
-    public double getAverageUpTime();
-
-    /**
-     * Gets minimum number of available processors for nodes in the projection.
-     *
-     * @return Minimum number of available processors.
-     */
-    public int getMinimumCpusPerNode();
-
-    /**
-     * Gets maximum number of available processors for nodes in the projection.
-     *
-     * @return Maximum number of available processors.
-     */
-    public int getMaximumCpusPerNode();
-
-    /**
-     * Gets average number of available processors for nodes in the projection.
-     *
-     * @return Average number of available processors.
-     */
-    public float getAverageCpusPerNode();
-
-    /**
-     * Gets minimum number of nodes per host.
-     *
-     * @return Minimum number of nodes per host.
-     */
-    public int getMinimumNodesPerHost();
-
-    /**
-     * Gets maximum number of nodes per host.
-     *
-     * @return Maximum number of nodes per host.
-     */
-    public int getMaximumNodesPerHost();
-
-    /**
-     * Gets average number of nodes per host.
-     *
-     * @return Average number of nodes per host.
-     */
-    public float getAverageNodesPerHost();
-
-    /**
-     * Gets total number of available processors.
-     *
-     * @return Total number of available processors.
+     * @return The number of processors available to the virtual
+     *      machine, never smaller than one.
      */
     public int getTotalCpus();
 
     /**
-     * Gets total number of hosts.
+     * Returns the CPU usage usage in {@code [0, 1]} range.
+     * The exact way how this number is calculated depends on SPI implementation.
+     * <p>
+     * If the CPU usage is not available, a negative value is returned.
+     * <p>
+     * This method is designed to provide a hint about the system load
+     * and may be queried frequently. The load average may be unavailable on
+     * some platform where it is expensive to implement this method.
      *
-     * @return Total number of hosts.
+     * @return The estimated CPU usage in {@code [0, 1]} range.
+     *      Negative value if not available.
      */
-    public int getTotalHosts();
+    public double getCurrentCpuLoad();
 
     /**
-     * Gets total number of nodes.
+     * Gets average of CPU load values over all metrics kept in the history.
+     * <p>
+     * <b>Note:</b> all aggregated metrics like average, minimum, maximum, total, count are
+     * calculated over all the metrics kept in history. The
+     * history size is set via either one or both of configuration settings:
+     * <ul>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsExpireTime()}</li>
+     * <li>{@link org.apache.ignite.configuration.IgniteConfiguration#getMetricsHistorySize()}</li>
+     * </ul>
      *
-     * @return Total number of nodes.
+     * @return Average of CPU load value in {@code [0, 1]} range over all metrics kept
+     *      in the history.
      */
-    public int getTotalNodes();
+    public double getAverageCpuLoad();
+
+    /**
+     * Returns average time spent in CG since the last update.
+     *
+     * @return Average time spent in CG since the last update.
+     */
+    public double getCurrentGcCpuLoad();
+
+    /**
+     * Returns the amount of heap memory in bytes that the JVM
+     * initially requests from the operating system for memory management.
+     * This method returns {@code -1} if the initial memory size is undefined.
+     * <p>
+     * This value represents a setting of the heap memory for Java VM and is
+     * not a sum of all initial heap values for all memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The initial size of memory in bytes; {@code -1} if undefined.
+     */
+    public long getHeapMemoryInitialized();
+
+    /**
+     * Returns the current heap size that is used for object allocation.
+     * The heap consists of one or more memory pools. This value is
+     * the sum of {@code used} heap memory values of all heap memory pools.
+     * <p>
+     * The amount of used memory in the returned is the amount of memory
+     * occupied by both live objects and garbage objects that have not
+     * been collected, if any.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return Amount of heap memory used.
+     */
+    public long getHeapMemoryUsed();
+
+    /**
+     * Returns the amount of heap memory in bytes that is committed for
+     * the JVM to use. This amount of memory is
+     * guaranteed for the JVM to use.
+     * The heap consists of one or more memory pools. This value is
+     * the sum of {@code committed} heap memory values of all heap memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The amount of committed memory in bytes.
+     */
+    public long getHeapMemoryCommitted();
+
+    /**
+     * Returns the maximum amount of heap memory in bytes that can be
+     * used for memory management. This method returns {@code -1}
+     * if the maximum memory size is undefined.
+     * <p>
+     * This amount of memory is not guaranteed to be available
+     * for memory management if it is greater than the amount of
+     * committed memory. The JVM may fail to allocate
+     * memory even if the amount of used memory does not exceed this
+     * maximum size.
+     * <p>
+     * This value represents a setting of the heap memory for Java VM and is
+     * not a sum of all initial heap values for all memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The maximum amount of memory in bytes; {@code -1} if undefined.
+     */
+    public long getHeapMemoryMaximum();
+
+    /**
+     * Returns the amount of non-heap memory in bytes that the JVM
+     * initially requests from the operating system for memory management.
+     * This method returns {@code -1} if the initial memory size is undefined.
+     * <p>
+     * This value represents a setting of non-heap memory for Java VM and is
+     * not a sum of all initial heap values for all memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The initial size of memory in bytes; {@code -1} if undefined.
+     */
+    public long getNonHeapMemoryInitialized();
+
+    /**
+     * Returns the current non-heap memory size that is used by Java VM.
+     * The non-heap memory consists of one or more memory pools. This value is
+     * the sum of {@code used} non-heap memory values of all non-heap memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return Amount of none-heap memory used.
+     */
+    public long getNonHeapMemoryUsed();
+
+    /**
+     * Returns the amount of non-heap memory in bytes that is committed for
+     * the JVM to use. This amount of memory is
+     * guaranteed for the JVM to use.
+     * The non-heap memory consists of one or more memory pools. This value is
+     * the sum of {@code committed} non-heap memory values of all non-heap memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The amount of committed memory in bytes.
+     */
+    public long getNonHeapMemoryCommitted();
+
+    /**
+     * Returns the maximum amount of non-heap memory in bytes that can be
+     * used for memory management. This method returns {@code -1}
+     * if the maximum memory size is undefined.
+     * <p>
+     * This amount of memory is not guaranteed to be available
+     * for memory management if it is greater than the amount of
+     * committed memory.  The JVM may fail to allocate
+     * memory even if the amount of used memory does not exceed this
+     * maximum size.
+     * <p>
+     * This value represents a setting of the non-heap memory for Java VM and is
+     * not a sum of all initial non-heap values for all memory pools.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The maximum amount of memory in bytes; {@code -1} if undefined.
+     */
+    public long getNonHeapMemoryMaximum();
+
+    /**
+     * Returns the uptime of the JVM in milliseconds.
+     *
+     * @return Uptime of the JVM in milliseconds.
+     */
+    public long getUpTime();
+
+    /**
+     * Returns the start time of the JVM in milliseconds.
+     * This method returns the approximate time when the Java virtual
+     * machine started.
+     *
+     * @return Start time of the JVM in milliseconds.
+     */
+    public long getStartTime();
+
+    /**
+     * Returns the start time of grid node in milliseconds.
+     * There can be several grid nodes started in one JVM, so JVM start time will be
+     * the same for all of them, but node start time will be different.
+     *
+     * @return Start time of the grid node in milliseconds.
+     */
+    public long getNodeStartTime();
+
+    /**
+     * Returns the current number of live threads including both
+     * daemon and non-daemon threads.
+     *
+     * @return Current number of live threads.
+     */
+    public int getCurrentThreadCount();
+
+    /**
+     * Returns the maximum live thread count since the JVM
+     * started or peak was reset.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The peak live thread count.
+     */
+    public int getMaximumThreadCount();
+
+    /**
+     * Returns the total number of threads created and also started
+     * since the JVM started.
+     * <p>
+     * <b>Note:</b> this is <b>not</b> an aggregated metric and it's calculated
+     * from the time of the node's startup.
+     *
+     * @return The total number of threads started.
+     */
+    public long getTotalStartedThreadCount();
+
+    /**
+     * Returns the current number of live daemon threads.
+     *
+     * @return Current number of live daemon threads.
+     */
+    public int getCurrentDaemonThreadCount();
+
+    /**
+     * In-Memory Data Grid assigns incremental versions to all cache operations. This method provides
+     * the latest data version on the node.
+     *
+     * @return Last data version.
+     */
+    public long getLastDataVersion();
+
+    /**
+     * Gets sent messages count.
+     *
+     * @return Sent messages count.
+     */
+    public int getSentMessagesCount();
+
+    /**
+     * Gets sent bytes count.
+     *
+     * @return Sent bytes count.
+     */
+    public long getSentBytesCount();
+
+    /**
+     * Gets received messages count.
+     *
+     * @return Received messages count.
+     */
+    public int getReceivedMessagesCount();
+
+    /**
+     * Gets received bytes count.
+     *
+     * @return Received bytes count.
+     */
+    public long getReceivedBytesCount();
+
+    /**
+     * Gets outbound messages queue size.
+     *
+     * @return Outbound messages queue size.
+     */
+    public int getOutboundMessagesQueueSize();
 }

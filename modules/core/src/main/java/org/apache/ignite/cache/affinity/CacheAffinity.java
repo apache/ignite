@@ -61,8 +61,6 @@ public interface CacheAffinity<K> {
 
     /**
      * Returns {@code true} if given node is the primary node for given key.
-     * To check if local node is primary for given key, pass
-     * {@link org.apache.ignite.Ignite#localNode()} as first parameter.
      *
      * @param n Node to check.
      * @param key Key to check.
@@ -72,8 +70,6 @@ public interface CacheAffinity<K> {
 
     /**
      * Returns {@code true} if local node is one of the backup nodes for given key.
-     * To check if local node is primary for given key, pass {@link org.apache.ignite.Ignite#localNode()}
-     * as first parameter.
      *
      * @param n Node to check.
      * @param key Key to check.
@@ -83,11 +79,10 @@ public interface CacheAffinity<K> {
 
     /**
      * Returns {@code true} if local node is primary or one of the backup nodes
-     * for given key. To check if local node is primary or backup for given key, pass
-     * {@link org.apache.ignite.Ignite#localNode()} as first parameter.
      * <p>
      * This method is essentially equivalent to calling
-     * <i>"{@link #isPrimary(org.apache.ignite.cluster.ClusterNode, Object)} || {@link #isBackup(org.apache.ignite.cluster.ClusterNode, Object)})"</i>,
+     * <i>"{@link #isPrimary(org.apache.ignite.cluster.ClusterNode, Object)} ||
+     *      {@link #isBackup(org.apache.ignite.cluster.ClusterNode, Object)})"</i>,
      * however it is more efficient as it makes both checks at once.
      *
      * @param n Node to check.

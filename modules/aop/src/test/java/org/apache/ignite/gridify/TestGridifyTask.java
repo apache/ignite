@@ -29,7 +29,7 @@ import java.util.*;
 @ComputeTaskName(TestGridifyTask.TASK_NAME)
 public class TestGridifyTask extends ComputeTaskSplitAdapter<GridifyArgument, Object> {
     /** */
-    public static final String TASK_NAME = "TestGridifyTask";
+    public static final String TASK_NAME = "org.apache.ignite.gridify.TestGridifyTask";
 
     /** {@inheritDoc} */
     @Override public Collection<? extends ComputeJob> split(int gridSize, GridifyArgument arg) throws IgniteCheckedException {

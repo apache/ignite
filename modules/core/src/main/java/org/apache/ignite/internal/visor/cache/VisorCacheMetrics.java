@@ -27,6 +27,9 @@ import java.io.*;
  */
 public class VisorCacheMetrics implements Serializable {
     /** */
+    private static final int MICROSECONDS_IN_SECOND = 1_000_000;
+
+    /** */
     private static final long serialVersionUID = 0L;
 
     /** Gets the number of all entries cached on this node. */
@@ -104,26 +107,20 @@ public class VisorCacheMetrics implements Serializable {
 
         cm.size = c.size();
 
-        cm.createTm = m.createTime();
-        cm.writeTm = m.writeTime();
-        cm.readTm = m.readTime();
-        cm.commitTm = m.commitTime();
-        cm.rollbackTm = m.rollbackTime();
+        cm.reads = (int)m.getCacheGets();
+        cm.writes = (int)(m.getCachePuts() + m.getCacheRemovals());
+        cm.hits = (int)m.getCacheHits();
+        cm.misses = (int)m.getCacheMisses();
 
-        cm.reads = m.reads();
-        cm.writes = m.writes();
-        cm.hits = m.hits();
-        cm.misses = m.misses();
+        cm.txCommits = (int)m.getCacheTxCommits();
+        cm.txRollbacks = (int)m.getCacheTxRollbacks();
 
-        cm.txCommits = m.txCommits();
-        cm.txRollbacks = m.txRollbacks();
-
-        cm.readsPerSec = perSecond(m.reads(), m.readTime(), m.createTime());
-        cm.writesPerSec = perSecond(m.writes(), m.writeTime(), m.createTime());
-        cm.hitsPerSec = perSecond (m.hits(), m.readTime(), m.createTime());
-        cm.missesPerSec = perSecond(m.misses(), m.readTime(), m.createTime());
-        cm.commitsPerSec = perSecond(m.txCommits(), m.commitTime(), m.createTime());
-        cm.rollbacksPerSec = perSecond(m.txRollbacks(), m.rollbackTime(), m.createTime());
+        cm.readsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageGetTime());
+        cm.writesPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAveragePutTime());
+        cm.hitsPerSec = -1;
+        cm.missesPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageRemoveTime());
+        cm.commitsPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxCommitTime());
+        cm.rollbacksPerSec = (int)(MICROSECONDS_IN_SECOND * 1.f / m.getAverageTxRollbackTime());
 
         cm.qryMetrics = VisorCacheQueryMetrics.from(c.queries().metrics());
 

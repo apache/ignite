@@ -26,7 +26,7 @@ public interface IgniteAsyncSupport {
      *
      * @return Component with asynchronous mode enabled.
      */
-    public IgniteAsyncSupport enableAsync();
+    public IgniteAsyncSupport withAsync();
 
     /**
      * @return {@code True} if asynchronous mode is enabled.

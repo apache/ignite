@@ -38,7 +38,7 @@ import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
 import org.apache.ignite.internal.{GridEx, GridProductImpl}
-import org.apache.ignite.lang.IgnitePredicate
+import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
 import org.apache.ignite.thread.IgniteThreadPoolExecutor
@@ -2522,10 +2522,10 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            m.getTotalHosts.toString.padTo(4, ' ') + pipe +
-            m.getTotalNodes.toString.padTo(4, ' ') + pipe +
+            GridUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
+            grid.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
-            bar(m.getAverageCpuLoad, m.getAverageHeapMemoryUsed / m.getAverageHeapMemoryMaximum) + pipe
+            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
         )
     }
 

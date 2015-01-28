@@ -1061,7 +1061,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
                     Socket sock0 = sock;
 
                     if (sock0 != null) {
-                        msg.setMetrics(ignite.configuration().getNodeId(), metricsProvider.getMetrics());
+                        msg.setMetrics(ignite.configuration().getNodeId(), metricsProvider.metrics());
 
                         try {
                             writeToSocket(sock0, msg);
@@ -1096,7 +1096,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
 
                         updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                        for (T2<UUID, ClusterNodeMetrics> t : metricsSet.clientMetrics())
+                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
                             updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
@@ -1147,7 +1147,7 @@ public class TcpClientDiscoverySpi extends TcpDiscoverySpiAdapter implements Tcp
          * @param metrics Metrics.
          * @param tstamp Timestamp.
          */
-        private void updateMetrics(UUID nodeId, ClusterNodeMetrics metrics, long tstamp) {
+        private void updateMetrics(UUID nodeId, ClusterMetrics metrics, long tstamp) {
             assert nodeId != null;
             assert metrics != null;
 

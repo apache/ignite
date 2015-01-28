@@ -56,7 +56,7 @@ public class VisorCacheResetMetricsTask extends VisorOneNodeTask<String, Void> {
             GridCache cache = g.cachex(cacheName);
 
             if (cache != null)
-                cache.resetMetrics();
+                cache.mxBean().clear();
 
             return null;
         }
