@@ -4,6 +4,7 @@ Copyright [2015] The Apache Software Foundation
 This product includes software developed at
 The Apache Software Foundation (http://www.apache.org/).
 
+
 This software has a dependency on Java port of a concurrent trie hash
 map implementation from the Scala collections library, licensed
 under Apache License, Version 2.0.
