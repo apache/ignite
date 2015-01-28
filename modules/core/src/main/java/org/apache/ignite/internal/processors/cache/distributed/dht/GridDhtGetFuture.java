@@ -320,7 +320,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     // TODO: To fix, check that reader is contained in the list of readers once
                     // TODO: again after the returned future completes - if not, try again.
                     // TODO: Also, why is info read before transactions are complete, and not after?
-                    IgniteFuture<Boolean> f = (!e.deleted() && k.getValue()) ? e.addReader(reader, msgId, topVer) : null;
+                    IgniteFuture<Boolean> f = (!e.deleted() && k.getValue() && skipVals) ?
+                        e.addReader(reader, msgId, topVer) : null;
 
                     if (f != null) {
                         if (txFut == null)

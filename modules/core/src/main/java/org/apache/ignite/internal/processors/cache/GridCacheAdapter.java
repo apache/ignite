@@ -649,8 +649,16 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> containsKeyAsync(final K key) {
-        return getAllAsync(Collections.singletonList(key), false, null, false, null, null, false, false, null, true)
-            .chain(new CX1<IgniteFuture<Map<K, V>>, Boolean>() {
+        return getAllAsync(
+            Collections.singletonList(key),
+            /*force primary*/false,
+            /*skip tx*/false,
+            /*entry*/null,
+            /*subj id*/null,
+            /*task name*/null,
+            /*deserialize portable*/false,
+            /*skip values*/true
+        ).chain(new CX1<IgniteFuture<Map<K, V>>, Boolean>() {
                 @Override public Boolean applyx(IgniteFuture<Map<K, V>> fut) throws IgniteCheckedException {
                     return fut.get().get(key) != null;
                 }

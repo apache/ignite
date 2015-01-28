@@ -69,8 +69,11 @@ public abstract class IgniteCacheContainsKeyAbstractSelfTest extends GridCacheAb
 
         cache(0).put(key, 1);
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < gridCount(); i++) {
             assertTrue("Invalid result on grid: " + i, cache(i).containsKey(key));
+
+            assertFalse("Invalid result on grid: " + i, cache(i).containsKey("2"));
+        }
     }
 
     /**

@@ -1036,6 +1036,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param missed Map of missed keys.
      * @param keysCnt Keys count (to avoid call to {@code Collection.size()}).
      * @param deserializePortable Deserialize portable flag.
+     * @param skipVals Skip values flag.
      * @throws IgniteCheckedException If failed.
      * @return Enlisted keys.
      */
@@ -1048,7 +1049,9 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         Map<K, V> map,
         Map<K, GridCacheVersion> missed,
         int keysCnt,
-        boolean deserializePortable) throws IgniteCheckedException {
+        boolean deserializePortable,
+        boolean skipVals
+    ) throws IgniteCheckedException {
         assert !F.isEmpty(keys);
         assert keysCnt == keys.size();
         assert cached == null || F.first(keys).equals(cached.key());
@@ -1070,7 +1073,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (key == null)
                 continue;
 
-            if (pessimistic() && !readCommitted())
+            if (pessimistic() && !readCommitted() && !skipVals)
                 addActiveCache(cacheCtx);
 
             IgniteTxKey<K> txKey = cacheCtx.txKey(key);
@@ -1093,7 +1096,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         if (cacheCtx.portableEnabled())
                             val0 = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
-                        map.put(key, val0);
+                        map.put(key, (V)CU.skipValue(val0, skipVals));
                     }
                 }
                 else {
@@ -1119,7 +1122,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 null);
 
                             if (val != null) {
-                                if (!readCommitted())
+                                if (!readCommitted() && !skipVals)
                                     txEntry.readValue(val);
 
                                 if (!F.isEmpty(txEntry.entryProcessors()))
@@ -1130,7 +1133,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 if (cacheCtx.portableEnabled())
                                     val0 = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
-                                map.put(key, val0);
+                                map.put(key, (V)CU.skipValue(val0, skipVals));
                             }
                             else
                                 missed.put(key, txEntry.cached().version());
@@ -1152,10 +1155,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             }
             // First time access within transaction.
             else {
-                if (lockKeys == null)
+                if (lockKeys == null && !skipVals)
                     lockKeys = single ? (Collection<K>)keys : new ArrayList<K>(keysCnt);
 
-                if (!single)
+                if (!single && !skipVals)
                     lockKeys.add(key);
 
                 while (true) {
@@ -1174,7 +1177,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         V val = null;
 
-                        if (!pessimistic() || readCommitted() || groupLock()) {
+                        if (!pessimistic() || readCommitted() || groupLock() && !skipVals) {
                             IgniteCacheExpiryPolicy accessPlc =
                                 optimistic() ? accessPolicy(cacheCtx, txKey, expiryPlc) : null;
 
@@ -1198,7 +1201,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 if (cacheCtx.portableEnabled())
                                     val0 = (V)cacheCtx.unwrapPortableIfNeeded(val, !deserializePortable);
 
-                                map.put(key, val0);
+                                map.put(key, (V)CU.skipValue(val0, skipVals));
                             }
                             else
                                 missed.put(key, ver);
@@ -1207,7 +1210,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             // We must wait for the lock in pessimistic mode.
                             missed.put(key, ver);
 
-                        if (!readCommitted()) {
+                        if (!readCommitted() && !skipVals) {
                             txEntry = addEntry(READ,
                                 val,
                                 null,
@@ -1319,7 +1322,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         final Map<K, GridCacheVersion> missedMap,
         @Nullable final Collection<K> redos,
         final boolean deserializePortable,
-        boolean skipVals
+        final boolean skipVals
     ) {
         assert redos != null || pessimistic();
 
@@ -1377,7 +1380,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         nextVer = cctx.versions().next(topologyVersion());
 
                     while (true) {
-                        assert txEntry != null || readCommitted() || groupLock();
+                        assert txEntry != null || readCommitted() || groupLock() || skipVals;
 
                         GridCacheEntryEx<K, V> e = txEntry == null ? entryEx(cacheCtx, txKey) : txEntry.cached();
 
@@ -1413,11 +1416,11 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             // In pessimistic mode, we should always be able to set.
                             assert set || !pessimistic();
 
-                            if (readCommitted() || groupLock()) {
+                            if (readCommitted() || groupLock() || skipVals) {
                                 cacheCtx.evicts().touch(e, topologyVersion());
 
                                 if (visibleVal != null)
-                                    map.put(key, visibleVal);
+                                    map.put(key, (V)CU.skipValue(visibleVal, skipVals));
                             }
                             else {
                                 assert txEntry != null;
@@ -1516,13 +1519,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 retMap,
                 missed,
                 keysCnt,
-                deserializePortable);
+                deserializePortable,
+                skipVals);
 
             if (single && missed.isEmpty())
                 return new GridFinishedFuture<>(cctx.kernalContext(), retMap);
 
             // Handle locks.
-            if (pessimistic() && !readCommitted() && !groupLock()) {
+            if (pessimistic() && !readCommitted() && !groupLock() && !skipVals) {
                 if (expiryPlc == null)
                     expiryPlc = cacheCtx.expiry();
 
@@ -1667,7 +1671,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 }
             }
             else {
-                assert optimistic() || readCommitted() || groupLock();
+                assert optimistic() || readCommitted() || groupLock() || skipVals;
 
                 final Collection<K> redos = new LinkedList<>();
 
