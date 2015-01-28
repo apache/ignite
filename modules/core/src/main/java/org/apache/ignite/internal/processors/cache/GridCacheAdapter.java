@@ -5603,7 +5603,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 val = (V)ctx.marshalToPortable(val);
             }
 
-            GridVersionedEntry<K,V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
+            GridCacheRawVersionedEntry<K,V> e = new GridCacheRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
 
             e.marshal(ctx.marshaller());
 
