@@ -30,7 +30,7 @@ set -e
 SERVICE=$2
 
 # Name of PID file.
-PIDFILE=${GRIDGAIN_PID_DIR}/${SERVICE}.pid
+PIDFILE=${IGNITE_PID_DIR}/${SERVICE}.pid
 
 case "$1" in
     start)
@@ -56,10 +56,10 @@ case "$1" in
         fi
 
         # Resolve config directory.
-        GRIDGAIN_CONF_DIR=${GRIDGAIN_CONF_DIR-"${IGNITE_HOME}/config"}
+        IGNITE_CONF_DIR=${IGNITE_CONF_DIR-"${IGNITE_HOME}/config"}
 
         # Resolve full config path.
-        [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$GRIDGAIN_CONF_DIR/$DEFAULT_CONFIG"
+        [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$IGNITE_CONF_DIR/$DEFAULT_CONFIG"
 
         # Discover path to Java executable and check it's version.
         checkJava
