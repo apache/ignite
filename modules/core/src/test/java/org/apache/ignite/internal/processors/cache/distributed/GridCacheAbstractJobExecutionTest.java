@@ -123,7 +123,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         for (int i = 0; i < jobCnt; i++) {
             comp.apply(new CX1<Integer, Void>() {

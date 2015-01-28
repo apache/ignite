@@ -235,7 +235,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
                 dataChunk.add(key);
@@ -402,7 +402,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
                 ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);

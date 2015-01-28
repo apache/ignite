@@ -1245,7 +1245,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache.put("key2", 1);
         cache.put("key3", 3);
 
-        IgniteCache<String, Integer> asyncCache = cache.enableAsync();
+        IgniteCache<String, Integer> asyncCache = cache.withAsync();
 
         assertNull(asyncCache.invoke("key1", INCR_PROCESSOR));
 
@@ -1619,7 +1619,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteFuture<IgniteTx> f = null;
 
         if (tx != null) {
-            tx = (IgniteTx)tx.enableAsync();
+            tx = (IgniteTx)tx.withAsync();
 
             tx.commit();
 
@@ -3480,7 +3480,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
+            IgniteCompute comp = forLocal(dfltIgnite).withAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
@@ -3550,7 +3550,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
-            IgniteCompute comp = forLocal(dfltIgnite).enableAsync();
+            IgniteCompute comp = forLocal(dfltIgnite).withAsync();
 
             comp.call(new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {

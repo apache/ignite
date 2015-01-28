@@ -100,7 +100,7 @@ public class GridCachePartitionedLoadCacheSelfTest extends GridCommonAbstractTes
             IgniteCache<Integer, String> cache = jcache(0);
 
             if (async) {
-                IgniteCache<Integer, String> asyncCache = cache.enableAsync();
+                IgniteCache<Integer, String> asyncCache = cache.withAsync();
 
                 asyncCache.localLoadCache(null, PUT_CNT);
 
