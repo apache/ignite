@@ -1655,8 +1655,7 @@ public class CacheConfiguration extends MutableConfiguration {
      * is flushed to the notification queue. Greater buffer size may improve throughput,
      * but also may increase latency.
      * <p>
-     * Default value is either {@link #DFLT_CONT_QUERY_MAX_BUF_SIZE} or
-     * {@code GG_CONT_QUERY_MAX_BUF_SIZE} system property value (if specified).
+     * Default value is either {@link #DFLT_CONT_QUERY_MAX_BUF_SIZE}.
      *
      * @return Maximum buffer size for continuous queries.
      * @deprecated Ignored in current version.

@@ -104,7 +104,7 @@ public final class GridTestProperties {
      * @param user User name.
      */
     private static void configureLog4j(String user) {
-        String cfgFile = System.getProperty("GG_TEST_PROP_LOG4J_FILE");
+        String cfgFile = System.getProperty("IGNITE_TEST_PROP_LOG4J_FILE");
 
         if (cfgFile == null)
             cfgFile = "log4j-test.xml";
