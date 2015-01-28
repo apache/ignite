@@ -911,7 +911,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFs enableAsync() {
+        @Override public IgniteFs withAsync() {
             return null;
         }
 
@@ -1210,7 +1210,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteCluster enableAsync() {
+        @Override public IgniteCluster withAsync() {
             return null;
         }
 

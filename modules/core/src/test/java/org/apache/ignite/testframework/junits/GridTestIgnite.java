@@ -11,6 +11,7 @@ package org.apache.ignite.testframework.junits;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.marshaller.IgniteMarshaller;
@@ -215,4 +216,9 @@ public class GridTestIgnite implements Ignite {
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {}
+
+    /** {@inheritDoc} */
+    @Override public <K> CacheAffinity<K> affinity(String cacheName) {
+        return null;
+    }
 }

@@ -552,7 +552,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, ComputeTask task, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         assertNull(comp.execute(task, arg));
 
@@ -572,7 +572,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, String taskName, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         assertNull(comp.execute(taskName, arg));
 
@@ -593,7 +593,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected <R> ComputeTaskFuture<R> executeAsync(IgniteCompute comp, Class taskCls, @Nullable Object arg)
         throws IgniteCheckedException {
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         assertNull(comp.execute(taskCls, arg));
 
@@ -613,7 +613,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <T extends IgniteEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws IgniteCheckedException {
-        evts = evts.enableAsync();
+        evts = evts.withAsync();
 
         assertTrue(evts.isAsync());
 

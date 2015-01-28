@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.local.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -403,11 +404,15 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public boolean removex(K key,
         @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) throws IgniteCheckedException {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
         A.notNull(key, "key");
 
         ctx.denyOnLocalRead();
 
-        return (Boolean)updateAllInternal(DELETE,
+        Boolean removed = (Boolean)updateAllInternal(DELETE,
             Collections.singleton(key),
             null,
             null,
@@ -416,6 +421,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             false,
             filter,
             ctx.writeThrough());
+
+        if (statsEnabled && removed)
+            metrics0().addRemoveTimeNanos(System.nanoTime() - start);
+
+        return  removed;
     }
 
     /** {@inheritDoc} */
@@ -602,7 +612,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             success = false;
                     }
                     else {
-                        if (!storeEnabled)
+                        if (!storeEnabled && configuration().isStatisticsEnabled())
                             metrics0().onRead(false);
 
                         success = false;
@@ -810,9 +820,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     ) {
         final boolean writeThrough = ctx.writeThrough();
 
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         final ExpiryPolicy expiryPlc = expiryPerCall();
 
-        return asyncOp(new Callable<Object>() {
+        IgniteFuture fut = asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return updateAllInternal(DELETE,
                     keys,
@@ -825,6 +839,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                     writeThrough);
             }
         });
+
+        if (statsEnabled)
+            fut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
+
+        return fut;
     }
 
     /**

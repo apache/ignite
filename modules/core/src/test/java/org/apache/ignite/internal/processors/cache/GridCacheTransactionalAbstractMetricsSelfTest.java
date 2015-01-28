@@ -225,16 +225,18 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txCommits());
 
-                if (put)
-                    assertEquals(TX_CNT, cacheMetrics.txCommits());
+                if (put) {
+                    assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
+                    assert cacheMetrics.getAverageTxCommitTime() > 0;
+                }
             }
             else {
                 assertEquals(0, metrics.txCommits());
-                assertEquals(0, cacheMetrics.txCommits());
+                assertEquals(0, cacheMetrics.getCacheTxCommits());
             }
 
             assertEquals(0, metrics.txRollbacks());
-            assertEquals(0, cacheMetrics.txRollbacks());
+            assertEquals(0, cacheMetrics.getCacheTxRollbacks());
         }
     }
 
@@ -263,17 +265,19 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
             CacheMetrics cacheMetrics = grid(i).cache(null).metrics();
 
             assertEquals(0, metrics.txCommits());
-            assertEquals(0, cacheMetrics.txCommits());
+            assertEquals(0, cacheMetrics.getCacheTxCommits());
 
             if (i == 0) {
                 assertEquals(TX_CNT, metrics.txRollbacks());
 
-                if (put)
-                    assertEquals(TX_CNT, cacheMetrics.txRollbacks());
+                if (put) {
+                    assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
+                    assert cacheMetrics.getAverageTxRollbackTime() > 0;
+                }
             }
             else {
                 assertEquals(0, metrics.txRollbacks());
-                assertEquals(0, cacheMetrics.txRollbacks());
+                assertEquals(0, cacheMetrics.getCacheTxRollbacks());
             }
         }
     }

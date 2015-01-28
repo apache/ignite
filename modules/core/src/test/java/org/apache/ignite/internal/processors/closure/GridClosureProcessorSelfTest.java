@@ -198,7 +198,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.run(job);
 
@@ -224,7 +224,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         if (p != null)
             prj = prj.forPredicate(p);
 
-        IgniteCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).withAsync();
 
         comp.broadcast(job);
 
@@ -247,7 +247,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.run(jobs);
 
@@ -270,7 +270,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.call(job);
 
@@ -293,7 +293,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.broadcast(job);
 
@@ -316,7 +316,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.call(jobs);
 
@@ -407,7 +407,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncErrorNoFailover() throws Exception {
-        IgniteCompute comp = compute(grid(0).forPredicate(F.notEqualTo(grid(0).localNode()))).enableAsync();
+        IgniteCompute comp = compute(grid(0).forPredicate(F.notEqualTo(grid(0).localNode()))).withAsync();
 
         comp.withNoFailover().call(new TestCallableError());
 
@@ -486,7 +486,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testReduceAsync() throws Exception {
         Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
 
-        IgniteCompute comp = grid(0).compute().enableAsync();
+        IgniteCompute comp = grid(0).compute().withAsync();
 
         comp.call(jobs, F.sumIntReducer());
 

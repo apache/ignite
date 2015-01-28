@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.plugin.*;
@@ -313,6 +314,11 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
         g.close();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <K> CacheAffinity<K> affinity(String cacheName) {
+        return g.affinity(cacheName);
     }
 
     /** {@inheritDoc} */

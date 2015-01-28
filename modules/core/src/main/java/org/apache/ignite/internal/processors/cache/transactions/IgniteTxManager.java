@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -1256,7 +1257,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    cacheCtx.cache().metrics0().onTxCommit();
+                    if (cacheCtx.cache().configuration().isStatisticsEnabled())
+                        cacheCtx.cache().metrics0().onTxCommit(System.nanoTime() - tx.startTime());
                 }
             }
 
@@ -1329,7 +1331,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                 for (int cacheId : tx.activeCacheIds()) {
                     GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                    cacheCtx.cache().metrics0().onTxRollback();
+                    cacheCtx.cache().metrics0().onTxRollback(System.nanoTime() - tx.startTime());
                 }
             }
 

@@ -28,8 +28,8 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheReplicatedBasicApiTest extends GridCacheBasicApiAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

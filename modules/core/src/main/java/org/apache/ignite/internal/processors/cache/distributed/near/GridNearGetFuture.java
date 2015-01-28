@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -473,12 +474,14 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
                                 dht.removeIfObsolete(key);
                         }
 
-                        if (v != null)
-                            near.metrics0().onRead(true);
+                        if (v != null) {
+                            if (cctx.cache().configuration().isStatisticsEnabled())
+                                near.metrics0().onRead(true);
+                        }
                         else {
                             primary = cctx.affinity().primary(key, topVer);
 
-                            if (!primary.isLocal())
+                            if (!primary.isLocal() && cctx.cache().configuration().isStatisticsEnabled())
                                 near.metrics0().onRead(false);
                         }
                     }
