@@ -28,6 +28,7 @@ import org.junit.*;
 
 import javax.cache.processor.*;
 import java.util.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -531,13 +532,15 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         assertNull(c.localPeek(key));
 
-        c.lock(key).lock();
+        Lock lock = c.lock(key);
 
-        assertTrue(c.isLocked(key));
+        lock.lock();
 
-        c.lock(key).unlock();
+        assertTrue(c.isLocalLocked(key, false));
 
-        assertFalse(c.isLocked(key));
+        lock.unlock();
+
+        assertFalse(c.isLocalLocked(key, false));
 
         assertNull(c.localPeek(key));
 

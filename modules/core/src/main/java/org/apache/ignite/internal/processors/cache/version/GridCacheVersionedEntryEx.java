@@ -15,19 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed;
+package org.apache.ignite.internal.processors.cache.version;
 
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.jetbrains.annotations.*;
+import org.apache.ignite.cache.*;
 
 /**
- * Interface mostly for Near to DHT version mapping.
+ * Extended versioned entry.
  */
-public interface GridCacheMappedVersion {
+public interface GridCacheVersionedEntryEx<K, V> extends GridCacheVersionedEntry<K, V>, GridCacheVersionable {
     /**
-     * Mapping should occur only if this interface returns a non-null value.
-     * 
-     * @return Mapped version.
+     *
+     * @return
      */
-    @Nullable public GridCacheVersion mappedVersion();
+    public boolean isStartVersion();
 }

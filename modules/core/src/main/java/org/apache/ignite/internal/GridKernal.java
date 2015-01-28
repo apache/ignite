@@ -2639,7 +2639,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCluster enableAsync() {
+    @Override public IgniteCluster withAsync() {
         return new IgniteClusterAsyncImpl(this);
     }
 

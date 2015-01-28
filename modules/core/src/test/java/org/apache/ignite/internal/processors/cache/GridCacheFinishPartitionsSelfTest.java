@@ -29,6 +29,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -224,7 +225,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         IgniteCache<Integer, String> cache = grid.jcache(null);
 
-        cache.lock(key).lock();
+        Lock lock = cache.lock(key);
+
+        lock.lock();
 
         long start = System.currentTimeMillis();
 
@@ -244,17 +247,21 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
             }
         });
 
-        cache.lock(key + 1).lock();
+        Lock lock1 = cache.lock(key + 1);
 
-        cache.lock(key).unlock();
+        lock1.lock();
 
-        cache.lock(key + 2).lock();
+        lock.unlock();
 
-        cache.lock(key + 1).unlock();
+        Lock lock2 = cache.lock(key + 2);
+
+        lock2.lock();
+
+        lock1.unlock();
 
         assert !fut.isDone() : "Failed waiting for locks";
 
-        cache.lock(key + 2).unlock();
+        lock2.unlock();
 
         latch.await();
     }
@@ -276,7 +283,9 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
         IgniteCache<String, String> cache = grid.jcache(null);
 
-        cache.lock(key).lock();
+        Lock lock = cache.lock(key);
+
+        lock.lock();
 
         long start;
         try {
@@ -302,7 +311,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
                 + fut.isDone() + ']';
         }
         finally {
-            cache.lock(key).unlock();
+            lock.unlock();
         }
 
         latch.await();

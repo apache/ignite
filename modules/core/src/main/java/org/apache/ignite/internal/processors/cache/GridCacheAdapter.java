@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.datastructures.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
@@ -2469,7 +2470,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             (IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)fut;
 
         return fut0.chain(new CX1<IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>, Map<K, EntryProcessorResult<T>>>() {
-            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
+            @Override public Map<K, EntryProcessorResult<T>> applyx(
+                IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> fut)
                 throws IgniteCheckedException {
                 GridCacheReturn<Map<K, EntryProcessorResult<T>>> ret = fut.get();
 
@@ -3826,7 +3828,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
 
@@ -5599,7 +5601,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 val = (V)ctx.marshalToPortable(val);
             }
 
-            GridVersionedEntry<K,V> e = new GridRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
+            GridCacheRawVersionedEntry<K,V> e = new GridCacheRawVersionedEntry<>(key, null, val, null, ttl, 0, ver);
 
             e.marshal(ctx.marshaller());
 

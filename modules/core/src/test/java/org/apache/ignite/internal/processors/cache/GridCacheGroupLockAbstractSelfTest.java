@@ -42,6 +42,7 @@ import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -395,14 +396,16 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    cache.lock(key1).lock();
+                    Lock lock = cache.lock(key1);
+
+                    lock.lock();
 
                     try {
                         lockLatch.countDown();
                         unlockLatch.await();
                     }
                     finally {
-                        cache.lock(key1).unlock();
+                        lock.unlock();
                     }
                 }
                 catch (CacheException e) {
@@ -478,7 +481,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
         }
 
-        cache.lock(key1).lock();
+        Lock lock = cache.lock(key1);
+
+        lock.lock();
 
         try {
             try (IgniteTx tx = grid.transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
@@ -497,7 +502,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             }
         }
         finally {
-            cache.lock(key1).unlock();
+            lock.unlock();
         }
     }
 

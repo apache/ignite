@@ -65,7 +65,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
         PutJob putJob = new PutJob(queueName);
 
-        IgniteCompute comp = compute(grid(0).forLocal()).enableAsync();
+        IgniteCompute comp = compute(grid(0).forLocal()).withAsync();
 
         comp.run(putJob);
 
@@ -84,7 +84,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends IgniteCol
 
             jobs.add(job);
 
-            comp = compute(grid(i).forLocal()).enableAsync();
+            comp = compute(grid(i).forLocal()).withAsync();
 
             comp.call(job);
 

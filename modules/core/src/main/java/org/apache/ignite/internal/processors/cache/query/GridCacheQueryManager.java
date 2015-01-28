@@ -34,6 +34,7 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.*;
@@ -763,7 +764,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridIterator<IgniteBiTuple<K, V>> heapIt = new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
             private IgniteBiTuple<K, V> next;
 
-            private Iterator<K> iter = prj.keySet().iterator();
+            private Iterator<K> iter = qry.includeBackups() || cctx.isReplicated() ?
+                prj.keySet().iterator() : prj.primaryKeySet().iterator();
 
             {
                 advance();

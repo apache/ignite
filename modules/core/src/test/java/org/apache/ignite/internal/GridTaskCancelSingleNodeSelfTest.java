@@ -100,7 +100,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_JOB_FINISHED, EVT_JOB_CANCELLED, EVT_JOB_REJECTED);
 
-        IgniteCompute comp = grid().compute().enableAsync();
+        IgniteCompute comp = grid().compute().withAsync();
 
         comp.execute(TestTask.class, null);
 

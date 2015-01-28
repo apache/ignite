@@ -344,7 +344,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
-            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
 
             comp.call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable));
 
@@ -382,7 +382,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
-            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
 
             comp.call(new CacheOperationCallable(clientId, cacheName, op, key));
 
