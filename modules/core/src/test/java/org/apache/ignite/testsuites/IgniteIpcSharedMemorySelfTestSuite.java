@@ -34,6 +34,7 @@ public class IgniteIpcSharedMemorySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridIpcSharedMemorySpaceSelfTest.class));
         suite.addTest(new TestSuite(GridIpcSharedMemoryUtilsSelfTest.class));
         suite.addTest(new TestSuite(GridIpcSharedMemoryCrashDetectionSelfTest.class));
+        suite.addTest(new TestSuite(GridIpcSharedMemoryNativeLoaderSelfTest.class));
 
         return suite;
     }
