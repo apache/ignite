@@ -38,5 +38,5 @@ if exist "%1\target\" (
 goto :eof
 
 :concat
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%1
+set IGNITE_LIBS=%IGNITE_LIBS%;%1
 goto :eof

@@ -111,7 +111,7 @@ setGridGainHome() {
 # The function exports JMX_MON variable with Java JMX options.
 #
 findAvailableJmxPort() {
-    JMX_PORT=`"$JAVA" -cp "${GRIDGAIN_LIBS}" org.gridgain.grid.util.portscanner.GridJmxPortFinder`
+    JMX_PORT=`"$JAVA" -cp "${IGNITE_LIBS}" org.gridgain.grid.util.portscanner.GridJmxPortFinder`
 
     #
     # This variable defines necessary parameters for JMX

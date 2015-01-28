@@ -15,11 +15,11 @@
 #  limitations under the License.
 
 #
-# Exports GRIDGAIN_LIBS variable containing classpath for GridGain.
+# Exports IGNITE_LIBS variable containing classpath for GridGain.
 # Expects IGNITE_HOME to be set.
 # Can be used like:
 #       . "${IGNITE_HOME}"/bin/include/setenv.sh
-# in other scripts to set classpath using exported GRIDGAIN_LIBS variable.
+# in other scripts to set classpath using exported IGNITE_LIBS variable.
 #
 
 #
@@ -52,12 +52,12 @@ esac
 #
 # Libraries included in classpath.
 #
-GRIDGAIN_LIBS="${IGNITE_HOME}/libs/*"
+IGNITE_LIBS="${IGNITE_HOME}/libs/*"
 
 for file in ${IGNITE_HOME}/libs/*
 do
     if [ -d ${file} ] && [ "${file}" != "${IGNITE_HOME}"/libs/optional ]; then
-        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/*
+        IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/*
     fi
 
     if [ -d ${file} ] && [ "${file}" == "${IGNITE_HOME}"/libs/gridgain-hadoop ]; then
@@ -66,13 +66,13 @@ do
 done
 
 if [ "${USER_LIBS}" != "" ]; then
-    GRIDGAIN_LIBS=${USER_LIBS}${SEP}${GRIDGAIN_LIBS}
+    IGNITE_LIBS=${USER_LIBS}${SEP}${IGNITE_LIBS}
 fi
 
 if [ "${HADOOP_EDITION}" == "1" ]; then
     . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
 
     if [ "${GRIDGAIN_HADOOP_CLASSPATH}" != "" ]; then
-        GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
+        IGNITE_LIBS=${IGNITE_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
     fi
 fi

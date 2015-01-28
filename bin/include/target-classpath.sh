@@ -44,11 +44,11 @@ includeToClassPath() {
     do
         if [ -d ${file} ] && [ -d "${file}/target" ]; then
             if [ -d "${file}/target/classes" ]; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/target/classes
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
 
             if [ -d "${file}/target/libs" ]; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/target/libs/*
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
             fi
         fi
     done

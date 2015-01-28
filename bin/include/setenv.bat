@@ -14,11 +14,11 @@
 ::  limitations under the License.
 
 ::
-:: Exports GRIDGAIN_LIBS variable containing classpath for GridGain.
+:: Exports IGNITE_LIBS variable containing classpath for GridGain.
 :: Expects IGNITE_HOME to be set.
 :: Can be used like:
 ::      call %IGNITE_HOME%\bin\include\setenv.bat
-:: in other scripts to set classpath using exported GRIDGAIN_LIBS variable.
+:: in other scripts to set classpath using exported IGNITE_LIBS variable.
 ::
 
 @echo off
@@ -37,13 +37,13 @@ goto :eof
 
 :run
 :: The following libraries are required for GridGain.
-set GRIDGAIN_LIBS=%IGNITE_HOME%\libs\*
+set IGNITE_LIBS=%IGNITE_HOME%\libs\*
 
 for /D %%F in (%IGNITE_HOME%\libs\*) do if not "%%F" == "%IGNITE_HOME%\libs\optional" call :concat %%F\*
 
 if exist %IGNITE_HOME%\libs\gridgain-hadoop set HADOOP_EDITION=1
 
-if defined USER_LIBS set GRIDGAIN_LIBS=%USER_LIBS%;%GRIDGAIN_LIBS%
+if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 
 if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
 
@@ -51,10 +51,10 @@ set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
 if "%GRIDGAIN_HADOOP_CLASSPATH%" == "" goto :eof
 
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
+set IGNITE_LIBS=%IGNITE_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
 
 goto :eof
 
 :concat
-set GRIDGAIN_LIBS=%GRIDGAIN_LIBS%;%1
+set IGNITE_LIBS=%IGNITE_LIBS%;%1
 goto :eof

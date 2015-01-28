@@ -97,11 +97,11 @@ if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 :run
 
 ::
-:: Set GRIDGAIN_LIBS
+:: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
-set CP=%GRIDGAIN_LIBS%
+set CP=%IGNITE_LIBS%
 
 ::
 :: Parse command line parameters.

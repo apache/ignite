@@ -53,11 +53,11 @@ fi
 . "${SCRIPTS_HOME}"/include/parseargs.sh
 
 #
-# Set GRIDGAIN_LIBS.
+# Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${GRIDGAIN_LIBS}"
+CP="${IGNITE_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
