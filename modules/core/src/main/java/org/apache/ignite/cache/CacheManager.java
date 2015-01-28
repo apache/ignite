@@ -19,9 +19,11 @@ package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.mxbean.*;
 
 import javax.cache.*;
 import javax.cache.configuration.*;
+import javax.cache.management.*;
 import javax.management.*;
 import java.net.*;
 import java.util.*;
@@ -348,7 +350,13 @@ public class CacheManager implements javax.cache.CacheManager {
 
         try {
             if (!isRegistered(mBeanServer, registeredObjectName))
-                mBeanServer.registerMBean(mxbean, registeredObjectName);
+                if (objectName.equals(CACHE_CONFIGURATION))
+                    mBeanServer.registerMBean(new IgniteStandardMXBean((CacheMXBean)mxbean, CacheMXBean.class),
+                        registeredObjectName);
+                else
+                    mBeanServer.registerMBean(
+                        new IgniteStandardMXBean((CacheStatisticsMXBean)mxbean, CacheStatisticsMXBean.class),
+                        registeredObjectName);
         }
         catch (Exception e) {
             throw new CacheException("Failed to register MBean: " + registeredObjectName, e);
