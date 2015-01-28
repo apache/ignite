@@ -52,7 +52,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = ggshmem
+subdir = igniteshmem
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -91,12 +91,12 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libggshmem_la_LIBADD =
-am_libggshmem_la_OBJECTS = libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo
-libggshmem_la_OBJECTS = $(am_libggshmem_la_OBJECTS)
-libggshmem_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+libigniteshmem_la_LIBADD =
+am_libigniteshmem_la_OBJECTS = libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo
+libigniteshmem_la_OBJECTS = $(am_libigniteshmem_la_OBJECTS)
+libigniteshmem_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(libggshmem_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(libigniteshmem_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -110,8 +110,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libggshmem_la_SOURCES)
-DIST_SOURCES = $(libggshmem_la_SOURCES)
+SOURCES = $(libigniteshmem_la_SOURCES)
+DIST_SOURCES = $(libigniteshmem_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -250,20 +250,20 @@ ACLOCAL_AMFLAGS = "-Im4"
 # The list of libraries we are building seperated by spaces.
 # The 'lib_' indicates that these build products will be installed
 # in the $(libdir) directory. For example /usr/lib
-lib_LTLIBRARIES = libggshmem.la
+lib_LTLIBRARIES = libigniteshmem.la
 
 #######################################
 # Build information for each library
 
-# Sources for ggshmem
-libggshmem_la_SOURCES = org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
+# Sources for igniteshmem
+libigniteshmem_la_SOURCES = org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
 
 # Linker options libTestProgram
-libggshmem_la_LDFLAGS = 
+libigniteshmem_la_LDFLAGS =
 
 # Compiler options. Here we are adding the include directory
 # to be searched for headers included in the source code.
-libggshmem_la_CPPFLAGS = -I$(top_srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(JAVA_HOME)/include/darwin \
+libigniteshmem_la_CPPFLAGS = -I$(top_srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -I$(JAVA_HOME)/include/darwin \
 -I/System/Library/Frameworks/JavaVM.framework/Headers
 
 all: all-am
@@ -279,9 +279,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu ggshmem/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu igniteshmem/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu ggshmem/Makefile
+	  $(AUTOMAKE) --gnu igniteshmem/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -332,8 +332,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libggshmem.la: $(libggshmem_la_OBJECTS) $(libggshmem_la_DEPENDENCIES) $(EXTRA_libggshmem_la_DEPENDENCIES) 
-	$(libggshmem_la_LINK) -rpath $(libdir) $(libggshmem_la_OBJECTS) $(libggshmem_la_LIBADD) $(LIBS)
+libigniteshmem.la: $(libigniteshmem_la_OBJECTS) $(libigniteshmem_la_DEPENDENCIES) $(EXTRA_libigniteshmem_la_DEPENDENCIES)
+	$(libigniteshmem_la_LINK) -rpath $(libdir) $(libigniteshmem_la_OBJECTS) $(libigniteshmem_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -341,7 +341,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -364,12 +364,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo: org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libggshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo -MD -MP -MF $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Tpo -c -o libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Tpo $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' object='libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo' libtool=yes @AMDEPBACKSLASH@
+libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo: org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libigniteshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo -MD -MP -MF $(DEPDIR)/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Tpo -c -o libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Tpo $(DEPDIR)/libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' object='libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libggshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libigniteshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libigniteshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -185,7 +185,7 @@ public class IpcSharedMemoryUtils {
      * @return Wrapping grid exception.
      */
     static IgniteCheckedException linkError(UnsatisfiedLinkError e) {
-        return new IgniteCheckedException("Linkage error due to possible native library, libggshmem.so, " +
+        return new IgniteCheckedException("Linkage error due to possible native library, libigniteshmem.so, " +
             "version mismatch (stop all grid nodes, clean up your '/tmp' folder, and try again).", e);
     }
 

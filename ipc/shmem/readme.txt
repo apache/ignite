@@ -26,7 +26,7 @@ Usage with GridGain
 -------------------
 
 Copy compiled library to folder that already listed in 'java.library.path'
-with name in form: 'libggshmem-<gridgain-version>.<extention>'.
+with name in form: 'libigniteshmem-<gridgain-version>.<extention>'.
 Note: Grid should be restarted.
 
 **************************************************************************************

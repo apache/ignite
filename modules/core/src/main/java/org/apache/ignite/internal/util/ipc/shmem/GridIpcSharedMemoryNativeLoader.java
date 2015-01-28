@@ -36,10 +36,10 @@ public class GridIpcSharedMemoryNativeLoader {
     private static volatile boolean loaded;
 
     /** Library name base. */
-    private static final String LIB_NAME_BASE = "ggshmem";
+    private static final String LIB_NAME_BASE = "igniteshmem";
 
     /** Lock file path. */
-    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "ggshmem.lock");
+    private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "igniteshmem.lock");
 
     /** Library name. */
     static final String LIB_NAME = LIB_NAME_BASE + "-" + GridProductImpl.VER;
