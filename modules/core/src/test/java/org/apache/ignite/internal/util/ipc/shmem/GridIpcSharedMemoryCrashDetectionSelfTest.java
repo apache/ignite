@@ -61,7 +61,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
 
             info("Check that server gets correct exception upon client's killing.");
 
-            info("Shared memory IDs before starting client endpoint: " + GridIpcSharedMemoryUtils.sharedMemoryIds());
+            info("Shared memory IDs before starting client endpoint: " + IpcSharedMemoryUtils.sharedMemoryIds());
 
             Collection<Integer> shmemIdsWithinInteractions = interactWithClient(srv, true);
 
@@ -69,7 +69,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
 
             // Give server endpoint some time to make resource clean up. See GridIpcSharedMemoryServerEndpoint.GC_FREQ.
             for (int i = 0; i < 12; i++) {
-                shmemIdsAfterInteractions = GridIpcSharedMemoryUtils.sharedMemoryIds();
+                shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
                 info("Shared memory IDs created within interaction: " + shmemIdsWithinInteractions);
                 info("Shared memory IDs after killing client endpoint: " + shmemIdsAfterInteractions);
@@ -93,13 +93,13 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testGgfsClientServerInteractionsUponServerKilling() throws Exception {
-        Collection<Integer> shmemIdsBeforeInteractions = GridIpcSharedMemoryUtils.sharedMemoryIds();
+        Collection<Integer> shmemIdsBeforeInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs before starting server-client interactions: " + shmemIdsBeforeInteractions);
 
         Collection<Integer> shmemIdsWithinInteractions = interactWithServer();
 
-        Collection<Integer> shmemIdsAfterInteractions = GridIpcSharedMemoryUtils.sharedMemoryIds();
+        Collection<Integer> shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs created within interaction: " + shmemIdsWithinInteractions);
         info("Shared memory IDs after server and client killing: " + shmemIdsAfterInteractions);
@@ -117,7 +117,7 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
         try {
             // Give server endpoint some time to make resource clean up. See GridIpcSharedMemoryServerEndpoint.GC_FREQ.
             for (int i = 0; i < 12; i++) {
-                shmemIdsAfterInteractions = GridIpcSharedMemoryUtils.sharedMemoryIds();
+                shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
                 info("Shared memory IDs after server restart: " + shmemIdsAfterInteractions);
 
@@ -143,11 +143,11 @@ public class GridIpcSharedMemoryCrashDetectionSelfTest extends GridCommonAbstrac
      */
     public void testClientThrowsCorrectExceptionUponServerKilling() throws Exception {
         info("Shared memory IDs before starting server-client interactions: " +
-            GridIpcSharedMemoryUtils.sharedMemoryIds());
+            IpcSharedMemoryUtils.sharedMemoryIds());
 
         Collection<Integer> shmemIdsWithinInteractions = checkClientThrowsCorrectExceptionUponServerKilling();
 
-        Collection<Integer> shmemIdsAfterInteractions = GridIpcSharedMemoryUtils.sharedMemoryIds();
+        Collection<Integer> shmemIdsAfterInteractions = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("Shared memory IDs created within interaction: " + shmemIdsWithinInteractions);
         info("Shared memory IDs after server killing and client graceful termination: " + shmemIdsAfterInteractions);

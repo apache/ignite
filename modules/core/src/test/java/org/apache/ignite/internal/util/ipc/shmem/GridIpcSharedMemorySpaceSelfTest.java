@@ -154,14 +154,14 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("Using token file: " + tok);
 
-        Collection<Integer> ids = GridIpcSharedMemoryUtils.sharedMemoryIds();
+        Collection<Integer> ids = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("IDs in the system: " + ids);
 
-        GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, GridIpcSharedMemoryUtils.pid(), 0, 128,
+        GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
             false, log);
 
-        ids = GridIpcSharedMemoryUtils.sharedMemoryIds();
+        ids = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("IDs in the system: " + ids);
 
@@ -174,7 +174,7 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         space.forceClose();
 
-        ids = GridIpcSharedMemoryUtils.sharedMemoryIds();
+        ids = IpcSharedMemoryUtils.sharedMemoryIds();
 
         info("IDs in the system: " + ids);
 
@@ -195,10 +195,10 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("Using token file: " + tok);
 
-        GridIpcSharedMemorySpace spaceOut = new GridIpcSharedMemorySpace(tok, GridIpcSharedMemoryUtils.pid(), 0, 128,
+        GridIpcSharedMemorySpace spaceOut = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
             false, log);
 
-        try (GridIpcSharedMemorySpace spaceIn = new GridIpcSharedMemorySpace(tok, GridIpcSharedMemoryUtils.pid(), 0,
+        try (GridIpcSharedMemorySpace spaceIn = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0,
             128, true, spaceOut.sharedMemoryId(), log)) {
             // Write some data to the space, but avoid blocking.
             spaceOut.write(DATA, 0, 16, 0);
@@ -233,11 +233,11 @@ public class GridIpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         info("Using token file: " + tok);
 
-        try (GridIpcSharedMemorySpace spaceOut = new GridIpcSharedMemorySpace(tok, GridIpcSharedMemoryUtils.pid(),
-            GridIpcSharedMemoryUtils.pid(), 128, false, log)) {
+        try (GridIpcSharedMemorySpace spaceOut = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(),
+            IpcSharedMemoryUtils.pid(), 128, false, log)) {
 
-            try (GridIpcSharedMemorySpace spaceIn = new GridIpcSharedMemorySpace(tok, GridIpcSharedMemoryUtils.pid(),
-                GridIpcSharedMemoryUtils.pid(), 128, true, spaceOut.sharedMemoryId(), log)) {
+            try (GridIpcSharedMemorySpace spaceIn = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(),
+                IpcSharedMemoryUtils.pid(), 128, true, spaceOut.sharedMemoryId(), log)) {
                 // Write some data to the space, but avoid blocking.
                 spaceOut.write(DATA, 0, 16, 0);
 

@@ -26,7 +26,7 @@ import java.util.*;
 /**
  *
  */
-public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
+public class IpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -38,14 +38,14 @@ public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPid() throws Exception {
-        int pid = GridIpcSharedMemoryUtils.pid();
+        int pid = IpcSharedMemoryUtils.pid();
 
         info("PID of the current process: " + pid);
 
-        assert GridIpcSharedMemoryUtils.alive(pid);
+        assert IpcSharedMemoryUtils.alive(pid);
 
         // PID cannot have this value.
-        assert !GridIpcSharedMemoryUtils.alive(Integer.MAX_VALUE) : "Alive PID: " + Integer.MAX_VALUE;
+        assert !IpcSharedMemoryUtils.alive(Integer.MAX_VALUE) : "Alive PID: " + Integer.MAX_VALUE;
     }
 
     /**
@@ -58,7 +58,7 @@ public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
 
         String tok = tokFile.getAbsolutePath();
 
-        GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, GridIpcSharedMemoryUtils.pid(), 0, 128,
+        GridIpcSharedMemorySpace space = new GridIpcSharedMemorySpace(tok, IpcSharedMemoryUtils.pid(), 0, 128,
             false, log);
 
         info("Space: " + space);
@@ -69,7 +69,7 @@ public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
             // Write some data to the space, but avoid blocking.
             space.write(new byte[] {0, 1, 2, 3}, 0, 4, 0);
 
-            Collection<Integer> ids = GridIpcSharedMemoryUtils.sharedMemoryIds();
+            Collection<Integer> ids = IpcSharedMemoryUtils.sharedMemoryIds();
 
             info("IDs: " + ids);
 
@@ -79,6 +79,6 @@ public class GridIpcSharedMemoryUtilsSelfTest extends GridCommonAbstractTest {
             space.forceClose();
         }
 
-        assertFalse(GridIpcSharedMemoryUtils.sharedMemoryIds().contains(shmemId));
+        assertFalse(IpcSharedMemoryUtils.sharedMemoryIds().contains(shmemId));
     }
 }

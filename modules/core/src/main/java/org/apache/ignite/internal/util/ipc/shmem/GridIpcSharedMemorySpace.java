@@ -87,10 +87,10 @@ public class GridIpcSharedMemorySpace implements Closeable {
 
         opSize = size;
 
-        shmemPtr = GridIpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, DEBUG && log.isDebugEnabled());
+        shmemPtr = IpcSharedMemoryUtils.allocateSystemResources(tokFileName, size, DEBUG && log.isDebugEnabled());
 
-        shmemId = GridIpcSharedMemoryUtils.sharedMemoryId(shmemPtr);
-        semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
+        shmemId = IpcSharedMemoryUtils.sharedMemoryId(shmemPtr);
+        semId = IpcSharedMemoryUtils.semaphoreId(shmemPtr);
 
         isReader = reader;
 
@@ -127,9 +127,9 @@ public class GridIpcSharedMemorySpace implements Closeable {
         this.readerPid = readerPid;
         this.tokFileName = tokFileName;
 
-        shmemPtr = GridIpcSharedMemoryUtils.attach(shmemId, DEBUG && log.isDebugEnabled());
+        shmemPtr = IpcSharedMemoryUtils.attach(shmemId, DEBUG && log.isDebugEnabled());
 
-        semId = GridIpcSharedMemoryUtils.semaphoreId(shmemPtr);
+        semId = IpcSharedMemoryUtils.semaphoreId(shmemPtr);
     }
 
     /**
@@ -155,7 +155,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            GridIpcSharedMemoryUtils.writeSharedMemory(shmemPtr, buf, off, len, timeout);
+            IpcSharedMemoryUtils.writeSharedMemory(shmemPtr, buf, off, len, timeout);
         }
         finally {
             lock.readLock().unlock();
@@ -184,7 +184,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            GridIpcSharedMemoryUtils.writeSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
+            IpcSharedMemoryUtils.writeSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
         }
         finally {
             lock.readLock().unlock();
@@ -216,7 +216,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            return (int) GridIpcSharedMemoryUtils.readSharedMemory(shmemPtr, buf, off, len, timeout);
+            return (int) IpcSharedMemoryUtils.readSharedMemory(shmemPtr, buf, off, len, timeout);
         }
         finally {
             lock.readLock().unlock();
@@ -247,7 +247,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            return (int) GridIpcSharedMemoryUtils.readSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
+            return (int) IpcSharedMemoryUtils.readSharedMemoryByteBuffer(shmemPtr, buf, off, len, timeout);
         }
         finally {
             lock.readLock().unlock();
@@ -291,13 +291,13 @@ public class GridIpcSharedMemorySpace implements Closeable {
         if (!closed.compareAndSet(false, true))
             return;
 
-        GridIpcSharedMemoryUtils.ipcClose(shmemPtr);
+        IpcSharedMemoryUtils.ipcClose(shmemPtr);
 
         // Wait all readers and writes to leave critical section.
         lock.writeLock().lock();
 
         try {
-            GridIpcSharedMemoryUtils.freeSystemResources(tokFileName, shmemPtr, force);
+            IpcSharedMemoryUtils.freeSystemResources(tokFileName, shmemPtr, force);
         }
         finally {
             lock.writeLock().unlock();
@@ -318,7 +318,7 @@ public class GridIpcSharedMemorySpace implements Closeable {
             if (closed.get())
                 throw new IgniteCheckedException("Shared memory segment has been closed: " + this);
 
-            return GridIpcSharedMemoryUtils.unreadCount(shmemPtr);
+            return IpcSharedMemoryUtils.unreadCount(shmemPtr);
         }
         finally {
             lock.readLock().unlock();

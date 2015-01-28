@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.h"
+#include "org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -342,7 +342,7 @@ static void semNotify(JNIEnv * env, int semId, int semNum, T_IpcData *ipcData) {
  * @param debug Debug flag, which modifies the global debug flag. This parameter is expected
  *              to be always the same during application lifetime.
  */
-jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_allocateSystemResources(
+jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_allocateSystemResources(
         JNIEnv * env, jclass, jstring jTokFileName, jint size, jboolean debug) {
     int key = -1;
     int shmId = -1;
@@ -431,7 +431,7 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_al
  * @param debug Debug flag, which modifies the global debug flag. This parameter is expected
  *              to be always the same during application lifetime.
  */
-jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_attach(JNIEnv * env, jclass,
+jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_attach(JNIEnv * env, jclass,
         jint shmId, jboolean debug) {
     // Set global debug flag.
     __GG_DEBUG = debug;
@@ -458,7 +458,7 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_at
  * @param env JNI environment.
  * @param buf Data buffer pointer in shared memory segment.
  */
-void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_ipcClose(JNIEnv *env, jclass, jlong buf) {
+void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_ipcClose(JNIEnv *env, jclass, jlong buf) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) buf) - BUF_OFFSET);
 
     // Set closed flag to true using memory barrier.
@@ -489,7 +489,7 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_ipc
  * @param force Force flag for forcing resources removal.
  *
  */
-void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_freeSystemResources__Ljava_lang_String_2JZ(
+void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_freeSystemResources__Ljava_lang_String_2JZ(
         JNIEnv* env, jclass, jstring jTokFileName, jlong buf, jboolean force) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) buf) - BUF_OFFSET);
 
@@ -534,7 +534,7 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_fre
  * @param jTokFileName Token file name for allocating resources.
  * @param size Shared memory segment size in bytes.
  */
-void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_freeSystemResources__Ljava_lang_String_2I(
+void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_freeSystemResources__Ljava_lang_String_2I(
         JNIEnv* env, jclass, jstring jTokFileName, jint size) {
     int key = -1;
     int shmId = -1;
@@ -642,7 +642,7 @@ public:
  * @param <T> Destination object type.
  */
 template<class T>
-jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_ReadShMem(JNIEnv *env, jclass, jlong shMemPtr,
+jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_ReadShMem(JNIEnv *env, jclass, jlong shMemPtr,
         T dest, jlong dOffset, jlong len, jlong timeout) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) shMemPtr) - BUF_OFFSET);
 
@@ -709,7 +709,7 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_Re
  * @param <T> Source object type.
  */
 template<class T>
-void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_WriteShMem(JNIEnv *env, jclass,
+void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_WriteShMem(JNIEnv *env, jclass,
         jlong shMemPtr, T src, jlong sOffset, jlong len, jlong timeout) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) shMemPtr) - BUF_OFFSET);
 
@@ -774,9 +774,9 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_Wri
  * @param len Number of bytes to copy.
  * @param timeout Operation timeout in milliseconds.
  */
-void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_writeSharedMemory(JNIEnv *env, jclass clsName,
+void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_writeSharedMemory(JNIEnv *env, jclass clsName,
         jlong shMemPtr, jbyteArray src, jlong sOffset, jlong len, jlong timeout) {
-    Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_WriteShMem<jbyteArray>(env, clsName, shMemPtr,
+    Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_WriteShMem<jbyteArray>(env, clsName, shMemPtr,
             src, sOffset, len, timeout);
 }
 
@@ -791,9 +791,9 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_wri
  * @param len Number of bytes to copy.
  * @param timeout Operation timeout in milliseconds.
  */
-void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_writeSharedMemoryByteBuffer(JNIEnv *env,
+void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_writeSharedMemoryByteBuffer(JNIEnv *env,
         jclass clsName, jlong shMemPtr, jobject src, jlong sOffset, jlong len, jlong timeout) {
-    Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_WriteShMem<jobject>(env, clsName, shMemPtr,
+    Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_WriteShMem<jobject>(env, clsName, shMemPtr,
             src, sOffset, len, timeout);
 }
 
@@ -808,9 +808,9 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_wri
  * @param size Number of bytes to copy.
  * @param timeout Operation timeout in milliseconds.
  */
-jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_readSharedMemory(JNIEnv *env, jclass clsName,
+jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_readSharedMemory(JNIEnv *env, jclass clsName,
         jlong shMemPtr, jbyteArray dest, jlong dOffset, jlong size, jlong timeout) {
-    return Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_ReadShMem<jbyteArray>(env, clsName, shMemPtr,
+    return Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_ReadShMem<jbyteArray>(env, clsName, shMemPtr,
             dest, dOffset, size, timeout);
 }
 
@@ -825,9 +825,9 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_re
  * @param size Number of bytes to copy.
  * @param timeout Operation timeout in milliseconds.
  */
-jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_readSharedMemoryByteBuffer(JNIEnv *env,
+jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_readSharedMemoryByteBuffer(JNIEnv *env,
         jclass clsName, jlong shMemPtr, jobject dest, jlong dOffset, jlong size, jlong timeout) {
-    return Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_ReadShMem<jobject>(env, clsName, shMemPtr,
+    return Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_ReadShMem<jobject>(env, clsName, shMemPtr,
             dest, dOffset, size, timeout);
 }
 
@@ -837,7 +837,7 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_re
  * @param shMemPtr Data pointer in shared memory segment.
  * @return Number of uneread bytes.
  */
-jint Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_unreadCount(JNIEnv*, jclass, jlong shMemPtr) {
+jint Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_unreadCount(JNIEnv*, jclass, jlong shMemPtr) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) shMemPtr) - BUF_OFFSET);
 
     return getUnreadCount(ipcData, true, true);
@@ -849,7 +849,7 @@ jint Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_unr
  * @param pid Process ID of the counterpart.
  * @return true if couterpart is alive, false otherwise.
  */
-jboolean Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_alive(JNIEnv*, jclass, jint pid) {
+jboolean Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_alive(JNIEnv*, jclass, jint pid) {
     int res = kill((int) pid, 0);
 
     // Return true if signal was sent or there is no permission to send signal to this process.
@@ -863,7 +863,7 @@ jboolean Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils
  * @param shMemPtr Shared memory data pointer.
  * @return Shared memory ID.
  */
-jint Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_sharedMemoryId(JNIEnv*, jclass, jlong shMemPtr) {
+jint Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_sharedMemoryId(JNIEnv*, jclass, jlong shMemPtr) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) shMemPtr) - BUF_OFFSET);
 
     return ipcData->shmId;
@@ -875,7 +875,7 @@ jint Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_sha
  * @param shMemPtr Shared memory data pointer.
  * @return Semaphore set ID.
  */
-jint Java_org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils_semaphoreId(JNIEnv*, jclass, jlong shMemPtr) {
+jint Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_semaphoreId(JNIEnv*, jclass, jlong shMemPtr) {
     T_IpcData *ipcData = (T_IpcData*) (((char *) shMemPtr) - BUF_OFFSET);
 
     return ipcData->semId;

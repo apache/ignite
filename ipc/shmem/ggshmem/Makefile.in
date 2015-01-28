@@ -92,7 +92,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libggshmem_la_LIBADD =
-am_libggshmem_la_OBJECTS = libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.lo
+am_libggshmem_la_OBJECTS = libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo
 libggshmem_la_OBJECTS = $(am_libggshmem_la_OBJECTS)
 libggshmem_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
@@ -256,7 +256,7 @@ lib_LTLIBRARIES = libggshmem.la
 # Build information for each library
 
 # Sources for ggshmem
-libggshmem_la_SOURCES = org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp
+libggshmem_la_SOURCES = org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
 
 # Linker options libTestProgram
 libggshmem_la_LDFLAGS = 
@@ -341,7 +341,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -364,12 +364,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.lo: org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libggshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.lo -MD -MP -MF $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.Tpo -c -o libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.Tpo $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp' object='libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.lo' libtool=yes @AMDEPBACKSLASH@
+libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo: org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libggshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo -MD -MP -MF $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Tpo -c -o libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
+@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Tpo $(DEPDIR)/libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' object='libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libggshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_GridIpcSharedMemoryUtils.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libggshmem_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o libggshmem_la-org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.lo `test -f 'org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp' || echo '$(srcdir)/'`org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

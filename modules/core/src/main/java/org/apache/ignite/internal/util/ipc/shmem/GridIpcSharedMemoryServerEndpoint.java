@@ -148,7 +148,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
     @Override public void start() throws IgniteCheckedException {
         GridIpcSharedMemoryNativeLoader.load();
 
-        pid = GridIpcSharedMemoryUtils.pid();
+        pid = IpcSharedMemoryUtils.pid();
 
         if (pid == -1)
             throw new GridIpcEndpointBindException("Failed to get PID of the current process.");
@@ -161,7 +161,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         if (F.isEmpty(tokDirPath))
             throw new GridIpcEndpointBindException("Token directory path is empty.");
 
-        tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + GridIpcSharedMemoryUtils.pid();
+        tokDirPath = tokDirPath + '/' + locNodeId.toString() + '-' + IpcSharedMemoryUtils.pid();
 
         tokDir = U.resolveWorkDirectory(tokDirPath, false);
 
@@ -265,7 +265,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                     return ret;
                 }
                 catch (UnsatisfiedLinkError e) {
-                    throw GridIpcSharedMemoryUtils.linkError(e);
+                    throw IpcSharedMemoryUtils.linkError(e);
                 }
                 catch (IOException e) {
                     if (log.isDebugEnabled())
@@ -611,7 +611,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                 }
 
                 // Is process alive?
-                if (GridIpcSharedMemoryUtils.alive(pid)) {
+                if (IpcSharedMemoryUtils.alive(pid)) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping alive node: " + pid);
 
@@ -664,7 +664,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                             continue;
                         }
 
-                        if (GridIpcSharedMemoryUtils.alive(pid0)) {
+                        if (IpcSharedMemoryUtils.alive(pid0)) {
                             if (log.isDebugEnabled())
                                 log.debug("Skipping alive process: " + pid0);
 
@@ -674,7 +674,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
                         if (log.isDebugEnabled())
                             log.debug("Possibly stale token file: " + f0);
 
-                        GridIpcSharedMemoryUtils.freeSystemResources(f0.getAbsolutePath(), size);
+                        IpcSharedMemoryUtils.freeSystemResources(f0.getAbsolutePath(), size);
 
                         if (f0.delete()) {
                             if (log.isDebugEnabled())

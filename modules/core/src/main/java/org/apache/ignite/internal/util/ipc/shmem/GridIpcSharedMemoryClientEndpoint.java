@@ -119,7 +119,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
             // Send request.
             ObjectOutputStream out = new ObjectOutputStream(sock.getOutputStream());
 
-            int pid = GridIpcSharedMemoryUtils.pid();
+            int pid = IpcSharedMemoryUtils.pid();
 
             out.writeObject(new GridIpcSharedMemoryInitRequest(pid));
 
@@ -153,7 +153,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
             }
         }
         catch (UnsatisfiedLinkError e) {
-            throw GridIpcSharedMemoryUtils.linkError(e);
+            throw IpcSharedMemoryUtils.linkError(e);
         }
         catch (IOException e) {
             throw new IgniteCheckedException("Failed to connect shared memory endpoint to port " +
@@ -256,7 +256,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
         if (!checkIn && !checkOut)
             return false;
 
-        if (!GridIpcSharedMemoryUtils.alive(inSpace.otherPartyPid())) {
+        if (!IpcSharedMemoryUtils.alive(inSpace.otherPartyPid())) {
             U.warn(log, "Remote process is considered to be dead (shared memory space will be forcibly closed): " +
                 inSpace.otherPartyPid());
 
@@ -299,7 +299,7 @@ public class GridIpcSharedMemoryClientEndpoint implements GridIpcEndpoint {
         // Space is not usable at this point and all local threads
         // are guaranteed to leave its methods (other party is not alive).
         // So, we can cleanup resources without additional synchronization.
-        GridIpcSharedMemoryUtils.freeSystemResources(tokFile.getAbsolutePath(), space.size());
+        IpcSharedMemoryUtils.freeSystemResources(tokFile.getAbsolutePath(), space.size());
 
         tokFile.delete();
     }

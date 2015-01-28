@@ -29,7 +29,7 @@ import java.util.*;
  * NOTE: Native library should be loaded, before methods of this class are called. Native library is loaded with: {@link
  * GridIpcSharedMemoryNativeLoader#load()}.
  */
-public class GridIpcSharedMemoryUtils {
+public class IpcSharedMemoryUtils {
     /**
      * Allocates shared memory segment and semaphores for IPC exchange.
      *
