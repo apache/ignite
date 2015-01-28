@@ -5559,7 +5559,7 @@ public abstract class GridUtils {
             }
         }
         // Don't go into internal GridGain structures.
-        else if (isGridGain(obj.getClass()))
+        else if (isIgnite(obj.getClass()))
             return null;
         else if (obj instanceof Iterable)
             for (Object o : (Iterable<?>)obj) {
@@ -5587,16 +5587,6 @@ public abstract class GridUtils {
         }
 
         return null;
-    }
-
-    /**
-     * Checks if given class is of {@code GridGain} type.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if given class is of {@code GridGain} type.
-     */
-    public static boolean isGridGain(Class<?> cls) {
-        return cls.getName().startsWith("org.gridgain");
     }
 
     /**
