@@ -125,8 +125,7 @@ public class GridIpcSharedMemoryNativeLoader {
 
         // Obtain lock on file to prevent concurrent extracts.
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(LOCK_FILE, "rws");
-             FileLock lock = randomAccessFile.getChannel().lock()) {
-
+             FileLock ignored = randomAccessFile.getChannel().lock()) {
             if (extractAndLoad(errs, platformSpecificResourcePath()))
                 return;
 

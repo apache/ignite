@@ -17,6 +17,7 @@
 
 package org.apache.ignite.util.mbeans;
 
+import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.testframework.junits.common.*;
 import javax.management.*;
@@ -31,7 +32,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      * @throws Exception Thrown if test fails.
      */
     public void testCorrectMBeanInfo() throws Exception {
-        StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(), GridMBeanInterface.class);
+        StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(), GridMBeanInterface.class);
 
         MBeanInfo info =  mbean.getMBeanInfo();
 
@@ -77,7 +78,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testMissedNameMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(), GridMBeanInterfaceBad.class);
+            StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(), GridMBeanInterfaceBad.class);
 
             mbean.getMBeanInfo();
         }
@@ -94,7 +95,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testMissedDescriptionMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(),
+            StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
                 GridMBeanInterfaceBadAgain.class);
 
             mbean.getMBeanInfo();
@@ -112,7 +113,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyDescriptionMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(),
+            StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
                 GridMBeanInterfaceEmptyDescription.class);
 
             mbean.getMBeanInfo();
@@ -130,7 +131,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
      */
     public void testEmptyNameMBeanInfo() throws Exception {
         try {
-            StandardMBean mbean = new IgniteStandardMBean(new GridMBeanImplementation(),
+            StandardMBean mbean = new IgniteStandardMXBean(new GridMBeanImplementation(),
                 GridMBeanInterfaceEmptyName.class);
 
             mbean.getMBeanInfo();
@@ -151,7 +152,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          *
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanROGetter.")
+        @IgniteMXBeanDescription("MBeanROGetter.")
         public String getROData();
 
         /**
@@ -160,23 +161,23 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanSuperOperation.")
-        @IgniteMBeanParametersNames({"someData"})
-        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1."})
+        @IgniteMXBeanDescription("MBeanSuperOperation.")
+        @IgniteMXBeanParametersNames({"someData"})
+        @IgniteMXBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingSuper(String someData);
     }
 
     /**
      * Test MBean interface.
      */
-    @IgniteMBeanDescription("MBeanDescription.")
+    @IgniteMXBeanDescription("MBeanDescription.")
     public static interface GridMBeanInterface extends GridMBeanSuperInterface {
         /**
          * Test getter.
          *
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanWritableGetter.")
+        @IgniteMXBeanDescription("MBeanWritableGetter.")
         public String getWritableData();
 
         /**
@@ -191,7 +192,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          *
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanReadonlyGetter.")
+        @IgniteMXBeanDescription("MBeanReadonlyGetter.")
         public String getReadOnlyData();
 
         /**
@@ -199,7 +200,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          *
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanWritableIsGetter.")
+        @IgniteMXBeanDescription("MBeanWritableIsGetter.")
         public boolean isWritable();
 
         /**
@@ -215,9 +216,9 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanOperation.")
-        @IgniteMBeanParametersNames({"ignored", "someData"})
-        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
+        @IgniteMXBeanDescription("MBeanOperation.")
+        @IgniteMXBeanParametersNames({"ignored", "someData"})
+        @IgniteMXBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
         public String doSomething(boolean ignored, String someData);
     }
 
@@ -232,9 +233,9 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanOperation.")
-        @IgniteMBeanParametersNames({"ignored"})
-        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
+        @IgniteMXBeanDescription("MBeanOperation.")
+        @IgniteMXBeanParametersNames({"ignored"})
+        @IgniteMXBeanParametersDescriptions({"MBeanOperationParameter1.", "MBeanOperationParameter2."})
         public String doSomethingBad(boolean ignored, String someData);
     }
 
@@ -249,7 +250,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @IgniteMBeanDescription("")
+        @IgniteMXBeanDescription("")
         public String doSomethingBad(boolean ignored, String someData);
     }
 
@@ -264,7 +265,7 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @IgniteMBeanParametersNames({"", "someData"})
+        @IgniteMXBeanParametersNames({"", "someData"})
         public String doSomethingBadAgain(boolean ignored, String someData);
     }
 
@@ -279,9 +280,9 @@ public class GridMBeanSelfTest extends GridCommonAbstractTest {
          * @param someData Some data.
          * @return Some string.
          */
-        @IgniteMBeanDescription("MBeanOperation.")
-        @IgniteMBeanParametersNames({"ignored", "someData"})
-        @IgniteMBeanParametersDescriptions({"MBeanOperationParameter1."})
+        @IgniteMXBeanDescription("MBeanOperation.")
+        @IgniteMXBeanParametersNames({"ignored", "someData"})
+        @IgniteMXBeanParametersDescriptions({"MBeanOperationParameter1."})
         public String doSomethingBadAgain(boolean ignored, String someData);
     }
 

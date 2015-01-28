@@ -90,6 +90,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         cfg.setDistributionMode(PARTITIONED_ONLY);
         cfg.setPreloadPartitionedDelay(-1);
         cfg.setBackups(1);
+        cfg.setStatisticsEnabled(true);
 
         CacheQueryConfiguration qcfg = new CacheQueryConfiguration();
 
@@ -122,8 +123,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             for (int i = 0; i < GRID_CNT; i++) {
                 CacheMetrics m = grid(i).cache(null).metrics();
 
-                hits += m.hits();
-                misses += m.misses();
+                hits += m.getCacheHits();
+                misses += m.getCacheMisses();
             }
 
             assertEquals(CNT / 2, hits);

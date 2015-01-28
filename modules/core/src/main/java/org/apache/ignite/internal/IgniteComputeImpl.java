@@ -33,9 +33,10 @@ import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 
 /**
- * {@link org.apache.ignite.IgniteCompute} implementation.
+ * {@link IgniteCompute} implementation.
  */
-public class IgniteComputeImpl implements IgniteCompute, Externalizable {
+public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
+    implements IgniteCompute, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -47,9 +48,6 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
 
     /** */
     private UUID subjId;
-
-    /** */
-    private IgniteAsyncSupportAdapter asyncSup;
 
     /**
      * Required by {@link Externalizable}.
@@ -65,29 +63,16 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
      * @param async Async support flag.
      */
     public IgniteComputeImpl(GridKernalContext ctx, ClusterGroupAdapter prj, UUID subjId, boolean async) {
+        super(async);
+
         this.ctx = ctx;
         this.prj = prj;
         this.subjId = subjId;
-
-        asyncSup = new IgniteAsyncSupportAdapter(async);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> ComputeTaskFuture<R> future() {
-        return (ComputeTaskFuture<R>)asyncSup.future();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteCompute enableAsync() {
-        if (asyncSup.isAsync())
-            return this;
-
+    @Override protected IgniteCompute createAsyncInstance() {
         return new IgniteComputeImpl(ctx, prj, subjId, true);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isAsync() {
-        return asyncSup.isAsync();
     }
 
     /** {@inheritDoc} */
@@ -96,14 +81,15 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteCheckedException {
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job)
+        throws IgniteCheckedException {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
         guard();
 
         try {
-            asyncSup.saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
+            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -119,7 +105,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes()));
+            return saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -136,7 +122,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return (R)asyncSup.saveOrGet(ctx.task().execute(taskName, arg));
+            return (R)saveOrGet(ctx.task().execute(taskName, arg));
         }
         finally {
             unguard();
@@ -154,7 +140,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return asyncSup.saveOrGet(ctx.task().execute(taskCls, arg));
+            return saveOrGet(ctx.task().execute(taskCls, arg));
         }
         finally {
             unguard();
@@ -171,7 +157,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
             ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
             ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
 
-            return asyncSup.saveOrGet(ctx.task().execute(task, arg));
+            return saveOrGet(ctx.task().execute(task, arg));
         }
         finally {
             unguard();
@@ -185,7 +171,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.saveOrGet(ctx.closure().runAsync(BROADCAST, job, prj.nodes()));
+            saveOrGet(ctx.closure().runAsync(BROADCAST, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -199,7 +185,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes()));
         }
         finally {
             unguard();
@@ -207,13 +193,14 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException {
+    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg)
+        throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().broadcast(job, arg, prj.nodes()));
+            return saveOrGet(ctx.closure().broadcast(job, arg, prj.nodes()));
         }
         finally {
             unguard();
@@ -227,7 +214,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.saveOrGet(ctx.closure().runAsync(BALANCE, job, prj.nodes()));
+            saveOrGet(ctx.closure().runAsync(BALANCE, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -241,7 +228,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            asyncSup.saveOrGet(ctx.closure().runAsync(BALANCE, jobs, prj.nodes()));
+            saveOrGet(ctx.closure().runAsync(BALANCE, jobs, prj.nodes()));
         }
         finally {
             unguard();
@@ -255,7 +242,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().callAsync(job, arg, prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(job, arg, prj.nodes()));
         }
         finally {
             unguard();
@@ -269,7 +256,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().callAsync(BALANCE, job, prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(BALANCE, job, prj.nodes()));
         }
         finally {
             unguard();
@@ -283,7 +270,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().callAsync(BALANCE, jobs, prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(BALANCE, jobs, prj.nodes()));
         }
         finally {
             unguard();
@@ -299,7 +286,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().callAsync(job, args, prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(job, args, prj.nodes()));
         }
         finally {
             unguard();
@@ -315,7 +302,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes()));
+            return saveOrGet(ctx.closure().forkjoinAsync(BALANCE, jobs, rdc, prj.nodes()));
         }
         finally {
             unguard();
@@ -332,7 +319,7 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
         guard();
 
         try {
-            return asyncSup.saveOrGet(ctx.closure().callAsync(job, args, rdc, prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(job, args, rdc, prj.nodes()));
         }
         finally {
             unguard();
@@ -472,5 +459,10 @@ public class IgniteComputeImpl implements IgniteCompute, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         return prj.compute();
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> ComputeTaskFuture<R> future() {
+        return (ComputeTaskFuture<R>)super.future();
     }
 }

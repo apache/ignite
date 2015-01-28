@@ -17,7 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -68,6 +69,27 @@ public class GridCacheVersionSelfTest extends GridCommonAbstractTest {
                 return version(0x7FFFFFF + 1, 1);
             }
         }, IllegalArgumentException.class, null);
+    }
+
+    /**
+     * Test versions marshalling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMarshalling() throws Exception {
+        GridCacheVersion ver = version(1, 1);
+        GridCacheVersionEx verEx = new GridCacheVersionEx(2, 2, 0, 0, ver);
+
+        IgniteOptimizedMarshaller marsh = new IgniteOptimizedMarshaller(false);
+
+        byte[] verBytes = marsh.marshal(ver);
+        byte[] verExBytes = marsh.marshal(verEx);
+
+        GridCacheVersion verNew = marsh.unmarshal(verBytes, Thread.currentThread().getContextClassLoader());
+        GridCacheVersionEx verExNew = marsh.unmarshal(verExBytes, Thread.currentThread().getContextClassLoader());
+
+        assert ver.equals(verNew);
+        assert verEx.equals(verExNew);
     }
 
     /**
