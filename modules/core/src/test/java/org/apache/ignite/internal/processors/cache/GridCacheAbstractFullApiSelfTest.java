@@ -467,7 +467,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (tx != null)
             tx.commit();
 
-        assert cache().getAll(null).isEmpty();
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache().getAll(null).isEmpty();
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
         assert cache().getAll(Collections.<String>emptyList()).isEmpty();
 
         Map<String, Integer> map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
@@ -494,7 +501,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             tx = cache().txStart();
 
-            assert cache().getAll(null).isEmpty();
             assert cache().getAll(Collections.<String>emptyList()).isEmpty();
 
             map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
@@ -660,11 +666,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        IgniteFuture<Map<String, Integer>> fut1 = cache().getAllAsync(null);
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache().getAllAsync(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
         IgniteFuture<Map<String, Integer>> fut2 = cache().getAllAsync(Collections.<String>emptyList());
         IgniteFuture<Map<String, Integer>> fut3 = cache().getAllAsync(F.asList("key1", "key2"));
 
-        assert fut1.get().isEmpty();
         assert fut2.get().isEmpty();
         assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
         assert fut3.get().get("key1") == 1;
@@ -988,25 +1000,26 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, NullPointerException.class, null);
 
         {
-            Map<String, Integer> m = new HashMap<>(2);
-
-            m.put("key1", 1);
-            m.put(null, 2);
-
-            // WARN: F.asMap() doesn't work here, because it will throw NPE.
-
-            cache.putAll(m);
-        }
-
-        {
-            Set<String> keys = new HashSet<>(2);
+            final Set<String> keys = new LinkedHashSet<>(2);
 
             keys.add("key1");
             keys.add(null);
 
-            // WARN: F.asSet() doesn't work here, because it will throw NPE.
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    cache.invokeAll(keys, INCR_PROCESSOR);
 
-            cache.invokeAll(keys, INCR_PROCESSOR);
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    cache.invokeAll(F.asSet("key1"), null);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
         }
     }
 
@@ -1695,37 +1708,216 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception In case of error.
      */
+    public void testNullInTx() throws Exception {
+        if (!txEnabled())
+            return;
+
+        final IgniteCache<String, Integer> cache = jcache();
+
+        for (int i = 0; i < 100; i++) {
+            final String key = "key-" + i;
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                public Void call() throws Exception {
+                    IgniteTransactions txs = grid(0).transactions();
+
+                    try (IgniteTx tx = txs.txStart()) {
+                        cache.put(key, 1);
+
+                        cache.put(null, 2);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            assertNull(cache.get(key));
+
+            cache.put(key, 1);
+
+            assertEquals(1, (int) cache.get(key));
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                public Void call() throws Exception {
+                    IgniteTransactions txs = grid(0).transactions();
+
+                    try (IgniteTx tx = txs.txStart()) {
+                        cache.put(key, 2);
+
+                        cache.remove(null);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            assertEquals(1, (int) cache.get(key));
+
+            cache.put(key, 2);
+
+            assertEquals(2, (int)cache.get(key));
+
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                public Void call() throws Exception {
+                    IgniteTransactions txs = grid(0).transactions();
+
+                    Map<String, Integer> map = new LinkedHashMap<String, Integer>();
+
+                    map.put("k1", 1);
+                    map.put("k2", 2);
+                    map.put(null, 3);
+
+                    try (IgniteTx tx = txs.txStart()) {
+                        cache.put(key, 1);
+
+                        cache.putAll(map);
+
+                        tx.commit();
+                    }
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            assertNull(cache.get("k1"));
+            assertNull(cache.get("k2"));
+
+            assertEquals(2, (int) cache.get(key));
+
+            cache.put(key, 3);
+
+            assertEquals(3, (int)cache.get(key));
+        }
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
     public void testPutAllWithNulls() throws Exception {
-        final GridCache<String, Integer> cache = cache();
+        final IgniteCache<String, Integer> cache = jcache();
 
         {
-            Map<String, Integer> m = new HashMap<>(2);
+            final Map<String, Integer> m = new LinkedHashMap<>(2);
 
             m.put("key1", 1);
             m.put(null, 2);
 
-            // WARN: F.asMap() doesn't work here, because it will throw NPE.
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    cache.putAll(m);
 
-            cache.putAll(m);
+                    return null;
+                }
+            }, NullPointerException.class, null);
 
-            assertNotNull(cache.get("key1"));
+            cache.put("key1", 1);
+
+            assertEquals(1, (int)cache.get("key1"));
         }
 
         {
-            Map<String, Integer> m = new HashMap<>(2);
+            final Map<String, Integer> m = new LinkedHashMap<>(2);
 
             m.put("key3", 3);
             m.put("key4", null);
 
+            GridTestUtils.assertThrows(log, new Callable<Void>() {
+                @Override
+                public Void call() throws Exception {
+                    cache.putAll(m);
+
+                    return null;
+                }
+            }, NullPointerException.class, null);
+
+            m.put("key4", 4);
+
             cache.putAll(m);
 
-            assertNotNull(cache.get("key3"));
-            assertNull(cache.get("key4"));
+            assertEquals(3, (int) cache.get("key3"));
+            assertEquals(4, (int)cache.get("key4"));
         }
 
         assertThrows(log, new Callable<Object>() {
             @Nullable @Override public Object call() throws Exception {
                 cache.put("key1", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.getAndPut("key1", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.put(null, 1);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace(null, 1);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.getAndReplace(null, 1);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace("key", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.getAndReplace("key", null);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace(null, 1, 2);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace("key", null, 2);
+
+                return null;
+            }
+        }, NullPointerException.class, A.NULL_MSG_PREFIX);
+
+        assertThrows(log, new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                cache.replace("key", 1, null);
 
                 return null;
             }
@@ -2498,14 +2690,53 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testRemoveAllWithNulls() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        final IgniteCache<String, Integer> cache = jcache();
 
-        Collection<String> c = new LinkedList<>();
+        final Set<String> c = new LinkedHashSet<>();
 
         c.add("key1");
         c.add(null);
 
-        cache.removeAll(c);
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override
+            public Void call() throws Exception {
+                cache.removeAll(c);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.removeAll(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.remove(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.getAndRemove(null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.remove("key1", null);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
     }
 
     /**

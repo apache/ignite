@@ -481,6 +481,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        A.notNull(key, "key");
+
         return removeAllAsync0(Collections.singletonList(key), null, entry, true, false, filter);
     }
 
@@ -520,6 +522,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removeAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
         return removexAsync(key, ctx.equalsPeekArray(val));
     }
 

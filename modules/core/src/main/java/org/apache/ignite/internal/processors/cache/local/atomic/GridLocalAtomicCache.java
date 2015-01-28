@@ -248,6 +248,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean replace(K key, V oldVal, V newVal) throws IgniteCheckedException {
+        A.notNull(oldVal, "oldVal");
+
         return putx(key, newVal, ctx.equalsPeekArray(oldVal));
     }
 
@@ -442,7 +444,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public boolean remove(K key, V val) throws IgniteCheckedException {
-        A.notNull(key, "key");
+        A.notNull(key, "key", val, "val");
 
         ctx.denyOnLocalRead();
 
@@ -665,9 +667,30 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
-        EntryProcessor<K, V, T> entryProcessor,
+        final EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        return invokeAllAsync(keys, entryProcessor, args).get();
+        A.notNull(keys, "keys", entryProcessor, "entryProcessor");
+
+        if (keyCheck)
+            validateCacheKeys(keys);
+
+        ctx.denyOnLocalRead();
+
+        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
+            @Override public EntryProcessor apply(K k) {
+                return entryProcessor;
+            }
+        });
+
+        return (Map<K, EntryProcessorResult<T>>)updateAllInternal(TRANSFORM,
+            invokeMap.keySet(),
+            invokeMap.values(),
+            args,
+            expiryPerCall(),
+            true,
+            false,
+            null,
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -736,10 +759,26 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) throws IgniteCheckedException {
-        return invokeAllAsync(map, args).get();
+        A.notNull(map, "map");
+
+        if (keyCheck)
+            validateCacheKeys(map.keySet());
+
+        ctx.denyOnLocalRead();
+
+        return (Map<K, EntryProcessorResult<T>>)updateAllInternal(TRANSFORM,
+            map.keySet(),
+            map.values(),
+            args,
+            expiryPerCall(),
+            true,
+            false,
+            null,
+            ctx.writeThrough());
     }
 
     /** {@inheritDoc} */
@@ -910,10 +949,13 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         boolean intercept = ctx.config().getInterceptor() != null;
 
         for (K key : keys) {
+            if (key == null)
+                throw new NullPointerException("Null key.");
+
             Object val = valsIter != null ? valsIter.next() : null;
 
-            if (key == null)
-                continue;
+            if (val == null && op != DELETE)
+                throw new NullPointerException("Null value.");
 
             while (true) {
                 GridCacheEntryEx<K, V> entry = null;
@@ -1044,7 +1086,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                 Object val = valsIter != null ? valsIter.next() : null;
 
                 if (val == null && op != DELETE)
-                    continue;
+                    throw new NullPointerException("Null value.");
 
                 try {
                     try {
@@ -1394,7 +1436,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         while (true) {
             for (K key : keys) {
                 if (key == null)
-                    continue;
+                    throw new NullPointerException("Null key.");
 
                 GridCacheEntryEx<K, V> entry = entryEx(key);
 

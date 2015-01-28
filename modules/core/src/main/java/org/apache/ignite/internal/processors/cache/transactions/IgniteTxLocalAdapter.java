@@ -1901,6 +1901,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             groupLockSanityCheck(cacheCtx, keys);
 
             for (K key : keys) {
+                if (key == null) {
+                    setRollbackOnly();
+
+                    throw new NullPointerException("Null key.");
+                }
+
                 V val = rmv || lookup == null ? null : lookup.get(key);
                 EntryProcessor entryProcessor = invokeMap == null ? null : invokeMap.get(key);
 
@@ -1930,13 +1936,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     drExpireTime = -1L;
                 }
 
-                if (key == null)
-                    continue;
-
                 if (!rmv && val == null && entryProcessor == null) {
-                    skipped = skip(skipped, key);
+                    setRollbackOnly();
 
-                    continue;
+                    throw new NullPointerException("Null value.");
                 }
 
                 if (cacheCtx.portableEnabled())

@@ -549,15 +549,19 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             // We still can get here if user pass map with single element.
             if (key == null) {
-                onDone(new GridCacheReturn<>(null, false));
+                NullPointerException err = new NullPointerException("Null key.");
 
-                return;
+                onDone(err);
+
+                throw err;
             }
 
             if (val == null && op != GridCacheOperation.DELETE) {
-                onDone(new GridCacheReturn<>(null, false));
+                NullPointerException err = new NullPointerException("Null value.");
 
-                return;
+                onDone(err);
+
+                throw err;
             }
 
             if (cctx.portableEnabled()) {
