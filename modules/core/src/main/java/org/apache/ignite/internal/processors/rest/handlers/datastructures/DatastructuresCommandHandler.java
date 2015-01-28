@@ -41,6 +41,7 @@ public class DataStructuresCommandHandler extends GridRestCommandHandlerAdapter 
         CACHE_INCREMENT,
         CACHE_DECREMENT
     );
+
     /**
      * @param ctx Context.
      */

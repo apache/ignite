@@ -43,6 +43,12 @@ public class IgniteCollectionConfiguration {
     /** Default distribution mode. */
     public static final CacheDistributionMode DFLT_DISTRIBUTION_MODE = PARTITIONED_ONLY;
 
+    /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
+    public static final long DFLT_OFFHEAP_MEMORY = -1;
+
+    /** Off-heap memory size. */
+    private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
+
     /** Cache mode. */
     private CacheMode cacheMode = DFLT_CACHE_MODE;
 
@@ -145,5 +151,19 @@ public class IgniteCollectionConfiguration {
      */
     public void setDistributionMode(CacheDistributionMode distro) {
         this.distro = distro;
+    }
+
+    /**
+     * @param offHeapMaxMem Maximum memory in bytes available to off-heap memory space.
+     */
+    public void setOffHeapMaxMemory(long offHeapMaxMem) {
+        this.offHeapMaxMem = offHeapMaxMem;
+    }
+
+    /**
+     * @return Maximum memory in bytes available to off-heap memory space.
+     */
+    public long getOffHeapMaxMemory() {
+        return offHeapMaxMem;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.transactions.*;
 
@@ -91,7 +92,7 @@ public abstract class GridCacheAtomicLongApiAbstractSelfTest extends IgniteAtomi
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (DataStructureRemovedException e) {
             info("Caught expected exception: " + e.getMessage());
         }
     }

@@ -165,8 +165,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                 return val;
 
             return CU.outTx(new Callable<IgniteAtomicSequence>() {
-                @Override
-                public IgniteAtomicSequence call() throws Exception {
+                @Override public IgniteAtomicSequence call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(atomicsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key), GridCacheAtomicSequenceValue.class);
 
@@ -297,11 +296,9 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                 return atomicLong;
 
             return CU.outTx(new Callable<IgniteAtomicLong>() {
-                @Override
-                public IgniteAtomicLong call() throws Exception {
+                @Override public IgniteAtomicLong call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(atomicsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
-                        GridCacheAtomicLongValue val = cast(dsView.get(key),
-                            GridCacheAtomicLongValue.class);
+                        GridCacheAtomicLongValue val = cast(dsView.get(key), GridCacheAtomicLongValue.class);
 
                         // Check that atomic long hasn't been created in other thread yet.
                         GridCacheAtomicLongEx a = cast(dsMap.get(key), GridCacheAtomicLongEx.class);
@@ -351,10 +348,9 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * Removes atomic long from cache.
      *
      * @param name Atomic long name.
-     * @return Method returns {@code true} if atomic long has been removed and {@code false} if it's not cached.
      * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeAtomicLong(String name) throws IgniteCheckedException {
+    public final void removeAtomicLong(String name) throws IgniteCheckedException {
         assert name != null;
         assert atomicsCacheCtx != null;
 
@@ -363,7 +359,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-            return removeInternal(key, GridCacheAtomicLongValue.class);
+            removeInternal(key, GridCacheAtomicLongValue.class);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to remove atomic long by name: " + name, e);
@@ -459,10 +455,9 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * Removes atomic reference from cache.
      *
      * @param name Atomic reference name.
-     * @return Method returns {@code true} if atomic reference has been removed and {@code false} if it's not cached.
      * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeAtomicReference(String name) throws IgniteCheckedException {
+    public final void removeAtomicReference(String name) throws IgniteCheckedException {
         assert name != null;
         assert atomicsCacheCtx != null;
 
@@ -471,7 +466,10 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-            return removeInternal(key, GridCacheAtomicReferenceValue.class);
+            removeInternal(key, GridCacheAtomicReferenceValue.class);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to remove atomic reference by name: " + name, e);
         }
         finally {
             atomicsCacheCtx.gate().leave();
@@ -563,10 +561,9 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * Removes atomic stamped from cache.
      *
      * @param name Atomic stamped name.
-     * @return Method returns {@code true} if atomic stamped has been removed and {@code false} if it's not cached.
      * @throws IgniteCheckedException If removing failed.
      */
-    public final boolean removeAtomicStamped(String name) throws IgniteCheckedException {
+    public final void removeAtomicStamped(String name) throws IgniteCheckedException {
         assert name != null;
         assert atomicsCacheCtx != null;
 
@@ -575,7 +572,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         try {
             GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-            return removeInternal(key, GridCacheAtomicStampedValue.class);
+            removeInternal(key, GridCacheAtomicStampedValue.class);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to remove atomic stamped by name: " + name, e);
@@ -707,49 +704,46 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * Removes count down latch from cache.
      *
      * @param name Name of the latch.
-     * @return Count down latch for the given name.
      * @throws IgniteCheckedException If operation failed.
      */
-    public boolean removeCountDownLatch(final String name) throws IgniteCheckedException {
+    public void removeCountDownLatch(final String name) throws IgniteCheckedException {
         assert name != null;
         assert atomicsCacheCtx != null;
 
         atomicsCacheCtx.gate().enter();
 
         try {
-            return CU.outTx(
-                new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        GridCacheInternal key = new GridCacheInternalKeyImpl(name);
+            CU.outTx(new Callable<Boolean>() {
+                @Override public Boolean call() throws Exception {
+                    GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-                        try (IgniteTx tx = CU.txStartInternal(atomicsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
-                            // Check correctness type of removable object.
-                            GridCacheCountDownLatchValue val =
-                                cast(dsView.get(key), GridCacheCountDownLatchValue.class);
+                    try (IgniteTx tx = CU.txStartInternal(atomicsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        // Check correctness type of removable object.
+                        GridCacheCountDownLatchValue val =
+                            cast(dsView.get(key), GridCacheCountDownLatchValue.class);
 
-                            if (val != null) {
-                                if (val.get() > 0) {
-                                    throw new IgniteCheckedException("Failed to remove count down latch " +
-                                        "with non-zero count: " + val.get());
-                                }
-
-                                dsView.removex(key);
-
-                                tx.commit();
+                        if (val != null) {
+                            if (val.get() > 0) {
+                                throw new IgniteCheckedException("Failed to remove count down latch " +
+                                    "with non-zero count: " + val.get());
                             }
-                            else
-                                tx.setRollbackOnly();
 
-                            return val != null;
-                        }
-                        catch (Error | Exception e) {
-                            U.error(log, "Failed to remove data structure: " + key, e);
+                            dsView.removex(key);
 
-                            throw e;
+                            tx.commit();
                         }
+                        else
+                            tx.setRollbackOnly();
+
+                        return val != null;
                     }
-                },
-                atomicsCacheCtx);
+                    catch (Error | Exception e) {
+                        U.error(log, "Failed to remove data structure: " + key, e);
+
+                        throw e;
+                    }
+                }
+            }, atomicsCacheCtx);
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to remove count down latch by name: " + name, e);
@@ -966,6 +960,19 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         }
 
         return cache;
+    }
+
+    /**
+     * @param info Data structure information.
+     * @throws IgniteException If validation failed.
+     */
+    private void updateUtilityCache(DataStructureInfo info) throws IgniteException {
+        validateDataStructure(info);
+
+        IgniteException err = utilityCache.invoke(DATA_STRUCTURES_KEY, new AddAtomicProcessor(info));
+
+        if (err != null)
+            throw err;
     }
 
     /**

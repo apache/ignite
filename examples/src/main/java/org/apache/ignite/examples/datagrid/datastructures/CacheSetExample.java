@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.*;
 import org.apache.ignite.lang.*;
 
@@ -33,9 +34,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheSetExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /** Set instance. */
     private static IgniteSet<String> set;
 
@@ -72,8 +70,10 @@ public class CacheSetExample {
      * @throws IgniteCheckedException If execution failed.
      */
     private static IgniteSet<String> initializeSet(Ignite g, String setName) throws IgniteCheckedException {
+        IgniteCollectionConfiguration setCfg = new IgniteCollectionConfiguration();
+
         // Initialize new set.
-        IgniteSet<String> set = g.cache(CACHE_NAME).dataStructures().set(setName, false, true);
+        IgniteSet<String> set = g.set(setName, setCfg, true);
 
         // Initialize set items.
         for (int i = 0; i < 10; i++)
@@ -94,7 +94,7 @@ public class CacheSetExample {
         final String setName = set.name();
 
         // Write set items on each node.
-        g.compute().broadcast(new SetClosure(CACHE_NAME, setName));
+        g.compute().broadcast(new SetClosure(setName));
 
         System.out.println("Set size after writing [expected=" + (10 + g.cluster().nodes().size() * 5) +
             ", actual=" + set.size() + ']');
@@ -136,8 +136,8 @@ public class CacheSetExample {
 
         System.out.println("Set size after clearing: " + set.size());
 
-        // Remove set from cache.
-        g.cache(CACHE_NAME).dataStructures().removeSet(set.name());
+        // Remove set.
+        set.close();
 
         System.out.println("Set was removed: " + set.removed());
 
@@ -154,25 +154,20 @@ public class CacheSetExample {
      * Closure to populate the set.
      */
     private static class SetClosure implements IgniteRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
         /** Set name. */
         private final String setName;
 
         /**
-         * @param cacheName Cache name.
          * @param setName Set name.
          */
-        SetClosure(String cacheName, String setName) {
-            this.cacheName = cacheName;
+        SetClosure(String setName) {
             this.setName = setName;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                IgniteSet<String> set = Ignition.ignite().cache(cacheName).dataStructures().set(setName, false, true);
+                IgniteSet<String> set = Ignition.ignite().set(setName, null, false);
 
                 UUID locId = Ignition.ignite().cluster().localNode().id();
 

@@ -45,11 +45,6 @@ import java.util.*;
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
  * </li>
  * <li>
- *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
- *     creating and working with distributed concurrent data structures, such as
- *     {@link org.apache.ignite.IgniteAtomicLong}, {@link org.apache.ignite.IgniteAtomicReference}, {@link org.apache.ignite.IgniteQueue}, etc.
- * </li>
- * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
  * </li>
@@ -101,14 +96,6 @@ public interface GridCache<K, V> extends CacheProjection<K, V> {
      * @return Cache data affinity service.
      */
     public CacheAffinity<K> affinity();
-
-    /**
-     * Gets data structures service to provide a gateway for creating various
-     * distributed data structures similar in APIs to {@code java.util.concurrent} package.
-     *
-     * @return Cache data structures service.
-     */
-    public CacheDataStructures dataStructures();
 
     /**
      * Gets metrics (statistics) for this cache.

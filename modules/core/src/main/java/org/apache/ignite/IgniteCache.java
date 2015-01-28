@@ -49,11 +49,6 @@ import java.util.concurrent.locks.*;
  *     data partitioning and mapping keys to grid nodes responsible for caching those keys.
  * </li>
  * <li>
- *     Method {@link #dataStructures()} provides {@link org.apache.ignite.cache.datastructures.CacheDataStructures} service for
- *     creating and working with distributed concurrent data structures, such as
- *     {@link IgniteAtomicLong}, {@link IgniteAtomicReference}, {@link IgniteQueue}, etc.
- * </li>
- * <li>
  *  Methods like {@code 'tx{Un}Synchronize(..)'} witch allow to get notifications for transaction state changes.
  *  This feature is very useful when integrating cache transactions with some other in-house transactions.
  * </li>

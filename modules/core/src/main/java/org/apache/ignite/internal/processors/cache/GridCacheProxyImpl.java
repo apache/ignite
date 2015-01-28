@@ -146,11 +146,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataStructures dataStructures() {
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheConfiguration configuration() {
         return cache.configuration();
     }

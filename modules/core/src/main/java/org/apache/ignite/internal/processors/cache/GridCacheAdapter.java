@@ -358,12 +358,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public CacheDataStructures dataStructures() {
-        // TODO IGNITE-6.
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public <K1, V1> GridCache<K1, V1> cache() {
         return (GridCache<K1, V1>)this;

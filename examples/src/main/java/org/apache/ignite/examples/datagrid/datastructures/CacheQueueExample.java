@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid.datastructures;
 
 import org.apache.ignite.*;
+import org.apache.ignite.configuration.*;
 import org.apache.ignite.examples.datagrid.*;
 import org.apache.ignite.lang.*;
 
@@ -34,9 +35,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheQueueExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /** Number of retries */
     private static final int RETRIES = 20;
 
@@ -78,8 +76,10 @@ public class CacheQueueExample {
      * @throws IgniteCheckedException If execution failed.
      */
     private static IgniteQueue<String> initializeQueue(Ignite g, String queueName) throws IgniteCheckedException {
+        IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
+
         // Initialize new FIFO queue.
-        IgniteQueue<String> queue = g.cache(CACHE_NAME).dataStructures().queue(queueName, 0, false, true);
+        IgniteQueue<String> queue = g.queue(queueName, colCfg, 0, true);
 
         // Initialize queue items.
         // We will be use blocking operation and queue size must be appropriated.
@@ -101,7 +101,7 @@ public class CacheQueueExample {
         final String queueName = queue.name();
 
         // Read queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, false));
+        g.compute().run(new QueueClosure(queueName, false));
 
         System.out.println("Queue size after reading [expected=0, actual=" + queue.size() + ']');
     }
@@ -116,7 +116,7 @@ public class CacheQueueExample {
         final String queueName = queue.name();
 
         // Write queue items on each node.
-        g.compute().run(new QueueClosure(CACHE_NAME, queueName, true));
+        g.compute().run(new QueueClosure(queueName, true));
 
         System.out.println("Queue size after writing [expected=" + g.cluster().nodes().size() * RETRIES +
             ", actual=" + queue.size() + ']');
@@ -158,9 +158,6 @@ public class CacheQueueExample {
      * Closure to populate or poll the queue.
      */
     private static class QueueClosure implements IgniteRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
         /** Queue name. */
         private final String queueName;
 
@@ -168,12 +165,10 @@ public class CacheQueueExample {
         private final boolean put;
 
         /**
-         * @param cacheName Cache name.
          * @param queueName Queue name.
          * @param put Flag indicating whether to put or poll.
          */
-        QueueClosure(String cacheName, String queueName, boolean put) {
-            this.cacheName = cacheName;
+        QueueClosure(String queueName, boolean put) {
             this.queueName = queueName;
             this.put = put;
         }
@@ -181,8 +176,7 @@ public class CacheQueueExample {
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                IgniteQueue<String> queue = Ignition.ignite().cache(cacheName).dataStructures().
-                    queue(queueName, 0, false, true);
+                IgniteQueue<String> queue = Ignition.ignite().queue(queueName, null, 0, false);
 
                 if (put) {
                     UUID locId = Ignition.ignite().cluster().localNode().id();
