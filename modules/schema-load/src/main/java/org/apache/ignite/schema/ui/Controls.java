@@ -471,6 +471,8 @@ public class Controls {
         tbl.setMinHeight(70);
         tbl.setPlaceholder(text(placeholder, 0));
 
+        tbl.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
         tbl.getColumns().addAll(cols);
 
         return tbl;

@@ -676,7 +676,8 @@ public class SchemaLoadApp extends Application {
             "If checked then this field will be part of key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
-            "If checked then this field will be marked with @CacheAffinityKeyMapped annotation in generated POJO");
+            "Check to annotate filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
+            "Note that a class can have only one field annotated with @CacheAffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -1111,12 +1112,13 @@ public class SchemaLoadApp extends Application {
 
                         boolean isTbl = pojo.parent() != null;
 
-                        CheckBox ch = new CheckBox(isTbl ? pojo.table() : pojo.schema());
+                        CheckBox ch = new CheckBox();
+                        Label lb = new Label(isTbl ? pojo.table() : pojo.schema());
 
                         ch.setAllowIndeterminate(false);
-                        ch.setMnemonicParsing(false);
 
                         ch.indeterminateProperty().bindBidirectional(pojo.indeterminate());
+
                         ch.selectedProperty().bindBidirectional(pojo.useProperty());
 
                         ch.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -1128,10 +1130,10 @@ public class SchemaLoadApp extends Application {
                             }
                         });
 
-                        Pane pnl = new HBox();
+                        Pane pnl = new HBox(5);
 
                         pnl.setPadding(new Insets(0, 0, 0, isTbl ? 25 : 5));
-                        pnl.getChildren().add(ch);
+                        pnl.getChildren().addAll(ch, lb);
 
                         setGraphic(pnl);
                     }
