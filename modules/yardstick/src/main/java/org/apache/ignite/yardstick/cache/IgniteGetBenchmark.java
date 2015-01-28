@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * GridGain benchmark that performs get operations.
  */
-public class GetBenchmarkIgnite extends IgniteCacheAbstractBenchmark {
+public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
