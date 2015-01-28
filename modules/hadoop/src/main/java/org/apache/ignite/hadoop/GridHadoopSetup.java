@@ -377,7 +377,7 @@ public class GridHadoopSetup {
 
         String answer = null;
 
-        if (!F.isEmpty(System.getenv("GRIDGAIN_HADOOP_SETUP_YES")))
+        if (!F.isEmpty(System.getenv("IGNITE_HADOOP_SETUP_YES")))
             answer = "Y";
         else {
             BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -412,7 +412,7 @@ public class GridHadoopSetup {
         X.println("  # " + msg);
         X.println("  # Setup failed, exiting... ");
 
-        if (e != null && !F.isEmpty(System.getenv("GRIDGAIN_HADOOP_SETUP_DEBUG")))
+        if (e != null && !F.isEmpty(System.getenv("IGNITE_HADOOP_SETUP_DEBUG")))
             e.printStackTrace();
 
         System.exit(1);
