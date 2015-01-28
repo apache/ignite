@@ -173,7 +173,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
             @Nullable @Override public Object call() throws Exception {
                 sem.acquire();
 
-                IgniteCompute comp = g.compute().enableAsync();
+                IgniteCompute comp = g.compute().withAsync();
 
                 comp.execute(GridJobExecutionLoadTestTask.class, null);
 
