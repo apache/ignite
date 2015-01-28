@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GridGain benchmark that performs apply operations.
+ * Ignite benchmark that performs apply operations.
  */
 public class IgniteApplyBenchmark extends IgniteAbstractBenchmark {
     /** Args for apply. */

@@ -23,7 +23,7 @@ import org.apache.ignite.yardstick.compute.model.*;
 import java.util.*;
 
 /**
- * GridGain benchmark that performs execute operations.
+ * Ignite benchmark that performs execute operations.
  */
 public class IgniteExecuteBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */

@@ -24,7 +24,7 @@ import org.apache.ignite.yardstick.cache.model.*;
 import java.util.*;
 
 /**
- * GridGain benchmark that performs transactional put and get operations.
+ * Ignite benchmark that performs transactional put and get operations.
  */
 public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */

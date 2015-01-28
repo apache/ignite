@@ -23,7 +23,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.transactions.*;
 
 /**
- * Input arguments for GridGain benchmarks.
+ * Input arguments for Ignite benchmarks.
  */
 @SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
 public class IgniteBenchmarkArguments {
@@ -35,8 +35,8 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-b", "--backups"}, description = "Backups")
     private int backups;
 
-    @Parameter(names = {"-ggcfg", "--ggConfig"}, description = "Configuration file")
-    private String ggcfg = "config/gridgain-localhost-config.xml";
+    @Parameter(names = {"-cfg", "--Config"}, description = "Configuration file")
+    private String cfg = "config/ignite-localhost-config.xml";
 
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
@@ -188,7 +188,7 @@ public class IgniteBenchmarkArguments {
      * @return Configuration file.
      */
     public String configuration() {
-        return ggcfg;
+        return cfg;
     }
 
     /**

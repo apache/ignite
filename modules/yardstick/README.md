@@ -37,7 +37,7 @@ The following Ignite benchmark properties can be defined in the benchmark config
 
 * `-nn <num>` or `--nodeNumber <num>` - Number of nodes (automatically set in `benchmark.properties`), used to wait for the specified number of nodes to start
 * `-b <num>` or `--backups <num>` - Number of backups for every key
-* `-ggcfg <path>` or `--ggConfig <path>` - Path to Ignite configuration file
+* `-cfg <path>` or `--Config <path>` - Path to Ignite configuration file
 * `-sm <mode>` or `-syncMode <mode>` - Synchronization mode (defined in `CacheWriteSynchronizationMode`)
 * `-dm <mode>` or `--distroMode <mode>` - Distribution mode (defined in `CacheDistributionMode`)
 * `-wom <mode>` or `--writeOrderMode <mode>` - Write order mode for ATOMIC caches (defined in `CacheAtomicWriteOrderMode`)

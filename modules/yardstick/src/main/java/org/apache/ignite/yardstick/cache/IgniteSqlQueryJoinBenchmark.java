@@ -28,7 +28,7 @@ import java.util.concurrent.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
- * GridGain benchmark that performs query operations with joins.
+ * Ignite benchmark that performs query operations with joins.
  */
 public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
     /** */

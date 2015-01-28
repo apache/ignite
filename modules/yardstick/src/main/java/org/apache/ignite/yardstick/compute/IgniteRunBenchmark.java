@@ -24,7 +24,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * GridGain benchmark that performs run operations.
+ * Ignite benchmark that performs run operations.
  */
 public class IgniteRunBenchmark extends IgniteAbstractBenchmark {
     /** Jobs for run */

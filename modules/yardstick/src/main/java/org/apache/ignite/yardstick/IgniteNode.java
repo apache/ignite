@@ -36,7 +36,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 
 /**
- * Standalone GridGain node.
+ * Standalone Ignite node.
  */
 public class IgniteNode implements BenchmarkServer {
     /** Grid instance. */
@@ -73,7 +73,7 @@ public class IgniteNode implements BenchmarkServer {
 
         for (CacheConfiguration cc : c.getCacheConfiguration()) {
             // IgniteNode can not run in CLIENT_ONLY mode,
-            // except the case when it's used inside GridGainAbstractBenchmark.
+            // except the case when it's used inside IgniteAbstractBenchmark.
             CacheDistributionMode distroMode = args.distributionMode() == CLIENT_ONLY && !clientMode ?
                 PARTITIONED_ONLY : args.distributionMode();
 

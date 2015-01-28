@@ -29,7 +29,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
- * Abstract class for GridGain benchmarks.
+ * Abstract class for Ignite benchmarks.
  */
 public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /** Arguments. */

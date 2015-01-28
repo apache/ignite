@@ -22,7 +22,7 @@ import org.apache.ignite.*;
 import java.util.*;
 
 /**
- * GridGain benchmark that performs get operations.
+ * Ignite benchmark that performs get operations.
  */
 public class IgniteGetBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */

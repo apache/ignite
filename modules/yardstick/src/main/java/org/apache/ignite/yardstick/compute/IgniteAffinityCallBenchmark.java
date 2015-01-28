@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * GridGain benchmark that performs affinity call operations.
+ * Ignite benchmark that performs affinity call operations.
  */
 public class IgniteAffinityCallBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */

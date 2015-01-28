@@ -22,7 +22,7 @@ import org.apache.ignite.yardstick.*;
 import org.yardstickframework.*;
 
 /**
- * Abstract class for GridGain benchmarks which use cache.
+ * Abstract class for Ignite benchmarks which use cache.
  */
 public abstract class IgniteCacheAbstractBenchmark extends IgniteAbstractBenchmark {
     /** Cache. */

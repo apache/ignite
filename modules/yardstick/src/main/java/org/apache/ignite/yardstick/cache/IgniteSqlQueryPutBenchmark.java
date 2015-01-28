@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * GridGain benchmark that performs put and query operations.
+ * Ignite benchmark that performs put and query operations.
  */
 public class IgniteSqlQueryPutBenchmark extends IgniteCacheAbstractBenchmark {
     /** */
