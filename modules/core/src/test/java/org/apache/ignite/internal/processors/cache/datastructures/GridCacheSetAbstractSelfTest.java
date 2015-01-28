@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.testframework.*;
 
 import java.util.*;
@@ -46,6 +47,15 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -107,12 +117,12 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < gridCount(); i++) {
             GridKernal grid = (GridKernal)grid(i);
 
-            Map map = GridTestUtils.getFieldValue(grid.context().dataStructures(), "setsMap");
-
-            assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
-
             for (GridCache cache : grid.caches()) {
                 CacheDataStructuresManager dsMgr = grid.internalCache(cache.name()).context().dataStructures();
+
+                Map map = GridTestUtils.getFieldValue(dsMgr, "setsMap");
+
+                assertEquals("Set not removed [grid=" + i + ", map=" + map + ']', 0, map.size());
 
                 map = GridTestUtils.getFieldValue(dsMgr, "setDataMap");
 
@@ -835,7 +845,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         for (int i = 0; i < 10; i++)
             set.add(i);
 
-        Collection<Integer> c = grid(0).compute().broadcast(new IgniteCallable<Integer>() {
+        Collection<Integer> c = grid(0).compute().broadcast(new Callable<Integer>() {
             @Override public Integer call() throws Exception {
                 assertEquals(SET_NAME, set.name());
 

@@ -27,6 +27,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -1248,7 +1249,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
         try {
             qry.execute();
 
-            cache.dataStructures().atomicLong("long", 0, true);
+            cache.putx(new GridCacheInternalKeyImpl("test"), 1);
 
             cache.putx(1, 1);
             cache.putx(2, 2);

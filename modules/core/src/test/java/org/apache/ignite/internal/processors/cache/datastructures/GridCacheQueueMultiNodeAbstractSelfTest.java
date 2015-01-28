@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -113,6 +114,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
                 new LinkedBlockingQueue<Runnable>()));
 
         cfg.setSystemExecutorServiceShutdown(true);
+
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
 
         return cfg;
     }
@@ -279,7 +282,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
         queue.put(val);
 
-        grid(0).compute().call(new GetJob(queueName, RETRIES, val));
+        grid(0).compute().call(new GetJob(queueName, collectionConfiguration(), RETRIES, val));
 
         assertEquals(1, queue.size());
 
@@ -702,13 +705,18 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
         /** */
         private final String expVal;
 
+        /** */
+        private final IgniteCollectionConfiguration colCfg;
+
         /**
          * @param queueName Queue name.
+         * @param colCfg Collection configuration.
          * @param retries  Number of operations.
          * @param expVal Expected value.
          */
-        GetJob(String queueName, int retries, String expVal) {
+        GetJob(String queueName, IgniteCollectionConfiguration colCfg, int retries, String expVal) {
             this.queueName = queueName;
+            this.colCfg = colCfg;
             this.retries = retries;
             this.expVal = expVal;
         }
@@ -719,8 +727,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
             ignite.log().info("Running job [node=" + ignite.cluster().localNode().id() + ", job=" + this + "]");
 
-            IgniteQueue<String> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAPACITY,
-                false, true);
+            IgniteQueue<String> queue = ignite.queue(queueName, colCfg, QUEUE_CAPACITY, true);
 
             assertNotNull(queue);
 

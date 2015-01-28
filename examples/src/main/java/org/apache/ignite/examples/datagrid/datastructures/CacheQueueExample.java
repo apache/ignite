@@ -142,8 +142,8 @@ public class CacheQueueExample {
 
         System.out.println("Queue size after clearing: " + queue.size());
 
-        // Remove queue from cache.
-        g.cache(CACHE_NAME).dataStructures().removeQueue(queue.name());
+        // Remove queue.
+        queue.close();
 
         // Try to work with removed queue.
         try {

@@ -335,7 +335,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             if (rmvd)
                 return;
 
-            ctx.kernalContext().dataStructures().removeSet(ctx, name);
+            ctx.dataStructures().removeSet(name);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);

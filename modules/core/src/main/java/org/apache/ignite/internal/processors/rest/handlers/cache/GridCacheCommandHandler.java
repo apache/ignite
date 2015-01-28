@@ -61,8 +61,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_REMOVE,
         CACHE_REMOVE_ALL,
         CACHE_REPLACE,
-        CACHE_INCREMENT,
-        CACHE_DECREMENT,
         CACHE_CAS,
         CACHE_APPEND,
         CACHE_PREPEND,
@@ -255,20 +253,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                     break;
                 }
 
-                case CACHE_INCREMENT: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key,
-                        new IncrementCommand(key, req0));
-
-                    break;
-                }
-
-                case CACHE_DECREMENT: {
-                    fut = executeCommand(req.destinationId(), req.clientId(), cacheName, key,
-                        new DecrementCommand(key, req0));
-
-                    break;
-                }
-
                 case CACHE_CAS: {
                     final Object val1 = req0.value();
                     final Object val2 = req0.value2();
@@ -404,39 +388,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             return comp.future();
         }
-    }
-
-    /**
-     * Handles increment and decrement commands.
-     *
-     * @param cache Cache.
-     * @param key Key.
-     * @param req Request.
-     * @param decr Whether to decrement (increment otherwise).
-     * @return Future of operation result.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private static IgniteFuture<?> incrementOrDecrement(CacheProjection<Object, Object> cache, String key,
-        GridRestCacheRequest req, final boolean decr) throws IgniteCheckedException {
-        assert cache != null;
-        assert key != null;
-        assert req != null;
-
-        Long init = req.initial();
-        Long delta = req.delta();
-
-        if (delta == null)
-            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("delta"));
-
-        final IgniteAtomicLong l = cache.cache().dataStructures().atomicLong(key, init != null ? init : 0, true);
-
-        final Long d = delta;
-
-        return ((GridKernal)cache.gridProjection().ignite()).context().closure().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                return l.addAndGet(decr ? -d : d);
-            }
-        }, false);
     }
 
     /**
@@ -1019,59 +970,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             }
 
             return c.replacexAsync(key, val);
-        }
-    }
-
-    /** */
-    private static class IncrementCommand extends CacheCommand {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final Object key;
-
-        /** */
-        private final GridRestCacheRequest req;
-
-        /**
-         * @param key Key.
-         * @param req Operation request.
-         */
-        IncrementCommand(Object key, GridRestCacheRequest req) {
-            this.key = key;
-            this.req = req;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx)
-            throws IgniteCheckedException {
-            return incrementOrDecrement(c, (String)key, req, false);
-        }
-    }
-
-    /** */
-    private static class DecrementCommand extends CacheCommand {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private final Object key;
-
-        /** */
-        private final GridRestCacheRequest req;
-
-        /**
-         * @param key Key.
-         * @param req Operation request.
-         */
-        DecrementCommand(Object key, GridRestCacheRequest req) {
-            this.key = key;
-            this.req = req;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFuture<?> applyx(CacheProjection<Object, Object> c, GridKernalContext ctx) throws IgniteCheckedException {
-            return incrementOrDecrement(c, (String)key, req, true);
         }
     }
 

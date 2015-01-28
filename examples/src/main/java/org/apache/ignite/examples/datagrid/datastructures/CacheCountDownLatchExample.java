@@ -33,9 +33,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public class CacheCountDownLatchExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /** Number of latch initial count */
     private static final int INITIAL_COUNT = 10;
 
@@ -54,14 +51,13 @@ public class CacheCountDownLatchExample {
             final String latchName = UUID.randomUUID().toString();
 
             // Initialize count down latch in grid.
-            IgniteCountDownLatch latch = g.cache(CACHE_NAME).dataStructures().
-                countDownLatch(latchName, INITIAL_COUNT, false, true);
+            IgniteCountDownLatch latch = g.countDownLatch(latchName, INITIAL_COUNT, false, true);
 
             System.out.println("Latch initial value: " + latch.count());
 
             // Start waiting on the latch on all grid nodes.
             for (int i = 0; i < INITIAL_COUNT; i++)
-                g.compute().run(new LatchClosure(CACHE_NAME, latchName));
+                g.compute().run(new LatchClosure(latchName));
 
             // Wait for latch to go down which essentially means that all remote closures completed.
             latch.await();
@@ -78,26 +74,20 @@ public class CacheCountDownLatchExample {
      * Closure which simply waits on the latch on all nodes.
      */
     private static class LatchClosure implements IgniteRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
         /** Latch name. */
         private final String latchName;
 
         /**
-         * @param cacheName Cache name.
          * @param latchName Latch name.
          */
-        LatchClosure(String cacheName, String latchName) {
-            this.cacheName = cacheName;
+        LatchClosure(String latchName) {
             this.latchName = latchName;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                IgniteCountDownLatch latch = Ignition.ignite().cache(cacheName).dataStructures().
-                    countDownLatch(latchName, 1, false, true);
+                IgniteCountDownLatch latch = Ignition.ignite().countDownLatch(latchName, 1, false, true);
 
                 int newCnt = latch.countDown();
 

@@ -70,9 +70,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     /** Internal storage of all dataStructures items (sequence, atomic long etc.). */
     private final ConcurrentMap<GridCacheInternal, GridCacheRemovable> dsMap;
 
-    /** Queues map. */
-    private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
-
     /** Cache contains only {@code GridCacheAtomicValue}. */
     private CacheProjection<GridCacheInternalKey, GridCacheAtomicLongValue> atomicLongView;
 
@@ -87,9 +84,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
     /** Cache contains only entry {@code GridCacheSequenceValue}.  */
     private CacheProjection<GridCacheInternalKey, GridCacheAtomicSequenceValue> seqView;
-
-    /** Sets map. */
-    private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /** */
     private GridCacheContext atomicsCacheCtx;
@@ -107,8 +101,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         super(ctx);
 
         dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
-        queuesMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
-        setsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
 
         atomicCfg = ctx.config().getAtomicConfiguration();
     }
@@ -149,14 +141,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStop(boolean cancel) {
-        super.onKernalStop(cancel);
-
-        for (GridCacheQueueProxy q : queuesMap.values())
-            q.delegate().onKernalStop();
-    }
-
     /**
      * Gets a sequence from cache or creates one if it's not cached.
      *
@@ -187,7 +171,8 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                 return val;
 
             return CU.outTx(new Callable<IgniteAtomicSequence>() {
-                @Override public IgniteAtomicSequence call() throws Exception {
+                @Override
+                public IgniteAtomicSequence call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(atomicsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key), GridCacheAtomicSequenceValue.class);
 
@@ -318,7 +303,8 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
                 return atomicLong;
 
             return CU.outTx(new Callable<IgniteAtomicLong>() {
-                @Override public IgniteAtomicLong call() throws Exception {
+                @Override
+                public IgniteAtomicLong call() throws Exception {
                     try (IgniteTx tx = CU.txStartInternal(atomicsCacheCtx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
@@ -376,8 +362,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      */
     public final boolean removeAtomicLong(String name) throws IgniteCheckedException {
         assert name != null;
-
-        checkAtomicsConfiguration();
+        assert atomicsCacheCtx != null;
 
         atomicsCacheCtx.gate().enter();
 
@@ -473,7 +458,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         }
         finally {
             atomicsCacheCtx.gate().leave();
-
         }
     }
 
@@ -486,8 +470,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      */
     public final boolean removeAtomicReference(String name) throws IgniteCheckedException {
         assert name != null;
-
-        checkAtomicsConfiguration();
+        assert atomicsCacheCtx != null;
 
         atomicsCacheCtx.gate().enter();
 
@@ -496,12 +479,8 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
             return removeInternal(key, GridCacheAtomicReferenceValue.class);
         }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Failed to remove atomic reference by name: " + name, e);
-        }
         finally {
-            atomicsCacheCtx.gate().enter();
-
+            atomicsCacheCtx.gate().leave();
         }
     }
 
@@ -583,7 +562,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         }
         finally {
             atomicsCacheCtx.gate().leave();
-
         }
     }
 
@@ -596,8 +574,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      */
     public final boolean removeAtomicStamped(String name) throws IgniteCheckedException {
         assert name != null;
-
-        checkAtomicsConfiguration();
+        assert atomicsCacheCtx != null;
 
         atomicsCacheCtx.gate().enter();
 
@@ -641,55 +618,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         GridCacheAdapter cache = cacheForCollection(cfg);
 
-        GridCacheContext cctx = cache.context();
-
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc =
-            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || cfg.isCollocated());
-
-        GridCacheQueueHeader hdr = cctx.dataStructures().queue(name, cap, colloc, create);
-
-        if (hdr == null)
-            return null;
-
-        GridCacheQueueProxy queue = queuesMap.get(hdr.id());
-
-        if (queue == null) {
-            queue = new GridCacheQueueProxy(cctx, cctx.atomic() ? new GridAtomicCacheQueueImpl<>(name, hdr, cctx) :
-                new GridTransactionalCacheQueueImpl<>(name, hdr, cctx));
-
-            GridCacheQueueProxy old = queuesMap.putIfAbsent(hdr.id(), queue);
-
-            if (old != null)
-                queue = old;
-        }
-
-        return queue;
-    }
-
-    /**
-     * @param key Queue header key.
-     * @param hdr Current queue header.
-     * @param oldHdr Previous queue header value.
-     */
-    public void onQueueUpdated(GridCacheQueueHeaderKey key,
-        @Nullable GridCacheQueueHeader hdr,
-        @Nullable GridCacheQueueHeader oldHdr) {
-        for (final GridCacheQueueProxy queue : queuesMap.values()) {
-            if (queue.name().equals(key.queueName())) {
-                if (hdr == null) {
-                    assert oldHdr != null;
-
-                    if (oldHdr.id().equals(queue.delegate().id())) {
-                        queue.delegate().onRemoved(false);
-
-                        queuesMap.remove(queue.delegate().id());
-                    }
-                }
-                else
-                    queue.delegate().onHeaderChanged(hdr);
-            }
-        }
+        return cache.context().dataStructures().queue(name, cap, create && cfg.isCollocated(), create);
     }
 
     /**
@@ -789,8 +718,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      */
     public boolean removeCountDownLatch(final String name) throws IgniteCheckedException {
         assert name != null;
-
-        checkAtomicsConfiguration();
+        assert atomicsCacheCtx != null;
 
         atomicsCacheCtx.gate().enter();
 
@@ -944,6 +872,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * @return Set instance.
      * @throws IgniteCheckedException If failed.
      */
+    @SuppressWarnings("unchecked")
     @Nullable public <T> IgniteSet<T> set(final String name,
         @Nullable IgniteCollectionConfiguration cfg,
         final boolean create)
@@ -955,148 +884,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
 
         GridCacheAdapter cache = cacheForCollection(cfg);
 
-        final GridCacheContext cctx = cache.context();
-
-        // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc =
-            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || cfg.isCollocated());
-
-        if (cctx.atomic())
-            return set0(cctx, name, colloc, create);
-
-        return CU.outTx(new Callable<IgniteSet<T>>() {
-            @Nullable @Override public IgniteSet<T> call() throws Exception {
-                return set0(cctx, name, colloc, create);
-            }
-        }, cctx);
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param name Name of set.
-     * @param collocated Collocation flag.
-     * @param create If {@code true} set will be created in case it is not in cache.
-     * @return Set.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> IgniteSet<T> set0(GridCacheContext cctx,
-        String name,
-        boolean collocated,
-        boolean create)
-        throws IgniteCheckedException
-    {
-        cctx.gate().enter();
-
-        try {
-            GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
-
-            GridCacheSetHeader hdr;
-
-            GridCacheAdapter cache = cctx.cache();
-
-            if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
-
-                GridCacheSetHeader old = retryPutIfAbsent(cache, key, hdr);
-
-                if (old != null)
-                    hdr = old;
-            }
-            else
-                hdr = (GridCacheSetHeader)cache.get(key);
-
-            if (hdr == null)
-                return null;
-
-            GridCacheSetProxy<T> set = setsMap.get(hdr.id());
-
-            if (set == null) {
-                GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
-
-                if (old != null)
-                    set = old;
-            }
-
-            return set;
-        }
-        finally {
-            cctx.gate().leave();
-        }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param name Set name.
-     * @return {@code True} if set was removed.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public boolean removeSet(GridCacheContext cctx, String name) throws IgniteCheckedException {
-        GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
-
-        GridCache cache = cctx.cache();
-
-        GridCacheSetHeader hdr = retryRemove(cache, key);
-
-        if (hdr == null)
-            return false;
-
-        if (!cctx.isLocal()) {
-            while (true) {
-                long topVer = cctx.topologyVersionFuture().get();
-
-                Collection<ClusterNode> nodes = CU.affinityNodes(cctx, topVer);
-
-                try {
-                    cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new BlockSetCallable(hdr.id()),
-                        nodes,
-                        true).get();
-                }
-                catch (ClusterTopologyException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("BlockSet job failed, will retry: " + e);
-
-                    continue;
-                }
-
-                try {
-                    cctx.closures().callAsyncNoFailover(BROADCAST,
-                        new RemoveSetDataCallable(cctx.name(), hdr.id(), topVer),
-                        nodes,
-                        true).get();
-                }
-                catch (ClusterTopologyException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("RemoveSetData job failed, will retry: " + e);
-
-                    continue;
-                }
-
-                if (cctx.topologyVersionFuture().get() == topVer)
-                    break;
-            }
-        }
-        else {
-            blockSet(hdr.id());
-
-            cctx.dataStructures().removeSetData(hdr.id(), 0);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param setId Set ID.
-     */
-    @SuppressWarnings("unchecked")
-    private void blockSet(IgniteUuid setId) {
-        GridCacheSetProxy set = setsMap.remove(setId);
-
-        if (set != null)
-            set.blockOnRemove();
+        return cache.context().dataStructures().set(name, create ? cfg.isCollocated() : false, create);
     }
 
     /**
@@ -1136,38 +924,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cache Cache.
-     * @param key Key to remove.
-     * @throws IgniteCheckedException If failed.
-     * @return Removed value.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryRemove(final GridCache cache, final Object key) throws IgniteCheckedException {
-        return retry(log, new Callable<T>() {
-            @Nullable @Override public T call() throws Exception {
-                return (T)cache.remove(key);
-            }
-        });
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     * @param val Value.
-     * @throws IgniteCheckedException If failed.
-     * @return Previous value.
-     */
-    @SuppressWarnings("unchecked")
-    @Nullable private <T> T retryPutIfAbsent(final GridCache cache, final Object key, final T val)
-        throws IgniteCheckedException {
-        return retry(log, new Callable<T>() {
-            @Nullable @Override public T call() throws Exception {
-                return (T)cache.putIfAbsent(key, val);
-            }
-        });
-    }
-
-    /**
      * Tries to cast the object to expected type.
      *
      * @param obj Object which will be casted.
@@ -1200,7 +956,7 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
      * @return Cache to use for collection.
      */
     private GridCacheAdapter cacheForCollection(IgniteCollectionConfiguration cfg) {
-        // TODO IGNITE-29: start collection internal cache with required configuration or use existing one.
+        // TODO IGNITE-29: start collection internal cache with required configuration or use existing cache.
         GridCacheAdapter cache = ctx.cache().internalCache("TEST_COLLECTION_CACHE");
 
         if (cache == null)
@@ -1225,141 +981,6 @@ public final class CacheDataStructuresProcessor extends GridProcessorAdapter {
         if (atomicCfg == null)
             throw new IgniteException("Atomic data structure can not be created, " +
                 "need to provide IgniteAtomicConfiguration.");
-    }
-
-    /**
-     * Waits for completion of all started set operations and blocks all subsequent operations.
-     */
-    @GridInternal
-    private static class BlockSetCallable implements Callable<Void>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0;
-
-        /** Injected grid instance. */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private IgniteUuid setId;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public BlockSetCallable() {
-            // No-op.
-        }
-
-        /**
-         * @param setId Set ID.
-         */
-        private BlockSetCallable(IgniteUuid setId) {
-            this.setId = setId;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws IgniteCheckedException {
-            assert ignite != null;
-
-            ((GridKernal)ignite).context().dataStructures().blockSet(setId);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeGridUuid(out, setId);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            setId = U.readGridUuid(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "BlockSetCallable [setId=" + setId + ']';
-        }
-    }
-
-    /**
-     * Removes set items.
-     */
-    @GridInternal
-    private static class RemoveSetDataCallable implements Callable<Void>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 5053205121218843148L;
-
-        /** Injected grid instance. */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /** */
-        private String cacheName;
-
-        /** */
-        private IgniteUuid setId;
-
-        /** */
-        private long topVer;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public RemoveSetDataCallable() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         * @param setId Set ID.
-         * @param topVer Topology version.
-         */
-        private RemoveSetDataCallable(String cacheName, IgniteUuid setId, long topVer) {
-            this.cacheName = cacheName;
-            this.setId = setId;
-            this.topVer = topVer;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws IgniteCheckedException {
-            assert ignite != null;
-
-            GridCacheAdapter cache = ((GridKernal)ignite).context().cache().internalCache(cacheName);
-
-            assert cache != null;
-
-            GridCacheGateway gate = cache.context().gate();
-
-            gate.enter();
-
-            try {
-                cache.context().dataStructures().removeSetData(setId, topVer);
-            }
-            finally {
-                gate.leave();
-            }
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeString(out, cacheName);
-            U.writeGridUuid(out, setId);
-            out.writeLong(topVer);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            cacheName = U.readString(in);
-            setId = U.readGridUuid(in);
-            topVer = in.readLong();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return "RemoveSetCallable [setId=" + setId + ']';
-        }
     }
 
     /**

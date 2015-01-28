@@ -33,9 +33,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicReferenceExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /**
      * Executes example.
      *
@@ -45,7 +42,7 @@ public final class CacheAtomicReferenceExample {
     public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache atomic reference example started.");
+            System.out.println(">>> Atomic reference example started.");
 
             // Make name of atomic reference.
             final String refName = UUID.randomUUID().toString();
@@ -54,13 +51,12 @@ public final class CacheAtomicReferenceExample {
             String val = UUID.randomUUID().toString();
 
             // Initialize atomic reference in grid.
-            IgniteAtomicReference<String> ref = g.cache(CACHE_NAME).dataStructures().
-                atomicReference(refName, val, true);
+            IgniteAtomicReference<String> ref = g.atomicReference(refName, val, true);
 
             System.out.println("Atomic reference initial value : " + ref.get() + '.');
 
             // Make closure for checking atomic reference value on grid.
-            Runnable c = new ReferenceClosure(CACHE_NAME, refName);
+            Runnable c = new ReferenceClosure(refName);
 
             // Check atomic reference on all grid nodes.
             g.compute().run(c);
@@ -94,26 +90,20 @@ public final class CacheAtomicReferenceExample {
      * Obtains atomic reference.
      */
     private static class ReferenceClosure implements IgniteRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
         /** Reference name. */
         private final String refName;
 
         /**
-         * @param cacheName Cache name.
          * @param refName Reference name.
          */
-        ReferenceClosure(String cacheName, String refName) {
-            this.cacheName = cacheName;
+        ReferenceClosure(String refName) {
             this.refName = refName;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                IgniteAtomicReference<String> ref = Ignition.ignite().cache(cacheName).dataStructures().
-                    atomicReference(refName, null, true);
+                IgniteAtomicReference<String> ref = Ignition.ignite().atomicReference(refName, null, true);
 
                 System.out.println("Atomic reference value is " + ref.get() + '.');
             }

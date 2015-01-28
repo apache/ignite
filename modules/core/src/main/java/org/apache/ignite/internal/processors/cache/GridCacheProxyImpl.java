@@ -68,9 +68,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     /** Cache queries. */
     private CacheQueries<K, V> qry;
 
-    /** Data structures. */
-    private CacheDataStructures dataStructures;
-
     /** Affinity. */
     private CacheAffinity<K> aff;
 
@@ -99,7 +96,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         cache = ctx.cache();
 
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
-        dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 
@@ -151,7 +147,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
     /** {@inheritDoc} */
     @Override public CacheDataStructures dataStructures() {
-        return dataStructures;
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -1886,7 +1882,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         cache = ctx.cache();
 
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
-        dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
     }
 

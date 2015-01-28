@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.datastructures.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
@@ -178,8 +179,8 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testCacheMetaData() throws Exception {
-        // Create data structure to test filtering of internal objects.
-        grid(0).cache(null).dataStructures().atomicLong("LONG", 0, true);
+        // Put internal key to test filtering of internal objects.
+        grid(0).cache(null).put(new GridCacheInternalKeyImpl("test"), 1);
 
         Collection<GridCacheSqlMetadata> metas =
             ((GridCacheQueriesEx<?, ?>)grid(0).cache(null).queries()).sqlMetadata();

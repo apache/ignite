@@ -267,38 +267,48 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @return REST request.
      */
     @SuppressWarnings("unchecked")
-    private GridRestCacheRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
+    private GridRestRequest createRestRequest(GridMemcachedMessage req, GridRestCommand cmd) {
         assert req != null;
 
-        GridRestCacheRequest restReq = new GridRestCacheRequest();
+        if (cmd == CACHE_INCREMENT || cmd == CACHE_DECREMENT) {
+            DataStructuresRequest restReq = new DataStructuresRequest();
 
-        restReq.command(cmd);
-        restReq.clientId(req.clientId());
-        restReq.ttl(req.expiration());
-        restReq.delta(req.delta());
-        restReq.initial(req.initial());
-        restReq.cacheName(req.cacheName());
-        restReq.key(req.key());
+            restReq.command(cmd);
+            restReq.key(req.key());
+            restReq.delta(req.delta());
+            restReq.initial(req.initial());
 
-        if (cmd == CACHE_REMOVE_ALL) {
-            Object[] keys = (Object[]) req.value();
-
-            if (keys != null) {
-                Map<Object, Object> map = new HashMap<>();
-
-                for (Object key : keys) {
-                    map.put(key, null);
-                }
-
-                restReq.values(map);
-            }
+            return restReq;
         }
         else {
-            if (req.value() != null)
-                restReq.value(req.value());
-        }
+            GridRestCacheRequest restReq = new GridRestCacheRequest();
 
-        return restReq;
+            restReq.command(cmd);
+            restReq.clientId(req.clientId());
+            restReq.ttl(req.expiration());
+            restReq.cacheName(req.cacheName());
+            restReq.key(req.key());
+
+            if (cmd == CACHE_REMOVE_ALL) {
+                Object[] keys = (Object[]) req.value();
+
+                if (keys != null) {
+                    Map<Object, Object> map = new HashMap<>();
+
+                    for (Object key : keys) {
+                        map.put(key, null);
+                    }
+
+                    restReq.values(map);
+                }
+            }
+            else {
+                if (req.value() != null)
+                    restReq.value(req.value());
+            }
+
+            return restReq;
+        }
     }
 
     /**

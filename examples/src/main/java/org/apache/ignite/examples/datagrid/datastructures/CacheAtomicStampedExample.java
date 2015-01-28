@@ -33,9 +33,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicStampedExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /**
      * Executes example.
      *
@@ -45,7 +42,7 @@ public final class CacheAtomicStampedExample {
     public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache atomic stamped example started.");
+            System.out.println(">>> Atomic stamped example started.");
 
             // Make name of atomic stamped.
             String stampedName = UUID.randomUUID().toString();
@@ -57,13 +54,12 @@ public final class CacheAtomicStampedExample {
             String stamp = UUID.randomUUID().toString();
 
             // Initialize atomic stamped in cache.
-            IgniteAtomicStamped<String, String> stamped = g.cache(CACHE_NAME).dataStructures().
-                atomicStamped(stampedName, val, stamp, true);
+            IgniteAtomicStamped<String, String> stamped = g.atomicStamped(stampedName, val, stamp, true);
 
             System.out.println("Atomic stamped initial [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');
 
             // Make closure for checking atomic stamped on grid.
-            Runnable c = new StampedUpdateClosure(CACHE_NAME, stampedName);
+            Runnable c = new StampedUpdateClosure(stampedName);
 
             // Check atomic stamped on all grid nodes.
             g.compute().run(c);
@@ -100,25 +96,20 @@ public final class CacheAtomicStampedExample {
      * Performs update of on an atomic stamped variable in cache.
      */
     private static class StampedUpdateClosure implements IgniteRunnable {
-        /** Cache name. */
-        private final String cacheName;
-
         /** Atomic stamped variable name. */
         private final String stampedName;
 
         /**
-         * @param cacheName Cache name.
          * @param stampedName Atomic stamped variable name.
          */
-        StampedUpdateClosure(String cacheName, String stampedName) {
-            this.cacheName = cacheName;
+        StampedUpdateClosure(String stampedName) {
             this.stampedName = stampedName;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
             try {
-                IgniteAtomicStamped<String, String> stamped = Ignition.ignite().cache(cacheName).dataStructures().
+                IgniteAtomicStamped<String, String> stamped = Ignition.ignite().
                     atomicStamped(stampedName, null, null, true);
 
                 System.out.println("Atomic stamped [value=" + stamped.value() + ", stamp=" + stamped.stamp() + ']');

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.rest.handlers.datastructures.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -255,6 +256,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             addHandler(new GridVersionCommandHandler(ctx));
             addHandler(new GridLogCommandHandler(ctx));
             addHandler(new GridPortableMetadataHandler(ctx));
+            addHandler(new DataStructuresCommandHandler(ctx));
 
             // Start protocols.
             startTcpProtocol();
@@ -560,12 +562,17 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
                 break;
 
+            // TODO IGNITE-6.
+            case CACHE_INCREMENT:
+            case CACHE_DECREMENT:
+                perm = GridSecurityPermission.CACHE_PUT;
+
+                break;
+
             case CACHE_PUT:
             case CACHE_ADD:
             case CACHE_PUT_ALL:
             case CACHE_REPLACE:
-            case CACHE_INCREMENT:
-            case CACHE_DECREMENT:
             case CACHE_CAS:
             case CACHE_APPEND:
             case CACHE_PREPEND:
@@ -625,7 +632,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
             log.debug("Added REST command handler: " + hnd);
 
         for (GridRestCommand cmd : hnd.supportedCommands()) {
-            assert !handlers.containsKey(cmd);
+            assert !handlers.containsKey(cmd) : cmd;
 
             handlers.put(cmd, hnd);
         }

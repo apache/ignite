@@ -535,33 +535,31 @@ final class TestMemcacheClient {
     }
 
     /**
-     * @param cacheName Cache name.
      * @param key Key.
      * @param init Initial value (optional).
      * @param incr Amount to add.
      * @return New value.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K> long cacheIncrement(@Nullable String cacheName, K key, @Nullable Long init, long incr)
+    public <K> long increment(K key, @Nullable Long init, long incr)
         throws IgniteCheckedException {
         assert key != null;
 
-        return makeRequest(Command.INCREMENT, cacheName, key, null, incr, init).<Long>getObject();
+        return makeRequest(Command.INCREMENT, null, key, null, incr, init).<Long>getObject();
     }
 
     /**
-     * @param cacheName Cache name.
      * @param key Key.
      * @param init Initial value (optional).
      * @param decr Amount to subtract.
      * @return New value.
      * @throws IgniteCheckedException In case of error.
      */
-    public <K> long cacheDecrement(@Nullable String cacheName, K key, @Nullable Long init, long decr)
+    public <K> long decrement(K key, @Nullable Long init, long decr)
         throws IgniteCheckedException {
         assert key != null;
 
-        return makeRequest(Command.DECREMENT, cacheName, key, null, decr, init).<Long>getObject();
+        return makeRequest(Command.DECREMENT, null, key, null, decr, init).<Long>getObject();
     }
 
     /**

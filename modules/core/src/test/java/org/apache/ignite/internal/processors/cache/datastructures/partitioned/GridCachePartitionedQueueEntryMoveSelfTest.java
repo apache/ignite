@@ -22,29 +22,23 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.affinity.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
-import static org.apache.ignite.cache.CachePreloadMode.*;
 
 /**
  * Cache queue test with changing topology.
  */
-public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstractTest {
-    /** IP finder. */
-    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
-
+public class GridCachePartitionedQueueEntryMoveSelfTest extends IgniteCollectionAbstractTest {
     /** Queue capacity. */
     private static final int QUEUE_CAP = 5;
 
@@ -58,23 +52,33 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
     private UUID nodeId;
 
     /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return GRID_CNT;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
+        IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
+
+        colCfg.setBackups(BACKUP_CNT);
+
+        return colCfg;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
-
-        cacheCfg.setCacheMode(PARTITIONED);
-        cacheCfg.setBackups(BACKUP_CNT);
-        cacheCfg.setPreloadMode(SYNC);
-
-        cfg.setCacheConfiguration(cacheCfg);
-
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(IP_FINDER);
-
-        cfg.setDiscoverySpi(spi);
 
         if (nodeId != null) {
             cfg.setNodeId(nodeId);
@@ -103,8 +107,10 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(0);
 
-                    IgniteQueue<Integer> queue = ignite.cache(null).dataStructures().queue(queueName, QUEUE_CAP,
-                        true, true);
+                    IgniteQueue<Integer> queue = ignite.queue(queueName,
+                        collocatedCollectionConfiguration(),
+                        QUEUE_CAP,
+                        true);
 
                     for (int i = 0; i < QUEUE_CAP * 2; i++) {
                         if (i == QUEUE_CAP) {
@@ -143,8 +149,10 @@ public class GridCachePartitionedQueueEntryMoveSelfTest extends GridCommonAbstra
                 @Override public Void call() throws IgniteCheckedException {
                     Ignite ignite = grid(GRID_CNT);
 
-                    IgniteQueue<Integer> queue = ignite.cache(null).dataStructures().
-                        queue(queueName, Integer.MAX_VALUE, true, true);
+                    IgniteQueue<Integer> queue = ignite.queue(queueName,
+                        collocatedCollectionConfiguration(),
+                        Integer.MAX_VALUE,
+                        true);
 
                     int cnt = 0;
 

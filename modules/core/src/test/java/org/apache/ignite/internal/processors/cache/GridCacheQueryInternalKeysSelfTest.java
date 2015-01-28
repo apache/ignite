@@ -70,7 +70,7 @@ public class GridCacheQueryInternalKeysSelfTest extends GridCacheAbstractSelfTes
             GridCache<Object, Object> cache = grid(0).cache(null);
 
             for (int i = 0; i < ENTRY_CNT; i++)
-                cache.dataStructures().queue("queue" + i, Integer.MAX_VALUE, false, true);
+                cache.put(new GridCacheQueueHeaderKey("queue" + i), 1);
 
             startGrid(GRID_CNT); // Start additional node.
 

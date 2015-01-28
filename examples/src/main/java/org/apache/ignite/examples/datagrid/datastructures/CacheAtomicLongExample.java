@@ -33,9 +33,6 @@ import java.util.*;
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
  */
 public final class CacheAtomicLongExample {
-    /** Cache name. */
-    private static final String CACHE_NAME = "partitioned_tx";
-
     /** Number of retries */
     private static final int RETRIES = 20;
 
@@ -48,20 +45,20 @@ public final class CacheAtomicLongExample {
     public static void main(String[] args) throws IgniteCheckedException {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             System.out.println();
-            System.out.println(">>> Cache atomic long example started.");
+            System.out.println(">>> Atomic long example started.");
 
             // Make name for atomic long (by which it will be known in the grid).
             String atomicName = UUID.randomUUID().toString();
 
             // Initialize atomic long in grid.
-            final IgniteAtomicLong atomicLong = g.cache(CACHE_NAME).dataStructures().atomicLong(atomicName, 0, true);
+            final IgniteAtomicLong atomicLong = g.atomicLong(atomicName, 0, true);
 
             System.out.println();
             System.out.println("Atomic long initial value : " + atomicLong.get() + '.');
 
             // Try increment atomic long from all grid nodes.
             // Note that this node is also part of the grid.
-            g.compute(g.cluster().forCache(CACHE_NAME)).call(new IgniteCallable<Object>() {
+            g.compute().broadcast(new IgniteCallable<Object>() {
                 @Override public Object call() throws  Exception {
                     for (int i = 0; i < RETRIES; i++)
                         System.out.println("AtomicLong value has been incremented: " + atomicLong.incrementAndGet());

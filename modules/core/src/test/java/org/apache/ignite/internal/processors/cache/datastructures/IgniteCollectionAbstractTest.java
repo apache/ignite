@@ -26,6 +26,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
@@ -71,12 +72,15 @@ public abstract class IgniteCollectionAbstractTest extends GridCommonAbstractTes
     /**
      * @return Collection configuration.
      */
-    IgniteCollectionConfiguration collectionConfiguration() {
+    protected IgniteCollectionConfiguration collectionConfiguration() {
         IgniteCollectionConfiguration colCfg = new IgniteCollectionConfiguration();
 
         colCfg.setCacheMode(collectionCacheMode());
         colCfg.setAtomicityMode(collectionCacheAtomicityMode());
         colCfg.setDistributionMode(PARTITIONED_ONLY);
+
+        if (colCfg.getCacheMode() == PARTITIONED)
+            colCfg.setBackups(1);
 
         return colCfg;
     }

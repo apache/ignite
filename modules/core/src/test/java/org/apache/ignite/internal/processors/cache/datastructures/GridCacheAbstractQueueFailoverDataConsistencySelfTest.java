@@ -86,7 +86,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
     }
 
     /** {@inheritDoc} */
-    @Override IgniteCollectionConfiguration collectionConfiguration() {
+    @Override protected IgniteCollectionConfiguration collectionConfiguration() {
         IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
 
         colCfg.setBackups(1);

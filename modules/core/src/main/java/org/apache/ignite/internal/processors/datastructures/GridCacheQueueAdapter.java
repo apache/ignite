@@ -424,7 +424,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      *
      * @param throw0 If {@code true} then throws {@link org.apache.ignite.cache.datastructures.CacheDataStructureRemovedRuntimeException}.
      */
-    void onRemoved(boolean throw0) {
+    public void onRemoved(boolean throw0) {
         rmvd = true;
 
         releaseSemaphores();
@@ -449,7 +449,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * @param hdr Queue header.
      */
-    void onHeaderChanged(GridCacheQueueHeader hdr) {
+    public void onHeaderChanged(GridCacheQueueHeader hdr) {
         if (!hdr.empty()) {
             readSem.drainPermits();
             readSem.release(hdr.size());
@@ -466,7 +466,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * Grid stop callback.
      */
-    void onKernalStop() {
+    public void onKernalStop() {
         releaseSemaphores();
     }
 
@@ -481,7 +481,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /**
      * @return Queue unique ID.
      */
-    IgniteUuid id() {
+    public IgniteUuid id() {
         return id;
     }
 

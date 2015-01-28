@@ -20,12 +20,9 @@ package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.processors.cache.datastructures.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
-import org.apache.ignite.spi.discovery.tcp.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -42,23 +39,43 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  *
  */
-public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends IgniteCollectionAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheMode collectionCacheMode() {
+        return PARTITIONED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        // No-op.
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-
-        spi.setIpFinder(ipFinder);
-
-        c.setDiscoverySpi(spi);
         c.setIncludeEventTypes();
         c.setPeerClassLoadingEnabled(false);
 
-        c.setCacheConfiguration(cacheConfiguration());
+        CacheConfiguration[] ccfg = c.getCacheConfiguration();
+
+        if (ccfg != null) {
+            assert ccfg.length == 1 : ccfg.length;
+
+            c.setCacheConfiguration(ccfg[0], cacheConfiguration());
+        }
+        else
+            c.setCacheConfiguration(cacheConfiguration());
 
         return c;
     }
@@ -95,11 +112,9 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
                     info("Started grid: " + locNodeId);
 
-                    GridCache<String, ?> cache = ignite.cache(null);
-
                     info("Creating queue: " + locNodeId);
 
-                    IgniteQueue<String> q = cache.dataStructures().queue("queue", 1, true, true);
+                    IgniteQueue<String> q = ignite.queue("queue", collocatedCollectionConfiguration(), 1, true);
 
                     assert q != null;
 

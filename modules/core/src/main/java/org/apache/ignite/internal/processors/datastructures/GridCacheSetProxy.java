@@ -81,7 +81,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     /**
      * Remove callback.
      */
-    void blockOnRemove() {
+    public void blockOnRemove() {
         delegate.removed(true);
 
         busyLock.block();

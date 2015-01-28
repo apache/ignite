@@ -35,7 +35,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 /**
  * Failover tests for cache data structures.
  */
-public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends IgniteAtomicsAbstractTest {
+public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends IgniteCollectionAbstractTest {
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
 
@@ -91,6 +91,13 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        IgniteAtomicConfiguration atomicCfg = new IgniteAtomicConfiguration();
+
+        atomicCfg.setCacheMode(collectionCacheMode());
+        atomicCfg.setBackups(collectionConfiguration().getBackups());
+
+        cfg.setAtomicConfiguration(atomicCfg);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -602,20 +609,20 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      */
     public void testFifoQueueTopologyChange() throws Exception {
         try {
-            cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true).put(10);
+            grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true).put(10);
 
             Ignite g = startGrid(NEW_GRID_NAME);
 
-            assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).poll() == 10;
+            assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).poll() == 10;
 
-            g.cache(null).dataStructures().queue(STRUCTURE_NAME, 0, false, false).put(20);
+            g.queue(STRUCTURE_NAME, null, 0, false).put(20);
 
             stopGrid(NEW_GRID_NAME);
 
-            assert cache().dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() == 20;
+            assert grid(0).<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() == 20;
         }
         finally {
-            cache().dataStructures().removeQueue(STRUCTURE_NAME);
+            grid(0).<Integer>queue(STRUCTURE_NAME, null, 0, false).close();
         }
     }
 
@@ -623,9 +630,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantTopologyChange() throws Exception {
-        try {
-            IgniteQueue<Integer> s = cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true);
-
+        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true)) {
             s.put(1);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -637,8 +642,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
                             try {
                                 Ignite g = startGrid(name);
 
-                                assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false,
-                                    false).peek() > 0;
+                                assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() > 0;
                             }
                             finally {
                                 if (i != TOP_CHANGE_CNT - 1)
@@ -662,10 +666,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() == origVal;
-        }
-        finally {
-            cache().dataStructures().removeQueue(STRUCTURE_NAME);
+                assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() == origVal;
         }
     }
 
@@ -673,9 +674,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testQueueConstantMultipleTopologyChange() throws Exception {
-        try {
-            IgniteQueue<Integer> s = cache().dataStructures().queue(STRUCTURE_NAME, 0, false, true);
-
+        try (IgniteQueue<Integer> s = grid(0).queue(STRUCTURE_NAME, collectionConfiguration(), 0, true)) {
             s.put(1);
 
             IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new CA() {
@@ -692,8 +691,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
 
                                     Ignite g = startGrid(name);
 
-                                    assert g.cache(null).dataStructures()
-                                        .<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() > 0;
+                                    assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() > 0;
                                 }
                             }
                             finally {
@@ -719,10 +717,7 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
             fut.get();
 
             for (Ignite g : G.allGrids())
-                assert g.cache(null).dataStructures().<Integer>queue(STRUCTURE_NAME, 0, false, false).peek() == origVal;
-        }
-        finally {
-            cache().dataStructures().removeQueue(STRUCTURE_NAME);
+                assert g.<Integer>queue(STRUCTURE_NAME, null, 0, false).peek() == origVal;
         }
     }
 

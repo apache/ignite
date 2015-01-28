@@ -1916,7 +1916,7 @@ public class GridGainEx {
                 int cacheIdx = 1;
 
                 if (hasHadoop)
-                    copies[cacheIdx] = CU.hadoopSystemCache();
+                    copies[cacheIdx++] = CU.hadoopSystemCache();
 
                 if (hasAtomics)
                     copies[cacheIdx] = atomicsSystemCache(cfg.getAtomicConfiguration(), clientDisco);
