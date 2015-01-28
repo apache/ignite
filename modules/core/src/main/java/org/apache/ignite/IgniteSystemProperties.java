@@ -405,11 +405,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
-     * Specifies log level for Visor client logging.
-     */
-    public static final String IGNITE_VISOR_CLIENT_LOG_LEVEL = "IGNITE_VISOR_CLIENT_LOG_LEVEL";
-
-    /**
      * Atomic cache deferred update response buffer size.
      */
     public static final String IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE = "IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE";
@@ -428,11 +423,6 @@ public final class IgniteSystemProperties {
      * If this property is set to {@code true} then shared memory space native debug will be enabled.
      */
     public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
-
-    /**
-     * Portable object array initial capacity.
-     */
-    public static final String IGNITE_PORTABLE_ARRAY_INITIAL_CAPACITY = "IGNITE_PORTABLE_ARRAY_INITIAL_CAPACITY";
 
     /**
      * Property allowing to skip configuration consistency checks.
