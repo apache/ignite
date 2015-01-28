@@ -3321,25 +3321,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.put(key, 1);
 
-            assert !cache.isLocked(key);
+            assert !cache.isLocalLocked(key, false);
 
-            cache.lock(key).lock();
+            Lock lock = cache.lock(key);
+
+            lock.lock();
 
             lockCnt.await();
 
-            assert cache.isLocked(key);
+            assert cache.isLocalLocked(key, false);
 
-            cache.lock(key).unlock();
+            lock.unlock();
 
             unlockCnt.await();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked(key))
+                if (cache.isLocalLocked(key, false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked(key);
+            assert !cache.isLocalLocked(key, false);
         }
     }
 
@@ -3351,25 +3353,25 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
-            CacheLock lock = cache.lock("key");
+            Lock lock = cache.lock("key");
 
             cache.put("key", 1);
 
-            assert !lock.isLocked();
+            assert !cache.isLocalLocked("key", false);
 
             lock.lock();
 
-            assert lock.isLocked();
+            assert cache.isLocalLocked("key", false);
 
             lock.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (lock.isLocked())
+                if (cache.isLocalLocked("key", false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key");
+            assert !cache.isLocalLocked("key", false);
         }
     }
 
@@ -3410,14 +3412,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (lockingEnabled()) {
             jcache().put("key", 1);
 
-            assert !jcache().isLocked("key");
+            assert !jcache().isLocalLocked("key", false);
 
             final Lock lock = jcache().lock("key");
 
             lock.tryLock(2000, MILLISECONDS);
 
-            assert jcache().isLocked("key");
-            assert jcache().isLockedByThread("key");
+            assert jcache().isLocalLocked("key", false);
+            assert jcache().isLocalLocked("key", true);
 
             assert !forLocal(dfltIgnite).call(new Callable<Boolean>() {
                 @Override public Boolean call() throws InterruptedException {
@@ -3467,14 +3469,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cache.put("key", 1);
 
-            final CacheLock lock = cache.lock("key");
+            final Lock lock = cache.lock("key");
 
-            assert !cache.isLocked("key");
+            assert !cache.isLocalLocked("key", false);
 
             lock.tryLock(1000, MILLISECONDS);
 
-            assert cache.isLocked("key");
-            assert cache.isLockedByThread("key");
+            assert cache.isLocalLocked("key", false);
+            assert cache.isLocalLocked("key", true);
 
             final CountDownLatch latch = new CountDownLatch(1);
 
@@ -3502,21 +3504,21 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 // Let another thread start.
             latch.await();
 
-            assert cache.isLocked("key");
-            assert cache.isLockedByThread("key");
+            assert cache.isLocalLocked("key", false);
+            assert cache.isLocalLocked("key", true);
 
             lock.unlock();
 
             assert f.get();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked("key") || cache.isLockedByThread("key"))
+                if (cache.isLocalLocked("key", false) || cache.isLocalLocked("key", true))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key");
-            assert !cache.isLockedByThread("key");
+            assert !cache.isLocalLocked("key", false);
+            assert !cache.isLocalLocked("key", true);
         }
     }
 
@@ -3704,42 +3706,42 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put("key1", 1);
             cache.put("key2", 2);
 
-            assert !cache.isLocked("key1");
-            assert !cache.isLocked("key2");
+            assert !cache.isLocalLocked("key1", false);
+            assert !cache.isLocalLocked("key2", false);
 
-            cache.lockAll(ImmutableSet.of("key1", "key2")).lock();
+            Lock lock1_2 = cache.lockAll(ImmutableSet.of("key1", "key2"));
 
-            assert cache.isLocked("key1");
-            assert cache.isLocked("key2");
+            lock1_2.lock();
 
-            cache.lockAll(ImmutableSet.of("key1", "key2")).unlock();
+            assert cache.isLocalLocked("key1", false);
+            assert cache.isLocalLocked("key2", false);
+
+            lock1_2.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked("key1") || cache.isLocked("key2"))
+                if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key1");
-            assert !cache.isLocked("key2");
+            assert !cache.isLocalLocked("key1", false);
+            assert !cache.isLocalLocked("key2", false);
 
-            Lock lock = cache.lockAll(ImmutableSet.of("key1", "key2"));
+            lock1_2.lock();
 
-            lock.lock();
+            assert cache.isLocalLocked("key1", false);
+            assert cache.isLocalLocked("key2", false);
 
-            assert cache.isLocked("key1");
-            assert cache.isLocked("key2");
-
-            lock.unlock();
+            lock1_2.unlock();
 
             for (int i = 0; i < 100; i++)
-                if (cache.isLocked("key1") || cache.isLocked("key2"))
+                if (cache.isLocalLocked("key1", false) || cache.isLocalLocked("key2", false))
                     Thread.sleep(10);
                 else
                     break;
 
-            assert !cache.isLocked("key1");
-            assert !cache.isLocked("key2");
+            assert !cache.isLocalLocked("key1", false);
+            assert !cache.isLocalLocked("key2", false);
         }
     }
 

@@ -34,11 +34,13 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements IgniteCache<K, V>, Externalizable {
+public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+    implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -207,33 +209,21 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheLock lock(K key) throws CacheException {
-        return lockAll(Collections.<K>singleton(key));
+    @Override public Lock lock(K key) throws CacheException {
+        return lockAll(Collections.singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public CacheLock lockAll(final Collection<? extends K> keys) {
-        return new CacheLockImpl<K>(delegate, keys);
+    @Override public Lock lockAll(final Collection<? extends K> keys) {
+        return new CacheLockImpl<>(gate, delegate, prj, keys);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocked(K key) {
+    @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.isLocked(key);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLockedByThread(K key) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.isLockedByThread(key);
+            return byCurrThread ? delegate.isLockedByThread(key) : delegate.isLocked(key);
         }
         finally {
             gate.leave(prev);
@@ -996,10 +986,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> enableAsync() {
-        if (isAsync())
-            return this;
-
+    @Override protected IgniteCache<K, V> createAsyncInstance() {
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }
 

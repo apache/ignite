@@ -704,7 +704,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
             getClass().getClassLoader(),
             TestAopTarget.class.getName(), TestAopTargetInterface.class.getName());
 
-        return tstClsLdr.loadClass("TestAopTarget").newInstance();
+        return tstClsLdr.loadClass("org.apache.ignite.gridify.TestAopTarget").newInstance();
     }
 
     /**

@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Ggfs supporting asynchronous operations.
  */
-public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements GridGgfsEx {
+public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter<IgniteFs> implements GridGgfsEx {
     /** */
     private final GridGgfsImpl ggfs;
 
@@ -40,11 +40,6 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
         super(true);
 
         this.ggfs = ggfs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFs enableAsync() {
-        return this;
     }
 
     /** {@inheritDoc} */

@@ -67,7 +67,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     private static final Integer I_TOPIC_2 = 2;
 
     /** */
-    public static final String EXT_RESOURCE_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestUserResource";
+    public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.GridP2PAwareTestUserResource";
 
     /** Shared IP finder. */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);

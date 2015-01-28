@@ -55,10 +55,10 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static final int MSG_CNT = 3;
 
     /** */
-    private static final String TOPIC_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestMessageTopic";
+    private static final String TOPIC_CLS_NAME = "org.apache.ignite.tests.p2p.GridTestMessageTopic";
 
     /** */
-    private static final String LSNR_CLS_NAME = "org.gridgain.grid.tests.p2p.GridTestMessageListener";
+    private static final String LSNR_CLS_NAME = "org.apache.ignite.tests.p2p.GridTestMessageListener";
 
     /** */
     private static boolean include;
