@@ -23,18 +23,18 @@ import javax.net.ssl.*;
 import java.lang.management.*;
 
 /**
- * Contains constants for all system properties and environmental variables in GridGain. These
- * properties and variables can be used to affect the behavior of GridGain.
+ * Contains constants for all system properties and environmental variables in Ignite. These
+ * properties and variables can be used to affect the behavior of Ignite.
  */
 public final class IgniteSystemProperties {
     /**
-     * If this system property is present the GridGain will include grid name into verbose log.
+     * If this system property is present the Ignite will include grid name into verbose log.
      */
     public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
 
     /**
      * This property is used internally to pass an exit code to loader when
-     * GridGain instance is being restarted.
+     * Ignite instance is being restarted.
      */
     public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
 
@@ -45,7 +45,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DAEMON = "IGNITE_DAEMON";
 
-    /** Defines GridGain installation folder. */
+    /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
     /** If this system property is set to {@code false} - no shutdown hook will be set. */
@@ -63,14 +63,14 @@ public final class IgniteSystemProperties {
 
     /**
      * If this system property is set to {@code false} - no checks for new versions will
-     * be performed by GridGain. By default, GridGain periodically checks for the new
-     * version and prints out the message into the log if new version of GridGain is
+     * be performed by Ignite. By default, Ignite periodically checks for the new
+     * version and prints out the message into the log if new version of Ignite is
      * available for download.
      */
     public static final String IGNITE_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
 
     /**
-     * This system property defines interval in milliseconds in which GridGain will check
+     * This system property defines interval in milliseconds in which Ignite will check
      * thread pool state for starvation. Zero value will disable this checker.
      */
     public static final String IGNITE_STARVATION_CHECK_INTERVAL = "IGNITE_STARVATION_CHECK_INTERVAL";
@@ -92,7 +92,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_JETTY_PORT = "IGNITE_JETTY_PORT";
 
     /**
-     * This property does not allow GridGain to override Jetty log configuration for REST processor.
+     * This property does not allow Ignite to override Jetty log configuration for REST processor.
      */
     public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
@@ -111,16 +111,16 @@ public final class IgniteSystemProperties {
 
     /**
      * Set to either {@code true} or {@code false} to enable or disable quiet mode
-     * of GridGain. In quiet mode, only warning and errors are printed into the log
+     * of Ignite. In quiet mode, only warning and errors are printed into the log
      * additionally to a shortened version of standard output on the start.
      * <p>
-     * Note that if you use <tt>ggstart.{sh|bat}</tt> scripts to start GridGain they
+     * Note that if you use <tt>ggstart.{sh|bat}</tt> scripts to start Ignite they
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
-     * If this property is set to {@code true} (default) and GridGain is launched
+     * If this property is set to {@code true} (default) and Ignite is launched
      * in verbose mode (see {@link #IGNITE_QUIET}) and no console appenders can be found
      * in configuration, then default console appender will be added.
      * Set this property to {@code false} if no appenders should be added.
@@ -134,7 +134,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Name of the system property defining success file name. This file
-     * is used with auto-restarting functionality when GridGain is started
+     * is used with auto-restarting functionality when Ignite is started
      * by supplied <tt>ggstart.{bat|sh}</tt> scripts.
      */
     public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
@@ -143,7 +143,7 @@ public final class IgniteSystemProperties {
      * Name of the system property or environment variable to set or override
      * SMTP host. If provided - it will override the property in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -156,7 +156,7 @@ public final class IgniteSystemProperties {
      * Name of the system property or environment variable to set or override
      * SMTP port. If provided - it will override the property in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -170,7 +170,7 @@ public final class IgniteSystemProperties {
      * Name of the system property or environment variable to set or override
      * SMTP username. If provided - it will override the property in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -183,7 +183,7 @@ public final class IgniteSystemProperties {
      * Name of the system property or environment variable to set or override
      * SMTP password. If provided - it will override the property in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -196,7 +196,7 @@ public final class IgniteSystemProperties {
      * Name of the system property or environment variable to set or override
      * SMTP FROM email. If provided - it will override the property in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -211,7 +211,7 @@ public final class IgniteSystemProperties {
      * list of admin emails. Value of this property should be comma-separated list
      * of emails. If provided - it will override the property in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -225,7 +225,7 @@ public final class IgniteSystemProperties {
      * whether or not to use SSL. If provided - it will override the property
      * in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -249,7 +249,7 @@ public final class IgniteSystemProperties {
      * whether or not to use STARTTLS. If provided - it will override the property
      * in grid configuration.
      * <p>
-     * Note that GridGain uses SMTP to send emails in critical
+     * Note that Ignite uses SMTP to send emails in critical
      * situations such as license expiration or fatal system errors.
      * It is <b>highly</b> recommended to configure SMTP in production
      * environment.
@@ -261,7 +261,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Name of system property to set system-wide local IP address or host. If provided it will
-     * override all default local bind settings within GridGain or any of its SPIs.
+     * override all default local bind settings within Ignite or any of its SPIs.
      * <p>
      * Note that system-wide local bind address can also be set via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()}
      * method. However, system properties have priority over configuration properties specified in
@@ -271,7 +271,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Name of the system property or environment variable to activate synchronous
-     * listener notification for future objects implemented in GridGain. I.e.
+     * listener notification for future objects implemented in Ignite. I.e.
      * closure passed into method {@link org.apache.ignite.lang.IgniteFuture#listenAsync(org.apache.ignite.lang.IgniteInClosure)} will
      * be evaluated in the same thread that will end the future.
      *
@@ -281,7 +281,7 @@ public final class IgniteSystemProperties {
 
     /**
      * Name of the system property or environment variable to activate concurrent
-     * listener notification for future objects implemented in GridGain. I.e.
+     * listener notification for future objects implemented in Ignite. I.e.
      * upon future completion every listener will be notified concurrently in a
      * separate thread.
      *
@@ -306,7 +306,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_MAX_COMPLETED_TX_COUNT = "IGNITE_MAX_COMPLETED_TX_COUNT";
 
     /**
-     * Concurrency level for all concurrent hash maps created by GridGain.
+     * Concurrency level for all concurrent hash maps created by Ignite.
      */
     public static final String IGNITE_MAP_CONCURRENCY_LEVEL = "IGNITE_MAP_CONCURRENCY_LEVEL";
 
@@ -385,7 +385,7 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_COMMUNICATION_BUF_RESIZE_RATIO = "IGNITE_COMMUNICATION_BUF_RESIZE_RATIO";
 
     /**
-     * Flag that will force GridGain to fill memory block with some recognisable pattern right before
+     * Flag that will force Ignite to fill memory block with some recognisable pattern right before
      * this memory block is released. This will help to recognize cases when already released memory is accessed.
      */
     public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
@@ -447,11 +447,11 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
 
     /**
-     * If this property is set to {@code true} then GridGain will append
+     * If this property is set to {@code true} then Ignite will append
      * hash code of {@link Ignite} class as hex string and append
      * JVM name returned by {@link RuntimeMXBean#getName()}.
      * <p>
-     * This may be helpful when running GridGain in some application server
+     * This may be helpful when running Ignite in some application server
      * clusters or similar environments to avoid MBean name collisions.
      * <p>
      * Default is {@code false}.
