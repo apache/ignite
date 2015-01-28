@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.transactions.*;
@@ -784,6 +785,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 tx.addMeta(SES_ATTR, ses);
             }
+            else
+                // Session cache name may change in cross-cache transaction.
+                ses.cacheName(cctx.name());
         }
         else
             ses = new SessionData(null, cctx.name());
@@ -796,12 +800,14 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     private static class SessionData {
         /** */
+        @GridToStringExclude
         private final IgniteTx tx;
 
         /** */
-        private final String cacheName;
+        private String cacheName;
 
         /** */
+        @GridToStringInclude
         private Map<Object, Object> props;
 
         /**
@@ -835,6 +841,18 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
          */
         private String cacheName() {
             return cacheName;
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private void cacheName(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SessionData.class, this, "tx", CU.txString(tx));
         }
     }
 
@@ -872,6 +890,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.cacheName() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ThreadLocalSession.class, this);
         }
     }
 

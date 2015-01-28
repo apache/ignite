@@ -472,6 +472,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (writeEntries != null) {
                     Map<K, IgniteBiTuple<V, GridCacheVersion>> putMap = null;
                     List<K> rmvCol = null;
+                    GridCacheStoreManager<K, V> writeStore = null;
 
                     boolean skipNear = near() && store.writeToStoreFromDht();
 
@@ -496,10 +497,24 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         if (op == CREATE || op == UPDATE) {
                             // Batch-process all removes if needed.
                             if (rmvCol != null && !rmvCol.isEmpty()) {
-                                store.removeAllFromStore(this, rmvCol);
+                                assert writeStore != null;
+
+                                writeStore.removeAllFromStore(this, rmvCol);
 
                                 // Reset.
                                 rmvCol.clear();
+
+                                writeStore = null;
+                            }
+
+                            // Batch-process puts if cache ID has changed.
+                            if (writeStore != null && writeStore != cacheCtx.store() && putMap != null && !putMap.isEmpty()) {
+                                writeStore.putAllToStore(this, putMap);
+
+                                // Reset.
+                                putMap.clear();
+
+                                writeStore = null;
                             }
 
                             if (intercept) {
@@ -517,14 +532,29 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
                             putMap.put(key, F.t(val, ver));
+
+                            writeStore = cacheCtx.store();
                         }
                         else if (op == DELETE) {
                             // Batch-process all puts if needed.
                             if (putMap != null && !putMap.isEmpty()) {
-                                store.putAllToStore(this, putMap);
+                                assert writeStore != null;
+
+                                writeStore.putAllToStore(this, putMap);
 
                                 // Reset.
                                 putMap.clear();
+
+                                writeStore = null;
+                            }
+
+                            if (writeStore != null && writeStore != cacheCtx.store() && rmvCol != null && !rmvCol.isEmpty()) {
+                                writeStore.removeAllFromStore(this, rmvCol);
+
+                                // Reset.
+                                rmvCol.clear();
+
+                                writeStore = null;
                             }
 
                             if (intercept) {
@@ -541,6 +571,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 rmvCol = new LinkedList<>();
 
                             rmvCol.add(key);
+
+                            writeStore = cacheCtx.store();
                         }
                         else if (log.isDebugEnabled())
                             log.debug("Ignoring NOOP entry for batch store commit: " + e);
@@ -548,16 +580,18 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                     if (putMap != null && !putMap.isEmpty()) {
                         assert rmvCol == null || rmvCol.isEmpty();
+                        assert writeStore != null;
 
                         // Batch put at the end of transaction.
-                        store.putAllToStore(this, putMap);
+                        writeStore.putAllToStore(this, putMap);
                     }
 
                     if (rmvCol != null && !rmvCol.isEmpty()) {
                         assert putMap == null || putMap.isEmpty();
+                        assert writeStore != null;
 
                         // Batch remove at the end of transaction.
-                        store.removeAllFromStore(this, rmvCol);
+                        writeStore.removeAllFromStore(this, rmvCol);
                     }
                 }
 
