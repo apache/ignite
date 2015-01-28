@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 /**
  * Management bean for {@link NoopSecureSessionSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to no-op secure session SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to no-op secure session SPI configuration.")
 public interface NoopSecureSessionSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }
