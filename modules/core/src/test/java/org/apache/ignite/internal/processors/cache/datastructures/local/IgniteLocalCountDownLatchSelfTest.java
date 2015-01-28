@@ -32,7 +32,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCacheLocalCountDownLatchSelfTest extends GridCacheCountDownLatchAbstractSelfTest {
+public class IgniteLocalCountDownLatchSelfTest extends IgniteCountDownLatchAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return LOCAL;

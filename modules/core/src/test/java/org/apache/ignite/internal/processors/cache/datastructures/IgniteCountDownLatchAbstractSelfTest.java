@@ -34,7 +34,7 @@ import static java.util.concurrent.TimeUnit.*;
 /**
  * Cache count down latch self test.
  */
-public abstract class GridCacheCountDownLatchAbstractSelfTest extends IgniteAtomicsAbstractTest
+public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomicsAbstractTest
     implements Externalizable {
     /** */
     private static final int NODES_CNT = 4;

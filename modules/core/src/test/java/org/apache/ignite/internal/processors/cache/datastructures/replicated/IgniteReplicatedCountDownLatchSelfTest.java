@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -25,9 +25,9 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCachePartitionedAtomicLongApiSelfTest extends GridCacheAtomicLongApiAbstractSelfTest {
+public class IgniteReplicatedCountDownLatchSelfTest extends IgniteCountDownLatchAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
-        return PARTITIONED;
+        return REPLICATED;
     }
 }

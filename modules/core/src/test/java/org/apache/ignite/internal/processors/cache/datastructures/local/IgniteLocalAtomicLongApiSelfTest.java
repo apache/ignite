@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCacheLocalAtomicLongApiSelfTest extends GridCacheAtomicLongApiAbstractSelfTest {
+public class IgniteLocalAtomicLongApiSelfTest extends IgniteAtomicLongApiAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return LOCAL;

@@ -3249,6 +3249,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
         try {
             return ctx.dataStructures().sequence(name, initVal, create);
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
         finally {
             unguard();
         }
@@ -3261,6 +3264,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
         try {
             return ctx.dataStructures().atomicLong(name, initVal, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             unguard();
@@ -3277,6 +3283,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
         try {
             return ctx.dataStructures().atomicReference(name, initVal, create);
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
         finally {
             unguard();
         }
@@ -3292,6 +3301,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
         try {
             return ctx.dataStructures().atomicStamped(name, initVal, initStamp, create);
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
         finally {
             unguard();
         }
@@ -3306,6 +3318,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
         try {
             return ctx.dataStructures().countDownLatch(name, cnt, autoDel, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             unguard();
@@ -3323,6 +3338,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
         try {
             return ctx.dataStructures().queue(name, cfg, cap, create);
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
         finally {
             unguard();
         }
@@ -3338,6 +3356,9 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
         try {
             return ctx.dataStructures().set(name, cfg, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
         finally {
             unguard();

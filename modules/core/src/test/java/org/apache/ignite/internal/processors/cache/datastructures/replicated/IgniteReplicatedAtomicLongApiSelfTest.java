@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCacheReplicatedCountDownLatchSelfTest extends GridCacheCountDownLatchAbstractSelfTest {
+public class IgniteReplicatedAtomicLongApiSelfTest extends IgniteAtomicLongApiAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return REPLICATED;

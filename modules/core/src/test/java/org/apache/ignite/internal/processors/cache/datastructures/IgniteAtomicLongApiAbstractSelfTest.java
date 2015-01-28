@@ -30,7 +30,7 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 /**
  * Cache atomic long api test.
  */
-public abstract class GridCacheAtomicLongApiAbstractSelfTest extends IgniteAtomicsAbstractTest {
+public abstract class IgniteAtomicLongApiAbstractSelfTest extends IgniteAtomicsAbstractTest {
     /** Random number generator. */
     private static final Random RND = new Random();
 

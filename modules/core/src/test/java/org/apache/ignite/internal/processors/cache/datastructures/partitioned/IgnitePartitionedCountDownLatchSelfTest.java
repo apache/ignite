@@ -25,7 +25,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  *
  */
-public class GridCachePartitionedCountDownLatchSelfTest extends GridCacheCountDownLatchAbstractSelfTest {
+public class IgnitePartitionedCountDownLatchSelfTest extends IgniteCountDownLatchAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode atomicsCacheMode() {
         return PARTITIONED;

@@ -27,7 +27,7 @@ import java.util.*;
 /**
  *
  */
-public class GridCachePartitionedNoBackupsSetSelfTest extends GridCachePartitionedSetSelfTest {
+public class IgnitePartitionedSetNoBackupsSelfTest extends GridCachePartitionedSetSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteCollectionConfiguration collectionConfiguration() {
         IgniteCollectionConfiguration colCfg = super.collectionConfiguration();
