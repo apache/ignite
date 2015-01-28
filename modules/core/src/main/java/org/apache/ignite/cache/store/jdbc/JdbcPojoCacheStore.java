@@ -136,7 +136,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
     /** {@inheritDoc} */
     @Override protected void buildTypeCache() throws CacheException {
-        typeMapping = U.newHashMap(typeMetadata.size());
+        entryMappings = U.newHashMap(typeMetadata.size());
 
         mtdsCache = U.newHashMap(typeMetadata.size() * 2);
 
@@ -145,13 +145,13 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
             mtdsCache.put(type.getKeyType(), keyCache);
 
-            typeMapping.put(new IgniteBiTuple<String, Object>(null, keyId(type.getKeyType())),
+            entryMappings.put(new IgniteBiTuple<String, Object>(null, keyId(type.getKeyType())),
                 new EntryMapping(dialect, type));
 
             mtdsCache.put(type.getType(), new PojoMethodsCache(type.getType(), type.getValueDescriptors()));
         }
 
-        typeMapping = Collections.unmodifiableMap(typeMapping);
+        entryMappings = Collections.unmodifiableMap(entryMappings);
 
         mtdsCache = Collections.unmodifiableMap(mtdsCache);
     }
