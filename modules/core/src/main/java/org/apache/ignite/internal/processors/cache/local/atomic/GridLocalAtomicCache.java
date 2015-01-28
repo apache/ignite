@@ -259,7 +259,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridCacheReturn<V> replacex(K key, V oldVal, V newVal) throws IgniteCheckedException {
-        A.notNull(key, "key");
+        A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         ctx.denyOnLocalRead();
 
@@ -277,7 +277,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public GridCacheReturn<V> removex(K key, V val) throws IgniteCheckedException {
-        A.notNull(key, "key");
+        A.notNull(key, "key", val, "val");
 
         ctx.denyOnLocalRead();
 
@@ -295,7 +295,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
-        A.notNull(key, "key");
+        A.notNull(key, "key", val, "val");
 
         ctx.denyOnLocalRead();
 
@@ -305,7 +305,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
-        A.notNull(key, "key");
+        A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         ctx.denyOnLocalRead();
 
@@ -500,6 +500,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         throws IgniteCheckedException {
         ctx.denyOnFlag(LOCAL);
 
+        A.notNull(keys, "keys");
+
         String taskName = ctx.kernalContext().job().currentTaskName();
 
         return getAllInternal(keys,
@@ -525,6 +527,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
         ctx.denyOnFlag(LOCAL);
+
+        A.notNull(keys, "keys");
 
         final boolean swapOrOffheap = ctx.isSwapOrOffheapEnabled();
         final boolean storeEnabled = ctx.readThrough();

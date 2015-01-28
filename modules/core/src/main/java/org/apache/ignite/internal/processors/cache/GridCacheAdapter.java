@@ -1681,12 +1681,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public void evictAll(@Nullable Collection<? extends K> keys) {
+    @Override public void evictAll(Collection<? extends K> keys) {
         evictAll(keys, (IgnitePredicate<CacheEntry<K, V>>[])null);
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public V get(K key) throws IgniteCheckedException {
+        A.notNull(key, "key");
+
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1704,6 +1706,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> getAsync(final K key) {
+        A.notNull(key, "key");
+
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1725,6 +1729,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        A.notNull(keys, "keys");
+
         boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1742,6 +1748,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
+        A.notNull(keys, "keys");
+
         final boolean statsEnabled = ctx.config().isStatisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1879,9 +1887,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 Map<K, GridCacheVersion> misses = null;
 
                 for (K key : keys) {
-                    // Ignore null keys.
                     if (key == null)
-                        continue;
+                        throw new NullPointerException("Null key.");
 
                     while (true) {
                         GridCacheEntryEx<K, V> entry;
@@ -2206,14 +2213,12 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         ctx.denyOnLocalRead();
 
         return ctx.wrapClone(asyncOp(new AsyncOp<V>(key) {
-            @Override
-            public IgniteFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
+            @Override public IgniteFuture<V> op(IgniteTxLocalAdapter<K, V> tx) {
                 return tx.putAllAsync(ctx, F.t(key, val), true, entry, ttl, filter)
                     .chain((IgniteClosure<IgniteFuture<GridCacheReturn<V>>, V>)RET2VAL);
             }
 
-            @Override
-            public String toString() {
+            @Override public String toString() {
                 return "putAsync [key=" + key + ", val=" + val + ", filter=" + Arrays.toString(filter) + ']';
             }
         }));
@@ -2664,8 +2669,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public V replace(final K key, final V val) throws IgniteCheckedException {
+    @Nullable @Override public V replace(final K key, final V val) throws IgniteCheckedException {
         A.notNull(key, "key", val, "val");
 
         if (keyCheck)
@@ -3098,6 +3102,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> removexAsync(K key, IgnitePredicate<CacheEntry<K, V>>... filter) {
+        A.notNull(key, "key");
+
         return removexAsync(key, null, filter);
     }
 
@@ -4571,6 +4577,8 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public void evictAll(Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        A.notNull(keys, "keys");
+
         ctx.denyOnFlag(READ);
 
         if (F.isEmpty(keys))

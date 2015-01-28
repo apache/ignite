@@ -525,14 +525,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testGetAllWithNulls() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        final GridCache<String, Integer> cache = cache();
 
-        Collection<String> c = new LinkedList<>();
+        final Collection<String> c = new LinkedList<>();
 
         c.add("key1");
         c.add(null);
 
-        cache.getAll(c);
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache.getAll(c);
+
+                return null;
+            }
+        }, NullPointerException.class, null);
     }
 
     /**

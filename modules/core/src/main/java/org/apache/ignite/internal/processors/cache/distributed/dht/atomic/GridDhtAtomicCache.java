@@ -309,6 +309,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry,
         long ttl, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        A.notNull(key, "key");
+
         return updateAllAsync0(F0.asMap(key, val),
             null,
             null,
@@ -324,6 +326,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        A.notNull(key, "key");
+
         return updateAllAsync0(F0.asMap(key, val),
             null,
             null,
@@ -342,6 +346,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> putIfAbsentAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
         return putAsync(key, val, ctx.noPeekArray());
     }
 
@@ -352,6 +358,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
         return putxAsync(key, val, ctx.noPeekArray());
     }
 
@@ -362,6 +370,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<V> replaceAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
         return putAsync(key, val, ctx.hasPeekArray());
     }
 
@@ -372,6 +382,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replacexAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
         return putxAsync(key, val, ctx.hasPeekArray());
     }
 
@@ -382,6 +394,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+        A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
+
         return putxAsync(key, newVal, ctx.equalsPeekArray(oldVal));
     }
 
@@ -398,6 +412,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
+        A.notNull(key, "key", val, "val");
+
         return removeAllAsync0(F.asList(key), null, null, true, true, ctx.equalsPeekArray(val));
     }
 
@@ -492,6 +508,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("unchecked")
     @Override public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+        A.notNull(key, "key");
+
         return removeAllAsync0(Collections.singletonList(key), null, entry, false, false, filter);
     }
 
@@ -874,6 +892,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
+                if (key == null)
+                    throw new NullPointerException("Null key.");
+
                 GridCacheEntryEx<K, V> entry = null;
 
                 while (true) {

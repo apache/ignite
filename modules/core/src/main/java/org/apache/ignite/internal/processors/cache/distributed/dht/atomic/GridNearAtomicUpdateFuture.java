@@ -626,8 +626,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             // Create mappings first, then send messages.
             for (K key : keys) {
-                if (key == null)
-                    continue;
+                if (key == null) {
+                    NullPointerException err = new NullPointerException("Null key.");
+
+                    onDone(err);
+
+                    throw err;
+                }
 
                 Object val;
                 long drTtl;
@@ -639,6 +644,14 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     drTtl = -1;
                     drExpireTime = -1;
                     drVer = null;
+
+                    if (val == null) {
+                        NullPointerException err = new NullPointerException("Null value.");
+
+                        onDone(err);
+
+                        throw err;
+                    }
                 }
                 else if (drPutVals != null) {
                     GridCacheDrInfo<V> drPutVal =  drPutValsIt.next();
