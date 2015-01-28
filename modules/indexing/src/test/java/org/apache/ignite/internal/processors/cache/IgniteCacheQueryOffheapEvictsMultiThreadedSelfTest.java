@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 /**
  * Multi-threaded tests for cache queries.
  */
-public class GridCacheQueryEvictsMultiThreadedSelfTest extends GridCacheQueryMultiThreadedSelfTest {
+public class IgniteCacheQueryOffheapEvictsMultiThreadedSelfTest extends IgniteCacheQueryOffheapMultiThreadedSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean evictsEnabled() {
         return true;

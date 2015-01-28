@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -28,7 +30,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests for cache query index.
  */
-public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
+public class IgniteCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 2;
 
@@ -49,13 +51,13 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testWithoutStoreLoad() throws Exception {
-        GridCache<Integer, CacheValue> cache = grid(0).cache(null);
+        IgniteCache<Integer, CacheValue> cache = grid(0).jcache(null);
 
         for (int i = 0; i < ENTRY_CNT; i++)
             cache.put(i, new CacheValue(i));
 
         checkCache(cache);
-        checkQuery(cache, false);
+        checkQuery(cache);
     }
 
     /**
@@ -65,38 +67,39 @@ public class GridCacheQueryIndexSelfTest extends GridCacheAbstractSelfTest {
         for (int i = 0; i < ENTRY_CNT; i++)
             putToStore(i, new CacheValue(i));
 
-        GridCache<Integer, CacheValue> cache0 = grid(0).cache(null);
+        IgniteCache<Integer, CacheValue> cache0 = grid(0).jcache(null);
 
         cache0.loadCache(null, 0);
 
         checkCache(cache0);
-        checkQuery(cache0, true);
+        checkQuery(cache0);
     }
 
     /**
      * @param cache Cache.
      * @throws Exception If failed.
      */
-    private void checkCache(CacheProjection<Integer,CacheValue> cache) throws Exception {
-        assert cache.entrySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
-        assert cache.keySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
-        assert cache.values().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
+    private void checkCache(IgniteCache<Integer, CacheValue> cache) throws Exception {
+        Map<Integer, CacheValue> map = new HashMap<>();
+
+        for (Cache.Entry<Integer, CacheValue> entry : cache)
+            map.put(entry.getKey(), entry.getValue());
+
+        assert map.entrySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
+        assert map.keySet().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
+        assert map.values().size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
         assert cache.size() == ENTRY_CNT : "Expected: " + ENTRY_CNT + ", but was: " + cache.size();
     }
 
     /**
      * @param cache Cache.
-     * @param backups Include backups flag.
      * @throws Exception If failed.
      */
-    private void checkQuery(CacheProjection<Integer, CacheValue> cache, boolean backups) throws Exception {
-        CacheQuery<Map.Entry<Integer, CacheValue>> qry = cache.queries().createSqlQuery(
-            CacheValue.class, "val >= 5");
+    private void checkQuery(IgniteCache<Integer, CacheValue> cache) throws Exception {
+        QueryCursor<Cache.Entry<Integer, CacheValue>> qry =
+            cache.query(new QuerySqlPredicate<Integer, CacheValue>("val >= 5"));
 
-        if (backups)
-            qry.includeBackups(true);
-
-        Collection<Map.Entry<Integer, CacheValue>> queried = qry.execute().get();
+        Collection<Cache.Entry<Integer, CacheValue>> queried = qry.getAll();
 
         assertEquals("Unexpected query result: " + queried, 5, queried.size());
     }

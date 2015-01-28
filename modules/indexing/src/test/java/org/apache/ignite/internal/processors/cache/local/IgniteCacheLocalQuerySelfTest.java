@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.local;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -29,7 +30,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests local query.
  */
-public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest {
+public class IgniteCacheLocalQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
@@ -44,7 +45,7 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
      * @throws IgniteCheckedException If test failed.
      */
     public void testQueryLocal() throws Exception {
-        GridCache<Integer, String> cache = ignite.cache(null);
+        IgniteCache<Integer, String> cache = ignite.jcache(null);
 
         cache.put(1, "value1");
         cache.put(2, "value2");
@@ -53,11 +54,12 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
         cache.put(5, "value5");
 
         // Tests equals query.
-        CacheQuery<Map.Entry<Integer, String>> qry = cache.queries().createSqlQuery(String.class, "_val='value1'");
+        QueryCursor<Cache.Entry<Integer, String>> qry =
+            cache.localQuery(new QuerySqlPredicate<Integer, String>("_val='value1'"));
 
-        CacheQueryFuture<Map.Entry<Integer,String>> iter = qry.execute();
+        Iterator<Cache.Entry<Integer, String>> iter = qry.iterator();
 
-        Map.Entry<Integer, String> entry = iter.next();
+        Cache.Entry<Integer, String> entry = iter.next();
 
         assert iter.next() == null;
 
@@ -66,9 +68,9 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
         assert "value1".equals(entry.getValue());
 
         // Tests like query.
-        qry = cache.queries().createSqlQuery(String.class, "_val like 'value%'");
+        qry = cache.localQuery(new QuerySqlPredicate<Integer, String>("_val like 'value%'"));
 
-        iter = qry.execute();
+        iter = qry.iterator();
 
         assert iter.next() != null;
         assert iter.next() != null;
@@ -76,31 +78,5 @@ public class GridCacheLocalQuerySelfTest extends GridCacheAbstractQuerySelfTest 
         assert iter.next() != null;
         assert iter.next() != null;
         assert iter.next() == null;
-
-        // Tests reducer.
-        CacheQuery<Map.Entry<Integer, String>> rdcQry = cache.queries().createSqlQuery(String.class,
-            "_val like 'value%' and _key != 2 and _val != 'value3' order by _val");
-
-        Iterator<String> iter2 = rdcQry.
-            projection(ignite.cluster().forLocal()).
-            execute(new IgniteReducer<Map.Entry<Integer, String>, String>() {
-                /** */
-                private String res = "";
-
-                @Override public boolean collect(Map.Entry<Integer, String> e) {
-                    res += e.getValue();
-
-                    return true;
-                }
-
-                @Override public String reduce() {
-                    return res;
-                }
-            }).get().iterator();
-
-        String res = iter2.next();
-
-        assert res != null;
-        assert "value1value4value5".equals(res);
     }
 }

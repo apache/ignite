@@ -25,6 +25,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
@@ -33,7 +34,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 /**
  * Test for local query on partitioned cache without data.
  */
-public class GridCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -72,9 +73,8 @@ public class GridCacheFieldsQueryNoDataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuery() throws Exception {
-        CacheQuery<List<?>> qry = grid().cache(null).queries().createSqlFieldsQuery("select _VAL from Integer");
-
-        Collection<List<?>> res = qry.execute().get();
+        Collection<Cache.Entry<Object, Object>> res = grid().jcache(null)
+            .query(new QuerySqlPredicate<>("select _VAL from Integer")).getAll();
 
         assert res != null;
         assert res.isEmpty();

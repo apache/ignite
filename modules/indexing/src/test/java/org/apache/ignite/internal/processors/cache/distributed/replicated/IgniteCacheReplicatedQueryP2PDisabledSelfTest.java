@@ -15,14 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.distributed.replicated;
+
+import org.apache.ignite.configuration.*;
 
 /**
- * Queries over off-heap indexes.
+ * Tests replicated query.
  */
-public class GridCacheQueryOffheapMultiThreadedSelfTest extends GridCacheQueryMultiThreadedSelfTest {
+public class IgniteCacheReplicatedQueryP2PDisabledSelfTest extends IgniteCacheReplicatedQuerySelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean offheapEnabled() {
-        return true;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+
+        c.setPeerClassLoadingEnabled(false);
+
+        return c;
     }
 }

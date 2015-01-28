@@ -15,18 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.local;
-
-import org.apache.ignite.cache.*;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.*;
+package org.apache.ignite.internal.processors.cache;
 
 /**
- * Tests query for local cache in atomic mode.
+ * Multi-threaded tests for cache queries.
  */
-public class GridCacheLocalAtomicQuerySelfTest extends GridCacheLocalQuerySelfTest {
+public class IgniteCacheQueryEvictsMultiThreadedSelfTest extends IgniteCacheQueryMultiThreadedSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return ATOMIC;
+    @Override protected boolean evictsEnabled() {
+        return true;
     }
 }

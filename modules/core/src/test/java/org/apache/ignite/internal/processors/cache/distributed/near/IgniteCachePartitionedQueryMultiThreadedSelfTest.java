@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -42,7 +43,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 /**
  * Tests for partitioned cache queries.
  */
-public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
+public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final boolean TEST_INFO = true;
 
@@ -53,7 +54,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Don't start grid by default. */
-    public GridCachePartitionedQueryMultiThreadedSelfTest() {
+    public IgniteCachePartitionedQueryMultiThreadedSelfTest() {
         super(false);
     }
 
@@ -128,7 +129,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final Person p3 = new Person("Mike", 1800, "Bachelor");
         final Person p4 = new Person("Bob", 1900, "Bachelor");
 
-        final GridCache<UUID, Person> cache0 = grid(0).cache(null);
+        final IgniteCache<UUID, Person> cache0 = grid(0).jcache(null);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -147,10 +148,10 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         IgniteFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    CacheQuery<Map.Entry<UUID, Person>> masters = cache0.queries().createFullTextQuery(
-                        Person.class, "Master");
+                    QueryCursor<Cache.Entry<UUID, Person>> master =
+                        cache0.query(new QueryTextPredicate<UUID, Person>("Master"));
 
-                    Collection<Map.Entry<UUID, Person>> entries = masters.execute().get();
+                    Collection<Cache.Entry<UUID, Person>> entries = master.getAll();
 
                     checkResult(entries, p1, p2);
 
@@ -168,10 +169,10 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         IgniteFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
-                    CacheQuery<Map.Entry<UUID, Person>> bachelors =
-                        cache0.queries().createSqlQuery(Person.class, "degree = 'Bachelor'");
+                    QueryCursor<Cache.Entry<UUID, Person>> bachelors =
+                            cache0.query(new QuerySqlPredicate<UUID, Person>("degree = 'Bachelor'"));
 
-                    Collection<Map.Entry<UUID, Person>> entries = bachelors.execute().get();
+                    Collection<Cache.Entry<UUID, Person>> entries = bachelors.getAll();
 
                     checkResult(entries, p3, p4);
 
@@ -195,8 +196,8 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
      * @param entries Queried result.
      * @param persons Persons that should be in the result.
      */
-    private void checkResult(Iterable<Map.Entry<UUID, Person>> entries, Person... persons) {
-        for (Map.Entry<UUID, Person> entry : entries) {
+    private void checkResult(Iterable<Cache.Entry<UUID, Person>> entries, Person... persons) {
+        for (Cache.Entry<UUID, Person> entry : entries) {
             assertEquals(entry.getKey(), entry.getValue().id());
 
             assert F.<Person>asList(persons).contains(entry.getValue());

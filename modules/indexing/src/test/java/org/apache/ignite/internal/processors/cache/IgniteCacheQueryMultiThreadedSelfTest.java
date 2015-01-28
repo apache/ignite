@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -47,7 +48,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  * Multi-threaded tests for cache queries.
  */
 @SuppressWarnings("StatementWithEmptyBody")
-public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest {
     /** */
     private static final boolean TEST_INFO = true;
 
@@ -67,7 +68,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
     private static final long DURATION = 30 * 1000;
 
     /** Don't start grid by default. */
-    public GridCacheQueryMultiThreadedSelfTest() {
+    public IgniteCacheQueryMultiThreadedSelfTest() {
         super(false);
     }
 
@@ -219,10 +220,10 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @param g Grid.
      * @return Affinity nodes.
      */
-    private Set<UUID> affinityNodes(Iterable<Map.Entry<Integer, Integer>> entries, Ignite g) {
+    private Set<UUID> affinityNodes(Iterable<Cache.Entry<Integer, Integer>> entries, Ignite g) {
         Set<UUID> nodes = new HashSet<>();
 
-        for (Map.Entry<Integer, Integer> entry : entries)
+        for (Cache.Entry<Integer, Integer> entry : entries)
             nodes.add(g.cache(null).affinity().mapKeyToPrimaryAndBackups(entry.getKey()).iterator().next().id());
 
         return nodes;
@@ -242,19 +243,20 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Integer, String> c = g.cache(null);
+        final IgniteCache<Integer, String> c = g.jcache(null);
+        final IgniteCache<Integer, Long> cl = g.jcache(null);
 
         assertEquals(0, g.cache(null).size());
-        assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
-        assertEquals(0, c.queries().createSqlQuery(Long.class, "1 = 1").execute().get().size());
+        assertEquals(0, c.query(new QuerySqlPredicate<Integer, String>("1 = 1")).getAll().size());
+        assertEquals(0, cl.query(new QuerySqlPredicate<Integer, Long>("1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
         for (int i = 0; i < keyCnt; i += 1 + rnd.nextInt(3)) {
-            c.putx(i, String.valueOf(rnd.nextInt(valCnt)));
+            c.put(i, String.valueOf(rnd.nextInt(valCnt)));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                assertTrue(c.evict(i));
+                c.localEvict(Arrays.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -266,12 +268,12 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                 while (!done.get()) {
                     switch (rnd.nextInt(5)) {
                         case 0:
-                            c.putx(rnd.nextInt(keyCnt), String.valueOf(rnd.nextInt(valCnt)));
+                            c.put(rnd.nextInt(keyCnt), String.valueOf(rnd.nextInt(valCnt)));
 
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.evict(rnd.nextInt(keyCnt));
+                                c.localEvict(Arrays.asList(rnd.nextInt(keyCnt)));
 
                             break;
                         case 2:
@@ -283,17 +285,15 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                             break;
                         case 4:
-                            CacheQuery<Map.Entry<Integer, String>> qry = c.queries().createSqlQuery(
-                                String.class, "_val between ? and ?");
-
                             int from = rnd.nextInt(valCnt);
 
-                            CacheQueryFuture<Map.Entry<Integer, String>> fut =
-                                qry.execute(String.valueOf(from), String.valueOf(from + 250));
+                            QueryCursor<Cache.Entry<Integer, String>> qry = c.query(
+                                new QuerySqlPredicate<Integer, String>("_val between ? and ?", String.valueOf(from),
+                                String.valueOf(from + 250)));
 
-                            Collection<Map.Entry<Integer, String>> res = fut.get();
+                            Collection<Cache.Entry<Integer, String>> res = qry.getAll();
 
-                            for (Map.Entry<Integer, String> ignored : res) {
+                            for (Cache.Entry<Integer, String> ignored : res) {
                                 //No-op.
                             }
                     }
@@ -322,19 +322,20 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Integer, Long> c = g.cache(null);
+        final IgniteCache<Integer, Long> c = g.jcache(null);
+        final IgniteCache<Integer, String> c1 = g.jcache(null);
 
         assertEquals(0, g.cache(null).size());
-        assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
-        assertEquals(0, c.queries().createSqlQuery(Long.class, "1 = 1").execute().get().size());
+        assertEquals(0, c1.query(new QuerySqlPredicate<Integer, String>("1 = 1")).getAll().size());
+        assertEquals(0, c.query(new QuerySqlPredicate<Integer, Long>("1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
         for (int i = 0; i < keyCnt; i += 1 + rnd.nextInt(3)) {
-            c.putx(i, (long)rnd.nextInt(valCnt));
+            c.put(i, (long)rnd.nextInt(valCnt));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                assertTrue(c.evict(i));
+                c.localEvict(Arrays.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -348,12 +349,12 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     switch (rnd.nextInt(5)) {
                         case 0:
-                            c.putx(key, (long)rnd.nextInt(valCnt));
+                            c.put(key, (long)rnd.nextInt(valCnt));
 
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.evict(key);
+                                c.localEvict(Arrays.asList(key));
 
                             break;
                         case 2:
@@ -365,17 +366,12 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                             break;
                         case 4:
-                            CacheQuery<Map.Entry<Integer, Long>> qry = c.queries().createSqlQuery(
-                                Long.class,
-                                "_val between ? and ?");
-
                             int from = rnd.nextInt(valCnt);
 
-                            CacheQueryFuture<Map.Entry<Integer, Long>> f = qry.execute(from, from + 250);
+                            Collection<Cache.Entry<Integer, Long>> res = c.query(new QuerySqlPredicate<Integer, Long>(
+                                "_val between ? and ?", from, from + 250)).getAll();
 
-                            Collection<Map.Entry<Integer, Long>> res = f.get();
-
-                            for (Map.Entry<Integer, Long> ignored : res) {
+                            for (Cache.Entry<Integer, Long> ignored : res) {
                                 //No-op.
                             }
                     }
@@ -404,21 +400,18 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Integer, Object> c = g.cache(null);
+        final IgniteCache<Integer, Object> c = g.jcache(null);
 
-        assertEquals(0, g.cache(null).size());
-        assertEquals(0, c.offHeapEntriesCount());
-//        assertEquals(0, c.swapKeys());
-        assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
-        assertEquals(0, c.queries().createSqlQuery(Long.class, "1 = 1").execute().get().size());
+        assertEquals(0, g.jcache(null).size());
+        assertEquals(0, c.query(new QuerySqlPredicate<Integer, Object>("1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
         for (int i = 0; i < keyCnt; i += 1 + rnd.nextInt(3)) {
-            c.putx(i, rnd.nextBoolean() ? (long)rnd.nextInt(valCnt) : String.valueOf(rnd.nextInt(valCnt)));
+            c.put(i, rnd.nextBoolean() ? (long) rnd.nextInt(valCnt) : String.valueOf(rnd.nextInt(valCnt)));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                assertTrue(c.evict(i));
+                c.localEvict(Arrays.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -432,13 +425,13 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     switch (rnd.nextInt(5)) {
                         case 0:
-                            c.putx(key, rnd.nextBoolean() ? (long)rnd.nextInt(valCnt) :
+                            c.put(key, rnd.nextBoolean() ? (long) rnd.nextInt(valCnt) :
                                 String.valueOf(rnd.nextInt(valCnt)));
 
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.evict(key);
+                                c.localEvict(Arrays.asList(key));
 
                             break;
                         case 2:
@@ -450,17 +443,13 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                             break;
                         case 4:
-                            CacheQuery<Map.Entry<Integer, Object>> qry = c.queries().createSqlQuery(
-                                rnd.nextBoolean() ? Long.class : String.class,
-                                "_val between ? and ?");
-
                             int from = rnd.nextInt(valCnt);
 
-                            CacheQueryFuture<Map.Entry<Integer, Object>> f = qry.execute(from, from + 250);
+                            Collection<Cache.Entry<Integer, Object>> res = c.query(
+                                new QuerySqlPredicate<Integer, Object>("_val between ? and ?", from, from + 250))
+                                .getAll();
 
-                            Collection<Map.Entry<Integer, Object>> res = f.get();
-
-                            for (Map.Entry<Integer, Object> ignored : res) {
+                            for (Cache.Entry<Integer, Object> ignored : res) {
                                 //No-op.
                             }
                     }
@@ -487,19 +476,18 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Integer, TestValue> c = g.cache(null);
+        final IgniteCache<Integer, TestValue> c = g.jcache(null);
 
         assertEquals(0, g.cache(null).size());
-        assertEquals(0, c.queries().createSqlQuery(String.class, "1 = 1").execute().get().size());
-        assertEquals(0, c.queries().createSqlQuery(Long.class, "1 = 1").execute().get().size());
+        assertEquals(0, c.query(new QuerySqlPredicate<Integer, TestValue>("1 = 1")).getAll().size());
 
         Random rnd = new Random();
 
         for (int i = 0; i < keyCnt; i += 1 + rnd.nextInt(3)) {
-            c.putx(i, new TestValue(rnd.nextInt(valCnt)));
+            c.put(i, new TestValue(rnd.nextInt(valCnt)));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                assertTrue(c.evict(i));
+                c.localEvict(Arrays.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -513,12 +501,12 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     switch (rnd.nextInt(5)) {
                         case 0:
-                            c.putx(key, new TestValue(rnd.nextInt(valCnt)));
+                            c.put(key, new TestValue(rnd.nextInt(valCnt)));
 
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.evict(key);
+                                c.localEvict(Arrays.asList(key));
 
                             break;
                         case 2:
@@ -530,16 +518,13 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                             break;
                         case 4:
-                            CacheQuery<Map.Entry<Integer, TestValue>> qry = c.queries().createSqlQuery(
-                                Long.class, "TestValue.val between ? and ?");
-
                             int from = rnd.nextInt(valCnt);
 
-                            CacheQueryFuture<Map.Entry<Integer, TestValue>> f = qry.execute(from, from + 250);
+                            Collection<Cache.Entry<Integer, TestValue>> res =
+                                c.query(new QuerySqlPredicate<Integer, TestValue>("TestValue.val between ? and ?",
+                                    from, from + 250)).getAll();
 
-                            Collection<Map.Entry<Integer, TestValue>> res = f.get();
-
-                            for (Map.Entry<Integer, TestValue> ignored : res) {
+                            for (Cache.Entry<Integer, TestValue> ignored : res) {
                                 //No-op.
                             }
                     }
@@ -568,21 +553,17 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        GridCache<Integer, Integer> c = g.cache(null);
+        final IgniteCache<Integer, Integer> c = g.jcache(null);
 
         for (int i = 0; i < keyCnt; i++) {
-            c.putx(i, i);
+            c.put(i, i);
 
-            info("Affinity [key=" + i + ", aff=" + c.affinity().mapKeyToPrimaryAndBackups(i).iterator().next().id() + ']');
-
-            assertTrue(c.evict(i));
+            c.localEvict(Arrays.asList(i));
         }
 
         final AtomicInteger cnt = new AtomicInteger();
 
         final AtomicBoolean done = new AtomicBoolean();
-
-        final CacheQuery<Map.Entry<Integer, Integer>> qry = c.queries().createSqlQuery(Integer.class, "_val >= 0");
 
         IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
@@ -592,9 +573,8 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                     while (!done.get() && !Thread.currentThread().isInterrupted()) {
                         iter++;
 
-                        CacheQueryFuture<Map.Entry<Integer, Integer>> fut = qry.execute();
-
-                        Collection<Map.Entry<Integer, Integer>> entries = fut.get();
+                        Collection<Cache.Entry<Integer, Integer>> entries =
+                            c.query(new QuerySqlPredicate<Integer, Integer>("_val >= 0")).getAll();
 
                         assert entries != null;
 
@@ -636,12 +616,12 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        final GridCache<Integer, Integer> c = g.cache(null);
+        final IgniteCache<Integer, Integer> c = g.jcache(null);
 
         for (int i = 0; i < keyCnt; i++) {
-            c.putx(i, i);
+            c.put(i, i);
 
-            assertTrue(c.evict(i));
+            c.localEvict(Arrays.asList(i));
         }
 
         final AtomicInteger cnt = new AtomicInteger();
@@ -655,12 +635,8 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                 while (!done.get() && !Thread.currentThread().isInterrupted()) {
                     iter++;
 
-                    CacheQuery<Map.Entry<Integer, Integer>> qry =
-                        c.queries().createSqlQuery(Integer.class, "_val >= 0");
-
-                    CacheQueryFuture<Map.Entry<Integer, Integer>> fut = qry.execute();
-
-                    Collection<Map.Entry<Integer, Integer>> entries = fut.get();
+                    Collection<Cache.Entry<Integer, Integer>> entries =
+                        c.query(new QuerySqlPredicate<Integer, Integer>("_val >= 0")).getAll();
 
                     assert entries != null;
 
@@ -691,95 +667,6 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     @SuppressWarnings({"TooBroadScope"})
-    public void testMultiThreadedReduceQuery() throws Exception {
-        int threadCnt = 50;
-        int keyCnt = 10;
-        final int logMod = 5000;
-
-        final Ignite g = grid(0);
-
-        // Put test values into cache.
-        GridCache<Integer, Integer> c = g.cache(null);
-
-        for (int i = 0; i < keyCnt; i++)
-            c.putx(i, i);
-
-        final CacheQuery<Map.Entry<Integer, Integer>> rdcQry =
-            c.queries().createSqlQuery(Integer.class, "_val > 1 and _val < 4");
-
-        rdcQry.includeBackups(true);
-        rdcQry.keepAll(true);
-
-        final IgniteReducer<Map.Entry<Integer, Integer>, Integer> rmtRdc =
-            new IgniteReducer<Map.Entry<Integer, Integer>, Integer>() {
-                /** Reducer result. */
-                private int res;
-
-                @Override public boolean collect(Map.Entry<Integer, Integer> e) {
-                    res += e.getKey();
-
-                    return true;
-                }
-
-                @Override public Integer reduce() {
-                    return res;
-                }
-            };
-
-        final AtomicInteger cnt = new AtomicInteger();
-
-        final AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteFuture<?> fut = multithreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
-                while (!stop.get()) {
-                    Collection<Integer> rmtVals = rdcQry.execute(rmtRdc).get();
-
-                    assertEquals(GRID_CNT, rmtVals.size());
-
-                    Iterator<Integer> reduceIter = rmtVals.iterator();
-
-                    assert reduceIter != null;
-
-                    for (int i = 0; i < GRID_CNT; i++) {
-                        assert reduceIter.hasNext();
-
-                        assertEquals(Integer.valueOf(5), reduceIter.next());
-                    }
-
-                    Collection<Integer> res = rdcQry.execute(rmtRdc).get();
-
-                    int val = F.sumInt(res);
-
-                    int expVal = 5 * GRID_CNT;
-
-                    assertEquals(expVal, val);
-
-                    if (cnt.incrementAndGet() % logMod == 0) {
-                        GridCacheQueryManager<Object, Object> qryMgr =
-                            ((GridKernal)g).internalCache().context().queries();
-
-                        assert qryMgr != null;
-
-                        qryMgr.printMemoryStats();
-                    }
-                }
-            }
-        }, threadCnt);
-
-        Thread.sleep(DURATION);
-
-        stop.set(true);
-
-        fut.get();
-    }
-
-    /**
-     * JUnit.
-     *
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings({"TooBroadScope"})
     public void testMultiThreadedScanQuery() throws Exception {
         int threadCnt = 50;
         final int keyCnt = 500;
@@ -788,16 +675,14 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
         final Ignite g = grid(0);
 
         // Put test values into cache.
-        GridCache<Integer, Integer> c = g.cache(null);
+        final IgniteCache<Integer, Integer> c = g.jcache(null);
 
         for (int i = 0; i < keyCnt; i++)
-            c.putx(i, i);
+            c.put(i, i);
 
         final AtomicInteger cnt = new AtomicInteger();
 
         final AtomicBoolean done = new AtomicBoolean();
-
-        final CacheQuery<Map.Entry<Integer, Integer>> qry = c.queries().createScanQuery(null);
 
         IgniteFuture<?> fut = multithreadedAsync(
             new CAX() {
@@ -807,9 +692,13 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
                     while (!done.get() && !Thread.currentThread().isInterrupted()) {
                         iter++;
 
-                        CacheQueryFuture<Map.Entry<Integer, Integer>> fut = qry.execute();
-
-                        Collection<Map.Entry<Integer, Integer>> entries = fut.get();
+                        // Scan query.
+                        Collection<Cache.Entry<Integer, Integer>> entries =
+                            c.query(new QueryPredicate<Integer, Integer>() {
+                                @Override public boolean apply(Cache.Entry<Integer, Integer> integerIntegerEntry) {
+                                    return true;
+                                }
+                            }).getAll();
 
                         assert entries != null;
 

@@ -23,9 +23,9 @@ import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Tests for atomic cache with near cache enabled.
+ * Tests for partitioned cache queries.
  */
-public class GridCacheAtomicNearEnabledQuerySelfTest extends GridCachePartitionedQuerySelfTest {
+public class IgniteCacheAtomicQuerySelfTest extends IgniteCachePartitionedQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
@@ -33,6 +33,6 @@ public class GridCacheAtomicNearEnabledQuerySelfTest extends GridCachePartitione
 
     /** {@inheritDoc} */
     @Override protected CacheDistributionMode distributionMode() {
-        return NEAR_PARTITIONED;
+        return PARTITIONED_ONLY;
     }
 }

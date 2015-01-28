@@ -15,24 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.near;
+package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.cache.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.cache.CacheDistributionMode.*;
 
 /**
- * Tests for partitioned cache queries.
+ * Tests query for local cache in atomic mode.
  */
-public class GridCacheAtomicQuerySelfTest extends GridCachePartitionedQuerySelfTest {
+public class IgniteCacheLocalAtomicQuerySelfTest extends IgniteCacheLocalQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheDistributionMode distributionMode() {
-        return PARTITIONED_ONLY;
     }
 }
