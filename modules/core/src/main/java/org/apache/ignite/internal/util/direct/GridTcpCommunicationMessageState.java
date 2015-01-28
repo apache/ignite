@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.direct;
 
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
@@ -940,7 +941,7 @@ public class GridTcpCommunicationMessageState {
     }
 
     /**
-     * @param ver {@link GridCacheVersion}.
+     * @param ver {@link org.apache.ignite.internal.processors.cache.version.GridCacheVersion}.
      * @return Whether value was fully written.
      */
     public final boolean putCacheVersion(@Nullable GridCacheVersion ver) {

@@ -19,6 +19,7 @@ package org.apache.ignite.loadtests.hashmap;
 
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.apache.ignite.testframework.junits.logger.*;
