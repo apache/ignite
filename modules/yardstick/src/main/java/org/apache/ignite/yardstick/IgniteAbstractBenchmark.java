@@ -24,8 +24,8 @@ import org.yardstickframework.*;
 
 import java.util.concurrent.*;
 
-import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.events.IgniteEventType.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
@@ -42,7 +42,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        jcommander(cfg.commandLineArguments(), args, "<gridgain-driver>");
+        jcommander(cfg.commandLineArguments(), args, "<ignite-driver>");
 
         if (Ignition.state() != IgniteState.STARTED) {
             node = new IgniteNode(args.distributionMode() == CLIENT_ONLY);
@@ -79,7 +79,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @return Grid.
      */
     protected Ignite grid() {
-        return node.grid();
+        return node.ignite();
     }
 
     /**

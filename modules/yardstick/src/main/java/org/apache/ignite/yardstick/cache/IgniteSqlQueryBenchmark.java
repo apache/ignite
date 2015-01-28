@@ -28,9 +28,9 @@ import java.util.concurrent.*;
 import static org.yardstickframework.BenchmarkUtils.*;
 
 /**
- * GridGain benchmark that performs query operations with joins.
+ * GridGain benchmark that performs query operations.
  */
-public class IgniteSqlQueryJoinBenchmarkIgnite extends IgniteCacheAbstractBenchmark {
+public class IgniteSqlQueryBenchmark extends IgniteCacheAbstractBenchmark {
     /** */
     private CacheQuery qry;
 
@@ -42,33 +42,18 @@ public class IgniteSqlQueryJoinBenchmarkIgnite extends IgniteCacheAbstractBenchm
 
         long start = System.nanoTime();
 
-        try (IgniteDataLoader<Object, Object> dataLdr = grid().dataLoader(cache.getName())) {
-            final int orgRange = args.range() / 10;
-
-            // Populate organizations.
-            for (int i = 0; i < orgRange && !Thread.currentThread().isInterrupted(); i++)
-                dataLdr.addData(i, new Organization(i, "org" + i));
-
-            dataLdr.flush();
-
-            // Populate persons.
+        try (IgniteDataLoader<Integer, Person> dataLdr = grid().dataLoader(cache.getName())) {
             for (int i = 0; i < args.range() && !Thread.currentThread().isInterrupted(); i++) {
-                Person p =
-                    new Person(i, ThreadLocalRandom.current().nextInt(orgRange), "firstName" + i, "lastName" + i, i * 1000);
-
-                dataLdr.addData(i, p);
+                dataLdr.addData(i, new Person(i, "firstName" + i, "lastName" + i, i * 1000));
 
                 if (i % 100000 == 0)
                     println(cfg, "Populated persons: " + i);
             }
         }
 
-        println(cfg, "Finished populating join query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
+        println(cfg, "Finished populating query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
 
-        qry = null; // TODO: should be fixed after IGNITE-2 cache.queries().createSqlFieldsQuery(
-            // "select p.id, p.orgId, p.firstName, p.lastName, p.salary, o.name " +
-            //    "from Person p, Organization o " +
-            //    "where p.id = o.id and salary >= ? and salary <= ?");
+        qry = null; // TODO: should be fixed after IGNITE-2 cache.queries().createSqlQuery(Person.class, "salary >= ? and salary <= ?");
     }
 
     /** {@inheritDoc} */
@@ -77,23 +62,14 @@ public class IgniteSqlQueryJoinBenchmarkIgnite extends IgniteCacheAbstractBenchm
 
         double maxSalary = salary + 1000;
 
-        Collection<List<?>> lists = executeQueryJoin(salary, maxSalary);
+        Collection<Map.Entry<Integer, Person>> entries = executeQuery(salary, maxSalary);
 
-        for (List<?> l : lists) {
-            double sal = (Double)l.get(4);
+        for (Map.Entry<Integer, Person> entry : entries) {
+            Person p = entry.getValue();
 
-            if (sal < salary || sal > maxSalary) {
-                Person p = new Person();
-
-                p.setId((Integer)l.get(0));
-                p.setOrganizationId((Integer)l.get(1));
-                p.setFirstName((String)l.get(2));
-                p.setLastName((String)l.get(3));
-                p.setSalary(sal);
-
+            if (p.getSalary() < salary || p.getSalary() > maxSalary)
                 throw new Exception("Invalid person retrieved [min=" + salary + ", max=" + maxSalary +
-                    ", person=" + p + ']');
-            }
+                        ", person=" + p + ']');
         }
 
         return true;
@@ -102,11 +78,11 @@ public class IgniteSqlQueryJoinBenchmarkIgnite extends IgniteCacheAbstractBenchm
     /**
      * @param minSalary Min salary.
      * @param maxSalary Max salary.
-     * @return Query results.
+     * @return Query result.
      * @throws Exception If failed.
      */
-    private Collection<List<?>> executeQueryJoin(double minSalary, double maxSalary) throws Exception {
-        CacheQuery<List<?>> q = (CacheQuery<List<?>>)qry;
+    private Collection<Map.Entry<Integer, Person>> executeQuery(double minSalary, double maxSalary) throws Exception {
+        CacheQuery<Map.Entry<Integer, Person>> q = (CacheQuery<Map.Entry<Integer, Person>>)qry;
 
         return q.execute(minSalary, maxSalary).get();
     }

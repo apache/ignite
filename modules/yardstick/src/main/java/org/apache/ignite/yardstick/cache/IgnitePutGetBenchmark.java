@@ -18,35 +18,30 @@
 package org.apache.ignite.yardstick.cache;
 
 import org.apache.ignite.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.yardstick.cache.model.*;
 
 import java.util.*;
 
 /**
- * GridGain benchmark that performs transactional put and get operations.
+ * GridGain benchmark that performs put and get operations.
  */
-public class IgnitePutGetTxBenchmarkIgnite extends IgniteCacheAbstractBenchmark {
+public class IgnitePutGetBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int key = nextRandom(0, args.range() / 2);
+        int key = nextRandom(args.range());
 
-        try (IgniteTx tx = grid().transactions().txStart()) {
-            Object val = cache.get(key);
+        Object val = cache.get(key);
 
-            if (val != null)
-                key = nextRandom(args.range() / 2, args.range());
+        if (val != null)
+            key = nextRandom(args.range());
 
-            cache.put(key, new SampleValue(key));
-
-            tx.commit();
-        }
+        cache.put(key, new SampleValue(key));
 
         return true;
     }
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return grid().jcache("tx");
+        return grid().jcache("atomic");
     }
 }

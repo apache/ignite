@@ -23,13 +23,14 @@ import org.apache.ignite.yardstick.cache.model.*;
 import java.util.*;
 
 /**
- * GridGain benchmark that performs put operations.
+ * GridGain benchmark that performs transactional put operations.
  */
-public class IgnitePutBenchmarkIgnite extends IgniteCacheAbstractBenchmark {
+public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(args.range());
 
+        // Implicit transaction is used.
         cache.put(key, new SampleValue(key));
 
         return true;
@@ -37,6 +38,6 @@ public class IgnitePutBenchmarkIgnite extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return grid().jcache("atomic");
+        return grid().jcache("tx");
     }
 }

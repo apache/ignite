@@ -40,7 +40,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.*;
  */
 public class IgniteNode implements BenchmarkServer {
     /** Grid instance. */
-    private Ignite grid;
+    private Ignite ignite;
 
     /** Client mode. */
     private boolean clientMode;
@@ -56,16 +56,16 @@ public class IgniteNode implements BenchmarkServer {
     }
 
     /** */
-    public IgniteNode(boolean clientMode, Ignite grid) {
+    public IgniteNode(boolean clientMode, Ignite ignite) {
         this.clientMode = clientMode;
-        this.grid = grid;
+        this.ignite = ignite;
     }
 
     /** {@inheritDoc} */
     @Override public void start(BenchmarkConfiguration cfg) throws Exception {
         IgniteBenchmarkArguments args = new IgniteBenchmarkArguments();
 
-        BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<gridgain-node>");
+        BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
         IgniteConfiguration c = loadConfiguration(args.configuration());
 
@@ -119,7 +119,7 @@ public class IgniteNode implements BenchmarkServer {
 
         c.setCommunicationSpi(commSpi);
 
-        grid = Ignition.start(c);
+        ignite = Ignition.start(c);
     }
 
     /**
@@ -167,7 +167,7 @@ public class IgniteNode implements BenchmarkServer {
         }
 
         if (cfgMap == null || cfgMap.isEmpty())
-            throw new Exception("Failed to find grid configuration in: " + url);
+            throw new Exception("Failed to find ignite configuration in: " + url);
 
         return cfgMap.values().iterator().next();
     }
@@ -183,9 +183,9 @@ public class IgniteNode implements BenchmarkServer {
     }
 
     /**
-     * @return Grid.
+     * @return Ignite.
      */
-    public Ignite grid() {
-        return grid;
+    public Ignite ignite() {
+        return ignite;
     }
 }

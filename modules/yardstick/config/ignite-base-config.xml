@@ -24,7 +24,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
-    <bean id="base-grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
+    <bean id="base-ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" abstract="true">
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <!--property name="marshaller">
@@ -46,7 +46,7 @@
 
         <property name="cacheConfiguration">
             <list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="atomic"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -58,7 +58,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="tx"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -70,7 +70,7 @@
                     <property name="queryIndexEnabled" value="false"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="query"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -83,7 +83,7 @@
                     <property name="queryIndexEnabled" value="true"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="compute"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
