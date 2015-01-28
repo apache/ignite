@@ -1175,7 +1175,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             createSqlFunctions();
             runInitScript();
 
-            if (getString(GG_H2_DEBUG_CONSOLE) != null) {
+            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
                 WebServer webSrv = new WebServer();

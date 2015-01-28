@@ -1511,7 +1511,7 @@ object visor extends VisorTag {
                 val cfg = cfgs.iterator().next()
 
                 // Setting up 'Config URL' for properly print in console.
-                System.setProperty(IgniteSystemProperties.GG_CONFIG_URL, url.getPath)
+                System.setProperty(IgniteSystemProperties.IGNITE_CONFIG_URL, url.getPath)
 
                 var cpuCnt = Runtime.getRuntime.availableProcessors
 
@@ -1582,13 +1582,13 @@ object visor extends VisorTag {
     def open(cfg: IgniteConfiguration, cfgPath: String) {
         val daemon = Ignition.isDaemon
 
-        val shutdownHook = IgniteSystemProperties.getString(GG_NO_SHUTDOWN_HOOK, "false")
+        val shutdownHook = IgniteSystemProperties.getString(IGNITE_NO_SHUTDOWN_HOOK, "false")
 
         // Make sure Visor console starts as daemon node.
         Ignition.setDaemon(true)
 
         // Make sure visor starts without shutdown hook.
-        System.setProperty(GG_NO_SHUTDOWN_HOOK, "true")
+        System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, "true")
 
         val startedGridName = try {
              Ignition.start(cfg).name
@@ -1596,7 +1596,7 @@ object visor extends VisorTag {
         finally {
             Ignition.setDaemon(daemon)
 
-            System.setProperty(GG_NO_SHUTDOWN_HOOK, shutdownHook)
+            System.setProperty(IGNITE_NO_SHUTDOWN_HOOK, shutdownHook)
         }
 
         this.cfgPath = cfgPath

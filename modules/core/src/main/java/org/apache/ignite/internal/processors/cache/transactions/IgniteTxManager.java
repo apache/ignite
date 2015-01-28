@@ -56,10 +56,10 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     private static final int DFLT_MAX_COMPLETED_TX_CNT = 262144; // 2^18
 
     /** Slow tx warn timeout (initialized to 0). */
-    private static final int SLOW_TX_WARN_TIMEOUT = Integer.getInteger(GG_SLOW_TX_WARN_TIMEOUT, 0);
+    private static final int SLOW_TX_WARN_TIMEOUT = Integer.getInteger(IGNITE_SLOW_TX_WARN_TIMEOUT, 0);
 
     /** Tx salvage timeout (default 3s). */
-    private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(GG_TX_SALVAGE_TIMEOUT, 100);
+    private static final int TX_SALVAGE_TIMEOUT = Integer.getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 100);
 
     /** Committing transactions. */
     private final ThreadLocal<IgniteTxEx> threadCtx = new GridThreadLocalEx<>();
@@ -88,11 +88,11 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
 
     /** Committed local transactions. */
     private final GridBoundedConcurrentOrderedSet<GridCacheVersion> committedVers =
-        new GridBoundedConcurrentOrderedSet<>(Integer.getInteger(GG_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
+        new GridBoundedConcurrentOrderedSet<>(Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
     /** Rolled back local transactions. */
     private final NavigableSet<GridCacheVersion> rolledbackVers =
-        new GridBoundedConcurrentOrderedSet<>(Integer.getInteger(GG_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
+        new GridBoundedConcurrentOrderedSet<>(Integer.getInteger(IGNITE_MAX_COMPLETED_TX_COUNT, DFLT_MAX_COMPLETED_TX_CNT));
 
     /** Pessimistic commit buffer. */
     private GridCacheTxCommitBuffer<K, V> pessimisticRecoveryBuf;
@@ -1177,7 +1177,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             uncommitTx(tx);
 
             throw new IgniteException("Missing commit version (consider increasing " +
-                GG_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() + ", firstVer=" +
+                IGNITE_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() + ", firstVer=" +
                 committedVers.firstx() + ", lastVer=" + committedVers.lastx() + ", tx=" + tx.xid() + ']');
         }
 

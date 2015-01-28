@@ -36,7 +36,7 @@ public class GridFinishedFuture<T> implements IgniteFuture<T>, Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Synchronous notification flag. */
-    private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
+    private static final boolean SYNC_NOTIFY = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
 
     /** Complete value. */
     private T t;

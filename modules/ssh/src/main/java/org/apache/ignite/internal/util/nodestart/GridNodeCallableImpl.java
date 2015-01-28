@@ -313,8 +313,8 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
         SB sb = new SB();
 
-        sb.a(" -J-D").a(GG_SSH_HOST).a("=\"").a(host).a("\"").
-            a(" -J-D").a(GG_SSH_USER_NAME).a("=\"").a(username).a("\"");
+        sb.a(" -J-D").a(IGNITE_SSH_HOST).a("=\"").a(host).a("\"").
+            a(" -J-D").a(IGNITE_SSH_USER_NAME).a("=\"").a(username).a("\"");
 
         return sb.toString();
     }

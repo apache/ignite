@@ -30,26 +30,26 @@ public final class IgniteSystemProperties {
     /**
      * If this system property is present the GridGain will include grid name into verbose log.
      */
-    public static final String GG_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
+    public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
 
     /**
      * This property is used internally to pass an exit code to loader when
      * GridGain instance is being restarted.
      */
-    public static final String GG_RESTART_CODE = "IGNITE_RESTART_CODE";
+    public static final String IGNITE_RESTART_CODE = "IGNITE_RESTART_CODE";
 
     /**
      * Presence of this system property with value {@code true} will make the grid
      * node start as a daemon node. Node that this system property will override
      * {@link org.apache.ignite.configuration.IgniteConfiguration#isDaemon()} configuration.
      */
-    public static final String GG_DAEMON = "IGNITE_DAEMON";
+    public static final String IGNITE_DAEMON = "IGNITE_DAEMON";
 
     /** Defines GridGain installation folder. */
-    public static final String GG_HOME = "IGNITE_HOME";
+    public static final String IGNITE_HOME = "IGNITE_HOME";
 
     /** If this system property is set to {@code false} - no shutdown hook will be set. */
-    public static final String GG_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
+    public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
      * Name of the system property to disable requirement for proper node ordering
@@ -59,7 +59,7 @@ public final class IgniteSystemProperties {
      * {@link org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport @GridDiscoverySpiOrderSupport(true)} will
      * be allowed.
      */
-    public static final String GG_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
+    public static final String IGNITE_NO_DISCO_ORDER = "IGNITE_NO_DISCO_ORDER";
 
     /**
      * If this system property is set to {@code false} - no checks for new versions will
@@ -67,47 +67,47 @@ public final class IgniteSystemProperties {
      * version and prints out the message into the log if new version of GridGain is
      * available for download.
      */
-    public static final String GG_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
+    public static final String IGNITE_UPDATE_NOTIFIER = "IGNITE_UPDATE_NOTIFIER";
 
     /**
      * This system property defines interval in milliseconds in which GridGain will check
      * thread pool state for starvation. Zero value will disable this checker.
      */
-    public static final String GG_STARVATION_CHECK_INTERVAL = "IGNITE_STARVATION_CHECK_INTERVAL";
+    public static final String IGNITE_STARVATION_CHECK_INTERVAL = "IGNITE_STARVATION_CHECK_INTERVAL";
 
     /**
      * If this system property is present (any value) - no ASCII logo will
      * be printed.
      */
-    public static final String GG_NO_ASCII = "IGNITE_NO_ASCII";
+    public static final String IGNITE_NO_ASCII = "IGNITE_NO_ASCII";
 
     /**
      * This property allows to override Jetty host for REST processor.
      */
-    public static final String GG_JETTY_HOST = "IGNITE_JETTY_HOST";
+    public static final String IGNITE_JETTY_HOST = "IGNITE_JETTY_HOST";
 
     /**
      * This property allows to override Jetty local port for REST processor.
      */
-    public static final String GG_JETTY_PORT = "IGNITE_JETTY_PORT";
+    public static final String IGNITE_JETTY_PORT = "IGNITE_JETTY_PORT";
 
     /**
      * This property does not allow GridGain to override Jetty log configuration for REST processor.
      */
-    public static final String GG_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
+    public static final String IGNITE_JETTY_LOG_NO_OVERRIDE = "IGNITE_JETTY_LOG_NO_OVERRIDE";
 
     /**
      * This property allows to override maximum count of task results stored on one node
      * in REST processor.
      */
-    public static final String GG_REST_MAX_TASK_RESULTS = "IGNITE_REST_MAX_TASK_RESULTS";
+    public static final String IGNITE_REST_MAX_TASK_RESULTS = "IGNITE_REST_MAX_TASK_RESULTS";
 
     /**
      * This property defines the maximum number of attempts to remap near get to the same
      * primary node. Remapping may be needed when topology is changed concurrently with
      * get operation.
      */
-    public static final String GG_NEAR_GET_MAX_REMAPS = "IGNITE_NEAR_GET_MAX_REMAPS";
+    public static final String IGNITE_NEAR_GET_MAX_REMAPS = "IGNITE_NEAR_GET_MAX_REMAPS";
 
     /**
      * Set to either {@code true} or {@code false} to enable or disable quiet mode
@@ -117,27 +117,27 @@ public final class IgniteSystemProperties {
      * Note that if you use <tt>ggstart.{sh|bat}</tt> scripts to start GridGain they
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
-    public static final String GG_QUIET = "IGNITE_QUIET";
+    public static final String IGNITE_QUIET = "IGNITE_QUIET";
 
     /**
      * If this property is set to {@code true} (default) and GridGain is launched
-     * in verbose mode (see {@link #GG_QUIET}) and no console appenders can be found
+     * in verbose mode (see {@link #IGNITE_QUIET}) and no console appenders can be found
      * in configuration, then default console appender will be added.
      * Set this property to {@code false} if no appenders should be added.
      */
-    public static final String GG_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
+    public static final String IGNITE_CONSOLE_APPENDER = "IGNITE_CONSOLE_APPENDER";
 
     /**
      * Name of the system property defining name of command line program.
      */
-    public static final String GG_PROG_NAME = "IGNITE_PROG_NAME";
+    public static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /**
      * Name of the system property defining success file name. This file
      * is used with auto-restarting functionality when GridGain is started
      * by supplied <tt>ggstart.{bat|sh}</tt> scripts.
      */
-    public static final String GG_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
+    public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -150,7 +150,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpHost()
      */
-    public static final String GG_SMTP_HOST = "IGNITE_SMTP_HOST";
+    public static final String IGNITE_SMTP_HOST = "IGNITE_SMTP_HOST";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -164,7 +164,7 @@ public final class IgniteSystemProperties {
      * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPort()
      * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_PORT
      */
-    public static final String GG_SMTP_PORT = "IGNITE_SMTP_PORT";
+    public static final String IGNITE_SMTP_PORT = "IGNITE_SMTP_PORT";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -177,7 +177,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpUsername()
      */
-    public static final String GG_SMTP_USERNAME = "IGNITE_SMTP_USERNAME";
+    public static final String IGNITE_SMTP_USERNAME = "IGNITE_SMTP_USERNAME";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -190,7 +190,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpPassword()
      */
-    public static final String GG_SMTP_PWD = "IGNITE_SMTP_PASSWORD";
+    public static final String IGNITE_SMTP_PWD = "IGNITE_SMTP_PASSWORD";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -204,7 +204,7 @@ public final class IgniteSystemProperties {
      * @see org.apache.ignite.configuration.IgniteConfiguration#getSmtpFromEmail()
      * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_FROM_EMAIL
      */
-    public static final String GG_SMTP_FROM = "IGNITE_SMTP_FROM";
+    public static final String IGNITE_SMTP_FROM = "IGNITE_SMTP_FROM";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -218,7 +218,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getAdminEmails()
      */
-    public static final String GG_ADMIN_EMAILS = "IGNITE_ADMIN_EMAILS";
+    public static final String IGNITE_ADMIN_EMAILS = "IGNITE_ADMIN_EMAILS";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -233,7 +233,7 @@ public final class IgniteSystemProperties {
      * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpSsl()
      * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_SSL
      */
-    public static final String GG_SMTP_SSL = "IGNITE_SMTP_SSL";
+    public static final String IGNITE_SMTP_SSL = "IGNITE_SMTP_SSL";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -242,7 +242,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#isLifeCycleEmailNotification()
      */
-    public static final String GG_LIFECYCLE_EMAIL_NOTIFY = "IGNITE_LIFECYCLE_EMAIL_NOTIFY";
+    public static final String IGNITE_LIFECYCLE_EMAIL_NOTIFY = "IGNITE_LIFECYCLE_EMAIL_NOTIFY";
 
     /**
      * Name of the system property or environment variable to set or override
@@ -257,7 +257,7 @@ public final class IgniteSystemProperties {
      * @see org.apache.ignite.configuration.IgniteConfiguration#isSmtpStartTls()
      * @see org.apache.ignite.configuration.IgniteConfiguration#DFLT_SMTP_STARTTLS
      */
-    public static final String GG_SMTP_STARTTLS = "IGNITE_SMTP_STARTTLS";
+    public static final String IGNITE_SMTP_STARTTLS = "IGNITE_SMTP_STARTTLS";
 
     /**
      * Name of system property to set system-wide local IP address or host. If provided it will
@@ -267,7 +267,7 @@ public final class IgniteSystemProperties {
      * method. However, system properties have priority over configuration properties specified in
      * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
-    public static final String GG_LOCAL_HOST = "IGNITE_LOCAL_HOST";
+    public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
 
     /**
      * Name of the system property or environment variable to activate synchronous
@@ -277,7 +277,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.lang.IgniteFuture#syncNotify()
      */
-    public static final String GG_FUT_SYNC_NOTIFICATION = "IGNITE_FUTURE_SYNC_NOTIFICATION";
+    public static final String IGNITE_FUT_SYNC_NOTIFICATION = "IGNITE_FUTURE_SYNC_NOTIFICATION";
 
     /**
      * Name of the system property or environment variable to activate concurrent
@@ -287,7 +287,7 @@ public final class IgniteSystemProperties {
      *
      * @see org.apache.ignite.lang.IgniteFuture#concurrentNotify()
      */
-    public static final String GG_FUT_CONCURRENT_NOTIFICATION = "IGNITE_FUTURE_CONCURRENT_NOTIFICATION";
+    public static final String IGNITE_FUT_CONCURRENT_NOTIFICATION = "IGNITE_FUTURE_CONCURRENT_NOTIFICATION";
 
     /**
      * System property to override deployment mode configuration parameter.
@@ -296,165 +296,165 @@ public final class IgniteSystemProperties {
      * @see org.apache.ignite.configuration.IgniteDeploymentMode
      * @see org.apache.ignite.configuration.IgniteConfiguration#getDeploymentMode()
      */
-    public static final String GG_DEP_MODE_OVERRIDE = "IGNITE_DEPLOYMENT_MODE_OVERRIDE";
+    public static final String IGNITE_DEP_MODE_OVERRIDE = "IGNITE_DEPLOYMENT_MODE_OVERRIDE";
 
     /**
      * Property controlling size of buffer holding completed transaction versions. Such buffer
      * is used to detect duplicate transaction and has a default value of {@code 102400}. In
      * most cases this value is large enough and does not need to be changed.
      */
-    public static final String GG_MAX_COMPLETED_TX_COUNT = "IGNITE_MAX_COMPLETED_TX_COUNT";
+    public static final String IGNITE_MAX_COMPLETED_TX_COUNT = "IGNITE_MAX_COMPLETED_TX_COUNT";
 
     /**
      * Concurrency level for all concurrent hash maps created by GridGain.
      */
-    public static final String GG_MAP_CONCURRENCY_LEVEL = "IGNITE_MAP_CONCURRENCY_LEVEL";
+    public static final String IGNITE_MAP_CONCURRENCY_LEVEL = "IGNITE_MAP_CONCURRENCY_LEVEL";
 
     /**
      * Transactions that take more time, than value of this property, will be output to log
      * with warning level. {@code 0} (default value) disables warning on slow transactions.
      */
-    public static final String GG_SLOW_TX_WARN_TIMEOUT = "IGNITE_SLOW_TX_WARN_TIMEOUT";
+    public static final String IGNITE_SLOW_TX_WARN_TIMEOUT = "IGNITE_SLOW_TX_WARN_TIMEOUT";
 
     /**
      * Timeout after which all uncompleted transactions originated by left node will be
      * salvaged (i.e. invalidated and committed).
      */
-    public static final String GG_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
+    public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
 
     /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */
-    public static final String GG_OVERRIDE_MCAST_GRP = "IGNITE_OVERRIDE_MCAST_GRP";
+    public static final String IGNITE_OVERRIDE_MCAST_GRP = "IGNITE_OVERRIDE_MCAST_GRP";
 
     /**
      * System property to override default reflection cache size. Default value is {@code 128}.
      */
-    public static final String GG_REFLECTION_CACHE_SIZE = "IGNITE_REFLECTION_CACHE_SIZE";
+    public static final String IGNITE_REFLECTION_CACHE_SIZE = "IGNITE_REFLECTION_CACHE_SIZE";
 
     /**
      * System property to override default job processor maps sizes for finished jobs and
      * cancellation requests. Default value is {@code 10240}.
      */
-    public static final String GG_JOBS_HISTORY_SIZE = "IGNITE_JOBS_HISTORY_SIZE";
+    public static final String IGNITE_JOBS_HISTORY_SIZE = "IGNITE_JOBS_HISTORY_SIZE";
 
     /**
      * System property to override default job metrics processor property defining
      * concurrency level for structure holding job metrics snapshots.
      * Default value is {@code 64}.
      */
-    public static final String GG_JOBS_METRICS_CONCURRENCY_LEVEL = "IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL";
+    public static final String IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL = "IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL";
 
     /**
      * System property to hold optional configuration URL.
      */
-    public static final String GG_CONFIG_URL = "IGNITE_CONFIG_URL";
+    public static final String IGNITE_CONFIG_URL = "IGNITE_CONFIG_URL";
 
     /** System property to hold SSH host for visor-started nodes. */
-    public static final String GG_SSH_HOST = "IGNITE_SSH_HOST";
+    public static final String IGNITE_SSH_HOST = "IGNITE_SSH_HOST";
 
     /** System property to hold SSH user name for visor-started nodes. */
-    public static final String GG_SSH_USER_NAME = "IGNITE_SSH_USER_NAME";
+    public static final String IGNITE_SSH_USER_NAME = "IGNITE_SSH_USER_NAME";
 
     /** System property to hold preload resend timeout for evicted partitions. */
-    public static final String GG_PRELOAD_RESEND_TIMEOUT = "IGNITE_PRELOAD_RESEND_TIMEOUT";
+    public static final String IGNITE_PRELOAD_RESEND_TIMEOUT = "IGNITE_PRELOAD_RESEND_TIMEOUT";
 
     /**
      * System property to specify how often in milliseconds marshal buffers
      * should be rechecked and potentially trimmed. Default value is {@code 10,000ms}.
      */
-    public static final String GG_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
+    public static final String IGNITE_MARSHAL_BUFFERS_RECHECK = "IGNITE_MARSHAL_BUFFERS_RECHECK";
 
     /**
      * System property to disable {@link HostnameVerifier} for SSL connections.
      * Can be used for development with self-signed certificates. Default value is {@code false}.
      */
-    public static final String GG_DISABLE_HOSTNAME_VERIFIER = "IGNITE_DISABLE_HOSTNAME_VERIFIER";
+    public static final String IGNITE_DISABLE_HOSTNAME_VERIFIER = "IGNITE_DISABLE_HOSTNAME_VERIFIER";
 
     /**
      * System property to disable buffered communication if node sends less messages count than
      * specified by this property. Default value is {@code 512}.
      */
-    public static final String GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
+    public static final String IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT = "IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT";
 
     /**
      * System property to manage ratio for communication buffer resize. Buffer size will either
      * increase or decrease according to this ratio depending on system behavior. Default value is {@code 0.8}.
      */
-    public static final String GG_COMMUNICATION_BUF_RESIZE_RATIO = "IGNITE_COMMUNICATION_BUF_RESIZE_RATIO";
+    public static final String IGNITE_COMMUNICATION_BUF_RESIZE_RATIO = "IGNITE_COMMUNICATION_BUF_RESIZE_RATIO";
 
     /**
      * Flag that will force GridGain to fill memory block with some recognisable pattern right before
      * this memory block is released. This will help to recognize cases when already released memory is accessed.
      */
-    public static final String GG_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
+    public static final String IGNITE_OFFHEAP_SAFE_RELEASE = "IGNITE_OFFHEAP_SAFE_RELEASE";
 
     /** Maximum size for atomic cache queue delete history. */
-    public static final String GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
+    public static final String IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE = "IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE";
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
      * Makes sense only for {@link org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder}.
      */
-    public static final String GG_TCP_DISCOVERY_ADDRESSES = "IGNITE_TCP_DISCOVERY_ADDRESSES";
+    public static final String IGNITE_TCP_DISCOVERY_ADDRESSES = "IGNITE_TCP_DISCOVERY_ADDRESSES";
 
     /**
      * Flag indicating whether performance suggestions output on start should be disabled.
      */
-    public static final String GG_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
+    public static final String IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED = "IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED";
 
     /**
      * Specifies log level for Visor client logging.
      */
-    public static final String GG_VISOR_CLIENT_LOG_LEVEL = "IGNITE_VISOR_CLIENT_LOG_LEVEL";
+    public static final String IGNITE_VISOR_CLIENT_LOG_LEVEL = "IGNITE_VISOR_CLIENT_LOG_LEVEL";
 
     /**
      * Atomic cache deferred update response buffer size.
      */
-    public static final String GG_ATOMIC_DEFERRED_ACK_BUFFER_SIZE = "IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE";
+    public static final String IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE = "IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE";
 
     /**
      * Atomic cache deferred update timeout.
      */
-    public static final String GG_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
+    public static final String IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT = "IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT";
 
     /**
      * If this property set then debug console will be opened for H2 indexing SPI.
      */
-    public static final String GG_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
+    public static final String IGNITE_H2_DEBUG_CONSOLE = "IGNITE_H2_DEBUG_CONSOLE";
 
     /**
      * If this property is set to {@code true} then shared memory space native debug will be enabled.
      */
-    public static final String GG_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
+    public static final String IGNITE_IPC_SHMEM_SPACE_DEBUG = "IGNITE_IPC_SHMEM_SPACE_DEBUG";
 
     /**
      * Portable object array initial capacity.
      */
-    public static final String GG_PORTABLE_ARRAY_INITIAL_CAPACITY = "IGNITE_PORTABLE_ARRAY_INITIAL_CAPACITY";
+    public static final String IGNITE_PORTABLE_ARRAY_INITIAL_CAPACITY = "IGNITE_PORTABLE_ARRAY_INITIAL_CAPACITY";
 
     /**
      * Property allowing to skip configuration consistency checks.
      */
-    public static final String GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK =
+    public static final String IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK =
         "IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK";
 
     /**
      * Flag indicating whether validation of keys put to cache should be disabled.
      */
-    public static final String GG_CACHE_KEY_VALIDATION_DISABLED = "IGNITE_CACHE_KEY_VALIDATION_DISABLED";
+    public static final String IGNITE_CACHE_KEY_VALIDATION_DISABLED = "IGNITE_CACHE_KEY_VALIDATION_DISABLED";
 
     /**
      * Environment variable to override logging directory that has been set in logger configuration.
      */
-    public static final String GG_LOG_DIR = "IGNITE_LOG_DIR";
+    public static final String IGNITE_LOG_DIR = "IGNITE_LOG_DIR";
 
     /**
      * Environment variable to set work directory. The property {@link org.apache.ignite.configuration.IgniteConfiguration#setWorkDirectory} has higher
      * priority.
      */
-    public static final String GG_WORK_DIR = "IGNITE_WORK_DIR";
+    public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
 
     /**
      * If this property is set to {@code true} then GridGain will append
@@ -466,7 +466,7 @@ public final class IgniteSystemProperties {
      * <p>
      * Default is {@code false}.
      */
-    public static final String GG_MBEAN_APPEND_JVM_ID = "IGNITE_MBEAN_APPEND_JVM_ID";
+    public static final String IGNITE_MBEAN_APPEND_JVM_ID = "IGNITE_MBEAN_APPEND_JVM_ID";
 
     /**
      * Enforces singleton.

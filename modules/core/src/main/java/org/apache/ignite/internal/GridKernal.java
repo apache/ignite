@@ -617,7 +617,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(GG_UPDATE_NOTIFIER, true);
+        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
 
         GridUpdateNotifier verChecker0 = null;
 
@@ -869,7 +869,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
             }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
         }
 
-        String intervalStr = IgniteSystemProperties.getString(GG_STARVATION_CHECK_INTERVAL);
+        String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
 
         // Start starvation checker if enabled.
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
@@ -1659,7 +1659,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Config URL: " + System.getProperty(GG_CONFIG_URL, "n/a"));
+            log.info("Config URL: " + System.getProperty(IGNITE_CONFIG_URL, "n/a"));
     }
 
     /**
@@ -1693,7 +1693,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
 
         String fileName = log.fileName();
 
-        if (System.getProperty(GG_NO_ASCII) == null) {
+        if (System.getProperty(IGNITE_NO_ASCII) == null) {
             String ver = "ver. " + ACK_VER;
 
             // Big thanks to: http://patorjk.com/software/taag
@@ -2204,7 +2204,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
     private boolean isDaemon() {
         assert cfg != null;
 
-        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(GG_DAEMON));
+        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
     }
 
     /**
@@ -2229,7 +2229,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMBe
      * @see org.apache.ignite.Ignition#restart(boolean)
      */
     @Override public boolean isRestartEnabled() {
-        return System.getProperty(GG_SUCCESS_FILE) != null;
+        return System.getProperty(IGNITE_SUCCESS_FILE) != null;
     }
 
     /**

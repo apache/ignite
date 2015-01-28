@@ -346,7 +346,7 @@ public class GridGainEx {
      * @see org.apache.ignite.Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
-        String file = System.getProperty(GG_SUCCESS_FILE);
+        String file = System.getProperty(IGNITE_SUCCESS_FILE);
 
         if (file == null)
             U.warn(null, "Cannot restart node when restart not enabled.");
@@ -364,7 +364,7 @@ public class GridGainEx {
 
             // Set the exit code so that shell process can recognize it and loop
             // the start up sequence again.
-            System.setProperty(GG_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
+            System.setProperty(IGNITE_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
 
             stopAll(cancel);
 
@@ -1369,7 +1369,7 @@ public class GridGainEx {
 
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
-                System.setProperty(GG_CONFIG_URL, startCtx.configUrl().toString());
+                System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
 
             myCfg.setGridName(cfg.getGridName());
 
@@ -1458,13 +1458,13 @@ public class GridGainEx {
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
 
 
-            String ntfStr = IgniteSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
+            String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
                 myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
-            String locHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
+            String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
 
@@ -1473,7 +1473,7 @@ public class GridGainEx {
                 myCfg.setDaemon(true);
 
             // Check for deployment mode override.
-            String depModeName = IgniteSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
+            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(cfg.getCacheConfiguration())) {
@@ -1490,7 +1490,7 @@ public class GridGainEx {
                     catch (IllegalArgumentException e) {
                         throw new IgniteCheckedException("Failed to override deployment mode using system property " +
                             "(are there any misspellings?)" +
-                            "[name=" + GG_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
+                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
                     }
                 }
             }
@@ -1818,34 +1818,34 @@ public class GridGainEx {
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
-            String fromEmail = IgniteSystemProperties.getString(GG_SMTP_FROM);
+            String fromEmail = IgniteSystemProperties.getString(IGNITE_SMTP_FROM);
 
             if (fromEmail != null)
                 myCfg.setSmtpFromEmail(fromEmail);
 
-            String smtpHost = IgniteSystemProperties.getString(GG_SMTP_HOST);
+            String smtpHost = IgniteSystemProperties.getString(IGNITE_SMTP_HOST);
 
             if (smtpHost != null)
                 myCfg.setSmtpHost(smtpHost);
 
-            String smtpUsername = IgniteSystemProperties.getString(GG_SMTP_USERNAME);
+            String smtpUsername = IgniteSystemProperties.getString(IGNITE_SMTP_USERNAME);
 
             if (smtpUsername != null)
                 myCfg.setSmtpUsername(smtpUsername);
 
-            String smtpPwd = IgniteSystemProperties.getString(GG_SMTP_PWD);
+            String smtpPwd = IgniteSystemProperties.getString(IGNITE_SMTP_PWD);
 
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            int smtpPort = IgniteSystemProperties.getInteger(GG_SMTP_PORT, -1);
+            int smtpPort = IgniteSystemProperties.getInteger(IGNITE_SMTP_PORT, -1);
 
             if(smtpPort != -1)
                 myCfg.setSmtpPort(smtpPort);
 
-            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(GG_SMTP_SSL));
+            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(IGNITE_SMTP_SSL));
 
-            String adminEmails = IgniteSystemProperties.getString(GG_ADMIN_EMAILS);
+            String adminEmails = IgniteSystemProperties.getString(IGNITE_ADMIN_EMAILS);
 
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
@@ -1966,7 +1966,7 @@ public class GridGainEx {
             }
 
             // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (!IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK, false)) {
+            if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -1989,7 +1989,7 @@ public class GridGainEx {
             else {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
-                        "or system property " + GG_NO_SHUTDOWN_HOOK + " is set.");
+                        "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
             }
         }
 

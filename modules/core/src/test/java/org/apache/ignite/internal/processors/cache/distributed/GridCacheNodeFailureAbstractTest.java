@@ -186,7 +186,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             f.get();
 
-            U.sleep(getInteger(GG_TX_SALVAGE_TIMEOUT, 3000));
+            U.sleep(getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 3000));
 
             GridCache<Integer, String> checkCache = cache(checkIdx);
 

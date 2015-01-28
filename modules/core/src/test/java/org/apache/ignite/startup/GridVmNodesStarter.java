@@ -121,7 +121,7 @@ public final class GridVmNodesStarter {
      * @throws IgniteCheckedException If failed.
      */
     public static void main(String[] args) throws IgniteCheckedException {
-        System.setProperty(GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
 
         Options options = createOptions();
 

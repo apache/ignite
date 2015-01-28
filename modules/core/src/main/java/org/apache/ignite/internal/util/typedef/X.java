@@ -909,7 +909,7 @@ public final class X {
      * @throws IgniteCheckedException If GridGain home folder was not set.
      */
     public static String resolveGridGainHome() throws IgniteCheckedException {
-        String var = IgniteSystemProperties.getString(GG_HOME);
+        String var = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (var != null)
             return var;

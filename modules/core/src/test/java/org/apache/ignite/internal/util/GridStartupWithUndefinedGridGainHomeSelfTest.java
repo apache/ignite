@@ -62,7 +62,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
 
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.
-        String ggHome = IgniteSystemProperties.getString(GG_HOME);
+        String ggHome = IgniteSystemProperties.getString(IGNITE_HOME);
 
         assert ggHome != null;
 

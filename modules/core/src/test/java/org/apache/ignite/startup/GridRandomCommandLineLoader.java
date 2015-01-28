@@ -156,7 +156,7 @@ public final class GridRandomCommandLineLoader {
      */
     @SuppressWarnings({"BusyWait"})
     public static void main(String[] args) {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         logo();
 

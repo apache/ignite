@@ -101,11 +101,11 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_JETTY_PORT, Integer.toString(JETTY_PORT));
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         startGrid();
 
-        System.clearProperty(GG_JETTY_PORT);
+        System.clearProperty(IGNITE_JETTY_PORT);
     }
 
     /** {@inheritDoc} */

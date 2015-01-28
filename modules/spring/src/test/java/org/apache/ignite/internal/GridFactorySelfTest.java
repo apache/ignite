@@ -70,7 +70,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public GridFactorySelfTest() {
         super(false);
 
-        System.setProperty(GG_OVERRIDE_MCAST_GRP,
+        System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(GridFactorySelfTest.class));
     }
 

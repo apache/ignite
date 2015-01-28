@@ -34,7 +34,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** */
-    private static final int CONCURRENCY_LEVEL = Integer.getInteger(GG_JOBS_METRICS_CONCURRENCY_LEVEL, 64);
+    private static final int CONCURRENCY_LEVEL = Integer.getInteger(IGNITE_JOBS_METRICS_CONCURRENCY_LEVEL, 64);
 
     /** Time to live. */
     private final long expireTime;

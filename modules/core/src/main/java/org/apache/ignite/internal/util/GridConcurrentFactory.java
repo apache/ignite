@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
 import org.jdk8.backport.*;
 
 import java.util.concurrent.*;
@@ -30,7 +29,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class GridConcurrentFactory {
     /** Default concurrency level. */
-    private static final int CONCURRENCY_LEVEL = IgniteSystemProperties.getInteger(GG_MAP_CONCURRENCY_LEVEL, 256);
+    private static final int CONCURRENCY_LEVEL = IgniteSystemProperties.getInteger(IGNITE_MAP_CONCURRENCY_LEVEL, 256);
 
     /**
      * Ensure singleton.

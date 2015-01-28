@@ -63,7 +63,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     private static final int DFLT_MAX_TASK_RESULTS = 10240;
 
     /** Maximum number of task results. */
-    private final int maxTaskResults = getInteger(GG_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
+    private final int maxTaskResults = getInteger(IGNITE_REST_MAX_TASK_RESULTS, DFLT_MAX_TASK_RESULTS);
 
     /** Task results. */
     private final Map<IgniteUuid, TaskDescriptor> taskDescs =

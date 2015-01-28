@@ -285,10 +285,10 @@ public abstract class GridUtils {
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** GridGain Logging Directory. */
-    public static final String IGNITE_LOG_DIR = System.getenv(GG_LOG_DIR);
+    public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
 
     /** GridGain Work Directory. */
-    public static final String IGNITE_WORK_DIR = System.getenv(GG_WORK_DIR);
+    public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
     /** Clock timer. */
     private static Thread timer;
@@ -441,7 +441,7 @@ public abstract class GridUtils {
         SUN_REFLECT_FACTORY = refFac;
 
         // Disable hostname SSL verification for development and testing with self-signed certificates.
-        if (Boolean.parseBoolean(System.getProperty(GG_DISABLE_HOSTNAME_VERIFIER))) {
+        if (Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_HOSTNAME_VERIFIER))) {
             HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
                 @Override public boolean verify(String hostname, SSLSession sslSes) {
                     return true;
@@ -650,7 +650,7 @@ public abstract class GridUtils {
      * @return Checks if disco ordering should be enforced.
      */
     public static boolean relaxDiscoveryOrdered() {
-        return "true".equalsIgnoreCase(System.getProperty(GG_NO_DISCO_ORDER));
+        return "true".equalsIgnoreCase(System.getProperty(IGNITE_NO_DISCO_ORDER));
     }
 
     /**
@@ -1496,7 +1496,7 @@ public abstract class GridUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
+        String sysLocHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -2268,7 +2268,7 @@ public abstract class GridUtils {
         assert Thread.holdsLock(GridUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = IgniteSystemProperties.getString(GG_HOME);
+        String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;
@@ -2362,7 +2362,7 @@ public abstract class GridUtils {
                     ggHome = F.t(ggHome0 = resolveProjectHome());
 
                     if (ggHome0 != null)
-                        System.setProperty(GG_HOME, ggHome0);
+                        System.setProperty(IGNITE_HOME, ggHome0);
                 }
                 else
                     ggHome0 = ggHomeTup.get();
@@ -2389,9 +2389,9 @@ public abstract class GridUtils {
 
                 if (ggHomeTup == null) {
                     if (F.isEmpty(path))
-                        System.clearProperty(GG_HOME);
+                        System.clearProperty(IGNITE_HOME);
                     else
-                        System.setProperty(GG_HOME, path);
+                        System.setProperty(IGNITE_HOME, path);
 
                     ggHome = F.t(path);
 
@@ -3872,7 +3872,7 @@ public abstract class GridUtils {
      * @param sb Sb.
      */
     private static void appendJvmId(SB sb) {
-        if (getBoolean(GG_MBEAN_APPEND_JVM_ID)) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
                 + ManagementFactory.getRuntimeMXBean().getName();
 
@@ -7755,7 +7755,7 @@ public abstract class GridUtils {
      * @return {@code True} if property is Visor node startup property, {@code false} otherwise.
      */
     public static boolean isVisorNodeStartProperty(String name) {
-        return GG_SSH_HOST.equals(name) || GG_SSH_USER_NAME.equals(name);
+        return IGNITE_SSH_HOST.equals(name) || IGNITE_SSH_USER_NAME.equals(name);
     }
 
     /**

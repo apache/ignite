@@ -111,12 +111,12 @@ public class VisorBasicConfiguration implements Serializable {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
         cfg.gridName(c.getGridName());
-        cfg.ggHome(getProperty(GG_HOME, c.getGridGainHome()));
-        cfg.localHost(getProperty(GG_LOCAL_HOST, c.getLocalHost()));
+        cfg.ggHome(getProperty(IGNITE_HOME, c.getGridGainHome()));
+        cfg.localHost(getProperty(IGNITE_LOCAL_HOST, c.getLocalHost()));
         cfg.nodeId(g.localNode().id());
         cfg.marshaller(compactClass(c.getMarshaller()));
         cfg.deploymentMode(compactObject(c.getDeploymentMode()));
-        cfg.daemon(boolValue(GG_DAEMON, c.isDaemon()));
+        cfg.daemon(boolValue(IGNITE_DAEMON, c.isDaemon()));
         cfg.jmxRemote(g.isJmxRemoteEnabled());
         cfg.restart(g.isRestartEnabled());
         cfg.networkTimeout(c.getNetworkTimeout());
@@ -124,13 +124,13 @@ public class VisorBasicConfiguration implements Serializable {
         cfg.logger(compactClass(c.getGridLogger()));
         cfg.discoStartupDelay(c.getDiscoveryStartupDelay());
         cfg.mBeanServer(compactClass(c.getMBeanServer()));
-        cfg.noAscii(boolValue(GG_NO_ASCII, false));
-        cfg.noDiscoOrder(boolValue(GG_NO_DISCO_ORDER, false));
-        cfg.noShutdownHook(boolValue(GG_NO_SHUTDOWN_HOOK, false));
-        cfg.programName(getProperty(GG_PROG_NAME));
-        cfg.quiet(boolValue(GG_QUIET, true));
-        cfg.successFile(getProperty(GG_SUCCESS_FILE));
-        cfg.updateNotifier(boolValue(GG_UPDATE_NOTIFIER, true));
+        cfg.noAscii(boolValue(IGNITE_NO_ASCII, false));
+        cfg.noDiscoOrder(boolValue(IGNITE_NO_DISCO_ORDER, false));
+        cfg.noShutdownHook(boolValue(IGNITE_NO_SHUTDOWN_HOOK, false));
+        cfg.programName(getProperty(IGNITE_PROG_NAME));
+        cfg.quiet(boolValue(IGNITE_QUIET, true));
+        cfg.successFile(getProperty(IGNITE_SUCCESS_FILE));
+        cfg.updateNotifier(boolValue(IGNITE_UPDATE_NOTIFIER, true));
         cfg.securityCredentialsProvider(compactClass(c.getSecurityCredentialsProvider()));
 
         return cfg;

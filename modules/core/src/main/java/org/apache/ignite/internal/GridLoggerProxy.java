@@ -58,7 +58,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     private Object ctgr;
 
     /** Whether or not to log grid name. */
-    private static final boolean logGridName = System.getProperty(GG_LOG_GRID_NAME) != null;
+    private static final boolean logGridName = System.getProperty(IGNITE_LOG_GRID_NAME) != null;
 
     /**
      * No-arg constructor is required by externalization.
@@ -162,7 +162,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /**
-     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#GG_LOG_GRID_NAME}
+     * Enriches the log message with grid name if {@link org.apache.ignite.IgniteSystemProperties#IGNITE_LOG_GRID_NAME}
      * system property is set.
      *
      * @param m Message to enrich.

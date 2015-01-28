@@ -55,7 +55,7 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Maximum number of attempts to remap key to the same primary node. */
-    private static final int MAX_REMAP_CNT = getInteger(GG_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
+    private static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
     /** Context. */
     private GridCacheContext<K, V> cctx;

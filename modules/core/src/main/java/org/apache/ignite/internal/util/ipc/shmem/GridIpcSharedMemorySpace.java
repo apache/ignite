@@ -33,7 +33,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 @SuppressWarnings({"PointlessBooleanExpression", "ConstantConditions"})
 public class GridIpcSharedMemorySpace implements Closeable {
     /** Debug flag (enable for testing). */
-    private static final boolean DEBUG = Boolean.getBoolean(GG_IPC_SHMEM_SPACE_DEBUG);
+    private static final boolean DEBUG = Boolean.getBoolean(IGNITE_IPC_SHMEM_SPACE_DEBUG);
 
     /** Shared memory segment size (operable). */
     private final int opSize;

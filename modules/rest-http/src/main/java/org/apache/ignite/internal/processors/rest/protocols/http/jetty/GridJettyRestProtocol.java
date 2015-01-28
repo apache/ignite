@@ -47,7 +47,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
      *
      */
     static {
-        if (!IgniteSystemProperties.getBoolean(GG_JETTY_LOG_NO_OVERRIDE)) {
+        if (!IgniteSystemProperties.getBoolean(IGNITE_JETTY_LOG_NO_OVERRIDE)) {
             Properties p = new Properties();
 
             p.setProperty("org.eclipse.jetty.LEVEL", "WARN");
@@ -114,7 +114,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             throw new IgniteCheckedException("Failed to resolve local host to bind address: " + ctx.config().getLocalHost(), e);
         }
 
-        System.setProperty(GG_JETTY_HOST, locHost.getHostAddress());
+        System.setProperty(IGNITE_JETTY_HOST, locHost.getHostAddress());
 
         jettyHnd = new GridJettyRestHandler(hnd, new C1<String, Boolean>() {
             @Override public Boolean apply(String tok) {
@@ -172,21 +172,21 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
     }
 
     /**
-     * Checks {@link org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT} system property
+     * Checks {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT} system property
      * and overrides default connector port if it present.
      * Then initializes {@code port} with the found value.
      *
      * @param con Jetty connector.
      */
     private void override(AbstractNetworkConnector con) {
-        String host = System.getProperty(GG_JETTY_HOST);
+        String host = System.getProperty(IGNITE_JETTY_HOST);
 
         if (!F.isEmpty(host))
             con.setHost(host);
 
         int currPort = con.getPort();
 
-        Integer overridePort = Integer.getInteger(GG_JETTY_PORT);
+        Integer overridePort = Integer.getInteger(IGNITE_JETTY_PORT);
 
         if (overridePort != null && overridePort != 0)
             currPort = overridePort;
@@ -260,7 +260,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             httpCfg.setSendServerVersion(true);
             httpCfg.setSendDateHeader(true);
 
-            String srvPortStr = System.getProperty(GG_JETTY_PORT, "8080");
+            String srvPortStr = System.getProperty(IGNITE_JETTY_PORT, "8080");
 
             int srvPort;
 
@@ -276,7 +276,7 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 
-            srvConn.setHost(System.getProperty(GG_JETTY_HOST, "localhost"));
+            srvConn.setHost(System.getProperty(IGNITE_JETTY_HOST, "localhost"));
             srvConn.setPort(srvPort);
             srvConn.setIdleTimeout(30000L);
             srvConn.setReuseAddress(true);
