@@ -522,6 +522,7 @@ final class TestMemcacheClient {
     /**
      * @param cacheName Cache name.
      * @throws IgniteCheckedException In case of error.
+     * @return Metrics map.
      */
     public <K> Map<String, Long> cacheMetrics(@Nullable String cacheName) throws IgniteCheckedException {
         List<Response> raw = makeMultiRequest(Command.CACHE_METRICS, cacheName, null, null);

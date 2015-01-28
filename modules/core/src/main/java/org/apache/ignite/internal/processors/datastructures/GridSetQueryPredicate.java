@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -24,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import java.io.*;
 
 /**
- * Predicate for query over {@link org.apache.ignite.IgniteSet} items.
+ * Predicate for query over {@link IgniteSet} items.
  */
 public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Externalizable {
     /** */

@@ -512,7 +512,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
      */
     private void enterBusy() {
         if (!busyLock.enterBusy())
-            throw new CacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + delegate);
+            throw new DataStructureRemovedException("Set has been removed from cache: " + delegate);
     }
 
     /**

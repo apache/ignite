@@ -280,7 +280,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new CacheDataStructureRemovedException("Atomic reference was removed from cache: " + name);
+            throw new DataStructureRemovedException("Atomic reference was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

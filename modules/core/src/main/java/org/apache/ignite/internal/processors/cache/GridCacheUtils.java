@@ -63,7 +63,7 @@ public class GridCacheUtils {
     public static final String UTILITY_CACHE_NAME = "gg-sys-cache";
 
     /** Atomics system cache name. */
-    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-cache";
+    public static final String ATOMICS_CACHE_NAME = "ignite-atomics-sys-cache";
 
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";

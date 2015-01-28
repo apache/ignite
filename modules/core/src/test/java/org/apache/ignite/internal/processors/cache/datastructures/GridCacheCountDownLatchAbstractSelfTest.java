@@ -73,7 +73,7 @@ public abstract class GridCacheCountDownLatchAbstractSelfTest extends IgniteAtom
 
         assertEquals(2, latch1.count());
 
-        IgniteCompute comp = grid(0).compute().enableAsync();
+        IgniteCompute comp = grid(0).compute().withAsync();
 
         comp.call(new IgniteCallable<Object>() {
             @IgniteInstanceResource

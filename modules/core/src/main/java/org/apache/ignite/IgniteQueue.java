@@ -65,7 +65,7 @@ import java.util.concurrent.*;
  * </pre>
  * <h1 class="header">Creating Cache Queues</h1>
  * Instances of distributed cache queues can be created by calling the following method
- * on {@link org.apache.ignite.cache.datastructures.CacheDataStructures} API:
+ * on {@link Ignite} API:
  * <ul>
  *     <li>{@link Ignite#queue(String, IgniteCollectionConfiguration, int, boolean)}</li>
  * </ul>

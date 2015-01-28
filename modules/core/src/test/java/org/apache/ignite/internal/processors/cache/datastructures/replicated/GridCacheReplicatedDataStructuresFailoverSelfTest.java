@@ -33,6 +33,7 @@ public class GridCacheReplicatedDataStructuresFailoverSelfTest
         return REPLICATED;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }

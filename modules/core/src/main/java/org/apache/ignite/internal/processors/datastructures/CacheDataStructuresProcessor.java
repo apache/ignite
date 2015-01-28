@@ -24,12 +24,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
-import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -40,11 +36,9 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**

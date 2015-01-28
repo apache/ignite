@@ -345,7 +345,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new CacheDataStructureRemovedException("Atomic stamped was removed from cache: " + name);
+            throw new DataStructureRemovedException("Atomic stamped was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

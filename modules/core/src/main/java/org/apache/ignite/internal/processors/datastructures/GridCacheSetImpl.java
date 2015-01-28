@@ -379,8 +379,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         }
     }
 
-
-
     /**
      * @param call Callable.
      * @return Callable result.
@@ -461,11 +459,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /**
-     * Throws {@link org.apache.ignite.cache.datastructures.CacheDataStructureRemovedRuntimeException} if set was removed.
+     * Throws {@link org.apache.ignite.cache.datastructures.DataStructureRemovedException} if set was removed.
      */
     private void checkRemoved() {
         if (rmvd)
-            throw new CacheDataStructureRemovedRuntimeException("Set has been removed from cache: " + this);
+            throw new DataStructureRemovedException("Set has been removed from cache: " + this);
     }
 
     /**

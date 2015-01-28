@@ -2131,7 +2131,6 @@ public class GridGainEx {
             ccfg.setQueryIndexEnabled(false);
             ccfg.setPreloadMode(SYNC);
             ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
             ccfg.setCacheMode(cfg.getCacheMode());
 
             if (cfg.getCacheMode() == PARTITIONED) {

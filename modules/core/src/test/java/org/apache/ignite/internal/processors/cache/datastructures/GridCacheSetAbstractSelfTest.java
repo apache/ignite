@@ -786,7 +786,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
                                 set.add(val.incrementAndGet());
                         }
                     }
-                    catch (CacheDataStructureRemovedRuntimeException e) {
+                    catch (DataStructureRemovedException e) {
                         log.info("Set removed: " + e);
                     }
 
@@ -830,7 +830,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
                     return null;
                 }
-            }, CacheDataStructureRemovedRuntimeException.class, null);
+            }, DataStructureRemovedException.class, null);
         }
     }
 

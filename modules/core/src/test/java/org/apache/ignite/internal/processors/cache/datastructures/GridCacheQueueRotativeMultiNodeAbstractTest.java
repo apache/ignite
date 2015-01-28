@@ -177,7 +177,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends Ignite
 
                 return null;
             }
-        }, CacheDataStructureRemovedRuntimeException.class, null);
+        }, DataStructureRemovedException.class, null);
 
         info("Queue was removed: " + queue);
 

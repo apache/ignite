@@ -33,7 +33,7 @@ public interface GridCacheCountDownLatchEx extends IgniteCountDownLatch, GridCac
     /**
      * Callback to notify latch on changes.
      *
-     * @param count New count.
+     * @param cnt New count.
      */
-    public void onUpdate(int count);
+    public void onUpdate(int cnt);
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
 
 import java.io.*;

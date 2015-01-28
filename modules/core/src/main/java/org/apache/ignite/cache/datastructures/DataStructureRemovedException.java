@@ -21,17 +21,12 @@ import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * This runtime exception gets thrown if attempt to access an invalid data structure has been made.
- * Data structure may become invalid if communication with remote nodes has been lost or
- * any other error condition happened that prevented from insuring consistent state.
- * <p>
- * The best way to handle this error is to discard the invalid data structure instance and try
- * getting the underlying data structure from cache again.
+ * This runtime exception gets thrown if attempt to access a removed data structure has been made.
  * <p>
  * Note that data structures throw runtime exceptions out of methods that don't have
  * checked exceptions in the signature.
  */
-public class CacheDataStructureInvalidRuntimeException extends IgniteException {
+public class DataStructureRemovedException extends IgniteException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,7 +35,7 @@ public class CacheDataStructureInvalidRuntimeException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public CacheDataStructureInvalidRuntimeException(String msg) {
+    public DataStructureRemovedException(String msg) {
         super(msg);
     }
 
@@ -50,7 +45,7 @@ public class CacheDataStructureInvalidRuntimeException extends IgniteException {
      *
      * @param cause Non-null throwable cause.
      */
-    public CacheDataStructureInvalidRuntimeException(Throwable cause) {
+    public DataStructureRemovedException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -60,7 +55,7 @@ public class CacheDataStructureInvalidRuntimeException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public CacheDataStructureInvalidRuntimeException(String msg, @Nullable Throwable cause) {
+    public DataStructureRemovedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

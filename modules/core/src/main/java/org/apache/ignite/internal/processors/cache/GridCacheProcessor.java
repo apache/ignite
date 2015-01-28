@@ -1610,9 +1610,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Gets utility cache.
+     * Gets utility cache for atomic data structures.
      *
-     * @return Utility cache.
+     * @return Utility cache for atomic data structures.
      */
     public <K, V> GridCache<K, V> atomicsCache() {
         return cache(CU.ATOMICS_CACHE_NAME);

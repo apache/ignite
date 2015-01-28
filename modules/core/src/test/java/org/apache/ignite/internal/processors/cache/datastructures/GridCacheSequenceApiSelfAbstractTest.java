@@ -50,7 +50,7 @@ public abstract class GridCacheSequenceApiSelfAbstractTest extends IgniteAtomics
     protected static final int SEQ_NUM = 3;
 
     /** */
-    private static final String TRANSACTIONAL_CACHE_NAME = "cache1";
+    private static final String TRANSACTIONAL_CACHE_NAME = "tx_cache";
 
     /** Number of loops in method execution. */
     protected static final int MAX_LOOPS_NUM = 1000;

@@ -293,7 +293,7 @@ public final class GridCacheAtomicLongImpl implements GridCacheAtomicLongEx, Ext
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new CacheDataStructureRemovedException("Atomic long was removed from cache: " + name);
+            throw new DataStructureRemovedException("Atomic long was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */

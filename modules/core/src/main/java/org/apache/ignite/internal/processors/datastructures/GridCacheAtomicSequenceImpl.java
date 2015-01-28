@@ -372,7 +372,7 @@ public final class GridCacheAtomicSequenceImpl implements GridCacheAtomicSequenc
      */
     private void checkRemoved() throws IgniteCheckedException {
         if (rmvd)
-            throw new CacheDataStructureRemovedException("Sequence was removed from cache: " + name);
+            throw new DataStructureRemovedException("Sequence was removed from cache: " + name);
     }
 
     /** {@inheritDoc} */
