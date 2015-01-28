@@ -66,7 +66,7 @@ import java.util.concurrent.locks.*;
  */
 public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncSupport {
     /** {@inheritDoc} */
-    public @Override IgniteCache<K, V> enableAsync();
+    public @Override IgniteCache<K, V> withAsync();
 
     /** {@inheritDoc} */
     public @Override <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz);

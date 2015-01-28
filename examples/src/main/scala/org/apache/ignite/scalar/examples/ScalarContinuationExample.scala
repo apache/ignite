@@ -114,7 +114,7 @@ class FibonacciClosure (
             // Projection that excludes node with id passed in constructor if others exists.
             val prj = if (grid$.cluster().nodes().size() > 1) grid$.cluster().forOthers(excludeNode) else grid$.cluster().forNode(excludeNode)
 
-            val comp = grid$.compute(prj).enableAsync()
+            val comp = grid$.compute(prj).withAsync()
 
             // If future is not cached in node-local store, cache it.
             // Note recursive grid execution!
