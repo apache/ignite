@@ -139,7 +139,7 @@ public class SchemaLoadApp extends Application {
     /** */
     private final ExecutorService exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
         @Override public Thread newThread(Runnable r) {
-            Thread t = new Thread(r, "schema-load-worker");
+            Thread t = new Thread(r, "ignite-schema-load-worker");
 
             t.setDaemon(true);
 
@@ -909,11 +909,11 @@ public class SchemaLoadApp extends Application {
         // Restore connection pane settings.
         jdbcDrvJarTf.setText(userPrefs.get("jdbc.driver.jar", "h2.jar"));
         jdbcDrvClsTf.setText(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlTf.setText(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/schema-load/db"));
+        jdbcUrlTf.setText(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
         userTf.setText(userPrefs.get("jdbc.user", "sa"));
 
         // Restore generation pane settings.
-        outFolderTf.setText(userPrefs.get("out.folder", userHome + "/schema-load/out"));
+        outFolderTf.setText(userPrefs.get("out.folder", userHome + "/ignite-schema-load/out"));
         openFolderCh.setSelected(userPrefs.getBoolean("out.folder.open", true));
 
         pkgTf.setText(userPrefs.get("pojo.package", "org.apache.ignite"));
