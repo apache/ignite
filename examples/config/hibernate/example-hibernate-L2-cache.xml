@@ -45,21 +45,21 @@
         <property name="cache.region.factory_class">org.apache.ignite.cache.hibernate.GridHibernateRegionFactory</property>
 
         <!-- Specify the name of the grid, that will be used for second level caching. -->
-        <property name="org.gridgain.hibernate.grid_name">hibernate-grid</property>
+        <property name="org.apache.ignite.hibernate.grid_name">hibernate-grid</property>
 
         <!-- Specify connection release mode. -->
         <property name="connection.release_mode">on_close</property>
 
         <!-- Set default L2 cache access type. -->
-        <property name="org.gridgain.hibernate.default_access_type">READ_ONLY</property>
+        <property name="org.apache.ignite.hibernate.default_access_type">READ_ONLY</property>
 
         <!-- Specify the entity classes for mapping. -->
-        <mapping class="org.gridgain.examples.datagrid.hibernate.User"/>
-        <mapping class="org.gridgain.examples.datagrid.hibernate.Post"/>
+        <mapping class="org.apache.ignite.examples.datagrid.hibernate.User"/>
+        <mapping class="org.apache.ignite.examples.datagrid.hibernate.Post"/>
 
         <!-- Per-class L2 cache settings. -->
-        <class-cache class="org.gridgain.examples.datagrid.hibernate.User" usage="read-only"/>
-        <class-cache class="org.gridgain.examples.datagrid.hibernate.Post" usage="read-only"/>
-        <collection-cache collection="org.gridgain.examples.datagrid.hibernate.User.posts" usage="read-only"/>
+        <class-cache class="org.apache.ignite.examples.datagrid.hibernate.User" usage="read-only"/>
+        <class-cache class="org.apache.ignite.examples.datagrid.hibernate.Post" usage="read-only"/>
+        <collection-cache collection="org.apache.ignite.examples.datagrid.hibernate.User.posts" usage="read-only"/>
     </session-factory>
 </hibernate-configuration>
