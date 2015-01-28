@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
@@ -279,7 +280,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                 /*read-through*/false,
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
-                                /**update-metrics*/true,
+                                /**update-metrics*/false,
                                 /*event*/true,
                                 /*temporary*/false,
                                 subjId,
@@ -332,6 +333,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 if (!success)
                     break;
+                else
+                    ctx.cache().metrics0().onRead(true);
             }
 
             if (success) {

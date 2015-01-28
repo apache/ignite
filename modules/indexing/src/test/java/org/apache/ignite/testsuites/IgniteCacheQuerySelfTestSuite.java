@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.*;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.spi.communication.tcp.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.cache.local.*;
@@ -37,6 +38,9 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
      */
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Cache Queries Test Suite");
+
+        // Parsing
+        suite.addTestSuite(GridQueryParsingTest.class);
 
         // Queries tests.
         suite.addTestSuite(GridCacheQueryLoadSelfTest.class);

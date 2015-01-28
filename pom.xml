@@ -938,8 +938,8 @@
                                             <packages>org.apache.ignite.cache.spring</packages>
                                         </group>
                                         <group>
-                                            <title>.Net Configuration</title>
-                                            <packages>org.apache.ignite.dotnet</packages>
+                                            <title>Interop</title>
+                                            <packages>org.apache.ignite.interop</packages>
                                         </group>
                                     </groups>
                                     <header>

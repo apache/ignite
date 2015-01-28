@@ -2234,7 +2234,7 @@ public class GridGainEx {
 
                 if (data == null) {
                     try {
-                        IgnitionMBean mbean = new IgnitionMBeanAdapter();
+                        IgnitionMXBean mbean = new IgnitionMXBeanAdapter();
 
                         ObjectName objName = U.makeMBeanName(
                             null,
@@ -2252,7 +2252,7 @@ public class GridGainEx {
                                 "Kernal",
                                 Ignition.class.getSimpleName(),
                                 mbean,
-                                IgnitionMBean.class
+                                IgnitionMXBean.class
                             );
 
                             data = new GridMBeanServerData(objName);

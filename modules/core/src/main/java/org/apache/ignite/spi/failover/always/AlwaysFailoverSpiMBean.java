@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 /**
  * Management bean for {@link AlwaysFailoverSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to always failover SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to always failover SPI configuration.")
 public interface AlwaysFailoverSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
@@ -31,7 +31,7 @@ public interface AlwaysFailoverSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum number of attempts to execute a failed job on another node.
      */
-    @IgniteMBeanDescription("Maximum number of attempts to execute a failed job on another node.")
+    @IgniteMXBeanDescription("Maximum number of attempts to execute a failed job on another node.")
     public int getMaximumFailoverAttempts();
 
     /**
@@ -39,6 +39,6 @@ public interface AlwaysFailoverSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Total number of failed over jobs.
      */
-    @IgniteMBeanDescription("Total number of jobs that were failed over.")
+    @IgniteMXBeanDescription("Total number of jobs that were failed over.")
     public int getTotalFailoverJobsCount();
 }

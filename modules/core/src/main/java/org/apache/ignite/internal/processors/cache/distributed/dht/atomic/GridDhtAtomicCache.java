@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -154,7 +155,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        resetMetrics();
+        CacheMetricsImpl m = new CacheMetricsImpl(ctx);
+
+        if (ctx.dht().near() != null)
+            m.delegate(ctx.dht().near().metrics0());
+
+        metrics = m;
 
         preldr = new GridDhtPreloader<>(ctx);
 
@@ -210,18 +216,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 scheduleAtomicFutureRecheck();
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
-
-        if (ctx.dht().near() != null)
-            m.delegate(ctx.dht().near().metrics0());
-
-        metrics = m;
-
-        ctx.dr().resetMetrics();
     }
 
     /**
@@ -792,6 +786,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean rawRetval,
         @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         assert keys != null || drMap != null;
 
         if (keyCheck)
@@ -822,6 +820,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             filter,
             subjId,
             taskNameHash);
+
+        if (statsEnabled)
+            updateFut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return asyncOp(new CO<IgniteFuture<Object>>() {
             @Override public IgniteFuture<Object> apply() {
@@ -888,7 +889,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 /*read-through*/false,
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
-                                /**update-metrics*/true,
+                                /**update-metrics*/false,
                                 /*event*/true,
                                 /*temporary*/false,
                                 subjId,
@@ -943,6 +944,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (!success)
                     break;
+                else
+                    metrics0().onRead(true);
             }
 
             if (success) {

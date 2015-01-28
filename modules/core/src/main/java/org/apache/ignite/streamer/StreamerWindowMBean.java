@@ -22,14 +22,14 @@ import org.apache.ignite.mxbean.*;
 /**
  * Streamer window MBean.
  */
-@IgniteMBeanDescription("MBean that provides access to streamer window description.")
+@IgniteMXBeanDescription("MBean that provides access to streamer window description.")
 public interface StreamerWindowMBean {
     /**
      * Gets window name.
      *
      * @return Window name.
      */
-    @IgniteMBeanDescription("Window name.")
+    @IgniteMXBeanDescription("Window name.")
     public String getName();
 
     /**
@@ -37,7 +37,7 @@ public interface StreamerWindowMBean {
      *
      * @return Window class name.
      */
-    @IgniteMBeanDescription("Window class name.")
+    @IgniteMXBeanDescription("Window class name.")
     public String getClassName();
 
     /**
@@ -45,7 +45,7 @@ public interface StreamerWindowMBean {
      *
      * @return Current window size.
      */
-    @IgniteMBeanDescription("Window size.")
+    @IgniteMXBeanDescription("Window size.")
     public int getSize();
 
     /**
@@ -53,6 +53,6 @@ public interface StreamerWindowMBean {
      *
      * @return Eviction queue size estimate.
      */
-    @IgniteMBeanDescription("Eviction queue size estimate.")
+    @IgniteMXBeanDescription("Eviction queue size estimate.")
     public int getEvictionQueueSize();
 }

@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -428,4 +429,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     @Override public <T> Map<K, EntryProcessorResult<T>> invokeAll(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args);
+
+    /**
+     * Gets snapshot metrics (statistics) for this cache.
+     *
+     * @return Cache metrics.
+     */
+    public CacheMetrics metrics();
+
+    /**
+     * Gets MxBean for this cache.
+     *
+     * @return MxBean.
+     */
+    public CacheMetricsMXBean mxBean();
 }
