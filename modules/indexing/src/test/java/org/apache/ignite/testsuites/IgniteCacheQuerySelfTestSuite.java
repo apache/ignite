@@ -66,13 +66,13 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheSqlQueryMultiThreadedSelfTest.class);
 
         // Fields queries.
-        suite.addTestSuite(GridCacheLocalFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCacheAtomicNearEnabledFieldsQuerySelfTest.class);
-        suite.addTestSuite(GridCachePartitionedFieldsQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCacheLocalFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PDisabledSelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);
+        suite.addTestSuite(IgniteCachePartitionedFieldsQueryP2PDisabledSelfTest.class);
         suite.addTestSuite(GridCacheFieldsQueryNoDataSelfTest.class);
 
         // Continuous queries.

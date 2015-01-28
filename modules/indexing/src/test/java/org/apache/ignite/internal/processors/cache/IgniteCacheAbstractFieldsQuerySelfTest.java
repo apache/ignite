@@ -22,19 +22,15 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.processors.cache.query.*;
-import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.Cache;
 import java.io.*;
 import java.util.*;
 
@@ -45,7 +41,7 @@ import static org.apache.ignite.cache.CachePreloadMode.*;
 /**
  * Tests for fields queries.
  */
-public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -127,38 +123,38 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         startGrid(gridCount());
 
-        GridCache<String, Organization> orgCache = grid(0).cache(null);
+        IgniteCache<String, Organization> orgCache = grid(0).jcache(null);
 
         assert orgCache != null;
 
-        assert orgCache.putx("o1", new Organization(1, "A"));
-        assert orgCache.putx("o2", new Organization(2, "B"));
+        orgCache.put("o1", new Organization(1, "A"));
+        orgCache.put("o2", new Organization(2, "B"));
 
-        GridCache<CacheAffinityKey<String>, Person> personCache = grid(0).cache(null);
+        IgniteCache<CacheAffinityKey<String>, Person> personCache = grid(0).jcache(null);
 
         assert personCache != null;
 
-        assert personCache.putx(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
-        assert personCache.putx(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
-        assert personCache.putx(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
+        personCache.put(new CacheAffinityKey<>("p1", "o1"), new Person("John White", 25, 1));
+        personCache.put(new CacheAffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
+        personCache.put(new CacheAffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-        GridCache<String, String> strCache = grid(0).cache(null);
+        IgniteCache<String, String> strCache = grid(0).jcache(null);
 
         assert strCache != null;
 
-        assert strCache.putx("key", "val");
+        strCache.put("key", "val");
 
-        GridCache<Integer, Integer> intCache = grid(0).cache(null);
+        IgniteCache<Integer, Integer> intCache = grid(0).jcache(null);
 
         assert intCache != null;
 
         for (int i = 0; i < 200; i++)
-            assert intCache.putx(i, i);
+            intCache.put(i, i);
 
-        GridCache<Integer, Integer> namedCache = grid(0).cache(CACHE);
+        IgniteCache<Integer, Integer> namedCache = grid(0).jcache(CACHE);
 
         for (int i = 0; i < 200; i++)
-            assert namedCache.putx(i, i);
+            namedCache.put(i, i);
     }
 
     /** {@inheritDoc} */
@@ -500,26 +496,16 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         int size = cacheMode() == REPLICATED ? 200 * gridCount() : 200;
 
         assertEquals(size, cnt);
-
-        if (cacheMode() != LOCAL)
-            assertTrue(qry.getAll().size() < size);
     }
 
     /** @throws Exception If failed. */
     public void testPaginationIteratorKeepAll() throws Exception {
-        CacheQuery<List<?>> q = grid(0).cache(null).queries().createSqlFieldsQuery(
-            "select _key, _val from Integer");
-
-        q.pageSize(10);
-        q.keepAll(true);
-
-        CacheQueryFuture<List<?>> f = q.execute();
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select _key, _val from Integer", 10, new Object[0]));
 
         int cnt = 0;
 
-        List<?> row;
-
-        while ((row = f.next()) != null) {
+        for (List<?> row : qry) {
             assertEquals(2, row.size());
             assertEquals(row.get(0), row.get(1));
             assertTrue((Integer)row.get(0) >= 0 && (Integer)row.get(0) < 200);
@@ -531,15 +517,15 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
         assertEquals(size, cnt);
 
-        assertTrue(f.isDone());
+        qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select _key, _val from Integer", 10, new Object[0]));
 
-        List<List<?>> list = new ArrayList<>(f.get());
+        List<List<?>> list = new ArrayList<>(qry.getAll());
 
         dedup(list);
 
         Collections.sort(list, new Comparator<List<?>>() {
-            @Override
-            public int compare(List<?> r1, List<?> r2) {
+            @Override public int compare(List<?> r1, List<?> r2) {
                 return ((Integer) r1.get(0)).compareTo((Integer) r2.get(0));
             }
         });
@@ -567,15 +553,10 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
      * @throws Exception If failed.
      */
     private void testPaginationGet(@Nullable String cacheName) throws Exception {
-        CacheQuery<List<?>> q = grid(0).cache(cacheName).queries().createSqlFieldsQuery("select _key, _val from " +
-            "Integer");
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select _key, _val from Integer", 10, new Object[0]));
 
-        q.pageSize(10);
-        q.keepAll(true);
-
-        CacheQueryFuture<List<?>> f = q.execute();
-
-        List<List<?>> list = new ArrayList<>(f.get());
+        List<List<?>> list = new ArrayList<>(qry.getAll());
 
         dedup(list);
 
@@ -595,49 +576,15 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
 
     /** @throws Exception If failed. */
     public void testEmptyGrid() throws Exception {
-        CacheQuery<List<?>> qry = grid(0).cache(null).queries().createSqlFieldsQuery("select name, " +
-                "age from Person where age = 25");
+        QueryCursor<List<?>> qry = grid(0).jcache(null)
+            .queryFields(new QuerySqlPredicate<>("select name, age from Person where age = 25"));
 
-        List<?> res = F.first(qry.execute().get());
+        List<?> res = F.first(qry.getAll());
 
         assert res != null;
         assert res.size() == 2;
         assert "John White".equals(res.get(0));
         assert res.get(1).equals(25);
-    }
-
-    /** @throws Exception If failed. */
-    public void testOnProjection() throws Exception {
-        P2<Integer, Integer> p = new P2<Integer, Integer>() {
-            @Override public boolean apply(Integer key, Integer val) {
-                return val < 30;
-            }
-        };
-
-        CacheProjection<Integer, Integer> cachePrj = grid(0).<Integer, Integer>cache(null).projection(p);
-
-        CacheQuery<List<?>> q = cachePrj.queries()
-            .createSqlFieldsQuery("select _key, _val from Integer where _key >= 20 and _val < 40");
-
-        List<List<?>> list = new ArrayList<>(q.execute().get());
-
-        dedup(list);
-
-        Collections.sort(list, new Comparator<List<?>>() {
-            @Override
-            public int compare(List<?> r1, List<?> r2) {
-                return ((Integer) r1.get(0)).compareTo((Integer) r2.get(0));
-            }
-        });
-
-        assertEquals(10, list.size());
-
-        for (int i = 20; i < 30; i++) {
-            List<?> row = list.get(i - 20);
-
-            assertEquals(i, row.get(0));
-            assertEquals(i, row.get(1));
-        }
     }
 
     /**
@@ -668,75 +615,6 @@ public abstract class GridCacheAbstractFieldsQuerySelfTest extends GridCommonAbs
         res.clear();
 
         res.addAll(res0);
-    }
-
-    /**
-     * @param fut Query future.
-     * @return Metadata.
-     * @throws IgniteCheckedException In case of error.
-     */
-    private List<GridQueryFieldMetadata> metadata(CacheQueryFuture<List<?>> fut) throws IgniteCheckedException {
-        assert fut != null;
-
-        return ((GridCacheQueryMetadataAware)fut).metadata().get();
-    }
-
-    /**
-     */
-    private static class RemoteSumReducerFactory implements C1<Object[], IgniteReducer<List<Object>, Integer>> {
-        /** {@inheritDoc} */
-        @Override public IgniteReducer<List<Object>, Integer> apply(Object[] args) {
-            return new RemoteSumReducer();
-        }
-    }
-
-    /**
-     */
-    private static class RemoteSumReducer implements R1<List<Object>, Integer> {
-        /** */
-        private int sum;
-
-        /** {@inheritDoc} */
-        @Override public boolean collect(@Nullable List<Object> row) {
-            if (row != null)
-                sum += (int)row.get(0);
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer reduce() {
-            return sum;
-        }
-    }
-
-    /**
-     */
-    private static class LocalSumReducerFactory implements C1<Object[], IgniteReducer<Integer, Integer>> {
-        /** {@inheritDoc} */
-        @Override public IgniteReducer<Integer, Integer> apply(Object[] args) {
-            return new LocalSumReducer();
-        }
-    }
-
-    /**
-     */
-    private static class LocalSumReducer implements R1<Integer, Integer> {
-        /** */
-        private int sum;
-
-        /** {@inheritDoc} */
-        @Override public boolean collect(@Nullable Integer val) {
-            if (val != null)
-                sum += val;
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer reduce() {
-            return sum;
-        }
     }
 
     /**

@@ -40,6 +40,8 @@ import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.configuration.*;
 import javax.cache.expiry.*;
 import java.io.*;
@@ -207,13 +209,13 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testStringType() throws Exception {
-        GridCache<String, String> cache = ignite.cache(null);
+        IgniteCache<String, String> cache = ignite.jcache(null);
 
-        cache.putx("tst", "test");
+        cache.put("tst", "test");
 
-        CacheQuery<Map.Entry<String, String>> qry = cache.queries().createSqlQuery(String.class, "_val='test'");
+        QueryCursor<Cache.Entry<String, String>> qry = cache.query(new QuerySqlPredicate<String, String>("_val='test'"));
 
-        Map.Entry<String, String> entry = F.first(qry.execute().get());
+        Cache.Entry<String, String> entry = F.first(qry.getAll());
 
         assert entry != null;
     }
@@ -224,18 +226,18 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testIntegerType() throws Exception {
-        GridCache<String, Integer> cache = ignite.cache(null);
+        IgniteCache<String, Integer> cache = ignite.jcache(null);
 
         String key = "k";
 
         int val = 2;
 
-        cache.putx(key, val);
+        cache.put(key, val);
 
-        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
-            "select * from Integer where _key = 'k' and _val > 1");
+        QueryCursor<Cache.Entry<String, Integer>> qry =
+            cache.query(new QuerySqlPredicate<String, Integer>("select * from Integer where _key = 'k' and _val > 1"));
 
-        Map.Entry<String, Integer> entry = F.first(qry.execute().get());
+        Cache.Entry<String, Integer> entry = F.first(qry.getAll());
 
         assert entry != null;
 
@@ -249,12 +251,11 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      */
     public void testUserDefinedFunction() throws IgniteCheckedException {
         // Without alias.
-        CacheQuery<List<?>> qry = ignite.cache(null).queries().createSqlFieldsQuery("select square(1), square(2)").
-            projection(ignite.cluster());
+        IgniteCache<Object, Object> cache = ignite.jcache(null);
 
-        CacheQueryFuture<List<?>> fut = qry.execute();
+        QueryCursor<List<?>> qry = cache.queryFields(new QuerySqlPredicate<>("select square(1), square(2)"));
 
-        Collection<List<?>> res = fut.get();
+        Collection<List<?>> res = qry.getAll();
 
         assertEquals(gridCount(), res.size());
 
@@ -264,11 +265,9 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(4, row.get(1));
 
         // With alias.
-        qry = ignite.cache(null).queries().createSqlFieldsQuery("select _cube_(1), _cube_(2)").projection(ignite.cluster());
+        qry = cache.queryFields(new QuerySqlPredicate<>("select _cube_(1), _cube_(2)"));
 
-        fut = qry.execute();
-
-        res = fut.get();
+        res = qry.getAll();
 
         assertEquals(gridCount(), res.size());
 
@@ -278,18 +277,18 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         assertEquals(8, row.get(1));
 
         // Not registered.
-        final CacheQuery<List<?>> qry3 = ignite.cache(null).queries().createSqlFieldsQuery("select no()");
+        final QueryCursor<List<?>> qry3 = cache.queryFields(new QuerySqlPredicate<>("select no()"));
 
         GridTestUtils.assertThrows(
             log,
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    qry3.execute().get();
+                    qry3.getAll();
 
                     return null;
                 }
             },
-            IgniteCheckedException.class,
+            CacheException.class,
             null
         );
     }
@@ -303,17 +302,17 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         ignite.jcache(null).
             withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000))).put("key1", 1);
 
-        GridCache<String, Integer> cache = ignite.cache(null);
+        IgniteCache<String, Integer> cache = ignite.jcache(null);
 
-        CacheQuery<Map.Entry<String, Integer>> qry = cache.queries().createSqlQuery(Integer.class, "1=1");
+        QueryCursor<Cache.Entry<String, Integer>> qry = cache.query(new QuerySqlPredicate<String, Integer>("1=1"));
 
-        Map.Entry<String, Integer> res = F.first(qry.execute().get());
+        Cache.Entry<String, Integer> res = F.first(qry.getAll());
 
         assertEquals(1, res.getValue().intValue());
 
         U.sleep(1020);
 
-        res = F.first(qry.execute().get());
+        res = F.first(qry.getAll());
 
         assertNull(res);
     }
@@ -322,15 +321,14 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testIllegalBounds() throws Exception {
-        GridCache<Integer, Integer> cache = ignite.cache(null);
+        IgniteCache<Integer, Integer> cache = ignite.jcache(null);
 
         cache.put(1, 1);
         cache.put(2, 2);
 
-        CacheQuery<Map.Entry<Integer, Integer>> qry = cache.queries().createSqlQuery(Integer.class,
-            "_key between 2 and 1");
+        QueryCursor<List<?>> qry = cache.queryFields(new QuerySqlPredicate<Integer, Integer>("_key between 2 and 1"));
 
-        assertTrue(qry.execute().get().isEmpty());
+        assertTrue(qry.getAll().isEmpty());
     }
 
     /**
@@ -339,7 +337,7 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
      * @throws Exception In case of error.
      */
     public void testComplexType() throws Exception {
-        GridCache<Key, GridCacheQueryTestValue> cache = ignite.cache(null);
+        IgniteCache<Key, GridCacheQueryTestValue> cache = ignite.jcache(null);
 
         GridCacheQueryTestValue val1 = new GridCacheQueryTestValue();
 
@@ -354,14 +352,14 @@ public abstract class GridCacheAbstractQuerySelfTest extends GridCommonAbstractT
         val2.setField3(2L);
         val2.setField6(null);
 
-        cache.putx(new Key(100500), val1);
-        cache.putx(new Key(100501), val2);
+        cache.put(new Key(100500), val1);
+        cache.put(new Key(100501), val2);
 
-        CacheQuery<Map.Entry<Key, GridCacheQueryTestValue>> qry =
-            cache.queries().createSqlQuery(GridCacheQueryTestValue.class,
-                "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3");
+        QueryCursor<Cache.Entry<Key, GridCacheQueryTestValue>> qry = cache
+            .query(new QuerySqlPredicate<Key, GridCacheQueryTestValue>(
+                    "fieldName='field1' and field2=1 and field3=1 and id=100500 and embeddedField2=11 and x=3"));
 
-        Map.Entry<Key, GridCacheQueryTestValue> entry = F.first(qry.execute().get());
+        Cache.Entry<Key, GridCacheQueryTestValue> entry = F.first(qry.getAll());
 
         assertNotNull(entry);
         assertEquals(100500, entry.getKey().id);
