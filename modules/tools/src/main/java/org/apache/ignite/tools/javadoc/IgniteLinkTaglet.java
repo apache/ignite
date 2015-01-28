@@ -28,7 +28,7 @@ import java.util.*;
  * be used as replacement of {@link ...} tag that references to the GridGain class that is not in classpath.
  * Class and its arguments should have fully qualified names.
  */
-public class GridLinkTaglet implements Taglet {
+public class IgniteLinkTaglet implements Taglet {
     /** */
     private static final String NAME = "ignitelink";
 
@@ -95,8 +95,8 @@ public class GridLinkTaglet implements Taglet {
      *
      * @param tagletMap the map to register this tag to.
      */
-    public static void register(Map<String, GridLinkTaglet> tagletMap) {
-        GridLinkTaglet tag = new GridLinkTaglet();
+    public static void register(Map<String, IgniteLinkTaglet> tagletMap) {
+        IgniteLinkTaglet tag = new IgniteLinkTaglet();
 
         Taglet t = tagletMap.get(tag.getName());
 
