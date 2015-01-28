@@ -107,7 +107,7 @@ public class GridMultiSplitsLoadTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
-                IgniteCompute comp = ignite.compute().enableAsync();
+                IgniteCompute comp = ignite.compute().withAsync();
 
                 while (end - System.currentTimeMillis() > 0) {
                     int levels = 3;

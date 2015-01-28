@@ -79,22 +79,26 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             if (evtType == EVT_NODE_FAILED || evtType == EVT_NODE_LEFT) {
                 final Collection<String> caches = new HashSet<>();
 
-                for (ClusterNode clusterNode : ctx.discovery().allNodes())
+                for (ClusterNode clusterNode : ((IgniteDiscoveryEvent)evt).topologyNodes())
                     caches.addAll(U.cacheNames(clusterNode));
 
-                final Collection<AffinityAssignmentKey> rmv = new GridLeanSet<>();
+                final Collection<AffinityAssignmentKey> rmv = new HashSet<>();
 
                 for (AffinityAssignmentKey key : affMap.keySet()) {
-                    if (!caches.contains(key.cacheName) || key.topVer < discoEvt.topologyVersion() - 1)
+                    if (!caches.contains(key.cacheName) || key.topVer < discoEvt.topologyVersion() - 10)
                         rmv.add(key);
                 }
 
-                ctx.timeout().addTimeoutObject(new GridTimeoutObjectAdapter(
-                    IgniteUuid.fromUuid(ctx.localNodeId()), AFFINITY_MAP_CLEAN_UP_DELAY) {
-                    @Override public void onTimeout() {
-                        affMap.keySet().removeAll(rmv);
-                    }
-                });
+                if (!rmv.isEmpty()) {
+                    ctx.timeout().addTimeoutObject(
+                        new GridTimeoutObjectAdapter(
+                            IgniteUuid.fromUuid(ctx.localNodeId()),
+                            AFFINITY_MAP_CLEAN_UP_DELAY) {
+                                @Override public void onTimeout() {
+                                    affMap.keySet().removeAll(rmv);
+                                }
+                            });
+                }
             }
         }
     };
@@ -107,14 +111,13 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_FAILED, EVT_NODE_LEFT, EVT_NODE_JOINED);
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (ctx != null && ctx.event() != null)
-            ctx.event().removeLocalEventListener(lsnr);
+        ctx.event().removeLocalEventListener(lsnr);
     }
 
     /**
@@ -203,6 +206,14 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             key = ctx.portable().marshalToPortable(key);
 
         return affInfo.mapper.affinityKey(key);
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Cache affinity.
+     */
+    public <K> CacheAffinityProxy<K> affinityProxy(String cacheName) {
+        return new CacheAffinityProxy(cacheName);
     }
 
     /**
@@ -364,7 +375,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Requests {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} and {@link org.apache.ignite.cache.affinity.CacheAffinityKeyMapper} from remote node.
+     * Requests {@link CacheAffinityFunction} and
+     * {@link CacheAffinityKeyMapper} from remote node.
      *
      * @param cacheName Name of cache on which affinity is requested.
      * @param n Node from which affinity is requested.
@@ -482,6 +494,29 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             this.assignment = assignment;
             this.portableEnabled = portableEnabled;
         }
+
+        /**
+         * @return Cache affinity function.
+         */
+        private CacheAffinityFunction affinityFunction() {
+            return affFunc;
+        }
+
+        /**
+         * @return Affinity assignment.
+         */
+        private GridAffinityAssignment assignment() {
+            return assignment;
+        }
+
+        private CacheAffinityKeyMapper keyMapper() {
+            return mapper;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AffinityInfo.class, this);
+        }
     }
 
     /**
@@ -523,6 +558,275 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             res = 31 * res + (int)(topVer ^ (topVer >>> 32));
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(AffinityAssignmentKey.class, this);
+        }
+    }
+
+    /**
+     * Grid cache affinity.
+     */
+    private class CacheAffinityProxy<K> implements CacheAffinity<K> {
+        /** Cache name. */
+        private final String cacheName;
+
+        /**
+         * @param cacheName Cache name.
+         */
+        public CacheAffinityProxy(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().affinityFunction().partitions();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().affinityFunction().partition(key);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isPrimary(ClusterNode n, K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().assignment().primaryPartitions(n.id()).contains(partition(key));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isBackup(ClusterNode n, K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().assignment().backupPartitions(n.id()).contains(partition(key));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isPrimaryOrBackup(ClusterNode n, K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return isPrimary(n, key) || isBackup(n, key);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int[] primaryPartitions(ClusterNode n) {
+            ctx.gateway().readLock();
+
+            try {
+                Set<Integer> parts = cache().assignment().primaryPartitions(n.id());
+
+                return U.toIntArray(parts);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int[] backupPartitions(ClusterNode n) {
+            ctx.gateway().readLock();
+
+            try {
+                Set<Integer> parts = cache().assignment().backupPartitions(n.id());
+
+                return U.toIntArray(parts);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public int[] allPartitions(ClusterNode n) {
+            ctx.gateway().readLock();
+
+            try {
+                GridAffinityAssignment assignment = cache().assignment();
+
+                int[] primary = U.toIntArray(assignment.primaryPartitions(n.id()));
+                int[] backup = U.toIntArray(assignment.backupPartitions(n.id()));
+
+                return U.addAll(primary, backup);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object affinityKey(K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().keyMapper().affinityKey(key);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
+            ctx.gateway().readLock();
+
+            try {
+                return GridAffinityProcessor.this.mapKeysToNodes(cacheName, keys);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public ClusterNode mapKeyToNode(K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return GridAffinityProcessor.this.mapKeyToNode(cacheName, key);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<ClusterNode> mapKeyToPrimaryAndBackups(K key) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().assignment().get(partition(key));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClusterNode mapPartitionToNode(int part) {
+            ctx.gateway().readLock();
+
+            try {
+                return F.first(cache().assignment().get(part));
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<Integer, ClusterNode> mapPartitionsToNodes(Collection<Integer> parts) {
+            ctx.gateway().readLock();
+
+            try {
+                Map<Integer, ClusterNode> map = new HashMap<>();
+
+                if (!F.isEmpty(parts)) {
+                    for (int p : parts)
+                        map.put(p, mapPartitionToNode(p));
+                }
+
+                return map;
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<ClusterNode> mapPartitionToPrimaryAndBackups(int part) {
+            ctx.gateway().readLock();
+
+            try {
+                return cache().assignment().get(part);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                ctx.gateway().readUnlock();
+            }
+        }
+
+        /**
+         * @return Affinity info for current topology version.
+         */
+        private AffinityInfo cache() throws IgniteCheckedException {
+            return affinityCache(cacheName, topologyVersion());
+        }
+
+        /**
+         * @return Topology version.
+         */
+        private long topologyVersion() {
+            return ctx.discovery().topologyVersion();
         }
     }
 }

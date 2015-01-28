@@ -361,7 +361,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
-            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
 
             comp.call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable));
 
@@ -399,7 +399,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
-            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().enableAsync();
+            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
 
             comp.call(new CacheOperationCallable(clientId, cacheName, op, key));
 
@@ -1142,8 +1142,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             assert metrics != null;
 
             return new GridFinishedFuture<Object>(ctx, new GridCacheRestMetrics(
-                metrics.createTime(), metrics.readTime(), metrics.writeTime(),
-                metrics.reads(), metrics.writes(), metrics.hits(), metrics.misses()));
+                (int)metrics.getCacheGets(),
+                (int)(metrics.getCacheRemovals() + metrics.getCachePuts()),
+                (int)metrics.getCacheHits(),
+                (int)metrics.getCacheMisses())
+            );
         }
     }
 }

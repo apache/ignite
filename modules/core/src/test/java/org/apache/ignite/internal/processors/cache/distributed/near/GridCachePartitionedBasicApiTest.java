@@ -30,8 +30,8 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
  */
 public class GridCachePartitionedBasicApiTest extends GridCacheBasicApiAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 

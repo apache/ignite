@@ -24,25 +24,26 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
+import org.apache.ignite.transactions.*;
 
 import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Tests for colocated cache.
@@ -375,11 +376,11 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             final CountDownLatch lockLatch = new CountDownLatch(1);
             final CountDownLatch unlockLatch = new CountDownLatch(1);
 
+            final Lock lock = g0.jcache(null).lock(key);
+
             IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
-                        CacheLock lock = g0.jcache(null).lock(key);
-
                         lock.lock();
 
                         try {
@@ -400,10 +401,8 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             U.await(lockLatch);
 
-            assert g0.jcache(null).isLocked(key);
-            assert !g0.jcache(null).isLockedByThread(key) : "Key can not be locked by current thread.";
-
-            CacheLock lock = g0.jcache(null).lock(key);
+            assert g0.jcache(null).isLocalLocked(key, false);
+            assert !g0.jcache(null).isLocalLocked(key, true) : "Key can not be locked by current thread.";
 
             assert !lock.tryLock();
 
@@ -896,13 +895,15 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         try {
             IgniteCache<Object, Object> cache = jcache();
 
-            cache.lock(1).lock();
+            Lock lock = cache.lock(1);
+
+            lock.lock();
 
             assertNull(cache.getAndPut(1, "key1"));
             assertEquals("key1", cache.getAndPut(1, "key2"));
             assertEquals("key2", cache.get(1));
 
-            cache.lock(1).unlock();
+            lock.unlock();
         }
         finally {
             stopAllGrids();
@@ -928,9 +929,13 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             IgniteCache<Object, Object> cache = jcache(0);
 
-            cache.lock(k0).lock();
-            cache.lock(k1).lock();
-            cache.lock(k2).lock();
+            Lock lock0 = cache.lock(k0);
+            Lock lock1 = cache.lock(k1);
+            Lock lock2 = cache.lock(k2);
+
+            lock0.lock();
+            lock1.lock();
+            lock2.lock();
 
             cache.put(k0, "val0");
 
@@ -940,9 +945,9 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             assertEquals("val1", cache.get(k1));
             assertEquals("val2", cache.get(k2));
 
-            cache.lock(k0).unlock();
-            cache.lock(k1).unlock();
-            cache.lock(k2).unlock();
+            lock0.unlock();
+            lock1.unlock();
+            lock2.unlock();
         }
         finally {
             stopAllGrids();

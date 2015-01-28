@@ -172,7 +172,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         assertFalse(ggfs.isAsync());
 
-        IgniteFs ggfsAsync = ggfs.enableAsync();
+        IgniteFs ggfsAsync = ggfs.withAsync();
 
         assertTrue(ggfsAsync.isAsync());
 

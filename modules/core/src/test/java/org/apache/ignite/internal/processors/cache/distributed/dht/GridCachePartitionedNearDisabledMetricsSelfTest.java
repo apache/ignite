@@ -91,13 +91,13 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
 
             assert g.cache(null).isEmpty();
 
-            g.cache(null).resetMetrics();
+            g.cache(null).mxBean().clear();
         }
 
         assertNull("Value is not null for key: " + 0, cache.get(0));
 
         // Check metrics for the whole cache.
-        long writes = 0;
+        long removes = 0;
         long reads = 0;
         long hits = 0;
         long misses = 0;
@@ -105,13 +105,13 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
         for (int i = 0; i < gridCount(); i++) {
             CacheMetrics m = grid(i).cache(null).metrics();
 
-            writes += m.writes();
-            reads += m.reads();
-            hits += m.hits();
-            misses += m.misses();
+            removes += m.getCacheRemovals();
+            reads += m.getCacheGets();
+            hits += m.getCacheHits();
+            misses += m.getCacheMisses();
         }
 
-        assertEquals(0, writes);
+        assertEquals(0, removes);
         assertEquals(1, reads);
         assertEquals(0, hits);
         assertEquals(1, misses);

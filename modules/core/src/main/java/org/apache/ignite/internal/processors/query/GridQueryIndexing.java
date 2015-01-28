@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -44,6 +45,24 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void stop() throws IgniteCheckedException;
+
+
+    /**
+     * Runs two step query.
+     *
+     * @param space Space name.
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space,  GridCacheTwoStepQuery qry);
+
+    /**
+     * @param space Space.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Result.
+     */
+    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).

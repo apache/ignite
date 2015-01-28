@@ -30,6 +30,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -124,8 +125,10 @@ public class GridCacheEvictionLockUnlockSelfTest extends GridCommonAbstractTest 
 
                 IgniteCache<Object, Object> cache = jcache(i);
 
-                cache.lock("key").lock();
-                cache.lock("key").unlock();
+                Lock lock = cache.lock("key");
+
+                lock.lock();
+                lock.unlock();
 
                 assertTrue(evictLatch.await(3, SECONDS));
 

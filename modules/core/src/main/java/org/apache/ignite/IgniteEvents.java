@@ -257,5 +257,5 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public boolean isEnabled(int type);
 
     /** {@inheritDoc} */
-    @Override IgniteEvents enableAsync();
+    @Override IgniteEvents withAsync();
 }

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -154,7 +155,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Override public void start() throws IgniteCheckedException {
         super.start();
 
-        resetMetrics();
+        CacheMetricsImpl m = new CacheMetricsImpl(ctx);
+
+        if (ctx.dht().near() != null)
+            m.delegate(ctx.dht().near().metrics0());
+
+        metrics = m;
 
         preldr = new GridDhtPreloader<>(ctx);
 
@@ -210,18 +216,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 scheduleAtomicFutureRecheck();
             }
         });
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
-
-        if (ctx.dht().near() != null)
-            m.delegate(ctx.dht().near().metrics0());
-
-        metrics = m;
-
-        ctx.dr().resetMetrics();
     }
 
     /**
@@ -793,6 +787,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         boolean rawRetval,
         @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
+        final boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        final long start = statsEnabled ? System.nanoTime() : 0L;
+
         assert keys != null || drMap != null;
 
         if (keyCheck)
@@ -823,6 +821,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             filter,
             subjId,
             taskNameHash);
+
+        if (statsEnabled)
+            updateFut.listenAsync(new UpdateRemoveTimeStatClosure<>(metrics0(), start));
 
         return asyncOp(new CO<IgniteFuture<Object>>() {
             @Override public IgniteFuture<Object> apply() {
@@ -889,7 +890,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 /*read-through*/false,
                                 /*fail-fast*/true,
                                 /*unmarshal*/true,
-                                /**update-metrics*/true,
+                                /**update-metrics*/false,
                                 /*event*/true,
                                 /*temporary*/false,
                                 subjId,
@@ -944,6 +945,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (!success)
                     break;
+                else
+                    metrics0().onRead(true);
             }
 
             if (success) {
@@ -1081,7 +1084,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (plc != null)
                             expiry = new UpdateExpiryPolicy(plc);
 
-                        if (writeThrough() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
+                        if (keys.size() > 1 &&                             // Several keys ...
+                            writeThrough() &&                              // and store is enabled ...
+                            !ctx.store().isLocalStore() &&                 // and this is not local store ...
+                            !ctx.dr().receiveEnabled()  // and no DR.
+                        ) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> updRes = updateWithBatch(node,
                                 hasNear,
@@ -1679,7 +1686,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
-                        GridDrResolveResult<V> ctx = updRes.drResolveResult();
+                        GridCacheVersionConflictContextImpl<K, V> ctx = updRes.drResolveResult();
 
                         long ttl = updRes.newTtl();
                         long expireTime = updRes.drExpireTime();
@@ -1725,7 +1732,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
-                            GridDrResolveResult<V> ctx = updRes.drResolveResult();
+                            GridCacheVersionConflictContextImpl<K, V> ctx = updRes.drResolveResult();
 
                             long ttl = updRes.newTtl();
                             long expireTime = updRes.drExpireTime();

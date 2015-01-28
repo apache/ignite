@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheDistributionMode.*;
@@ -517,11 +518,15 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         IgniteCache<Integer, String> cache = jcache(0);
 
-        cache.lock(key1).lock();
+        Lock lock1 = cache.lock(key1);
+
+        lock1.lock();
 
         try {
             // Nested lock.
-            cache.lock(key2).lock();
+            Lock lock2 = cache.lock(key2);
+
+            lock2.lock();
 
             try {
                 assertNull(cache.getAndPut(key1, val1));
@@ -574,11 +579,11 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
                 assertNull(near(2).peekEx(key2));
             }
             finally {
-                cache.lock(key2).lock();
+                lock2.lock();
             }
         }
         finally {
-            cache.lock(key1).unlock();
+            lock1.unlock();
         }
     }
 }
