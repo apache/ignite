@@ -242,11 +242,11 @@ public class IpcSharedMemoryNativeLoader {
     }
 
     /**
-     * @param target
-     * @param src
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
+     * @param target Target.
+     * @param src Source.
+     * @return {@code True} if target md5-sum equal to source md5-sum.
+     * @throws NoSuchAlgorithmException If md5 algorithm was not found.
+     * @throws IOException If an I/O exception occurs.
      */
     private static boolean haveEqualMD5(File target, URL src) throws NoSuchAlgorithmException, IOException {
         try (InputStream targetIS = new FileInputStream(target);

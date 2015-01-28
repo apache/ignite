@@ -9099,12 +9099,14 @@ public abstract class GridUtils {
     }
 
     /**
-     * @param in
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
+     * Calculate MD5 digits.
+     *
+     * @param in Input stream.
+     * @return Calculated MD5 digest for given input stream.
+     * @throws NoSuchAlgorithmException If MD5 algorithm was not found.
+     * @throws IOException If an I/O exception occurs.
      */
-    public static byte[] calculateMD5Digest(InputStream in) throws NoSuchAlgorithmException, IOException {
+    public static byte[] calculateMD5Digest(@NotNull InputStream in) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("MD5");
         InputStream fis = new BufferedInputStream(in);
         byte[] dataBytes = new byte[1024];
@@ -9118,10 +9120,12 @@ public abstract class GridUtils {
     }
 
     /**
-     * @param in Input.
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws IOException
+     * Calculate MD5 string.
+     *
+     * @param in Input stream.
+     * @return Calculated MD5 string for given input stream.
+     * @throws NoSuchAlgorithmException If MD5 algorithm was not found.
+     * @throws IOException If an I/O exception occurs.
      */
     public static String calculateMD5(InputStream in) throws NoSuchAlgorithmException, IOException {
         byte[] md5Bytes = calculateMD5Digest(in);
