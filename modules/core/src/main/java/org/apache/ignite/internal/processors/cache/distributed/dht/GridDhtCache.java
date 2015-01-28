@@ -71,20 +71,16 @@ public class GridDhtCache<K, V> extends GridDhtTransactionalCacheAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        resetMetrics();
-
-        super.start();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        GridCacheMetricsAdapter m = new GridCacheMetricsAdapter();
+        CacheMetricsImpl m = new CacheMetricsImpl(ctx);
 
         m.delegate(ctx.dht().near().metrics0());
 
         metrics = m;
 
         ctx.dr().resetMetrics();
+
+
+        super.start();
     }
 
     /**

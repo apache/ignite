@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
@@ -428,6 +429,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 return new GridEmptyCloseableIterator<>();
 
             return idx.query(space, clause, params, type, filters);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space name.
+     * @param qry Query.
+     * @return Future.
+     */
+    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryTwoStep(space, qry);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space.
+     * @param sqlQry Query.
+     * @param params Parameters.
+     * @return Result.
+     */
+    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to execute query (grid is stopping).");
+
+        try {
+            return idx.queryTwoStep(space, sqlQry, params);
         }
         finally {
             busyLock.leaveBusy();

@@ -370,7 +370,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterNodeMetrics metrics() {
+        @Nullable @Override public ClusterMetrics metrics() {
             return null;
         }
 

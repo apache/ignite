@@ -24,10 +24,10 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.mxbean.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -792,7 +792,7 @@ public abstract class GridUtils {
         double heap = 0.0;
 
         for (ClusterNode n : nodesPerJvm(nodes)) {
-            ClusterNodeMetrics m = n.metrics();
+            ClusterMetrics m = n.metrics();
 
             heap += Math.max(m.getHeapMemoryInitialized(), m.getHeapMemoryMaximum());
         }
@@ -3937,7 +3937,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -3961,7 +3961,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -3987,7 +3987,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -6243,6 +6243,15 @@ public abstract class GridUtils {
             arr[idx++] = i;
 
         return arr;
+    }
+
+    public static int[] addAll(int[] arr1, int[] arr2) {
+        int[] all = new int[arr1.length + arr2.length];
+
+        System.arraycopy(arr1, 0, all, 0, arr1.length);
+        System.arraycopy(arr2, 0, all, arr1.length, arr2.length);
+
+        return all;
     }
 
     /**

@@ -24,6 +24,7 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.affinity.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -200,6 +201,18 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
 
         try {
             return cache.metrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean mxBean() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return cache.mxBean();
         }
         finally {
             gate.leave(prev);
@@ -1875,18 +1888,6 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
         qry = new GridCacheQueriesProxy<>(ctx, prj, (GridCacheQueriesEx<K, V>)delegate.queries());
         dataStructures = new GridCacheDataStructuresProxy<>(ctx, ctx.cache().dataStructures());
         aff = new GridCacheAffinityProxy<>(ctx, ctx.cache().affinity());
-    }
-
-    /** {@inheritDoc} */
-    @Override public void resetMetrics() {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            cache.resetMetrics();
-        }
-        finally {
-            gate.leave(prev);
-        }
     }
 
     /** {@inheritDoc} */
