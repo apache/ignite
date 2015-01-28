@@ -35,7 +35,8 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
 /**
  * {@link IgniteCompute} implementation.
  */
-public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute> implements IgniteCompute, Externalizable {
+public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
+    implements IgniteCompute, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -80,7 +81,8 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute> 
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job) throws IgniteCheckedException {
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, Runnable job)
+        throws IgniteCheckedException {
         A.notNull(affKey, "affKey");
         A.notNull(job, "job");
 
@@ -191,7 +193,8 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute> 
     }
 
     /** {@inheritDoc} */
-    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg) throws IgniteCheckedException {
+    @Override public <R, T> Collection<R> broadcast(IgniteClosure<T, R> job, @Nullable T arg)
+        throws IgniteCheckedException {
         A.notNull(job, "job");
 
         guard();

@@ -23,6 +23,9 @@ import org.apache.ignite.*;
  * Adapter for {@link IgniteAsyncSupport}.
  */
 public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
+    /** */
+    private static final Object mux = new Object();
+
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteFuture<?>> curFut;
 
@@ -54,7 +57,7 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
         if (res == null) {
             res = createAsyncInstance();
 
-            synchronized (IgniteAsyncSupportAdapter.class) {
+            synchronized (mux) {
                 if (asyncInstance != null)
                     return asyncInstance;
 
