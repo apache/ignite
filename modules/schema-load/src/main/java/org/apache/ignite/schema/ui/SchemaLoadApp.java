@@ -68,10 +68,10 @@ public class SchemaLoadApp extends Application {
     private TextField jdbcDrvJarTf;
 
     /** */
-    private TextField jdbcDrvClsTf;
+    private ComboBox<String> jdbcDrvClsCb;
 
     /** */
-    private TextField jdbcUrlTf;
+    private ComboBox<String> jdbcUrlCb;
 
     /** */
     private TextField userTf;
@@ -198,6 +198,22 @@ public class SchemaLoadApp extends Application {
 
         final String jdbcDrvJarPath = jdbcDrvJarTf.getText().trim();
 
+        final String jdbcDrvCls = jdbcDrvClsCb.getValue();
+
+        final String jdbcUrl = jdbcUrlCb.getValue();
+
+        String user = userTf.getText().trim();
+
+        String pwd = pwdTf.getText().trim();
+
+        final Properties jdbcInfo = new Properties();
+
+        if (!user.isEmpty())
+            jdbcInfo.put("user", user);
+
+        if (!pwd.isEmpty())
+            jdbcInfo.put("password", pwd);
+
         final boolean tblsOnly = parseCb.getSelectionModel().getSelectedIndex() == 0;
 
         Runnable task = new Task<Void>() {
@@ -205,8 +221,8 @@ public class SchemaLoadApp extends Application {
             @Override protected Void call() throws Exception {
                 long started = System.currentTimeMillis();
 
-                try (Connection conn = connect(jdbcDrvJarPath)) {
-                    pojos = DatabaseMetadataParser.parse(conn/*, tblsOnly*/);
+                try (Connection conn = connect(jdbcDrvJarPath, jdbcDrvCls, jdbcUrl, jdbcInfo)) {
+                    pojos = DatabaseMetadataParser.parse(conn, tblsOnly);
                 }
 
                 perceptualDelay(started);
@@ -435,18 +451,18 @@ public class SchemaLoadApp extends Application {
     /**
      * Check that text field is non empty.
      *
-     * @param tf Text field to check.
+     * @param ctrl Text field or combobox to check.
      * @param trim If {@code true} then
      * @param msg Warning message.
      * @return {@code true} If text field is empty.
      */
-    private boolean checkInput(TextField tf, boolean trim, String msg) {
-        String s = tf.getText();
+    private boolean checkInput(Control ctrl, boolean trim, String msg) {
+        String s = ctrl instanceof TextInputControl ? ((TextInputControl)ctrl).getText() : ((ComboBoxBase<String>)ctrl).getValue();
 
         s = trim ? s.trim() : s;
 
         if (s.isEmpty()) {
-            tf.requestFocus();
+            ctrl.requestFocus();
 
             MessageBox.warningDialog(owner, msg);
 
@@ -462,8 +478,8 @@ public class SchemaLoadApp extends Application {
     private void next() {
         if (rootPane.getCenter() == connLayerPnl) {
             if (checkInput(jdbcDrvJarTf, true, "Path to JDBC driver is not specified!") ||
-                checkInput(jdbcDrvClsTf, true, "JDBC driver class name is not specified!") ||
-                checkInput(jdbcUrlTf, true, "JDBC URL connection string is not specified!") ||
+                checkInput(jdbcDrvClsCb, true, "JDBC driver class name is not specified!") ||
+                checkInput(jdbcUrlCb, true, "JDBC URL connection string is not specified!") ||
                 checkInput(userTf, true, "User name is not specified!"))
                 return;
 
@@ -477,13 +493,15 @@ public class SchemaLoadApp extends Application {
      * Connect to database.
      *
      * @param jdbcDrvJarPath Path to JDBC driver.
+     * @param jdbcDrvCls JDBC class name.
+     * @param jdbcUrl JDBC connection URL.
+     * @param jdbcInfo Connection properties.
      * @return Connection to database.
      * @throws SQLException if connection failed.
      */
-    private Connection connect(String jdbcDrvJarPath) throws SQLException {
-        String drvCls = jdbcDrvClsTf.getText();
-
-        Driver drv = drivers.get(drvCls);
+    private Connection connect(String jdbcDrvJarPath, String jdbcDrvCls, String jdbcUrl, Properties jdbcInfo)
+        throws SQLException {
+        Driver drv = drivers.get(jdbcDrvCls);
 
         if (drv == null) {
             if (jdbcDrvJarPath.isEmpty())
@@ -499,28 +517,16 @@ public class SchemaLoadApp extends Application {
 
                 URLClassLoader ucl = URLClassLoader.newInstance(new URL[] {u});
 
-                drv = (Driver)Class.forName(drvCls, true, ucl).newInstance();
+                drv = (Driver)Class.forName(jdbcDrvCls, true, ucl).newInstance();
 
-                drivers.put(drvCls, drv);
+                drivers.put(jdbcDrvCls, drv);
             }
             catch (Throwable e) {
                 throw new IllegalStateException(e);
             }
         }
 
-        String user = userTf.getText().trim();
-
-        String pwd = pwdTf.getText().trim();
-
-        Properties info = new Properties();
-
-        if (!user.isEmpty())
-            info.put("user", user);
-
-        if (!pwd.isEmpty())
-            info.put("password", pwd);
-
-        Connection conn = drv.connect(jdbcUrlTf.getText(), info);
+        Connection conn = drv.connect(jdbcUrl, jdbcInfo);
 
         if (conn == null)
             throw new IllegalStateException("Connection was not established (JDBC driver returned null value).");
@@ -561,9 +567,15 @@ public class SchemaLoadApp extends Application {
             }
         }));
 
-        jdbcDrvClsTf = connPnl.addLabeled("JDBC Driver:", textField("Class name for JDBC driver"), 2);
+        jdbcDrvClsCb = connPnl.addLabeled("JDBC Driver:", comboBoxEditable("Enter сlass name for JDBC driver",
+            "org.h2.Driver", "com.ibm.db2.jcc.DB2Driver", "oracle.jdbc.OracleDriver",
+            "com.microsoft.sqlserver.jdbc.SQLServerDriver"), 2);
 
-        jdbcUrlTf = connPnl.addLabeled("JDBC URL:", textField("JDBC URL of the database connection string"), 2);
+        jdbcUrlCb = connPnl.addLabeled("JDBC URL:", comboBoxEditable("JDBC URL of the database connection string",
+            "jdbc:h2:_path_to_db_",
+            "jdbc:db2://server_name_or_ip:port/some_db",
+            "jdbc:oracle:thin:@server_name_or_ip:port:some_db",
+            "jdbc:sqlserver://server_name_or_ip:port;databaseName=some_db"), 2);
 
         userTf = connPnl.addLabeled("User:", textField("User name"), 2);
 
@@ -908,8 +920,8 @@ public class SchemaLoadApp extends Application {
 
         // Restore connection pane settings.
         jdbcDrvJarTf.setText(userPrefs.get("jdbc.driver.jar", "h2.jar"));
-        jdbcDrvClsTf.setText(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlTf.setText(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
+        jdbcDrvClsCb.setValue(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
+        jdbcUrlCb.setValue(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
         userTf.setText(userPrefs.get("jdbc.user", "sa"));
 
         // Restore generation pane settings.
@@ -940,8 +952,8 @@ public class SchemaLoadApp extends Application {
 
         // Save connection pane settings.
         userPrefs.put("jdbc.driver.jar", jdbcDrvJarTf.getText());
-        userPrefs.put("jdbc.driver.class", jdbcDrvClsTf.getText());
-        userPrefs.put("jdbc.url", jdbcUrlTf.getText());
+        userPrefs.put("jdbc.driver.class", jdbcDrvClsCb.getValue());
+        userPrefs.put("jdbc.url", jdbcUrlCb.getValue());
         userPrefs.put("jdbc.user", userTf.getText());
 
         // Save generation pane settings.

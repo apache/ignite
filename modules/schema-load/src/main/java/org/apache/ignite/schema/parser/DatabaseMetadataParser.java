@@ -239,10 +239,11 @@ public class DatabaseMetadataParser {
      * Parse database metadata.
      *
      * @param conn Connection to database.
+     * @param tblsOnly If {@code true} then process tables only else process tables and views.
      * @return Map with schemes and tables metadata.
      * @throws SQLException If parsing failed.
      */
-    public static ObservableList<PojoDescriptor> parse(Connection conn) throws SQLException {
+    public static ObservableList<PojoDescriptor> parse(Connection conn, boolean tblsOnly) throws SQLException {
         DatabaseMetaData dbMeta = conn.getMetaData();
 
         List<PojoDescriptor> res = new ArrayList<>();
@@ -263,7 +264,9 @@ public class DatabaseMetadataParser {
 
                 try (ResultSet tbls = dbMeta.getTables(catalog, schema, "%", null)) {
                     while (tbls.next()) {
-                        if ("TABLE".equals(tbls.getString(4)))
+                        String tblType = tbls.getString(4);
+
+                        if ("TABLE".equals(tblType) || (!tblsOnly && "VIEW".equals(tblType)))
                             children.add(parseTable(parent, dbMeta, catalog, schema, tbls.getString(3)));
                     }
                 }

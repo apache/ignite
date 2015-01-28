@@ -107,7 +107,7 @@ public class PojoGeneratorSelfTest extends TestCase {
      * Test that POJOs generated correctly.
      */
     public void testPojoGeneration() throws Exception {
-        List<PojoDescriptor> pojos = DatabaseMetadataParser.parse(conn);
+        List<PojoDescriptor> pojos = DatabaseMetadataParser.parse(conn, true);
 
         ConfirmCallable askOverwrite = new ConfirmCallable(null, "") {
             @Override public MessageBox.Result confirm(String msg) {
