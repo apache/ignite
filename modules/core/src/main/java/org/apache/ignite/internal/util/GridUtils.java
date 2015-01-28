@@ -5607,7 +5607,7 @@ public abstract class GridUtils {
      * @return {@code True} if given class is of {@code Grid} type.
      */
     public static boolean isGrid(Class<?> cls) {
-        return cls.getName().startsWith("org.gridgain.grid");
+        return cls.getName().startsWith("org.apache.ignite.internal");
     }
 
     /**
