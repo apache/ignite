@@ -18,23 +18,23 @@
 package org.apache.ignite.cache;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.cache.query.*;
+import org.apache.ignite.cache.query.*;
 
 import javax.cache.event.*;
 
 /**
- *
+ * Implementation of {@link org.apache.ignite.cache.CacheEntryEvent}.
  */
 public class CacheEntryEvent<K, V> extends javax.cache.event.CacheEntryEvent<K, V> {
     /** */
-    private final GridCacheContinuousQueryEntry<K, V> e;
+    private final CacheContinuousQueryEntry<K, V> e;
 
     /**
      * @param src Cache.
      * @param type Event type.
      * @param e Ignite event.
      */
-    public CacheEntryEvent(IgniteCache src, EventType type, GridCacheContinuousQueryEntry<K, V> e) {
+    public CacheEntryEvent(IgniteCache src, EventType type, CacheContinuousQueryEntry<K, V> e) {
         super(src, type);
 
         this.e = e;

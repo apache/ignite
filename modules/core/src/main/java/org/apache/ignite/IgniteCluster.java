@@ -19,9 +19,7 @@ package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -110,7 +108,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link GridCacheAffinityFunction} is
+     *      For fully replicated caches, {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -133,7 +131,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link GridCacheAffinityFunction}
+     *      For fully replicated caches first node ID returned by {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
@@ -337,5 +335,5 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /** {@inheritDoc} */
-    public IgniteCluster enableAsync();
+    public IgniteCluster withAsync();
 }

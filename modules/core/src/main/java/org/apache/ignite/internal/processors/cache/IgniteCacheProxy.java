@@ -20,15 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.cache.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.mxbean.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -38,12 +34,13 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements IgniteCache<K, V>, Externalizable {
+public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+    implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -90,6 +87,30 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
+    @Override public CacheMetrics metrics() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return ctx.cache().metrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean mxBean() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return ctx.cache().mxBean();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public <C extends Configuration<K, V>> C getConfiguration(Class<C> clazz) {
         CacheConfiguration cfg = ctx.config();
 
@@ -121,7 +142,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return flagsOn(GridCacheFlag.SKIP_STORE);
+        return flagsOn(CacheFlag.SKIP_STORE);
     }
 
     /** {@inheritDoc} */
@@ -130,11 +151,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
-
-                IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
-
-                comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
+                if (isAsync())
+                    curFut.set(ctx.cache().globalLoadCacheAsync(p, args));
+                else
+                    ctx.cache().globalLoadCache(p, args);
             }
             finally {
                 gate.leave(prev);
@@ -151,7 +171,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.<K, V>cache().loadCache(p, 0, args);
+                if (isAsync())
+                    curFut.set(delegate.<K, V>cache().loadCacheAsync(p, 0, args));
+                else
+                    delegate.<K, V>cache().loadCache(p, 0, args);
             }
             finally {
                 gate.leave(prev);
@@ -168,7 +191,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.putIfAbsent(key, val);
+                if (isAsync()) {
+                    curFut.set(delegate.putIfAbsentAsync(key, val));
+
+                    return null;
+                }
+                else
+                    return delegate.putIfAbsent(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -180,33 +209,21 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheLock lock(K key) throws CacheException {
-        return lockAll(Collections.<K>singleton(key));
+    @Override public Lock lock(K key) throws CacheException {
+        return lockAll(Collections.singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public CacheLock lockAll(final Collection<? extends K> keys) {
-        return new CacheLockImpl<K>(delegate, keys);
+    @Override public Lock lockAll(final Collection<? extends K> keys) {
+        return new CacheLockImpl<>(gate, delegate, prj, keys);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocked(K key) {
+    @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.isLocked(key);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLockedByThread(K key) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.isLockedByThread(key);
+            return byCurrThread ? delegate.isLockedByThread(key) : delegate.isLocked(key);
         }
         finally {
             gate.leave(prev);
@@ -285,7 +302,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.size();
+            return ctx.cache().globalSize();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         finally {
             gate.leave(prev);
@@ -311,7 +331,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.get(key);
+                if (isAsync()) {
+                    curFut.set(delegate.getAsync(key));
+
+                    return null;
+                }
+                else
+                    return delegate.get(key);
             }
             finally {
                 gate.leave(prev);
@@ -328,7 +354,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.getAll(keys);
+                if (isAsync()) {
+                    curFut.set(delegate.getAllAsync(keys));
+
+                    return null;
+                }
+                else
+                    return delegate.getAll(keys);
             }
             finally {
                 gate.leave(prev);
@@ -348,7 +380,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.getAll(keys);
+                if (isAsync()) {
+                    curFut.set(delegate.getAllAsync(keys));
+
+                    return null;
+                }
+                else
+                    return delegate.getAll(keys);
             }
             finally {
                 gate.leave(prev);
@@ -365,7 +403,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @param filter Filter.
      * @return Entry set.
      */
-    public Set<GridCacheEntry<K, V>> entrySetx(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    public Set<CacheEntry<K, V>> entrySetx(IgnitePredicate<CacheEntry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -379,7 +417,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /**
      * @param filter Filter.
      */
-    public void removeAll(IgnitePredicate<GridCacheEntry<K, V>>... filter) {
+    public void removeAll(IgnitePredicate<CacheEntry<K, V>>... filter) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -398,7 +436,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.containsKey(key);
+            if (isAsync()) {
+                curFut.set(delegate.containsKeyAsync(key));
+
+                return false;
+            }
+            else
+                return delegate.containsKey(key);
         }
         finally {
             gate.leave(prev);
@@ -442,7 +486,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.putx(key, val);
+                if (isAsync())
+                    curFut.set(delegate.putxAsync(key, val));
+                else
+                    delegate.putx(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -459,7 +506,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.put(key, val);
+                if (isAsync()) {
+                    curFut.set(delegate.putAsync(key, val));
+
+                    return null;
+                }
+                else
+                    return delegate.put(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -476,7 +529,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.putAll(map);
+                if (isAsync())
+                    curFut.set(delegate.putAllAsync(map));
+                else
+                    delegate.putAll(map);
             }
             finally {
                 gate.leave(prev);
@@ -493,7 +549,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.putxIfAbsent(key, val);
+                if (isAsync()) {
+                    curFut.set(delegate.putxIfAbsentAsync(key, val));
+
+                    return false;
+                }
+                else
+                    return delegate.putxIfAbsent(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -510,7 +572,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.removex(key);
+                if (isAsync()) {
+                    curFut.set(delegate.removexAsync(key));
+
+                    return false;
+                }
+                else
+                    return delegate.removex(key);
             }
             finally {
                 gate.leave(prev);
@@ -527,7 +595,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.remove(key, oldVal);
+                if (isAsync()) {
+                    curFut.set(delegate.removeAsync(key, oldVal));
+
+                    return false;
+                }
+                else
+                    return delegate.remove(key, oldVal);
             }
             finally {
                 gate.leave(prev);
@@ -544,7 +618,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.remove(key);
+                if (isAsync()) {
+                    curFut.set(delegate.removeAsync(key));
+
+                    return null;
+                }
+                else
+                    return delegate.remove(key);
             }
             finally {
                 gate.leave(prev);
@@ -561,7 +641,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.replace(key, oldVal, newVal);
+                if (isAsync()) {
+                    curFut.set(delegate.replaceAsync(key, oldVal, newVal));
+
+                    return false;
+                }
+                else
+                    return delegate.replace(key, oldVal, newVal);
             }
             finally {
                 gate.leave(prev);
@@ -578,7 +664,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.replacex(key, val);
+                if (isAsync()) {
+                    curFut.set(delegate.replacexAsync(key, val));
+
+                    return false;
+                }
+                else
+                    return delegate.replacex(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -595,7 +687,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return delegate.replace(key, val);
+                if (isAsync()) {
+                    curFut.set(delegate.replaceAsync(key, val));
+
+                    return null;
+                }
+                else
+                    return delegate.replace(key, val);
             }
             finally {
                 gate.leave(prev);
@@ -612,7 +710,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.removeAll(keys);
+                if (isAsync())
+                    curFut.set(delegate.removeAllAsync(keys));
+                else
+                    delegate.removeAll(keys);
             }
             finally {
                 gate.leave(prev);
@@ -631,7 +732,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                delegate.removeAll(keys);
+                if (isAsync())
+                    curFut.set(delegate.removeAllAsync(keys));
+                else
+                    delegate.removeAll(keys);
             }
             finally {
                 gate.leave(prev);
@@ -720,7 +824,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return saveOrGet(delegate.invokeAllAsync(keys, entryProcessor, args));
+                if (isAsync()) {
+                    curFut.set(delegate.invokeAllAsync(keys, entryProcessor, args));
+
+                    return null;
+                }
+                else
+                    return delegate.invokeAll(keys, entryProcessor, args);
             }
             finally {
                 gate.leave(prev);
@@ -739,7 +849,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
             GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
             try {
-                return saveOrGet(delegate.invokeAllAsync(map, args));
+                if (isAsync()) {
+                    curFut.set(delegate.invokeAllAsync(map, args));
+
+                    return null;
+                }
+                else
+                    return delegate.invokeAll(map, args);
             }
             finally {
                 gate.leave(prev);
@@ -756,11 +872,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheManager getCacheManager() {
+    @Override public javax.cache.CacheManager getCacheManager() {
         // TODO IGNITE-45 (Support start/close/destroy cache correctly)
-        IgniteCachingProvider provider = (IgniteCachingProvider)Caching.getCachingProvider(
-            IgniteCachingProvider.class.getName(),
-            IgniteCachingProvider.class.getClassLoader());
+        CachingProvider provider = (CachingProvider)Caching.getCachingProvider(
+            CachingProvider.class.getName(),
+            CachingProvider.class.getClassLoader());
 
         if (provider == null)
             return null;
@@ -823,27 +939,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
-        // TODO IGNITE-1.
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return F.iterator(delegate, new C1<GridCacheEntry<K, V>, Entry<K, V>>() {
-                @Override public Entry<K, V> apply(final GridCacheEntry<K, V> e) {
-                    return new Entry<K, V>() {
-                        @Override public K getKey() {
-                            return e.getKey();
-                        }
-
-                        @Override public V getValue() {
-                            return e.getValue();
-                        }
-
-                        @Override public <T> T unwrap(Class<T> clazz) {
-                            throw new IllegalArgumentException();
-                        }
-                    };
-                }
-            }, false);
+            return ((GridCacheAdapter)delegate).igniteIterator(prj);
         }
         finally {
             gate.leave(prev);
@@ -887,10 +986,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> enableAsync() {
-        if (isAsync())
-            return this;
-
+    @Override protected IgniteCache<K, V> createAsyncInstance() {
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }
 
@@ -901,7 +997,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
         try {
             GridCacheProjectionImpl<K1, V1> prj0 = new GridCacheProjectionImpl<>(
-                (GridCacheProjection<K1, V1>)(prj != null ? prj : delegate),
+                (CacheProjection<K1, V1>)(prj != null ? prj : delegate),
                 (GridCacheContext<K1, V1>)ctx,
                 null,
                 null,
@@ -924,13 +1020,13 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @param flags Flags to turn on (if empty, then no-op).
      * @return Cache with given flags enabled.
      */
-    public IgniteCache<K, V> flagsOn(@Nullable GridCacheFlag... flags) {
+    public IgniteCache<K, V> flagsOn(@Nullable CacheFlag... flags) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            Set<GridCacheFlag> res = EnumSet.noneOf(GridCacheFlag.class);
+            Set<CacheFlag> res = EnumSet.noneOf(CacheFlag.class);
 
-            Set<GridCacheFlag> flags0 = prj !=null ? prj.flags() : null;
+            Set<CacheFlag> flags0 = prj !=null ? prj.flags() : null;
 
             if (flags0 != null && !flags0.isEmpty())
                 res.addAll(flags0);
@@ -962,8 +1058,8 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      * @return Cache exception.
      */
     private CacheException cacheException(IgniteCheckedException e) {
-        if (e instanceof GridCachePartialUpdateException)
-            return new CachePartialUpdateException((GridCachePartialUpdateException)e);
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
 
         if (e.getCause() instanceof CacheException)
             return (CacheException)e.getCause();
@@ -995,75 +1091,5 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgniteCacheProxy.class, this);
-    }
-
-    /**
-     *
-     */
-    private static class LoadCacheClosure<K, V> implements Callable<Void>, Externalizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private String cacheName;
-
-        /** */
-        private IgniteBiPredicate<K, V> p;
-
-        /** */
-        private Object[] args;
-
-        /** */
-        @IgniteInstanceResource
-        private Ignite ignite;
-
-        /**
-         * Required by {@link Externalizable}.
-         */
-        public LoadCacheClosure() {
-            // No-op.
-        }
-
-        /**
-         * @param cacheName Cache name.
-         * @param p Predicate.
-         * @param args Arguments.
-         */
-        private LoadCacheClosure(String cacheName, IgniteBiPredicate<K, V> p, Object[] args) {
-            this.cacheName = cacheName;
-            this.p = p;
-            this.args = args;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws Exception {
-            IgniteCache<K, V> cache = ignite.jcache(cacheName);
-
-            assert cache != null : cacheName;
-
-            cache.localLoadCache(p, args);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeObject(p);
-
-            out.writeObject(args);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            p = (IgniteBiPredicate<K, V>)in.readObject();
-
-            args = (Object[])in.readObject();
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(LoadCacheClosure.class, this);
-        }
     }
 }

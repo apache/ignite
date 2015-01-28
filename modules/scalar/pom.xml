@@ -139,7 +139,7 @@
                                 </copy>
 
                                 <taskdef name="doctask"
-                                    classname="org.gridgain.grid.tools.ant.beautifier.GridJavadocAntTask"/>
+                                    classname="org.apache.ignite.tools.ant.beautifier.GridJavadocAntTask"/>
 
                                 <doctask css="dotted" dir="target/site/scaladocs" verify="false">
                                     <include name="**/*.html"/>

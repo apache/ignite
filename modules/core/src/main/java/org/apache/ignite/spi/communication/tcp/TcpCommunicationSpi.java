@@ -21,24 +21,22 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.product.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.ipc.*;
-import org.gridgain.grid.util.ipc.shmem.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -1536,7 +1534,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }

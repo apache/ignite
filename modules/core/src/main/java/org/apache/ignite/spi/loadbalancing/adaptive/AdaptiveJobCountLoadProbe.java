@@ -18,7 +18,7 @@
 package org.apache.ignite.spi.loadbalancing.adaptive;
 
 import org.apache.ignite.cluster.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 /**
  * Implementation of node load probing based on active and waiting job count.
@@ -83,7 +83,7 @@ public class AdaptiveJobCountLoadProbe implements AdaptiveLoadProbe {
 
     /** {@inheritDoc} */
     @Override public double getLoad(ClusterNode node, int jobsSentSinceLastUpdate) {
-        ClusterNodeMetrics metrics = node.metrics();
+        ClusterMetrics metrics = node.metrics();
 
         if (useAvg) {
             double load = metrics.getAverageActiveJobs() + metrics.getAverageWaitingJobs();

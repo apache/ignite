@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache;
 
-import org.gridgain.grid.cache.*;
+import org.apache.ignite.internal.processors.cache.*;
 
 import javax.cache.*;
 import java.util.*;
@@ -30,7 +30,7 @@ public class CachePartialUpdateException extends CacheException {
     /**
      * @param e Cause.
      */
-    public CachePartialUpdateException(GridCachePartialUpdateException e) {
+    public CachePartialUpdateException(CachePartialUpdateCheckedException e) {
         super(e.getMessage(), e);
     }
 
@@ -39,6 +39,6 @@ public class CachePartialUpdateException extends CacheException {
      * @return Collection of failed keys.
      */
     public <K> Collection<K> failedKeys() {
-        return ((GridCachePartialUpdateException)getCause()).failedKeys();
+        return ((CachePartialUpdateCheckedException)getCause()).failedKeys();
     }
 }

@@ -20,23 +20,22 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.security.*;
+import org.apache.ignite.internal.managers.security.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -47,7 +46,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 import static org.apache.ignite.spi.IgnitePortProtocol.*;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.*;
 import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage.*;
@@ -801,7 +800,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
             try {
                 U.sleep(2000);
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
             }
         }
@@ -892,7 +891,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1488,7 +1487,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -1512,7 +1511,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 try {
                     U.sleep(2000);
                 }
-                catch (GridInterruptedException e) {
+                catch (IgniteInterruptedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
                 }
             }
@@ -4341,7 +4340,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                         updateMetrics(e.getKey(), metricsSet.metrics(), tstamp);
 
-                        for (T2<UUID, ClusterNodeMetrics> t : metricsSet.clientMetrics())
+                        for (T2<UUID, ClusterMetrics> t : metricsSet.clientMetrics())
                             updateMetrics(t.get1(), t.get2(), tstamp);
                     }
                 }
@@ -4351,11 +4350,11 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                 if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
                     !msg.hasMetrics(locNodeId)) && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.
-                    msg.setMetrics(locNodeId, metricsProvider.getMetrics());
+                    msg.setMetrics(locNodeId, metricsProvider.metrics());
 
                     for (Map.Entry<UUID, ClientMessageWorker> e : clientMsgWorkers.entrySet()) {
                         UUID nodeId = e.getKey();
-                        ClusterNodeMetrics metrics = e.getValue().metrics();
+                        ClusterMetrics metrics = e.getValue().metrics();
 
                         if (metrics != null)
                             msg.setClientMetrics(locNodeId, nodeId, metrics);
@@ -4400,7 +4399,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
          * @param metrics Metrics.
          * @param tstamp Timestamp.
          */
-        private void updateMetrics(UUID nodeId, ClusterNodeMetrics metrics, long tstamp) {
+        private void updateMetrics(UUID nodeId, ClusterMetrics metrics, long tstamp) {
             assert nodeId != null;
             assert metrics != null;
 
@@ -5109,7 +5108,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         private final Socket sock;
 
         /** Current client metrics. */
-        private volatile ClusterNodeMetrics metrics;
+        private volatile ClusterMetrics metrics;
 
         /**
          * @param sock Socket.
@@ -5125,7 +5124,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
         /**
          * @return Current client metrics.
          */
-        ClusterNodeMetrics metrics() {
+        ClusterMetrics metrics() {
             return metrics;
         }
 

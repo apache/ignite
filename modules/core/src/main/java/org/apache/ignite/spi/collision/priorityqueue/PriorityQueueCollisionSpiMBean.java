@@ -17,20 +17,20 @@
 
 package org.apache.ignite.spi.collision.priorityqueue;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management bean that provides access to the priority queue collision SPI configuration.
  */
-@IgniteMBeanDescription("MBean provides access to the priority queue collision SPI.")
+@IgniteMXBeanDescription("MBean provides access to the priority queue collision SPI.")
 public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets current number of jobs that wait for the execution.
      *
      * @return Number of jobs that wait for execution.
      */
-    @IgniteMBeanDescription("Number of jobs that wait for execution.")
+    @IgniteMXBeanDescription("Number of jobs that wait for execution.")
     public int getCurrentWaitJobsNumber();
 
     /**
@@ -38,7 +38,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Number of active jobs.
      */
-    @IgniteMBeanDescription("Number of active jobs.")
+    @IgniteMXBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
     /*
@@ -46,7 +46,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Number of currently running (not {@code 'held}) jobs.
      */
-    @IgniteMBeanDescription("Number of running jobs.")
+    @IgniteMXBeanDescription("Number of running jobs.")
     public int getCurrentRunningJobsNumber();
 
     /**
@@ -54,7 +54,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Number of currently {@code 'held'} jobs.
      */
-    @IgniteMBeanDescription("Number of held jobs.")
+    @IgniteMXBeanDescription("Number of held jobs.")
     public int getCurrentHeldJobsNumber();
 
     /**
@@ -62,7 +62,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Number of jobs that can be executed in parallel.
      */
-    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMXBeanDescription("Number of jobs that can be executed in parallel.")
     public int getParallelJobsNumber();
 
     /**
@@ -70,7 +70,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @param num Parallel jobs number.
      */
-    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMXBeanDescription("Number of jobs that can be executed in parallel.")
     public void setParallelJobsNumber(int num);
 
     /**
@@ -79,7 +79,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Maximum allowed number of waiting jobs.
      */
-    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMXBeanDescription("Maximum allowed number of waiting jobs.")
     public int getWaitingJobsNumber();
 
     /**
@@ -88,7 +88,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @param num Maximium jobs number.
      */
-    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMXBeanDescription("Maximum allowed number of waiting jobs.")
     public void setWaitingJobsNumber(int num);
 
     /**
@@ -96,7 +96,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Key name of task priority attribute.
      */
-    @IgniteMBeanDescription("Key name of task priority attribute.")
+    @IgniteMXBeanDescription("Key name of task priority attribute.")
     public String getPriorityAttributeKey();
 
     /**
@@ -104,7 +104,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Key name of job priority attribute.
      */
-    @IgniteMBeanDescription("Key name of job priority attribute.")
+    @IgniteMXBeanDescription("Key name of job priority attribute.")
     public String getJobPriorityAttributeKey();
 
     /**
@@ -114,7 +114,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      * @return Default priority to use if a task does not have priority
      *      attribute set.
      */
-    @IgniteMBeanDescription("Default priority to use if a task does not have priority attribute set.")
+    @IgniteMXBeanDescription("Default priority to use if a task does not have priority attribute set.")
     public int getDefaultPriority();
 
     /**
@@ -122,7 +122,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @param priority default priority.
      */
-    @IgniteMBeanDescription("Default priority to use if a task does not have priority attribute set.")
+    @IgniteMXBeanDescription("Default priority to use if a task does not have priority attribute set.")
     public void setDefaultPriority(int priority);
 
     /**
@@ -132,7 +132,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      * @return Value to increment job priority by every time a lower priority job gets
      *      behind a higher priority job.
      */
-    @IgniteMBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
+    @IgniteMXBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
     public int getStarvationIncrement();
 
     /**
@@ -141,7 +141,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @param increment Increment value.
      */
-    @IgniteMBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
+    @IgniteMXBeanDescription("Value to increment job priority by every time a lower priority job gets behind a higher priority job.")
     public void setStarvationIncrement(int increment);
 
     /**
@@ -149,7 +149,7 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @return Flag indicating whether job starvation prevention is enabled.
      */
-    @IgniteMBeanDescription("Flag indicating whether job starvation prevention is enabled.")
+    @IgniteMXBeanDescription("Flag indicating whether job starvation prevention is enabled.")
     public boolean isStarvationPreventionEnabled();
 
     /**
@@ -157,6 +157,6 @@ public interface PriorityQueueCollisionSpiMBean extends IgniteSpiManagementMBean
      *
      * @param preventStarvation Flag indicating whether job starvation prevention is enabled.
      */
-    @IgniteMBeanDescription("Flag indicating whether job starvation prevention is enabled.")
+    @IgniteMXBeanDescription("Flag indicating whether job starvation prevention is enabled.")
     public void setStarvationPreventionEnabled(boolean preventStarvation);
 }

@@ -30,10 +30,10 @@ import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.grid.dotnet.*;
-import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.interop.*;
+import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -46,7 +46,7 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -389,8 +389,8 @@ public class IgniteConfiguration {
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
-    /** Configuration for .Net nodes. */
-    private GridDotNetConfiguration dotNetCfg;
+    /** Interop configuration. */
+    private InteropConfiguration interopCfg;
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -585,6 +585,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
+        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
         jettyPath = cfg.getRestJettyPath();
         licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
@@ -652,8 +653,6 @@ public class IgniteConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        dotNetCfg = cfg.getDotNetConfiguration() == null ?
-            null : new GridDotNetConfiguration(cfg.getDotNetConfiguration());
     }
 
     /**
@@ -3118,19 +3117,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns configuration for .Net nodes.
-     * @return Configuration for .Net nodes.
+     * Gets interop configuration.
+     *
+     * @return Interop configuration.
      */
-    @Nullable public GridDotNetConfiguration getDotNetConfiguration() {
-        return dotNetCfg;
+    @Nullable public InteropConfiguration getInteropConfiguration() {
+        return interopCfg;
     }
 
     /**
-     * Sets configuration for .Net nodes.
-     * @param dotNetCfg Configuration for .Net nodes
+     * Sets interop configuration.
+     *
+     * @param interopCfg Interop configuration.
      */
-    public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
-        this.dotNetCfg = dotNetCfg;
+    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
+        this.interopCfg = interopCfg;
     }
 
     /**

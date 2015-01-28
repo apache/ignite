@@ -19,7 +19,6 @@ package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -148,5 +147,5 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override IgniteMessaging enableAsync();
+    @Override IgniteMessaging withAsync();
 }

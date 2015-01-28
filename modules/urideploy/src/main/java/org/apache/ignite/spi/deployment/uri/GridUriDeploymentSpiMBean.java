@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.deployment.uri;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 import java.util.*;
@@ -25,14 +25,14 @@ import java.util.*;
 /**
  * Management bean for {@link GridUriDeploymentSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to URI deployment SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to URI deployment SPI configuration.")
 public interface GridUriDeploymentSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets temporary directory path.
      *
      * @return Temporary directory path.
      */
-    @IgniteMBeanDescription("Temporary directory path.")
+    @IgniteMXBeanDescription("Temporary directory path.")
     public String getTemporaryDirectoryPath();
 
     /**
@@ -40,7 +40,7 @@ public interface GridUriDeploymentSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return List of URIs.
      */
-    @IgniteMBeanDescription("List of URIs.")
+    @IgniteMXBeanDescription("List of URIs.")
     public List<String> getUriList();
 
     /**
@@ -48,6 +48,6 @@ public interface GridUriDeploymentSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return if files are ckecked for redundancy.
      */
-    @IgniteMBeanDescription("Indicates if MD5 check is enabled.")
+    @IgniteMXBeanDescription("Indicates if MD5 check is enabled.")
     public boolean isCheckMd5();
 }

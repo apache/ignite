@@ -18,9 +18,9 @@
 package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.spi.deployment.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.config.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.config.*;
+import org.apache.ignite.testframework.junits.spi.*;
 
 import java.net.*;
 import java.util.*;
@@ -47,7 +47,7 @@ public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstr
         ClassLoader ldr = getGarClassLoader();
 
         // Get resource from GAR file
-        URL rsrcUrl = ldr.getResource("org/gridgain/test/test.properties");
+        URL rsrcUrl = ldr.getResource("org/apache/ignite/test/test.properties");
 
         assert rsrcUrl != null;
     }

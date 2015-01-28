@@ -17,20 +17,20 @@
 
 package org.apache.ignite.spi.collision.fifoqueue;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management bean that provides access to the FIFO queue collision SPI configuration.
  */
-@IgniteMBeanDescription("MBean provides information about FIFO queue based collision SPI configuration.")
+@IgniteMXBeanDescription("MBean provides information about FIFO queue based collision SPI configuration.")
 public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets number of jobs that can be executed in parallel.
      *
      * @return Number of jobs that can be executed in parallel.
      */
-    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMXBeanDescription("Number of jobs that can be executed in parallel.")
     public int getParallelJobsNumber();
 
     /**
@@ -38,7 +38,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param num Parallel jobs number.
      */
-    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMXBeanDescription("Number of jobs that can be executed in parallel.")
     public void setParallelJobsNumber(int num);
 
     /**
@@ -47,7 +47,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum allowed number of waiting jobs.
      */
-    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMXBeanDescription("Maximum allowed number of waiting jobs.")
     public int getWaitingJobsNumber();
 
     /**
@@ -56,7 +56,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param num Waiting jobs number.
      */
-    @IgniteMBeanDescription("Maximum allowed number of waiting jobs.")
+    @IgniteMXBeanDescription("Maximum allowed number of waiting jobs.")
     public void setWaitingJobsNumber(int num);
 
     /**
@@ -64,7 +64,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of jobs that wait for execution.
      */
-    @IgniteMBeanDescription("Number of jobs that wait for execution.")
+    @IgniteMXBeanDescription("Number of jobs that wait for execution.")
     public int getCurrentWaitJobsNumber();
 
     /**
@@ -72,7 +72,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of active jobs.
      */
-    @IgniteMBeanDescription("Number of active jobs.")
+    @IgniteMXBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
     /*
@@ -80,7 +80,7 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of currently running (not {@code 'held}) jobs.
      */
-    @IgniteMBeanDescription("Number of running jobs.")
+    @IgniteMXBeanDescription("Number of running jobs.")
     public int getCurrentRunningJobsNumber();
 
     /**
@@ -88,6 +88,6 @@ public interface FifoQueueCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of currently {@code 'held'} jobs.
      */
-    @IgniteMBeanDescription("Number of held jobs.")
+    @IgniteMXBeanDescription("Number of held jobs.")
     public int getCurrentHeldJobsNumber();
 }

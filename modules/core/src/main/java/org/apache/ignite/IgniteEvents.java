@@ -20,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -258,5 +257,5 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public boolean isEnabled(int type);
 
     /** {@inheritDoc} */
-    @Override IgniteEvents enableAsync();
+    @Override IgniteEvents withAsync();
 }

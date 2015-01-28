@@ -23,24 +23,24 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.processors.cache.distributed.near.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
-import static org.gridgain.grid.cache.GridCachePreloadMode.*;
-import static org.gridgain.grid.cache.GridCacheWriteSynchronizationMode.*;
+import static org.apache.ignite.cache.CachePreloadMode.*;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 
 /**
  * Special cases for GG-2329.
@@ -89,7 +89,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(GridCacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
         cacheCfg.setPreloadMode(SYNC);
 
@@ -126,13 +126,15 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 info("Before lock for key: " + kv);
 
-                cache1.lock(kv).lock();
+                Lock lock = cache1.lock(kv);
+
+                lock.lock();
 
                 info("After lock for key: " + kv);
 
                 try {
-                    assert cache1.isLocked(kv);
-                    assert cache1.isLockedByThread(kv);
+                    assert cache1.isLocalLocked(kv, false);
+                    assert cache1.isLocalLocked(kv, true);
 
                     l1.countDown();
 
@@ -145,12 +147,12 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                 finally {
                     Thread.sleep(1000);
 
-                    cache1.lockAll(Collections.singleton(kv)).unlock();
+                    lock.unlock();
 
                     info("Unlocked key in thread 1: " + kv);
                 }
 
-                assert !cache1.isLockedByThread(kv);
+                assert !cache1.isLocalLocked(kv, true);
 
                 return null;
             }
@@ -162,7 +164,9 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
                 l1.await();
 
-                cache2.lock(kv).lock();
+                Lock lock = cache2.lock(kv);
+
+                lock.lock();
 
                 try {
                     String v = cache2.get(kv);
@@ -171,12 +175,12 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
                     assertEquals(Integer.toString(kv), v);
                 }
                 finally {
-                    cache2.lockAll(Collections.singleton(kv)).unlock();
+                    lock.unlock();
 
                     info("Unlocked key in thread 2: " + kv);
                 }
 
-                assert !cache2.isLockedByThread(kv);
+                assert !cache2.isLocalLocked(kv, true);
 
                 return null;
             }

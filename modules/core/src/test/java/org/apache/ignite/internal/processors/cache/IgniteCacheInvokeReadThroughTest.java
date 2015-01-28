@@ -18,14 +18,14 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
-import org.gridgain.grid.cache.*;
 
 import javax.cache.processor.*;
 
-import static org.gridgain.grid.cache.GridCacheAtomicityMode.*;
-import static org.gridgain.grid.cache.GridCacheDistributionMode.*;
-import static org.gridgain.grid.cache.GridCacheMode.*;
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  *
@@ -40,17 +40,17 @@ public class IgniteCacheInvokeReadThroughTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 
     /** {@inheritDoc} */
-    @Override protected GridCacheDistributionMode distributionMode() {
+    @Override protected CacheDistributionMode distributionMode() {
         return PARTITIONED_ONLY;
     }
 

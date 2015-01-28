@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.failover.never;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management bean for {@link NeverFailoverSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to never failover SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to never failover SPI configuration.")
 public interface NeverFailoverSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }

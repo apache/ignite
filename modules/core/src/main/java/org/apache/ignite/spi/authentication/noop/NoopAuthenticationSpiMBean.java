@@ -17,13 +17,13 @@
 
 package org.apache.ignite.spi.authentication.noop;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management bean for {@link NoopAuthenticationSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to no-op authentication SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to no-op authentication SPI configuration.")
 public interface NoopAuthenticationSpiMBean extends IgniteSpiManagementMBean {
     // No-op.
 }
