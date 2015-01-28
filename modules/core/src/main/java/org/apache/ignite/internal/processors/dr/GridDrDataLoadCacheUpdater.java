@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -55,7 +56,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
             f.get();
 
         for (Map.Entry<K, V> entry0 : col) {
-            GridVersionedEntry<K, V> entry = (GridVersionedEntry<K, V>)entry0;
+            GridCacheRawVersionedEntry<K, V> entry = (GridCacheRawVersionedEntry<K, V>)entry0;
 
             entry.unmarshal(ctx.config().getMarshaller());
 

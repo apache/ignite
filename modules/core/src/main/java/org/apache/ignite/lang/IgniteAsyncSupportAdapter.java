@@ -51,7 +51,7 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
     }
 
     /** {@inheritDoc} */
-    @Override public T enableAsync() {
+    @Override public T withAsync() {
         T res = asyncInstance;
 
         if (res == null) {

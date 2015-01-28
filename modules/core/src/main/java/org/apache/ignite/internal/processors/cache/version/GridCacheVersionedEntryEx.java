@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.internal.processors.cache.version;
+
+import org.apache.ignite.cache.*;
 
 /**
- * TODO: Add interface description.
+ * Extended versioned entry.
  */
-public interface IgniteAsyncSupport {
+public interface GridCacheVersionedEntryEx<K, V> extends GridCacheVersionedEntry<K, V>, GridCacheVersionable {
     /**
-     * Gets component with asynchronous mode enabled.
      *
-     * @return Component with asynchronous mode enabled.
+     * @return
      */
-    public IgniteAsyncSupport withAsync();
-
-    /**
-     * @return {@code True} if asynchronous mode is enabled.
-     */
-    public boolean isAsync();
-
-    /**
-     * Gets and resets future for previous asynchronous operation.
-     *
-     * @return Future for previous asynchronous operation.
-     */
-    public <R> IgniteFuture<R> future();
+    public boolean isStartVersion();
 }

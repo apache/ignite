@@ -186,7 +186,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     info("Before commitAsync");
 
-                    tx = (IgniteTx)tx.enableAsync();
+                    tx = (IgniteTx)tx.withAsync();
 
                     tx.commit();
 

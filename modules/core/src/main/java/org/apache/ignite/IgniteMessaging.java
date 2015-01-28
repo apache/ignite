@@ -147,5 +147,5 @@ public interface IgniteMessaging extends IgniteAsyncSupport {
     public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override IgniteMessaging enableAsync();
+    @Override IgniteMessaging withAsync();
 }

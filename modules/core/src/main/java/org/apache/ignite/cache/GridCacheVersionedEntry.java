@@ -15,19 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dr;
+package org.apache.ignite.cache;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
-import java.util.*;
-
 /**
- *
+ * Cache entry along with version information.
  */
-public interface GridVersionedEntry<K, V> extends Map.Entry<K, V> {
+public interface GridCacheVersionedEntry<K, V> {
     /**
      * Gets entry's key.
      *
@@ -40,7 +35,8 @@ public interface GridVersionedEntry<K, V> extends Map.Entry<K, V> {
      *
      * @return Entry's value.
      */
-    @Nullable public V value();
+    @Nullable
+    public V value();
 
     /**
      * Gets entry's TTL.
@@ -57,24 +53,30 @@ public interface GridVersionedEntry<K, V> extends Map.Entry<K, V> {
     public long expireTime();
 
     /**
-     * @return Version.
+     * Gets ID of initiator data center.
+     *
+     * @return ID of initiator data center.
      */
-    public GridCacheVersion version();
+    public byte dataCenterId();
 
     /**
-     * Perform internal marshal of this entry before it will be serialized.
+     * Gets entry's topology version in initiator data center.
      *
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException If failed.
+     * @return Entry's topology version in initiator data center.
      */
-    public void marshal(IgniteMarshaller marsh) throws IgniteCheckedException;
+    public int topologyVersion();
 
     /**
-     * Perform internal unmarshal of this entry. It must be performed after entry is deserialized and before
-     * its restored key/value are needed.
+     * Gets entry's order in initiator data center.
      *
-     * @param marsh Marshaller.
-     * @throws IgniteCheckedException If failed.
+     * @return Entry's order in initiator data center
      */
-    public void unmarshal(IgniteMarshaller marsh) throws IgniteCheckedException;
+    public long order();
+
+    /**
+     * Gets entry's global time in initiator data center.
+     *
+     * @return Entry's global time in initiator data center
+     */
+    public long globalTime();
 }

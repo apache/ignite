@@ -185,7 +185,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport enableAsync() {
+    @Override public IgniteAsyncSupport withAsync() {
         return new IgniteTxProxyImpl<>(tx, cctx, true);
     }
 

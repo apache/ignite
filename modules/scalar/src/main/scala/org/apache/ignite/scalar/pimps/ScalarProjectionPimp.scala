@@ -376,7 +376,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
         IgniteFuture[java.util.Collection[R]] = {
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
 
@@ -436,7 +436,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.run(toJavaCollection(s, (f: Run) => toRunnable(f)))
 
@@ -495,7 +495,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
     def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
         assert(s != null && r != null)
 
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.call(toJavaCollection(s, (f: Call[R1]) => toCallable(f)), r)
 
@@ -649,7 +649,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
         @Nullable p: NF): IgniteFuture[_] = {
-        val comp = value.ignite().compute(forPredicate(p)).enableAsync()
+        val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.affinityRun(cacheName, affKey, toRunnable(r))
 

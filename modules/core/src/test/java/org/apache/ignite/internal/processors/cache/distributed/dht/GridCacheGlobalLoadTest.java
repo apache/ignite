@@ -85,7 +85,7 @@ public class GridCacheGlobalLoadTest extends IgniteCacheAbstractTest {
     private void loadCache(boolean async) throws Exception {
         IgniteCache<Integer, Integer> cache = jcache();
 
-        IgniteCache<Integer, Integer> asyncCache = cache.enableAsync();
+        IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
         assertTrue(asyncCache.isAsync());
 
