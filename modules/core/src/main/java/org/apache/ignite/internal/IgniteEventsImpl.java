@@ -29,9 +29,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * {@link org.apache.ignite.IgniteEvents} implementation.
+ * {@link IgniteEvents} implementation.
  */
-public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements IgniteEvents, Externalizable {
+public class IgniteEventsImpl extends IgniteAsyncSupportAdapter<IgniteEvents> implements IgniteEvents, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -270,10 +270,7 @@ public class IgniteEventsImpl extends IgniteAsyncSupportAdapter implements Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteEvents enableAsync() {
-        if (isAsync())
-            return this;
-
+    @Override protected IgniteEvents createAsyncInstance() {
         return new IgniteEventsImpl(ctx, prj, true);
     }
 
