@@ -2256,7 +2256,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
 
-                    ch.write(ByteBuffer.wrap(U.GG_HEADER));
+                    ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
                     if (recovery != null) {
                         HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
@@ -3016,7 +3016,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                out.write(U.GG_HEADER);
+                out.write(U.IGNITE_HEADER);
                 out.write(NODE_ID_MSG_TYPE);
                 out.write(nodeIdMsg.nodeIdBytes);
 

@@ -236,7 +236,7 @@ public abstract class GridUtils {
         indexOf('.', GridUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] GG_HEADER = U.intToBytes(0x00004747);
+    public static final byte[] IGNITE_HEADER = U.intToBytes(0x00004747);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
