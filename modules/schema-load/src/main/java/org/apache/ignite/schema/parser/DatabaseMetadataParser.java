@@ -93,7 +93,7 @@ public class DatabaseMetadataParser {
                 return nullable ? Integer.class : int.class;
 
             case BIGINT:
-                return nullable ? Long.class : int.class;
+                return nullable ? Long.class : long.class;
 
             case REAL:
                 return nullable ? Float.class : float.class;
