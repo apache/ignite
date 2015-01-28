@@ -28,8 +28,6 @@ import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
-import java.io.*;
-import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -80,17 +78,17 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  *         <th>Default</th>
  *     </tr>
  *     <tr>
- *         <td>GridGainWebSessionsGridName</td>
+ *         <td>IgniteWebSessionsGridName</td>
  *         <td>Name of the grid that contains cache for web session storage.</td>
  *         <td>{@code null} (default grid)</td>
  *     </tr>
  *     <tr>
- *         <td>GridGainWebSessionsCacheName</td>
+ *         <td>IgniteWebSessionsCacheName</td>
  *         <td>Name of the cache for web session storage.</td>
  *         <td>{@code null} (default cache)</td>
  *     </tr>
  *     <tr>
- *         <td>GridGainWebSessionsMaximumRetriesOnFail</td>
+ *         <td>IgniteWebSessionsMaximumRetriesOnFail</td>
  *         <td>
  *             Valid for {@code ATOMIC} caches only. Maximum number of retries for session updates in case
  *             node leaves topology and update fails. If retry is enabled,
@@ -109,17 +107,17 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  *     &lt;filter-name&gt;GridGainWebSessionsFilter&lt;/filter-name&gt;
  *     &lt;filter-class&gt;org.apache.ignite.cache.websession.GridWebSessionFilter&lt;/filter-class&gt;
  *     &lt;init-param&gt;
- *         &lt;param-name&gt;GridGainWebSessionsGridName&lt;/param-name&gt;
+ *         &lt;param-name&gt;IgniteWebSessionsGridName&lt;/param-name&gt;
  *         &lt;param-value&gt;WebGrid&lt;/param-value&gt;
  *     &lt;/init-param&gt;
  *     &lt;init-param&gt;
- *         &lt;param-name&gt;GridGainWebSessionsCacheName&lt;/param-name&gt;
+ *         &lt;param-name&gt;IgniteWebSessionsCacheName&lt;/param-name&gt;
  *         &lt;param-value&gt;WebCache&lt;/param-value&gt;
  *     &lt;/init-param&gt;
  *
  *     &lt;!-- Valid for ATOMIC caches only. --&gt;
  *     &lt;init-param&gt;
- *         &lt;param-name&gt;GridGainWebSessionsMaximumRetriesOnFail&lt;/param-name&gt;
+ *         &lt;param-name&gt;IgniteWebSessionsMaximumRetriesOnFail&lt;/param-name&gt;
  *         &lt;param-value&gt;10&lt;/param-value&gt;
  *     &lt;/init-param&gt;
  * &lt;/filter&gt;
@@ -139,13 +137,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  */
 public class GridWebSessionFilter implements Filter {
     /** Web sessions caching grid name parameter name. */
-    public static final String WEB_SES_GRID_NAME_PARAM = "GridGainWebSessionsGridName";
+    public static final String WEB_SES_NAME_PARAM = "IgniteWebSessionsGridName";
 
     /** Web sessions caching cache name parameter name. */
-    public static final String WEB_SES_CACHE_NAME_PARAM = "GridGainWebSessionsCacheName";
+    public static final String WEB_SES_CACHE_NAME_PARAM = "IgniteWebSessionsCacheName";
 
     /** Web sessions caching retry on fail parameter name (valid for ATOMIC */
-    public static final String WEB_SES_MAX_RETRIES_ON_FAIL_NAME_PARAM = "GridGainWebSessionsMaximumRetriesOnFail";
+    public static final String WEB_SES_MAX_RETRIES_ON_FAIL_NAME_PARAM = "IgniteWebSessionsMaximumRetriesOnFail";
 
     /** Default retry on fail flag value. */
     public static final int DFLT_MAX_RETRIES_ON_FAIL = 3;
@@ -176,8 +174,8 @@ public class GridWebSessionFilter implements Filter {
         ctx = cfg.getServletContext();
 
         String gridName = U.firstNotNull(
-            cfg.getInitParameter(WEB_SES_GRID_NAME_PARAM),
-            ctx.getInitParameter(WEB_SES_GRID_NAME_PARAM));
+            cfg.getInitParameter(WEB_SES_NAME_PARAM),
+            ctx.getInitParameter(WEB_SES_NAME_PARAM));
 
         String cacheName = U.firstNotNull(
             cfg.getInitParameter(WEB_SES_CACHE_NAME_PARAM),

@@ -26,7 +26,7 @@
                              http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
          version="3.0">
     <context-param>
-        <param-name>GridGainConfigurationFilePath</param-name>
+        <param-name>IgniteConfigurationFilePath</param-name>
         <param-value>config/default-config.xml</param-value>
     </context-param>
 

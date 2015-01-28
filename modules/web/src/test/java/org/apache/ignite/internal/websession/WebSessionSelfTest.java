@@ -224,10 +224,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         WebAppContext ctx = new WebAppContext(U.resolveGridGainPath("modules/core/src/test/webapp").getAbsolutePath(),
             "/ggtest");
 
-        ctx.setInitParameter("GridGainConfigurationFilePath", cfg);
-        ctx.setInitParameter("GridGainWebSessionsGridName", gridName);
-        ctx.setInitParameter("GridGainWebSessionsCacheName", getCacheName());
-        ctx.setInitParameter("GridGainWebSessionsMaximumRetriesOnFail", "100");
+        ctx.setInitParameter("IgniteConfigurationFilePath", cfg);
+        ctx.setInitParameter("IgniteWebSessionsGridName", gridName);
+        ctx.setInitParameter("IgniteWebSessionsCacheName", getCacheName());
+        ctx.setInitParameter("IgniteWebSessionsMaximumRetriesOnFail", "100");
 
         ctx.addServlet(new ServletHolder(servlet), "/*");
 

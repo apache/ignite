@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.servlet.*;
-import java.net.*;
-import java.util.*;
 
 /**
  * This class defines GridGain startup based on servlet context listener.
@@ -40,7 +38,7 @@ import java.util.*;
  * &lt;/listener&gt;
  *
  * &lt;context-param&gt;
- *     &lt;param-name&gt;GridGainConfigurationFilePath&lt;/param-name&gt;
+ *     &lt;param-name&gt;IgniteConfigurationFilePath&lt;/param-name&gt;
  *     &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
  * &lt;/context-param&gt;
  * </pre>
@@ -70,7 +68,7 @@ import java.util.*;
  *         &lt;/listener&gt;
  *
  *         &lt;context-param&gt;
- *             &lt;param-name&gt;GridGainConfigurationFilePath&lt;/param-name&gt;
+ *             &lt;param-name&gt;IgniteConfigurationFilePath&lt;/param-name&gt;
  *             &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
  *         &lt;/context-param&gt;
  *         </pre>
@@ -86,7 +84,7 @@ import java.util.*;
  */
 public class GridServletContextListenerStartup implements ServletContextListener {
     /** Configuration file path parameter name. */
-    public static final String GRIDGAIN_CFG_FILE_PATH_PARAM = "GridGainConfigurationFilePath";
+    public static final String IGNITE_CFG_FILE_PATH_PARAM = "IgniteConfigurationFilePath";
 
     /** Names of started grids. */
     private final Collection<String> gridNames = new ArrayList<>();
@@ -95,7 +93,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
     @Override public void contextInitialized(ServletContextEvent evt) {
         ServletContext ctx = evt.getServletContext();
 
-        String cfgFile = ctx.getInitParameter(GRIDGAIN_CFG_FILE_PATH_PARAM);
+        String cfgFile = ctx.getInitParameter(IGNITE_CFG_FILE_PATH_PARAM);
 
         Collection<IgniteConfiguration> cfgs;
         GridSpringResourceContext rsrcCtx = null;
