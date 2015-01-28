@@ -72,7 +72,7 @@ fi
 if [ "${HADOOP_EDITION}" == "1" ]; then
     . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
 
-    if [ "${GRIDGAIN_HADOOP_CLASSPATH}" != "" ]; then
-        IGNITE_LIBS=${IGNITE_LIBS}${SEP}$GRIDGAIN_HADOOP_CLASSPATH
+    if [ "${IGNITE_HADOOP_CLASSPATH}" != "" ]; then
+        IGNITE_LIBS=${IGNITE_LIBS}${SEP}$IGNITE_HADOOP_CLASSPATH
     fi
 fi

@@ -49,9 +49,9 @@ if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
 
 set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
 
-if "%GRIDGAIN_HADOOP_CLASSPATH%" == "" goto :eof
+if "%IGNITE_HADOOP_CLASSPATH%" == "" goto :eof
 
-set IGNITE_LIBS=%IGNITE_LIBS%;%GRIDGAIN_HADOOP_CLASSPATH%
+set IGNITE_LIBS=%IGNITE_LIBS%;%IGNITE_HADOOP_CLASSPATH%
 
 goto :eof
 
