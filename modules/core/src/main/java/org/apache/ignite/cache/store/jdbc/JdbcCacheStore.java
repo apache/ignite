@@ -36,6 +36,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Base {@link CacheStore} implementation backed by JDBC. This implementation stores objects in underlying database
@@ -98,6 +99,10 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
+    /** Init lock. */
+    @GridToStringExclude
+    private final Lock initLock = new ReentrantLock();
+
     /** Successful initialization flag. */
     private boolean initOk;
 
@@ -114,11 +119,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @GridToStringExclude
     protected String passwd;
 
-    /** Type mapping description. */
-    protected Collection<CacheQueryTypeMetadata> typeMetadata;
-
-    /** Cache with query by type. */
-    protected Map<IgniteBiTuple<String, Object>, EntryMapping> entryMappings;
+    /** Cache with entry mapping description. (cache name, (key id, mapping description)). */
+    protected Map<Integer, Map<Object, EntryMapping>> cacheMappings = new ConcurrentHashMap<>();
 
     /** Database dialect. */
     protected JdbcDialect dialect;
@@ -176,7 +178,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      *
      * @throws CacheException If failed to initialize.
      */
-    protected abstract void buildTypeCache() throws CacheException;
+    protected abstract void buildTypeCache(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException;
 
     /**
      * Perform dialect resolution.
@@ -222,11 +224,21 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /**
+     *
+     * @return Cache key id.
+     */
+    protected Integer cacheKeyId() {
+        String cacheName = session().cacheName();
+
+        return cacheName != null ? cacheName.hashCode() : 0;
+    }
+
+    /**
      * Initializes store.
      *
      * @throws CacheException If failed to initialize.
      */
-    protected void init() throws CacheException {
+    private void init() throws CacheException {
         if (initLatch.getCount() > 0) {
             if (initGuard.compareAndSet(false, true)) {
                 if (log.isDebugEnabled())
@@ -235,14 +247,9 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 if (dataSrc == null && F.isEmpty(connUrl))
                     throw new CacheException("Failed to initialize cache store (connection is not provided).");
 
-                if (dialect == null)
-                    dialect = resolveDialect();
-
                 try {
-                    if (typeMetadata == null)
-                        throw new CacheException("Failed to initialize cache store (mapping description is not provided).");
-
-                    buildTypeCache();
+                    if (dialect == null)
+                        dialect = resolveDialect();
 
                     initOk = true;
                 }
@@ -264,6 +271,31 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
         if (!initOk)
             throw new CacheException("Cache store was not properly initialized.");
+
+        Integer cacheKey = cacheKeyId();
+
+        if (!cacheMappings.containsKey(cacheKey)) {
+            initLock.lock();
+
+            try {
+                if (!cacheMappings.containsKey(cacheKey)) {
+                    Collection<CacheQueryTypeMetadata> typeMetadata =
+                        ignite().cache(session().cacheName()).configuration().getQueryConfiguration().getTypeMetadata();
+
+                    Map<Object, EntryMapping> entryMappings = U.newHashMap(typeMetadata.size());
+
+                    for (CacheQueryTypeMetadata type : typeMetadata)
+                        entryMappings.put(keyId(type.getKeyType()), new EntryMapping(dialect, type));
+
+                    cacheMappings.put(cacheKey, Collections.unmodifiableMap(entryMappings));
+
+                    buildTypeCache(typeMetadata);
+                }
+            }
+            finally {
+                initLock.unlock();
+            }
+        }
     }
 
     /**
@@ -439,10 +471,15 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      * @throws CacheException if mapping for key was not found.
      */
     private EntryMapping entryMapping(Object keyId, Object key) throws CacheException {
-        EntryMapping em = entryMappings.get(new IgniteBiTuple<>(session().cacheName(), keyId));
+        String cacheName = session().cacheName();
+
+        init();
+
+        EntryMapping em = cacheMappings.get(cacheKeyId()).get(keyId);
 
         if (em == null)
-            throw new CacheException("Failed to find mapping description for key: " + key);
+            throw new CacheException("Failed to find mapping description for key: " + key +
+                " in cache: " + (cacheName != null ? cacheName : "<default>"));
 
         return em;
     }
@@ -451,8 +488,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
         throws CacheLoaderException {
         try {
-            init();
-
             ExecutorService pool = Executors.newFixedThreadPool(maxPoolSz);
 
             Collection<Future<?>> futs = new ArrayList<>();
@@ -475,10 +510,12 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 }
             }
             else {
+                init();
+
                 if (log.isDebugEnabled())
                     log.debug("Start loading all cache types entries from db");
 
-                for (EntryMapping em : entryMappings.values()) {
+                for (EntryMapping em : cacheMappings.get(cacheKeyId()).values()) {
                     if (parallelLoadCacheMinThreshold > 0) {
                         Connection conn = null;
 
@@ -541,8 +578,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @Nullable @Override public V load(K key) throws CacheLoaderException {
         assert key != null;
 
-        init();
-
         EntryMapping em = entryMapping(keyId(key), key);
 
         if (log.isDebugEnabled())
@@ -578,14 +613,12 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @Override public Map<K, V> loadAll(Iterable<? extends K> keys) throws CacheLoaderException {
         assert keys != null;
 
-        init();
-
         Connection conn = null;
 
         try {
             conn = connection();
 
-            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(entryMappings.size());
+            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(cacheMappings.get(cacheKeyId()).size());
 
             Map<K, V> res = new HashMap<>();
 
@@ -624,8 +657,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     /** {@inheritDoc} */
     @Override public void write(Cache.Entry<? extends K, ? extends V> entry) throws CacheWriterException {
         assert entry != null;
-
-        init();
 
         K key = entry.getKey();
 
@@ -685,15 +716,13 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         throws CacheWriterException {
         assert entries != null;
 
-        init();
-
         Connection conn = null;
 
         try {
             conn = connection();
 
             if (dialect.hasMerge()) {
-                Map<Object, PreparedStatement> stmts = U.newHashMap(entryMappings.size());
+                Map<Object, PreparedStatement> stmts = U.newHashMap(cacheMappings.get(cacheKeyId()).size());
 
                 Object prevKeyId = null;
 
@@ -740,7 +769,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                     U.closeQuiet(st);
             }
             else {
-                Map<Object, T2<PreparedStatement, PreparedStatement>> stmts = U.newHashMap(entryMappings.size());
+                Map<Object, T2<PreparedStatement, PreparedStatement>> stmts =
+                    U.newHashMap(cacheMappings.get(cacheKeyId()).size());
 
                 for (Cache.Entry<? extends K, ? extends V> entry : entries) {
                     K key = entry.getKey();
@@ -795,8 +825,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @Override public void delete(Object key) throws CacheWriterException {
         assert key != null;
 
-        init();
-
         EntryMapping em = entryMapping(keyId(key), key);
 
         if (log.isDebugEnabled())
@@ -832,7 +860,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         try {
             conn = connection();
 
-            Map<Object, PreparedStatement> stmts = U.newHashMap(entryMappings.size());
+            Map<Object, PreparedStatement> stmts = U.newHashMap(cacheMappings.get(cacheKeyId()).size());
 
             Object prevKeyId = null;
 
@@ -1001,15 +1029,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      */
     public void setUser(String user) {
         this.user = user;
-    }
-
-    /**
-     * Set type mapping description.
-     *
-     * @param typeMetadata Type mapping description.
-     */
-    public void setTypeMetadata(Collection<CacheQueryTypeMetadata> typeMetadata) {
-        this.typeMetadata = typeMetadata;
     }
 
     /**

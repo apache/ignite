@@ -670,10 +670,10 @@ public class SchemaLoadApp extends Application {
         pojosTbl = tableView("Tables not found in database", useCol, keyClsCol, valClsCol);
 
         TableColumn<PojoField, Boolean> useFldCol = booleanColumn("Use", "use",
-            "If checked then this field will used for XML and POJO generation");
+            "Check to use this field for XML and POJO generation");
 
         TableColumn<PojoField, Boolean> keyCol = booleanColumn("Key", "key",
-            "If checked then this field will be part of key object");
+            "Сheck to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
             "Check to annotate filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +

@@ -63,10 +63,9 @@ public class PojoCacheStoreMultitreadedSelfTest extends AbstractCacheStoreMultit
 
             springCtx.refresh();
 
-            Collection<CacheQueryTypeMetadata> typeMetadata =
-                springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
-
-            store.setTypeMetadata(typeMetadata);
+// TODO IGNITE-32 FIXME
+//            Collection<CacheQueryTypeMetadata> typeMetadata =
+//                springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))

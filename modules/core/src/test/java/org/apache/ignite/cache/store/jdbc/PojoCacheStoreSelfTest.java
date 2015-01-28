@@ -20,6 +20,7 @@ package org.apache.ignite.cache.store.jdbc;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.cache.store.jdbc.dialect.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -104,7 +105,22 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
             Collection<CacheQueryTypeMetadata> typeMetadata =
                 springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
 
-            store.setTypeMetadata(typeMetadata);
+            Map<Integer, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings = new ConcurrentHashMap<>();
+
+            JdbcDialect dialect = store.resolveDialect();
+
+            GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "dialect", dialect);
+
+            Map<Object, JdbcCacheStore.EntryMapping> entryMappings = U.newHashMap(typeMetadata.size());
+
+            for (CacheQueryTypeMetadata type : typeMetadata)
+                entryMappings.put(store.keyId(type.getKeyType()), new JdbcCacheStore.EntryMapping(dialect, type));
+
+            store.buildTypeCache(typeMetadata);
+
+            cacheMappings.put(0, Collections.unmodifiableMap(entryMappings));
+
+            GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "cacheMappings", cacheMappings);
         }
         catch (BeansException e) {
             if (X.hasCause(e, ClassNotFoundException.class))

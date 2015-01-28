@@ -20,7 +20,6 @@ package org.apache.ignite.cache.store.jdbc;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -135,9 +134,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     protected Map<String, PojoMethodsCache> mtdsCache;
 
     /** {@inheritDoc} */
-    @Override protected void buildTypeCache() throws CacheException {
-        entryMappings = U.newHashMap(typeMetadata.size());
-
+    @Override protected void buildTypeCache(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException {
         mtdsCache = U.newHashMap(typeMetadata.size() * 2);
 
         for (CacheQueryTypeMetadata type : typeMetadata) {
@@ -145,13 +142,8 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
             mtdsCache.put(type.getKeyType(), keyCache);
 
-            entryMappings.put(new IgniteBiTuple<String, Object>(null, keyId(type.getKeyType())),
-                new EntryMapping(dialect, type));
-
             mtdsCache.put(type.getType(), new PojoMethodsCache(type.getType(), type.getValueDescriptors()));
         }
-
-        entryMappings = Collections.unmodifiableMap(entryMappings);
 
         mtdsCache = Collections.unmodifiableMap(mtdsCache);
     }
