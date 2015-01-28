@@ -8621,7 +8621,7 @@ public abstract class GridUtils {
 
         byte[] out = new byte[len >> 1];
 
-        // two characters form the hex value.
+        // Two characters form the hex value.
         for (int i = 0, j = 0; j < len; i++) {
             int f = toDigit(data[j], j) << 4;
 
@@ -9098,37 +9098,40 @@ public abstract class GridUtils {
         return list;
     }
 
-    public static byte[] calculateMD5Digest(InputStream input) throws NoSuchAlgorithmException, IOException {
+    /**
+     * @param in
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
+    public static byte[] calculateMD5Digest(InputStream in) throws NoSuchAlgorithmException, IOException {
         MessageDigest md = MessageDigest.getInstance("MD5");
-        InputStream fis = new BufferedInputStream(input);
+        InputStream fis = new BufferedInputStream(in);
         byte[] dataBytes = new byte[1024];
 
         int nread;
-        while ((nread = fis.read(dataBytes)) != -1) {
+
+        while ((nread = fis.read(dataBytes)) != -1)
             md.update(dataBytes, 0, nread);
-        }
 
-        byte[] md5Bytes = md.digest();
-
-        //convert the byte to hex format
-        StringBuilder sb = new StringBuilder("");
-        for (byte md5Byte : md5Bytes) {
-            sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
-        }
-
-        return md5Bytes;
+        return md.digest();
     }
 
-    public static String calculateMD5(InputStream input) throws NoSuchAlgorithmException, IOException {
-        byte[] md5Bytes = calculateMD5Digest(input);
+    /**
+     * @param in Input.
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
+    public static String calculateMD5(InputStream in) throws NoSuchAlgorithmException, IOException {
+        byte[] md5Bytes = calculateMD5Digest(in);
 
-        //convert the byte to hex format
+        // Convert the byte to hex format.
         StringBuilder sb = new StringBuilder();
-        for (byte md5Byte : md5Bytes) {
+
+        for (byte md5Byte : md5Bytes)
             sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
-        }
 
         return sb.toString();
     }
-
 }

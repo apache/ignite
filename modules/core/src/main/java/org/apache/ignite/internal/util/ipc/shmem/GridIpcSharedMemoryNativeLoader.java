@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.util.ipc.shmem;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridProductImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
-import java.net.URL;
-import java.nio.channels.FileLock;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
-import java.util.LinkedList;
+import java.net.*;
+import java.nio.channels.*;
+import java.security.*;
+import java.util.*;
 
 /**
  * Shared memory native loader.
@@ -39,11 +38,11 @@ public class GridIpcSharedMemoryNativeLoader {
     /** Library name base. */
     private static final String LIB_NAME_BASE = "ggshmem";
 
-    /** Library name. */
-    private static final String LIB_NAME = LIB_NAME_BASE + "-" + GridProductImpl.VER;
-
     /** Lock file path. */
     private static final File LOCK_FILE = new File(System.getProperty("java.io.tmpdir"), "ggshmem.lock");
+
+    /** Library name. */
+    static final String LIB_NAME = LIB_NAME_BASE + "-" + GridProductImpl.VER;
 
     /**
      * @return Operating system name to resolve path to library.
@@ -62,8 +61,6 @@ public class GridIpcSharedMemoryNativeLoader {
 
         return name.replaceAll("\\W+", "_");
     }
-
-    static String libFileName(){return LIB_NAME;}
 
     /**
      * @return Platform.
@@ -111,7 +108,7 @@ public class GridIpcSharedMemoryNativeLoader {
     private static void doLoad() throws IgniteCheckedException {
         assert Thread.holdsLock(GridIpcSharedMemoryNativeLoader.class);
 
-        Collection<Throwable> errs = new LinkedList<>();
+        Collection<Throwable> errs = new ArrayList<>();
 
         try {
             // Load native library (the library directory should be in java.library.path).
@@ -210,7 +207,7 @@ public class GridIpcSharedMemoryNativeLoader {
         InputStream is = null;
 
         try {
-            if (!target.exists() || ! haveEqualMD5(target, src)) {
+            if (!target.exists() || !haveEqualMD5(target, src)) {
                 is = src.openStream();
 
                 if (is != null) {
@@ -244,9 +241,16 @@ public class GridIpcSharedMemoryNativeLoader {
         return false;
     }
 
+    /**
+     * @param target
+     * @param src
+     * @return
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     */
     private static boolean haveEqualMD5(File target, URL src) throws NoSuchAlgorithmException, IOException {
         try (InputStream targetIS = new FileInputStream(target);
-             InputStream srcIS = src.openStream()){
+             InputStream srcIS = src.openStream()) {
 
             String targetMD5 = U.calculateMD5(targetIS);
             String srcMD5 = U.calculateMD5(srcIS);
@@ -254,5 +258,4 @@ public class GridIpcSharedMemoryNativeLoader {
             return targetMD5.equals(srcMD5);
         }
     }
-
 }
