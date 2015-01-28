@@ -24,6 +24,30 @@ import java.util.*;
  */
 public interface JdbcDialect {
     /**
+     * Construct select count query.
+     *
+     * @param schema Database schema name.
+     * @param tblName Database table name.
+     * @param keyCols Database key columns for order.
+     * @return Query for select count.
+     */
+    public String loadCacheSelectRangeQuery(String schema, String tblName, Collection<String> keyCols);
+
+    /**
+     * Construct select count query.
+     *
+     * @param schema Database schema name.
+     * @param tblName Database table name.
+     * @param keyCols Database key columns for order.
+     * @param uniqCols Database unique value columns.
+     * @param appendLowerBound Need add lower bound for range.
+     * @param appendUpperBound Need add upper bound for range.
+     * @return Query for select count.
+     */
+    public String loadCacheRangeQuery(String schema, String tblName,
+        Collection<String> keyCols, Iterable<String> uniqCols, boolean appendLowerBound, boolean appendUpperBound);
+
+    /**
      * Construct load cache query.
      *
      * @param schema Database schema name.

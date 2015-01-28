@@ -169,8 +169,8 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
 
         U.closeQuiet(conn);
 
-        final Collection<OrganizationKey> orgKeys = new ArrayList<>(ORGANIZATION_CNT);
-        final Collection<PersonKey> prnKeys = new ArrayList<>(PERSON_CNT);
+        final Collection<OrganizationKey> orgKeys = new ConcurrentLinkedQueue<>();
+        final Collection<PersonKey> prnKeys = new ConcurrentLinkedQueue<>();
 
         IgniteBiInClosure<Object, Object> c = new CI2<Object, Object>() {
             @Override public void apply(Object k, Object v) {

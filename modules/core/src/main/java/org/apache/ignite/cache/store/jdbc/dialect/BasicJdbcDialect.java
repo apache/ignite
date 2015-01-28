@@ -146,6 +146,61 @@ public class BasicJdbcDialect implements JdbcDialect {
     }
 
     /** {@inheritDoc} */
+    @Override public String loadCacheSelectRangeQuery(String schema, String tblName, Collection<String> keyCols) {
+        String cols = mkString(keyCols, ",");
+
+        return String.format("SELECT %s FROM (SELECT %s, ROWNUM() AS rn FROM %s.%s ORDER BY %s) WHERE mod(rn, ?) = 0",
+            cols, cols, schema, tblName, cols);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String loadCacheRangeQuery(String schema, String tblName,
+        Collection<String> keyCols, Iterable<String> uniqCols, boolean appendLowerBound, boolean appendUpperBound) {
+        assert appendLowerBound || appendUpperBound;
+
+        SB sb = new SB();
+
+        String[] cols = keyCols.toArray(new String[keyCols.size()]);
+
+        if (appendLowerBound) {
+            sb.a("(");
+
+            for (int cnt = keyCols.size(); cnt > 0; cnt--) {
+                for (int j = 0; j < cnt; j++)
+                    if (j == cnt - 1)
+                        sb.a(cols[j]).a(" > ? ");
+                    else
+                        sb.a(cols[j]).a(" = ? AND ");
+                if (cnt != 1)
+                    sb.a("OR ");
+            }
+
+            sb.a(")");
+        }
+
+        if (appendLowerBound && appendUpperBound)
+            sb.a(" AND ");
+
+        if (appendUpperBound) {
+            sb.a("(");
+
+            for (int cnt = keyCols.size(); cnt > 0; cnt--) {
+                for (int j = 0; j < cnt; j++)
+                    if (j == cnt - 1)
+                        sb.a(cols[j]).a(" <= ? ");
+                    else
+                        sb.a(cols[j]).a(" = ? AND ");
+                if (cnt != 1)
+                    sb.a(" OR ");
+            }
+
+            sb.a(")");
+        }
+
+        return String.format("SELECT %s FROM %s.%s WHERE %s", mkString(uniqCols, ","), schema, tblName, sb.toString());
+    }
+
+    /** {@inheritDoc} */
     @Override public String loadCacheQuery(String schema, String tblName, Iterable<String> uniqCols) {
         return String.format("SELECT %s FROM %s.%s", mkString(uniqCols, ","), schema, tblName);
     }

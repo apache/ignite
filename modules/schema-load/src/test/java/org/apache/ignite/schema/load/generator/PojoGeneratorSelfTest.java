@@ -62,15 +62,36 @@ public class PojoGeneratorSelfTest extends TestCase {
         Statement stmt = conn.createStatement();
 
         stmt.executeUpdate("CREATE TABLE PRIMITIVES (pk INTEGER PRIMARY KEY, " +
-            " boolCol BOOLEAN NOT NULL, byteCol TINYINT NOT NULL, shortCol SMALLINT NOT NULL, intCol INTEGER NOT NULL, " +
-            " longCol BIGINT NOT NULL, floatCol REAL NOT NULL, doubleCol DOUBLE NOT NULL, doubleCol2 DOUBLE NOT NULL, " +
-            " bigDecimalCol DECIMAL(10, 0), strCol VARCHAR(10), dateCol DATE, timeCol TIME, tsCol TIMESTAMP, " +
+            " boolCol BOOLEAN NOT NULL," +
+            " byteCol TINYINT NOT NULL," +
+            " shortCol SMALLINT NOT NULL," +
+            " intCol INTEGER NOT NULL, " +
+            " longCol BIGINT NOT NULL," +
+            " floatCol REAL NOT NULL," +
+            " doubleCol DOUBLE NOT NULL," +
+            " doubleCol2 DOUBLE NOT NULL, " +
+            " bigDecimalCol DECIMAL(10, 0)," +
+            " strCol VARCHAR(10)," +
+            " dateCol DATE," +
+            " timeCol TIME," +
+            " tsCol TIMESTAMP, " +
             " arrCol BINARY(10))");
 
         stmt.executeUpdate("CREATE TABLE OBJECTS (pk INTEGER PRIMARY KEY, " +
-            " boolCol BOOLEAN, byteCol TINYINT, shortCol SMALLINT, intCol INTEGER, longCol BIGINT, floatCol REAL," +
-            " doubleCol DOUBLE, doubleCol2 DOUBLE, bigDecimalCol DECIMAL(10, 0), strCol VARCHAR(10), " +
-            " dateCol DATE, timeCol TIME, tsCol TIMESTAMP, arrCol BINARY(10))");
+            " boolCol BOOLEAN," +
+            " byteCol TINYINT," +
+            " shortCol SMALLINT," +
+            " intCol INTEGER," +
+            " longCol BIGINT," +
+            " floatCol REAL," +
+            " doubleCol DOUBLE," +
+            " doubleCol2 DOUBLE," +
+            " bigDecimalCol DECIMAL(10, 0)," +
+            " strCol VARCHAR(10), " +
+            " dateCol DATE," +
+            " timeCol TIME," +
+            " tsCol TIMESTAMP," +
+            " arrCol BINARY(10))");
 
         conn.commit();
 

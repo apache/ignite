@@ -40,147 +40,50 @@ import java.util.concurrent.atomic.*;
 /**
  * Base {@link CacheStore} implementation backed by JDBC. This implementation stores objects in underlying database
  * using mapping description.
+ * <p>
+ * <h2 class="header">Configuration</h2>
+ * Sections below describe mandatory and optional configuration settings as well
+ * as providing example using Java and Spring XML.
+ * <h3>Mandatory</h3>
+ * There are no mandatory configuration parameters.
+ * <h3>Optional</h3>
+ * <ul>
+ *     <li>Data source (see {@link #setDataSource(DataSource)}</li>
+ *     <li>Connection URL (see {@link #setConnectionUrl(String)})</li>
+ *     <li>User name (see {@link #setUser(String)})</li>
+ *     <li>Password (see {@link #setPassword(String)})</li>
+ *     <li>Create table query (see {@link #setConnectionUrl(String)})</li>
+ *     <li>Maximum batch size for writeAll and deleteAll operations. (see {@link #setBatchSize(int)})</li>
+ *     <li>Max workers thread count. These threads are responsible for load cache. (see {@link #setMaxPoolSize(int)})</li>
+ *     <li>Parallel load cache minimum threshold. (see {@link #setParallelLoadCacheMinimumThreshold(int)})</li>
+ * </ul>
+ * <h2 class="header">Java Example</h2>
+ * <pre name="code" class="java">
+ *     ...
+ *     JdbcPojoCacheStore store = new JdbcPojoCacheStore();
+ *     ...
+ *
+ * </pre>
+ * <h2 class="header">Spring Example</h2>
+ * <pre name="code" class="xml">
+ *     ...
+ *     &lt;bean id=&quot;cache.jdbc.store&quot;
+ *         class=&quot;org.gridgain.grid.cache.store.jdbc.JdbcPojoCacheStore&quot;&gt;
+ *         &lt;property name=&quot;connectionUrl&quot; value=&quot;jdbc:h2:mem:&quot;/&gt;
+ *     &lt;/bean&gt;
+ *     ...
+ * </pre>
+ * <p>
+ * <img src="http://www.gridgain.com/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
 public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
-    /**
-     * Entry mapping description.
-     */
-    protected static class EntryMapping {
-        /** Database dialect. */
-        protected final JdbcDialect dialect;
-
-        /** Select all items query. */
-        protected final String loadCacheQry;
-
-        /** Select item query. */
-        protected final String loadQrySingle;
-
-        /** Select items query. */
-        private final String loadQry;
-
-        /** Merge item(s) query. */
-        protected final String mergeQry;
-
-        /** Update item query. */
-        protected final String insQry;
-
-        /** Update item query. */
-        protected final String updQry;
-
-        /** Remove item(s) query. */
-        protected final String remQry;
-
-        /** Max key count for load query per statement. */
-        protected final int maxKeysPerStmt;
-
-        /** Database key columns. */
-        private final Collection<String> keyCols;
-
-        /** Database unique value columns. */
-        private final Collection<String> cols;
-
-        /** Unique value fields. */
-        private final Collection<CacheQueryTypeDescriptor> uniqValFields;
-
-        /** Type metadata. */
-        private final CacheQueryTypeMetadata typeMetadata;
-
-        /**
-         * @param typeMetadata Type metadata.
-         */
-        public EntryMapping(JdbcDialect dialect, CacheQueryTypeMetadata typeMetadata) {
-            this.dialect = dialect;
-
-            this.typeMetadata = typeMetadata;
-
-            final Collection<CacheQueryTypeDescriptor> keyFields = typeMetadata.getKeyDescriptors();
-
-            Collection<CacheQueryTypeDescriptor> valFields = typeMetadata.getValueDescriptors();
-
-            uniqValFields = F.view(typeMetadata.getValueDescriptors(),
-                new IgnitePredicate<CacheQueryTypeDescriptor>() {
-                    @Override public boolean apply(CacheQueryTypeDescriptor desc) {
-                        return !keyFields.contains(desc);
-                    }
-                });
-
-            String schema = typeMetadata.getSchema();
-
-            String tblName = typeMetadata.getTableName();
-
-            keyCols = databaseColumns(keyFields);
-
-            Collection<String> valCols = databaseColumns(valFields);
-
-            Collection<String> uniqValCols = databaseColumns(uniqValFields);
-
-            loadCacheQry = dialect.loadCacheQuery(schema, tblName, F.concat(false, keyCols, uniqValCols));
-
-            loadQrySingle = dialect.loadQuery(schema, tblName, keyCols, valCols, 1);
-
-            maxKeysPerStmt = dialect.getMaxParamsCnt() / keyCols.size();
-
-            loadQry = dialect.loadQuery(schema, tblName, keyCols, uniqValCols, maxKeysPerStmt);
-
-            insQry = dialect.insertQuery(schema, tblName, keyCols, uniqValCols);
-
-            updQry = dialect.updateQuery(schema, tblName, keyCols, uniqValCols);
-
-            mergeQry = dialect.mergeQuery(schema, tblName, keyCols, uniqValCols);
-
-            remQry = dialect.removeQuery(schema, tblName, keyCols);
-
-            cols = F.concat(false, keyCols, valCols);
-        }
-
-        /**
-         * Construct query for select values with key count less or equal {@code maxKeysPerStmt}
-         *
-         * @param keyCnt Key count.
-         */
-        protected String loadQuery(int keyCnt) {
-            assert keyCnt <= maxKeysPerStmt;
-
-            if (keyCnt == maxKeysPerStmt)
-                return loadQry;
-
-            if (keyCnt == 1)
-                return loadQrySingle;
-
-            return dialect.loadQuery(typeMetadata.getSchema(), typeMetadata.getTableName(), keyCols, cols, keyCnt);
-        }
-
-        /** Key type. */
-        protected String keyType() {
-            return typeMetadata.getKeyType();
-        }
-
-        /** Value type. */
-        protected String valueType() {
-            return typeMetadata.getType();
-        }
-
-        /**
-         * Gets key fields type descriptors.
-         *
-         * @return Key fields type descriptors.
-         */
-        protected Collection<CacheQueryTypeDescriptor> keyDescriptors() {
-            return typeMetadata.getKeyDescriptors();
-        }
-
-        /**
-         * Gets value fields type descriptors.
-         *
-         * @return Key value type descriptors.
-         */
-        protected Collection<CacheQueryTypeDescriptor> valueDescriptors() {
-            return typeMetadata.getValueDescriptors();
-        }
-    }
-
     /** Default batch size for put and remove operations. */
     protected static final int DFLT_BATCH_SIZE = 512;
+
+    /** Default batch size for put and remove operations. */
+    protected static final int DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD = 512;
 
     /** Connection attribute name. */
     protected static final String ATTR_CONN = "JDBC_STORE_CONNECTION";
@@ -217,23 +120,23 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @GridToStringExclude
     protected String passwd;
 
-    /** Execute. */
-    protected ExecutorService exec;
-
     /** Type mapping description. */
     protected Collection<CacheQueryTypeMetadata> typeMetadata;
 
     /** Cache with query by type. */
-    protected Map<Object, EntryMapping> typeMeta;
+    protected Map<IgniteBiTuple<String, Object>, EntryMapping> typeMapping;
 
     /** Database dialect. */
     protected JdbcDialect dialect;
 
-    /** Max workers thread count. These threads are responsible for execute query. */
-    protected int maxPoolSz = Runtime.getRuntime().availableProcessors();
+    /** Max workers thread count. These threads are responsible for load cache. */
+    private int maxPoolSz = Runtime.getRuntime().availableProcessors();
 
-    /** Maximum batch size for put and remove operations. */
-    protected int batchSz = DFLT_BATCH_SIZE;
+    /** Maximum batch size for writeAll and deleteAll operations. */
+    private int batchSz = DFLT_BATCH_SIZE;
+
+    /** Parallel load cache minimum threshold. If {@code 0} then load sequentially. */
+    private int parallelLoadCacheMinThreshold = DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
 
     /**
      * Get field value from object.
@@ -259,13 +162,20 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         throws CacheLoaderException;
 
     /**
-     * Extract type key from object.
+     * Extract type id from key object.
      *
      * @param key Key object.
-     * @return Type key.
-     * @throws CacheException If failed to extract type key.
+     * @return Type id.
      */
-    protected abstract Object typeId(Object key) throws CacheException;
+    protected abstract Object keyId(Object key) throws CacheException;
+
+    /**
+     * Extract type id from key class name.
+     *
+     * @param type String description of key type.
+     * @return Type id.
+     */
+    protected abstract Object keyId(String type) throws CacheException;
 
     /**
      * Build cache for mapped types.
@@ -335,8 +245,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 try {
                     if (typeMetadata == null)
                         throw new CacheException("Failed to initialize cache store (mappping description is not provided).");
-
-                    exec = Executors.newFixedThreadPool(maxPoolSz);
 
                     buildTypeCache();
 
@@ -431,62 +339,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
-        throws CacheLoaderException {
-        try {
-            init();
-
-            if (log.isDebugEnabled())
-                log.debug("Loading all values from db");
-
-            Collection<Future<?>> futs = new ArrayList<>();
-
-            for (final EntryMapping type : typeMeta.values())
-                futs.add(exec.submit(new Callable<Void>() {
-                    @Override public Void call() throws Exception {
-                    Connection conn = null;
-
-                    try {
-                        PreparedStatement stmt = null;
-
-                        try {
-                            conn = connection();
-
-                            stmt = conn.prepareStatement(type.loadCacheQry);
-
-                            ResultSet rs = stmt.executeQuery();
-
-                            while (rs.next()) {
-                                K key = buildObject(type.keyType(), type.keyDescriptors(), rs);
-                                V val = buildObject(type.valueType(), type.valueDescriptors(), rs);
-
-                                clo.apply(key, val);
-                            }
-                        }
-                        catch (SQLException e) {
-                            throw new IgniteCheckedException("Failed to load cache", e);
-                        }
-                        finally {
-                            U.closeQuiet(stmt);
-                        }
-                    }
-                    finally {
-                        U.closeQuiet(conn);
-                    }
-
-                    return null;
-                    }
-                }));
-
-            for (Future<?> fut : futs)
-                U.get(fut);
-        }
-        catch (Exception e) {
-            throw new CacheException(e);
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void txEnd(boolean commit) throws CacheWriterException {
         CacheStoreSession ses = session();
 
@@ -517,16 +369,212 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             log.debug("Transaction ended [xid=" + tx.xid() + ", commit=" + commit + ']');
     }
 
+    /**
+     * Construct load cache from range.
+     *
+     * @param m Type mapping description.
+     * @param clo Closure for loaded values.
+     * @param lowerBound Lower bound for range.
+     * @param upperBound Upper bound for range.
+     * @return Callable for pool submit.
+     */
+    private Callable<Void> loadCacheRange(final EntryMapping m, final IgniteBiInClosure<K, V> clo,
+        @Nullable final Object[] lowerBound, @Nullable final Object[] upperBound) {
+        return new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = null;
+
+                PreparedStatement stmt = null;
+
+                try {
+                    conn = openConnection(true);
+
+                    stmt = conn.prepareStatement(m.loadCacheRangeQuery(lowerBound != null, upperBound != null));
+
+                    int ix = 1;
+
+                    if (lowerBound != null)
+                        for (int i = lowerBound.length; i > 0; i--)
+                            for (int j = 0; j < i; j++)
+                                stmt.setObject(ix++, lowerBound[j]);
+
+                    if (upperBound != null)
+                        for (int i = upperBound.length; i > 0; i--)
+                            for (int j = 0; j < i; j++)
+                                stmt.setObject(ix++, upperBound[j]);
+
+                    ResultSet rs = stmt.executeQuery();
+
+                    while (rs.next()) {
+                        K key = buildObject(m.keyType(), m.keyDescriptors(), rs);
+                        V val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+
+                        clo.apply(key, val);
+                    }
+                }
+                catch (SQLException e) {
+                    throw new IgniteCheckedException("Failed to load cache", e);
+                }
+                finally {
+                    U.closeQuiet(stmt);
+
+                    U.closeQuiet(conn);
+                }
+
+                return null;
+            }
+        };
+    }
+
+    /**
+     * Construct load cache in one select.
+     *
+     * @param m Type mapping description.
+     * @param clo Closure for loaded values.
+     * @return Callable for pool submit.
+     */
+    private Callable<Void> loadCacheFull(final EntryMapping m, final IgniteBiInClosure<K, V> clo) {
+        return new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                Connection conn = null;
+
+                PreparedStatement stmt = null;
+
+                try {
+                    conn = openConnection(true);
+
+                    stmt = conn.prepareStatement(m.loadCacheQry);
+
+                    ResultSet rs = stmt.executeQuery();
+
+                    while (rs.next()) {
+                        K key = buildObject(m.keyType(), m.keyDescriptors(), rs);
+                        V val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+
+                        clo.apply(key, val);
+                    }
+                }
+                catch (SQLException e) {
+                    throw new IgniteCheckedException("Failed to load cache", e);
+                }
+                finally {
+                    U.closeQuiet(stmt);
+
+                    U.closeQuiet(conn);
+                }
+
+                return null;
+            }
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override public void loadCache(final IgniteBiInClosure<K, V> clo, @Nullable Object... args)
+        throws CacheLoaderException {
+        try {
+            init();
+
+            ExecutorService pool = Executors.newFixedThreadPool(maxPoolSz);
+
+            Collection<Future<?>> futs = new ArrayList<>();
+
+            if (args != null && args.length > 0) {
+                if (args.length % 2 != 0)
+                    throw new CacheLoaderException("Wrong argument count");
+
+                if (log.isDebugEnabled())
+                    log.debug("Start loading entries from db using queries from arguments");
+
+                for (int i = 0; i < args.length; i += 2) {
+                    String keyType = args[i].toString();
+
+                    final String selQry = args[i + 1].toString();
+
+                    CacheStoreSession ses = session();
+
+                    Object typeId = keyId(keyType);
+
+                    final EntryMapping m = typeMapping.get(new IgniteBiTuple<>(ses.cacheName(), typeId));
+
+                    if (m == null)
+                        throw new CacheWriterException("Failed to find mapping description for key: " + keyType);
+
+                    futs.add(pool.submit(new LoadCacheCustomQueryWorker<>(m, selQry, clo)));
+                }
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Start loading all types entries from db");
+
+                for (EntryMapping m : typeMapping.values()) {
+                    if (parallelLoadCacheMinThreshold > 0) {
+                        Connection conn = null;
+
+                        try {
+                            conn = connection();
+
+                            PreparedStatement stmt = conn.prepareStatement(m.loadCacheSelRangeQry);
+
+                            stmt.setInt(1, parallelLoadCacheMinThreshold);
+
+                            ResultSet rs = stmt.executeQuery();
+
+                            if (rs.next()) {
+                                int keyCnt = m.keyCols.size();
+
+                                Object[] upperBound = new Object[keyCnt];
+
+                                for (int i = 0; i < keyCnt; i++)
+                                    upperBound[i] = rs.getObject(i + 1);
+
+                                futs.add(pool.submit(loadCacheRange(m, clo, null, upperBound)));
+
+                                while (rs.next()) {
+                                    Object[] lowerBound = upperBound;
+
+                                    upperBound = new Object[keyCnt];
+
+                                    for (int i = 0; i < keyCnt; i++)
+                                        upperBound[i] = rs.getObject(i + 1);
+
+                                    futs.add(pool.submit(loadCacheRange(m, clo, lowerBound, upperBound)));
+                                }
+
+                                futs.add(pool.submit(loadCacheRange(m, clo, upperBound, null)));
+                            }
+                            else
+                                futs.add(pool.submit(loadCacheFull(m, clo)));
+                        }
+                        catch (SQLException ignored) {
+                            futs.add(pool.submit(loadCacheFull(m, clo)));
+                        }
+                        finally {
+                            U.closeQuiet(conn);
+                        }
+                    }
+                    else
+                        futs.add(pool.submit(loadCacheFull(m, clo)));
+                }
+            }
+
+            for (Future<?> fut : futs)
+                U.get(fut);
+        }
+        catch (IgniteCheckedException e) {
+            throw new CacheLoaderException("Failed to load cache", e.getCause());
+        }
+    }
+
     /** {@inheritDoc} */
     @Nullable @Override public V load(K key) throws CacheLoaderException {
         assert key != null;
 
         init();
 
-        EntryMapping type = typeMeta.get(typeId(key));
+        EntryMapping type = typeMapping.get(new IgniteBiTuple<>(session().cacheName(), keyId(key)));
 
         if (type == null)
-            throw new CacheLoaderException("Failed to find store mapping description for key: " + key);
+            throw new CacheLoaderException("Failed to find mapping description for key: " + key);
 
         if (log.isDebugEnabled())
             log.debug("Start load value from database by key: " + key);
@@ -564,22 +612,21 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         init();
 
         Connection conn = null;
+
         try {
             conn = connection();
 
-            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(typeMeta.size());
+            Map<Object, LoadWorker<K, V>> workers = U.newHashMap(typeMapping.size());
 
-            Collection<Future<Map<K, V>>> futs = new ArrayList<>();
-
-            int cnt = 0;
+            Map<K, V> res = new HashMap<>();
 
             for (K key : keys) {
-                Object typeId = typeId(key);
+                Object typeId = keyId(key);
 
-                final EntryMapping m = typeMeta.get(typeId);
+                EntryMapping m = typeMapping.get(new IgniteBiTuple<>(session().cacheName(), typeId));
 
                 if (m == null)
-                    throw new CacheWriterException("Failed to find store mapping description for key: " + key);
+                    throw new CacheWriterException("Failed to find mapping description for key: " + key);
 
                 LoadWorker<K, V> worker = workers.get(typeId);
 
@@ -589,25 +636,18 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 worker.keys.add(key);
 
                 if (worker.keys.size() == m.maxKeysPerStmt)
-                    futs.add(exec.submit(workers.remove(typeId)));
-
-                cnt ++;
+                    res.putAll(workers.remove(typeId).call());
             }
 
             for (LoadWorker<K, V> worker : workers.values())
-                futs.add(exec.submit(worker));
-
-            Map<K, V> res = U.newHashMap(cnt);
-
-            for (Future<Map<K, V>> fut : futs)
-                res.putAll(U.get(fut));
+                res.putAll(worker.call());
 
             return res;
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to open connection", e);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new CacheWriterException("Failed to load entries from database", e);
         }
         finally {
@@ -623,10 +663,10 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
         K key = entry.getKey();
 
-        EntryMapping type = typeMeta.get(typeId(key));
+        EntryMapping type = typeMapping.get(new IgniteBiTuple<>(session().cacheName(), keyId(key)));
 
         if (type == null)
-            throw new CacheWriterException("Failed to find store mapping description for entry: " + entry);
+            throw new CacheWriterException("Failed to find mapping description for entry: " + entry);
 
         if (log.isDebugEnabled())
             log.debug("Start write entry to database: " + entry);
@@ -689,88 +729,104 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         try {
             conn = connection();
 
-            if (dialect.hasMerge()) {
-                Map<Object, WriteWorker> workers = U.newHashMap(typeMeta.size());
+            String cacheName = session().cacheName();
 
-                Collection<Future<?>> futs = new ArrayList<>();
+            if (dialect.hasMerge()) {
+                Map<Object, PreparedStatement> stmts = U.newHashMap(typeMapping.size());
+
+                Object prevTypeId = null;
+
+                PreparedStatement mergeStmt = null;
+
+                int cnt = 0;
 
                 for (Cache.Entry<? extends K, ? extends V> entry : entries) {
-                    Object typeId = typeId(entry.getKey());
+                    Object typeId = keyId(entry.getKey());
 
-                    final EntryMapping m = typeMeta.get(typeId);
+                    final EntryMapping m = typeMapping.get(new IgniteBiTuple<>(cacheName, typeId));
 
                     if (m == null)
-                        throw new CacheWriterException("Failed to find store mapping description for key: " +
-                            entry.getKey());
+                        throw new CacheWriterException("Failed to find mapping description for key: " + entry.getKey());
 
-                    WriteWorker worker = workers.get(typeId);
+                    if (prevTypeId != null && !prevTypeId.equals(typeId)) {
+                        mergeStmt = stmts.get(prevTypeId);
 
-                    if (worker == null)
-                        workers.put(typeId, worker = new WriteWorker(conn, m));
+                        mergeStmt.executeBatch();
 
-                    worker.entries.add(entry);
+                        cnt = 0;
+                    }
 
-                    if (worker.entries.size() == batchSz)
-                        futs.add(exec.submit(workers.remove(typeId)));
+                    prevTypeId = typeId;
+
+                    mergeStmt = stmts.get(typeId);
+
+                    if (mergeStmt == null)
+                        stmts.put(typeId, mergeStmt = conn.prepareStatement(m.mergeQry));
+
+                    int i = fillKeyParameters(mergeStmt, m, entry.getKey());
+
+                    fillValueParameters(mergeStmt, i, m, entry.getValue());
+
+                    mergeStmt.addBatch();
+
+                    if (cnt++ % batchSz == 0)
+                        mergeStmt.executeBatch();
                 }
 
-                for (WriteWorker worker : workers.values())
-                    futs.add(exec.submit(worker));
+                if (mergeStmt != null && cnt % batchSz != 0)
+                    mergeStmt.executeBatch();
 
-                for (Future<?> fut : futs)
-                    U.get(fut);
+                for (PreparedStatement st : stmts.values())
+                    U.closeQuiet(st);
             }
             else {
-                Map<Object, T2<PreparedStatement, PreparedStatement>> stmtByType = U.newHashMap(typeMeta.size());
+                Map<Object, T2<PreparedStatement, PreparedStatement>> stmts = U.newHashMap(typeMapping.size());
 
                 for (Cache.Entry<? extends K, ? extends V> entry : entries) {
-                    Object typeId = typeId(entry.getKey());
+                    Object typeId = keyId(entry.getKey());
 
-                    final EntryMapping m = typeMeta.get(typeId);
+                    final EntryMapping m = typeMapping.get(new IgniteBiTuple<>(cacheName, typeId));
 
                     if (m == null)
-                        throw new CacheWriterException("Failed to find store mapping description for key: " +
+                        throw new CacheWriterException("Failed to find mapping description for key: " +
                             entry.getKey());
 
-                    T2<PreparedStatement, PreparedStatement> stmts = stmtByType.get(typeId);
+                    T2<PreparedStatement, PreparedStatement> pair = stmts.get(typeId);
 
-                    if (stmts == null)
-                        stmtByType.put(typeId,
-                            stmts = new T2<>(conn.prepareStatement(m.updQry), conn.prepareStatement(m.insQry)));
+                    if (pair == null)
+                        stmts.put(typeId,
+                            pair = new T2<>(conn.prepareStatement(m.updQry), conn.prepareStatement(m.insQry)));
 
-                    PreparedStatement stmt = stmts.get1();
+                    PreparedStatement updStmt = pair.get1();
 
-                    assert stmt != null;
+                    assert updStmt != null;
 
-                    int i = fillValueParameters(stmt, 1, m, entry.getValue());
+                    int i = fillValueParameters(updStmt, 1, m, entry.getValue());
 
-                    fillKeyParameters(stmt, i, m, entry.getKey());
+                    fillKeyParameters(updStmt, i, m, entry.getKey());
 
-                    if (stmt.executeUpdate() == 0) {
-                        stmt = stmts.get2();
+                    if (updStmt.executeUpdate() == 0) {
+                        PreparedStatement insStmt = pair.get2();
 
-                        assert stmt != null;
+                        assert insStmt != null;
 
-                        i = fillKeyParameters(stmt, m, entry.getKey());
+                        i = fillKeyParameters(insStmt, m, entry.getKey());
 
-                        fillValueParameters(stmt, i, m, entry.getValue());
+                        fillValueParameters(insStmt, i, m, entry.getValue());
 
-                        stmt.executeUpdate();
+                        insStmt.executeUpdate();
                     }
                 }
 
-                for (T2<PreparedStatement, PreparedStatement> stmts :  stmtByType.values()) {
-                    U.closeQuiet(stmts.get1());
+                for (T2<PreparedStatement, PreparedStatement> pair :  stmts.values()) {
+                    U.closeQuiet(pair.get1());
 
-                    U.closeQuiet(stmts.get2());
+                    U.closeQuiet(pair.get2());
                 }
             }
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to open connection", e);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheWriterException("Failed to write values into database", e);
         }
         finally {
             closeConnection(conn);
@@ -783,10 +839,10 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
         init();
 
-        EntryMapping type = typeMeta.get(typeId(key));
+        EntryMapping type = typeMapping.get(new IgniteBiTuple<>(session().cacheName(), keyId(key)));
 
         if (type == null)
-            throw new CacheWriterException("Failed to find store mapping description for key: " + key);
+            throw new CacheWriterException("Failed to find mapping description for key: " + key);
 
         if (log.isDebugEnabled())
             log.debug("Start remove value from database by key: " + key);
@@ -821,58 +877,60 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         try {
             conn = connection();
 
-            Collection<Future<?>> futs = new ArrayList<>();
+            Map<Object, PreparedStatement> stmts = U.newHashMap(typeMapping.size());
 
-            Map<Object, DeleteWorker> workers = U.newHashMap(typeMeta.size());
+            Object prevTypeId = null;
+
+            PreparedStatement delStmt = null;
+
+            int cnt = 0;
 
             for (Object key : keys) {
-                Object typeId = typeId(key);
+                Object typeId = keyId(key);
 
-                final EntryMapping m = typeMeta.get(typeId);
+                EntryMapping m = typeMapping.get(new IgniteBiTuple<>(session().cacheName(), typeId));
 
                 if (m == null)
-                    throw new CacheWriterException("Failed to find store mapping description for key: " + key);
+                    throw new CacheWriterException("Failed to find mapping description for key: " + key);
 
-                DeleteWorker worker = workers.get(typeId);
+                if (prevTypeId != null && !prevTypeId.equals(typeId)) {
+                    delStmt = stmts.get(prevTypeId);
 
-                if (worker == null)
-                    workers.put(typeId, worker = new DeleteWorker(conn, m));
+                    delStmt.executeBatch();
 
-                worker.keys.add(key);
+                    cnt = 0;
+                }
 
-                if (worker.keys.size() == batchSz)
-                    futs.add(exec.submit(workers.remove(typeId)));
+                prevTypeId = typeId;
+
+                delStmt = stmts.get(typeId);
+
+                if (delStmt == null)
+                    stmts.put(typeId, delStmt = conn.prepareStatement(m.remQry));
+
+                fillKeyParameters(delStmt, m, key);
+
+                delStmt.addBatch();
+
+                if (cnt++ % batchSz == 0)
+                    delStmt.executeBatch();
             }
 
-            for (DeleteWorker worker : workers.values())
-                futs.add(exec.submit(worker));
+            if (delStmt != null && cnt % batchSz != 0)
+                delStmt.executeBatch();
 
-            for (Future<?> fut : futs)
-                U.get(fut);
+            for (PreparedStatement st : stmts.values())
+                U.closeQuiet(st);
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to open connection", e);
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new CacheWriterException("Failed to remove values from database", e);
         }
         finally {
             closeConnection(conn);
         }
-    }
-
-    /**
-     * Extract database column names from {@link CacheQueryTypeDescriptor}.
-     *
-     * @param dsc collection of {@link CacheQueryTypeDescriptor}.
-     */
-    protected static Collection<String> databaseColumns(Collection<CacheQueryTypeDescriptor> dsc) {
-        return F.transform(dsc, new C1<CacheQueryTypeDescriptor, String>() {
-            /** {@inheritDoc} */
-            @Override public String apply(CacheQueryTypeDescriptor desc) {
-                return desc.getDbName();
-            }
-        });
     }
 
     /**
@@ -903,25 +961,25 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
     /**
      * @param stmt Prepare statement.
-     * @param type Type description.
+     * @param m Type mapping description.
      * @param key Key object.
      * @return Next index for parameters.
      */
-    protected int fillKeyParameters(PreparedStatement stmt, EntryMapping type, Object key) throws CacheException {
-        return fillKeyParameters(stmt, 1, type, key);
+    protected int fillKeyParameters(PreparedStatement stmt, EntryMapping m, Object key) throws CacheException {
+        return fillKeyParameters(stmt, 1, m, key);
     }
 
     /**
      * @param stmt Prepare statement.
      * @param i Start index for parameters.
-     * @param type Type description.
+     * @param m Type mapping description.
      * @param val Value object.
      * @return Next index for parameters.
      */
-    protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping type, Object val)
+    protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping m, Object val)
         throws CacheWriterException {
-        for (CacheQueryTypeDescriptor field : type.uniqValFields) {
-            Object fieldVal = extractField(type.valueType(), field.getJavaName(), val);
+        for (CacheQueryTypeDescriptor field : m.uniqValFields) {
+            Object fieldVal = extractField(m.valueType(), field.getJavaName(), val);
 
             try {
                 if (fieldVal != null)
@@ -954,14 +1012,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     /**
      * @return Connection URL.
      */
-    public String getConnUrl() {
+    public String getConnectionUrl() {
         return connUrl;
     }
 
     /**
      * @param connUrl Connection URL.
      */
-    public void setConnUrl(String connUrl) {
+    public void setConnectionUrl(String connUrl) {
         this.connUrl = connUrl;
     }
 
@@ -1039,7 +1097,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /**
-     * Get maximum batch size for put and remove operations.
+     * Get maximum batch size for delete and delete operations.
      *
      * @return Maximum batch size.
      */
@@ -1048,7 +1106,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     }
 
     /**
-     * Set maximum batch size for put and remove operations.
+     * Set maximum batch size for write and delete operations.
      *
      * @param batchSz Maximum batch size.
      */
@@ -1056,17 +1114,275 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         this.batchSz = batchSz;
     }
 
-    private class LoadWorker<K1, V1> implements Callable<Map<K1, V1>> {
-        private final Connection conn;
+    /**
+     * Parallel load cache minimum row count threshold.
+     *
+     * @return If {@code 0} then load sequentially.
+     */
+    public int getParallelLoadCacheMinimumThreshold() {
+        return parallelLoadCacheMinThreshold;
+    }
 
-        private final Collection<K1> keys;
+    /**
+     * Parallel load cache minimum row count threshold.
+     *
+     * @param parallelLoadCacheMinThreshold Minimum row count threshold. If {@code 0} then load sequentially.
+     */
+    public void setParallelLoadCacheMinimumThreshold(int parallelLoadCacheMinThreshold) {
+        this.parallelLoadCacheMinThreshold = parallelLoadCacheMinThreshold;
+    }
 
+    /**
+     * Entry mapping description.
+     */
+    protected static class EntryMapping {
+        /** Database dialect. */
+        private final JdbcDialect dialect;
+
+        /** Select border for range queries. */
+        protected final String loadCacheSelRangeQry;
+
+        /** Select all items query. */
+        protected final String loadCacheQry;
+
+        /** Select item query. */
+        protected final String loadQrySingle;
+
+        /** Select items query. */
+        private final String loadQry;
+
+        /** Merge item(s) query. */
+        protected final String mergeQry;
+
+        /** Update item query. */
+        protected final String insQry;
+
+        /** Update item query. */
+        protected final String updQry;
+
+        /** Remove item(s) query. */
+        protected final String remQry;
+
+        /** Max key count for load query per statement. */
+        protected final int maxKeysPerStmt;
+
+        /** Database key columns. */
+        private final Collection<String> keyCols;
+
+        /** Database unique value columns. */
+        private final Collection<String> cols;
+
+        /** Unique value fields. */
+        private final Collection<CacheQueryTypeDescriptor> uniqValFields;
+
+        /** Type metadata. */
+        private final CacheQueryTypeMetadata typeMetadata;
+
+        /**
+         * @param typeMetadata Type metadata.
+         */
+        public EntryMapping(JdbcDialect dialect, CacheQueryTypeMetadata typeMetadata) {
+            this.dialect = dialect;
+
+            this.typeMetadata = typeMetadata;
+
+            final Collection<CacheQueryTypeDescriptor> keyFields = typeMetadata.getKeyDescriptors();
+
+            Collection<CacheQueryTypeDescriptor> valFields = typeMetadata.getValueDescriptors();
+
+            uniqValFields = F.view(typeMetadata.getValueDescriptors(),
+                new IgnitePredicate<CacheQueryTypeDescriptor>() {
+                    @Override public boolean apply(CacheQueryTypeDescriptor desc) {
+                        return !keyFields.contains(desc);
+                    }
+                });
+
+            String schema = typeMetadata.getSchema();
+
+            String tblName = typeMetadata.getTableName();
+
+            keyCols = databaseColumns(keyFields);
+
+            Collection<String> valCols = databaseColumns(valFields);
+
+            Collection<String> uniqValCols = databaseColumns(uniqValFields);
+
+            cols = F.concat(false, keyCols, uniqValCols);
+
+            loadCacheQry = dialect.loadCacheQuery(schema, tblName, cols);
+
+            loadCacheSelRangeQry = dialect.loadCacheSelectRangeQuery(schema, tblName, keyCols);
+
+            loadQrySingle = dialect.loadQuery(schema, tblName, keyCols, valCols, 1);
+
+            maxKeysPerStmt = dialect.getMaxParamsCnt() / keyCols.size();
+
+            loadQry = dialect.loadQuery(schema, tblName, keyCols, uniqValCols, maxKeysPerStmt);
+
+            insQry = dialect.insertQuery(schema, tblName, keyCols, uniqValCols);
+
+            updQry = dialect.updateQuery(schema, tblName, keyCols, uniqValCols);
+
+            mergeQry = dialect.mergeQuery(schema, tblName, keyCols, uniqValCols);
+
+            remQry = dialect.removeQuery(schema, tblName, keyCols);
+        }
+
+        /**
+         * Extract database column names from {@link CacheQueryTypeDescriptor}.
+         *
+         * @param dsc collection of {@link CacheQueryTypeDescriptor}.
+         */
+        private static Collection<String> databaseColumns(Collection<CacheQueryTypeDescriptor> dsc) {
+            return F.transform(dsc, new C1<CacheQueryTypeDescriptor, String>() {
+                /** {@inheritDoc} */
+                @Override public String apply(CacheQueryTypeDescriptor desc) {
+                    return desc.getDbName();
+                }
+            });
+        }
+
+        /**
+         * Construct query for select values with key count less or equal {@code maxKeysPerStmt}
+         *
+         * @param keyCnt Key count.
+         */
+        protected String loadQuery(int keyCnt) {
+            assert keyCnt <= maxKeysPerStmt;
+
+            if (keyCnt == maxKeysPerStmt)
+                return loadQry;
+
+            if (keyCnt == 1)
+                return loadQrySingle;
+
+            return dialect.loadQuery(typeMetadata.getSchema(), typeMetadata.getTableName(), keyCols, cols, keyCnt);
+        }
+        /**
+         * Construct query for select values in range.
+         *
+         * @param appendLowerBound Need add lower bound for range.
+         * @param appendUpperBound Need add upper bound for range.
+         * @return Query with range.
+         */
+        protected String loadCacheRangeQuery(boolean appendLowerBound, boolean appendUpperBound) {
+            return dialect.loadCacheRangeQuery(typeMetadata.getSchema(), typeMetadata.getTableName(), keyCols, cols,
+                appendLowerBound, appendUpperBound);
+        }
+
+        /** Key type. */
+        protected String keyType() {
+            return typeMetadata.getKeyType();
+        }
+
+        /** Value type. */
+        protected String valueType() {
+            return typeMetadata.getType();
+        }
+
+        /**
+         * Gets key fields type descriptors.
+         *
+         * @return Key fields type descriptors.
+         */
+        protected Collection<CacheQueryTypeDescriptor> keyDescriptors() {
+            return typeMetadata.getKeyDescriptors();
+        }
+
+        /**
+         * Gets value fields type descriptors.
+         *
+         * @return Key value type descriptors.
+         */
+        protected Collection<CacheQueryTypeDescriptor> valueDescriptors() {
+            return typeMetadata.getValueDescriptors();
+        }
+    }
+
+    /**
+     * Worker for load cache using custom user query.
+     *
+     * @param <K1> Key type.
+     * @param <V1> Value type.
+     */
+    private class LoadCacheCustomQueryWorker<K1, V1> implements Callable<Void> {
+        /** Entry mapping description. */
         private final EntryMapping m;
 
+        /** User query. */
+        private final String qry;
+
+        /** Closure for loaded values. */
+        private final IgniteBiInClosure<K1, V1> clo;
+
+        /**
+         * @param m Entry mapping description.
+         * @param qry User query.
+         * @param clo Closure for loaded values.
+         */
+        private LoadCacheCustomQueryWorker(EntryMapping m, String qry, IgniteBiInClosure<K1, V1> clo) {
+            this.m = m;
+            this.qry = qry;
+            this.clo = clo;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            Connection conn = null;
+
+            PreparedStatement stmt = null;
+
+            try {
+                conn = openConnection(true);
+
+                stmt = conn.prepareStatement(qry);
+
+                ResultSet rs = stmt.executeQuery();
+
+                while (rs.next()) {
+                    K1 key = buildObject(m.keyType(), m.keyDescriptors(), rs);
+                    V1 val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+
+                    clo.apply(key, val);
+                }
+
+                return null;
+            } catch (SQLException e) {
+                throw new CacheLoaderException("Failed to execute custom query for load cache", e);
+            }
+            finally {
+                U.closeQuiet(stmt);
+
+                U.closeQuiet(conn);
+            }
+        }
+    }
+
+    /**
+     * Worker for load by keys.
+     *
+     * @param <K1> Key type.
+     * @param <V1> Value type.
+     */
+    private class LoadWorker<K1, V1> implements Callable<Map<K1, V1>> {
+        /** Connection. */
+        private final Connection conn;
+
+        /** Keys for load. */
+        private final Collection<K1> keys;
+
+        /** Entry mapping description. */
+        private final EntryMapping m;
+
+        /**
+         * @param conn Connection.
+         * @param m Entry mapping description.
+         */
         private LoadWorker(Connection conn, EntryMapping m) {
             this.conn = conn;
-            keys = new ArrayList<>(batchSz);
             this.m = m;
+
+            keys = new ArrayList<>(m.maxKeysPerStmt);
         }
 
         /** {@inheritDoc} */
@@ -1104,80 +1420,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             finally {
                 U.closeQuiet(stmt);
             }
-        }
-    }
-
-    private class WriteWorker implements Callable<Void> {
-        private final Connection conn;
-
-        private final Collection<Cache.Entry<?, ?>> entries;
-
-        private final EntryMapping m;
-
-        private WriteWorker(Connection conn, EntryMapping m) {
-            this.conn = conn;
-            entries = new ArrayList<>(batchSz);
-            this.m = m;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws Exception {
-            PreparedStatement stmt = null;
-
-            try {
-                stmt = conn.prepareStatement(m.mergeQry);
-
-                for (Cache.Entry<?, ?> entry : entries) {
-                    int i = fillKeyParameters(stmt, m, entry.getKey());
-
-                    fillValueParameters(stmt, i, m, entry.getValue());
-
-                    stmt.addBatch();
-                }
-
-                stmt.executeBatch();
-            }
-            finally {
-                U.closeQuiet(stmt);
-            }
-
-            return null;
-        }
-    }
-
-    private class DeleteWorker implements Callable<Void> {
-        private final Connection conn;
-
-        private final Collection<Object> keys;
-
-        private final EntryMapping m;
-
-        private DeleteWorker(Connection conn, EntryMapping m) {
-            this.conn = conn;
-            keys = new ArrayList<>(batchSz);
-            this.m = m;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Void call() throws Exception {
-            PreparedStatement stmt = null;
-
-            try {
-                stmt = conn.prepareStatement(m.remQry);
-
-                for (Object key : keys) {
-                    fillKeyParameters(stmt, m, key);
-
-                    stmt.addBatch();
-                }
-
-                stmt.executeBatch();
-            }
-            finally {
-                U.closeQuiet(stmt);
-            }
-
-            return null;
         }
     }
 }

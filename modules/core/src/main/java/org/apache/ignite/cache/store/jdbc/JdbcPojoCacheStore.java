@@ -20,6 +20,7 @@ package org.apache.ignite.cache.store.jdbc;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -135,7 +136,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
     /** {@inheritDoc} */
     @Override protected void buildTypeCache() throws CacheException {
-        typeMeta = U.newHashMap(typeMetadata.size());
+        typeMapping = U.newHashMap(typeMetadata.size());
 
         mtdsCache = U.newHashMap(typeMetadata.size() * 2);
 
@@ -144,12 +145,13 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
 
             mtdsCache.put(type.getKeyType(), keyCache);
 
-            typeMeta.put(keyCache.cls, new EntryMapping(dialect, type));
+            typeMapping.put(new IgniteBiTuple<String, Object>(null, keyId(type.getKeyType())),
+                new EntryMapping(dialect, type));
 
             mtdsCache.put(type.getType(), new PojoMethodsCache(type.getType(), type.getValueDescriptors()));
         }
 
-        typeMeta = Collections.unmodifiableMap(typeMeta);
+        typeMapping = Collections.unmodifiableMap(typeMapping);
 
         mtdsCache = Collections.unmodifiableMap(mtdsCache);
     }
@@ -186,10 +188,17 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object typeId(Object key) throws CacheException {
-        if (key != null)
-            return key.getClass();
+    @Override protected Object keyId(Object key) throws CacheException {
+        return key.getClass();
+    }
 
-        throw new CacheException();
+    /** {@inheritDoc} */
+    @Override protected Object keyId(String type) throws CacheException {
+        try {
+            return Class.forName(type);
+        }
+        catch (ClassNotFoundException e) {
+            throw new CacheException("Failed to find class: " + type, e);
+        }
     }
 }
