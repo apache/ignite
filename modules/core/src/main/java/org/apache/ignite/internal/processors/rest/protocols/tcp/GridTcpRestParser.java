@@ -65,7 +65,7 @@ public class GridTcpRestParser implements GridNioParser {
 
                     break;
 
-                case GRIDGAIN_REQ_FLAG:
+                case IGNITE_REQ_FLAG:
                     // Skip header.
                     buf.get();
 
@@ -73,7 +73,7 @@ public class GridTcpRestParser implements GridNioParser {
 
                     break;
 
-                case GRIDGAIN_HANDSHAKE_FLAG:
+                case IGNITE_HANDSHAKE_FLAG:
                     // Skip header.
                     buf.get();
 
@@ -134,7 +134,7 @@ public class GridTcpRestParser implements GridNioParser {
 
             ByteBuffer slice = res.slice();
 
-            slice.put(GRIDGAIN_REQ_FLAG);
+            slice.put(IGNITE_REQ_FLAG);
             slice.putInt(res.remaining() - 5);
             slice.putLong(msg.requestId());
             slice.put(U.uuidToBytes(msg.clientId()));
