@@ -50,7 +50,7 @@ public final class GridRandomCommandLineLoader {
     private static final String GRIDGAIN_PROG_NAME = "GRIDGAIN_PROG_NAME";
 
     /** Copyright text. Ant processed. */
-    private static final String COPYRIGHT = "Copyright (C) 2014 GridGain Systems.";
+    private static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation.";
 
     /** Version. Ant processed. */
     private static final String VER = "x.x.x";

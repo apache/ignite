@@ -722,7 +722,7 @@
                                     </groups>
                                     <header>
                                         <![CDATA[
-                                    GridGain - In-Memory Data Fabric
+                                    Ignite - In-Memory Data Fabric
                                 ]]>
                                     </header>
                                     <bottom>
@@ -734,7 +734,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -766,7 +766,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Fabric</b>
+                                                            <b>Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${ignite.version}</strong>
@@ -956,7 +956,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -1075,7 +1075,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
                                             <td width="100%" align="right" valign="center">
                                                 <table border=0>
