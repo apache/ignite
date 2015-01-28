@@ -21,9 +21,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
-import java.io.*;
-import java.util.*;
-
 /**
  * Grid discovery metrics test.
  */
@@ -65,7 +62,7 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
 
         assert metrics2 != null;
 
-        assert metrics1.equals(metrics2);
+        assert isMetricsEquals(metrics1, metrics2);
     }
 
     /**
@@ -122,5 +119,52 @@ public class ClusterMetricsSnapshotSerializeSelfTest extends GridCommonAbstractT
         metrics.setOutboundMessagesQueueSize(46);
 
         return metrics;
+    }
+
+    private boolean isMetricsEquals(ClusterMetrics obj, ClusterMetrics obj1) {
+        return
+            obj.getAverageActiveJobs() == obj1.getAverageActiveJobs() &&
+            obj.getAverageCancelledJobs() == obj1.getAverageCancelledJobs() &&
+            obj.getAverageJobExecuteTime() == obj1.getAverageJobExecuteTime() &&
+            obj.getAverageJobWaitTime() == obj1.getAverageJobWaitTime() &&
+            obj.getAverageRejectedJobs() == obj1.getAverageRejectedJobs() &&
+            obj.getAverageWaitingJobs() == obj1.getAverageWaitingJobs() &&
+            obj.getCurrentActiveJobs() == obj1.getCurrentActiveJobs() &&
+            obj.getCurrentCancelledJobs() == obj1.getCurrentCancelledJobs() &&
+            obj.getCurrentIdleTime() == obj1.getCurrentIdleTime() &&
+            obj.getCurrentJobExecuteTime() == obj1.getCurrentJobExecuteTime() &&
+            obj.getCurrentJobWaitTime() == obj1.getCurrentJobWaitTime() &&
+            obj.getCurrentRejectedJobs() == obj1.getCurrentRejectedJobs() &&
+            obj.getCurrentWaitingJobs() == obj1.getCurrentWaitingJobs() &&
+            obj.getCurrentDaemonThreadCount() == obj1.getCurrentDaemonThreadCount() &&
+            obj.getHeapMemoryCommitted() == obj1.getHeapMemoryCommitted() &&
+            obj.getHeapMemoryInitialized() == obj1.getHeapMemoryInitialized() &&
+            obj.getHeapMemoryMaximum() == obj1.getHeapMemoryMaximum() &&
+            obj.getHeapMemoryUsed() == obj1.getHeapMemoryUsed() &&
+            obj.getMaximumActiveJobs() == obj1.getMaximumActiveJobs() &&
+            obj.getMaximumCancelledJobs() == obj1.getMaximumCancelledJobs() &&
+            obj.getMaximumJobExecuteTime() == obj1.getMaximumJobExecuteTime() &&
+            obj.getMaximumJobWaitTime() == obj1.getMaximumJobWaitTime() &&
+            obj.getMaximumRejectedJobs() == obj1.getMaximumRejectedJobs() &&
+            obj.getMaximumWaitingJobs() == obj1.getMaximumWaitingJobs() &&
+            obj.getNonHeapMemoryCommitted() == obj1.getNonHeapMemoryCommitted() &&
+            obj.getNonHeapMemoryInitialized() == obj1.getNonHeapMemoryInitialized() &&
+            obj.getNonHeapMemoryMaximum() == obj1.getNonHeapMemoryMaximum() &&
+            obj.getNonHeapMemoryUsed() == obj1.getNonHeapMemoryUsed() &&
+            obj.getMaximumThreadCount() == obj1.getMaximumThreadCount() &&
+            obj.getStartTime() == obj1.getStartTime() &&
+            obj.getCurrentCpuLoad() == obj1.getCurrentCpuLoad() &&
+            obj.getCurrentThreadCount() == obj1.getCurrentThreadCount() &&
+            obj.getTotalCancelledJobs() == obj1.getTotalCancelledJobs() &&
+            obj.getTotalExecutedJobs() == obj1.getTotalExecutedJobs() &&
+            obj.getTotalIdleTime() == obj1.getTotalIdleTime() &&
+            obj.getTotalRejectedJobs() == obj1.getTotalRejectedJobs() &&
+            obj.getTotalStartedThreadCount() == obj1.getTotalStartedThreadCount() &&
+            obj.getUpTime() == obj1.getUpTime() &&
+            obj.getSentMessagesCount() == obj1.getSentMessagesCount() &&
+            obj.getSentBytesCount() == obj1.getSentBytesCount() &&
+            obj.getReceivedMessagesCount() == obj1.getReceivedMessagesCount() &&
+            obj.getReceivedBytesCount() == obj1.getReceivedBytesCount() &&
+            obj.getOutboundMessagesQueueSize() == obj1.getOutboundMessagesQueueSize();
     }
 }
