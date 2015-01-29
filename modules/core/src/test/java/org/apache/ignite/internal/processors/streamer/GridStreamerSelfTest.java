@@ -446,7 +446,7 @@ public class GridStreamerSelfTest extends GridCommonAbstractTest {
 
         GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(urls);
 
-        Class<?> cls = ldr.loadClass("org.gridgain.grid.tests.p2p.GridCacheDeploymentTestKey");
+        Class<?> cls = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestKey");
 
         assert cls != null;
 

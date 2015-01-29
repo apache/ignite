@@ -87,7 +87,7 @@ public class GridReduceSelfTest extends GridCommonAbstractTest {
 
             List<ReducerTestClosure> closures = closures(ignite.cluster().nodes().size());
 
-            IgniteCompute comp = compute(ignite.cluster().forLocal()).enableAsync();
+            IgniteCompute comp = compute(ignite.cluster().forLocal()).withAsync();
 
             comp.call(closures, new R1<Long, Long>() {
                 private long sum;

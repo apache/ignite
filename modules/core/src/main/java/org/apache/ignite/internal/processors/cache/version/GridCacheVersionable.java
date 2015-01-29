@@ -15,49 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.version;
 
 /**
- *
+ * Classes that are based on version may choose to implement this interface.
  */
-public interface GridDrResolveResult<V> {
+public interface GridCacheVersionable {
     /**
-     * @return TTL.
+     * @return Version.
      */
-    public long newTtl();
-
-    /**
-     * @return Expire time.
-     */
-    public long newExpireTime();
-
-    /**
-     * @return DR expire time.
-     */
-    public long newDrExpireTime();
-
-    /**
-     * @return {@code True} in case merge is to be performed.
-     */
-    public boolean isMerge();
-
-    /**
-     * @return {@code True} in case old value should be used.
-     */
-    public boolean isUseOld();
-
-    /**
-     * @return Cache operation.
-     */
-    public GridCacheOperation operation();
-
-    /**
-     * @return Value.
-     */
-    public V value();
-
-    /**
-     * @return Value bytes.
-     */
-    public byte[] valueBytes();
+    public GridCacheVersion version();
 }

@@ -47,7 +47,7 @@ public class ComputeRunnableExample {
             Collection<IgniteFuture> futs = new ArrayList<>();
 
             // Enable asynchronous mode.
-            IgniteCompute compute = g.compute().enableAsync();
+            IgniteCompute compute = g.compute().withAsync();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -698,31 +699,45 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         }
                                     }
 
-                                    GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
-                                        txEntry,
-                                        explicitVer,
-                                        op,
-                                        val,
-                                        valBytes,
-                                        txEntry.ttl(),
-                                        txEntry.drExpireTime());
+                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
-                                    if (drRes != null) {
-                                        op = drRes.operation();
-                                        val = drRes.value();
-                                        valBytes = drRes.valueBytes();
+                                    if (drNeedResolve) {
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
+                                            drRes = conflictResolve(op, txEntry.key(), val, valBytes, txEntry.ttl(),
+                                                txEntry.drExpireTime(), explicitVer, cached);
 
-                                        if (drRes.isMerge())
+                                        assert drRes != null;
+
+                                        GridCacheVersionConflictContextImpl<K, V> conflictCtx = drRes.get2();
+
+                                        if (conflictCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (conflictCtx.isUseNew()) {
+                                            txEntry.ttl(conflictCtx.ttl());
+
+                                            if (conflictCtx.newEntry().dataCenterId() != cctx.dataCenterId())
+                                                txEntry.drExpireTime(conflictCtx.expireTime());
+                                            else
+                                                txEntry.drExpireTime(-1L);
+                                        }
+                                        else {
+                                            assert conflictCtx.isMerge();
+
+                                            op = drRes.get1();
+                                            val = conflictCtx.mergeValue();
+                                            valBytes = null;
                                             explicitVer = writeVersion();
-                                        else if (op == NOOP)
-                                            txEntry.ttl(-1L);
+
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.drExpireTime(-1L);
+                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
-                                    if (sndTransformedVals || (drRes != null)) {
-                                        assert sndTransformedVals && cacheCtx.isReplicated() || (drRes != null);
+                                    if (sndTransformedVals || drNeedResolve) {
+                                        assert sndTransformedVals && cacheCtx.isReplicated() || drNeedResolve;
 
                                         txEntry.value(val, true, false);
                                         txEntry.valueBytes(valBytes);

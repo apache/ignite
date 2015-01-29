@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -627,6 +628,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     /** @inheritDoc */
     @Override public boolean initialValue(K key, GridCacheSwapEntry<V> unswapped) {
         assert false; return false;
+    }
+
+    /** @inheritDoc */
+    @Override public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException {
+        return null;
     }
 
     /** @inheritDoc */

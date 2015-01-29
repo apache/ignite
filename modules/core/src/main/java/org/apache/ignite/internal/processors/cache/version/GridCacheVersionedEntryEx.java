@@ -15,14 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.version;
+
+import org.apache.ignite.cache.*;
 
 /**
- * Classes that are based on version may choose to implement this interface.
+ * Extended versioned entry.
  */
-public interface GridCacheVersionable {
+public interface GridCacheVersionedEntryEx<K, V> extends GridCacheVersionedEntry<K, V>, GridCacheVersionable {
     /**
-     * @return Version.
+     *
+     * @return {@code True} if entry is new.
      */
-    public GridCacheVersion version();
+    public boolean isStartVersion();
 }

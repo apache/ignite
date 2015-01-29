@@ -206,7 +206,7 @@ public class GridSessionWaitAttributeSelfTest extends GridCommonAbstractTest {
 
         ignite1.compute().localDeployTask(TestSessionTask.class, TestSessionTask.class.getClassLoader());
 
-        IgniteCompute comp = ignite1.compute().enableAsync();
+        IgniteCompute comp = ignite1.compute().withAsync();
 
         comp.execute(TestSessionTask.class.getName(), type);
 

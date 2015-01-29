@@ -1825,7 +1825,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs enableAsync() {
+    @Override public IgniteFs withAsync() {
         return new GridGgfsAsyncImpl(this);
     }
 

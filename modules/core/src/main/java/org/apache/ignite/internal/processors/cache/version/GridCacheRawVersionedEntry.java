@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.dr;
+package org.apache.ignite.internal.processors.cache.version;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.marshaller.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.marshaller.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
+import java.util.*;
 
 /**
- *
+ * Raw versioned entry.
  */
-public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Externalizable {
+public class GridCacheRawVersionedEntry<K, V> implements GridCacheVersionedEntry<K, V>, GridCacheVersionable,
+    Map.Entry<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -56,7 +58,7 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
     /**
      * {@code Externalizable) support.
      */
-    public GridRawVersionedEntry() {
+    public GridCacheRawVersionedEntry() {
         // No-op.
     }
 
@@ -71,13 +73,8 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
      * @param ttl TTL.
      * @param ver Version.
      */
-    public GridRawVersionedEntry(K key,
-        @Nullable byte[] keyBytes,
-        @Nullable V val,
-        @Nullable byte[] valBytes,
-        long ttl,
-        long expireTime,
-        GridCacheVersion ver) {
+    public GridCacheRawVersionedEntry(K key, @Nullable byte[] keyBytes, @Nullable V val, @Nullable byte[] valBytes,
+        long ttl, long expireTime, GridCacheVersion ver) {
         this.key = key;
         this.keyBytes = keyBytes;
         this.val = val;
@@ -124,12 +121,38 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
     }
 
     /** {@inheritDoc} */
+    @Override public byte dataCenterId() {
+        return ver.dataCenterId();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int topologyVersion() {
+        return ver.topologyVersion();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long order() {
+        return ver.order();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long globalTime() {
+        return ver.globalTime();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return ver;
     }
 
-    /** {@inheritDoc} */
-    @Override public void unmarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    /**
+     * Perform internal unmarshal of this entry. It must be performed after entry is deserialized and before
+     * its restored key/value are needed.
+     *
+     * @param marsh Marshaller.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void unmarshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         unmarshalKey(marsh);
 
         if (valBytes != null && val == null)
@@ -143,13 +166,18 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
      * @param marsh Marshaller.
      * @throws IgniteCheckedException If failed.
      */
-    private void unmarshalKey(IgniteMarshaller marsh) throws IgniteCheckedException {
+    public void unmarshalKey(IgniteMarshaller marsh) throws IgniteCheckedException {
         if (key == null)
             key = marsh.unmarshal(keyBytes, null);
     }
 
-    /** {@inheritDoc} */
-    @Override public void marshal(IgniteMarshaller marsh) throws IgniteCheckedException {
+    /**
+     * Perform internal marshal of this entry before it will be serialized.
+     *
+     * @param marsh Marshaller.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void marshal(IgniteMarshaller marsh) throws IgniteCheckedException {
         if (keyBytes == null)
             keyBytes = marsh.marshal(key);
 
@@ -188,6 +216,12 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
     }
 
     /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridCacheRawVersionedEntry.class, this, "keyBytesLen",
+            keyBytes != null ? keyBytes.length : "n/a", "valBytesLen", valBytes != null ? valBytes.length : "n/a");
+    }
+
+    /** {@inheritDoc} */
     @Override public K getKey() {
         return key();
     }
@@ -200,11 +234,5 @@ public class GridRawVersionedEntry<K, V> implements GridVersionedEntry<K, V>, Ex
     /** {@inheritDoc} */
     @Override public V setValue(V val) {
         throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridRawVersionedEntry.class, this, "keyBytesLen", keyBytes != null ? keyBytes.length : "n/a",
-            "valBytesLen", valBytes != null ? valBytes.length : "n/a");
     }
 }
