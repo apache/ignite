@@ -28,7 +28,7 @@ import java.util.*;
 public class IgniteExecuteBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        grid().compute().execute(new NoopTask(args.jobs()), null);
+        ignite().compute().execute(new NoopTask(args.jobs()), null);
 
         return true;
     }

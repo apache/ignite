@@ -42,7 +42,7 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
 
         long start = System.nanoTime();
 
-        try (IgniteDataLoader<Object, Object> dataLdr = grid().dataLoader(cache.getName())) {
+        try (IgniteDataLoader<Object, Object> dataLdr = ignite().dataLoader(cache.getName())) {
             final int orgRange = args.range() / 10;
 
             // Populate organizations.
@@ -113,6 +113,6 @@ public class IgniteSqlQueryJoinBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return grid().jcache("query");
+        return ignite().jcache("query");
     }
 }

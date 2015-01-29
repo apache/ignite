@@ -38,6 +38,6 @@ public class IgnitePutTxBenchmark extends IgniteCacheAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
-        return grid().jcache("tx");
+        return ignite().jcache("tx");
     }
 }

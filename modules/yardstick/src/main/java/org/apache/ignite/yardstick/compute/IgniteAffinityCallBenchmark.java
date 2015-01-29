@@ -29,7 +29,7 @@ import java.util.concurrent.*;
 public class IgniteAffinityCallBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        grid().compute().affinityCall("compute", ThreadLocalRandom.current().nextInt(), new NoopCallable());
+        ignite().compute().affinityCall("compute", ThreadLocalRandom.current().nextInt(), new NoopCallable());
 
         return true;
     }

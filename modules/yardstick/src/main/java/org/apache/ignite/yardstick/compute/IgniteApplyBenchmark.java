@@ -45,7 +45,7 @@ public class IgniteApplyBenchmark extends IgniteAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        grid().compute().apply(new NoopClosure(), applyArgs);
+        ignite().compute().apply(new NoopClosure(), applyArgs);
 
         return true;
     }

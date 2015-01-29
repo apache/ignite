@@ -78,7 +78,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     /**
      * @return Grid.
      */
-    protected Ignite grid() {
+    protected Ignite ignite() {
         return node.ignite();
     }
 
@@ -88,7 +88,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
     private void waitForNodes() throws Exception {
         final CountDownLatch nodesStartedLatch = new CountDownLatch(1);
 
-        grid().events().localListen(new IgnitePredicate<IgniteEvent>() {
+        ignite().events().localListen(new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent gridEvt) {
                 if (nodesStarted())
                     nodesStartedLatch.countDown();
@@ -108,7 +108,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @return {@code True} if all nodes are started, {@code false} otherwise.
      */
     private boolean nodesStarted() {
-        return grid().cluster().nodes().size() >= args.nodes();
+        return ignite().cluster().nodes().size() >= args.nodes();
     }
 
     /**

@@ -44,7 +44,7 @@ public class IgniteRunBenchmark extends IgniteAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        grid().compute().run(jobs);
+        ignite().compute().run(jobs);
         
         return true;
     }
