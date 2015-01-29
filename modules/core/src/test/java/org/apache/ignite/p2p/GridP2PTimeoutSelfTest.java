@@ -66,8 +66,8 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(new URL[] {new URL(path)});
 
-            Class task1 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1");
-            Class task2 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath2");
+            Class task1 = ldr.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath1");
+            Class task2 = ldr.loadClass("org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2");
 
             ldr.setTimeout(100);
 
@@ -108,8 +108,8 @@ public class GridP2PTimeoutSelfTest extends GridCommonAbstractTest {
 
             GridTestExternalClassLoader ldr = new GridTestExternalClassLoader(new URL[] {new URL(path)});
 
-            Class filter1 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PEventFilterExternalPath1");
-            Class filter2 = ldr.loadClass("org.gridgain.grid.tests.p2p.GridP2PEventFilterExternalPath2");
+            Class filter1 = ldr.loadClass("org.apache.ignite.tests.p2p.GridP2PEventFilterExternalPath1");
+            Class filter2 = ldr.loadClass("org.apache.ignite.tests.p2p.GridP2PEventFilterExternalPath2");
 
             ldr.setTimeout(100);
 

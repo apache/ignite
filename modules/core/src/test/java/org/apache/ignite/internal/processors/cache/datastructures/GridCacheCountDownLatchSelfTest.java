@@ -208,7 +208,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         assert latch1.count() == 2;
 
-        IgniteCompute comp = grid(0).compute().enableAsync();
+        IgniteCompute comp = grid(0).compute().withAsync();
 
         comp.call(new IgniteCallable<Object>() {
             @IgniteInstanceResource

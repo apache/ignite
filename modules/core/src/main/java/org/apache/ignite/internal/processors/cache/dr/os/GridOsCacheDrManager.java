@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.dr.os;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
-import org.apache.ignite.internal.processors.cache.transactions.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.dr.*;
 import org.jetbrains.annotations.*;
 
@@ -64,6 +64,11 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public GridCacheVersionAbstractConflictResolver conflictResolver() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void replicate(K key,
         @Nullable byte[] keyBytes,
         @Nullable V val,
@@ -73,30 +78,6 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
         GridCacheVersion ver,
         GridDrType drType) {
         // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDrResolveResult<V> resolveAtomic(GridCacheEntryEx<K, V> e,
-        GridCacheOperation op,
-        @Nullable Object writeObj,
-        @Nullable byte[] valBytes,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc,
-        long drTtl,
-        long drExpireTime,
-        @Nullable GridCacheVersion drVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridDrResolveResult<V> resolveTx(GridCacheEntryEx<K, V> e,
-        IgniteTxEntry<K, V> txEntry,
-        GridCacheVersion newVer,
-        GridCacheOperation op,
-        V newVal,
-        byte[] newValBytes,
-        long newTtl,
-        long newDrExpireTime) throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -111,6 +92,11 @@ public class GridOsCacheDrManager<K, V> implements GridCacheDrManager<K, V> {
 
     /** {@inheritDoc} */
     @Override public void onReceiveCacheEntriesReceived(int entriesCnt) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onReceiveCacheConflictResolved(boolean useNew, boolean useOld, boolean merge) {
         // No-op.
     }
 

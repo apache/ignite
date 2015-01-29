@@ -26,6 +26,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.portables.*;
@@ -5559,7 +5560,7 @@ public abstract class GridUtils {
             }
         }
         // Don't go into internal GridGain structures.
-        else if (isGridGain(obj.getClass()))
+        else if (isIgnite(obj.getClass()))
             return null;
         else if (obj instanceof Iterable)
             for (Object o : (Iterable<?>)obj) {
@@ -5590,16 +5591,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks if given class is of {@code GridGain} type.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if given class is of {@code GridGain} type.
-     */
-    public static boolean isGridGain(Class<?> cls) {
-        return cls.getName().startsWith("org.gridgain");
-    }
-
-    /**
      * Checks if given class is of {@code Ignite} type.
      *
      * @param cls Class to check.
@@ -5616,7 +5607,7 @@ public abstract class GridUtils {
      * @return {@code True} if given class is of {@code Grid} type.
      */
     public static boolean isGrid(Class<?> cls) {
-        return cls.getName().startsWith("org.gridgain.grid");
+        return cls.getName().startsWith("org.apache.ignite.internal");
     }
 
     /**

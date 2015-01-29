@@ -235,7 +235,7 @@ public class IgniteManagedImpl extends IgniteAsyncSupportAdapter implements Igni
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteManaged enableAsync() {
+    @Override public IgniteManaged withAsync() {
         if (isAsync())
             return this;
 

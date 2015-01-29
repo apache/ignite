@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.dr.*;
@@ -668,6 +669,14 @@ public interface GridCacheEntryEx<K, V> {
      */
     public boolean initialValue(K key, GridCacheSwapEntry<V> unswapped)
         throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * Create versioned entry for this cache entry.
+     *
+     * @return Versioned entry.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException;
 
     /**
      * Sets new value if passed in version matches the current version
