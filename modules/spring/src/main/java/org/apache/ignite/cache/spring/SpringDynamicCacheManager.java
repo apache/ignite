@@ -103,7 +103,7 @@ public class SpringDynamicCacheManager extends SpringCacheManager {
     @Override public void afterPropertiesSet() throws Exception {
         super.afterPropertiesSet();
 
-        metaCache = ((GridEx)grid).utilityCache(MetaKey.class, org.springframework.cache.Cache.class);
+        metaCache = ((IgniteEx)grid).utilityCache(MetaKey.class, org.springframework.cache.Cache.class);
         dataCache = grid.cache(dataCacheName);
     }
 

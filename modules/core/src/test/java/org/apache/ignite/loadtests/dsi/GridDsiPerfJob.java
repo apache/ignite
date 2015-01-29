@@ -105,7 +105,7 @@ public class GridDsiPerfJob extends ComputeJobAdapter {
 
         long cnt = cntrs.get1().incrementAndGet();
 
-        GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal) ignite).internalCache(cacheName);
+        GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache(cacheName);
         GridDhtCacheAdapter dht = near.dht();
 
         doWork();

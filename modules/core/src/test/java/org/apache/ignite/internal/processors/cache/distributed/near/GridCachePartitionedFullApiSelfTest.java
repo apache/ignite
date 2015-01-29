@@ -64,7 +64,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
      * @throws Exception If failed.
      */
     public void testPartitionEntrySetToString() throws Exception {
-        GridCacheAdapter<String, Integer> cache = ((GridKernal)grid(0)).internalCache();
+        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
         for (int i = 0; i < 100; i++) {
             String key = String.valueOf(i);
@@ -82,7 +82,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
      * @throws Exception If failed.
      */
     public void testPartitionEntrySetIterator() throws Exception {
-        GridCacheAdapter<String, Integer> cache = ((GridKernal)grid(0)).internalCache();
+        GridCacheAdapter<String, Integer> cache = ((IgniteKernal)grid(0)).internalCache();
 
         Map<Integer, Collection<String>> partMap = new HashMap<>();
 

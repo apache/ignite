@@ -163,7 +163,7 @@ public class GridCacheNearTxMultiNodeSelfTest extends GridCommonAbstractTest {
             ignites = F.asList(otherIgnite, newIgnite);
 
             for (Ignite g : ignites) {
-                GridNearCacheAdapter near = ((GridKernal)g).internalCache().context().near();
+                GridNearCacheAdapter near = ((IgniteKernal)g).internalCache().context().near();
                 GridDhtCacheAdapter dht = near.dht();
 
                 checkTm(g, near.context().tm());

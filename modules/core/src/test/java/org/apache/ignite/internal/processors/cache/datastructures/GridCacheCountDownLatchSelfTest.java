@@ -392,7 +392,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         // Ensure latch is removed on all nodes.
         for (Ignite g : G.allGrids())
-            assert ((GridKernal)g).internalCache(cacheName).context().dataStructures().
+            assert ((IgniteKernal)g).internalCache(cacheName).context().dataStructures().
                 countDownLatch(latchName, 10, true, false) == null;
 
         checkRemovedLatch(latch);

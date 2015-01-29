@@ -365,7 +365,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
         CacheAffinity<Object> aff = grid(0).cache(null).affinity();
 
         for (int i = 0; i < gridCount(); i++) {
-            for (GridCacheEntryEx e : ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0()) {
+            for (GridCacheEntryEx e : ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0()) {
                 if (aff.isPrimary(grid(i).localNode(), e.key()) && e.key() instanceof GridCacheQueueHeaderKey)
                     return i;
             }

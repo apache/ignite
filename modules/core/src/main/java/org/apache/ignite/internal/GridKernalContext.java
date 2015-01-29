@@ -138,7 +138,7 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      *
      * @return Grid instance.
      */
-    public GridEx grid();
+    public IgniteEx grid();
 
     /**
      * Gets grid configuration.
