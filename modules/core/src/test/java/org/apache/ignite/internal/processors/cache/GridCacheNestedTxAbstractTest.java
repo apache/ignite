@@ -108,7 +108,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
     public void testTwoTx() throws Exception {
         final GridCache<String, Integer> c = grid(0).cache(null);
 
-        GridKernalContext ctx = ((GridKernal)grid(0)).context();
+        GridKernalContext ctx = ((IgniteKernal)grid(0)).context();
 
         c.put(CNTR_KEY, 0);
 

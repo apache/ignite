@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
 
@@ -66,7 +68,7 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
 
         final AtomicReference<IpcSharedMemorySpace> spaceRef = new AtomicReference<>();
 
-        IgniteFuture<?> fut1 = multithreadedAsync(
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings("TooBroadScope")
                 @Override public Object call() throws Exception {
@@ -97,15 +99,21 @@ public class IpcSharedMemorySpaceSelfTest extends GridCommonAbstractTest {
             1,
             "writer");
 
-        IgniteFuture<?> fut2 = multithreadedAsync(
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings({"TooBroadScope", "StatementWithEmptyBody"})
                 @Override public Object call() throws Exception {
                     IpcSharedMemorySpace inSpace;
 
-                    while ((inSpace = spaceRef.get()) == null) {
-                        // No-op;
-                    }
+                    GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                        @Override public boolean apply() {
+                            return spaceRef.get() != null;
+                        }
+                    }, 10_000);
+
+                    inSpace = spaceRef.get();
+
+                    assertNotNull(inSpace);
 
                     try (IpcSharedMemorySpace space = new IpcSharedMemorySpace(tok, 0, 0, 128, true,
                         inSpace.sharedMemoryId(), log)) {

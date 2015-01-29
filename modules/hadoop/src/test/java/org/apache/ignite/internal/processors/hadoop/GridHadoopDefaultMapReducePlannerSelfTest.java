@@ -70,7 +70,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
     private static final String INVALID_HOST_3 = "invalid_host3";
 
     /** Mocked Grid. */
-    private static final MockGrid GRID = new MockGrid();
+    private static final MockIgnite GRID = new MockIgnite();
 
     /** Mocked GGFS. */
     private static final IgniteFs GGFS = new MockGgfs();
@@ -734,7 +734,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
+        @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
             return null;
         }
 
@@ -921,7 +921,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
+        @Override public <R> IgniteInternalFuture<R> future() {
             return null;
         }
     }
@@ -930,7 +930,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
      * Mocked Grid.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class MockGrid extends IgniteSpringBean implements GridEx {
+    private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
         /** {@inheritDoc} */
         @Override public IgniteFs ggfsx(String name) {
             assert F.eq("ggfs", name);
@@ -1001,7 +1001,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
+        @Override public IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
             return null;
         }
 
@@ -1215,7 +1215,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
+        @Override public <R> IgniteInternalFuture<R> future() {
             return null;
         }
     }

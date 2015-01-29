@@ -18,7 +18,7 @@
 package org.apache.ignite.jvmtest;
 
 import junit.framework.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
@@ -46,7 +46,7 @@ public class QueueSizeCounterMultiThreadedTest extends TestCase {
 
         final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @SuppressWarnings( {"BusyWait"})
                 @Nullable @Override public Object call() throws Exception {

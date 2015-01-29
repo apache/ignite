@@ -158,7 +158,7 @@ public class GridHadoopDefaultMapReducePlanner implements GridHadoopMapReducePla
                 GridGgfsEx ggfs = null;
 
                 if (F.eq(ignite.name(), endpoint.grid()))
-                    ggfs = (GridGgfsEx)((GridEx)ignite).ggfsx(endpoint.ggfs());
+                    ggfs = (GridGgfsEx)((IgniteEx)ignite).ggfsx(endpoint.ggfs());
 
                 if (ggfs != null && !ggfs.isProxy(split0.file())) {
                     Collection<IgniteFsBlockLocation> blocks = ggfs.affinity(new IgniteFsPath(split0.file()),

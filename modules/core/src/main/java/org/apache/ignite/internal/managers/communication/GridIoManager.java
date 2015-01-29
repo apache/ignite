@@ -718,7 +718,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         if (set.reserved()) {
             // Set is reserved which means that it is currently processed by worker thread.
-            msgC.run();
+            if (msgC != null)
+                msgC.run();
 
             return;
         }

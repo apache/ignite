@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.proto;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -54,14 +55,14 @@ public class GridHadoopProtocolJobStatusTask extends GridHadoopProtocolTaskAdapt
             pollDelay = DFLT_POLL_DELAY;
 
         if (pollDelay > 0) {
-            IgniteFuture<?> fut = hadoop.finishFuture(jobId);
+            IgniteInternalFuture<?> fut = hadoop.finishFuture(jobId);
 
             if (fut != null) {
                 if (fut.isDone() || F.eq(jobCtx.getAttribute(ATTR_HELD), true))
                     return hadoop.status(jobId);
                 else {
-                    fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
-                        @Override public void apply(IgniteFuture<?> fut0) {
+                    fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> fut0) {
                             jobCtx.callcc();
                         }
                     });

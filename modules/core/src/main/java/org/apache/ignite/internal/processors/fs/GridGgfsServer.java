@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.fs.common.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -256,7 +256,7 @@ public class GridGgfsServer {
 
                     GridGgfsMessage msg = marsh.unmarshall(cmd, hdr, dis);
 
-                    IgniteFuture<GridGgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
+                    IgniteInternalFuture<GridGgfsMessage> fut = hnd.handleAsync(ses, msg, dis);
 
                     // If fut is null, no response is required.
                     if (fut != null) {
@@ -287,8 +287,8 @@ public class GridGgfsServer {
                             }
                         }
                         else {
-                            fut.listenAsync(new CIX1<IgniteFuture<GridGgfsMessage>>() {
-                                @Override public void applyx(IgniteFuture<GridGgfsMessage> fut) {
+                            fut.listenAsync(new CIX1<IgniteInternalFuture<GridGgfsMessage>>() {
+                                @Override public void applyx(IgniteInternalFuture<GridGgfsMessage> fut) {
                                     GridGgfsMessage res;
 
                                     try {

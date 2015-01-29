@@ -125,7 +125,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
      * @param fut Future to cancel.
      * @throws Exception If failed.
      */
-    private void testMessageSet(IgniteFuture<?> fut) throws Exception {
+    private void testMessageSet(IgniteInternalFuture<?> fut) throws Exception {
         cancelLatch.await();
 
         assertTrue(fut.cancel());
@@ -134,7 +134,7 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
 
         assertTrue(U.await(finishLatch, 5000, MILLISECONDS));
 
-        Map map = U.field(((GridKernal)grid(0)).context().io(), "msgSetMap");
+        Map map = U.field(((IgniteKernal)grid(0)).context().io(), "msgSetMap");
 
         info("Map: " + map);
 

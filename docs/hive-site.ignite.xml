@@ -19,15 +19,15 @@
 
 <!--
     This template file contains settings needed to run Apache Hive queries
-    with GridGain In-Memory Accelerator.
+    with Ignite In-Memory Accelerator.
 
     You can replace '$HIVE_HOME/conf/hive-site.xml' file with this one or
-    run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop
+    run script '$IGNITE_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop
     and Hive client setup.
 -->
 <configuration>
     <!--
-        GridGain requires query plan to be passed not using local resource.
+        Ignite requires query plan to be passed not using local resource.
     -->
     <property>
         <name>hive.rpc.query.plan</name>

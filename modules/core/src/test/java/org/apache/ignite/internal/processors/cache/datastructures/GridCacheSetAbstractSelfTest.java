@@ -24,7 +24,6 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -94,7 +93,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         assertSetIteratorsCleared();
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridCacheDataStructuresManager ds = grid.internalCache(null).context().dataStructures();
 
@@ -113,7 +112,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      */
     private void assertSetIteratorsCleared() {
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal) grid(i);
 
             GridCacheQueryManager queries = grid.internalCache(null).context().queries();
 
@@ -624,7 +623,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             UUID setNodeId = null;
 
             for (int i = 0; i < gridCount(); i++) {
-                GridKernal grid = (GridKernal)grid(i);
+                IgniteKernal grid = (IgniteKernal)grid(i);
 
                 Iterator<GridCacheEntryEx<Object, Object>> entries =
                     grid.context().cache().internalCache("noBackupsCache").map().allEntries0().iterator();
@@ -668,7 +667,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         assertNotNull(set0);
 
-        Collection<IgniteFuture> futs = new ArrayList<>();
+        Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
         final int THREADS_PER_NODE = 5;
         final int KEY_RANGE = 10_000;
@@ -723,7 +722,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             }, THREADS_PER_NODE, "testSetMultithreaded"));
         }
 
-        for (IgniteFuture fut : futs)
+        for (IgniteInternalFuture fut : futs)
             fut.get();
     }
 
@@ -775,7 +774,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         final AtomicInteger val = new AtomicInteger(10_000);
 
-        IgniteFuture<?> fut;
+        IgniteInternalFuture<?> fut;
 
         try {
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
@@ -806,7 +805,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx<Object, Object> entry = entries.next();

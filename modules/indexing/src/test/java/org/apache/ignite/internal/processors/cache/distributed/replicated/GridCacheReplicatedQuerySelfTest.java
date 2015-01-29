@@ -285,7 +285,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
     private ConcurrentMap<UUID,
         Map<Long, GridFutureAdapter<GridCloseableIterator<IgniteBiTuple<CacheKey, CacheValue>>>>>
         distributedQueryManagerQueryItersMap(Ignite g) {
-        GridCacheContext ctx = ((GridKernal)g).internalCache().context();
+        GridCacheContext ctx = ((IgniteKernal)g).internalCache().context();
 
         Field qryItersField = ReflectionUtils.findField(ctx.queries().getClass(), "qryIters");
 
@@ -442,7 +442,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
 
             final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<GridCloseableIterator<
                 IgniteBiTuple<Integer, Integer>>>>> map =
-                U.field(((GridKernal)grid(0)).internalCache().context().queries(), "qryIters");
+                U.field(((IgniteKernal)grid(0)).internalCache().context().queries(), "qryIters");
 
             // fut.nextX() does not guarantee the request has completed on remote node
             // (we could receive page from local one), so we need to wait.
@@ -458,7 +458,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             assertEquals(1, futs.size());
 
             GridCloseableIterator<IgniteBiTuple<Integer, Integer>> iter =
-                (GridCloseableIterator<IgniteBiTuple<Integer, Integer>>)((IgniteFuture)F.first(futs.values()).get()).get();
+                (GridCloseableIterator<IgniteBiTuple<Integer, Integer>>)((IgniteInternalFuture)F.first(futs.values()).get()).get();
 
             ResultSet rs = U.field(iter, "data");
 

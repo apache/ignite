@@ -1,7 +1,7 @@
-GridGain Shared memory IPC library
--------------------
+Apache Ignite Shared memory IPC library
+---------------------------------------
 
-GridGain shared memory IPC library implement exchange via shared memory for GridGain.
+Apache Ignite shared memory IPC library implement exchange via shared memory for Apache Ignite.
 
 Building on Linux and Mac OS X
 -------------------
@@ -22,7 +22,7 @@ to see all available command line options. Once the configure script finishes, y
 This will build and install the shared memory library and the headers into the default location on your
 system (which is usually '/usr/local').
 
-Usage with GridGain
+Usage with Apache Ignite
 -------------------
 
 Copy compiled library to folder that already listed in 'java.library.path'

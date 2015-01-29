@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Base externalizable test class.
  */
-public class GridExternalizableAbstractTest extends GridCommonAbstractTest {
+public class IgniteExternalizableAbstractTest extends GridCommonAbstractTest {
     /**
      * @return Marshallers.
      */

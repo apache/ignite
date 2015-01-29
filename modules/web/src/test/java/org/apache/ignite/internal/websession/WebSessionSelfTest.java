@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.websession;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.*;
 import org.eclipse.jetty.webapp.*;
@@ -118,7 +118,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> restarterFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @SuppressWarnings("BusyWait")
             @Override public Object call() throws Exception {
                 Random rnd = new Random();

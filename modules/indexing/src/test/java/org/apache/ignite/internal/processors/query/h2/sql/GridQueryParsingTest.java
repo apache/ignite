@@ -194,7 +194,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     private JdbcConnection connection() throws Exception {
-        GridKernalContext ctx = ((GridKernal)ignite).context();
+        GridKernalContext ctx = ((IgniteKernal)ignite).context();
 
         GridQueryProcessor qryProcessor = ctx.query();
 

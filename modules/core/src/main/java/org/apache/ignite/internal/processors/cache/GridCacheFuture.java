@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 
@@ -26,7 +27,7 @@ import java.util.*;
 /**
  * This interface should be implemented by all distributed futures.
  */
-public interface GridCacheFuture<R> extends IgniteFuture<R> {
+public interface GridCacheFuture<R> extends IgniteInternalFuture<R> {
     /**
      * @return Unique identifier for this future.
      */

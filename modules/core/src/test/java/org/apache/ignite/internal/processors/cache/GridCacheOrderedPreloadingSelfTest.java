@@ -137,7 +137,7 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
 
             // For first node in topology replicated preloader gets completed right away.
             for (int i = 1; i < GRID_CNT; i++) {
-                GridKernal kernal = (GridKernal)grid(i);
+                IgniteKernal kernal = (IgniteKernal)grid(i);
 
                 GridFutureAdapter<?> fut1 = (GridFutureAdapter<?>)kernal.internalCache(FIRST_CACHE_NAME).preloader()
                     .syncFuture();

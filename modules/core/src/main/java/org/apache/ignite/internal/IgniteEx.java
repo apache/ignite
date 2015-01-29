@@ -29,7 +29,7 @@ import java.util.*;
 /**
  * Extended Grid interface which provides some additional methods required for kernal and Visor.
  */
-public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
+public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Gets utility cache.
      *
@@ -124,7 +124,7 @@ public interface GridEx extends Ignite, ClusterGroupEx, IgniteCluster {
     /**
      * Schedule sending of given email to all configured admin emails.
      */
-    IgniteFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
+    IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html);
 
     /**
      * Get GGFS instance returning null if it doesn't exist.

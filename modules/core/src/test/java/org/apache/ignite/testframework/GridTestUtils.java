@@ -455,7 +455,7 @@ public final class GridTestUtils {
      * @param threadName Thread name.
      * @return Future for the run. Future returns execution time in milliseconds.
      */
-    public static IgniteFuture<Long> runMultiThreadedAsync(Runnable run, int threadNum, String threadName) {
+    public static IgniteInternalFuture<Long> runMultiThreadedAsync(Runnable run, int threadNum, String threadName) {
         return runMultiThreadedAsync(makeCallable(run, null), threadNum, threadName);
     }
 
@@ -483,7 +483,7 @@ public final class GridTestUtils {
      * @return Future for the run. Future returns execution time in milliseconds.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public static IgniteFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
+    public static IgniteInternalFuture<Long> runMultiThreadedAsync(Callable<?> call, int threadNum, final String threadName) {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
 
@@ -503,7 +503,7 @@ public final class GridTestUtils {
         };
 
         // Async execution future (doesn't support cancel()).
-        IgniteFuture<Long> runFut = runAsync(new Callable<Long>() {
+        IgniteInternalFuture<Long> runFut = runAsync(new Callable<Long>() {
             @Override public Long call() throws Exception {
                 return runMultiThreaded(calls, threadFactory);
             }
@@ -581,7 +581,7 @@ public final class GridTestUtils {
      * @return Future with task result.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    public static <T> IgniteFuture<T> runAsync(final Callable<T> task) {
+    public static <T> IgniteInternalFuture<T> runAsync(final Callable<T> task) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to start new threads (test is being stopped).");
 
@@ -843,7 +843,7 @@ public final class GridTestUtils {
      * @return Cache context.
      */
     public static <K, V> GridCacheContext<K, V> cacheContext(CacheProjection<K, V> cache) {
-        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
+        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
     }
 
     /**
@@ -880,7 +880,7 @@ public final class GridTestUtils {
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
-            GridCache<K, V> cache = ((GridEx)g).cachex(cacheName);
+            GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
 
             GridDhtPartitionTopology<?, ?> top = dht(cache).topology();
 

@@ -90,7 +90,7 @@ public class VisorGridConfiguration implements Serializable {
      * @param g Grid.
      * @return Fill data transfer object with node configuration data.
      */
-    public VisorGridConfiguration from(GridEx g) {
+    public VisorGridConfiguration from(IgniteEx g) {
         assert g != null;
 
         IgniteConfiguration c = g.configuration();

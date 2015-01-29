@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.jetbrains.annotations.*;
@@ -100,12 +101,12 @@ public interface GridCachePreloader<K, V> {
     /**
      * @return Future which will complete when preloader is safe to use.
      */
-    public IgniteFuture<Object> startFuture();
+    public IgniteInternalFuture<Object> startFuture();
 
     /**
      * @return Future which will complete when preloading is finished.
      */
-    public IgniteFuture<?> syncFuture();
+    public IgniteInternalFuture<?> syncFuture();
 
     /**
      * Requests that preloader sends the request for the key.
@@ -114,7 +115,7 @@ public interface GridCachePreloader<K, V> {
      * @param topVer Topology version, {@code -1} if not required.
      * @return Future to complete when all keys are preloaded.
      */
-    public IgniteFuture<Object> request(Collection<? extends K> keys, long topVer);
+    public IgniteInternalFuture<Object> request(Collection<? extends K> keys, long topVer);
 
     /**
      * Force preload process.

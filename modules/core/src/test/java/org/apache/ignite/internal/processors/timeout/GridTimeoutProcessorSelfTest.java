@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.timeout;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
@@ -382,7 +383,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
     public void testAddRemoveInterleaving() throws Exception {
         final AtomicInteger callCnt = new AtomicInteger(0);
 
-        IgniteFuture<?> rmv = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> rmv = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @SuppressWarnings("CallToThreadYield")
             @Override public void run() {
@@ -440,7 +441,7 @@ public class GridTimeoutProcessorSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(max * threads);
 
-        IgniteFuture<?> called = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> called = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @SuppressWarnings("CallToThreadYield")
             @Override public void run() {

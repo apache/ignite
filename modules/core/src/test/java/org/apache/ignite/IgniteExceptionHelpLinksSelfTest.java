@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.util.GridUtils.*;
 /**
  * Tests for proper link output in stack traces.
  */
-public class GridExceptionHelpLinksSelfTest extends TestCase {
+public class IgniteExceptionHelpLinksSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */

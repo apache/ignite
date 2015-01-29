@@ -19,7 +19,8 @@ package org.apache.ignite.scalar.pimps
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterNode}
-import org.apache.ignite.lang.{IgniteFuture, IgniteFutureCancelledException, IgnitePredicate}
+import org.apache.ignite.internal.IgniteInternalFuture
+import org.apache.ignite.lang.{IgniteFutureCancelledException, IgnitePredicate}
 import org.jetbrains.annotations._
 
 /**
@@ -375,7 +376,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
     def callAsync$[R](@Nullable s: Seq[Call[R]], @Nullable p: NF):
-        IgniteFuture[java.util.Collection[R]] = {
+        IgniteInternalFuture[java.util.Collection[R]] = {
         val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.call[R](toJavaCollection(s, (f: Call[R]) => toCallable(f)))
@@ -393,7 +394,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      closures were executed or `null` (see above).
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
-    def #?[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
+    def #?[R](@Nullable s: Seq[Call[R]], @Nullable p: NF): IgniteInternalFuture[java.util.Collection[R]] = {
         callAsync$(s, p)
     }
 
@@ -408,7 +409,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      closures were executed or `null` (see above).
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
-    def callAsync$[R](@Nullable s: Call[R], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
+    def callAsync$[R](@Nullable s: Call[R], @Nullable p: NF): IgniteInternalFuture[java.util.Collection[R]] = {
         callAsync$(Seq(s), p)
     }
 
@@ -422,7 +423,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      closures were executed or `null` (see above).
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
-    def #?[R](@Nullable s: Call[R], @Nullable p: NF): IgniteFuture[java.util.Collection[R]] = {
+    def #?[R](@Nullable s: Call[R], @Nullable p: NF): IgniteInternalFuture[java.util.Collection[R]] = {
         callAsync$(s, p)
     }
 
@@ -435,7 +436,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
-    def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
+    def runAsync$(@Nullable s: Seq[Run], @Nullable p: NF): IgniteInternalFuture[_] = {
         val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.run(toJavaCollection(s, (f: Run) => toRunnable(f)))
@@ -451,7 +452,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.apache.ignite.cluster.ClusterGroup.call(...)`
      */
-    def *?(@Nullable s: Seq[Run], @Nullable p: NF): IgniteFuture[_] = {
+    def *?(@Nullable s: Seq[Run], @Nullable p: NF): IgniteInternalFuture[_] = {
         runAsync$(s, p)
     }
 
@@ -464,7 +465,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
-    def runAsync$(@Nullable s: Run, @Nullable p: NF): IgniteFuture[_] = {
+    def runAsync$(@Nullable s: Run, @Nullable p: NF): IgniteInternalFuture[_] = {
         runAsync$(Seq(s), p)
     }
 
@@ -476,7 +477,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @param p Optional node filter predicate. If `null` provided - all nodes in projection will be used.
      * @see `org.apache.ignite.cluster.ClusterGroup.run(...)`
      */
-    def *?(@Nullable s: Run, @Nullable p: NF): IgniteFuture[_] = {
+    def *?(@Nullable s: Run, @Nullable p: NF): IgniteInternalFuture[_] = {
         runAsync$(s, p)
     }
 
@@ -492,7 +493,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @return Future over the reduced result or `null` (see above).
      * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
-    def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
+    def reduceAsync$[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteInternalFuture[R2] = {
         assert(s != null && r != null)
 
         val comp = value.ignite().compute(forPredicate(p)).withAsync()
@@ -513,7 +514,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @return Future over the reduced result or `null` (see above).
      * @see `org.apache.ignite.cluster.ClusterGroup.reduce(...)`
      */
-    def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteFuture[R2] = {
+    def @?[R1, R2](s: Seq[Call[R1]], r: Seq[R1] => R2, @Nullable p: NF): IgniteInternalFuture[R2] = {
         reduceAsync$(s, r, p)
     }
 
@@ -648,7 +649,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      * @throws IgniteFutureCancelledException Subclass of `IgniteCheckedException` thrown if computation was cancelled.
      */
     def affinityRunAsync$(cacheName: String, @Nullable affKey: Any, @Nullable r: Run,
-        @Nullable p: NF): IgniteFuture[_] = {
+        @Nullable p: NF): IgniteInternalFuture[_] = {
         val comp = value.ignite().compute(forPredicate(p)).withAsync()
 
         comp.affinityRun(cacheName, affKey, toRunnable(r))
