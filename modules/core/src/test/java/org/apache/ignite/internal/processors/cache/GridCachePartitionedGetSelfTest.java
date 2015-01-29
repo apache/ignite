@@ -230,7 +230,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
                 g.cache(null).put(KEY, VAL);
 
                 // Register listener.
-                ((GridKernal)g).context().io().addMessageListener(
+                ((IgniteKernal)g).context().io().addMessageListener(
                     TOPIC_CACHE,
                     new GridMessageListener() {
                         @Override public void onMessage(UUID nodeId, Object msg) {

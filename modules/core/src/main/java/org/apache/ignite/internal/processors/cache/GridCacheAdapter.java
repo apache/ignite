@@ -4420,7 +4420,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            return GridGainEx.gridx(t.get1()).cachex(t.get2());
+            return IgnitionEx.gridx(t.get1()).cachex(t.get2());
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -5239,7 +5239,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ((GridEx) ignite).cachex(cacheName).clearAll();
+            ((IgniteEx) ignite).cachex(cacheName).clearAll();
 
             return null;
         }
@@ -5292,7 +5292,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Integer apply(Object o) {
-            GridCache<Object, Object> cache = ((GridEx)ignite).cachex(cacheName);
+            GridCache<Object, Object> cache = ((IgniteEx)ignite).cachex(cacheName);
 
             return primaryOnly ? cache.primarySize() : cache.size();
         }
@@ -5523,7 +5523,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         /** {@inheritDoc} */
         @Override public Void call() throws Exception {
-            GridCacheAdapter<K, V> cache = ((GridKernal)ignite).context().cache().internalCache(cacheName);
+            GridCacheAdapter<K, V> cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
 
             assert cache != null : cacheName;
 

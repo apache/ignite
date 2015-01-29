@@ -24,14 +24,8 @@ import org.apache.ignite.internal.*;
  * Adapter for {@link IgniteAsyncSupport}.
  */
 public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
-    /** */
-    private static final Object mux = new Object();
-
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteInternalFuture<?>> curFut;
-
-    /** */
-    private volatile T asyncInstance;
 
     /**
      * Default constructor.
@@ -44,29 +38,16 @@ public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements 
      * @param async Async enabled flag.
      */
     public IgniteAsyncSupportAdapter(boolean async) {
-        if (async) {
+        if (async)
             curFut = new ThreadLocal<>();
-
-            asyncInstance = (T)this;
-        }
     }
 
     /** {@inheritDoc} */
     @Override public T withAsync() {
-        T res = asyncInstance;
+        if (isAsync())
+            return (T)this;
 
-        if (res == null) {
-            res = createAsyncInstance();
-
-            synchronized (mux) {
-                if (asyncInstance != null)
-                    return asyncInstance;
-
-                asyncInstance = res;
-            }
-        }
-
-        return res;
+        return createAsyncInstance();
     }
 
     /**

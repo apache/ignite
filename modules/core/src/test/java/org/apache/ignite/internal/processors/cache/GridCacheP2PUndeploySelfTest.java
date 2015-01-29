@@ -184,7 +184,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @return Size.
      * @throws IgniteCheckedException If failed.
      */
-    private long size(String cacheName, GridKernal g) throws IgniteCheckedException {
+    private long size(String cacheName, IgniteKernal g) throws IgniteCheckedException {
         if (offheap)
             return g.cache(cacheName).offHeapEntriesCount();
 
@@ -204,7 +204,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
 
         try {
             Ignite ignite1 = startGrid(1);
-            GridKernal grid2 = (GridKernal)startGrid(2);
+            IgniteKernal grid2 = (IgniteKernal)startGrid(2);
 
             GridCache<Integer, Object> cache1 = ignite1.cache(cacheName);
             GridCache<Integer, Object> cache2 = grid2.cache(cacheName);
@@ -273,7 +273,7 @@ public class GridCacheP2PUndeploySelfTest extends GridCommonAbstractTest {
      * @param grid Kernal.
      * @return Name for swap space.
      */
-    private String swapSpaceName(String cacheName, GridKernal grid) {
+    private String swapSpaceName(String cacheName, IgniteKernal grid) {
         GridCacheContext<Object, Object> cctx = grid.internalCache(cacheName).context();
 
         return CU.swapSpaceName(cctx.isNear() ? cctx.near().dht().context() : cctx);

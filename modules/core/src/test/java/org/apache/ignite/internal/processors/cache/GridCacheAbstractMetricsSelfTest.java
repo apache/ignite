@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.util.GridUtils;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
@@ -739,7 +739,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // One more update from the same cache entry to ensure that expire time is shifted forward.
-        GridUtils.sleep(100);
+        IgniteUtils.sleep(100);
 
         tx = inTx ? c.txStart() : null;
 
@@ -764,7 +764,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // And one more direct update to ensure that expire time is shifted forward.
-        GridUtils.sleep(100);
+        IgniteUtils.sleep(100);
 
         assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
 
@@ -791,7 +791,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
-        GridUtils.sleep(100);
+        IgniteUtils.sleep(100);
 
         assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
 
@@ -864,7 +864,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 tx.commit();
         }
 
-        GridUtils.sleep(2000);
+        IgniteUtils.sleep(2000);
 
         entry = c.entry(key);
 

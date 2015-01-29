@@ -44,7 +44,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
     private static final int GRID_CNT = 1;
 
     /** Grid kernal. */
-    private GridKernal grid;
+    private IgniteKernal grid;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -53,7 +53,7 @@ public class GridCacheFinishPartitionsSelfTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = (GridKernal)grid(0);
+        grid = (IgniteKernal)grid(0);
     }
 
     /** {@inheritDoc} */

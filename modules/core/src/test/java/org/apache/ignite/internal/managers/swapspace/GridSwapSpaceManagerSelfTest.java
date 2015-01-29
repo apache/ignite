@@ -67,7 +67,7 @@ public class GridSwapSpaceManagerSelfTest extends GridCommonAbstractTest {
     private GridSwapSpaceManager getSwapSpaceManager(Ignite ignite) {
         assert ignite != null;
 
-        return ((GridKernal) ignite).context().swap();
+        return ((IgniteKernal) ignite).context().swap();
     }
 
     /**

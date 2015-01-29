@@ -104,8 +104,8 @@ public class GridCacheMvccManagerSelfTest extends GridCommonAbstractTest {
             tx.commit();
 
             for (int i = 0; i < gridCnt; i++) {
-                assert ((GridKernal)grid(i)).internalCache().context().mvcc().localCandidates().isEmpty();
-                assert ((GridKernal)grid(i)).internalCache().context().mvcc().remoteCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().localCandidates().isEmpty();
+                assert ((IgniteKernal)grid(i)).internalCache().context().mvcc().remoteCandidates().isEmpty();
             }
         }
         finally {
