@@ -190,6 +190,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache weak query iterator holder. */
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
+    /** Conflict resolver. */
+    private GridCacheVersionAbstractConflictResolver conflictRslvr;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -306,6 +309,14 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+
+        // Conflict resolver is determined in two stages:
+        // 1. If DR receiver hub is enabled, then pick it from DR manager.
+        // 2. Otherwise instantiate default resolver in case local store is configured.
+        conflictRslvr = drMgr.conflictResolver();
+
+        if (conflictRslvr == null && storeMgr.isLocalStore())
+            conflictRslvr = new GridCacheVersionConflictResolver();
     }
 
     /**
@@ -1543,6 +1554,38 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return false;
+    }
+
+    /**
+     * Check whether conflict resolution is required.
+     *
+     * @param oldVer Old version.
+     * @param newVer New version.
+     * @return {@code True} in case DR is required.
+     */
+    public boolean conflictNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
+        return conflictRslvr != null;
+    }
+
+    /**
+     * Resolve DR conflict.
+     *
+     * @param oldEntry Old entry.
+     * @param newEntry New entry.
+     * @param atomicVerComparator Whether to use atomic version comparator.
+     * @return Conflict resolution result.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    public GridCacheVersionConflictContextImpl<K, V> conflictResolve(GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
+        assert conflictRslvr != null : "Should not reach this place.";
+
+        GridCacheVersionConflictContextImpl<K, V> ctx = conflictRslvr.resolve(oldEntry, newEntry, atomicVerComparator);
+
+        if (ctx.isManualResolve())
+            drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
+
+        return ctx;
     }
 
     /**

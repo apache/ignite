@@ -1923,6 +1923,21 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
                 }
             }
 
+            // Cancel update notification timer.
+            if (updateNtfTimer != null)
+                updateNtfTimer.cancel();
+
+            if (starveTimer != null)
+                starveTimer.cancel();
+
+            // Cancel license timer.
+            if (licTimer != null)
+                licTimer.cancel();
+
+            // Cancel metrics log timer.
+            if (metricsLogTimer != null)
+                metricsLogTimer.cancel();
+
             gw.writeLock();
 
             try {
@@ -1930,21 +1945,6 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
                 // No more kernal calls from this point on.
                 gw.setState(STOPPING);
-
-                // Cancel update notification timer.
-                if (updateNtfTimer != null)
-                    updateNtfTimer.cancel();
-
-                if (starveTimer != null)
-                    starveTimer.cancel();
-
-                // Cancel license timer.
-                if (licTimer != null)
-                    licTimer.cancel();
-
-                // Cancel metrics log timer.
-                if (metricsLogTimer != null)
-                    metricsLogTimer.cancel();
 
                 // Clear node local store.
                 nodeLoc.clear();

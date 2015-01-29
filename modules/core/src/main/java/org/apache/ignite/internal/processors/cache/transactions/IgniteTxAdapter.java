@@ -1252,6 +1252,51 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /**
+     * Resolve DR conflict.
+     *
+     * @param op Initially proposed operation.
+     * @param key Key.
+     * @param newVal New value.
+     * @param newValBytes New value bytes.
+     * @param newTtl New TTL.
+     * @param newDrExpireTime New explicit DR expire time.
+     * @param newVer New version.
+     * @param old Old entry.
+     * @return Tuple with adjusted operation type and conflict context.
+     * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
+     * @throws GridCacheEntryRemovedException If entry got removed.
+     */
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>> conflictResolve(
+        GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
+        GridCacheVersion newVer, GridCacheEntryEx<K, V> old)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        // Construct old entry info.
+        GridCacheVersionedEntryEx<K, V> oldEntry = old.versionedEntry();
+
+        // Construct new entry info.
+        if (newVal == null && newValBytes != null)
+            newVal = cctx.marshaller().unmarshal(newValBytes, cctx.deploy().globalLoader());
+
+        long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
+
+        GridCacheVersionedEntryEx<K, V> newEntry =
+            new GridCachePlainVersionedEntry<K, V>(key, newVal, newTtl, newExpireTime, newVer);
+
+        GridCacheVersionConflictContextImpl<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+
+        if (ctx.isMerge()) {
+            V resVal = ctx.mergeValue();
+
+            if ((op == CREATE || op == UPDATE) && resVal == null)
+                op = DELETE;
+            else if (op == DELETE && resVal != null)
+                op = old.isNewLocked() ? CREATE : UPDATE;
+        }
+
+        return F.t(op, ctx);
+    }
+
+    /**
      * @param e Transaction entry.
      * @param primaryOnly Flag to include backups into check or not.
      * @return {@code True} if entry is locally mapped as a primary or back up node.

@@ -25,7 +25,7 @@ import org.apache.ignite.cache.*;
 public interface GridCacheVersionedEntryEx<K, V> extends GridCacheVersionedEntry<K, V>, GridCacheVersionable {
     /**
      *
-     * @return
+     * @return {@code True} if entry is new.
      */
     public boolean isStartVersion();
 }
