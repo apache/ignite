@@ -601,7 +601,7 @@ public class SchemaLoadApp extends Application {
         connPnl.addColumn(35, 35, 35, Priority.NEVER);
 
         connPnl.add(text("This utility is designed to automatically generate configuration XML files and" +
-            " POGO classes from database schema information.", 550), 3);
+            " POJO classes from database schema information.", 550), 3);
 
         connPnl.wrap();
 
