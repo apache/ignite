@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import mx4j.tools.adaptor.http.*;
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.internal.util.direct.*;
@@ -165,7 +166,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (cntr.getAndIncrement() < msgCnt) {

@@ -854,7 +854,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         boolean found = false;
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridCacheAdapter<Object, Object> cache = grid.context().cache().internalCache();
 

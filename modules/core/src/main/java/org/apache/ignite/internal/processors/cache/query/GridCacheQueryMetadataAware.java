@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.query.*;
-import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -29,5 +29,5 @@ public interface GridCacheQueryMetadataAware {
     /**
      * @return Future to retrieve metadata.
      */
-    public IgniteFuture<List<GridQueryFieldMetadata>> metadata();
+    public IgniteInternalFuture<List<GridQueryFieldMetadata>> metadata();
 }

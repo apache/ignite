@@ -631,6 +631,11 @@ public class GridCacheTestEntryEx<K, V> extends GridMetadataAwareAdapter impleme
     }
 
     /** @inheritDoc */
+    @Override public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException {
+        return null;
+    }
+
+    /** @inheritDoc */
     @Override public boolean versionedValue(V val, GridCacheVersion curVer, GridCacheVersion newVer) {
         assert false; return false;
     }

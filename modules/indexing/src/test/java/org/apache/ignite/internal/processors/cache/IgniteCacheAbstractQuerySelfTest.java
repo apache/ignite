@@ -607,8 +607,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         cache.putx(key, val);
         cache1.putx(key, val);
 
-        GridCacheQueryManager<Object, Object> qryMgr = ((GridKernal) ignite).internalCache().context().queries();
-        GridCacheQueryManager<Object, Object> qryMgr1 = ((GridKernal) ignite).internalCache("c1").context().queries();
+        GridCacheQueryManager<Object, Object> qryMgr = ((IgniteKernal) ignite).internalCache().context().queries();
+        GridCacheQueryManager<Object, Object> qryMgr1 = ((IgniteKernal) ignite).internalCache("c1").context().queries();
 
         assert hasIndexTable(ObjectValue.class, qryMgr);
         assert hasIndexTable(ObjectValue.class, qryMgr1);
@@ -707,7 +707,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         for (int i = 0; i < gridCount(); i++) {
             GridCacheQueryManager<Object, Object> qryMgr =
-                ((GridKernal)grid(i)).internalCache().context().queries();
+                ((IgniteKernal)grid(i)).internalCache().context().queries();
 
             assert !hasIndexTable(EmptyObject.class, qryMgr);
         }

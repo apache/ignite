@@ -86,7 +86,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testHasNearCache() throws Exception {
-        GridKernal g0 = (GridKernal)startGrid(0); // PARTITIONED_ONLY cache.
+        IgniteKernal g0 = (IgniteKernal)startGrid(0); // PARTITIONED_ONLY cache.
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 0));
         assertFalse(g0.context().discovery().hasNearCache(null, 0));
@@ -94,7 +94,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
         assertFalse(g0.context().discovery().hasNearCache(null, 1));
 
-        GridKernal g1 = (GridKernal)startGrid(1); // NEAR_ONLY cache.
+        IgniteKernal g1 = (IgniteKernal)startGrid(1); // NEAR_ONLY cache.
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));
@@ -104,7 +104,7 @@ public class GridDiscoveryManagerSelfTest extends GridCommonAbstractTest {
         assertTrue(g1.context().discovery().hasNearCache(CACHE_NAME, 2));
         assertTrue(g1.context().discovery().hasNearCache(null, 2));
 
-        GridKernal g2 = (GridKernal)startGrid(2); // NEAR_PARTITIONED cache.
+        IgniteKernal g2 = (IgniteKernal)startGrid(2); // NEAR_PARTITIONED cache.
 
         assertFalse(g0.context().discovery().hasNearCache(CACHE_NAME, 1));
         assertTrue(g0.context().discovery().hasNearCache(CACHE_NAME, 2));

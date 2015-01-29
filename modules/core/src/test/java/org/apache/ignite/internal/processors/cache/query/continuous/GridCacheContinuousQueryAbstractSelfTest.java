@@ -162,7 +162,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals("Cache is not empty: " + grid(i).cache(null).entrySet(), 0, grid(i).cache(null).size());
 
         for (int i = 0; i < gridCount(); i++) {
-            GridContinuousProcessor proc = ((GridKernal)grid(i)).context().continuous();
+            GridContinuousProcessor proc = ((IgniteKernal)grid(i)).context().continuous();
 
             assertEquals(String.valueOf(i), 2, ((Map)U.field(proc, "locInfos")).size());
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "rmtInfos")).size());
@@ -173,7 +173,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             assertEquals(String.valueOf(i), 0, ((Map)U.field(proc, "pending")).size());
 
             GridCacheContinuousQueryManager mgr =
-                ((GridKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
+                ((IgniteKernal)grid(i)).context().cache().internalCache().context().continuousQueries();
 
             assertEquals(0, ((Map)U.field(mgr, "lsnrs")).size());
         }

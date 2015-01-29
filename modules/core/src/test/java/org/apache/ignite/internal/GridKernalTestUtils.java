@@ -18,7 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.internal.*;
 
 /**
  * Test kernal utils.
@@ -40,6 +39,6 @@ public class GridKernalTestUtils {
     public static GridKernalContext context(Ignite ignite) {
         assert ignite != null;
 
-        return ((GridKernal) ignite).context();
+        return ((IgniteKernal) ignite).context();
     }
 }

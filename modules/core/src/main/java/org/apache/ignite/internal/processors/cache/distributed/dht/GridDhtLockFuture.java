@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -234,8 +235,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @return Participating nodes.
      */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
+        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
                 if (isMini(f))
                     return ((MiniFuture)f).node();
 
@@ -470,7 +471,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        for (IgniteFuture<?> fut : futures()) {
+        for (IgniteInternalFuture<?> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -496,7 +497,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
             boolean found = false;
 
-            for (IgniteFuture<Boolean> fut : pending()) {
+            for (IgniteInternalFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture mini = (MiniFuture)fut;
 
@@ -712,7 +713,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteFuture<?> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 

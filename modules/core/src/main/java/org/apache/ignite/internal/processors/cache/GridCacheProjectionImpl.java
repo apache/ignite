@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -614,7 +615,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> containsKeyAsync(K key) {
+    @Override public IgniteInternalFuture<Boolean> containsKeyAsync(K key) {
         return cache.containsKeyAsync(key, entryFilter(false));
     }
 
@@ -639,7 +640,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync(K key) {
+    @Override public IgniteInternalFuture<V> reloadAsync(K key) {
         return cache.reloadAsync(key, entryFilter(false));
     }
 
@@ -649,7 +650,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> reloadAllAsync() {
+    @Override public IgniteInternalFuture<?> reloadAllAsync() {
         return cache.reloadAllAsync(entryFilter(false));
     }
 
@@ -659,7 +660,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys) {
         return cache.reloadAllAsync(keys, entryFilter(false));
     }
 
@@ -675,7 +676,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync(K key) {
+    @Override public IgniteInternalFuture<V> getAsync(K key) {
         return cache.getAsync(key, deserializePortables(), entryFilter(false));
     }
 
@@ -685,7 +686,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getForcePrimaryAsync(K key) {
+    @Override public IgniteInternalFuture<V> getForcePrimaryAsync(K key) {
         return cache.getForcePrimaryAsync(key);
     }
 
@@ -695,7 +696,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
+    @Override public IgniteInternalFuture<Map<K, V>> getAllOutTxAsync(List<K> keys) {
         return cache.getAllOutTxAsync(keys);
     }
 
@@ -730,7 +731,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys) {
         return cache.getAllAsync(keys, deserializePortables(), entryFilter(false));
     }
 
@@ -747,13 +748,13 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> putAsync(K key, V val,
+    @Override public IgniteInternalFuture<V> putAsync(K key, V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return putAsync(key, val, null, -1, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
+    @Override public IgniteInternalFuture<V> putAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry, long ttl,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         A.notNull(key, "key", val, "val");
 
@@ -782,7 +783,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap)
+    @Override public IgniteInternalFuture<?> putAllDrAsync(Map<? extends K, GridCacheDrInfo<V>> drMap)
         throws IgniteCheckedException {
         return cache.putAllDrAsync(drMap);
     }
@@ -801,14 +802,14 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<EntryProcessorResult<T>> invokeAsync(K key,
+    @Override public <T> IgniteInternalFuture<EntryProcessorResult<T>> invokeAsync(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         return cache.invokeAsync(key, entryProcessor, args);
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
+    @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(Set<? extends K> keys,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) {
         return cache.invokeAllAsync(keys, entryProcessor, args);
@@ -822,20 +823,20 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public <T> IgniteFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
+    @Override public <T> IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> invokeAllAsync(
         Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args) {
         return cache.invokeAllAsync(map, args);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> putxAsync(K key, V val,
+    @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return putxAsync(key, val, null, -1, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public IgniteInternalFuture<Boolean> putxAsync(K key, V val, @Nullable GridCacheEntryEx<K, V> entry,
         long ttl, @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         A.notNull(key, "key", val, "val");
 
@@ -852,7 +853,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> putIfAbsentAsync(K key, V val) {
+    @Override public IgniteInternalFuture<V> putIfAbsentAsync(K key, V val) {
         return putAsync(key, val, cctx.noPeekArray());
     }
 
@@ -862,7 +863,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> putxIfAbsentAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> putxIfAbsentAsync(K key, V val) {
         return putxAsync(key, val, cctx.noPeekArray());
     }
 
@@ -872,7 +873,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> replaceAsync(K key, V val) {
+    @Override public IgniteInternalFuture<V> replaceAsync(K key, V val) {
         return putAsync(key, val, cctx.hasPeekArray());
     }
 
@@ -882,7 +883,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replacexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> replacexAsync(K key, V val) {
         return putxAsync(key, val, cctx.hasPeekArray());
     }
 
@@ -892,7 +893,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(K key, V oldVal, V newVal) {
         IgnitePredicate<CacheEntry<K, V>> fltr = and(F.<K, V>cacheContainsPeek(oldVal), false);
 
         return cache.putxAsync(key, newVal, fltr);
@@ -905,7 +906,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
+    @Override public IgniteInternalFuture<?> putAllAsync(Map<? extends K, ? extends V> m,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         m = isAll(m, true);
 
@@ -1072,12 +1073,12 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(K key, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(K key, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return removeAsync(key, null, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public IgniteInternalFuture<V> removeAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         return cache.removeAsync(key, entry, and(filter, false));
     }
@@ -1094,7 +1095,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> removeAllDrAsync(Map<? extends K, GridCacheVersion> drMap) throws IgniteCheckedException {
         return cache.removeAllDrAsync(drMap);
     }
 
@@ -1105,19 +1106,19 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(K key,
+    @Override public IgniteInternalFuture<Boolean> removexAsync(K key,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return removexAsync(key, null, filter);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
+    @Override public IgniteInternalFuture<Boolean> removexAsync(K key, @Nullable GridCacheEntryEx<K, V> entry,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         return cache.removexAsync(key, entry, and(filter, false));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<GridCacheReturn<V>> replacexAsync(K key, V oldVal, V newVal) {
         A.notNull(key, "key", oldVal, "oldVal", newVal, "newVal");
 
         // Check k-v predicate first.
@@ -1138,7 +1139,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
+    @Override public IgniteInternalFuture<GridCacheReturn<V>> removexAsync(K key, V val) {
         return !isAll(key, val, true) ? new GridFinishedFuture<>(cctx.kernalContext(),
             new GridCacheReturn<V>(false)) : cache.removexAsync(key, val);
     }
@@ -1149,7 +1150,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removeAsync(K key, V val) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(K key, V val) {
         return !isAll(key, val, true) ? new GridFinishedFuture<>(cctx.kernalContext(), false) :
             cache.removeAsync(key, val);
     }
@@ -1161,7 +1162,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return cache.removeAllAsync(keys, and(filter, false));
     }
@@ -1173,7 +1174,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> removeAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<?> removeAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         return cache.removeAllAsync(and(filter, false));
     }
 
@@ -1184,7 +1185,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(K key, long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAsync(K key, long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return cache.lockAsync(key, timeout, and(filter, false));
     }
@@ -1196,7 +1197,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys, long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return cache.lockAllAsync(keys, timeout, and(filter, false));
     }

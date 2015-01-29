@@ -164,7 +164,7 @@ public class GridGgfsHadoopFileSystemClientSelfTest extends GridGgfsCommonAbstra
      */
     @SuppressWarnings("ConstantConditions")
     private void switchHandlerErrorFlag(boolean flag) throws Exception {
-        IgniteFsProcessorAdapter ggfsProc = ((GridKernal)grid(0)).context().ggfs();
+        IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal)grid(0)).context().ggfs();
 
         Map<String, GridGgfsContext> ggfsMap = getField(ggfsProc, "ggfsCache");
 

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -75,7 +75,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         final GridCache<Integer, H2TextValue> c = grid(0).cache(null);
 
-        IgniteFuture<?> fut1 = multithreadedAsync(new Callable() {
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     for (int i = 0; i < keyCnt; i++) {
                         c.putx(i, new H2TextValue(txt));
@@ -98,7 +98,7 @@ public class GridCacheFullTextQueryMultithreadedSelfTest extends GridCacheAbstra
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> fut2 = multithreadedAsync(new Callable() {
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     int cnt = 0;
 

@@ -68,7 +68,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
     private static final byte IS_UNSWAPPED_MASK = 0x02;
 
     /** */
-    private static final Comparator<GridCacheVersion> ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
+    public static final Comparator<GridCacheVersion> ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
      * NOTE
@@ -1658,7 +1658,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
 
         GridCacheVersion enqueueVer = null;
 
-        GridDrResolveResult<V> drRes = null;
+        GridCacheVersionConflictContextImpl<K, V> drRes = null;
 
         EntryProcessorResult<?> invokeRes = null;
 
@@ -1675,49 +1675,113 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (isNew())
                 unswap(true, retval);
 
+            boolean newTtlResolved = false;
+
+            boolean drNeedResolve = false;
+
             Object transformClo = null;
 
             if (drResolve) {
-                drRes = cctx.dr().resolveAtomic(this,
-                    op,
-                    writeObj,
-                    valBytes,
-                    expiryPlc,
-                    drTtl,
-                    drExpireTime,
-                    drVer);
+                GridCacheVersion oldDrVer = version().drVersion();
 
-                if (drRes != null) {
+                drNeedResolve = cctx.conflictNeedResolve(oldDrVer, drVer);
+
+                if (drNeedResolve) {
+                    // Get old value.
+                    V oldVal = rawGetOrUnmarshalUnlocked(true);
+
+                    if (writeObj == null && valBytes != null)
+                        writeObj = cctx.marshaller().unmarshal(valBytes, cctx.deploy().globalLoader());
+
+                    if (op == GridCacheOperation.TRANSFORM) {
+                        transformClo = writeObj;
+
+                        writeObj = ((IgniteClosure<V, V>)writeObj).apply(oldVal);
+                    }
+
+                    K k = key();
+
+                    if (drTtl >= 0L) {
+                        // DR TTL is set explicitly
+                        assert drExpireTime >= 0L;
+
+                        newTtl = drTtl;
+                        newExpireTime = drExpireTime;
+                    }
+                    else {
+                        long ttl = expiryPlc != null ? (isNew() ? expiryPlc.forCreate() : expiryPlc.forUpdate()) : -1L;
+
+                        newTtl = ttl < 0 ? ttlExtras() : ttl;
+                        newExpireTime = CU.toExpireTime(newTtl);
+                    }
+
+                    newTtlResolved = true;
+
+                    GridCacheVersionedEntryEx<K, V> oldEntry = versionedEntry();
+                    GridCacheVersionedEntryEx<K, V> newEntry =
+                        new GridCachePlainVersionedEntry<>(k, (V)writeObj, newTtl, newExpireTime, drVer);
+
+                    drRes = cctx.conflictResolve(oldEntry, newEntry, verCheck);
+
+                    assert drRes != null;
+
                     if (drRes.isUseOld()) {
+                        // Handle special case with atomic comparator.
+                        if (!isNew() &&                                            // Not initial value,
+                            verCheck &&                                            // and atomic version check,
+                            oldDrVer.dataCenterId() == drVer.dataCenterId() &&     // and data centers are equal,
+                            ATOMIC_VER_COMPARATOR.compare(oldDrVer, drVer) == 0 && // and both versions are equal,
+                            cctx.writeThrough() &&                                 // and store is enabled,
+                            primary)                                               // and we are primary.
+                        {
+                            V val = rawGetOrUnmarshalUnlocked(false);
+
+                            if (val == null) {
+                                assert deletedUnlocked();
+
+                                cctx.store().removeFromStore(null, key());
+                            }
+                            else
+                                cctx.store().putToStore(null, key(), val, ver);
+                        }
+
                         old = retval ? rawGetOrUnmarshalUnlocked(false) : val;
 
                         return new GridCacheUpdateAtomicResult<>(false,
                             old,
                             null,
                             invokeRes,
-                            -1L,
+                            0L,
                             -1L,
                             null,
                             null,
                             false);
                     }
+                    else if (drRes.isUseNew())
+                        op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
+                    else {
+                        assert drRes.isMerge();
 
-                    newTtl = drRes.newTtl();
+                        writeObj = drRes.mergeValue();
+                        valBytes = null;
 
-                    newExpireTime = drRes.newExpireTime();
-
-                    newDrExpireTime = drRes.newDrExpireTime();
-
-                    op = drRes.operation();
-
-                    writeObj = drRes.value();
-
-                    valBytes = drRes.valueBytes();
-
-                    if (drRes.isMerge())
                         drVer = null; // Update will be considered as local.
+
+                        op = writeObj != null ? GridCacheOperation.UPDATE : GridCacheOperation.DELETE;
+                    }
+
+                    newTtl = drRes.ttl();
+                    newExpireTime = drRes.expireTime();
+
+                    // Explicit DR expire time will be passed to remote node only in that case.
+                    if (!drRes.explicitTtl() && !drRes.isMerge()) {
+                        if (drRes.isUseNew() && newEntry.dataCenterId() != cctx.dataCenterId() ||
+                            drRes.isUseOld() && oldEntry.dataCenterId() != cctx.dataCenterId())
+                            newDrExpireTime = drRes.expireTime();
+                    }
                 }
                 else
+                    // Nullify DR version on this update, so that we will use regular version during next updates.
                     drVer = null;
             }
 
@@ -3092,6 +3156,14 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
         }
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException {
+        boolean isNew = isStartVersion();
+
+        return new GridCachePlainVersionedEntry<>(key, isNew ? unswap(true, true) : rawGetOrUnmarshalUnlocked(false),
+            ttlExtras(), expireTimeExtras(), ver.drVersion(), isNew);
     }
 
     /** {@inheritDoc} */
