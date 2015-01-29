@@ -36,13 +36,13 @@
 using namespace std;
 
 /** IgniteCheckedException JNI class name. */
-const char* GRID_EXCEPTION = "org/apache/ignite/IgniteCheckedException";
+const char* IGNITE_EXCEPTION = "org/apache/ignite/IgniteCheckedException";
 
-/** GridIpcSharedMemoryOperationTimedoutException JNI class name. */
-const char* OP_TIMEDOUT_EXCEPTION = "org/apache/ignite/internal/util/ipc/shmem/GridIpcSharedMemoryOperationTimedoutException";
+/** IpcSharedMemoryOperationTimedoutException JNI class name. */
+const char* OP_TIMEDOUT_EXCEPTION = "org/apache/ignite/internal/util/ipc/shmem/IpcSharedMemoryOperationTimedoutException";
 
-/** GridIpcOutOfSystemResourcesException JNI class name. */
-const char* OUT_OF_RSRCS_EXCEPTION = "org/apache/ignite/internal/util/ipc/shmem/GridIpcOutOfSystemResourcesException";
+/** IpcOutOfSystemResourcesException JNI class name. */
+const char* OUT_OF_RSRCS_EXCEPTION = "org/apache/ignite/internal/util/ipc/shmem/IpcOutOfSystemResourcesException";
 
 /** Global flag for enabling debug logging. */
 static bool __GG_DEBUG = false;
@@ -220,7 +220,7 @@ static void throwExceptionByErrno(JNIEnv* env) {
         break;
 
     default:
-        throwException(env, GRID_EXCEPTION);
+        throwException(env, IGNITE_EXCEPTION);
         break;
     }
 }
@@ -244,7 +244,7 @@ static bool semInit(JNIEnv* env, int semId, int semNum) {
         GG_LOG_DEBUG("Semaphore init failed [semId=%d, semNum=%s, errno=%d]", semId,
                 semNum == SEM_READ ? "SEM_READ" : "SEM_WRITE", errno);
 
-        throwException(env, GRID_EXCEPTION);
+        throwException(env, IGNITE_EXCEPTION);
 
         return false;
     }
@@ -299,7 +299,7 @@ static void semWait(JNIEnv * env, int semId, int semNum, int timeout, T_IpcData 
             return;
         }
         else {
-            throwException(env, GRID_EXCEPTION);
+            throwException(env, IGNITE_EXCEPTION);
         }
     }
 }
@@ -329,7 +329,7 @@ static void semNotify(JNIEnv * env, int semId, int semNum, T_IpcData *ipcData) {
         GG_LOG_DEBUG("Semaphore wait failed [semId=%d, semNum=%s, errno=%d]", semId,
                 semNum == SEM_READ ? "SEM_READ" : "SEM_WRITE", errno);
 
-        throwException(env, GRID_EXCEPTION);
+        throwException(env, IGNITE_EXCEPTION);
     }
 }
 
@@ -361,7 +361,7 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_alloca
 
     // Get system token, used in IPC.
     if ((key = ::ftok(tokFileName.c_str(), 'G')) == -1) {
-        throwException(env, GRID_EXCEPTION);
+        throwException(env, IGNITE_EXCEPTION);
 
         return 0;
     }
@@ -405,7 +405,7 @@ jlong Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_alloca
     // Initialize SEM_READ and SEM_WRITE to 1.
     if (!semInit(env, semId, SEM_READ) || !semInit(env, semId, SEM_WRITE)) {
         // Exception will be thrown on return.
-        throwException(env, GRID_EXCEPTION);
+        throwException(env, IGNITE_EXCEPTION);
 
         // Cleanup ignoring possible errors.
         ::semctl(semId, 0, IPC_RMID);
@@ -722,7 +722,7 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_WriteSh
 
         while (unreadCnt == ipcData->size) {
             if (ipcData->closed) {
-                env->ThrowNew(env->FindClass(GRID_EXCEPTION), "Shared memory segment has been closed.");
+                env->ThrowNew(env->FindClass(IGNITE_EXCEPTION), "Shared memory segment has been closed.");
 
                 return;
             }
@@ -746,7 +746,7 @@ void Java_org_apache_ignite_internal_util_ipc_shmem_IpcSharedMemoryUtils_WriteSh
         }
 
         if (ipcData->closed) {
-            env->ThrowNew(env->FindClass(GRID_EXCEPTION), "Shared memory segment has been closed");
+            env->ThrowNew(env->FindClass(IGNITE_EXCEPTION), "Shared memory segment has been closed");
 
             return;
         }
