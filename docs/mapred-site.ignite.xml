@@ -33,30 +33,30 @@
 
 <!--
     This template file contains settings needed to run Apache Hadoop jobs
-    with GridGain In-Memory Accelerator.
+    with Apache Ignite In-Memory Accelerator.
 
     You can replace '$HADOOP_HOME/etc/hadoop/mapred-site.xml' file with this one
     to run jobs on localhost (local node can be a part of distributed cluster though).
     To run jobs on remote host you have to change jobtracker address to the REST address
-    of any running GridGain node.
+    of any running Ignite node.
 
-    Note that GridGain jars must be in Apache Hadoop client classpath to work
+    Note that Ignite jars must be in Apache Hadoop client classpath to work
     with this configuration.
 
-    Run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
+    Run script '$IGNITE_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
 -->
 
 <configuration>
     <!-- 
-        Framework name must be set to 'gridgain'.
+        Framework name must be set to 'ignite'.
     -->
     <property>
         <name>mapreduce.framework.name</name>
-        <value>gridgain</value>
+        <value>ignite</value>
     </property>
 
     <!--
-        Job tracker address must be set to the REST address of any running GridGain node.
+        Job tracker address must be set to the REST address of any running Ignite node.
     -->
     <property>
         <name>mapreduce.jobtracker.address</name>
