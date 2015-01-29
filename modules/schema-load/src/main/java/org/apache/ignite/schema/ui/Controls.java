@@ -345,6 +345,21 @@ public class Controls {
     }
 
     /**
+     * Create titled pane.
+     *
+     * @param title Title.
+     * @param node Node.
+     * @return New {@code TitledPane} instance.
+     */
+    public static TitledPane titledPane(String title, Node node) {
+        TitledPane tp = new TitledPane(title, node);
+
+        tp.setExpanded(false);
+
+        return tp;
+    }
+
+    /**
      * Create table column.
      *
      * @param colName Column name to display.

@@ -87,8 +87,20 @@ public class SchemaLoadApp extends Application {
     /** */
     private BorderPane rootPane;
 
+    /** Header pane. */
+    private BorderPane hdrPane;
+
+    /** */
+    private HBox dbIcon;
+
+    /** */
+    private HBox genIcon;
+
     /** */
     private Label titleLb;
+
+    /** */
+    private Label subTitleLb;
 
     /** */
     private Button prevBtn;
@@ -273,8 +285,10 @@ public class SchemaLoadApp extends Application {
 
                 unlockUI(connLayerPnl, connPnl, nextBtn);
 
+                hdrPane.setLeft(genIcon);
+
                 titleLb.setText("Generate XML And POJOs");
-                titleLb.setGraphic(imageView("text_tree", 48));
+                subTitleLb.setText(jdbcUrlTf.getText());
 
                 rootPane.setCenter(genLayerPnl);
 
@@ -422,11 +436,16 @@ public class SchemaLoadApp extends Application {
     /**
      * @return Header pane with title label.
      */
-    private Pane createHeaderPane() {
+    private BorderPane createHeaderPane() {
+        dbIcon = hBox(0, true, imageView("data_connection", 48));
+        genIcon = hBox(0, true, imageView("text_tree", 48));
+
         titleLb = label("");
         titleLb.setId("banner");
 
-        BorderPane bp = borderPane(null, hBox(10, true, titleLb), null, null, hBox(0, true, imageView("ignite", 48)));
+        subTitleLb = label("");
+
+        BorderPane bp = borderPane(null, vBox(5, titleLb, subTitleLb), null, dbIcon, hBox(0, true, imageView("ignite", 48)));
         bp.setId("banner");
 
         return bp;
@@ -470,8 +489,10 @@ public class SchemaLoadApp extends Application {
             "This will discard all your changes."))
             return;
 
+        hdrPane.setLeft(dbIcon);
+
         titleLb.setText("Connect To Database");
-        titleLb.setGraphic(imageView("data_connection", 48));
+        subTitleLb.setText("Specify database connection properties...");
 
         rootPane.setCenter(connLayerPnl);
 
@@ -581,7 +602,8 @@ public class SchemaLoadApp extends Application {
 
         connPnl.wrap();
 
-        ComboBox<String> rdbmsCb = connPnl.addLabeled("DB Server type:", comboBox("tt", RDBMS_NAMES), 2);
+        ComboBox<String> rdbmsCb = connPnl.addLabeled("DB Server preset:",
+            comboBox("Select database server to get predefined settings", RDBMS_NAMES), 2);
 
         jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
 
@@ -776,15 +798,11 @@ public class SchemaLoadApp extends Application {
         openFolderCh = genPnl.add(checkBox("Reveal output folder",
             "Open output folder in system file manager after generation complete", true), 3);
 
-        genPnl.add(new Separator(), 3);
-
-        GridPaneEx regexPnl = paneEx(0, 0, 0, 0);
+        GridPaneEx regexPnl = paneEx(5, 5, 5, 5);
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
         regexPnl.addColumn();
         regexPnl.addColumn(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
-
-        regexPnl.add(label("Replace \"Key class name\", \"Value class name\" or  \"Java name\" for selected tables:"), 4);
 
         regexTf = regexPnl.addLabeled("  Regexp:", textField("Regular expression. For example: (\\w+)"));
 
@@ -826,11 +844,15 @@ public class SchemaLoadApp extends Application {
                         String replace = replaceTf.getText();
 
                         try {
-//                            fieldsTbl.getSelectionModel().getSelectedItems()
+                            switch (replaceCb.getSelectionModel().getSelectedIndex()) {
+                                case 0: renameKeyClassNames(regex, replace);
+                                    break;
 
-                            for (PojoDescriptor pojo : selItems)
-                                for (PojoField field : pojo.fields())
-                                    field.javaName(field.javaName().replaceAll(regex, replace));
+                                case 1: renameValueClassNames(regex, replace);
+                                    break;
+
+                                default: renameJavaNames(regex, replace);
+                            }
                         }
                         catch (Exception e) {
                             MessageBox.errorDialog(owner, "Failed to rename " + target + "!", e);
@@ -859,8 +881,15 @@ public class SchemaLoadApp extends Application {
                         "Are you sure you want to revert " + target + " for all selected " + src + "?"))
                         return;
 
-                    for (PojoDescriptor pojo : selItems)
-                        pojo.revertJavaNames();
+                    switch (replaceCb.getSelectionModel().getSelectedIndex()) {
+                        case 0: revertKeyClassNames();
+                            break;
+
+                        case 1: revertValueClassNames();
+                            break;
+
+                        default: revertJavaNames();
+                    }
                 }
             })
         ), 2).setPadding(new Insets(0, 0, 0, 10));
@@ -872,7 +901,7 @@ public class SchemaLoadApp extends Application {
                     curPojo = newItem;
 
                     fieldsTbl.setItems(curPojo.fields());
-                    fieldsTbl.getSelectionModel().clearAndSelect(0);
+                    fieldsTbl.getSelectionModel().clearSelection();
 
                     keyValPnl.setDisable(false);
                 }
@@ -885,9 +914,68 @@ public class SchemaLoadApp extends Application {
             }
         });
 
-        genPnl.add(regexPnl, 3);
+        genPnl.add(titledPane("Rename \"Key class name\", \"Value class name\" or  \"Java name\" for selected tables",
+            regexPnl), 3);
 
         genLayerPnl = stackPane(genPnl);
+    }
+
+    /**
+     * Rename key class name for selected tables.
+     *
+     * @param regex Regex to search.
+     * @param replace Text for replacement.
+     */
+    private void renameKeyClassNames(String regex, String replace) {
+        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+            pojo.keyClassName(pojo.keyClassName().replaceAll(regex, replace));
+    }
+
+    /**
+     * Rename value class name for selected tables.
+     *
+     * @param regex Regex to search.
+     * @param replace Text for replacement.
+     */
+    private void renameValueClassNames(String regex, String replace) {
+        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+            pojo.valueClassName(pojo.valueClassName().replaceAll(regex, replace));
+    }
+
+    /**
+     * Rename fields java name for current or selected tables.
+     *
+     * @param regex Regex to search.
+     * @param replace Text for replacement.
+     */
+    private void renameJavaNames(String regex, String replace) {
+        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+            for (PojoField field : pojo.fields())
+                field.javaName(field.javaName().replaceAll(regex, replace));
+    }
+
+    /**
+     * Revert key class name for selected tables to initial value.
+     */
+    private void revertKeyClassNames() {
+        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+            pojo.revertKeyClassName();
+    }
+
+    /**
+     * Revert value class name for selected tables to initial value.
+     */
+    private void revertValueClassNames() {
+        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+            pojo.revertValueClassName();
+    }
+
+    /**
+     * Revert fields java name for selected or current table to initial value.
+     */
+    private void revertJavaNames() {
+        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+            pojo.revertJavaNames();
     }
 
     /**
@@ -921,7 +1009,8 @@ public class SchemaLoadApp extends Application {
 
         createGeneratePane();
 
-        rootPane = borderPane(createHeaderPane(), createConnectionPane(), createButtonsPane(), null, null);
+        hdrPane = createHeaderPane();
+        rootPane = borderPane(hdrPane, createConnectionPane(), createButtonsPane(), null, null);
 
         primaryStage.setScene(scene(rootPane));
 
@@ -975,8 +1064,8 @@ public class SchemaLoadApp extends Application {
 
         xmlSingleFileCh.setSelected(userPrefs.getBoolean("xml.single", true));
 
-        regexTf.setText(userPrefs.get("naming.pattern", ""));
-        replaceTf.setText(userPrefs.get("naming.replace", ""));
+        regexTf.setText(userPrefs.get("naming.pattern", "(\\w+)"));
+        replaceTf.setText(userPrefs.get("naming.replace", "$1_SomeText"));
 
         primaryStage.show();
     }

@@ -176,10 +176,24 @@ public class PojoDescriptor {
     }
 
     /**
+     * @param name New key class name.
+     */
+    public void keyClassName(String name) {
+        keyClsName.set(name);
+    }
+
+    /**
      * @return Value class name.
      */
     public String valueClassName() {
         return valClsName.get();
+    }
+
+    /**
+     * @param name New value class name.
+     */
+    public void valueClassName(String name) {
+        valClsName.set(name);
     }
 
     /**
@@ -261,6 +275,20 @@ public class PojoDescriptor {
                 return true;
 
         return false;
+    }
+
+    /**
+     * Revert changes to key class name made by user.
+     */
+    public void revertKeyClassName() {
+       keyClsName.set(keyClsNamePrev);
+    }
+
+    /**
+     * Revert changes to value class name made by user.
+     */
+    public void revertValueClassName() {
+        valClsName.set(valClsNamePrev);
     }
 
     /**

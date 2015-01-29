@@ -67,6 +67,22 @@
     -fx-background-color: -fx-box-border, eeeeee;
 }
 
+.titled-pane {
+    -fx-font-size: 14;
+}
+
+.titled-pane:focused {
+    -fx-text-fill: -fx-text-base-color;
+}
+
+.titled-pane:focused > .title {
+    -fx-color: eeeeee;
+}
+
+.titled-pane:focused > .title > .arrow-button .arrow {
+    -fx-background-color: black;
+}
+
 #banner {
    -fx-font-size: 20px;
    -fx-font-weight: bold;
