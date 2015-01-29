@@ -107,12 +107,12 @@ import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
  * <pre name="code" class="java">
  * GridConfiguration cfg = new GridConfiguration();
  */
-public class GridGainEx {
+public class IgnitionEx {
     /** Default configuration path relative to GridGain home. */
     public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named grids. */
-    private static final ConcurrentMap<Object, GridNamedInstance> grids = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap8<>();
 
     /** Map of grid states ever started in this JVM. */
     private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap8<>();
@@ -121,7 +121,7 @@ public class GridGainEx {
     private static final Object dfltGridMux = new Object();
 
     /** Default grid. */
-    private static volatile GridNamedInstance dfltGrid;
+    private static volatile IgniteNamedInstance dfltGrid;
 
     /** Default grid state. */
     private static volatile IgniteState dfltGridState;
@@ -154,7 +154,7 @@ public class GridGainEx {
     /**
      * Enforces singleton.
      */
-    private GridGainEx() {
+    private IgnitionEx() {
         // No-op.
     }
 
@@ -169,7 +169,7 @@ public class GridGainEx {
      * @param daemon Daemon flag to set.
      */
     public static void setDaemon(boolean daemon) {
-        GridGainEx.daemon = daemon;
+        IgnitionEx.daemon = daemon;
     }
 
     /**
@@ -204,7 +204,7 @@ public class GridGainEx {
      * @return Grid state.
      */
     public static IgniteState state(@Nullable String name) {
-        GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         if (grid == null) {
             IgniteState state = name != null ? gridStates.get(name) : dfltGridState;
@@ -250,7 +250,7 @@ public class GridGainEx {
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel) {
-        GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         if (grid != null && grid.state() == STARTED) {
             grid.stop(cancel);
@@ -296,7 +296,7 @@ public class GridGainEx {
      *      up to the actual job to exit from execution
      */
     public static void stopAll(boolean cancel) {
-        GridNamedInstance dfltGrid0 = dfltGrid;
+        IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
             dfltGrid0.stop(cancel);
@@ -315,7 +315,7 @@ public class GridGainEx {
         }
 
         // Stop the rest and clear grids map.
-        for (GridNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : grids.values()) {
             grid.stop(cancel);
 
             boolean fireEvt = grids.remove(grid.getName(), grid);
@@ -743,7 +743,7 @@ public class GridGainEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
-        List<GridNamedInstance> grids = new ArrayList<>(cfgMap.size());
+        List<IgniteNamedInstance> grids = new ArrayList<>(cfgMap.size());
 
         try {
             for (IgniteConfiguration cfg : cfgMap.get1()) {
@@ -759,7 +759,7 @@ public class GridGainEx {
                 }
 
                 // Use either user defined context or our one.
-                GridNamedInstance grid = start0(
+                IgniteNamedInstance grid = start0(
                     new GridStartContext(cfg, springCfgUrl, springCtx == null ? cfgMap.get2() : springCtx));
 
                 // Add it if it was not stopped during startup.
@@ -769,7 +769,7 @@ public class GridGainEx {
         }
         catch (IgniteCheckedException e) {
             // Stop all instances started so far.
-            for (GridNamedInstance grid : grids) {
+            for (IgniteNamedInstance grid : grids) {
                 try {
                     grid.stop(true);
                 }
@@ -782,7 +782,7 @@ public class GridGainEx {
         }
 
         // Return the first grid started.
-        GridNamedInstance res = !grids.isEmpty() ? grids.get(0) : null;
+        IgniteNamedInstance res = !grids.isEmpty() ? grids.get(0) : null;
 
         return res != null ? res.grid() : null;
     }
@@ -821,7 +821,7 @@ public class GridGainEx {
      * @return Started grid.
      * @throws IgniteCheckedException If grid could not be started.
      */
-    private static GridNamedInstance start0(GridStartContext startCtx) throws IgniteCheckedException {
+    private static IgniteNamedInstance start0(GridStartContext startCtx) throws IgniteCheckedException {
         assert startCtx != null;
 
         String name = startCtx.config().getGridName();
@@ -829,9 +829,9 @@ public class GridGainEx {
         if (name != null && name.isEmpty())
             throw new IgniteCheckedException("Non default grid instances cannot have empty string name.");
 
-        GridNamedInstance grid = new GridNamedInstance(name);
+        IgniteNamedInstance grid = new IgniteNamedInstance(name);
 
-        GridNamedInstance old;
+        IgniteNamedInstance old;
 
         if (name != null)
             old = grids.putIfAbsent(name, grid);
@@ -910,14 +910,14 @@ public class GridGainEx {
     public static List<Ignite> allGrids() {
         List<Ignite> allIgnites = new ArrayList<>(grids.size() + 1);
 
-        for (GridNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : grids.values()) {
             Ignite g = grid.grid();
 
             if (g != null)
                 allIgnites.add(g);
         }
 
-        GridNamedInstance dfltGrid0 = dfltGrid;
+        IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
             IgniteKernal g = dfltGrid0.grid();
@@ -944,7 +944,7 @@ public class GridGainEx {
     public static Ignite grid(UUID locNodeId) throws IgniteIllegalStateException {
         A.notNull(locNodeId, "locNodeId");
 
-        GridNamedInstance dfltGrid0 = dfltGrid;
+        IgniteNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
             IgniteKernal g = dfltGrid0.grid();
@@ -953,7 +953,7 @@ public class GridGainEx {
                 return g;
         }
 
-        for (GridNamedInstance grid : grids.values()) {
+        for (IgniteNamedInstance grid : grids.values()) {
             IgniteKernal g = grid.grid();
 
             if (g != null && g.getLocalNodeId().equals(locNodeId))
@@ -981,7 +981,7 @@ public class GridGainEx {
      *      initialized or grid instance was stopped or was not started.
      */
     public static Ignite grid(@Nullable String name) throws IgniteIllegalStateException {
-        GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         Ignite res;
 
@@ -999,7 +999,7 @@ public class GridGainEx {
      * @return Grid instance.
      */
     public static IgniteKernal gridx(@Nullable String name) {
-        GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
+        IgniteNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
         IgniteKernal res;
 
@@ -1136,7 +1136,7 @@ public class GridGainEx {
     /**
      * Grid data container.
      */
-    private static final class GridNamedInstance {
+    private static final class IgniteNamedInstance {
         /** Map of registered MBeans. */
         private static final Map<MBeanServer, GridMBeanServerData> mbeans =
             new HashMap<>();
@@ -1237,7 +1237,7 @@ public class GridGainEx {
          *
          * @param name Grid name (possibly {@code null} for default grid).
          */
-        GridNamedInstance(@Nullable String name) {
+        IgniteNamedInstance(@Nullable String name) {
             this.name = name;
         }
 
@@ -1973,7 +1973,7 @@ public class GridGainEx {
                             if (log.isInfoEnabled())
                                 log.info("Invoking shutdown hook...");
 
-                            GridNamedInstance.this.stop(true);
+                            IgniteNamedInstance.this.stop(true);
                         }
                     });
 

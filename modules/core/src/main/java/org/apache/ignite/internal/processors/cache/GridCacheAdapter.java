@@ -4430,7 +4430,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            return GridGainEx.gridx(t.get1()).cachex(t.get2());
+            return IgnitionEx.gridx(t.get1()).cachex(t.get2());
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

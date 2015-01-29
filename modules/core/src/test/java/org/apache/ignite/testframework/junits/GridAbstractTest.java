@@ -653,7 +653,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        return GridGainEx.start(optimize(getConfiguration(gridName)), ctx);
+        return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
     }
 
     /**
