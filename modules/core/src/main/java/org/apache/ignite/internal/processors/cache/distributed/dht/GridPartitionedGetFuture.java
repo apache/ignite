@@ -290,8 +290,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         // Assign keys to primary nodes.
         for (K key : keys) {
-            if (key != null)
-                hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
+            if (key == null) {
+                NullPointerException err = new NullPointerException("Null key");
+
+                onDone(err);
+
+                throw err;
+            }
+
+            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
         }
 
         if (isDone())

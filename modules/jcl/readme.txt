@@ -1,10 +1,10 @@
-GridGain JCL Module
--------------------
+Apache Ignite JCL Module
+------------------------
 
-GridGain JCL module provides GridLogger implementation that can delegate to any logger based
+Apache Ignite JCL module provides GridLogger implementation that can delegate to any logger based
 on Jakarta Commons Logging (JCL).
 
-To enable JCL module when starting a standalone node, move 'optional/gridgain-jcl' folder to
+To enable JCL module when starting a standalone node, move 'optional/ignite-jcl' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
@@ -23,8 +23,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-jcl</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-jcl</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

@@ -610,7 +610,13 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             }
         }, proto == GridClientProtocol.TCP ? GridClientException.class : IllegalArgumentException.class, null);
 
-        dfltData.getAll(Collections.singleton(null));
+        assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dfltData.getAll(Collections.singleton(null));
+
+                return null;
+            }
+        }, proto == GridClientProtocol.TCP ? GridClientException.class : IllegalArgumentException.class, null);
     }
 
     /**
