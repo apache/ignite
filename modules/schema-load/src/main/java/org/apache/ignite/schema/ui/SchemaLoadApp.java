@@ -113,6 +113,9 @@ public class SchemaLoadApp extends Application {
     private Button nextBtn;
 
     /** */
+    private ComboBox<String> rdbmsCb;
+
+    /** */
     private TextField jdbcDrvJarTf;
 
     /** */
@@ -153,9 +156,6 @@ public class SchemaLoadApp extends Application {
 
     /** */
     private CheckBox xmlSingleFileCh;
-
-    /** */
-    private CheckBox openFolderCh;
 
     /** */
     private TextField regexTf;
@@ -404,9 +404,8 @@ public class SchemaLoadApp extends Application {
 
                 unlockUI(genLayerPnl, genPnl, prevBtn, nextBtn);
 
-                MessageBox.informationDialog(owner, "Generation complete!");
-
-                if (openFolderCh.isSelected())
+                if (MessageBox.confirmDialog(owner, "Generation complete!\n\n" +
+                    "Reveal output folder in system default file browser?"))
                     try {
                         java.awt.Desktop.getDesktop().open(destFolder);
                     }
@@ -606,7 +605,7 @@ public class SchemaLoadApp extends Application {
 
         connPnl.wrap();
 
-        ComboBox<String> rdbmsCb = connPnl.addLabeled("DB Server preset:",
+        rdbmsCb = connPnl.addLabeled("DB Server preset:",
             comboBox("Select database server to get predefined settings", RDBMS_NAMES), 2);
 
         jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
@@ -724,7 +723,7 @@ public class SchemaLoadApp extends Application {
         genPnl.addColumn(35, 35, 35, Priority.NEVER);
 
         genPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
-        genPnl.addRows(8);
+        genPnl.addRows(7);
 
         TableColumn<PojoDescriptor, Boolean> useCol = customColumn("Schema / Table", "use",
             "If checked then this table will be used for XML and POJOs generation", PojoDescriptorCell.cellFactory());
@@ -795,6 +794,16 @@ public class SchemaLoadApp extends Application {
             @Override public void handle(ActionEvent evt) {
                 DirectoryChooser dc = new DirectoryChooser();
 
+                try {
+                    File outFolder = new File(outFolderTf.getText());
+
+                    if (outFolder.exists())
+                        dc.setInitialDirectory(outFolder);
+                }
+                catch (Throwable ignored) {
+                    // No-op.
+                }
+
                 File folder = dc.showDialog(owner);
 
                 if (folder != null)
@@ -810,9 +819,6 @@ public class SchemaLoadApp extends Application {
 
         xmlSingleFileCh = genPnl.add(checkBox("Write all configurations to a single XML file",
             "If selected then all configurations will be saved into the file 'Ignite.xml'", true), 3);
-
-        openFolderCh = genPnl.add(checkBox("Reveal output folder",
-            "Open output folder in system file manager after generation complete", true), 3);
 
         GridPaneEx regexPnl = paneEx(5, 5, 5, 5);
         regexPnl.addColumn();
@@ -1065,6 +1071,7 @@ public class SchemaLoadApp extends Application {
         String userHome = System.getProperty("user.home").replace('\\', '/');
 
         // Restore connection pane settings.
+        rdbmsCb.getSelectionModel().select(userPrefs.getInt("jdbc.db.preset", 0));
         jdbcDrvJarTf.setText(userPrefs.get("jdbc.driver.jar", "h2.jar"));
         jdbcDrvClsTf.setText(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
         jdbcUrlTf.setText(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
@@ -1072,7 +1079,6 @@ public class SchemaLoadApp extends Application {
 
         // Restore generation pane settings.
         outFolderTf.setText(userPrefs.get("out.folder", userHome + "/ignite-schema-load/out"));
-        openFolderCh.setSelected(userPrefs.getBoolean("out.folder.open", true));
 
         pkgTf.setText(userPrefs.get("pojo.package", "org.apache.ignite"));
         pojoIncludeKeysCh.setSelected(userPrefs.getBoolean("pojo.include", true));
@@ -1097,6 +1103,7 @@ public class SchemaLoadApp extends Application {
         userPrefs.putDouble("window.height", owner.getHeight());
 
         // Save connection pane settings.
+        userPrefs.putInt("jdbc.db.preset", rdbmsCb.getSelectionModel().getSelectedIndex());
         userPrefs.put("jdbc.driver.jar", jdbcDrvJarTf.getText());
         userPrefs.put("jdbc.driver.class", jdbcDrvClsTf.getText());
         userPrefs.put("jdbc.url", jdbcUrlTf.getText());
@@ -1104,7 +1111,6 @@ public class SchemaLoadApp extends Application {
 
         // Save generation pane settings.
         userPrefs.put("out.folder", outFolderTf.getText());
-        userPrefs.putBoolean("out.folder.open", openFolderCh.isSelected());
 
         userPrefs.put("pojo.package", pkgTf.getText());
         userPrefs.putBoolean("pojo.include", pojoIncludeKeysCh.isSelected());
