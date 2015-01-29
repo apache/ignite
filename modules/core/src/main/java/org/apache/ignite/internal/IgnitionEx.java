@@ -1144,9 +1144,6 @@ public class IgnitionEx {
         /** */
         private static final String[] EMPTY_STR_ARR = new String[0];
 
-        /** Empty array of caches. */
-        private static final CacheConfiguration[] EMPTY_CACHE_CONFIGS = new CacheConfiguration[0];
-
         /** Grid name. */
         private final String name;
 
