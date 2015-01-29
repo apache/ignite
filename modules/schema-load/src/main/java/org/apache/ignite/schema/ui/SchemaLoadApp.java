@@ -49,6 +49,38 @@ import static org.apache.ignite.schema.ui.Controls.*;
  */
 @SuppressWarnings("UnnecessaryFullyQualifiedName")
 public class SchemaLoadApp extends Application {
+    /** Rdbms names. */
+    private static final String[] RDBMS_NAMES = {
+        "H2 Database",
+        "DB2",
+        "Oracle",
+        "Microsoft SQL Server",
+        "Custom server..."};
+
+    /** Jdbc drivers. */
+    private static final String[] JDBC_JAR = {
+        "h2.jar",
+        "db2jcc4.jar",
+        "ojdbc6.jar",
+        "sqljdbc41.jar",
+        "jdbc.jar"};
+
+    /** Jdbc drivers. */
+    private static final String[] JDBC_DRIVERS = {
+        "org.h2.Driver",
+        "com.ibm.db2.jcc.DB2Driver",
+        "oracle.jdbc.OracleDriver",
+        "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+        "org.custom.Driver"};
+
+    /** Jdbc urls. */
+    private static final String[] JDBC_URLS = {
+        "jdbc:h2:_path_to_db_",
+        "jdbc:db2://server_name_or_ip:port/some_db",
+        "jdbc:oracle:thin:@server_name_or_ip:port:some_db",
+        "jdbc:sqlserver://server_name_or_ip:port;databaseName=some_db",
+        "jdbc:custom"};
+
     /** */
     private Stage owner;
 
@@ -68,10 +100,10 @@ public class SchemaLoadApp extends Application {
     private TextField jdbcDrvJarTf;
 
     /** */
-    private ComboBox<String> jdbcDrvClsCb;
+    private TextField jdbcDrvClsTf;
 
     /** */
-    private ComboBox<String> jdbcUrlCb;
+    private TextField jdbcUrlTf;
 
     /** */
     private TextField userTf;
@@ -198,9 +230,9 @@ public class SchemaLoadApp extends Application {
 
         final String jdbcDrvJarPath = jdbcDrvJarTf.getText().trim();
 
-        final String jdbcDrvCls = jdbcDrvClsCb.getValue();
+        final String jdbcDrvCls = jdbcDrvClsTf.getText();
 
-        final String jdbcUrl = jdbcUrlCb.getValue();
+        final String jdbcUrl = jdbcUrlTf.getText();
 
         String user = userTf.getText().trim();
 
@@ -451,18 +483,18 @@ public class SchemaLoadApp extends Application {
     /**
      * Check that text field is non empty.
      *
-     * @param ctrl Text field or combobox to check.
+     * @param tf Text field check.
      * @param trim If {@code true} then
      * @param msg Warning message.
      * @return {@code true} If text field is empty.
      */
-    private boolean checkInput(Control ctrl, boolean trim, String msg) {
-        String s = ctrl instanceof TextInputControl ? ((TextInputControl)ctrl).getText() : ((ComboBoxBase<String>)ctrl).getValue();
+    private boolean checkInput(TextField tf, boolean trim, String msg) {
+        String s = tf.getText();
 
         s = trim ? s.trim() : s;
 
         if (s.isEmpty()) {
-            ctrl.requestFocus();
+            tf.requestFocus();
 
             MessageBox.warningDialog(owner, msg);
 
@@ -478,8 +510,8 @@ public class SchemaLoadApp extends Application {
     private void next() {
         if (rootPane.getCenter() == connLayerPnl) {
             if (checkInput(jdbcDrvJarTf, true, "Path to JDBC driver is not specified!") ||
-                checkInput(jdbcDrvClsCb, true, "JDBC driver class name is not specified!") ||
-                checkInput(jdbcUrlCb, true, "JDBC URL connection string is not specified!") ||
+                checkInput(jdbcDrvClsTf, true, "JDBC driver class name is not specified!") ||
+                checkInput(jdbcUrlTf, true, "JDBC URL connection string is not specified!") ||
                 checkInput(userTf, true, "User name is not specified!"))
                 return;
 
@@ -549,6 +581,8 @@ public class SchemaLoadApp extends Application {
 
         connPnl.wrap();
 
+        ComboBox<String> rdbmsCb = connPnl.addLabeled("DB Server type:", comboBox("tt", RDBMS_NAMES), 2);
+
         jdbcDrvJarTf = connPnl.addLabeled("Driver JAR:", textField("Path to driver jar"));
 
         connPnl.add(button("...", "Select JDBC driver jar or zip", new EventHandler<ActionEvent>() {
@@ -567,15 +601,19 @@ public class SchemaLoadApp extends Application {
             }
         }));
 
-        jdbcDrvClsCb = connPnl.addLabeled("JDBC Driver:", comboBoxEditable("Enter сlass name for JDBC driver",
-            "org.h2.Driver", "com.ibm.db2.jcc.DB2Driver", "oracle.jdbc.OracleDriver",
-            "com.microsoft.sqlserver.jdbc.SQLServerDriver"), 2);
+        jdbcDrvClsTf = connPnl.addLabeled("JDBC Driver:", textField("Enter сlass name for JDBC driver"), 2);
 
-        jdbcUrlCb = connPnl.addLabeled("JDBC URL:", comboBoxEditable("JDBC URL of the database connection string",
-            "jdbc:h2:_path_to_db_",
-            "jdbc:db2://server_name_or_ip:port/some_db",
-            "jdbc:oracle:thin:@server_name_or_ip:port:some_db",
-            "jdbc:sqlserver://server_name_or_ip:port;databaseName=some_db"), 2);
+        jdbcUrlTf = connPnl.addLabeled("JDBC URL:", textField("JDBC URL of the database connection string"), 2);
+
+        rdbmsCb.getSelectionModel().selectedIndexProperty().addListener(new ChangeListener<Number>() {
+            @Override public void changed(ObservableValue<? extends Number> observable, Number oldIdx, Number newIdx) {
+                int idx = newIdx.intValue();
+
+                jdbcDrvJarTf.setText(JDBC_JAR[idx]);
+                jdbcDrvClsTf.setText(JDBC_DRIVERS[idx]);
+                jdbcUrlTf.setText(JDBC_URLS[idx]);
+            }
+        });
 
         userTf = connPnl.addLabeled("User:", textField("User name"), 2);
 
@@ -788,6 +826,8 @@ public class SchemaLoadApp extends Application {
                         String replace = replaceTf.getText();
 
                         try {
+//                            fieldsTbl.getSelectionModel().getSelectedItems()
+
                             for (PojoDescriptor pojo : selItems)
                                 for (PojoField field : pojo.fields())
                                     field.javaName(field.javaName().replaceAll(regex, replace));
@@ -832,7 +872,7 @@ public class SchemaLoadApp extends Application {
                     curPojo = newItem;
 
                     fieldsTbl.setItems(curPojo.fields());
-                    fieldsTbl.getSelectionModel().select(0);
+                    fieldsTbl.getSelectionModel().clearAndSelect(0);
 
                     keyValPnl.setDisable(false);
                 }
@@ -921,8 +961,8 @@ public class SchemaLoadApp extends Application {
 
         // Restore connection pane settings.
         jdbcDrvJarTf.setText(userPrefs.get("jdbc.driver.jar", "h2.jar"));
-        jdbcDrvClsCb.setValue(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
-        jdbcUrlCb.setValue(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
+        jdbcDrvClsTf.setText(userPrefs.get("jdbc.driver.class", "org.h2.Driver"));
+        jdbcUrlTf.setText(userPrefs.get("jdbc.url", "jdbc:h2:" + userHome + "/ignite-schema-load/db"));
         userTf.setText(userPrefs.get("jdbc.user", "sa"));
 
         // Restore generation pane settings.
@@ -953,8 +993,8 @@ public class SchemaLoadApp extends Application {
 
         // Save connection pane settings.
         userPrefs.put("jdbc.driver.jar", jdbcDrvJarTf.getText());
-        userPrefs.put("jdbc.driver.class", jdbcDrvClsCb.getValue());
-        userPrefs.put("jdbc.url", jdbcUrlCb.getValue());
+        userPrefs.put("jdbc.driver.class", jdbcDrvClsTf.getText());
+        userPrefs.put("jdbc.url", jdbcUrlTf.getText());
         userPrefs.put("jdbc.user", userTf.getText());
 
         // Save generation pane settings.

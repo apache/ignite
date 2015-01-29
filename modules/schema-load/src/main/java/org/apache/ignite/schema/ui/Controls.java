@@ -327,22 +327,6 @@ public class Controls {
     }
 
     /**
-     * Create editable combo box.
-     *
-     * @param tip Tooltip text.
-     * @param items Combo box items.
-     * @return New {@code ComboBox} instance.
-     */
-    public static ComboBox<String> comboBoxEditable(String tip, String... items) {
-        ComboBox<String> cb = comboBox(tip, items);
-
-        cb.setEditable(true);
-        cb.setPromptText(tip);
-
-        return cb;
-    }
-
-    /**
      * Create split pane for provided nodes.
      *
      * @param node1 First node.
