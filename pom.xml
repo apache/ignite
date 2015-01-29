@@ -1280,11 +1280,7 @@
         </profile>
 
         <profile>
-            <id>ignite-yardstick</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-
+            <id>benchmarks</id>
             <modules>
                 <module>modules/yardstick</module>
             </modules>
