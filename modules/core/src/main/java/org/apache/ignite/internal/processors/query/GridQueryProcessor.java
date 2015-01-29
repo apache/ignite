@@ -168,7 +168,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param valTypeName Value type name.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    public IgniteFuture<?> rebuildIndexes(@Nullable final String space, String valTypeName) {
+    public IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, String valTypeName) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to rebuild indexes (grid is stopping).");
 
@@ -185,7 +185,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param desc Type descriptor.
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
-    private IgniteFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
+    private IgniteInternalFuture<?> rebuildIndexes(@Nullable final String space, @Nullable final TypeDescriptor desc) {
         if (idx == null)
             return new GridFinishedFuture<>(ctx, new IgniteCheckedException("Indexing is disabled."));
 
@@ -225,7 +225,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when rebuilding of all indexes is finished.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<?> rebuildAllIndexes() {
+    public IgniteInternalFuture<?> rebuildAllIndexes() {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to get space size (grid is stopping).");
 
@@ -233,7 +233,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             GridCompoundFuture<?, ?> fut = new GridCompoundFuture<Object, Object>(ctx);
 
             for (Map.Entry<TypeId, TypeDescriptor> e : types.entrySet())
-                fut.add((IgniteFuture)rebuildIndexes(e.getKey().space, e.getValue()));
+                fut.add((IgniteInternalFuture)rebuildIndexes(e.getKey().space, e.getValue()));
 
             fut.markInitialized();
 
@@ -440,7 +440,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Future.
      */
-    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -458,7 +458,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param params Parameters.
      * @return Result.
      */
-    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 

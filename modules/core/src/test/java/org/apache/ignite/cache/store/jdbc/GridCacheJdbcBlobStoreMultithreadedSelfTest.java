@@ -23,7 +23,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -113,7 +112,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testMultithreadedPut() throws Exception {
-        IgniteFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut1 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Override public Object call() throws Exception {
@@ -127,7 +126,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
             }
         }, 4, "put");
 
-        IgniteFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut2 = runMultiThreadedAsync(new Callable<Object>() {
             private final Random rnd = new Random();
 
             @Override public Object call() throws Exception {

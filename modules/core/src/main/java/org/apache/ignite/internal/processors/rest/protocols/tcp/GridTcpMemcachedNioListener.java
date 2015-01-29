@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.protocols.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -120,20 +119,20 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return;
         }
 
-        IgniteFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
+        IgniteInternalFuture<GridRestResponse> lastFut = ses.removeMeta(LAST_FUT.ordinal());
 
         if (lastFut != null && lastFut.isDone())
             lastFut = null;
 
-        IgniteFuture<GridRestResponse> f;
+        IgniteInternalFuture<GridRestResponse> f;
 
         if (lastFut == null)
             f = handleRequest0(ses, req, cmd);
         else {
             f = new GridEmbeddedFuture<>(
                 lastFut,
-                new C2<GridRestResponse, Exception, IgniteFuture<GridRestResponse>>() {
-                    @Override public IgniteFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
+                new C2<GridRestResponse, Exception, IgniteInternalFuture<GridRestResponse>>() {
+                    @Override public IgniteInternalFuture<GridRestResponse> apply(GridRestResponse res, Exception e) {
                         return handleRequest0(ses, req, cmd);
                     }
                 },
@@ -150,7 +149,7 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
      * @param cmd Command.
      * @return Future or {@code null} if processed immediately.
      */
-    @Nullable private IgniteFuture<GridRestResponse> handleRequest0(
+    @Nullable private IgniteInternalFuture<GridRestResponse> handleRequest0(
         final GridNioSession ses,
         final GridMemcachedMessage req,
         final GridTuple3<GridRestCommand, Boolean, Boolean> cmd
@@ -165,10 +164,10 @@ public class GridTcpMemcachedNioListener extends GridNioServerListenerAdapter<Gr
             return null;
         }
 
-        IgniteFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
+        IgniteInternalFuture<GridRestResponse> f = hnd.handleAsync(createRestRequest(req, cmd.get1()));
 
-        f.listenAsync(new CIX1<IgniteFuture<GridRestResponse>>() {
-            @Override public void applyx(IgniteFuture<GridRestResponse> f) throws IgniteCheckedException {
+        f.listenAsync(new CIX1<IgniteInternalFuture<GridRestResponse>>() {
+            @Override public void applyx(IgniteInternalFuture<GridRestResponse> f) throws IgniteCheckedException {
                 GridRestResponse restRes = f.get();
 
                 // Handle 'Stat' command (special case because several packets are included in response).

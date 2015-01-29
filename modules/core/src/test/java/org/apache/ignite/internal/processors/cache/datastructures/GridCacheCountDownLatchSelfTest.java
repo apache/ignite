@@ -152,7 +152,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
         assert latch.count() == 2;
 
-        IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     CacheCountDownLatch latch = grid(0).cache("local").dataStructures()
@@ -219,7 +219,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
 
             @Nullable @Override public Object call() throws Exception {
                 // Test latch in multiple threads on each node.
-                IgniteFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
+                IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(
                     new Callable<Object>() {
                         @Nullable @Override public Object call() throws Exception {
                             CacheCountDownLatch latch = ignite.cache(cacheName).dataStructures()
@@ -246,7 +246,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
             }
         });
 
-        IgniteFuture<Object> fut = comp.future();
+        IgniteInternalFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 

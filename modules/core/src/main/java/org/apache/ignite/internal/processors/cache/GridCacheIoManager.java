@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -112,13 +113,13 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                     log.debug("Received message has higher topology version [msg=" + msg +
                         ", locTopVer=" + locTopVer + ", rmtTopVer=" + rmtTopVer + ']');
 
-                IgniteFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer);
 
                 if (!topFut.isDone()) {
                     final IgniteBiInClosure<UUID, GridCacheMessage<K, V>> c0 = c;
 
-                    topFut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                        @Override public void apply(IgniteFuture<Long> t) {
+                    topFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                        @Override public void apply(IgniteInternalFuture<Long> t) {
                             onMessage0(nodeId, cacheMsg, c0);
                         }
                     });
@@ -203,7 +204,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
             if (cacheMsg.allowForStartup())
                 processMessage(nodeId, cacheMsg, c);
             else {
-                IgniteFuture<?> startFut = startFuture(cacheMsg);
+                IgniteInternalFuture<?> startFut = startFuture(cacheMsg);
 
                 if (startFut.isDone())
                     processMessage(nodeId, cacheMsg, c);
@@ -213,8 +214,8 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
                             ", locId=" + cctx.localNodeId() + ", msg=" + cacheMsg + ']');
 
                     // Don't hold this thread waiting for preloading to complete.
-                    startFut.listenAsync(new CI1<IgniteFuture<?>>() {
-                        @Override public void apply(IgniteFuture<?> f) {
+                    startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> f) {
                             rw.readLock();
 
                             try {
@@ -269,7 +270,7 @@ public class GridCacheIoManager<K, V> extends GridCacheSharedManagerAdapter<K, V
      * @param cacheMsg Cache message to get start future.
      * @return Preloader start future.
      */
-    private IgniteFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
+    private IgniteInternalFuture<Object> startFuture(GridCacheMessage<K, V> cacheMsg) {
         int cacheId = cacheMsg.cacheId();
 
         return cacheId != 0 ? cctx.cacheContext(cacheId).preloader().startFuture() : cctx.preloadersStartFuture();

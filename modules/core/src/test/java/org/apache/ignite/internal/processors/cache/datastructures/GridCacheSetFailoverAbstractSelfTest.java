@@ -113,7 +113,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> killFut = startNodeKiller(stop);
+        IgniteInternalFuture<?> killFut = startNodeKiller(stop);
 
         long stopTime = System.currentTimeMillis() + TEST_DURATION;
 
@@ -219,7 +219,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
      * @param stop Stop flag.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop) {
+    private IgniteInternalFuture<?> startNodeKiller(final AtomicBoolean stop) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();

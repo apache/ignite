@@ -19,6 +19,7 @@ package org.apache.ignite.spi.collision;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -197,7 +198,7 @@ public class GridTestCollisionTaskSession implements ComputeTaskSession {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> mapFuture() {
+    @Override public IgniteInternalFuture<?> mapFuture() {
         assert false : "Not implemented";
 
         return null;

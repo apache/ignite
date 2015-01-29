@@ -120,11 +120,14 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
      */
     private static StreamerConfiguration streamerConfiguration() {
         Collection<StreamerStage> stages = F.<StreamerStage>asList(new StreamerStage() {
-            @Override public String name() {
+            @Override
+            public String name() {
                 return "name";
             }
 
-            @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
+            @Nullable
+            @Override
+            public Map<String, Collection<?>> run(StreamerContext ctx, Collection evts) {
                 return null;
             }
         });
@@ -132,7 +135,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         StreamerConfiguration cfg = new StreamerConfiguration();
 
         cfg.setAtLeastOnce(true);
-        cfg.setWindows(F.asList((StreamerWindow)new StreamerUnboundedWindow()));
+        cfg.setWindows(F.asList((StreamerWindow) new StreamerUnboundedWindow()));
         cfg.setStages(stages);
 
         return cfg;
@@ -475,7 +478,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         final Ignite ignite = grid();
 
         GridMarshallerTestBean inBean = newTestBean(ignite.cluster().forPredicate(new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode n) {
+            @Override
+            public boolean apply(ClusterNode n) {
                 return n.id().equals(ignite.cluster().localNode().id());
             }
         }));
@@ -618,7 +622,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testScheduler() throws Exception {
         IgniteScheduler scheduler = grid().scheduler();
 
-        IgniteFuture<?> fut = scheduler.runLocal(new Runnable() {
+        IgniteInternalFuture<?> fut = scheduler.runLocal(new Runnable() {
             @Override public void run() {
                 // No-op.
             }

@@ -19,7 +19,7 @@ package org.apache.ignite.loadtests.offheap;
 
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.affinity.consistenthash.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.offheap.*;
@@ -168,7 +168,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -223,7 +223,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -294,7 +294,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -349,7 +349,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 

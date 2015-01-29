@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -152,7 +153,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllAsync(
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
@@ -172,7 +173,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
+                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
@@ -238,7 +239,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param expiryPlc Expiry policy.
      * @return Loaded values.
      */
-    public IgniteFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable Collection<? extends K> keys,
         boolean readThrough,
         boolean reload,
         boolean forcePrimary,
@@ -373,7 +374,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      *
      * {@inheritDoc}
      */
-    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
         long timeout,
         @Nullable IgniteTxLocalEx<K, V> tx,
         boolean isInvalidate,
@@ -606,7 +607,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param filter filter Optional filter.
      * @return Lock future.
      */
-    IgniteFuture<Exception> lockAllAsync(
+    IgniteInternalFuture<Exception> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable final GridNearTxLocal<K, V> tx,
         final long threadId,
@@ -620,7 +621,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     ) {
         assert keys != null;
 
-        IgniteFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
+        IgniteInternalFuture<Object> keyFut = ctx.dht().dhtPreloader().request(keys, topVer);
 
         // Prevent embedded future creation if possible.
         if (keyFut.isDone()) {
@@ -645,8 +646,8 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
         }
         else {
             return new GridEmbeddedFuture<>(true, keyFut,
-                new C2<Object, Exception, IgniteFuture<Exception>>() {
-                    @Override public IgniteFuture<Exception> apply(Object o, Exception exx) {
+                new C2<Object, Exception, IgniteInternalFuture<Exception>>() {
+                    @Override public IgniteInternalFuture<Exception> apply(Object o, Exception exx) {
                         if (exx != null)
                             return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
@@ -679,7 +680,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
      * @param filter filter Optional filter.
      * @return Lock future.
      */
-    private IgniteFuture<Exception> lockAllAsync0(
+    private IgniteInternalFuture<Exception> lockAllAsync0(
         GridCacheContext<K, V> cacheCtx,
         @Nullable final GridNearTxLocal<K, V> tx,
         long threadId,
@@ -766,7 +767,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
             if (log.isDebugEnabled())
                 log.debug("Performing colocated lock [tx=" + tx + ", keys=" + keys + ']');
 
-            IgniteFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(cacheCtx,
+            IgniteInternalFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(cacheCtx,
                 keys,
                 tx.implicit(),
                 txRead,

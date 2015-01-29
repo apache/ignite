@@ -22,7 +22,6 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
@@ -225,7 +224,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
 
             assert stat != null;
 
-            IgniteFuture<?> fut = hadoop.finishFuture(jobId);
+            IgniteInternalFuture<?> fut = hadoop.finishFuture(jobId);
 
             if (!complete)
                 assertFalse(fut.isDone());

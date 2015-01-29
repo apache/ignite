@@ -18,7 +18,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.dataload.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -209,7 +209,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *
      * @return Future for this loading process.
      */
-    public IgniteFuture<?> future();
+    public IgniteInternalFuture<?> future();
 
     /**
      * Optional deploy class for peer deployment. All classes loaded by a data loader
@@ -240,7 +240,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public IgniteFuture<?> removeData(K key)  throws IgniteCheckedException, IgniteInterruptedException, IllegalStateException;
+    public IgniteInternalFuture<?> removeData(K key)  throws IgniteCheckedException, IgniteInterruptedException, IllegalStateException;
 
     /**
      * Adds data for loading on remote node. This method can be called from multiple
@@ -258,7 +258,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public IgniteFuture<?> addData(K key, @Nullable V val) throws IgniteCheckedException, IgniteInterruptedException,
+    public IgniteInternalFuture<?> addData(K key, @Nullable V val) throws IgniteCheckedException, IgniteInterruptedException,
         IllegalStateException;
 
     /**
@@ -276,7 +276,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      * @throws IllegalStateException If grid has been concurrently stopped or
      *      {@link #close(boolean)} has already been called on loader.
      */
-    public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IgniteInterruptedException,
+    public IgniteInternalFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IgniteInterruptedException,
         IllegalStateException;
 
     /**
@@ -292,7 +292,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
      */
-    public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException;
+    public IgniteInternalFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) throws IllegalStateException;
 
     /**
      * Adds data for loading on remote node. This method can be called from multiple
@@ -307,7 +307,7 @@ public interface IgniteDataLoader<K, V> extends AutoCloseable {
      *      {@link #close(boolean)} has already been called on loader.
      * @return Future for this load operation.
      */
-    public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException;
+    public IgniteInternalFuture<?> addData(Map<K, V> entries) throws IllegalStateException;
 
     /**
      * Loads any remaining data, but doesn't close the loader. Data can be still added after

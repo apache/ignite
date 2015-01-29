@@ -432,9 +432,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        IgniteFuture<Integer> fut1 = cache().getAsync("key1");
-        IgniteFuture<Integer> fut2 = cache().getAsync("key2");
-        IgniteFuture<Integer> fut3 = cache().getAsync("wrongKey");
+        IgniteInternalFuture<Integer> fut1 = cache().getAsync("key1");
+        IgniteInternalFuture<Integer> fut2 = cache().getAsync("key2");
+        IgniteInternalFuture<Integer> fut3 = cache().getAsync("wrongKey");
 
         assert fut1.get() == 1;
         assert fut2.get() == 2;
@@ -448,8 +448,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 100);
 
-        IgniteFuture<Integer> fut1 = cache().projection(gte100).getAsync("key1");
-        IgniteFuture<Integer> fut2 = cache().projection(gte100).getAsync("key2");
+        IgniteInternalFuture<Integer> fut1 = cache().projection(gte100).getAsync("key1");
+        IgniteInternalFuture<Integer> fut2 = cache().projection(gte100).getAsync("key2");
 
         assert fut1.get() == null;
         assert fut2.get() == 100;
@@ -674,8 +674,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, NullPointerException.class, null);
 
-        IgniteFuture<Map<String, Integer>> fut2 = cache().getAllAsync(Collections.<String>emptyList());
-        IgniteFuture<Map<String, Integer>> fut3 = cache().getAllAsync(F.asList("key1", "key2"));
+        IgniteInternalFuture<Map<String, Integer>> fut2 = cache().getAllAsync(Collections.<String>emptyList());
+        IgniteInternalFuture<Map<String, Integer>> fut3 = cache().getAllAsync(F.asList("key1", "key2"));
 
         assert fut2.get().isEmpty();
         assert fut3.get().size() == 2 : "Invalid map: " + fut3.get();
@@ -694,8 +694,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         List<String> keys = F.asList("key1", "key2", "key3", "key4");
 
-        IgniteFuture<Map<String, Integer>> fut1 = cache().projection(gte100).getAllAsync(keys);
-        IgniteFuture<Map<String, Integer>> fut2 = cache().projection(gte200).getAllAsync(keys);
+        IgniteInternalFuture<Map<String, Integer>> fut1 = cache().projection(gte100).getAllAsync(keys);
+        IgniteInternalFuture<Map<String, Integer>> fut2 = cache().projection(gte200).getAllAsync(keys);
 
         assert fut1.get().size() == 4 : "Invalid map: " + fut1.get();
         assert fut1.get().get("key1") == 100;
@@ -1234,8 +1234,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        IgniteFuture<Integer> fut1 = cache().putAsync("key1", 10);
-        IgniteFuture<Integer> fut2 = cache().putAsync("key2", 11);
+        IgniteInternalFuture<Integer> fut1 = cache().putAsync("key1", 10);
+        IgniteInternalFuture<Integer> fut2 = cache().putAsync("key2", 11);
 
         assertEquals((Integer)1, fut1.get(5000));
         assertEquals((Integer)2, fut2.get(5000));
@@ -1248,8 +1248,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutAsync0() throws Exception {
-        IgniteFuture<Integer> fut1 = cache().putAsync("key1", 0);
-        IgniteFuture<Integer> fut2 = cache().putAsync("key2", 1);
+        IgniteInternalFuture<Integer> fut1 = cache().putAsync("key1", 0);
+        IgniteInternalFuture<Integer> fut2 = cache().putAsync("key2", 1);
 
         assert fut1.get(5000) == null;
         assert fut2.get(5000) == null;
@@ -1268,15 +1268,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertNull(asyncCache.invoke("key1", INCR_PROCESSOR));
 
-        IgniteFuture<?> fut0 = asyncCache.future();
+        IgniteInternalFuture<?> fut0 = asyncCache.future();
 
         assertNull(asyncCache.invoke("key2", INCR_PROCESSOR));
 
-        IgniteFuture<?> fut1 = asyncCache.future();
+        IgniteInternalFuture<?> fut1 = asyncCache.future();
 
         assertNull(asyncCache.invoke("key3", RMV_PROCESSOR));
 
-        IgniteFuture<?> fut2 = asyncCache.future();
+        IgniteInternalFuture<?> fut2 = asyncCache.future();
 
         fut0.get();
         fut1.get();
@@ -1632,10 +1632,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache().put("key2", 1);
 
-        IgniteFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
-        IgniteFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
+        IgniteInternalFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
+        IgniteInternalFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
-        IgniteFuture<IgniteTx> f = null;
+        IgniteInternalFuture<IgniteTx> f = null;
 
         if (tx != null) {
             tx = (IgniteTx)tx.withAsync();
@@ -1660,12 +1660,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutxAsyncFiltered() throws Exception {
-        IgniteFuture<Boolean> f1 = cache().putxAsync("key1", 1);
-        IgniteFuture<Boolean> f2 = cache().putxAsync("key1", 101, F.<String, Integer>cacheHasPeekValue());
-        IgniteFuture<Boolean> f3 = cache().putxAsync("key2", 2);
-        IgniteFuture<Boolean> f4 = cache().putxAsync("key2", 202, F.<String, Integer>cacheHasPeekValue());
-        IgniteFuture<Boolean> f5 = cache().putxAsync("key1", 1, F.<String, Integer>cacheNoPeekValue());
-        IgniteFuture<Boolean> f6 = cache().putxAsync("key2", 2, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<Boolean> f1 = cache().putxAsync("key1", 1);
+        IgniteInternalFuture<Boolean> f2 = cache().putxAsync("key1", 101, F.<String, Integer>cacheHasPeekValue());
+        IgniteInternalFuture<Boolean> f3 = cache().putxAsync("key2", 2);
+        IgniteInternalFuture<Boolean> f4 = cache().putxAsync("key2", 202, F.<String, Integer>cacheHasPeekValue());
+        IgniteInternalFuture<Boolean> f5 = cache().putxAsync("key1", 1, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<Boolean> f6 = cache().putxAsync("key2", 2, F.<String, Integer>cacheNoPeekValue());
 
         assert f1.get() : "Invalid future1: " + f1;
         assert f2.get() : "Invalid future2: " + f2;
@@ -1957,12 +1957,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAllAsync() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
-        IgniteFuture<?> f1 = cache().putAllAsync(map);
+        IgniteInternalFuture<?> f1 = cache().putAllAsync(map);
 
         map.put("key1", 10);
         map.put("key2", 20);
 
-        IgniteFuture<?> f2 = cache().putAllAsync(map);
+        IgniteInternalFuture<?> f2 = cache().putAllAsync(map);
 
         f2.get();
         f1.get();
@@ -1979,11 +1979,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAllAsyncFiltered() throws Exception {
         Map<String, Integer> map1 = F.asMap("key1", 1, "key2", 2);
 
-        IgniteFuture<?> f1 = cache().putAllAsync(map1, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<?> f1 = cache().putAllAsync(map1, F.<String, Integer>cacheNoPeekValue());
 
         Map<String, Integer> map2 = F.asMap("key1", 10, "key2", 20, "key3", 3);
 
-        IgniteFuture<?> f2 = cache().putAllAsync(map2, F.<String, Integer>cacheNoPeekValue());
+        IgniteInternalFuture<?> f2 = cache().putAllAsync(map2, F.<String, Integer>cacheNoPeekValue());
 
         f2.get();
         f1.get();
@@ -2077,12 +2077,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
         try {
-            IgniteFuture<Integer> fut1 = cache().putIfAbsentAsync("key", 1);
+            IgniteInternalFuture<Integer> fut1 = cache().putIfAbsentAsync("key", 1);
 
             assert fut1.get() == null;
             assert cache().get("key") != null && cache().get("key") == 1;
 
-            IgniteFuture<Integer> fut2 = cache().putIfAbsentAsync("key", 2);
+            IgniteInternalFuture<Integer> fut2 = cache().putIfAbsentAsync("key", 2);
 
             assert fut2.get() != null && fut2.get() == 1;
             assert cache().get("key") != null && cache().get("key") == 1;
@@ -2193,12 +2193,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkPutxIfAbsentAsync(boolean inTx) throws Exception {
-        IgniteFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key", 1);
+        IgniteInternalFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key", 1);
 
         assert fut1.get();
         assert cache().get("key") != null && cache().get("key") == 1;
 
-        IgniteFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key", 2);
+        IgniteInternalFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key", 2);
 
         assert !fut2.get();
         assert cache().get("key") != null && cache().get("key") == 1;
@@ -2241,8 +2241,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testPutxIfAbsentAsyncConcurrent() throws Exception {
-        IgniteFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key1", 1);
-        IgniteFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key2", 2);
+        IgniteInternalFuture<Boolean> fut1 = cache().putxIfAbsentAsync("key1", 1);
+        IgniteInternalFuture<Boolean> fut2 = cache().putxIfAbsentAsync("key2", 2);
 
         assert fut1.get();
         assert fut2.get();
@@ -3736,7 +3736,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             });
 
-            IgniteFuture<Boolean> f = comp.future();
+            IgniteInternalFuture<Boolean> f = comp.future();
 
                 // Let another thread start.
             latch.await();
@@ -3793,7 +3793,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 @Override public Boolean call() throws Exception {
                     syncLatch.countDown();
 
-                    IgniteFuture<Boolean> f = e.lockAsync(1000);
+                    IgniteInternalFuture<Boolean> f = e.lockAsync(1000);
 
                     try {
                         f.get(100);
@@ -3813,7 +3813,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             });
 
-            IgniteFuture<Boolean> f = comp.future();
+            IgniteInternalFuture<Boolean> f = comp.future();
 
             syncLatch.await();
 

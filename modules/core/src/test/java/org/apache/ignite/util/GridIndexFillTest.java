@@ -17,8 +17,8 @@
 
 package org.apache.ignite.util;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.snaptree.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -116,7 +116,7 @@ public class GridIndexFillTest extends GridCommonAbstractTest {
     public void testSnaptreeParallelBuild() throws Exception {
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 ThreadLocalRandom rnd = ThreadLocalRandom.current();
 

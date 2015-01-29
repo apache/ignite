@@ -2534,7 +2534,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
      * @see #isSmtpEnabled()
      * @see org.apache.ignite.configuration.IgniteConfiguration#getAdminEmails()
      */
-    @Override public IgniteFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
+    @Override public IgniteInternalFuture<Boolean> sendAdminEmailAsync(String subj, String body, boolean html) {
         A.notNull(subj, "subj");
         A.notNull(body, "body");
 
@@ -2626,7 +2626,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
      * @throws IgniteCheckedException In case of error.
      * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
      */
-    IgniteFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws IgniteCheckedException {
+    IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws IgniteCheckedException {
         A.notNull(file, "file");
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
@@ -2647,7 +2647,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> IgniteInternalFuture<R> future() {
         throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 
@@ -2668,7 +2668,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
      * @throws IgniteCheckedException In case of error.
      * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
      */
-    IgniteFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
+    IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
         Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
         int maxConn) throws IgniteCheckedException {
         A.notNull(hosts, "hosts");
@@ -2809,15 +2809,15 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
         if (call == null)
             return false;
 
-        IgniteFuture<GridTuple3<String, Boolean, String>> fut = ctx.closure().callLocalSafe(call, true);
+        IgniteInternalFuture<GridTuple3<String, Boolean, String>> fut = ctx.closure().callLocalSafe(call, true);
 
         comp.add(fut);
 
         if (cnt.decrementAndGet() == 0)
             comp.markInitialized();
 
-        fut.listenAsync(new CI1<IgniteFuture<GridTuple3<String, Boolean, String>>>() {
-            @Override public void apply(IgniteFuture<GridTuple3<String, Boolean, String>> f) {
+        fut.listenAsync(new CI1<IgniteInternalFuture<GridTuple3<String, Boolean, String>>>() {
+            @Override public void apply(IgniteInternalFuture<GridTuple3<String, Boolean, String>> f) {
                 runNextNodeCallable(queue, comp, cnt);
             }
         });
