@@ -55,6 +55,7 @@ public class SchemaLoadApp extends Application {
         "DB2",
         "Oracle",
         "Microsoft SQL Server",
+        "MySQL",
         "Custom server..."};
 
     /** Jdbc drivers. */
@@ -63,6 +64,7 @@ public class SchemaLoadApp extends Application {
         "db2jcc4.jar",
         "ojdbc6.jar",
         "sqljdbc41.jar",
+        "mysql-connector-java-5-bin.jar",
         "jdbc.jar"};
 
     /** Jdbc drivers. */
@@ -71,14 +73,16 @@ public class SchemaLoadApp extends Application {
         "com.ibm.db2.jcc.DB2Driver",
         "oracle.jdbc.OracleDriver",
         "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+        "com.mysql.jdbc.Driver",
         "org.custom.Driver"};
 
     /** Jdbc urls. */
     private static final String[] JDBC_URLS = {
         "jdbc:h2:_path_to_db_",
-        "jdbc:db2://server_name_or_ip:port/some_db",
-        "jdbc:oracle:thin:@server_name_or_ip:port:some_db",
-        "jdbc:sqlserver://server_name_or_ip:port;databaseName=some_db",
+        "jdbc:db2://[host]:[port]/[database]",
+        "jdbc:oracle:thin:@[host]:[port]:[database]",
+        "jdbc:sqlserver://[host]:[port];databaseName=[database]",
+        "jdbc:mysql://[host][,failoverhost...]:[port]/[database]",
         "jdbc:custom"};
 
     /** */
