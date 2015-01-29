@@ -1083,7 +1083,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (plc != null)
                             expiry = new UpdateExpiryPolicy(plc);
 
-                        if (writeThrough() && keys.size() > 1 && !ctx.dr().receiveEnabled()) {
+                        if (keys.size() > 1 &&                             // Several keys ...
+                            writeThrough() &&                              // and store is enabled ...
+                            !ctx.store().isLocalStore() &&                 // and this is not local store ...
+                            !ctx.dr().receiveEnabled()  // and no DR.
+                        ) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult<K, V> updRes = updateWithBatch(node,
                                 hasNear,
@@ -1681,7 +1685,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 if (dhtFut != null) {
                     if (updRes.sendToDht()) { // Send to backups even in case of remove-remove scenarios.
-                        GridDrResolveResult<V> ctx = updRes.drResolveResult();
+                        GridCacheVersionConflictContextImpl<K, V> ctx = updRes.drResolveResult();
 
                         long ttl = updRes.newTtl();
                         long expireTime = updRes.drExpireTime();
@@ -1727,7 +1731,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 if (hasNear) {
                     if (primary && updRes.sendToDht()) {
                         if (!ctx.affinity().belongs(node, entry.partition(), topVer)) {
-                            GridDrResolveResult<V> ctx = updRes.drResolveResult();
+                            GridCacheVersionConflictContextImpl<K, V> ctx = updRes.drResolveResult();
 
                             long ttl = updRes.newTtl();
                             long expireTime = updRes.drExpireTime();

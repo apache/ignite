@@ -69,9 +69,9 @@ public class HibernateL2CacheExampleNodeStartup {
         cfg.setCacheConfiguration(
             cacheConfiguration("org.hibernate.cache.spi.UpdateTimestampsCache", ATOMIC),
             cacheConfiguration("org.hibernate.cache.internal.StandardQueryCache", ATOMIC),
-            cacheConfiguration("org.gridgain.examples.datagrid.hibernate.User", TRANSACTIONAL),
-            cacheConfiguration("org.gridgain.examples.datagrid.hibernate.User.posts", TRANSACTIONAL),
-            cacheConfiguration("org.gridgain.examples.datagrid.hibernate.Post", TRANSACTIONAL)
+            cacheConfiguration("org.apache.ignite.examples.datagrid.hibernate.User", TRANSACTIONAL),
+            cacheConfiguration("org.apache.ignite.examples.datagrid.hibernate.User.posts", TRANSACTIONAL),
+            cacheConfiguration("org.apache.ignite.examples.datagrid.hibernate.Post", TRANSACTIONAL)
         );
 
         return cfg;

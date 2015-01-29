@@ -671,6 +671,14 @@ public interface GridCacheEntryEx<K, V> {
         throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
+     * Create versioned entry for this cache entry.
+     *
+     * @return Versioned entry.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public GridCacheVersionedEntryEx<K, V> versionedEntry() throws IgniteCheckedException;
+
+    /**
      * Sets new value if passed in version matches the current version
      * (used for read-through only).
      *
