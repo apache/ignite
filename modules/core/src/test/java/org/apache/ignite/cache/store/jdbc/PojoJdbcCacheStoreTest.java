@@ -50,9 +50,12 @@ import static org.apache.ignite.testframework.junits.cache.GridAbstractCacheStor
 /**
  * Class for {@code PojoCacheStore} tests.
  */
-public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
+public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
     /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
+
+    /** Default config with mapping. */
+    protected static final String DFLT_MAPPING_CONFIG = "modules/core/src/test/config/store/jdbc/Ignite.xml";
 
     /** Organization count. */
     protected static final int ORGANIZATION_CNT = 1000;
@@ -70,7 +73,7 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings({"AbstractMethodCallInConstructor", "OverriddenMethodCallDuringObjectConstruction"})
-    public PojoCacheStoreSelfTest() throws Exception {
+    public PojoJdbcCacheStoreTest() throws Exception {
         super(false);
 
         store = store();
@@ -86,10 +89,22 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
 
         store.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", ""));
 
+        return store;
+    }
+
+    /**
+     * @param store Store.
+     * @throws Exception If failed.
+     */
+    protected void inject(JdbcCacheStore store) throws Exception {
+        getTestResources().inject(store);
+
+        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
+
         UrlResource metaUrl;
 
         try {
-            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/Ignite.xml").toURI().toURL());
+            metaUrl = new UrlResource(new File(DFLT_MAPPING_CONFIG).toURI().toURL());
         }
         catch (MalformedURLException e) {
             throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
@@ -131,18 +146,6 @@ public class PojoCacheStoreSelfTest extends GridCommonAbstractTest {
                 throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
                     metaUrl + ", err=" + e.getMessage() + ']', e);
         }
-
-        return store;
-    }
-
-    /**
-     * @param store Store.
-     * @throws Exception If failed.
-     */
-    protected void inject(JdbcCacheStore store) throws Exception {
-        getTestResources().inject(store);
-
-        GridTestUtils.setFieldValue(store, CacheStore.class, "ses", ses);
     }
 
     /**

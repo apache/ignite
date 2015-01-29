@@ -716,6 +716,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         throws CacheWriterException {
         assert entries != null;
 
+        init();
+
         Connection conn = null;
 
         try {

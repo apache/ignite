@@ -17,22 +17,37 @@
 
 package org.apache.ignite.cache.store.jdbc;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.jdbc.model.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
+import org.springframework.beans.*;
+import org.springframework.beans.factory.xml.*;
+import org.springframework.context.support.*;
+import org.springframework.core.io.*;
 
+import javax.cache.configuration.*;
+import java.io.*;
+import java.net.*;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheMode.*;
+
 /**
  *
  */
-public abstract class AbstractCacheStoreMultithreadedSelfTest<T extends JdbcCacheStore> extends GridCommonAbstractTest {
+public abstract class AbstractJdbcCacheStoreMultithreadedSelfTest<T extends JdbcCacheStore> extends GridCommonAbstractTest {
     /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
     protected static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
@@ -88,6 +103,67 @@ public abstract class AbstractCacheStoreMultithreadedSelfTest<T extends JdbcCach
      * @throws Exception In case of error.
      */
     protected abstract T store() throws Exception;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setIpFinder(IP_FINDER);
+
+        c.setDiscoverySpi(disco);
+
+        CacheConfiguration cc = defaultCacheConfiguration();
+
+        cc.setCacheMode(PARTITIONED);
+        cc.setAtomicityMode(ATOMIC);
+        cc.setSwapEnabled(false);
+        cc.setWriteBehindEnabled(false);
+
+        UrlResource metaUrl;
+
+        try {
+            metaUrl = new UrlResource(new File("modules/core/src/test/config/store/jdbc/Ignite.xml").toURI().toURL());
+        }
+        catch (MalformedURLException e) {
+            throw new IgniteCheckedException("Failed to resolve metadata path [err=" + e.getMessage() + ']', e);
+        }
+
+        try {
+            GenericApplicationContext springCtx = new GenericApplicationContext();
+
+            new XmlBeanDefinitionReader(springCtx).loadBeanDefinitions(metaUrl);
+
+            springCtx.refresh();
+
+            Collection<CacheQueryTypeMetadata> tp = springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
+
+            CacheQueryConfiguration cq = new CacheQueryConfiguration();
+
+            cq.setTypeMetadata(tp);
+
+            cc.setQueryConfiguration(cq);
+        }
+        catch (BeansException e) {
+            if (X.hasCause(e, ClassNotFoundException.class))
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context " +
+                    "(make sure all classes used in Spring configuration are present at CLASSPATH) " +
+                    "[springUrl=" + metaUrl + ']', e);
+            else
+                throw new IgniteCheckedException("Failed to instantiate Spring XML application context [springUrl=" +
+                    metaUrl + ", err=" + e.getMessage() + ']', e);
+        }
+
+        cc.setCacheStoreFactory(new FactoryBuilder.SingletonFactory(store));
+        cc.setReadThrough(true);
+        cc.setWriteThrough(true);
+        cc.setLoadPreviousValue(true);
+
+        c.setCacheConfiguration(cc);
+
+        return c;
+    }
 
     /**
      * @throws Exception If failed.
