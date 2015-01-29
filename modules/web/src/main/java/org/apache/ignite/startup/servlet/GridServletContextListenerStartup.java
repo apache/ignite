@@ -26,6 +26,8 @@ import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.servlet.*;
+import java.net.*;
+import java.util.*;
 
 /**
  * This class defines GridGain startup based on servlet context listener.

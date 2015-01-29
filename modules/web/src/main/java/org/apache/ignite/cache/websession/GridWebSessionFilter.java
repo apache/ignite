@@ -28,6 +28,8 @@ import javax.cache.*;
 import javax.cache.expiry.*;
 import javax.servlet.*;
 import javax.servlet.http.*;
+import java.io.*;
+import java.util.*;
 
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
