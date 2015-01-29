@@ -48,7 +48,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
     /**
      * Logs folder for Windows.
-     * Folder for linux is configured in {@code gridgain-log4j.xml}.
+     * Folder for linux is configured in {@code ignite-log4j.xml}.
      */
     private static final String LOG_DIR_WIN = "work\\log";
 

@@ -44,7 +44,7 @@ import org.jetbrains.annotations.*;
  *          &lt;bean class="org.gridgain.grid.logger.jcl.GridJclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
- *                      &lt;constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/&gt;
+ *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *                  &lt;/bean&gt;
  *              &lt;/constructor-arg&gt;
  *          &lt;/bean&gt;
