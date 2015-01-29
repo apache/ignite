@@ -23,14 +23,14 @@ import java.util.*;
 /**
  *
  */
-@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<IgniteUriDeploymentSpi> {
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
+public class GridUriDeploymentConfigSelfTest extends GridSpiAbstractConfigTest<UriDeploymentSpi> {
     /**
      * @throws Exception If failed.
      */
     public void testNegativeConfig() throws Exception {
-        checkNegativeSpiProperty(new IgniteUriDeploymentSpi(), "uriList", null);
-        checkNegativeSpiProperty(new IgniteUriDeploymentSpi(), "uriList", Collections.singletonList("qwertyuiop"), false);
-        checkNegativeSpiProperty(new IgniteUriDeploymentSpi(), "uriList", Collections.singletonList(null), false);
+        checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", null);
+        checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", Collections.singletonList("qwertyuiop"), false);
+        checkNegativeSpiProperty(new UriDeploymentSpi(), "uriList", Collections.singletonList(null), false);
     }
 }

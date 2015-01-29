@@ -21,7 +21,7 @@
         "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 
 <hibernate-mapping package="org.gridgain.examples.datagrid.store" default-access="field">
-    <class name="org.apache.ignite.cache.store.hibernate.IgniteCacheHibernateBlobStoreEntry" table="ENTRIES">
+    <class name="org.apache.ignite.cache.store.hibernate.CacheHibernateBlobStoreEntry" table="ENTRIES">
         <id name="key"/>
 
         <property name="val"/>

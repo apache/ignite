@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Grid URI deployment class loader test.
  */
-@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentClassLoaderSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Test URI deployment with multiple scanners.
  */
-@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentMultiScannersSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

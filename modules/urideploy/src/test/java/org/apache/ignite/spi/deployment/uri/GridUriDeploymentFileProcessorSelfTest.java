@@ -28,7 +28,7 @@ import java.util.*;
 /**
  *
  */
-@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentFileProcessorSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

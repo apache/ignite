@@ -27,12 +27,12 @@ import java.net.*;
 /**
  * Cache store test.
  */
-public class IgniteCacheHibernateBlobStoreSelfTest extends
-    GridAbstractCacheStoreSelfTest<IgniteCacheHibernateBlobStore<Object, Object>> {
+public class CacheHibernateBlobStoreSelfTest extends
+    GridAbstractCacheStoreSelfTest<CacheHibernateBlobStore<Object, Object>> {
     /**
      * @throws Exception If failed.
      */
-    public IgniteCacheHibernateBlobStoreSelfTest() throws Exception {
+    public CacheHibernateBlobStoreSelfTest() throws Exception {
         // No-op.
     }
 
@@ -46,7 +46,7 @@ public class IgniteCacheHibernateBlobStoreSelfTest extends
             return;
 
         try {
-            s.createQuery("delete from " + IgniteCacheHibernateBlobStoreEntry.class.getSimpleName())
+            s.createQuery("delete from " + CacheHibernateBlobStoreEntry.class.getSimpleName())
                     .setFlushMode(FlushMode.ALWAYS).executeUpdate();
 
             Transaction hTx = s.getTransaction();
@@ -60,8 +60,8 @@ public class IgniteCacheHibernateBlobStoreSelfTest extends
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteCacheHibernateBlobStore<Object, Object> store() {
-        return new IgniteCacheHibernateBlobStore<>();
+    @Override protected CacheHibernateBlobStore<Object, Object> store() {
+        return new CacheHibernateBlobStore<>();
     }
 
     /**

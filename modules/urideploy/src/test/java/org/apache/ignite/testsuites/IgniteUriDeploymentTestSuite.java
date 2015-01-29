@@ -25,7 +25,7 @@ import org.apache.ignite.spi.deployment.uri.scanners.file.*;
 import org.apache.ignite.spi.deployment.uri.scanners.http.*;
 
 /**
- * Tests against {@link org.apache.ignite.spi.deployment.uri.IgniteUriDeploymentSpi}.
+ * Tests against {@link org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}.
  */
 public class IgniteUriDeploymentTestSuite {
     /**

@@ -26,9 +26,9 @@ import javax.transaction.*;
 import java.util.*;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.jta.IgniteCacheTmLookup} interface that is using list of JNDI names to find TM.
+ * Implementation of {@link org.apache.ignite.cache.jta.CacheTmLookup} interface that is using list of JNDI names to find TM.
  */
-public class IgniteCacheJndiTmLookup implements IgniteCacheTmLookup {
+public class CacheJndiTmLookup implements CacheTmLookup {
     /** */
     private List<String> jndiNames;
 

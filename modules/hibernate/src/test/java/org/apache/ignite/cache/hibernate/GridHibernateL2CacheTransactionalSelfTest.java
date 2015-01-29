@@ -62,7 +62,7 @@ public class GridHibernateL2CacheTransactionalSelfTest extends GridHibernateL2Ca
     /**
      */
     @SuppressWarnings("PublicInnerClass")
-    public static class TestTmLookup implements IgniteCacheTmLookup {
+    public static class TestTmLookup implements CacheTmLookup {
         /** {@inheritDoc} */
         @Override public TransactionManager getTm() throws IgniteCheckedException {
             return jotm.getTransactionManager();

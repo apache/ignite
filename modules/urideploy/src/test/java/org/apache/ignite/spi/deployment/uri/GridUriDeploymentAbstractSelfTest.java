@@ -24,7 +24,7 @@ import org.apache.ignite.testframework.junits.spi.*;
 /**
  *
  */
-public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractTest<IgniteUriDeploymentSpi> {
+public abstract class GridUriDeploymentAbstractSelfTest extends GridSpiAbstractTest<UriDeploymentSpi> {
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         getSpi().setListener(null);

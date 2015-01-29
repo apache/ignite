@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Tests error and warn messages throttling.
  */
-@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentMultiScannersErrorThrottlingTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception If failed.

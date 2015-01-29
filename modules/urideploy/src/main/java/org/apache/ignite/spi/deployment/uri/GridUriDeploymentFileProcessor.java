@@ -32,7 +32,7 @@ import java.net.*;
 import java.security.*;
 import java.util.*;
 
-import static org.apache.ignite.spi.deployment.uri.IgniteUriDeploymentSpi.*;
+import static org.apache.ignite.spi.deployment.uri.UriDeploymentSpi.*;
 
 /**
  * Utility class.

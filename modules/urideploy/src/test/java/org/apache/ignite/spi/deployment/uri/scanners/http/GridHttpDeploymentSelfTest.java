@@ -33,7 +33,7 @@ import static org.eclipse.jetty.http.HttpHeader.*;
 /**
  * Test http scanner.
  */
-@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridHttpDeploymentSelfTest extends GridUriDeploymentAbstractSelfTest {
     /** Jetty. */
     private Server srv;
