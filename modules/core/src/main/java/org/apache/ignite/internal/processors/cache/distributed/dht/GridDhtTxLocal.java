@@ -63,9 +63,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** Near XID. */
     private GridCacheVersion nearXidVer;
 
-    /** Transaction nodes mapping (primary node -> related backup nodes). */
-    private Map<UUID, Collection<UUID>> txNodes;
-
     /** Future. */
     @GridToStringExclude
     private final AtomicReference<GridDhtTxPrepareFuture<K, V>> prepFut =
@@ -153,11 +150,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-        return txNodes;
-    }
-
-    /** {@inheritDoc} */
     @Override public UUID eventNodeId() {
         return nearNodeId;
     }
@@ -199,6 +191,13 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     /** {@inheritDoc} */
     @Override protected IgniteUuid nearFutureId() {
         return nearFutId;
+    }
+
+    /**
+     * @param nearFutId Near future ID.
+     */
+    public void nearFutureId(IgniteUuid nearFutId) {
+        this.nearFutId = nearFutId;
     }
 
     /** {@inheritDoc} */
@@ -289,7 +288,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         if (fut == null) {
             // Future must be created before any exception can be thrown.
             if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture<>(cctx, this, nearMiniId,
-                Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(), true, null)))
+                Collections.<IgniteTxKey<K>, GridCacheVersion>emptyMap(), true, needReturnValue(), null)))
                 return prepFut.get();
         }
         else
@@ -355,8 +354,6 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
         Collection<UUID> lastBackups) {
-        assert optimistic();
-
         // In optimistic mode prepare still can be called explicitly from salvageTx.
         GridDhtTxPrepareFuture<K, V> fut = prepFut.get();
 
@@ -365,7 +362,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
             // Future must be created before any exception can be thrown.
             if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture<>(cctx, this, nearMiniId, verMap, last,
-                lastBackups))) {
+                needReturnValue(), lastBackups))) {
                 GridDhtTxPrepareFuture<K, V> f = prepFut.get();
 
                 assert f.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +

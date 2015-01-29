@@ -78,8 +78,6 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
-     * @param writeEntries Write entries.
-     * @param recoverEntries Recover entries.
      */
     public GridNearTxFinishRequest(
         IgniteUuid futId,
@@ -97,12 +95,10 @@ public class GridNearTxFinishRequest<K, V> extends GridDistributedTxFinishReques
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<IgniteTxEntry<K, V>> writeEntries,
-        Collection<IgniteTxEntry<K, V>> recoverEntries,
         @Nullable UUID subjId,
         int taskNameHash) {
         super(xidVer, futId, null, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer, committedVers,
-            rolledbackVers, txSize, writeEntries, recoverEntries, null);
+            rolledbackVers, txSize, null);
 
         this.explicitLock = explicitLock;
         this.storeEnabled = storeEnabled;

@@ -53,7 +53,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** Commit version for EC transactions. */
     @GridToStringInclude
-    private GridCacheVersion commitVer;
+    private GridCacheVersion writeVer;
 
     /** Transaction timeout. */
     @GridToStringInclude
@@ -112,6 +112,9 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /** */
     private byte[] txNodesBytes;
 
+    /** One phase commit flag. */
+    private boolean onePhaseCommit;
+
     /** System flag. */
     private boolean sys;
 
@@ -129,6 +132,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param grpLockKey Group lock key.
      * @param partLock {@code True} if preparing group-lock transaction with partition lock.
      * @param txNodes Transaction nodes mapping.
+     * @param onePhaseCommit One phase commit flag.
      */
     public GridDistributedTxPrepareRequest(
         IgniteTxEx<K, V> tx,
@@ -136,11 +140,12 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         Collection<IgniteTxEntry<K, V>> writes,
         IgniteTxKey grpLockKey,
         boolean partLock,
-        Map<UUID, Collection<UUID>> txNodes
+        Map<UUID, Collection<UUID>> txNodes,
+        boolean onePhaseCommit
     ) {
         super(tx.xidVersion(), 0);
 
-        commitVer = null;
+        writeVer = tx.writeVersion();
         threadId = tx.threadId();
         concurrency = tx.concurrency();
         isolation = tx.isolation();
@@ -154,6 +159,29 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         this.grpLockKey = grpLockKey;
         this.partLock = partLock;
         this.txNodes = txNodes;
+        this.onePhaseCommit = onePhaseCommit;
+    }
+
+    /**
+     * Clones write entries so that near entries are not passed to DHT cache.
+     */
+    public void cloneEntries() {
+        if (F.isEmpty(writes))
+            return;
+
+        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(writes.size());
+
+        for (IgniteTxEntry<K, V> e : writes) {
+            GridCacheContext<K, V> cacheCtx = e.context();
+
+            // Clone only if it is a near cache.
+            if (cacheCtx.isNear())
+                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
+            else
+                cp.add(e);
+        }
+
+        writes = cp;
     }
 
     /**
@@ -200,7 +228,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
     /**
      * @return Commit version.
      */
-    public GridCacheVersion commitVersion() { return commitVer; }
+    public GridCacheVersion writeVersion() { return writeVer; }
 
     /**
      * @return Invalidate flag.
@@ -275,6 +303,13 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      */
     public int txSize() {
         return txSize;
+    }
+
+    /**
+     * @return One phase commit flag.
+     */
+    public boolean onePhaseCommit() {
+        return onePhaseCommit;
     }
 
     /** {@inheritDoc}
@@ -420,7 +455,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
         _clone.threadId = threadId;
         _clone.concurrency = concurrency;
         _clone.isolation = isolation;
-        _clone.commitVer = commitVer;
+        _clone.writeVer = writeVer;
         _clone.timeout = timeout;
         _clone.invalidate = invalidate;
         _clone.reads = reads;
@@ -455,7 +490,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
         switch (commState.idx) {
             case 8:
-                if (!commState.putCacheVersion(commitVer))
+                if (!commState.putCacheVersion(writeVer))
                     return false;
 
                 commState.idx++;
@@ -599,7 +634,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
                 if (commitVer0 == CACHE_VER_NOT_READ)
                     return false;
 
-                commitVer = commitVer0;
+                writeVer = commitVer0;
 
                 commState.idx++;
 

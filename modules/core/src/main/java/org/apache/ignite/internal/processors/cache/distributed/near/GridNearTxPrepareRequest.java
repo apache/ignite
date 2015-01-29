@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
@@ -55,7 +56,14 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
 
     /** IDs of backup nodes receiving last prepare request during this prepare. */
     @GridDirectCollection(UUID.class)
+    @GridToStringInclude
     private Collection<UUID> lastBackups;
+
+    /** Need return value flag. */
+    private boolean retVal;
+
+    /** Implicit single flag. */
+    private boolean implicitSingle;
 
     /** Subject ID. */
     @GridDirectVersion(1)
@@ -99,10 +107,13 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         Map<UUID, Collection<UUID>> txNodes,
         boolean last,
         Collection<UUID> lastBackups,
+        boolean onePhaseCommit,
+        boolean retVal,
+        boolean implicitSingle,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
-        super(tx, reads, writes, grpLockKey, partLock, txNodes);
+        super(tx, reads, writes, grpLockKey, partLock, txNodes, onePhaseCommit);
 
         assert futId != null;
 
@@ -111,6 +122,8 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
         this.near = near;
         this.last = last;
         this.lastBackups = lastBackups;
+        this.retVal = retVal;
+        this.implicitSingle = implicitSingle;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
     }
@@ -169,6 +182,20 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
      */
     public int taskNameHash() {
         return taskNameHash;
+    }
+
+    /**
+     * @return Whether return value is requested.
+     */
+    public boolean returnValue() {
+        return retVal;
+    }
+
+    /**
+     * @return Implicit single flag.
+     */
+    public boolean implicitSingle() {
+        return implicitSingle;
     }
 
     /**

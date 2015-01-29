@@ -607,7 +607,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     @SuppressWarnings("unchecked")
     public void testPutIfAbsentAsyncTx() throws Exception {
-        IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt), F.t(EVT_CACHE_OBJECT_READ, 1)};
+        IgniteBiTuple[] evts = new IgniteBiTuple[] {F.t(EVT_CACHE_OBJECT_PUT, 2 * gridCnt)};
 
         runTest(new TestCacheRunnable() {
             @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {

@@ -303,13 +303,6 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     public Map<IgniteTxKey<K>, IgniteTxEntry<K, V>> readMap();
 
     /**
-     * Gets pessimistic recovery writes, i.e. values that have never been sent to remote nodes with lock requests.
-     *
-     * @return Collection of recovery writes.
-     */
-    public Collection<IgniteTxEntry<K, V>> recoveryWrites();
-
-    /**
      * Gets a list of entries that needs to be locked on the next step of prepare stage of
      * optimistic transaction.
      *

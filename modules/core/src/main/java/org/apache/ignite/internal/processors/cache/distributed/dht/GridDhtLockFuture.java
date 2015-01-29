@@ -779,8 +779,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
             }
 
             if (tx != null) {
-                tx.addDhtMapping(dhtMap);
-                tx.addNearMapping(nearMap);
+                tx.addDhtNodeEntryMapping(dhtMap);
+                tx.addNearNodeEntryMapping(nearMap);
 
                 tx.needsCompletedVersions(hasRmtNodes);
             }
@@ -851,6 +851,29 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             // Must unswap entry so that isNewLocked returns correct value.
                             e.unswap(true, false);
 
+                            boolean needVal = false;
+
+                            try {
+                                needVal = e.isNewLocked();
+
+                                if (needVal) {
+                                    List<ClusterNode> owners = cctx.topology().owners(e.partition(),
+                                        tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
+
+                                    // Do not preload if local node is partition owner.
+                                    if (owners.contains(cctx.localNode()))
+                                        needVal = false;
+                                }
+                            }
+                            catch (GridCacheEntryRemovedException ex) {
+                                assert false : "Entry cannot become obsolete when DHT local candidate is added " +
+                                    "[e=" + e + ", ex=" + ex + ']';
+                            }
+
+                            // Skip entry if it is not new and is not present in updated mapping.
+                            if (tx != null && !needVal)
+                                continue;
+
                             boolean invalidateRdr = e.readerId(n.id()) != null;
 
                             IgniteTxEntry<K, V> entry = tx != null ? tx.entry(e.txKey()) : null;
@@ -858,20 +881,12 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                             req.addDhtKey(
                                 e.key(),
                                 e.getOrMarshalKeyBytes(),
-                                tx != null ? tx.writeMap().get(e.txKey()) : null,
-                                entry != null ? entry.drVersion() : null,
                                 invalidateRdr,
                                 cctx);
 
-                            try {
-                                if (e.isNewLocked())
-                                    // Mark last added key as needed to be preloaded.
-                                    req.markLastKeyForPreload();
-                            }
-                            catch (GridCacheEntryRemovedException ex) {
-                                assert false : "Entry cannot become obsolete when DHT local candidate is added " +
-                                    "[e=" + e + ", ex=" + ex + ']';
-                            }
+                            if (needVal)
+                                // Mark last added key as needed to be preloaded.
+                                req.markLastKeyForPreload();
 
                             it.set(addOwned(req, e));
                         }

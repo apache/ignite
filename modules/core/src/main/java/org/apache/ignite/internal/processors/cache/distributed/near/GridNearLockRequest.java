@@ -276,8 +276,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
      * @param retVal Flag indicating whether value should be returned.
      * @param keyBytes Key bytes.
      * @param dhtVer DHT version.
-     * @param writeEntry Write entry if implicit transaction mapped on one node.
-     * @param drVer DR version.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
@@ -286,14 +284,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         byte[] keyBytes,
         boolean retVal,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable IgniteTxEntry<K, V> writeEntry,
-        @Nullable GridCacheVersion drVer,
         GridCacheContext<K, V> ctx
     ) throws IgniteCheckedException {
         dhtVers[idx] = dhtVer;
 
         // Delegate to super.
-        addKeyBytes(key, keyBytes, writeEntry, retVal, null, drVer, ctx);
+        addKeyBytes(key, keyBytes, retVal, (Collection<GridCacheMvccCandidate<K>>)null, ctx);
     }
 
     /**

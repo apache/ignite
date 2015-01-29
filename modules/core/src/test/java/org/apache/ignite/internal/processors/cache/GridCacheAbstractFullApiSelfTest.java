@@ -461,11 +461,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testGetAll() throws Exception {
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
-        cache().put("key1", 1);
-        cache().put("key2", 2);
+        try {
+            cache().put("key1", 1);
+            cache().put("key2", 2);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         assert cache().getAll(null).isEmpty();
         assert cache().getAll(Collections.<String>emptyList()).isEmpty();
@@ -494,30 +500,36 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             tx = cache().txStart();
 
-            assert cache().getAll(null).isEmpty();
-            assert cache().getAll(Collections.<String>emptyList()).isEmpty();
+            try {
+                assert cache().getAll(null).isEmpty();
+                assert cache().getAll(Collections.<String>emptyList()).isEmpty();
 
-            map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
+                map1 = cache().getAll(F.asList("key1", "key2", "key9999"));
 
-            info("Retrieved map1: " + map1);
+                info("Retrieved map1: " + map1);
 
-            assert 2 == map1.size() : "Invalid map: " + map1;
+                assert 2 == map1.size() : "Invalid map: " + map1;
 
-            assertEquals(1, (int)map1.get("key1"));
-            assertEquals(2, (int)map1.get("key2"));
-            assertNull(map1.get("key9999"));
+                assertEquals(1, (int)map1.get("key1"));
+                assertEquals(2, (int)map1.get("key2"));
+                assertNull(map1.get("key9999"));
 
-            map2 = cache().getAll(F.asList("key1", "key2", "key9999"));
+                map2 = cache().getAll(F.asList("key1", "key2", "key9999"));
 
-            info("Retrieved map2: " + map2);
+                info("Retrieved map2: " + map2);
 
-            assert 2 == map2.size() : "Invalid map: " + map2;
+                assert 2 == map2.size() : "Invalid map: " + map2;
 
-            assertEquals(1, (int)map2.get("key1"));
-            assertEquals(2, (int)map2.get("key2"));
-            assertNull(map2.get("key9999"));
+                assertEquals(1, (int)map2.get("key1"));
+                assertEquals(2, (int)map2.get("key2"));
+                assertNull(map2.get("key9999"));
 
-            tx.commit();
+                tx.commit();
+            }
+            finally {
+                if (tx != null)
+                    tx.close();
+            }
         }
     }
 
@@ -571,14 +583,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (txEnabled()) {
             IgniteTx tx = cache().txStart();
 
-            cache().put("key1", 100);
-            cache().put("key2", 101);
-            cache().put("key3", 200);
-            cache().put("key4", 201);
+            try {
+                cache().put("key1", 100);
+                cache().put("key2", 101);
+                cache().put("key3", 200);
+                cache().put("key4", 201);
 
-            tx.commit();
-
-            tx.close();
+                tx.commit();
+            }
+            finally {
+                tx.close();
+            }
 
             tx = cache().txStart(PESSIMISTIC, REPEATABLE_READ);
 
@@ -731,27 +746,27 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPutTx() throws Exception {
         if (txEnabled()) {
-            IgniteTx tx = cache().txStart();
+            try (IgniteTx tx = cache().txStart()) {
+                assert cache().put("key1", 1) == null;
+                assert cache().put("key2", 2) == null;
 
-            assert cache().put("key1", 1) == null;
-            assert cache().put("key2", 2) == null;
+                // Check inside transaction.
+                assert cache().get("key1") == 1;
+                assert cache().get("key2") == 2;
 
-            // Check inside transaction.
-            assert cache().get("key1") == 1;
-            assert cache().get("key2") == 2;
+                // Put again to check returned values.
+                assert cache().put("key1", 1) == 1;
+                assert cache().put("key2", 2) == 2;
 
-            // Put again to check returned values.
-            assert cache().put("key1", 1) == 1;
-            assert cache().put("key2", 2) == 2;
+                checkContainsKey(true, "key1");
+                checkContainsKey(true, "key2");
 
-            checkContainsKey(true, "key1");
-            checkContainsKey(true, "key2");
+                assert cache().get("key1") != null;
+                assert cache().get("key2") != null;
+                assert cache().get("wrong") == null;
 
-            assert cache().get("key1") != null;
-            assert cache().get("key2") != null;
-            assert cache().get("wrong") == null;
-
-            tx.commit();
+                tx.commit();
+            }
 
             // Check outside transaction.
             checkContainsKey(true, "key1");
@@ -1192,11 +1207,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutFiltered() throws Exception {
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
-        cache().put("key1", 1, F.<String, Integer>cacheNoPeekValue());
-        cache().put("key2", 100, gte100);
+        try {
+            cache().put("key1", 1, F.<String, Integer>cacheNoPeekValue());
+            cache().put("key2", 100, gte100);
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1"));
 
@@ -1206,7 +1227,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert i == null : "Why not null?: " + i;
     }
-
 
     /**
      * @throws Exception In case of error.
@@ -1330,11 +1350,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutAsyncFiltered() throws Exception {
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
-        assert cache().putAsync("key1", 1, gte100).get() == null;
-        assert cache().putAsync("key2", 101, F.<String, Integer>cacheNoPeekValue()).get() == null;
+        try {
+            assert cache().putAsync("key1", 1, gte100).get() == null;
+            assert cache().putAsync("key2", 101, F.<String, Integer>cacheNoPeekValue()).get() == null;
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key2"));
 
@@ -1377,16 +1403,22 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private void checkPutx(boolean inTx) throws Exception {
         IgniteTx tx = inTx ? cache().txStart() : null;
 
-        assert cache().putx("key1", 1);
-        assert cache().putx("key2", 2);
-        assert !cache().putx("wrong", 3, gte100);
+        try {
+            assert cache().putx("key1", 1);
+            assert cache().putx("key2", 2);
+            assert !cache().putx("wrong", 3, gte100);
 
-        // Check inside transaction.
-        assert cache().get("key1") == 1;
-        assert cache().get("key2") == 2;
+            // Check inside transaction.
+            assert cache().get("key1") == 1;
+            assert cache().get("key2") == 2;
 
-        if (tx != null)
-            tx.commit();
+            if (tx != null)
+                tx.commit();
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -1611,25 +1643,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testPutxAsync() throws Exception {
         IgniteTx tx = txEnabled() ? cache().txStart() : null;
 
-        cache().put("key2", 1);
+        try {
+            cache().put("key2", 1);
 
-        IgniteFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
-        IgniteFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
+            IgniteFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
+            IgniteFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
-        IgniteFuture<IgniteTx> f = null;
+            IgniteFuture<IgniteTx> f = null;
 
-        if (tx != null) {
-            tx = (IgniteTx)tx.enableAsync();
+            if (tx != null) {
+                tx = (IgniteTx)tx.enableAsync();
 
-            tx.commit();
+                tx.commit();
 
-            f = tx.future();
+                f = tx.future();
+            }
+
+            assert fut1.get();
+            assert fut2.get();
+
+            assert f == null || f.get().state() == COMMITTED;
         }
-
-        assert fut1.get();
-        assert fut2.get();
-
-        assert f == null || f.get().state() == COMMITTED;
+        finally {
+            if (tx != null)
+                tx.close();
+        }
 
         checkSize(F.asSet("key1", "key2"));
 
@@ -2016,6 +2054,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         putToStore("key3", 3);
 
         assertFalse(cache().putxIfAbsentAsync("key3", 4).get());
+
+        assertEquals((Integer)3, cache().get("key3"));
 
         cache().evict("key2");
         cache().clear("key3");

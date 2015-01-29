@@ -24,7 +24,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.internal.util.tostring.*;
-import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -63,24 +62,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** Min version used as base for completed versions. */
     private GridCacheVersion baseVer;
 
-    /** Transaction write entries. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> writeEntries;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> writeEntriesBytes;
-
-    /** Write entries which have not been transferred to nodes during lock request. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
-
-    /** */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> recoveryWritesBytes;
-
     /** Expected txSize. */
     private int txSize;
 
@@ -113,9 +94,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
-     * @param writeEntries Write entries.
-     * @param recoveryWrites Recover entries. In pessimistic mode entries which were not transferred to remote nodes
-     *      with lock requests. {@code Null} for optimistic mode.
      * @param grpLockKey Group lock key if this is a group-lock transaction.
      */
     public GridDistributedTxFinishRequest(
@@ -132,11 +110,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
         int txSize,
-        Collection<IgniteTxEntry<K, V>> writeEntries,
-        Collection<IgniteTxEntry<K, V>> recoveryWrites,
         @Nullable IgniteTxKey grpLockKey
     ) {
-        super(xidVer, writeEntries == null ? 0 : writeEntries.size());
+        super(xidVer, 0);
         assert xidVer != null;
 
         this.futId = futId;
@@ -149,33 +125,9 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         this.syncRollback = syncRollback;
         this.baseVer = baseVer;
         this.txSize = txSize;
-        this.writeEntries = writeEntries;
-        this.recoveryWrites = recoveryWrites;
         this.grpLockKey = grpLockKey;
 
         completedVersions(committedVers, rolledbackVers);
-    }
-
-    /**
-     * Clones write entries so that near entries are not passed to DHT cache.
-     */
-    public void cloneEntries() {
-        if (F.isEmpty(writeEntries))
-            return;
-
-        Collection<IgniteTxEntry<K, V>> cp = new ArrayList<>(writeEntries.size());
-
-        for (IgniteTxEntry<K, V> e : writeEntries) {
-            GridCacheContext<K, V> cacheCtx = e.context();
-
-            // Clone only if it is a near cache.
-            if (cacheCtx.isNear())
-                cp.add(e.cleanCopy(cacheCtx.nearTx().dht().context()));
-            else
-                cp.add(e);
-        }
-
-        writeEntries = cp;
     }
 
     /**
@@ -290,24 +242,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (writeEntries != null) {
-            marshalTx(writeEntries, ctx);
-
-            writeEntriesBytes = new ArrayList<>(writeEntries.size());
-
-            for (IgniteTxEntry<K, V> e : writeEntries)
-                writeEntriesBytes.add(ctx.marshaller().marshal(e));
-        }
-
-        if (recoveryWrites != null) {
-            marshalTx(recoveryWrites, ctx);
-
-            recoveryWritesBytes = new ArrayList<>(recoveryWrites.size());
-
-            for (IgniteTxEntry<K, V> e : recoveryWrites)
-                recoveryWritesBytes.add(ctx.marshaller().marshal(e));
-        }
-
         if (grpLockKey != null && grpLockKeyBytes == null) {
             if (ctx.deploymentEnabled())
                 prepareObject(grpLockKey, ctx);
@@ -319,24 +253,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     /** {@inheritDoc} */
     @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
-
-        if (writeEntriesBytes != null) {
-            writeEntries = new ArrayList<>(writeEntriesBytes.size());
-
-            for (byte[] arr : writeEntriesBytes)
-                writeEntries.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
-            unmarshalTx(writeEntries, false, ctx, ldr);
-        }
-
-        if (recoveryWritesBytes != null) {
-            recoveryWrites = new ArrayList<>(recoveryWritesBytes.size());
-
-            for (byte[] arr : recoveryWritesBytes)
-                recoveryWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
-            unmarshalTx(recoveryWrites, false, ctx, ldr);
-        }
 
         if (grpLockKeyBytes != null && grpLockKey == null)
             grpLockKey = ctx.marshaller().unmarshal(grpLockKeyBytes, ldr);
@@ -365,10 +281,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         _clone.invalidate = invalidate;
         _clone.commit = commit;
         _clone.baseVer = baseVer;
-        _clone.writeEntries = writeEntries;
-        _clone.writeEntriesBytes = writeEntriesBytes;
-        _clone.recoveryWrites = recoveryWrites;
-        _clone.recoveryWritesBytes = recoveryWritesBytes;
         _clone.txSize = txSize;
         _clone.grpLockKey = grpLockKey;
         _clone.grpLockKeyBytes = grpLockKeyBytes;

@@ -131,9 +131,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
     /** Group lock entry flag. */
     private boolean grpLock;
 
-    /** Flag indicating if this entry should be transferred to remote node. */
-    private boolean transferRequired;
-
     /** Deployment enabled flag. */
     private boolean depEnabled;
 
@@ -277,20 +274,6 @@ public class IgniteTxEntry<K, V> implements GridPeerDeployAware, Externalizable,
      */
     public void groupLockEntry(boolean grpLock) {
         this.grpLock = grpLock;
-    }
-
-    /**
-     * @param transferRequired Sets flag indicating that transfer is required to remote node.
-     */
-    public void transferRequired(boolean transferRequired) {
-        this.transferRequired = transferRequired;
-    }
-
-    /**
-     * @return Flag indicating whether transfer is required to remote nodes.
-     */
-    public boolean transferRequired() {
-        return transferRequired;
     }
 
     /**

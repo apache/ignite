@@ -156,9 +156,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /** */
     private Set<Integer> invalidParts = new GridLeanSet<>();
 
-    /** Recover writes. */
-    private Collection<IgniteTxEntry<K, V>> recoveryWrites;
-
     /**
      * Transaction state. Note that state is not protected, as we want to
      * always use {@link #state()} and {@link #state(IgniteTxState)}
@@ -188,6 +185,9 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** Lock condition. */
     private final Condition cond = lock.newCondition();
+
+    /** */
+    protected Map<UUID, Collection<UUID>> txNodes;
 
     /** Subject ID initiated this transaction. */
     protected UUID subjId;
@@ -357,8 +357,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry<K, V>> optimisticLockEntries() {
-        assert optimistic();
-
         if (!groupLock())
             return writeEntries();
         else {
@@ -383,20 +381,6 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
                 Collections.<IgniteTxEntry<K,V>>emptyList() :
                 Collections.singletonList(grpLockEntry);
         }
-    }
-
-    /**
-     * @param recoveryWrites Recover write entries.
-     */
-    public void recoveryWrites(Collection<IgniteTxEntry<K, V>> recoveryWrites) {
-        this.recoveryWrites = recoveryWrites;
-    }
-
-    /**
-     * @return Recover write entries.
-     */
-    @Override public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites;
     }
 
     /** {@inheritDoc} */
@@ -1163,7 +1147,14 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<UUID, Collection<UUID>> transactionNodes() {
-        return null;
+        return txNodes;
+    }
+
+    /**
+     * @param txNodes Transaction nodes.
+     */
+    public void transactionNodes(Map<UUID, Collection<UUID>> txNodes) {
+        this.txNodes = txNodes;
     }
 
     /** {@inheritDoc} */

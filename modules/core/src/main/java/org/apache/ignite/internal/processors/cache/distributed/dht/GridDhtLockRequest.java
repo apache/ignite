@@ -237,8 +237,6 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
      *
      * @param key Key.
      * @param keyBytes Key bytes.
-     * @param writeEntry Write entry.
-     * @param drVer DR version.
      * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
@@ -246,14 +244,12 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
     public void addDhtKey(
         K key,
         byte[] keyBytes,
-        IgniteTxEntry<K, V> writeEntry,
-        @Nullable GridCacheVersion drVer,
         boolean invalidateEntry,
         GridCacheContext<K, V> ctx
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, keyBytes, writeEntry, false, null, drVer, ctx);
+        addKeyBytes(key, keyBytes, false, null, ctx);
     }
 
     /**

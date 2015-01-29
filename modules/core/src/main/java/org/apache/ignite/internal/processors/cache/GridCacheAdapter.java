@@ -4190,7 +4190,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 true,
                 op.single(),
                 ctx.system(),
-                PESSIMISTIC,
+                OPTIMISTIC,
                 READ_COMMITTED,
                 tCfg.getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
@@ -4265,7 +4265,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 true,
                 op.single(),
                 ctx.system(),
-                PESSIMISTIC,
+                OPTIMISTIC,
                 READ_COMMITTED,
                 ctx.kernalContext().config().getTransactionsConfiguration().getDefaultTxTimeout(),
                 ctx.hasFlag(INVALIDATE),
@@ -4301,13 +4301,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         try {
             IgniteFuture fut = holder.future();
 
-            if (fut != null && !fut.isDone()) {
-                final IgniteTxLocalAdapter<K, V> tx0 = tx;
+            final IgniteTxLocalAdapter<K, V> tx0 = tx;
 
+            if (fut != null && !fut.isDone()) {
                 IgniteFuture<T> f = new GridEmbeddedFuture<>(fut,
                     new C2<T, Exception, IgniteFuture<T>>() {
                         @Override public IgniteFuture<T> apply(T t, Exception e) {
-                            return op.op(tx0);
+                            return op.op(tx0).chain(new CX1<IgniteFuture<T>, T>() {
+                                @Override public T applyx(IgniteFuture<T> tFut) throws IgniteCheckedException {
+                                    try {
+                                        return tFut.get();
+                                    }
+                                    catch (IgniteCheckedException e1) {
+                                        tx0.rollbackAsync();
+
+                                        throw e1;
+                                    }
+                                }
+                            });
                         }
                     }, ctx.kernalContext());
 
@@ -4316,7 +4327,18 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return f;
             }
 
-            IgniteFuture<T> f = op.op(tx);
+            IgniteFuture<T> f = op.op(tx).chain(new CX1<IgniteFuture<T>, T>() {
+                @Override public T applyx(IgniteFuture<T> tFut) throws IgniteCheckedException {
+                    try {
+                        return tFut.get();
+                    }
+                    catch (IgniteCheckedException e1) {
+                        tx0.rollbackAsync();
+
+                        throw e1;
+                    }
+                }
+            });
 
             saveFuture(holder, f);
 

@@ -874,8 +874,6 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                                     distributedKeys.add(key);
 
-                                    IgniteTxEntry<K, V> writeEntry = tx != null ? tx.writeMap().get(txKey) : null;
-
                                     if (tx != null)
                                         tx.addKeyMapping(txKey, mapping.node());
 
@@ -884,13 +882,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
                                         node.isLocal() ? null : entry.getOrMarshalKeyBytes(),
                                         retval && dhtVer == null,
                                         dhtVer, // Include DHT version to match remote DHT entry.
-                                        writeEntry,
-                                        inTx() ? tx.entry(txKey).drVersion() : null,
                                         cctx);
-
-                                    // Clear transfer required flag since we are sending message.
-                                    if (writeEntry != null)
-                                        writeEntry.transferRequired(false);
                                 }
 
                                 if (cand.reentry())

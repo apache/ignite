@@ -47,15 +47,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** Transaction isolation. */
     private IgniteTxIsolation isolation;
 
-    /** Near writes. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Collection<IgniteTxEntry<K, V>> nearWrites;
-
-    /** Serialized near writes. */
-    @GridDirectCollection(byte[].class)
-    private Collection<byte[]> nearWritesBytes;
-
     /** Mini future ID. */
     private IgniteUuid miniId;
 
@@ -69,9 +60,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     @GridToStringInclude
     @GridDirectCollection(GridCacheVersion.class)
     private Collection<GridCacheVersion> pendingVers;
-
-    /** One phase commit flag for fast-commit path. */
-    private boolean onePhaseCommit;
 
     /** One phase commit write version. */
     private GridCacheVersion writeVer;
@@ -117,10 +105,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      * @param rolledbackVers Rolled back versions.
      * @param pendingVers Pending versions.
      * @param txSize Expected transaction size.
-     * @param writes Write entries.
-     * @param nearWrites Near cache writes.
-     * @param recoverWrites Recovery write entries.
-     * @param onePhaseCommit One phase commit flag.
      * @param grpLockKey Group lock key.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash.
@@ -145,16 +129,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         Collection<GridCacheVersion> rolledbackVers,
         Collection<GridCacheVersion> pendingVers,
         int txSize,
-        Collection<IgniteTxEntry<K, V>> writes,
-        Collection<IgniteTxEntry<K, V>> nearWrites,
-        Collection<IgniteTxEntry<K, V>> recoverWrites,
-        boolean onePhaseCommit,
         @Nullable IgniteTxKey grpLockKey,
         @Nullable UUID subjId,
         int taskNameHash
     ) {
         super(xidVer, futId, commitVer, threadId, commit, invalidate, sys, syncCommit, syncRollback, baseVer,
-            committedVers, rolledbackVers, txSize, writes, recoverWrites, grpLockKey);
+            committedVers, rolledbackVers, txSize, grpLockKey);
 
         assert miniId != null;
         assert nearNodeId != null;
@@ -164,10 +144,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         this.topVer = topVer;
         this.nearNodeId = nearNodeId;
         this.isolation = isolation;
-        this.nearWrites = nearWrites;
         this.miniId = miniId;
         this.sysInvalidate = sysInvalidate;
-        this.onePhaseCommit = onePhaseCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
     }
@@ -175,13 +153,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
     /** {@inheritDoc} */
     @Override public boolean allowForStartup() {
         return true;
-    }
-
-    /**
-     * @return Near writes.
-     */
-    public Collection<IgniteTxEntry<K, V>> nearWrites() {
-        return nearWrites == null ? Collections.<IgniteTxEntry<K, V>>emptyList() : nearWrites;
     }
 
     /**
@@ -224,13 +195,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
      */
     public boolean isSystemInvalidate() {
         return sysInvalidate;
-    }
-
-    /**
-     * @return One phase commit flag.
-     */
-    public boolean onePhaseCommit() {
-        return onePhaseCommit;
     }
 
     /**
@@ -314,35 +278,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         return nearTtls;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
-    @Override public void prepareMarshal(GridCacheSharedContext<K, V> ctx) throws IgniteCheckedException {
-        super.prepareMarshal(ctx);
-
-        if (nearWrites != null) {
-            marshalTx(nearWrites, ctx);
-
-            nearWritesBytes = new ArrayList<>(nearWrites.size());
-
-            for (IgniteTxEntry<K, V> e : nearWrites)
-                nearWritesBytes.add(ctx.marshaller().marshal(e));
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void finishUnmarshal(GridCacheSharedContext<K, V> ctx, ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(ctx, ldr);
-
-        if (nearWritesBytes != null) {
-            nearWrites = new ArrayList<>(nearWritesBytes.size());
-
-            for (byte[] arr : nearWritesBytes)
-                nearWrites.add(ctx.marshaller().<IgniteTxEntry<K, V>>unmarshal(arr, ldr));
-
-            unmarshalTx(nearWrites, true, ctx, ldr);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDhtTxFinishRequest.class, this, super.toString());
@@ -366,13 +301,10 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
         _clone.nearNodeId = nearNodeId;
         _clone.isolation = isolation;
-        _clone.nearWrites = nearWrites;
-        _clone.nearWritesBytes = nearWritesBytes;
         _clone.miniId = miniId;
         _clone.sysInvalidate = sysInvalidate;
         _clone.topVer = topVer;
         _clone.pendingVers = pendingVers;
-        _clone.onePhaseCommit = onePhaseCommit;
         _clone.writeVer = writeVer;
         _clone.subjId = subjId;
         _clone.taskNameHash = taskNameHash;

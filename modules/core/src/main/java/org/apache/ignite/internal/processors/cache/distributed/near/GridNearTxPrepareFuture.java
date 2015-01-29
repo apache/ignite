@@ -255,6 +255,13 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /**
+     * @param e Error.
+     */
+    void onError(Throwable e) {
+        onError(null, null, e);
+    }
+
+    /**
      * @param nodeId Sender.
      * @param res Result.
      */
@@ -323,65 +330,69 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * Waits for topology exchange future to be ready and then prepares user transaction.
      */
     public void prepare() {
-        GridDhtTopologyFuture topFut = topologyReadLock();
+        if (tx.optimistic()) {
+            GridDhtTopologyFuture topFut = topologyReadLock();
 
-        try {
-            if (topFut.isDone()) {
-                try {
-                    if (!tx.state(PREPARING)) {
-                        if (tx.setRollbackOnly()) {
-                            if (tx.timedOut())
-                                onError(null, null, new IgniteTxTimeoutException("Transaction timed out and " +
-                                    "was rolled back: " + this));
+            try {
+                if (topFut.isDone()) {
+                    try {
+                        if (!tx.state(PREPARING)) {
+                            if (tx.setRollbackOnly()) {
+                                if (tx.timedOut())
+                                    onError(null, null, new IgniteTxTimeoutException("Transaction timed out and " +
+                                        "was rolled back: " + this));
+                                else
+                                    onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
+                                        "[state=" + tx.state() + ", tx=" + this + ']'));
+                            }
                             else
-                                onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
-                                    "[state=" + tx.state() + ", tx=" + this + ']'));
+                                onError(null, null, new IgniteTxRollbackException("Invalid transaction state for " +
+                                    "prepare [state=" + tx.state() + ", tx=" + this + ']'));
+
+                            return;
                         }
-                        else
-                            onError(null, null, new IgniteTxRollbackException("Invalid transaction state for " +
-                                "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
-                        return;
+                        GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
+
+                        tx.topologyVersion(snapshot.topologyVersion());
+                        tx.topologySnapshot(snapshot);
+
+                        // Make sure to add future before calling prepare.
+                        cctx.mvcc().addFuture(this);
+
+                        prepare0();
                     }
+                    catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
+                        onError(cctx.localNodeId(), null, e);
+                    }
+                    catch (IgniteCheckedException e) {
+                        tx.setRollbackOnly();
 
-                    GridDiscoveryTopologySnapshot snapshot = topFut.topologySnapshot();
+                        String msg = "Failed to prepare transaction (will attempt rollback): " + this;
 
-                    tx.topologyVersion(snapshot.topologyVersion());
-                    tx.topologySnapshot(snapshot);
+                        U.error(log, msg, e);
 
-                    // Make sure to add future before calling prepare.
-                    cctx.mvcc().addFuture(this);
+                        tx.rollbackAsync();
 
-                    prepare0();
+                        onError(null, null, new IgniteTxRollbackException(msg, e));
+                    }
                 }
-                catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
-                    onError(cctx.localNodeId(), null, e);
-                }
-                catch (IgniteCheckedException e) {
-                    tx.setRollbackOnly();
+                else {
+                    topFut.syncNotify(false);
 
-                    String msg = "Failed to prepare transaction (will attempt rollback): " + this;
-
-                    U.error(log, msg, e);
-
-                    tx.rollbackAsync();
-
-                    onError(null, null, new IgniteTxRollbackException(msg, e));
+                    topFut.listenAsync(new CI1<IgniteFuture<Long>>() {
+                        @Override public void apply(IgniteFuture<Long> t) {
+                            prepare();
+                        }
+                    });
                 }
             }
-            else {
-                topFut.syncNotify(false);
-
-                topFut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                    @Override public void apply(IgniteFuture<Long> t) {
-                        prepare();
-                    }
-                });
+            finally {
+                topologyReadUnlock();
             }
         }
-        finally {
-            topologyReadUnlock();
-        }
+        else
+            preparePessimistic();
     }
 
     /**
@@ -472,21 +483,23 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         assert topVer > 0;
 
-        for (int cacheId : tx.activeCacheIds()) {
-            GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
-
-            if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyException("Failed to map keys for cache (all " +
-                    "partition nodes left the grid): " + cacheCtx.name()));
-
-                return;
-            }
-        }
-
         txMapping = new GridDhtTxMapping<>();
 
         ConcurrentLinkedDeque8<GridDistributedTxMapping<K, V>> mappings =
             new ConcurrentLinkedDeque8<>();
+
+        if (!F.isEmpty(reads) || !F.isEmpty(writes)) {
+            for (int cacheId : tx.activeCacheIds()) {
+                GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
+
+                if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
+                    onDone(new ClusterTopologyException("Failed to map keys for cache (all " +
+                        "partition nodes left the grid): " + cacheCtx.name()));
+
+                    return;
+                }
+            }
+        }
 
         // Assign keys to primary nodes.
         GridDistributedTxMapping<K, V> cur = null;
@@ -538,7 +551,166 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
         txMapping.initLast(mappings);
 
+        tx.transactionNodes(txMapping.transactionNodes());
+
+        checkOnePhase();
+
         proceedPrepare(mappings);
+    }
+
+    /**
+     *
+     */
+    private void preparePessimistic() {
+        Map<ClusterNode, GridDistributedTxMapping<K, V>> mappings = new HashMap<>();
+
+        long topVer = tx.topologyVersion();
+
+        txMapping = new GridDhtTxMapping<>();
+
+        for (IgniteTxEntry<K, V> txEntry : tx.allEntries()) {
+            GridCacheContext<K, V> cacheCtx = txEntry.context();
+
+            List<ClusterNode> nodes = cacheCtx.affinity().nodes(txEntry.key(), topVer);
+
+            ClusterNode primary = F.first(nodes);
+
+            GridDistributedTxMapping<K, V> nodeMapping = mappings.get(primary);
+
+            if (nodeMapping == null) {
+                nodeMapping = new GridDistributedTxMapping<>(primary);
+
+                mappings.put(primary, nodeMapping);
+            }
+
+            txEntry.nodeId(primary.id());
+
+            nodeMapping.add(txEntry);
+
+            txMapping.addMapping(nodes);
+        }
+
+        tx.transactionNodes(txMapping.transactionNodes());
+
+        checkOnePhase();
+
+        for (final GridDistributedTxMapping<K, V> m : mappings.values()) {
+            final ClusterNode node = m.node();
+
+            GridNearTxPrepareRequest<K, V> req = new GridNearTxPrepareRequest<>(
+                futId,
+                tx.topologyVersion(),
+                tx,
+                tx.optimistic() && tx.serializable() ? m.reads() : null,
+                m.writes(),
+                    /*grp lock key*/null,
+                    /*part lock*/false,
+                tx.syncCommit(),
+                tx.syncRollback(),
+                txMapping.transactionNodes(),
+                true,
+                txMapping.transactionNodes().get(node.id()),
+                tx.onePhaseCommit(),
+                tx.needReturnValue() && tx.implicit(),
+                tx.implicitSingle(),
+                tx.subjectId(),
+                tx.taskNameHash());
+
+            for (IgniteTxEntry<K, V> txEntry : m.writes()) {
+                assert txEntry.cached().detached() : "Expected detached entry while preparing transaction " +
+                    "[locNodeId=" + cctx.localNodeId() +
+                    ", txEntry=" + txEntry + ']';
+
+                if (txEntry.op() == TRANSFORM)
+                    req.addDhtVersion(txEntry.txKey(), null);
+            }
+
+            if (node.isLocal()) {
+                IgniteFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(node.id(), tx, req);
+
+                // Add new future.
+                add(new GridEmbeddedFuture<>(
+                    cctx.kernalContext(),
+                    fut,
+                    new C2<IgniteTxEx<K, V>, Exception, IgniteTxEx<K, V>>() {
+                        @Override public IgniteTxEx<K, V> apply(IgniteTxEx<K, V> t, Exception ex) {
+                            if (ex != null) {
+                                onError(node.id(), null, ex);
+
+                                return t;
+                            }
+
+                            IgniteTxLocalEx<K, V> dhtTx = (IgniteTxLocalEx<K, V>)t;
+
+                            Collection<Integer> invalidParts = dhtTx.invalidPartitions();
+
+                            assert F.isEmpty(invalidParts);
+
+                            if (!m.empty()) {
+                                for (IgniteTxEntry<K, V> writeEntry : m.entries()) {
+                                    IgniteTxKey<K> key = writeEntry.txKey();
+
+                                    IgniteTxEntry<K, V> dhtTxEntry = dhtTx.entry(key);
+
+                                    if (dhtTxEntry.op() == NOOP)
+                                        tx.entry(key).op(NOOP);
+                                }
+
+                                tx.addDhtVersion(m.node().id(), dhtTx.xidVersion());
+
+                                m.dhtVersion(dhtTx.xidVersion());
+
+                                GridCacheVersion min = dhtTx.minVersion();
+
+                                IgniteTxManager<K, V> tm = cctx.near().dht().context().tm();
+
+                                tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
+                                    tm.committedVersions(min), tm.rolledbackVersions(min));
+                            }
+
+                            tx.implicitSingleResult(dhtTx.implicitSingleResult());
+
+                            return tx;
+                        }
+                    }
+                ));
+            }
+            else {
+                MiniFuture fut = new MiniFuture(m, null);
+
+                req.miniId(fut.futureId());
+
+                add(fut); // Append new future.
+
+                try {
+                    cctx.io().send(node, req);
+                }
+                catch (IgniteCheckedException e) {
+                    // Fail the whole thing.
+                    fut.onResult(e);
+                }
+            }
+        }
+
+        markInitialized();
+    }
+
+    /**
+     * Checks if mapped transaction can be committed on one phase.
+     * One-phase commit can be done if transaction maps to one primary node and not more than one backup.
+     */
+    private void checkOnePhase() {
+        if (cctx.isStoreEnabled())
+            return;
+
+        Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
+
+        if (map.size() == 1) {
+            Collection<UUID> backups = F.firstEntry(map).getValue();
+
+            if (backups.size() <= 1)
+                tx.onePhaseCommit(true);
+        }
     }
 
     /**
@@ -571,6 +743,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             txMapping.transactionNodes(),
             m.last(),
             m.lastBackups(),
+            tx.onePhaseCommit(),
+            tx.needReturnValue() && tx.implicit(),
+            tx.implicitSingle(),
             tx.subjectId(),
             tx.taskNameHash());
 
@@ -618,7 +793,18 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         assert F.isEmpty(invalidParts);
 
+                        tx.implicitSingleResult(dhtTx.implicitSingleResult());
+
                         if (!m.empty()) {
+                            for (IgniteTxEntry<K, V> writeEntry : m.entries()) {
+                                IgniteTxKey<K> key = writeEntry.txKey();
+
+                                IgniteTxEntry<K, V> dhtTxEntry = dhtTx.entry(key);
+
+                                if (dhtTxEntry.op() == NOOP)
+                                    tx.entry(key).op(NOOP);
+                            }
+
                             tx.addDhtVersion(m.node().id(), dhtTx.xidVersion());
 
                             m.dhtVersion(dhtTx.xidVersion());
@@ -872,6 +1058,17 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                         }
                     }
 
+                    if (tx.implicitSingle())
+                        tx.implicitSingleResult(res.returnValue());
+
+                    for (IgniteTxKey<K> key : res.filterFailedKeys()) {
+                        IgniteTxEntry<K, V> txEntry = tx.entry(key);
+
+                        assert txEntry != null : "Missing tx entry for write key: " + key;
+
+                        txEntry.op(NOOP);
+                    }
+
                     if (!m.empty()) {
                         // Register DHT version.
                         tx.addDhtVersion(m.node().id(), res.dhtVersion());
@@ -882,7 +1079,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     }
 
                     // Proceed prepare before finishing mini future.
-                    proceedPrepare(mappings);
+                    if (mappings != null)
+                        proceedPrepare(mappings);
 
                     // Finish this mini future.
                     onDone(tx);

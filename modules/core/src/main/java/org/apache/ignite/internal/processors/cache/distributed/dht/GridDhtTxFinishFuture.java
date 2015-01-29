@@ -92,8 +92,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
         super(cctx.kernalContext(), F.<IgniteTx>identityReducer(tx));
 
-        assert cctx != null;
-
         this.cctx = cctx;
         this.tx = tx;
         this.commit = commit;
@@ -283,6 +281,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     private boolean finish(Map<UUID, GridDistributedTxMapping<K, V>> dhtMap,
         Map<UUID, GridDistributedTxMapping<K, V>> nearMap) {
+        if (tx.onePhaseCommit())
+            return false;
+
         boolean res = false;
 
         boolean sync = commit ? tx.syncCommit() : tx.syncRollback();
@@ -323,10 +324,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.rolledbackVersions(),
                 tx.pendingVersions(),
                 tx.size(),
-                tx.pessimistic() ? dhtMapping.writes() : null,
-                tx.pessimistic() && nearMapping != null ? nearMapping.writes() : null,
-                tx.recoveryWrites(),
-                tx.onePhaseCommit(),
                 tx.groupLockKey(),
                 tx.subjectId(),
                 tx.taskNameHash());
@@ -344,9 +341,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                         req.nearTtl(idx++, e.ttl());
                 }
             }
-
-            if (tx.onePhaseCommit())
-                req.writeVersion(tx.writeVersion());
 
             try {
                 cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
@@ -395,10 +389,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     tx.rolledbackVersions(),
                     tx.pendingVersions(),
                     tx.size(),
-                    null,
-                    tx.pessimistic() ? nearMapping.writes() : null,
-                    tx.recoveryWrites(),
-                    tx.onePhaseCommit(),
                     tx.groupLockKey(),
                     tx.subjectId(),
                     tx.taskNameHash());

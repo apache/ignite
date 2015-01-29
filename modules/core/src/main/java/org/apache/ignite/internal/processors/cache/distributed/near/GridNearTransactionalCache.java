@@ -263,7 +263,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 byte[] bytes = !keyBytes.isEmpty() ? keyBytes.get(i) : null;
 
                 Collection<GridCacheMvccCandidate<K>> cands = req.candidatesByIndex(i);
-                GridCacheVersion drVer = req.drVersionByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
@@ -312,7 +311,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 }
 
                                 tx.addEntry(ctx, txKey, bytes, GridCacheOperation.NOOP, /*Value.*/null,
-                                    /*Value byts.*/null, drVer);
+                                    /*Value byts.*/null, /*dr version*/null);
                             }
 
                             // Add remote candidate before reordering.

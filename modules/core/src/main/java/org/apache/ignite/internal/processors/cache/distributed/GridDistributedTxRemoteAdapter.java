@@ -503,34 +503,33 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                                     GridCacheVersion explicitVer = txEntry.drVersion();
 
-                                    if (finalizationStatus() == FinalizationStatus.RECOVERY_FINISH || optimistic()) {
-                                        // Primary node has left the grid so we have to process conflicts on backups.
-                                        if (explicitVer == null)
-                                            explicitVer = writeVersion(); // Force write version to be used.
 
-                                        GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
-                                            txEntry,
-                                            explicitVer,
-                                            op,
-                                            val,
-                                            valBytes,
-                                            txEntry.ttl(),
-                                            txEntry.drExpireTime());
+                                    // Primary node has left the grid so we have to process conflicts on backups.
+                                    if (explicitVer == null)
+                                        explicitVer = writeVersion(); // Force write version to be used.
 
-                                        if (drRes != null) {
-                                            op = drRes.operation();
-                                            val = drRes.value();
-                                            valBytes = drRes.valueBytes();
+                                    GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
+                                        txEntry,
+                                        explicitVer,
+                                        op,
+                                        val,
+                                        valBytes,
+                                        txEntry.ttl(),
+                                        txEntry.drExpireTime());
 
-                                            if (drRes.isMerge())
-                                                explicitVer = writeVersion();
-                                            else if (op == NOOP)
-                                                txEntry.ttl(-1L);
-                                        }
-                                        else
-                                            // Nullify explicit version so that innerSet/innerRemove will work as usual.
-                                            explicitVer = null;
+                                    if (drRes != null) {
+                                        op = drRes.operation();
+                                        val = drRes.value();
+                                        valBytes = drRes.valueBytes();
+
+                                        if (drRes.isMerge())
+                                            explicitVer = writeVersion();
+                                        else if (op == NOOP)
+                                            txEntry.ttl(-1L);
                                     }
+                                    else
+                                        // Nullify explicit version so that innerSet/innerRemove will work as usual.
+                                        explicitVer = null;
 
                                     if (op == CREATE || op == UPDATE) {
                                         // Invalidate only for near nodes (backups cannot be invalidated).

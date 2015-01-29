@@ -109,6 +109,7 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
+     * @param onePhaseCommit One phase commit flag.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -122,9 +123,10 @@ public class GridDhtTxPrepareRequest<K, V> extends GridDistributedTxPrepareReque
         Map<UUID, Collection<UUID>> txNodes,
         GridCacheVersion nearXidVer,
         boolean last,
+        boolean onePhaseCommit,
         UUID subjId,
         int taskNameHash) {
-        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes);
+        super(tx, null, dhtWrites, grpLockKey, partLock, txNodes, onePhaseCommit);
 
         assert futId != null;
         assert miniId != null;

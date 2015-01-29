@@ -188,9 +188,9 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 assertEquals(1, g.cache(null).metrics().getCacheMisses());
             }
             else if (g.cache(null).affinity().isBackup(g.cluster().localNode(), key)){
-                assertEquals(2, g.cache(null).metrics().getCacheGets());
+                assertEquals(1, g.cache(null).metrics().getCacheGets());
                 assertEquals(1, g.cache(null).metrics().getCacheHits());
-                assertEquals(1, g.cache(null).metrics().getCacheMisses());
+                assertEquals(0, g.cache(null).metrics().getCacheMisses());
             }
             else {
                 assertEquals(0, g.cache(null).metrics().getCacheGets());
@@ -243,9 +243,9 @@ public class GridCacheNearMetricsSelfTest extends GridCacheAbstractSelfTest {
                 assertEquals(0, g.cache(null).metrics().getCacheMisses());
             }
             else {
-                assertEquals(2, g.cache(null).metrics().getCacheGets());
+                assertEquals(1, g.cache(null).metrics().getCacheGets());
                 assertEquals(1, g.cache(null).metrics().getCacheHits());
-                assertEquals(1, g.cache(null).metrics().getCacheMisses());
+                assertEquals(0, g.cache(null).metrics().getCacheMisses());
             }
         }
     }

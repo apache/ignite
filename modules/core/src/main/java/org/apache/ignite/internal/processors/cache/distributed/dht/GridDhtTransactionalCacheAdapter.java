@@ -136,8 +136,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtLockResponse<K, V> res)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<K> keys = req.keys();
-        List<IgniteTxEntry<K, V>> writes = req.writeEntries();
-
         GridDhtTxRemote<K, V> tx = null;
 
         int size = F.size(keys);
@@ -150,11 +148,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
             IgniteTxKey<K> txKey = ctx.txKey(key);
 
-            IgniteTxEntry<K, V> writeEntry = writes == null ? null : writes.get(i);
-
             assert F.isEmpty(req.candidatesByIndex(i));
-
-            GridCacheVersion drVer = req.drVersionByIndex(i);
 
             if (log.isDebugEnabled())
                 log.debug("Unmarshalled key: " + key);
@@ -218,13 +212,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             tx.addWrite(
                                 ctx,
-                                writeEntry == null ? NOOP : writeEntry.op(),
+                                NOOP,
                                 txKey,
                                 req.keyBytes() != null ? req.keyBytes().get(i) : null,
-                                writeEntry == null ? null : writeEntry.value(),
-                                writeEntry == null ? null : writeEntry.valueBytes(),
-                                writeEntry == null ? null : writeEntry.entryProcessors(),
-                                drVer,
+                                null,
+                                null,
+                                null,
                                 req.accessTtl());
 
                             if (req.groupLock())
@@ -828,14 +821,10 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (log.isDebugEnabled())
                                 log.debug("Performing DHT lock [tx=" + tx + ", entries=" + entries + ']');
 
-                            assert req.writeEntries() == null || req.writeEntries().size() == entries.size();
-
                             IgniteFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
                                 cacheCtx,
                                 entries,
-                                req.writeEntries(),
                                 req.onePhaseCommit(),
-                                req.drVersions(),
                                 req.messageId(),
                                 req.implicitTx(),
                                 req.txRead(),
