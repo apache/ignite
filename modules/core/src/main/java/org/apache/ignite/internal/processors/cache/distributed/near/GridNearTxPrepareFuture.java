@@ -627,7 +627,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             }
 
             if (node.isLocal()) {
-                IgniteFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(node.id(), tx, req);
+                IgniteInternalFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(node.id(), tx, req);
 
                 // Add new future.
                 add(new GridEmbeddedFuture<>(

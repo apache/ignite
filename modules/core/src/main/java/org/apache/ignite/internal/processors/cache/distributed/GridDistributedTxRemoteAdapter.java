@@ -506,41 +506,37 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     GridCacheVersion explicitVer = txEntry.drVersion();
 
 
-                                        boolean drNeedResolve =
-                                            cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
+                                    boolean drNeedResolve =
+                                        cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
-                                        if (drNeedResolve) {
-                                            IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
-                                                drRes = conflictResolve(op, txEntry.key(), val, valBytes,
-                                                txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
+                                    if (drNeedResolve) {
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
+                                            drRes = conflictResolve(op, txEntry.key(), val, valBytes,
+                                            txEntry.ttl(), txEntry.drExpireTime(), explicitVer, cached);
 
-                                            assert drRes != null;
+                                        assert drRes != null;
 
-                                            GridCacheVersionConflictContextImpl<K, V> drCtx = drRes.get2();
+                                        GridCacheVersionConflictContextImpl<K, V> drCtx = drRes.get2();
 
-                                            if (drCtx.isUseOld())
-                                                op = NOOP;
-                                            else if (drCtx.isUseNew()) {
-                                                txEntry.ttl(drCtx.ttl());
+                                        if (drCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (drCtx.isUseNew()) {
+                                            txEntry.ttl(drCtx.ttl());
 
-                                                if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
-                                                    txEntry.drExpireTime(drCtx.expireTime());
-                                                else
-                                                    txEntry.drExpireTime(-1L);
-                                            }
-                                            else if (drCtx.isMerge()) {
-                                                op = drRes.get1();
-                                                val = drCtx.mergeValue();
-                                                valBytes = null;
-                                                explicitVer = writeVersion();
-
-                                                txEntry.ttl(drCtx.ttl());
+                                            if (drCtx.newEntry().dataCenterId() != cacheCtx.dataCenterId())
+                                                txEntry.drExpireTime(drCtx.expireTime());
+                                            else
                                                 txEntry.drExpireTime(-1L);
-                                            }
                                         }
-                                        else
-                                            // Nullify explicit version so that innerSet/innerRemove will work as usual.
-                                            explicitVer = null;
+                                        else if (drCtx.isMerge()) {
+                                            op = drRes.get1();
+                                            val = drCtx.mergeValue();
+                                            valBytes = null;
+                                            explicitVer = writeVersion();
+
+                                            txEntry.ttl(drCtx.ttl());
+                                            txEntry.drExpireTime(-1L);
+                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.

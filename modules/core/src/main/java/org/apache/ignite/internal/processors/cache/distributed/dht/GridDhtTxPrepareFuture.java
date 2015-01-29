@@ -489,10 +489,10 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             onComplete();
 
             if (!tx.colocated() && tx.markFinalizing(IgniteTxEx.FinalizationStatus.USER_FINISH)) {
-                IgniteFuture<IgniteTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
+                IgniteInternalFuture<IgniteTx> fut = this.err.get() == null ? tx.commitAsync() : tx.rollbackAsync();
 
-                fut.listenAsync(new CIX1<IgniteFuture<IgniteTx>>() {
-                    @Override public void applyx(IgniteFuture<IgniteTx> gridCacheTxGridFuture) {
+                fut.listenAsync(new CIX1<IgniteInternalFuture<IgniteTx>>() {
+                    @Override public void applyx(IgniteInternalFuture<IgniteTx> gridCacheTxGridFuture) {
                         try {
                             if (replied.compareAndSet(false, true))
                                 sendPrepareResponse(res);

@@ -728,8 +728,8 @@ public class IgniteTxHandler<K, V> {
             finish(nodeId, nearTx, req, req.nearTtls());
 
         if (dhtTx != null && !dhtTx.done()) {
-            dhtTx.finishFuture().listenAsync(new CI1<IgniteFuture<IgniteTx>>() {
-                @Override public void apply(IgniteFuture<IgniteTx> igniteTxIgniteFuture) {
+            dhtTx.finishFuture().listenAsync(new CI1<IgniteInternalFuture<IgniteTx>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteTx> igniteTxIgniteFuture) {
                     sendReply(nodeId, req);
                 }
             });
