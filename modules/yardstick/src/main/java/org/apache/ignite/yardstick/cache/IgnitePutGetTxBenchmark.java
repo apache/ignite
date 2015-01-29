@@ -31,14 +31,8 @@ public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark {
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         int key = nextRandom(0, args.range() / 2);
 
-        ignite().log().debug("IgnitePutGetTxBenchmark - key: " + key);
-
         try (IgniteTx tx = ignite().transactions().txStart()) {
-            ignite().log().debug("IgnitePutGetTxBenchmark: txStart()");
-
             Object val = cache.get(key);
-
-            ignite().log().debug("IgnitePutGetTxBenchmark - get():" + val);
 
             if (val != null)
                 key = nextRandom(args.range() / 2, args.range());
@@ -46,8 +40,6 @@ public class IgnitePutGetTxBenchmark extends IgniteCacheAbstractBenchmark {
             cache.put(key, new SampleValue(key));
 
             tx.commit();
-
-            ignite().log().debug("IgnitePutGetTxBenchmark - txCommit");
         }
 
         return true;
