@@ -300,6 +300,14 @@ public class XmlGenerator {
     public static void generate(String pkg, Collection<CacheQueryTypeMetadata> meta, File out,
         ConfirmCallable askOverwrite) {
 
+        File outFolder = out.getParentFile();
+
+        if (outFolder == null)
+            throw new IllegalStateException("Invalid output file: " + out);
+
+        if (!outFolder.exists() && !outFolder.mkdirs())
+            throw new IllegalStateException("Failed to create output folder for XML file: " + outFolder);
+
         try {
             if (out.exists()) {
                 MessageBox.Result choice = askOverwrite.confirm(out.getName());
