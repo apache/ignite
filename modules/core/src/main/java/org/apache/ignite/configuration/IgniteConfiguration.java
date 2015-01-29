@@ -1073,7 +1073,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@ignitelink org.gridgain.grid.logger.log4j.GridLog4jLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j.IgniteLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.

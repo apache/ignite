@@ -33,7 +33,7 @@ public @interface QuerySqlField {
      * Just like with databases, field indexing may require additional overhead
      * during updates, but makes select operations faster.
      * <p>
-     * When {@ignitelink org.gridgain.grid.spi.indexing.h2.GridH2IndexingSpi} is set as indexing SPI and indexed field is
+     * When indexed field is
      * of type {@code com.vividsolutions.jts.geom.Geometry} (or any subclass of this class) then GridGain will
      * consider this index as spatial providing performance boost for spatial queries.
      *

@@ -31,10 +31,10 @@ import java.util.*;
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
  * often started and stopped by grid loaders. Grid loaders can be found in
- * {@link org.gridgain.grid.startup} package, for example:
+ * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@ignitelink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
+ * <li>{@ignitelink org.apache.ignite.startup.servlet.GridServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -76,7 +76,7 @@ import java.util.*;
  * ...
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
- * For more information refer to {@ignitelink org.gridgain.grid.GridSpringBean} documentation.
+ * For more information refer to {@ignitelink org.apache.ignite.IgniteSpringBean} documentation.
  */
 public class Ignition {
     /**
