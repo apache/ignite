@@ -26,7 +26,7 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 
@@ -117,7 +117,7 @@ public class GridHadoopMapReduceEmbeddedSelfTest extends GridHadoopMapReduceTest
 
             job.setJarByClass(GridHadoopWordCount2.class);
 
-            IgniteFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
+            IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new GridHadoopJobId(UUID.randomUUID(), 1),
                     createJobInfo(job.getConfiguration()));
 
             fut.get();

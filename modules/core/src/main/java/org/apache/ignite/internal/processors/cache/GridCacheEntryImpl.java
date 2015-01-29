@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -377,7 +378,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync() {
+    @Override public IgniteInternalFuture<V> reloadAsync() {
         GridCacheProjectionImpl<K, V> old = ctx.gate().enter(proxy.gateProjection());
 
         try {
@@ -409,7 +410,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync() {
+    @Override public IgniteInternalFuture<V> getAsync() {
         return proxy.getAsync(key);
     }
 
@@ -420,7 +421,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> setAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         // Should not pass dht entries as to near cache.
         return proxy.putAsync(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
@@ -432,7 +433,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<Boolean> setxAsync(V val, IgnitePredicate<CacheEntry<K, V>>[] filter) {
         // Should not pass dht entries as to near cache.
         return proxy.putxAsync(key, val, isNearEnabled(ctx) ? null : cached, ttl, filter);
     }
@@ -443,7 +444,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> replaceAsync(V val) {
+    @Override public IgniteInternalFuture<V> replaceAsync(V val) {
         return setAsync(val, ctx.hasPeekArray());
     }
 
@@ -453,7 +454,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
         return setxAsync(newVal, ctx.equalsPeekArray(newVal));
     }
 
@@ -499,7 +500,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
         return setAsync(val, ctx.noPeekArray());
     }
 
@@ -509,7 +510,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
         return setxAsync(val, ctx.noPeekArray());
     }
 
@@ -519,7 +520,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replacexAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
         return setxAsync(val, ctx.hasPeekArray());
     }
 
@@ -529,7 +530,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return proxy.removeAsync(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
@@ -539,7 +540,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return proxy.removexAsync(key, isNearEnabled(ctx) ? null : cached, filter);
     }
 
@@ -549,7 +550,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removeAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
         return proxy.removeAsync(key, val);
     }
 
@@ -649,7 +650,7 @@ public class GridCacheEntryImpl<K, V> implements CacheEntry<K, V>, Externalizabl
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter) {
         return proxy.lockAsync(key, timeout, filter);
     }

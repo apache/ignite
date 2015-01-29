@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -458,11 +459,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            IgniteFuture<?>  fut = ctx.cache().loadAll(keys, replaceExisting);
+            IgniteInternalFuture<?> fut = ctx.cache().loadAll(keys, replaceExisting);
 
             if (completionLsnr != null) {
-                fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> fut) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
                         try {
                             fut.get();
 
@@ -786,10 +787,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync()) {
-                    IgniteFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
+                    IgniteInternalFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
 
-                    IgniteFuture<T> fut0 = fut.chain(new CX1<IgniteFuture<EntryProcessorResult<T>>, T>() {
-                        @Override public T applyx(IgniteFuture<EntryProcessorResult<T>> fut)
+                    IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
                             throws IgniteCheckedException {
                             EntryProcessorResult<T> res = fut.get();
 

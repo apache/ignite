@@ -26,7 +26,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -282,7 +281,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             final int keysCnt = 10;
 
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     // Make thread-local copy to shuffle keys.
                     List<Integer> threadKeys = new ArrayList<>(keys);
@@ -378,7 +377,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             final Lock lock = g0.jcache(null).lock(key);
 
-            IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         lock.lock();

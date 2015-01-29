@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.query;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
@@ -174,7 +175,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -186,7 +187,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object[] params) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -198,7 +199,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebuildIndexes(Class<?> cls) {
+    @Override public IgniteInternalFuture<?> rebuildIndexes(Class<?> cls) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -210,7 +211,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebuildIndexes(String typeName) {
+    @Override public IgniteInternalFuture<?> rebuildIndexes(String typeName) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
@@ -222,7 +223,7 @@ public class GridCacheQueriesProxy<K, V> implements GridCacheQueriesEx<K, V>, Ex
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> rebuildAllIndexes() {
+    @Override public IgniteInternalFuture<?> rebuildAllIndexes() {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

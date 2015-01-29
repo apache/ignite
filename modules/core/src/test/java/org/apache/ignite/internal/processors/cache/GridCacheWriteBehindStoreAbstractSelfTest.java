@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -99,7 +99,7 @@ public abstract class GridCacheWriteBehindStoreAbstractSelfTest extends GridComm
 
         final AtomicInteger operations = new AtomicInteger();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings({"NullableProblems"})
             @Override public void run() {
                 // Initialize key set for this thread.

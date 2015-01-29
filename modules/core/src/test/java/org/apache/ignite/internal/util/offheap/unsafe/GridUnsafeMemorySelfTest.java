@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.offheap.unsafe;
 
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jdk8.backport.*;
@@ -264,7 +264,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 int x = 0;
 
@@ -317,7 +317,7 @@ public class GridUnsafeMemorySelfTest extends GridCommonAbstractTest {
 
             final LongAdder locAdder = new LongAdder();
 
-            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new GridRandom();
 

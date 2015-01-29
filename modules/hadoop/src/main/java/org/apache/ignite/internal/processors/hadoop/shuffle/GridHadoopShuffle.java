@@ -234,7 +234,7 @@ public class GridHadoopShuffle extends GridHadoopComponent {
      * @param jobId Job ID.
      * @return Future.
      */
-    public IgniteFuture<?> flush(GridHadoopJobId jobId) {
+    public IgniteInternalFuture<?> flush(GridHadoopJobId jobId) {
         GridHadoopShuffleJob job = jobs.get(jobId);
 
         if (job == null)

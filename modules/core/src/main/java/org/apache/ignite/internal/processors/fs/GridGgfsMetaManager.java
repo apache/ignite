@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -55,7 +56,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
     private GridCache<Object, Object> metaCache;
 
     /** */
-    private IgniteFuture<?> metaCacheStartFut;
+    private IgniteInternalFuture<?> metaCacheStartFut;
 
     /** File ID to file info projection. */
     private GridCacheProjectionEx<IgniteUuid, GridGgfsFileInfo> id2InfoPrj;
@@ -1672,12 +1673,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 id2InfoPrj.invoke(parentInfo.id(),
                                     new UpdateListing(path.name(), new GridGgfsListingEntry(newInfo), false));
 
-                                IgniteFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
+                                IgniteInternalFuture<?> delFut = ggfsCtx.data().delete(oldInfo);
 
                                 // Record PURGE event if needed.
                                 if (evts.isRecordable(EVT_GGFS_FILE_PURGED)) {
-                                    delFut.listenAsync(new CI1<IgniteFuture<?>>() {
-                                        @Override public void apply(IgniteFuture<?> t) {
+                                    delFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                                        @Override public void apply(IgniteInternalFuture<?> t) {
                                             try {
                                                 t.get(); // Ensure delete succeeded.
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -89,9 +90,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         comp.run(putJob);
 
-        IgniteFuture<?> fut = comp.future();
+        IgniteInternalFuture<?> fut = comp.future();
 
-        Collection<IgniteFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
+        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
         Collection<TakeJob> jobs = new ArrayList<>(GRID_CNT - 1);
 
@@ -134,7 +135,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         info(">>> Joined node polled " + polled);
 
-        for (IgniteFuture<?> f : futs)
+        for (IgniteInternalFuture<?> f : futs)
             f.cancel();
 
         putJob.stop(true);

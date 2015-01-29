@@ -19,47 +19,47 @@
 
 <!--
     This template file contains settings needed to run Apache Hadoop jobs
-    with GridGain's distributed in-memory file system GGFS.
+    with Apache Ignite's distributed in-memory file system IgniteFS.
 
     You can replace '$HADOOP_HOME/etc/hadoop/core-site.xml' file with this one
-    to work with GridGain GGFS nodes running on localhost (these local nodes can be
+    to work with IgniteFS nodes running on localhost (these local nodes can be
     a part of distributed cluster though). To work with file system on remote
     hosts you need to change the host of file system URI to any host running
-    GridGain's GGFS node.
+    IgniteFS node.
 
-    Note that GridGain jars must be in Apache Hadoop client classpath to work
+    Note that Ignite jars must be in Apache Hadoop client classpath to work
     with this configuration.
 
-    Run script '$GRIDGAIN_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
+    Run script '$IGNITE_HOME/bin/setup-hadoop.{sh|bat}' for Apache Hadoop client setup.
 -->
 
 <configuration>
     <!--
-        Set default file system to GGFS instance named "ggfs" configured in GridGain.
+        Set default file system to IgniteFS instance named "ignitefs" configured in Ignite.
     -->
     <property>
         <name>fs.default.name</name>
-        <value>ggfs://ggfs@localhost</value>
+        <value>ignitefs://ignitefs@localhost</value>
     </property>
 
     <!--
-        Set Hadoop 1.* file system implementation class for GGFS.
+        Set Hadoop 1.* file system implementation class for IgniteFS.
     -->
     <property>
-        <name>fs.ggfs.impl</name>
+        <name>fs.ignitefs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem</value>
     </property>
 
     <!--
-        Set Hadoop 2.* file system implementation class for GGFS.
+        Set Hadoop 2.* file system implementation class for IgniteFS.
     -->
     <property>
-        <name>fs.AbstractFileSystem.ggfs.impl</name>
+        <name>fs.AbstractFileSystem.ignitefs.impl</name>
         <value>org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem</value>
     </property>
 
     <!--
-        Disallow data node replacement since it does not make sense for GridGain's GGFS nodes.
+        Disallow data node replacement since it does not make sense for IgniteFS nodes.
     -->
     <property>
         <name>dfs.client.block.write.replace-datanode-on-failure.policy</name>
@@ -67,11 +67,11 @@
     </property>
 
     <!--
-        Allow to write the job statistics into GGFS.
+        Allow to write the job statistics into IgniteFS.
     -->
     <!--
     <property>
-        <name>gridgain.counters.writer</name>
+        <name>ignite.counters.writer</name>
         <value>org.apache.ignite.internal.processors.hadoop.counter.GridHadoopFSCounterWriter</value>
     </property>
     -->
@@ -82,7 +82,7 @@
     -->
     <!--
     <property>
-        <name>gridgain.counters.fswriter.directory</name>
+        <name>ignite.counters.fswriter.directory</name>
         <value>/user/${USER}</value>
     </property>
     -->

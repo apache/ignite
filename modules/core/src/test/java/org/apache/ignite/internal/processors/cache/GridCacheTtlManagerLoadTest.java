@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import javax.cache.expiry.*;
@@ -44,7 +43,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
         try {
             final AtomicBoolean stop = new AtomicBoolean();
 
-            IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     IgniteCache<Object,Object> cache = g.jcache(null).
                         withExpiryPolicy(new TouchedExpiryPolicy(new Duration(MILLISECONDS, 1000)));

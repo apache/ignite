@@ -24,7 +24,6 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -668,7 +667,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         assertNotNull(set0);
 
-        Collection<IgniteFuture> futs = new ArrayList<>();
+        Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
         final int THREADS_PER_NODE = 5;
         final int KEY_RANGE = 10_000;
@@ -723,7 +722,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             }, THREADS_PER_NODE, "testSetMultithreaded"));
         }
 
-        for (IgniteFuture fut : futs)
+        for (IgniteInternalFuture fut : futs)
             fut.get();
     }
 
@@ -775,7 +774,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         final AtomicInteger val = new AtomicInteger(10_000);
 
-        IgniteFuture<?> fut;
+        IgniteInternalFuture<?> fut;
 
         try {
             fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {

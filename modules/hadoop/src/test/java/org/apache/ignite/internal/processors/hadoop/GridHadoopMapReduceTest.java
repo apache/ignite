@@ -25,7 +25,7 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
@@ -98,7 +98,7 @@ public class GridHadoopMapReduceTest extends GridHadoopAbstractWordCountTest {
 
             GridHadoopJobId jobId = new GridHadoopJobId(UUID.randomUUID(), 1);
 
-            IgniteFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
 
             fut.get();
 

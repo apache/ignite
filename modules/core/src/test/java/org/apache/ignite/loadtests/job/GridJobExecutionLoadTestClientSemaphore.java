@@ -20,6 +20,7 @@ package org.apache.ignite.loadtests.job;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -57,8 +58,8 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     /** {@inheritDoc} */
     @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
-        final IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> t) {
+        final IgniteInClosure<IgniteInternalFuture<?>> lsnr = new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> t) {
                 tasksSem.release();
             }
         };

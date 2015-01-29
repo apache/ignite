@@ -24,7 +24,6 @@ import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 
@@ -173,7 +172,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> fut = startNodeKiller(stop, new AtomicInteger(), killIdxs);
+        IgniteInternalFuture<?> fut = startNodeKiller(stop, new AtomicInteger(), killIdxs);
 
         final int ITEMS = (atomicityMode() == ATOMIC) ? 10_000 : 3000;
 
@@ -279,7 +278,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         final AtomicInteger stopCnt = new AtomicInteger();
 
-        IgniteFuture<?> fut = startNodeKiller(stop, stopCnt, killIdxs);
+        IgniteInternalFuture<?> fut = startNodeKiller(stop, stopCnt, killIdxs);
 
         int err = 0;
 
@@ -332,7 +331,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
      * @param killIdxs Indexes of nodes to kill.
      * @return Future completing when thread finishes.
      */
-    private IgniteFuture<?> startNodeKiller(final AtomicBoolean stop, final AtomicInteger killCnt,
+    private IgniteInternalFuture<?> startNodeKiller(final AtomicBoolean stop, final AtomicInteger killCnt,
         final List<Integer> killIdxs) {
         return GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {

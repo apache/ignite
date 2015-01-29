@@ -23,7 +23,6 @@ import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -50,7 +49,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
         if (log.isDebugEnabled())
             log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
-        IgniteFuture<?> f = cache.context().preloader().startFuture();
+        IgniteInternalFuture<?> f = cache.context().preloader().startFuture();
 
         if (!f.isDone())
             f.get();

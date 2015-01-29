@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -153,7 +153,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
             assertNull(asyncCache.invoke(key, incProcessor));
 
-            IgniteFuture<Integer> fut = asyncCache.future();
+            IgniteInternalFuture<Integer> fut = asyncCache.future();
 
             assertNotNull(fut);
 
@@ -404,7 +404,7 @@ public abstract class IgniteCacheInvokeAbstractTest extends IgniteCacheAbstractT
 
         assertNull(asyncCache.invokeAll(keys, new IncrementProcessor()));
 
-        IgniteFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
+        IgniteInternalFuture<Map<Integer, EntryProcessorResult<Integer>>> fut = asyncCache.future();
 
         resMap = fut.get();
 

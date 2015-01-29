@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 
@@ -94,7 +94,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
@@ -173,7 +173,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
@@ -262,7 +262,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
@@ -330,7 +330,7 @@ public abstract class GridCacheAbstractIteratorsSelfTest extends GridCacheAbstra
         for (int i = 0; i < gridCount(); i++)
             cache(i).removeAll();
 
-        final IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        final IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 for (int i = 0; i < entryCount(); i++)
                     cache().put(KEY_PREFIX + i, i);
