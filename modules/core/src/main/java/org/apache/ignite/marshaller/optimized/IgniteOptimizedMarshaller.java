@@ -183,7 +183,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
         if (path == null)
             return;
 
-        URL url = GridUtils.resolveGridGainUrl(path, false);
+        URL url = IgniteUtils.resolveGridGainUrl(path, false);
 
         if (url == null)
             throw new IgniteCheckedException("Failed to find resource for name: " + path);
