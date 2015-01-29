@@ -189,7 +189,7 @@ public class GridCacheSetFailoverAbstractSelfTest extends GridCacheAbstractSelfT
 
             for (int i = 0; i < gridCount(); i++) {
                 Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
 
                 while (entries.hasNext()) {
                     GridCacheEntryEx<Object, Object> entry = entries.next();

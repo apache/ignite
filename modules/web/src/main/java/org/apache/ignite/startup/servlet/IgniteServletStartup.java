@@ -141,7 +141,7 @@ public class IgniteServletStartup extends HttpServlet {
 
         try {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =
-                GridGainEx.loadConfigurations(cfgUrl);
+                IgnitionEx.loadConfigurations(cfgUrl);
 
             Collection<IgniteConfiguration> cfgs = t.get1();
 
@@ -153,7 +153,7 @@ public class IgniteServletStartup extends HttpServlet {
 
                 IgniteConfiguration adapter = new IgniteConfiguration(cfg);
 
-                Ignite ignite = GridGainEx.start(adapter, t.get2());
+                Ignite ignite = IgnitionEx.start(adapter, t.get2());
 
                 // Test if grid is not null - started properly.
                 if (ignite != null)

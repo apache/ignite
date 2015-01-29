@@ -84,7 +84,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     /** {@inheritDoc} */
     @Override protected void afterGridStart(Ignite ignite) {
         TestTxLookup tmLookup =
-            (TestTxLookup)((GridKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
+            (TestTxLookup)((IgniteKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
 
         assertNotNull(tmLookup);
 

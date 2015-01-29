@@ -101,7 +101,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
         assertEquals(GRID_CNT, grid(0).nodes().size());
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridContinuousProcessor proc = grid.context().continuous();
 

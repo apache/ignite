@@ -60,14 +60,14 @@ public class GridCacheAffinityApiSelfTest extends GridCacheAbstractSelfTest {
      * @return Affinity.
      */
     private CacheAffinityFunction affinity() {
-        return ((GridKernal)grid(0)).internalCache().configuration().getAffinity();
+        return ((IgniteKernal)grid(0)).internalCache().configuration().getAffinity();
     }
 
     /**
      * @return Affinity mapper.
      */
     private CacheAffinityKeyMapper affinityMapper() {
-        return ((GridKernal)grid(0)).internalCache().configuration().getAffinityMapper();
+        return ((IgniteKernal)grid(0)).internalCache().configuration().getAffinityMapper();
     }
 
     /**

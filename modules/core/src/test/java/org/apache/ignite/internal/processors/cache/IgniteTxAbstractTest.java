@@ -280,7 +280,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
         if (printMemoryStats()) {
             if (cntr.getAndIncrement() % 100 == 0)
                 // Print transaction memory stats.
-                ((GridKernal)grid(gridIdx)).internalCache().context().tm().printMemoryStats();
+                ((IgniteKernal)grid(gridIdx)).internalCache().context().tm().printMemoryStats();
         }
     }
 

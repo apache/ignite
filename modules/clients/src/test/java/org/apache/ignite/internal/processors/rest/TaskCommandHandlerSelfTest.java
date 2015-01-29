@@ -159,7 +159,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         GridClientFactory.stop(client.id(), true);
 
-        GridKernal g = (GridKernal)grid(0);
+        IgniteKernal g = (IgniteKernal)grid(0);
 
         Map<GridRestCommand, GridRestCommandHandler> handlers = U.field(g.context().rest(), "handlers");
 

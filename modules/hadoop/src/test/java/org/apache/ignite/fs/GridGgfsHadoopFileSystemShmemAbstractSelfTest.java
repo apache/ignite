@@ -25,7 +25,7 @@ import org.apache.ignite.testframework.*;
 import java.util.*;
 import java.util.concurrent.*;
 
-import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
  * GGFS Hadoop file system IPC self test.
@@ -57,14 +57,14 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testOutOfResources() throws Exception {
-        final Collection<GridIpcEndpoint> eps = new LinkedList<>();
+        final Collection<IpcEndpoint> eps = new LinkedList<>();
 
         try {
             IgniteCheckedException e = (IgniteCheckedException)GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @SuppressWarnings("InfiniteLoopStatement")
                 @Override public Object call() throws Exception {
                     while (true) {
-                        GridIpcEndpoint ep = GridIpcEndpointFactory.connectEndpoint("shmem:10500", log);
+                        IpcEndpoint ep = IpcEndpointFactory.connectEndpoint("shmem:10500", log);
 
                         eps.add(ep);
                     }
@@ -81,7 +81,7 @@ public abstract class GridGgfsHadoopFileSystemShmemAbstractSelfTest extends Grid
                 msg.contains("(error code: 12)"));
         }
         finally {
-            for (GridIpcEndpoint ep : eps)
+            for (IpcEndpoint ep : eps)
                 ep.close();
         }
     }

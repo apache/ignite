@@ -62,7 +62,7 @@ public abstract class IgniteFsProcessorAdapter extends GridProcessorAdapter {
      * @param name GGFS name.
      * @return Collection of endpoints or {@code null} in case GGFS is not defined.
      */
-    public abstract Collection<GridIpcServerEndpoint> endpoints(@Nullable String name);
+    public abstract Collection<IpcServerEndpoint> endpoints(@Nullable String name);
 
     /**
      * Create compute job for the given GGFS job.

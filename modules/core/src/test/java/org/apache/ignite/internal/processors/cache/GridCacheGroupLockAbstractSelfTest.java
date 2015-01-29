@@ -461,7 +461,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkSanityCheckDisabled(final IgniteTxConcurrency concurrency) throws Exception {
         assert !sanityCheckEnabled();
 
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         final UUID affinityKey = primaryKeyForCache(grid);
 
@@ -545,7 +545,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0,
                 unlocks.affectedKeys().size());
 
-            GridCacheAdapter<Object, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
+            GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache();
 
             GridCacheAffinityManager<Object, Object> affMgr = cacheAdapter.context().affinity();
 

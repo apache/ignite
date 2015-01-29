@@ -68,7 +68,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         ggfs = grid.fileSystem(ggfsName());
 

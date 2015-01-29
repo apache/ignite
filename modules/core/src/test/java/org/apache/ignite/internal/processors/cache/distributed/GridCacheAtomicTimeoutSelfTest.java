@@ -87,7 +87,7 @@ public class GridCacheAtomicTimeoutSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            final GridKernal grid = (GridKernal)grid(i);
+            final IgniteKernal grid = (IgniteKernal)grid(i);
 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid.configuration().getCommunicationSpi();
 

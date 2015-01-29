@@ -8621,7 +8621,7 @@ public abstract class GridUtils {
 
         byte[] out = new byte[len >> 1];
 
-        // two characters form the hex value.
+        // Two characters form the hex value.
         for (int i = 0, j = 0; j < len; i++) {
             int f = toDigit(data[j], j) << 4;
 
@@ -9096,5 +9096,46 @@ public abstract class GridUtils {
         }
 
         return list;
+    }
+
+    /**
+     * Calculate MD5 digits.
+     *
+     * @param in Input stream.
+     * @return Calculated MD5 digest for given input stream.
+     * @throws NoSuchAlgorithmException If MD5 algorithm was not found.
+     * @throws IOException If an I/O exception occurs.
+     */
+    public static byte[] calculateMD5Digest(@NotNull InputStream in) throws NoSuchAlgorithmException, IOException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        InputStream fis = new BufferedInputStream(in);
+        byte[] dataBytes = new byte[1024];
+
+        int nread;
+
+        while ((nread = fis.read(dataBytes)) != -1)
+            md.update(dataBytes, 0, nread);
+
+        return md.digest();
+    }
+
+    /**
+     * Calculate MD5 string.
+     *
+     * @param in Input stream.
+     * @return Calculated MD5 string for given input stream.
+     * @throws NoSuchAlgorithmException If MD5 algorithm was not found.
+     * @throws IOException If an I/O exception occurs.
+     */
+    public static String calculateMD5(InputStream in) throws NoSuchAlgorithmException, IOException {
+        byte[] md5Bytes = calculateMD5Digest(in);
+
+        // Convert the byte to hex format.
+        StringBuilder sb = new StringBuilder();
+
+        for (byte md5Byte : md5Bytes)
+            sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
+
+        return sb.toString();
     }
 }

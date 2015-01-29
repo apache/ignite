@@ -603,7 +603,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                         if (cnt.incrementAndGet() % logMod == 0) {
                             GridCacheQueryManager<Object, Object> qryMgr =
-                                ((GridKernal)g).internalCache().context().queries();
+                                ((IgniteKernal)g).internalCache().context().queries();
 
                             assert qryMgr != null;
 
@@ -668,7 +668,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     if (cnt.incrementAndGet() % logMod == 0) {
                         GridCacheQueryManager<Object, Object> qryMgr =
-                            ((GridKernal)g).internalCache().context().queries();
+                            ((IgniteKernal)g).internalCache().context().queries();
 
                         assert qryMgr != null;
 
@@ -757,7 +757,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                     if (cnt.incrementAndGet() % logMod == 0) {
                         GridCacheQueryManager<Object, Object> qryMgr =
-                            ((GridKernal)g).internalCache().context().queries();
+                            ((IgniteKernal)g).internalCache().context().queries();
 
                         assert qryMgr != null;
 
@@ -817,7 +817,7 @@ public class GridCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTest 
 
                         if (cnt.incrementAndGet() % logMod == 0) {
                             GridCacheQueryManager<Object, Object> qryMgr =
-                                ((GridKernal)g).internalCache().context().queries();
+                                ((IgniteKernal)g).internalCache().context().queries();
 
                             assert qryMgr != null;
 
