@@ -216,7 +216,7 @@ public class GridHadoopJobTrackerSelfTest extends GridHadoopAbstractSelfTest {
      */
     private void checkStatus(GridHadoopJobId jobId, boolean complete) throws Exception {
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal kernal = (GridKernal)grid(i);
+            IgniteKernal kernal = (IgniteKernal)grid(i);
 
             GridHadoop hadoop = kernal.hadoop();
 

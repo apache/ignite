@@ -109,8 +109,8 @@ public class GridCommunicationSendMessageSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void doSend() throws Exception {
-        GridIoManager mgr0 = ((GridKernal)grid(0)).context().io();
-        GridIoManager mgr1 = ((GridKernal)grid(1)).context().io();
+        GridIoManager mgr0 = ((IgniteKernal)grid(0)).context().io();
+        GridIoManager mgr1 = ((IgniteKernal)grid(1)).context().io();
 
         String topic = "test-topic";
 

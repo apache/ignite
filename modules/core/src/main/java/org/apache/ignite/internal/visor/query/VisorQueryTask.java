@@ -281,7 +281,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
          * @param id Uniq query result id.
          */
         private void scheduleResultSetHolderRemoval(final String id) {
-            ((GridKernal)g).context().timeout()
+            ((IgniteKernal)g).context().timeout()
                 .addTimeoutObject(new GridTimeoutObjectAdapter(VisorQueryUtils.RMV_DELAY) {
                     @Override public void onTimeout() {
                         ClusterNodeLocalMap<String, VisorFutureResultSetHolder> storage = g.nodeLocalMap();

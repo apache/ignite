@@ -32,9 +32,9 @@ import java.util.concurrent.*;
  * Grid distributed executor test.
  */
 @GridCommonTest(group = "Thread Tests")
-public class GridExecutorServiceTest extends GridCommonAbstractTest {
+public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     /** */
-    public GridExecutorServiceTest() {
+    public IgniteExecutorServiceTest() {
         super(true);
     }
 

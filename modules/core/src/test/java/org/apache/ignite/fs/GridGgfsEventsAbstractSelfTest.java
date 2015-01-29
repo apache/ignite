@@ -111,7 +111,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     protected IgniteConfiguration getConfiguration(String gridName, IgniteFsConfiguration ggfsCfg) throws Exception {
-        IgniteConfiguration cfg = GridGainEx.loadConfiguration("config/hadoop/default-config.xml").get1();
+        IgniteConfiguration cfg = IgnitionEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 

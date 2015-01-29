@@ -181,7 +181,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testFailure() throws Exception {
-        GridKernal kernal = ((GridKernal)grid());
+        IgniteKernal kernal = ((IgniteKernal)grid());
 
         GridRestProcessor proc = kernal.context().rest();
 

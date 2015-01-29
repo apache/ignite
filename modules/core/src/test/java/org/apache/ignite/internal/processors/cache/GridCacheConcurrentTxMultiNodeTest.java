@@ -442,7 +442,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
             doWork();
 
-            GridNearCacheAdapter near = (GridNearCacheAdapter)((GridKernal) ignite).internalCache();
+            GridNearCacheAdapter near = (GridNearCacheAdapter)((IgniteKernal) ignite).internalCache();
             GridDhtCacheAdapter dht = near.dht();
 
             long start = cntrs.get2().get();
@@ -570,7 +570,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
                     for (Ignite g : G.allGrids()) {
                         if (g.name().contains("server")) {
                             GridNearCacheAdapter<CacheAffinityKey<String>, Object> near =
-                                (GridNearCacheAdapter<CacheAffinityKey<String>, Object>)((GridKernal)g).
+                                (GridNearCacheAdapter<CacheAffinityKey<String>, Object>)((IgniteKernal)g).
                                     <CacheAffinityKey<String>, Object>internalCache();
                             GridDhtCacheAdapter<CacheAffinityKey<String>, Object> dht = near.dht();
 

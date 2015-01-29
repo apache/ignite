@@ -80,7 +80,7 @@ public class GridTopologyBuildVersionSelfTest extends GridCommonAbstractTest {
 
         try {
             for (int i = 3; i >= 0; i--) {
-                GridKernal g = (GridKernal)grid(i);
+                IgniteKernal g = (IgniteKernal)grid(i);
 
                 NavigableMap<IgniteProductVersion, Collection<ClusterNode>> verMap = g.context().discovery()
                     .topologyVersionMap();

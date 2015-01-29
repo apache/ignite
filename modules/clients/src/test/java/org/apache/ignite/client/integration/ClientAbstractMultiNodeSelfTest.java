@@ -399,7 +399,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
      * @throws Exception If failed.
      */
     public void testInvalidateFlag() throws Exception {
-        GridEx g0 = grid(0);
+        IgniteEx g0 = grid(0);
 
         GridCache<String, String> cache = g0.cache(PARTITIONED_CACHE_NAME);
 
@@ -783,7 +783,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
             if (!(o instanceof GridDistributedLockRequest))
                 return;
 
-            GridKernal g = (GridKernal)G.ignite(ignite.configuration().getNodeId());
+            IgniteKernal g = (IgniteKernal)G.ignite(ignite.configuration().getNodeId());
 
             GridCacheContext<Object, Object> cacheCtx = g.internalCache(REPLICATED_ASYNC_CACHE_NAME).context();
 

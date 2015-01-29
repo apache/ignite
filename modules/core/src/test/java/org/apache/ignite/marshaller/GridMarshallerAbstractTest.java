@@ -445,7 +445,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Tests marshal {@link GridKernal} instance.
+     * Tests marshal {@link IgniteKernal} instance.
      *
      * @throws Exception If test failed.
      */
@@ -459,8 +459,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         assert inBean.getObjectField() != null;
         assert outBean.getObjectField() != null;
 
-        assert inBean.getObjectField().getClass().equals(GridKernal.class);
-        assert outBean.getObjectField().getClass().equals(GridKernal.class);
+        assert inBean.getObjectField().getClass().equals(IgniteKernal.class);
+        assert outBean.getObjectField().getClass().equals(IgniteKernal.class);
 
         assert inBean != outBean;
 

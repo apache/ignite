@@ -506,7 +506,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     private void printAffinityState(Iterable<Ignite> grids) {
         for (Ignite g : grids) {
             GridAffinityAssignmentCache affCache = getFieldValue(
-                ((GridKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
+                ((IgniteKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
                 "aff");
 
             CacheAffinityFunction aff = getFieldValue(affCache, "aff");

@@ -38,7 +38,7 @@ public class GridCacheTtlManagerLoadTest extends GridCacheTtlManagerSelfTest {
     public void testLoad() throws Exception {
         cacheMode = REPLICATED;
 
-        final GridKernal g = (GridKernal)startGrid(0);
+        final IgniteKernal g = (IgniteKernal)startGrid(0);
 
         try {
             final AtomicBoolean stop = new AtomicBoolean();
