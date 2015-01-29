@@ -443,5 +443,5 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     @Override public <R> ComputeTaskFuture<R> future();
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute enableAsync();
+    @Override public IgniteCompute withAsync();
 }

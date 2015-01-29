@@ -22,7 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.apache.ignite.internal.util.typedef.*;
 
@@ -40,7 +40,7 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
         throws IgniteCheckedException {
         String cacheName = cache0.getConfiguration(CacheConfiguration.class).getName();
 
-        GridKernalContext ctx = ((GridKernal)cache0.unwrap(Ignite.class)).context();
+        GridKernalContext ctx = ((IgniteKernal)cache0.unwrap(Ignite.class)).context();
         IgniteLogger log = ctx.log(GridDrDataLoadCacheUpdater.class);
         GridCacheAdapter<K, V> cache = ctx.cache().internalCache(cacheName);
 
@@ -49,13 +49,13 @@ public class GridDrDataLoadCacheUpdater<K, V> implements IgniteDataLoadCacheUpda
         if (log.isDebugEnabled())
             log.debug("Running DR put job [nodeId=" + ctx.localNodeId() + ", cacheName=" + cacheName + ']');
 
-        IgniteFuture<?> f = cache.context().preloader().startFuture();
+        IgniteInternalFuture<?> f = cache.context().preloader().startFuture();
 
         if (!f.isDone())
             f.get();
 
         for (Map.Entry<K, V> entry0 : col) {
-            GridVersionedEntry<K, V> entry = (GridVersionedEntry<K, V>)entry0;
+            GridCacheRawVersionedEntry<K, V> entry = (GridCacheRawVersionedEntry<K, V>)entry0;
 
             entry.unmarshal(ctx.config().getMarshaller());
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -186,7 +186,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean done = new AtomicBoolean();
 
-            IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+            IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         Ignite g2 = startGrid(2);
@@ -222,7 +222,7 @@ public class GridCacheDhtPreloadPutGetSelfTest extends GridCommonAbstractTest {
                 "reader"
             );
 
-            IgniteFuture fut2 = GridTestUtils.runMultiThreadedAsync(
+            IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         writeLatch.await();

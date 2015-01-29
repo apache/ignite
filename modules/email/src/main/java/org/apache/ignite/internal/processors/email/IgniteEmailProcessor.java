@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.email;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -165,7 +164,7 @@ public class IgniteEmailProcessor extends IgniteEmailProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html) {
+    @Override public IgniteInternalFuture<Boolean> schedule(String subj, String body, boolean html) {
         String[] addrs = ctx.config().getAdminEmails();
 
         return addrs == null || addrs.length == 0 ? new GridFinishedFuture<>(ctx, false) :
@@ -174,7 +173,7 @@ public class IgniteEmailProcessor extends IgniteEmailProcessorAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"SynchronizeOnNonFinalField"})
-    @Override public IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
+    @Override public IgniteInternalFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs) {
         assert subj != null;
         assert body != null;
         assert addrs != null;

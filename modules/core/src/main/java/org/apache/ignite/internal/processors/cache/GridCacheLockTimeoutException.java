@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.internal.processors.cache.version.*;
+
 /**
  * Used to internally indicate that lock acquisition has timed out.
  */

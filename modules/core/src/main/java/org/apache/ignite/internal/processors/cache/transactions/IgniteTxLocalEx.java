@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.dr.*;
 import org.jetbrains.annotations.*;
@@ -70,7 +72,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param filter Entry filter.
      * @return Future for this get.
      */
-    public IgniteFuture<Map<K, V>> getAllAsync(
+    public IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -86,7 +88,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param ttl Time to live for entry. If negative, leave unchanged.
      * @return Future for put operation.
      */
-    public IgniteFuture<GridCacheReturn<V>> putAllAsync(
+    public IgniteInternalFuture<GridCacheReturn<V>> putAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
@@ -100,7 +102,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param invokeArgs Optional arguments for entry processor.
      * @return Transform operation future.
      */
-    public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
+    public <T> IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
@@ -113,7 +115,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param filter Filter.
      * @return Future for asynchronous remove.
      */
-    public IgniteFuture<GridCacheReturn<V>> removeAllAsync(
+    public IgniteInternalFuture<GridCacheReturn<V>> removeAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -125,7 +127,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param drMap DR map to put.
      * @return Future for DR put operation.
      */
-    public IgniteFuture<?> putAllDrAsync(
+    public IgniteInternalFuture<?> putAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheDrInfo<V>> drMap);
 
@@ -134,7 +136,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param drMap DR map.
      * @return Future for asynchronous remove.
      */
-    public IgniteFuture<?> removeAllDrAsync(
+    public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheVersion> drMap);
 
@@ -145,7 +147,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param keys Keys to lock.
      * @return Lock future.
      */
-    public IgniteFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys);
+    public IgniteInternalFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys);
 
     /**
      * @return {@code True} if keys from the same partition are allowed to be enlisted in group-lock transaction.
@@ -170,7 +172,7 @@ public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
      * @param deserializePortable Deserialize portable flag.
      * @return Future with {@code True} value if loading took place.
      */
-    public IgniteFuture<Boolean> loadMissing(
+    public IgniteInternalFuture<Boolean> loadMissing(
         GridCacheContext<K, V> cacheCtx,
         boolean readThrough,
         boolean async,

@@ -37,7 +37,7 @@ import org.apache.ignite.internal.util.{GridConfigurationFinder, GridUtils}
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.{GridEx, GridProductImpl}
+import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
@@ -228,7 +228,7 @@ object visor extends VisorTag {
     @volatile var cfgPath: String = null
 
     /** */
-    @volatile var grid: GridEx = null
+    @volatile var grid: IgniteEx = null
 
     /**
      * Get grid node for specified ID.
@@ -1603,7 +1603,7 @@ object visor extends VisorTag {
 
         grid =
             try
-                Ignition.ignite(startedGridName).asInstanceOf[GridEx]
+                Ignition.ignite(startedGridName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
@@ -2522,10 +2522,10 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            m.getTotalHosts.toString.padTo(4, ' ') + pipe +
-            m.getTotalNodes.toString.padTo(4, ' ') + pipe +
+            GridUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
+            grid.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
-            bar(m.getAverageCpuLoad, m.getAverageHeapMemoryUsed / m.getAverageHeapMemoryMaximum) + pipe
+            bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
         )
     }
 

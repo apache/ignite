@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -546,8 +548,8 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport enableAsync() {
-        throw new UnsupportedOperationException("enableAsync() should not be called on IgniteTxAdapter directly.");
+    @Override public IgniteAsyncSupport withAsync() {
+        throw new UnsupportedOperationException("withAsync() should not be called on IgniteTxAdapter directly.");
     }
 
     /** {@inheritDoc} */
@@ -556,7 +558,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> IgniteInternalFuture<R> future() {
         throw new UnsupportedOperationException("future() should not be called on IgniteTxAdapter directly.");
     }
 
@@ -948,7 +950,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public IgniteFuture<IgniteTx> finishFuture() {
+    @Override public IgniteInternalFuture<IgniteTx> finishFuture() {
         GridFutureAdapter<IgniteTx> fut = finFut.get();
 
         if (fut == null) {
@@ -1251,6 +1253,51 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /**
+     * Resolve DR conflict.
+     *
+     * @param op Initially proposed operation.
+     * @param key Key.
+     * @param newVal New value.
+     * @param newValBytes New value bytes.
+     * @param newTtl New TTL.
+     * @param newDrExpireTime New explicit DR expire time.
+     * @param newVer New version.
+     * @param old Old entry.
+     * @return Tuple with adjusted operation type and conflict context.
+     * @throws org.apache.ignite.IgniteCheckedException In case of eny exception.
+     * @throws GridCacheEntryRemovedException If entry got removed.
+     */
+    protected IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>> conflictResolve(
+        GridCacheOperation op, K key, V newVal, byte[] newValBytes, long newTtl, long newDrExpireTime,
+        GridCacheVersion newVer, GridCacheEntryEx<K, V> old)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        // Construct old entry info.
+        GridCacheVersionedEntryEx<K, V> oldEntry = old.versionedEntry();
+
+        // Construct new entry info.
+        if (newVal == null && newValBytes != null)
+            newVal = cctx.marshaller().unmarshal(newValBytes, cctx.deploy().globalLoader());
+
+        long newExpireTime = newDrExpireTime >= 0L ? newDrExpireTime : CU.toExpireTime(newTtl);
+
+        GridCacheVersionedEntryEx<K, V> newEntry =
+            new GridCachePlainVersionedEntry<K, V>(key, newVal, newTtl, newExpireTime, newVer);
+
+        GridCacheVersionConflictContextImpl<K, V> ctx = old.context().conflictResolve(oldEntry, newEntry, false);
+
+        if (ctx.isMerge()) {
+            V resVal = ctx.mergeValue();
+
+            if ((op == CREATE || op == UPDATE) && resVal == null)
+                op = DELETE;
+            else if (op == DELETE && resVal != null)
+                op = old.isNewLocked() ? CREATE : UPDATE;
+        }
+
+        return F.t(op, ctx);
+    }
+
+    /**
      * @param e Transaction entry.
      * @param primaryOnly Flag to include backups into check or not.
      * @return {@code True} if entry is locally mapped as a primary or back up node.
@@ -1513,7 +1560,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport enableAsync() {
+        @Override public IgniteAsyncSupport withAsync() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 
@@ -1523,7 +1570,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
+        @Override public <R> IgniteInternalFuture<R> future() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

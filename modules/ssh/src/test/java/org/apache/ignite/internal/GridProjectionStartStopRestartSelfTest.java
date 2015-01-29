@@ -1023,7 +1023,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         boolean restart,
         int timeout,
         int maxConn) throws IgniteCheckedException {
-        cluster = cluster.enableAsync();
+        cluster = cluster.withAsync();
 
         assertNull(cluster.startNodes(hosts, dflts, restart, timeout, maxConn));
 

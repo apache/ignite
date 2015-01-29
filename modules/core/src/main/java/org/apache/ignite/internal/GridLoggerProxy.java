@@ -200,7 +200,7 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
             String gridNameR = t.get1();
             Object ctgrR = t.get2();
 
-            return GridGainEx.gridx(gridNameR).log().getLogger(ctgrR);
+            return IgnitionEx.gridx(gridNameR).log().getLogger(ctgrR);
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

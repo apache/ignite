@@ -69,7 +69,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
 
         try {
             // Check coordinator time deltas.
-            final GridKernal kernal = (GridKernal)grid(0);
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
 
             // Wait for latest time sync history.
             GridTestUtils.waitForCondition(new PA() {
@@ -128,7 +128,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
             }
 
             // Check coordinator time deltas.
-            final GridKernal kernal = (GridKernal)grid(0);
+            final IgniteKernal kernal = (IgniteKernal)grid(0);
 
             assertEquals(6, kernal.localNode().order());
 
@@ -197,7 +197,7 @@ public class GridTimeSyncProcessorSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
             if (evt == LifecycleEventType.BEFORE_GRID_START)
-                ((GridKernalContextImpl)((GridKernal)g).context()).timeSource(new TimeShiftClockSource(delta));
+                ((GridKernalContextImpl)((IgniteKernal)g).context()).timeSource(new TimeShiftClockSource(delta));
         }
     }
 

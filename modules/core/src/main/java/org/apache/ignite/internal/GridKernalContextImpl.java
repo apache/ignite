@@ -266,7 +266,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private List<GridComponent> comps = new LinkedList<>();
 
     /** */
-    private GridEx grid;
+    private IgniteEx grid;
 
     /** */
     private ExecutorService utilityCachePool;
@@ -320,7 +320,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     @SuppressWarnings("TypeMayBeWeakened")
     protected GridKernalContextImpl(GridLoggerProxy log,
-        GridEx grid,
+        IgniteEx grid,
         IgniteConfiguration cfg,
         GridKernalGateway gw,
         ExecutorService utilityCachePool,
@@ -496,7 +496,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public GridEx grid() {
+    @Override public IgniteEx grid() {
         return grid;
     }
 
@@ -888,7 +888,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return GridGainEx.gridx(stash.get()).context();
+            return IgnitionEx.gridx(stash.get()).context();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

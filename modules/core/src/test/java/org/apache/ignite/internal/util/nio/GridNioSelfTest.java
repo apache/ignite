@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -102,7 +102,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         GridNioServer<?> srvr = startServer(PORT, new GridPlainParser(), lsnr);
 
         try {
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override
                 public void run() {
                     byte[] msg = new byte[MSG_SIZE];
@@ -256,7 +256,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try {
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -628,7 +628,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             new EchoListener());
 
         try {
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings("BusyWait")
                 @Override public void run() {
                     try {

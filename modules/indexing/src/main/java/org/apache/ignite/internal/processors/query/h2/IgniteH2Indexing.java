@@ -753,12 +753,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         return rdcQryExec.query(space, qry);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
         Connection c;
 
         try {

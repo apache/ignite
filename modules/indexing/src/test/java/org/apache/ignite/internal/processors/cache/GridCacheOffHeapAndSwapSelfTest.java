@@ -285,7 +285,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     public void testPartitionIterators() throws Exception {
         populate();
 
-        GridCacheAdapter<Long, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
+        GridCacheAdapter<Long, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache();
         GridNearCacheAdapter<Long, Object> cache = (GridNearCacheAdapter<Long, Object>)cacheAdapter;
 
         Map<Integer, Collection<Long>> grouped = new HashMap<>();
@@ -512,7 +512,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
     public void testIteratorsCleanup() throws Exception {
         final GridCache<Long, Long> cache = populate();
 
-        IgniteFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> offHeapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Iterator<Map.Entry<Long, Long>> ohIt = cache.offHeapIterator();
@@ -535,7 +535,7 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
             }
         }, 20);
 
-        IgniteFuture<?> swapFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> swapFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Iterator<Map.Entry<Long, Long>> ohIt = cache.swapIterator();
@@ -566,6 +566,6 @@ public class GridCacheOffHeapAndSwapSelfTest extends GridCommonAbstractTest {
         // Runs iterator queue cleanup in GridCacheSwapManager.read method.
         cache.get(1L + ENTRY_CNT);
 
-        assertEquals(0, ((GridKernal)grid(0)).internalCache().context().swap().iteratorSetSize());
+        assertEquals(0, ((IgniteKernal)grid(0)).internalCache().context().swap().iteratorSetSize());
     }
 }

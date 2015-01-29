@@ -19,6 +19,7 @@ package org.apache.ignite.testframework.junits.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -541,7 +542,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteAsyncSupport enableAsync() {
+        @Override public IgniteAsyncSupport withAsync() {
             throw new UnsupportedOperationException();
         }
 
@@ -551,7 +552,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
+        @Override public <R> IgniteInternalFuture<R> future() {
             return null;
         }
 

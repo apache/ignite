@@ -18,7 +18,7 @@
 package org.apache.ignite.loadtests.streamer;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.streamer.index.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
@@ -114,7 +114,7 @@ public class GridStreamerIndexLoadTest {
 
         final AtomicLong enqueueCntr = new AtomicLong();
 
-        IgniteFuture<Long> enqueueFut = runMultiThreadedAsync(new CAX() {
+        IgniteInternalFuture<Long> enqueueFut = runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 Random rnd = new Random();
 
@@ -128,7 +128,7 @@ public class GridStreamerIndexLoadTest {
 
         final AtomicLong evictCntr = new AtomicLong();
 
-        IgniteFuture<Long> evictFut = runMultiThreadedAsync(new CAX() {
+        IgniteInternalFuture<Long> evictFut = runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!Thread.currentThread().isInterrupted()) {
                     win.pollEvicted();
@@ -138,7 +138,7 @@ public class GridStreamerIndexLoadTest {
             }
         }, thrCnt, "evictor");
 
-        IgniteFuture<Long> collFut = runMultiThreadedAsync(new CAX() {
+        IgniteInternalFuture<Long> collFut = runMultiThreadedAsync(new CAX() {
             @Override public void applyx() {
                 int nSec = 0;
                 long prevEnqueue = enqueueCntr.get();

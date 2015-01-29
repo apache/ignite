@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.discovery.*;
@@ -172,8 +174,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @return Participating nodes.
      */
     @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteFuture<?> f) {
+        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
+            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
                 if (isMini(f))
                     return ((MiniFuture)f).node();
 
@@ -370,7 +372,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
     @Override public boolean onNodeLeft(UUID nodeId) {
         boolean found = false;
 
-        for (IgniteFuture<?> fut : futures()) {
+        for (IgniteInternalFuture<?> fut : futures()) {
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -403,7 +405,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" +
                     this + ']');
 
-            for (IgniteFuture<Boolean> fut : pending()) {
+            for (IgniteInternalFuture<Boolean> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture mini = (MiniFuture)fut;
 
@@ -535,7 +537,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteFuture<?> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -595,8 +597,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                     markInitialized();
                 }
                 else {
-                    fut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                        @Override public void apply(IgniteFuture<Long> t) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                        @Override public void apply(IgniteInternalFuture<Long> t) {
                             mapOnTopology();
                         }
                     });
@@ -858,7 +860,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
 
             add(fut); // Append new future.
 
-            IgniteFuture<?> txSync = null;
+            IgniteInternalFuture<?> txSync = null;
 
             if (inTx())
                 txSync = cctx.tm().awaitFinishAckAsync(node.id(), tx.threadId());
@@ -877,8 +879,8 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
                 }
             }
             else {
-                txSync.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> t) {
+                txSync.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
                         try {
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
@@ -911,7 +913,7 @@ public final class GridDhtColocatedLockFuture<K, V> extends GridCompoundIdentity
         if (log.isDebugEnabled())
             log.debug("Before locally locking keys : " + keys);
 
-        IgniteFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx,
+        IgniteInternalFuture<Exception> fut = cctx.colocated().lockAllAsync(cctx,
             tx,
             threadId,
             lockVer,

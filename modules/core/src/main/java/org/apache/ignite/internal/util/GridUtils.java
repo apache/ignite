@@ -24,10 +24,11 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
-import org.apache.ignite.mxbean.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.deployment.*;
@@ -792,7 +793,7 @@ public abstract class GridUtils {
         double heap = 0.0;
 
         for (ClusterNode n : nodesPerJvm(nodes)) {
-            ClusterNodeMetrics m = n.metrics();
+            ClusterMetrics m = n.metrics();
 
             heap += Math.max(m.getHeapMemoryInitialized(), m.getHeapMemoryMaximum());
         }
@@ -3937,7 +3938,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -3961,7 +3962,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -3987,7 +3988,7 @@ public abstract class GridUtils {
         assert name != null;
         assert itf != null;
 
-        DynamicMBean mbean = new IgniteStandardMBean(impl, itf);
+        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
 
         mbean.getMBeanInfo();
 
@@ -5559,7 +5560,7 @@ public abstract class GridUtils {
             }
         }
         // Don't go into internal GridGain structures.
-        else if (isGridGain(obj.getClass()))
+        else if (isIgnite(obj.getClass()))
             return null;
         else if (obj instanceof Iterable)
             for (Object o : (Iterable<?>)obj) {
@@ -5590,16 +5591,6 @@ public abstract class GridUtils {
     }
 
     /**
-     * Checks if given class is of {@code GridGain} type.
-     *
-     * @param cls Class to check.
-     * @return {@code True} if given class is of {@code GridGain} type.
-     */
-    public static boolean isGridGain(Class<?> cls) {
-        return cls.getName().startsWith("org.gridgain");
-    }
-
-    /**
      * Checks if given class is of {@code Ignite} type.
      *
      * @param cls Class to check.
@@ -5616,7 +5607,7 @@ public abstract class GridUtils {
      * @return {@code True} if given class is of {@code Grid} type.
      */
     public static boolean isGrid(Class<?> cls) {
-        return cls.getName().startsWith("org.gridgain.grid");
+        return cls.getName().startsWith("org.apache.ignite.internal");
     }
 
     /**
@@ -6243,6 +6234,15 @@ public abstract class GridUtils {
             arr[idx++] = i;
 
         return arr;
+    }
+
+    public static int[] addAll(int[] arr1, int[] arr2) {
+        int[] all = new int[arr1.length + arr2.length];
+
+        System.arraycopy(arr1, 0, all, 0, arr1.length);
+        System.arraycopy(arr2, 0, all, arr1.length, arr2.length);
+
+        return all;
     }
 
     /**
@@ -7289,10 +7289,10 @@ public abstract class GridUtils {
      * @param f Future to listen to.
      * @param log Logger.
      */
-    public static void asyncLogError(IgniteFuture<?> f, final IgniteLogger log) {
+    public static void asyncLogError(IgniteInternalFuture<?> f, final IgniteLogger log) {
         if (f != null)
-            f.listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> f) {
+            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
                     try {
                         f.get();
                     }

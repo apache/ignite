@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import java.util.*;
@@ -31,7 +32,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
     /** Grid. */
-    private GridKernal grid;
+    private IgniteKernal grid;
 
     /**
      *
@@ -42,7 +43,7 @@ public class GridCacheMvccFlagsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = (GridKernal)grid();
+        grid = (IgniteKernal)grid();
     }
 
     /** {@inheritDoc} */

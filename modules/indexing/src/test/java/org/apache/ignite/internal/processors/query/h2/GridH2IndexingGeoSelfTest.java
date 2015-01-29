@@ -21,8 +21,8 @@ import com.vividsolutions.jts.geom.*;
 import com.vividsolutions.jts.io.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
@@ -137,7 +137,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
         final AtomicBoolean stop = new AtomicBoolean();
         final AtomicReference<Exception> err = new AtomicReference<>();
 
-        IgniteFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> putFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 WKTReader r = new WKTReader();
 
@@ -161,7 +161,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
             }
         }, Runtime.getRuntime().availableProcessors(), "put-thread");
 
-        IgniteFuture<?> qryFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> qryFut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 WKTReader r = new WKTReader();
 

@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.typedef;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -821,11 +821,11 @@ public final class X {
      * @param futs Futures to wait for.
      * @throws IgniteCheckedException If any of the futures threw exception.
      */
-    public static void waitAll(@Nullable Iterable<IgniteFuture<?>> futs) throws IgniteCheckedException {
+    public static void waitAll(@Nullable Iterable<IgniteInternalFuture<?>> futs) throws IgniteCheckedException {
         if (F.isEmpty(futs))
             return;
 
-        for (IgniteFuture fut : futs)
+        for (IgniteInternalFuture fut : futs)
             fut.get();
     }
 

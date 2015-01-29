@@ -80,7 +80,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             final AtomicBoolean finished = new AtomicBoolean();
 
-            IgniteFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Object>() {
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new IgniteCallable<Object>() {
                 @Override public Object call() throws Exception {
                     Random rnd = new Random();
 
@@ -135,11 +135,11 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             // Check all grids have all exchange futures completed.
             for (int i = 0; i < 4; i++) {
-                GridKernal grid = (GridKernal)grid(i);
+                IgniteKernal grid = (IgniteKernal)grid(i);
 
                 GridCacheContext<Object, Object> cctx = grid.internalCache(null).context();
 
-                IgniteFuture<Long> verFut = cctx.affinity().affinityReadyFuture(topVer);
+                IgniteInternalFuture<Long> verFut = cctx.affinity().affinityReadyFuture(topVer);
 
                 assertEquals((Long)topVer, verFut.get());
                 assertEquals((Long)topVer, cctx.topologyVersionFuture().get());

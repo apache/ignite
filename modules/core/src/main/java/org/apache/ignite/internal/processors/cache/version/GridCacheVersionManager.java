@@ -1,0 +1,282 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.version;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
+import org.apache.ignite.events.*;
+import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+
+import java.util.*;
+import java.util.concurrent.atomic.*;
+
+import static org.apache.ignite.events.IgniteEventType.*;
+
+/**
+ * Makes sure that cache lock order values come in proper sequence.
+ * <p>
+ * NOTE: this class should not make use of any cache specific structures,
+ * like, for example GridCacheContext, as it may be reused between different
+ * caches.
+ */
+public class GridCacheVersionManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** Timestamp used as base time for cache topology version (January 1, 2014). */
+    public static final long TOP_VER_BASE_TIME = 1388520000000L;
+
+    /**
+     * Current order. Initialize to current time to make sure that
+     * local version increments even after restarts.
+     */
+    private final AtomicLong order = new AtomicLong(U.currentTimeMillis());
+
+    /** Current order for store operations. */
+    private final AtomicLong loadOrder = new AtomicLong(0);
+
+    /** Last version. */
+    private volatile GridCacheVersion last;
+
+    /** Serializable transaction flag. */
+    private boolean txSerEnabled;
+
+    /** Data center ID. */
+    @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
+    private byte dataCenterId;
+
+    /** */
+    private long gridStartTime;
+
+    /** */
+    private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
+        @Override public void onEvent(IgniteEvent evt) {
+            assert evt.type() == EVT_NODE_METRICS_UPDATED;
+
+            IgniteDiscoveryEvent discoEvt = (IgniteDiscoveryEvent)evt;
+
+            ClusterNode node = cctx.discovery().node(discoEvt.node().id());
+
+            if (node != null && !node.id().equals(cctx.localNodeId()))
+                onReceived(discoEvt.eventNode().id(), node.metrics().getLastDataVersion());
+        }
+    };
+
+    /**
+     * @return Pre-generated UUID.
+     */
+    private IgniteUuid uuid() {
+        return IgniteUuid.randomUuid();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start0() throws IgniteCheckedException {
+        txSerEnabled = cctx.gridConfig().getTransactionsConfiguration().isTxSerializableEnabled();
+
+        dataCenterId = cctx.dataCenterId();
+
+        last = new GridCacheVersion(0, 0, order.get(), 0, dataCenterId);
+
+        cctx.gridEvents().addLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        for (ClusterNode n : cctx.discovery().remoteNodes())
+            onReceived(n.id(), n.metrics().getLastDataVersion());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void stop0(boolean cancel) {
+        cctx.gridEvents().removeLocalEventListener(discoLsnr, EVT_NODE_METRICS_UPDATED);
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Remote version.
+     */
+    public void onReceived(UUID nodeId, GridCacheVersion ver) {
+        onReceived(nodeId, ver.order());
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Remote version.
+     */
+    public void onReceived(UUID nodeId, long ver) {
+        if (ver > 0)
+            while (true) {
+                long order = this.order.get();
+
+                // If another version is larger, we update.
+                if (ver > order) {
+                    if (!this.order.compareAndSet(order, ver))
+                        // Try again.
+                        continue;
+                    else if (log.isDebugEnabled())
+                        log.debug("Updated version from node [nodeId=" + nodeId + ", ver=" + ver + ']');
+                }
+                else if (log.isDebugEnabled()) {
+                    log.debug("Did not update version from node (version has lower order) [nodeId=" + nodeId +
+                        ", ver=" + ver + ", curOrder=" + this.order + ']');
+                }
+
+                break;
+            }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param ver Received version.
+     * @return Next version.
+     */
+    public GridCacheVersion onReceivedAndNext(UUID nodeId, GridCacheVersion ver) {
+        onReceived(nodeId, ver);
+
+        return next(ver);
+    }
+
+    /**
+     * @return Next version based on current topology.
+     */
+    public GridCacheVersion next() {
+        return next(cctx.kernalContext().discovery().topologyVersion(), true, false);
+    }
+
+    /**
+     * Gets next version based on given topology version. Given value should be
+     * real topology version calculated as number of grid topology changes and
+     * obtained from discovery manager.
+     *
+     * @param topVer Topology version for which new version should be obtained.
+     * @return Next version based on given topology version.
+     */
+    public GridCacheVersion next(long topVer) {
+        return next(topVer, true, false);
+    }
+
+    /**
+     * Gets next version for cache store load and reload operations.
+     *
+     * @return Next version for cache store operations.
+     */
+    public GridCacheVersion nextForLoad() {
+        return next(cctx.kernalContext().discovery().topologyVersion(), true, true);
+    }
+
+    /**
+     * Gets next version for cache store load and reload operations.
+     *
+     * @return Next version for cache store operations.
+     */
+    public GridCacheVersion nextForLoad(long topVer) {
+        return next(topVer, true, true);
+    }
+
+    /**
+     * Gets next version for cache store load and reload operations.
+     *
+     * @return Next version for cache store operations.
+     */
+    public GridCacheVersion nextForLoad(GridCacheVersion ver) {
+        return next(ver.topologyVersion(), false, true);
+    }
+
+    /**
+     * Gets next version based on given cache version.
+     *
+     * @param ver Cache version for which new version should be obtained.
+     * @return Next version based on given cache version.
+     */
+    public GridCacheVersion next(GridCacheVersion ver) {
+        return next(ver.topologyVersion(), false, false);
+    }
+
+    /**
+     * The version is generated by taking last order plus one and random {@link UUID}.
+     * Such algorithm ensures that lock IDs constantly grow in value and older
+     * lock IDs are smaller than new ones. Therefore, older lock IDs appear
+     * in the pending set before newer ones, hence preventing starvation.
+     *
+     * @param topVer Topology version for which new version should be obtained.
+     * @param addTime If {@code true} then adds to the given topology version number of seconds
+     *        from the start time of the first grid node.
+     * @return New lock order.
+     */
+    private GridCacheVersion next(long topVer, boolean addTime, boolean forLoad) {
+        if (topVer == -1)
+            topVer = cctx.kernalContext().discovery().topologyVersion();
+
+        if (addTime) {
+            if (gridStartTime == 0)
+                gridStartTime = cctx.kernalContext().discovery().gridStartTime();
+
+            topVer += (gridStartTime - TOP_VER_BASE_TIME) / 1000;
+        }
+
+        long globalTime = cctx.kernalContext().clockSync().adjustedTime(topVer);
+
+        int locNodeOrder = (int)cctx.localNode().order();
+
+        if (txSerEnabled) {
+            synchronized (this) {
+                long ord = forLoad ? loadOrder.incrementAndGet() : order.incrementAndGet();
+
+                GridCacheVersion next = new GridCacheVersion(
+                    (int)topVer,
+                    globalTime,
+                    ord,
+                    locNodeOrder,
+                    dataCenterId);
+
+                last = next;
+
+                return next;
+            }
+        }
+        else {
+            long ord = forLoad ? loadOrder.incrementAndGet() : order.incrementAndGet();
+
+            GridCacheVersion next = new GridCacheVersion(
+                (int)topVer,
+                globalTime,
+                ord,
+                locNodeOrder,
+                dataCenterId);
+
+            last = next;
+
+            return next;
+        }
+    }
+
+    /**
+     * Gets last generated version without generating a new one.
+     *
+     * @return Last generated version.
+     */
+    public GridCacheVersion last() {
+        if (txSerEnabled) {
+            synchronized (this) {
+                return last;
+            }
+        }
+        else
+            return last;
+    }
+}

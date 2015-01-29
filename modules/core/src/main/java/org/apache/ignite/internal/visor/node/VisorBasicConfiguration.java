@@ -107,7 +107,7 @@ public class VisorBasicConfiguration implements Serializable {
      * @param c Grid configuration.
      * @return Data transfer object for node basic configuration properties.
      */
-    public static VisorBasicConfiguration from(GridEx g, IgniteConfiguration c) {
+    public static VisorBasicConfiguration from(IgniteEx g, IgniteConfiguration c) {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
         cfg.gridName(c.getGridName());

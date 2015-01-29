@@ -151,7 +151,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     private static void changeTopology(Ignite parent, int add, int rmv, String type) throws IgniteCheckedException {
         Collection<ComputeTaskFuture<?>> tasks = new ArrayList<>();
 
-        IgniteCompute comp = parent.compute().enableAsync();
+        IgniteCompute comp = parent.compute().withAsync();
 
         // Start nodes in parallel.
         while (add-- > 0) {

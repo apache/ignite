@@ -48,7 +48,7 @@ public class IgniteSpring {
      *      also if default grid has already been started.
      */
     public static Ignite start(@Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return GridGainEx.start(new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(new GridSpringResourceContextImpl(springCtx));
     }
 
     /**
@@ -64,7 +64,7 @@ public class IgniteSpring {
      *      also if named grid has already been started.
      */
     public static Ignite start(IgniteConfiguration cfg, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return GridGainEx.start(cfg, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(cfg, new GridSpringResourceContextImpl(springCtx));
     }
 
     /**
@@ -88,7 +88,7 @@ public class IgniteSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(String springCfgPath, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return GridGainEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx));
     }
 
     /**
@@ -112,6 +112,6 @@ public class IgniteSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return GridGainEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx));
     }
 }

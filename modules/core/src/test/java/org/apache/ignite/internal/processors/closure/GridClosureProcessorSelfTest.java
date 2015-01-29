@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
@@ -189,7 +190,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteFuture<?> runAsync(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
+    private IgniteInternalFuture<?> runAsync(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
         throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -198,7 +199,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.run(job);
 
@@ -212,7 +213,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteFuture<?> broadcast(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
+    private IgniteInternalFuture<?> broadcast(int idx, Runnable job, @Nullable IgnitePredicate<ClusterNode> p)
         throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -224,7 +225,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
         if (p != null)
             prj = prj.forPredicate(p);
 
-        IgniteCompute comp = compute(prj).enableAsync();
+        IgniteCompute comp = compute(prj).withAsync();
 
         comp.broadcast(job);
 
@@ -238,7 +239,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteFuture<?> runAsync(int idx, Collection<TestRunnable> jobs, @Nullable IgnitePredicate<ClusterNode> p)
+    private IgniteInternalFuture<?> runAsync(int idx, Collection<TestRunnable> jobs, @Nullable IgnitePredicate<ClusterNode> p)
         throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
@@ -247,7 +248,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.run(jobs);
 
@@ -261,7 +262,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteFuture<Integer> callAsync(int idx, Callable<Integer> job, @Nullable IgnitePredicate<ClusterNode> p)
+    private IgniteInternalFuture<Integer> callAsync(int idx, Callable<Integer> job, @Nullable IgnitePredicate<ClusterNode> p)
         throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -270,7 +271,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.call(job);
 
@@ -284,7 +285,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteFuture<Collection<Integer>> broadcast(int idx, Callable<Integer> job,
+    private IgniteInternalFuture<Collection<Integer>> broadcast(int idx, Callable<Integer> job,
         @Nullable IgnitePredicate<ClusterNode> p) throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert job != null;
@@ -293,7 +294,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.broadcast(job);
 
@@ -307,7 +308,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @return Future object.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteFuture<Collection<Integer>> callAsync(int idx, Collection<TestCallable> jobs,
+    private IgniteInternalFuture<Collection<Integer>> callAsync(int idx, Collection<TestCallable> jobs,
         @Nullable IgnitePredicate<ClusterNode> p) throws IgniteCheckedException {
         assert idx >= 0 && idx < NODES_CNT;
         assert !F.isEmpty(jobs);
@@ -316,7 +317,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         IgniteCompute comp = p != null ? compute(grid(idx).forPredicate(p)) : grid(idx).compute();
 
-        comp = comp.enableAsync();
+        comp = comp.withAsync();
 
         comp.call(jobs);
 
@@ -341,7 +342,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testRunAsyncSingle() throws Exception {
         Runnable job = new TestRunnable();
 
-        IgniteFuture<?> fut = broadcast(0, job, null);
+        IgniteInternalFuture<?> fut = broadcast(0, job, null);
 
         assert fut.get() == null;
 
@@ -367,7 +368,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testRunAsyncMultiple() throws Exception {
         Collection<TestRunnable> jobs = F.asList(new TestRunnable(), new TestRunnable());
 
-        IgniteFuture<?> fut = runAsync(0, jobs, null);
+        IgniteInternalFuture<?> fut = runAsync(0, jobs, null);
 
         assert fut.get() == null : "Execution result must be null.";
 
@@ -381,7 +382,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testCallAsyncSingle() throws Exception {
         Callable<Integer> job = new TestCallable();
 
-        IgniteFuture<Collection<Integer>> fut1 = broadcast(0, job, null);
+        IgniteInternalFuture<Collection<Integer>> fut1 = broadcast(0, job, null);
 
         assert fut1.get() != null;
 
@@ -394,7 +395,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
         assertEquals(1, execCntr.get());
 
-        IgniteFuture<Integer> fut2 = callAsync(0, job, null);
+        IgniteInternalFuture<Integer> fut2 = callAsync(0, job, null);
 
         assert fut2.get() == 1 :
             "Execution result must be equal to 1, actual: " + fut2.get();
@@ -407,11 +408,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCallAsyncErrorNoFailover() throws Exception {
-        IgniteCompute comp = compute(grid(0).forPredicate(F.notEqualTo(grid(0).localNode()))).enableAsync();
+        IgniteCompute comp = compute(grid(0).forPredicate(F.notEqualTo(grid(0).localNode()))).withAsync();
 
         comp.withNoFailover().call(new TestCallableError());
 
-        IgniteFuture<Integer> fut = comp.future();
+        IgniteInternalFuture<Integer> fut = comp.future();
 
         try {
             fut.get();
@@ -467,7 +468,7 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testCallAsyncMultiple() throws Exception {
         Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
 
-        IgniteFuture<Collection<Integer>> fut = callAsync(0, jobs, null);
+        IgniteInternalFuture<Collection<Integer>> fut = callAsync(0, jobs, null);
 
         Collection<Integer> results = fut.get();
 
@@ -486,11 +487,11 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
     public void testReduceAsync() throws Exception {
         Collection<TestCallable> jobs = F.asList(new TestCallable(), new TestCallable());
 
-        IgniteCompute comp = grid(0).compute().enableAsync();
+        IgniteCompute comp = grid(0).compute().withAsync();
 
         comp.call(jobs, F.sumIntReducer());
 
-        IgniteFuture<Integer> fut = comp.future();
+        IgniteInternalFuture<Integer> fut = comp.future();
 
         // Sum of arithmetic progression.
         int exp = (1 + jobs.size()) * jobs.size() / 2;

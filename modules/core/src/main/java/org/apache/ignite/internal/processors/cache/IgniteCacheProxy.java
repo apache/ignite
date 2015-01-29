@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -35,12 +35,13 @@ import javax.cache.integration.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 
 /**
  * Cache proxy.
  */
-public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements IgniteCache<K, V>, Externalizable {
+public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCache<K, V>>
+    implements IgniteCache<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -84,6 +85,30 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
      */
     public GridCacheContext<K, V> context() {
         return ctx;
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetrics metrics() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return ctx.cache().metrics();
+        }
+        finally {
+            gate.leave(prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public CacheMetricsMXBean mxBean() {
+        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
+
+        try {
+            return ctx.cache().mxBean();
+        }
+        finally {
+            gate.leave(prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -185,33 +210,21 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public CacheLock lock(K key) throws CacheException {
-        return lockAll(Collections.<K>singleton(key));
+    @Override public Lock lock(K key) throws CacheException {
+        return lockAll(Collections.singleton(key));
     }
 
     /** {@inheritDoc} */
-    @Override public CacheLock lockAll(final Collection<? extends K> keys) {
-        return new CacheLockImpl<K>(delegate, keys);
+    @Override public Lock lockAll(final Collection<? extends K> keys) {
+        return new CacheLockImpl<>(gate, delegate, prj, keys);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isLocked(K key) {
+    @Override public boolean isLocalLocked(K key, boolean byCurrThread) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return delegate.isLocked(key);
-        }
-        finally {
-            gate.leave(prev);
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isLockedByThread(K key) {
-        GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
-
-        try {
-            return delegate.isLockedByThread(key);
+            return byCurrThread ? delegate.isLockedByThread(key) : delegate.isLocked(key);
         }
         finally {
             gate.leave(prev);
@@ -446,11 +459,11 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            IgniteFuture<?>  fut = ctx.cache().loadAll(keys, replaceExisting);
+            IgniteInternalFuture<?> fut = ctx.cache().loadAll(keys, replaceExisting);
 
             if (completionLsnr != null) {
-                fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> fut) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
                         try {
                             fut.get();
 
@@ -774,10 +787,10 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
 
             try {
                 if (isAsync()) {
-                    IgniteFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
+                    IgniteInternalFuture<EntryProcessorResult<T>> fut = delegate.invokeAsync(key, entryProcessor, args);
 
-                    IgniteFuture<T> fut0 = fut.chain(new CX1<IgniteFuture<EntryProcessorResult<T>>, T>() {
-                        @Override public T applyx(IgniteFuture<EntryProcessorResult<T>> fut)
+                    IgniteInternalFuture<T> fut0 = fut.chain(new CX1<IgniteInternalFuture<EntryProcessorResult<T>>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<EntryProcessorResult<T>> fut)
                             throws IgniteCheckedException {
                             EntryProcessorResult<T> res = fut.get();
 
@@ -974,10 +987,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCache<K, V> enableAsync() {
-        if (isAsync())
-            return this;
-
+    @Override protected IgniteCache<K, V> createAsyncInstance() {
         return new IgniteCacheProxy<>(ctx, delegate, prj, true);
     }
 

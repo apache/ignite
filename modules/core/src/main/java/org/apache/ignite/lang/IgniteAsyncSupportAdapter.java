@@ -18,13 +18,20 @@
 package org.apache.ignite.lang;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 
 /**
  * Adapter for {@link IgniteAsyncSupport}.
  */
-public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
+public class IgniteAsyncSupportAdapter<T extends IgniteAsyncSupport> implements IgniteAsyncSupport {
+    /** */
+    private static final Object mux = new Object();
+
     /** Future for previous asynchronous operation. */
-    protected ThreadLocal<IgniteFuture<?>> curFut;
+    protected ThreadLocal<IgniteInternalFuture<?>> curFut;
+
+    /** */
+    private volatile T asyncInstance;
 
     /**
      * Default constructor.
@@ -37,12 +44,35 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
      * @param async Async enabled flag.
      */
     public IgniteAsyncSupportAdapter(boolean async) {
-        if (async)
+        if (async) {
             curFut = new ThreadLocal<>();
+
+            asyncInstance = (T)this;
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteAsyncSupport enableAsync() {
+    @Override public T withAsync() {
+        T res = asyncInstance;
+
+        if (res == null) {
+            res = createAsyncInstance();
+
+            synchronized (mux) {
+                if (asyncInstance != null)
+                    return asyncInstance;
+
+                asyncInstance = res;
+            }
+        }
+
+        return res;
+    }
+
+    /**
+     * Creates component with asynchronous mode enabled.
+     */
+    protected T createAsyncInstance() {
         throw new UnsupportedOperationException();
     }
 
@@ -52,18 +82,18 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> IgniteInternalFuture<R> future() {
         if (curFut == null)
             throw new IllegalStateException("Asynchronous mode is disabled.");
 
-        IgniteFuture<?> fut = curFut.get();
+        IgniteInternalFuture<?> fut = curFut.get();
 
         if (fut == null)
             throw new IllegalStateException("Asynchronous operation not started.");
 
         curFut.set(null);
 
-        return (IgniteFuture<R>)fut;
+        return (IgniteInternalFuture<R>)fut;
     }
 
     /**
@@ -72,7 +102,7 @@ public class IgniteAsyncSupportAdapter implements IgniteAsyncSupport {
      *         otherwise waits for future and returns result.
      * @throws IgniteCheckedException If asynchronous mode is disabled and future failed.
      */
-    public <R> R saveOrGet(IgniteFuture<R> fut) throws IgniteCheckedException {
+    public <R> R saveOrGet(IgniteInternalFuture<R> fut) throws IgniteCheckedException {
         if (curFut != null) {
             curFut.set(fut);
 

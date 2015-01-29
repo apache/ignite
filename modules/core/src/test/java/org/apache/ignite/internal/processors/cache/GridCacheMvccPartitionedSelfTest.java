@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -36,7 +37,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
  */
 public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
     /** Grid. */
-    private GridKernal grid;
+    private IgniteKernal grid;
 
     /** VM ip finder for TCP discovery. */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -50,7 +51,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        grid = (GridKernal)grid();
+        grid = (IgniteKernal)grid();
     }
 
     /** {@inheritDoc} */

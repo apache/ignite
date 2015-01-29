@@ -95,7 +95,7 @@ public class GridSessionSetTaskAttributeSelfTest extends GridCommonAbstractTest 
     private void checkTask(int num) throws IgniteCheckedException {
         Ignite ignite = G.ignite(getTestGridName());
 
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         comp.execute(GridTaskSessionTestTask.class.getName(), num);
 

@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -168,7 +170,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      */
     public void onResult(UUID nodeId, GridCachePessimisticCheckCommittedTxResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteFuture<GridCacheCommittedTxInfo<K, V>> fut : pending()) {
+            for (IgniteInternalFuture<GridCacheCommittedTxInfo<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -201,7 +203,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteFuture<?> fut : futures())
+        for (IgniteInternalFuture<?> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -257,7 +259,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteFuture<?> f) {
+    private boolean isMini(IgniteInternalFuture<?> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 

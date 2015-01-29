@@ -121,7 +121,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t;
 
             try {
-                t = GridGainEx.loadConfigurations(cfgUrl);
+                t = IgnitionEx.loadConfigurations(cfgUrl);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to load GridGain configuration.", e);
@@ -149,7 +149,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
                         ignite = G.ignite(cfg.getGridName());
                     }
                     catch (IgniteIllegalStateException ignored) {
-                        ignite = GridGainEx.start(new IgniteConfiguration(cfg), rsrcCtx);
+                        ignite = IgnitionEx.start(new IgniteConfiguration(cfg), rsrcCtx);
                     }
                 }
 

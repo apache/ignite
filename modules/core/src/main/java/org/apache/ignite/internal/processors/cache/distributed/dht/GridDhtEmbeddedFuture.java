@@ -49,7 +49,7 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
      * @param embedded Embedded.
      * @param c Closure.
      */
-    public GridDhtEmbeddedFuture(GridKernalContext ctx, IgniteFuture<B> embedded, IgniteBiClosure<B, Exception, A> c) {
+    public GridDhtEmbeddedFuture(GridKernalContext ctx, IgniteInternalFuture<B> embedded, IgniteBiClosure<B, Exception, A> c) {
         super(ctx, embedded, c);
 
         invalidParts = Collections.emptyList();
@@ -60,8 +60,8 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
      * @param c Embedding closure.
      * @param ctx Kernal context.
      */
-    public GridDhtEmbeddedFuture(IgniteFuture<B> embedded,
-        IgniteBiClosure<B, Exception, IgniteFuture<A>> c, GridKernalContext ctx) {
+    public GridDhtEmbeddedFuture(IgniteInternalFuture<B> embedded,
+        IgniteBiClosure<B, Exception, IgniteInternalFuture<A>> c, GridKernalContext ctx) {
         super(embedded, c, ctx);
 
         invalidParts = Collections.emptyList();
@@ -73,7 +73,7 @@ public class GridDhtEmbeddedFuture<A, B> extends GridEmbeddedFuture<A, B> implem
      * @param c Closure.
      * @param invalidParts Retries.
      */
-    public GridDhtEmbeddedFuture(GridKernalContext ctx, IgniteFuture<B> embedded, IgniteBiClosure<B, Exception, A> c,
+    public GridDhtEmbeddedFuture(GridKernalContext ctx, IgniteInternalFuture<B> embedded, IgniteBiClosure<B, Exception, A> c,
         Collection<Integer> invalidParts) {
         super(ctx, embedded, c);
 

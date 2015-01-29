@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.fs.mapreduce.records.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -172,7 +173,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         assertFalse(ggfs.isAsync());
 
-        IgniteFs ggfsAsync = ggfs.enableAsync();
+        IgniteFs ggfsAsync = ggfs.withAsync();
 
         assertTrue(ggfsAsync.isAsync());
 
@@ -185,7 +186,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             assertNull(ggfsAsync.execute(
                 new Task(), new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
-            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
+            IgniteInternalFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
             assertNotNull(fut);
 
@@ -197,7 +198,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfsAsync.format();
 
-        IgniteFuture<?> fut = ggfsAsync.future();
+        IgniteInternalFuture<?> fut = ggfsAsync.future();
 
         assertNotNull(fut);
 

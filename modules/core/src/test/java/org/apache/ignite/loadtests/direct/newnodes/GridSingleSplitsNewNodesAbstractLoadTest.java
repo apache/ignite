@@ -147,7 +147,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             GridTestUtils.runMultiThreaded(new Runnable() {
                 /** {@inheritDoc} */
                 @Override public void run() {
-                    IgniteCompute comp = ignite.compute().enableAsync();
+                    IgniteCompute comp = ignite.compute().withAsync();
 
                     while (end - System.currentTimeMillis() > 0
                         && !Thread.currentThread().isInterrupted()) {
