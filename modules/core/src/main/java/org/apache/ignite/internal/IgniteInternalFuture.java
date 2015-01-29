@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lang;
+package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -28,13 +29,13 @@ import java.util.concurrent.*;
  * callback.
  * @param <R> Type of the result for the future.
  */
-public interface IgniteFuture<R> {
+public interface IgniteInternalFuture<R> {
     /**
      * Synchronously waits for completion of the computation and
      * returns computation result.
      *
      * @return Computation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
@@ -47,8 +48,8 @@ public interface IgniteFuture<R> {
      *
      * @param timeout The maximum time to wait in milliseconds.
      * @return Computation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
@@ -61,8 +62,8 @@ public interface IgniteFuture<R> {
      * @param timeout The maximum time to wait.
      * @param unit The time unit of the {@code timeout} argument.
      * @return Computation result.
-     * @throws org.apache.ignite.IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
+     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
      * @throws IgniteFutureCancelledException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
      * @throws IgniteCheckedException If computation failed.
      */
@@ -168,7 +169,7 @@ public interface IgniteFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>> lsnr);
+    public void listenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
 
     /**
      * Removes given listeners from the future. If no listener is passed in, then all listeners
@@ -176,7 +177,7 @@ public interface IgniteFuture<R> {
      *
      * @param lsnr Listeners to remove.
      */
-    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<R>>... lsnr);
+    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>>... lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -185,5 +186,5 @@ public interface IgniteFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
-    public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<R>, T> doneCb);
+    public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
 }

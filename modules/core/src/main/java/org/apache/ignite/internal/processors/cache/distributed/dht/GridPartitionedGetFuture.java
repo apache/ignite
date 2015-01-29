@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -202,8 +203,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
     @SuppressWarnings("unchecked")
     @Override public Collection<? extends ClusterNode> nodes() {
         return
-            F.viewReadOnly(futures(), new IgniteClosure<IgniteFuture<Map<K, V>>, ClusterNode>() {
-                @Nullable @Override public ClusterNode apply(IgniteFuture<Map<K, V>> f) {
+            F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<Map<K, V>>, ClusterNode>() {
+                @Nullable @Override public ClusterNode apply(IgniteInternalFuture<Map<K, V>> f) {
                     if (isMini(f))
                         return ((MiniFuture)f).node();
 
@@ -214,7 +215,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteFuture<Map<K, V>> fut : futures())
+        for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -233,7 +234,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearGetResponse<K, V> res) {
-        for (IgniteFuture<Map<K, V>> fut : futures())
+        for (IgniteInternalFuture<Map<K, V>> fut : futures())
             if (isMini(fut)) {
                 MiniFuture f = (MiniFuture)fut;
 
@@ -264,7 +265,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
      * @param f Future.
      * @return {@code True} if mini-future.
      */
-    private boolean isMini(IgniteFuture<Map<K, V>> f) {
+    private boolean isMini(IgniteInternalFuture<Map<K, V>> f) {
         return f.getClass().equals(MiniFuture.class);
     }
 
@@ -290,8 +291,15 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
 
         // Assign keys to primary nodes.
         for (K key : keys) {
-            if (key != null)
-                hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
+            if (key == null) {
+                NullPointerException err = new NullPointerException("Null key");
+
+                onDone(err);
+
+                throw err;
+            }
+
+            hasRmtNodes |= map(key, mappings, locVals, topVer, mapped);
         }
 
         if (isDone())
@@ -350,8 +358,8 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 }
 
                 // Add new future.
-                add(fut.chain(new C1<IgniteFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
-                    @Override public Map<K, V> apply(IgniteFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
+                add(fut.chain(new C1<IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>>, Map<K, V>>() {
+                    @Override public Map<K, V> apply(IgniteInternalFuture<Collection<GridCacheEntryInfo<K, V>>> fut) {
                         try {
                             return createResultMap(fut.get());
                         }
@@ -686,11 +694,11 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                     log.debug("Remapping mini get future [invalidParts=" + invalidParts + ", fut=" + this + ']');
 
                 // Need to wait for next topology version to remap.
-                IgniteFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
+                IgniteInternalFuture<Long> topFut = ctx.discovery().topologyFuture(rmtTopVer);
 
-                topFut.listenAsync(new CIX1<IgniteFuture<Long>>() {
+                topFut.listenAsync(new CIX1<IgniteInternalFuture<Long>>() {
                     @SuppressWarnings("unchecked")
-                    @Override public void applyx(IgniteFuture<Long> fut) throws IgniteCheckedException {
+                    @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
                         long topVer = fut.get();
 
                         // This will append new futures to compound list.

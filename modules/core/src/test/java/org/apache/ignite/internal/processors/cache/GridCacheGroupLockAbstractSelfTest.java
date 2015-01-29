@@ -393,7 +393,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         final CountDownLatch unlockLatch = new CountDownLatch(1);
         final CountDownLatch lockLatch = new CountDownLatch(1);
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     Lock lock = cache.lock(key1);

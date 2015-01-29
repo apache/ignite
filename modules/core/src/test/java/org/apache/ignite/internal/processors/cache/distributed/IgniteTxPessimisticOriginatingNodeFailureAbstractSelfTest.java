@@ -190,7 +190,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     tx.commit();
 
-                    IgniteFuture<IgniteTx> fut = tx.future();
+                    IgniteInternalFuture<IgniteTx> fut = tx.future();
 
                     info("Got future for commitAsync().");
 

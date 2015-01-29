@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -242,7 +241,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
-                            IgniteFuture<Object> fut = new GridFinishedFuture<>(ctx,
+                            IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(ctx,
                                 new IgniteCheckedException("Operation failed"));
 
                             fut.syncNotify(sync);

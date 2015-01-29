@@ -18,7 +18,7 @@
 package org.apache.ignite.streamer.index;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.streamer.index.hash.*;
 import org.apache.ignite.streamer.index.tree.*;
 import org.apache.ignite.streamer.window.*;
@@ -296,7 +296,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
         win.start();
 
-        IgniteFuture<Long> pollFut = null;
+        IgniteInternalFuture<Long> pollFut = null;
 
         if (pollEvicted) {
             // These threads poll evicted events from the window if it doesn't break
@@ -331,7 +331,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             // if it is still present in the window. In the tested index events are
             // sorted by value and the value is a number of repeated events, so, this
             // should be invariant.
-            IgniteFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
+            IgniteInternalFuture<Long> fut1 = runMultiThreadedAsync(new CAX() {
                 @Override public void applyx() throws IgniteCheckedException {
                     final String evt = Thread.currentThread().getName();
                     int cntr = 1;
@@ -358,7 +358,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
             }, threadCnt / 2, "test-multi");
 
             // This thread generates a set of single non-repeating events from 0 to iters.
-            IgniteFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
+            IgniteInternalFuture<Long> fut2 = runMultiThreadedAsync(new CAX() {
                 @Override public void applyx() throws IgniteCheckedException {
                     for (int i = 0; i < iters && !Thread.currentThread().isInterrupted(); i++)
                         win.enqueue(String.valueOf(i));

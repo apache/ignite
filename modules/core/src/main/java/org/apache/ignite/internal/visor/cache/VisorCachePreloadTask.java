@@ -19,7 +19,7 @@ package org.apache.ignite.internal.visor.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -56,14 +56,14 @@ public class VisorCachePreloadTask extends VisorOneNodeTask<Set<String>, Void> {
 
         /** {@inheritDoc} */
         @Override protected Void run(Set<String> cacheNames) throws IgniteCheckedException {
-            Collection<IgniteFuture<?>> futs = new ArrayList<>();
+            Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
             for(GridCache c : g.cachesx()) {
                 if (cacheNames.contains(c.name()))
                     futs.add(c.forceRepartition());
             }
 
-            for (IgniteFuture f: futs)
+            for (IgniteInternalFuture f: futs)
                 f.get();
 
             return null;

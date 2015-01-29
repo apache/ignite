@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache.local;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.future.*;
@@ -107,7 +107,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync() {
         try {
             prepare();
 
@@ -146,7 +146,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public IgniteFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteTx> commitAsync() {
         try {
             prepare();
         }
@@ -164,11 +164,11 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
                 fut.checkLocks();
 
-                return (IgniteFuture)fut;
+                return (IgniteInternalFuture)fut;
             }
         }
 
-        return (IgniteFuture)this.fut.get();
+        return (IgniteInternalFuture)this.fut.get();
     }
 
     /** {@inheritDoc} */
@@ -177,7 +177,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteTx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.hadoop.*;
@@ -382,8 +383,8 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
             fut.onDone(U.unwrap(e));
         }
 
-        fut.listenAsync(new IgniteInClosure<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> f) {
+        fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     f.get();
 
@@ -433,7 +434,7 @@ public class GridHadoopShuffleJob<T> implements AutoCloseable {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<?> flush() throws IgniteCheckedException {
+    public IgniteInternalFuture<?> flush() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Flushing job " + job.id() + " on address " + locReduceAddr);
 

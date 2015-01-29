@@ -458,7 +458,7 @@ public class GridCacheReplicatedQuerySelfTest extends GridCacheAbstractQuerySelf
             assertEquals(1, futs.size());
 
             GridCloseableIterator<IgniteBiTuple<Integer, Integer>> iter =
-                (GridCloseableIterator<IgniteBiTuple<Integer, Integer>>)((IgniteFuture)F.first(futs.values()).get()).get();
+                (GridCloseableIterator<IgniteBiTuple<Integer, Integer>>)((IgniteInternalFuture)F.first(futs.values()).get()).get();
 
             ResultSet rs = U.field(iter, "data");
 

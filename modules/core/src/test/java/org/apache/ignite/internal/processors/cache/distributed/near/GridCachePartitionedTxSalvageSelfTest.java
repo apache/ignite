@@ -23,7 +23,6 @@ import org.apache.ignite.cache.affinity.consistenthash.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -196,7 +195,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
         final Collection<Integer> keys = nearKeys(ignite);
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridCache<Object, Object> c = cache(0);
 

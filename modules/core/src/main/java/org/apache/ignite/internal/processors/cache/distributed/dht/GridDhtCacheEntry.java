@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -355,7 +356,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public IgniteFuture<Boolean> addReader(UUID nodeId, long msgId, long topVer)
+    @Nullable public IgniteInternalFuture<Boolean> addReader(UUID nodeId, long msgId, long topVer)
         throws GridCacheEntryRemovedException {
         // Don't add local node as reader.
         if (cctx.nodeId().equals(nodeId))
@@ -450,8 +451,8 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
             if (!txFut.isDone()) {
                 final ReaderId<K, V> reader0 = reader;
 
-                txFut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> f) {
+                txFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> f) {
                         synchronized (this) {
                             // Release memory.
                             reader0.resetTxFuture();

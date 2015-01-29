@@ -23,7 +23,6 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -212,7 +211,7 @@ public class GridAffinityAssignmentCache {
      * @param topVer Topology version to await for.
      * @return Future that will be completed after affinity for topology version {@code topVer} is calculated.
      */
-    public IgniteFuture<Long> readyFuture(long topVer) {
+    public IgniteInternalFuture<Long> readyFuture(long topVer) {
         GridAffinityAssignment aff = head.get();
 
         if (aff.topologyVersion() >= topVer) {
@@ -346,7 +345,7 @@ public class GridAffinityAssignmentCache {
                 log.debug("Will wait for topology version [locNodeId=" + ctx.localNodeId() +
                 ", topVer=" + topVer + ']');
 
-            IgniteFuture<Long> fut = readyFuture(topVer);
+            IgniteInternalFuture<Long> fut = readyFuture(topVer);
 
             if (fut != null)
                 fut.get();

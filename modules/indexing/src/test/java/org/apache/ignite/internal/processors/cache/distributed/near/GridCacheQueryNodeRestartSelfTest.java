@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -115,7 +116,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
 
         final AtomicBoolean done = new AtomicBoolean();
 
-        IgniteFuture<?> fut1 = multithreadedAsync(new CAX() {
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     CacheQuery<Map.Entry<Integer, Integer>> qry =
@@ -141,7 +142,7 @@ public class GridCacheQueryNodeRestartSelfTest extends GridCacheAbstractSelfTest
         for (int i = 0; i < GRID_CNT; i++)
             grid(i).events().localListen(lsnr, IgniteEventType.EVT_CACHE_PRELOAD_STOPPED);
 
-        IgniteFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @SuppressWarnings({"BusyWait"})
             @Override public Object call() throws Exception {
                 while (!done.get()) {

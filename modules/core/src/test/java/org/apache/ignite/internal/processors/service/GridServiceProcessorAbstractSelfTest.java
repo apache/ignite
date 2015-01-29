@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.processors.affinity.*;
@@ -146,11 +146,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut1 = svcs1.future();
+        IgniteInternalFuture<?> fut1 = svcs1.future();
 
         svcs2.deployClusterSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut2 = svcs2.future();
+        IgniteInternalFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -175,11 +175,11 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs1.deployClusterSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut1 = svcs1.future();
+        IgniteInternalFuture<?> fut1 = svcs1.future();
 
         svcs2.deployNodeSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut2 = svcs2.future();
+        IgniteInternalFuture<?> fut2 = svcs2.future();
 
         info("Deployed service: " + name);
 
@@ -259,7 +259,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -291,7 +291,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -325,7 +325,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
                 CACHE_NAME, affKey);
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -352,7 +352,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployMultiple(name, new DummyService(), nodeCount() * 2, 3);
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -386,7 +386,7 @@ public abstract class GridServiceProcessorAbstractSelfTest extends GridCommonAbs
 
         svcs.deployMultiple(name, new DummyService(), cnt, 3);
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 

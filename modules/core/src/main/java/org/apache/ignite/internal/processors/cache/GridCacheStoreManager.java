@@ -176,17 +176,17 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
         }
 
-        if (!cctx.config().isKeepPortableInStore()) {
-            if (cctx.config().isPortableEnabled()) {
-                if (store instanceof GridInteropAware)
-                    ((GridInteropAware)store).configure(true);
-                else
-                    convertPortable = true;
-            }
+        boolean convertPortable = !cctx.config().isKeepPortableInStore();
+
+        if (cctx.config().isPortableEnabled()) {
+            if (store instanceof GridInteropAware)
+                ((GridInteropAware)store).configure(cctx.cache().name(), convertPortable);
             else
-                U.warn(log, "GridCacheConfiguration.isKeepPortableInStore() configuration property will " +
-                    "be ignored because portable mode is not enabled for cache: " + cctx.namex());
+                this.convertPortable = convertPortable;
         }
+        else if (convertPortable)
+            U.warn(log, "GridCacheConfiguration.isKeepPortableInStore() configuration property will " +
+                "be ignored because portable mode is not enabled for cache: " + cctx.namex());
     }
 
     /** {@inheritDoc} */

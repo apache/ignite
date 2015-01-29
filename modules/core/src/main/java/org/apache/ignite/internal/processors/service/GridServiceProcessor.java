@@ -147,13 +147,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         ManagedServiceConfiguration[] cfgs = ctx.config().getServiceConfiguration();
 
         if (cfgs != null) {
-            Collection<IgniteFuture<?>> futs = new ArrayList<>();
+            Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
             for (ManagedServiceConfiguration c : ctx.config().getServiceConfiguration())
                 futs.add(deploy(c));
 
             // Await for services to deploy.
-            for (IgniteFuture<?> f : futs)
+            for (IgniteInternalFuture<?> f : futs)
                 f.get();
         }
 
@@ -262,7 +262,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public IgniteFuture<?> deployNodeSingleton(ClusterGroup prj, String name, ManagedService svc) {
+    public IgniteInternalFuture<?> deployNodeSingleton(ClusterGroup prj, String name, ManagedService svc) {
         return deployMultiple(prj, name, svc, 0, 1);
     }
 
@@ -271,7 +271,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param svc Service.
      * @return Future.
      */
-    public IgniteFuture<?> deployClusterSingleton(ClusterGroup prj, String name, ManagedService svc) {
+    public IgniteInternalFuture<?> deployClusterSingleton(ClusterGroup prj, String name, ManagedService svc) {
         return deployMultiple(prj, name, svc, 1, 1);
     }
 
@@ -282,7 +282,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param maxPerNodeCnt Max per-node count.
      * @return Future.
      */
-    public IgniteFuture<?> deployMultiple(ClusterGroup prj, String name, ManagedService svc, int totalCnt,
+    public IgniteInternalFuture<?> deployMultiple(ClusterGroup prj, String name, ManagedService svc, int totalCnt,
         int maxPerNodeCnt) {
         ManagedServiceConfiguration cfg = new ManagedServiceConfiguration();
 
@@ -302,7 +302,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param  affKey Affinity key.
      * @return Future.
      */
-    public IgniteFuture<?> deployKeyAffinitySingleton(String name, ManagedService svc, String cacheName, Object affKey) {
+    public IgniteInternalFuture<?> deployKeyAffinitySingleton(String name, ManagedService svc, String cacheName, Object affKey) {
         A.notNull(affKey, "affKey");
 
         ManagedServiceConfiguration cfg = new ManagedServiceConfiguration();
@@ -321,7 +321,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param cfg Service configuration.
      * @return Future for deployment.
      */
-    public IgniteFuture<?> deploy(ManagedServiceConfiguration cfg) {
+    public IgniteInternalFuture<?> deploy(ManagedServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
         validate(cfg);
@@ -412,7 +412,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param name Service name.
      * @return Future.
      */
-    public IgniteFuture<?> cancel(String name) {
+    public IgniteInternalFuture<?> cancel(String name) {
         while (true) {
             try {
                 GridFutureAdapter<?> fut = new GridFutureAdapter<>(ctx);
@@ -450,8 +450,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteFuture<?> cancelAll() {
-        Collection<IgniteFuture<?>> futs = new ArrayList<>();
+    public IgniteInternalFuture<?> cancelAll() {
+        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
         for (CacheEntry<Object, Object> e : cache.entrySetx()) {
             if (!(e.getKey() instanceof GridServiceDeploymentKey))
