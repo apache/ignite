@@ -304,6 +304,10 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
         _clone.invalidParts = invalidParts;
         _clone.ownedVals = ownedVals;
         _clone.ownedValsBytes = ownedValsBytes;
+        _clone.retVal = retVal;
+        _clone.retValBytes = retValBytes;
+        _clone.filterFailedKeys = filterFailedKeys;
+        _clone.filterFailedKeyBytes = filterFailedKeyBytes;
     }
 
     /** {@inheritDoc} */
@@ -329,12 +333,18 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 11:
-                if (!commState.putGridUuid(futId))
+                if (!commState.putByteArray(filterFailedKeyBytes))
                     return false;
 
                 commState.idx++;
 
             case 12:
+                if (!commState.putGridUuid(futId))
+                    return false;
+
+                commState.idx++;
+
+            case 13:
                 if (invalidParts != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(invalidParts.size()))
@@ -361,13 +371,13 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (ownedValsBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(ownedValsBytes.size()))
@@ -394,7 +404,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 15:
+            case 16:
                 if (pending != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(pending.size()))
@@ -418,6 +428,12 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                     if (!commState.putInt(-1))
                         return false;
                 }
+
+                commState.idx++;
+
+            case 17:
+                if (!commState.putByteArray(retValBytes))
+                    return false;
 
                 commState.idx++;
 
@@ -446,6 +462,16 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
                 commState.idx++;
 
             case 11:
+                byte[] filterFailedKeyBytes0 = commState.getByteArray();
+
+                if (filterFailedKeyBytes0 == BYTE_ARR_NOT_READ)
+                    return false;
+
+                filterFailedKeyBytes = filterFailedKeyBytes0;
+
+                commState.idx++;
+
+            case 12:
                 IgniteUuid futId0 = commState.getGridUuid();
 
                 if (futId0 == GRID_UUID_NOT_READ)
@@ -455,7 +481,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 12:
+            case 13:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -484,7 +510,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 13:
+            case 14:
                 IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -494,7 +520,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 14:
+            case 15:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -523,7 +549,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.idx++;
 
-            case 15:
+            case 16:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -549,6 +575,16 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
                 commState.readSize = -1;
                 commState.readItems = 0;
+
+                commState.idx++;
+
+            case 17:
+                byte[] retValBytes0 = commState.getByteArray();
+
+                if (retValBytes0 == BYTE_ARR_NOT_READ)
+                    return false;
+
+                retValBytes = retValBytes0;
 
                 commState.idx++;
 

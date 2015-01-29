@@ -266,6 +266,8 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
         _clone.commitVer = commitVer;
         _clone.invalidate = invalidate;
         _clone.commit = commit;
+        _clone.syncCommit = syncCommit;
+        _clone.syncRollback = syncRollback;
         _clone.baseVer = baseVer;
         _clone.txSize = txSize;
         _clone.grpLockKey = grpLockKey;
@@ -337,6 +339,12 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
+            case 16:
+                if (!commState.putBoolean(sys))
+                    return false;
+
+                commState.idx++;
+
             case 17:
                 if (!commState.putLong(threadId))
                     return false;
@@ -349,11 +357,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 20:
-                if (!commState.putBoolean(sys))
-                    return false;
-
-                commState.idx++;
         }
 
         return true;
@@ -440,6 +443,14 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
+            case 16:
+                if (buf.remaining() < 1)
+                    return false;
+
+                sys = commState.getBoolean();
+
+                commState.idx++;
+
             case 17:
                 if (buf.remaining() < 8)
                     return false;
@@ -456,13 +467,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 20:
-                if (buf.remaining() < 1)
-                    return false;
-
-                sys = commState.getBoolean();
-
-                commState.idx++;
         }
 
         return true;

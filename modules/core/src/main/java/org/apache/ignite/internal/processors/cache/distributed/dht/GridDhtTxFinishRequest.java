@@ -327,25 +327,31 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
         }
 
         switch (commState.idx) {
-            case 21:
+            case 19:
                 if (!commState.putEnum(isolation))
                     return false;
 
                 commState.idx++;
 
-            case 22:
+            case 20:
                 if (!commState.putGridUuid(miniId))
                     return false;
 
                 commState.idx++;
 
-            case 23:
+            case 21:
                 if (!commState.putUuid(nearNodeId))
                     return false;
 
                 commState.idx++;
 
-            case 26:
+            case 22:
+                if (!commState.putLongList(nearTtls))
+                    return false;
+
+                commState.idx++;
+
+            case 23:
                 if (pendingVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(pendingVers.size()))
@@ -372,44 +378,38 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 27:
+            case 24:
                 if (!commState.putBoolean(sysInvalidate))
                     return false;
 
                 commState.idx++;
 
-            case 28:
+            case 25:
                 if (!commState.putLong(topVer))
                     return false;
 
                 commState.idx++;
 
-            case 29:
-                if (!commState.putCacheVersion(writeVer))
-                    return false;
-
-                commState.idx++;
-
-            case 30:
-                if (!commState.putUuid(subjId))
-                    return false;
-
-                commState.idx++;
-
-            case 31:
-                if (!commState.putInt(taskNameHash))
-                    return false;
-
-                commState.idx++;
-
-            case 32:
+            case 26:
                 if (!commState.putLongList(ttls))
                     return false;
 
                 commState.idx++;
 
-            case 33:
-                if (!commState.putLongList(nearTtls))
+            case 27:
+                if (!commState.putCacheVersion(writeVer))
+                    return false;
+
+                commState.idx++;
+
+            case 28:
+                if (!commState.putUuid(subjId))
+                    return false;
+
+                commState.idx++;
+
+            case 29:
+                if (!commState.putInt(taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -428,7 +428,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
             return false;
 
         switch (commState.idx) {
-            case 21:
+            case 19:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -438,7 +438,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 22:
+            case 20:
                 IgniteUuid miniId0 = commState.getGridUuid();
 
                 if (miniId0 == GRID_UUID_NOT_READ)
@@ -448,7 +448,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 23:
+            case 21:
                 UUID nearNodeId0 = commState.getUuid();
 
                 if (nearNodeId0 == UUID_NOT_READ)
@@ -458,7 +458,17 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 26:
+            case 22:
+                GridLongList nearTtls0 = commState.getLongList();
+
+                if (nearTtls0 == LONG_LIST_NOT_READ)
+                    return false;
+
+                nearTtls = nearTtls0;
+
+                commState.idx++;
+
+            case 23:
                 if (commState.readSize == -1) {
                     if (buf.remaining() < 4)
                         return false;
@@ -487,7 +497,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 27:
+            case 24:
                 if (buf.remaining() < 1)
                     return false;
 
@@ -495,7 +505,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 28:
+            case 25:
                 if (buf.remaining() < 8)
                     return false;
 
@@ -503,35 +513,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 29:
-                GridCacheVersion writeVer0 = commState.getCacheVersion();
-
-                if (writeVer0 == CACHE_VER_NOT_READ)
-                    return false;
-
-                writeVer = writeVer0;
-
-                commState.idx++;
-
-            case 30:
-                UUID subjId0 = commState.getUuid();
-
-                if (subjId0 == UUID_NOT_READ)
-                    return false;
-
-                subjId = subjId0;
-
-                commState.idx++;
-
-            case 31:
-                if (buf.remaining() < 4)
-                    return false;
-
-                taskNameHash = commState.getInt();
-
-                commState.idx++;
-
-            case 32:
+            case 26:
                 GridLongList ttls0 = commState.getLongList();
 
                 if (ttls0 == LONG_LIST_NOT_READ)
@@ -541,13 +523,31 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 33:
-                GridLongList nearTtls0 = commState.getLongList();
+            case 27:
+                GridCacheVersion writeVer0 = commState.getCacheVersion();
 
-                if (nearTtls0 == LONG_LIST_NOT_READ)
+                if (writeVer0 == CACHE_VER_NOT_READ)
                     return false;
 
-                nearTtls = nearTtls0;
+                writeVer = writeVer0;
+
+                commState.idx++;
+
+            case 28:
+                UUID subjId0 = commState.getUuid();
+
+                if (subjId0 == UUID_NOT_READ)
+                    return false;
+
+                subjId = subjId0;
+
+                commState.idx++;
+
+            case 29:
+                if (buf.remaining() < 4)
+                    return false;
+
+                taskNameHash = commState.getInt();
 
                 commState.idx++;
 
