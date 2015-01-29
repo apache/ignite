@@ -181,7 +181,7 @@
                                     <fileset dir="target/site/scaladocs"/>
                                 </replaceregexp>
 
-                                <zip destfile="target/gridgain-scalar-${ignite.version}-javadoc.jar"
+                                <zip destfile="target/ignite-scalar-${ignite.version}-javadoc.jar"
                                      basedir="target/site/scaladocs"
                                      encoding="UTF-8"/>
                             </target>
