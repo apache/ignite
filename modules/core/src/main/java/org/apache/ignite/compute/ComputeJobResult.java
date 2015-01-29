@@ -67,7 +67,7 @@ public interface ComputeJobResult {
      *      If job on remote node was rejected (cancelled while it was on waiting queue), then
      *      {@link ComputeExecutionRejectedException} will be returned.
      *      <p>
-     *      If node on which job was computing failed, then {@link org.apache.ignite.cluster.ClusterTopologyException} is
+     *      If node on which job was computing failed, then {@link org.apache.ignite.internal.cluster.ClusterTopologyCheckedException} is
      *      returned.
      */
     public IgniteCheckedException getException();

@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.dataload.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
@@ -462,7 +463,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             }
 
             if (node == null) {
-                resFut.onDone(new ClusterTopologyException("Failed to map key to node " +
+                resFut.onDone(new ClusterTopologyCheckedException("Failed to map key to node " +
                     "(no nodes with cache found in topology) [infos=" + entries.size() +
                     ", cacheName=" + cacheName + ']'));
 
@@ -541,7 +542,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     buf.onNodeLeft();
 
                 if (f != null)
-                    f.onDone(new ClusterTopologyException("Failed to wait for request completion " +
+                    f.onDone(new ClusterTopologyCheckedException("Failed to wait for request completion " +
                         "(node has left): " + nodeId));
             }
         }
@@ -1044,7 +1045,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
                     if (ctx.discovery().alive(node) && ctx.discovery().pingNode(node.id()))
                         ((GridFutureAdapter<Object>)fut).onDone(e);
                     else
-                        ((GridFutureAdapter<Object>)fut).onDone(new ClusterTopologyException("Failed to send " +
+                        ((GridFutureAdapter<Object>)fut).onDone(new ClusterTopologyCheckedException("Failed to send " +
                             "request (node has left): " + node.id()));
                 }
             }
@@ -1060,7 +1061,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             if (log.isDebugEnabled())
                 log.debug("Forcibly completing futures (node has left): " + node.id());
 
-            Exception e = new ClusterTopologyException("Failed to wait for request completion " +
+            Exception e = new ClusterTopologyCheckedException("Failed to wait for request completion " +
                 "(node has left): " + node.id());
 
             for (GridFutureAdapter<Object> f : reqs.values())

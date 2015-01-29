@@ -1095,7 +1095,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             dep = ctx.deploy().deploy(cls0, U.detectClassLoader(cls0));
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to deploy user message: " + msg);
+                throw new IgniteDeploymentCheckedException("Failed to deploy user message: " + msg);
 
             depClsName = cls0.getName();
         }
@@ -1662,7 +1662,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                         null);
 
                     if (dep == null)
-                        throw new IgniteDeploymentException(
+                        throw new IgniteDeploymentCheckedException(
                             "Failed to obtain deployment information for user message. " +
                             "If you are using custom message or topic class, try implementing " +
                             "GridPeerDeployAware interface. [msg=" + ioMsg + ']');

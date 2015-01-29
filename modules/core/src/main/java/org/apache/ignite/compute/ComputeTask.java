@@ -87,7 +87,7 @@ import java.util.*;
  *          <ul>
  *          <li>
  *              Job has failed due to node crash. In this case {@link ComputeJobResult#getException()}
- *              method will return an instance of {@link org.apache.ignite.cluster.ClusterTopologyException} exception.
+ *              method will return an instance of {@link org.apache.ignite.internal.cluster.ClusterTopologyCheckedException} exception.
  *          </li>
  *          <li>
  *              Job execution was rejected, i.e. remote node has cancelled job before it got
@@ -146,7 +146,7 @@ import java.util.*;
  * <li>
  * {@link ComputeTaskAdapter} provides default implementation for {@link ComputeTask#result(ComputeJobResult, List)}
  * method which provides automatic fail-over to another node if remote job has failed
- * due to node crash (detected by {@link org.apache.ignite.cluster.ClusterTopologyException} exception) or due to job
+ * due to node crash (detected by {@link org.apache.ignite.internal.cluster.ClusterTopologyCheckedException} exception) or due to job
  * execution rejection (detected by {@link ComputeExecutionRejectedException} exception).
  * Here is an example of how a you would implement your task using {@link ComputeTaskAdapter}:
  * <pre name="code" class="java">

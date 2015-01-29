@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -80,7 +81,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
                     reduceJobResult(taskResult, jobResult, nid);
                 else {
                     // Ignore nodes that left topology.
-                    if (!(unhandledEx instanceof ClusterGroupEmptyException))
+                    if (!(unhandledEx instanceof ClusterGroupEmptyCheckedException))
                         taskResult.unhandledEx().put(nid, unhandledEx);
                 }
             }

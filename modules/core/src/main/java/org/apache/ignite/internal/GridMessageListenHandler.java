@@ -129,7 +129,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         GridDeployment dep = ctx.deploy().deploy(pda.deployClass(), pda.classLoader());
 
         if (dep == null)
-            throw new IgniteDeploymentException("Failed to deploy message listener.");
+            throw new IgniteDeploymentCheckedException("Failed to deploy message listener.");
 
         depInfo = new GridDeploymentInfoBean(dep);
 
@@ -146,7 +146,7 @@ public class GridMessageListenHandler implements GridContinuousHandler {
             depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
         if (dep == null)
-            throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+            throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
         ClassLoader ldr = dep.classLoader();
 

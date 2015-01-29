@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -565,7 +566,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param exchFut Exchange future.
          * @return Missed partitions.
          * @throws InterruptedException If interrupted.
-         * @throws ClusterTopologyException If node left.
+         * @throws org.apache.ignite.internal.cluster.ClusterTopologyCheckedException If node left.
          * @throws IgniteCheckedException If failed to send message.
          */
         private Set<Integer> demandFromNode(ClusterNode node, final long topVer, GridDhtPartitionDemandMessage<K, V> d,
@@ -905,7 +906,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                 catch (IgniteInterruptedCheckedException e) {
                                     throw e;
                                 }
-                                catch (ClusterTopologyException e) {
+                                catch (ClusterTopologyCheckedException e) {
                                     if (log.isDebugEnabled())
                                         log.debug("Node left during preloading (will retry) [node=" + node.id() +
                                             ", msg=" + e.getMessage() + ']');

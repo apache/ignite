@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -476,7 +477,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will ignore): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
 
                     found = true;
                 }
@@ -887,8 +888,8 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
                     }
                     catch (IgniteCheckedException e) {
                         // Fail the whole thing.
-                        if (e instanceof ClusterTopologyException)
-                            fut.onResult((ClusterTopologyException)e);
+                        if (e instanceof ClusterTopologyCheckedException)
+                            fut.onResult((ClusterTopologyCheckedException)e);
                         else
                             fut.onResult(e);
                     }
@@ -948,7 +949,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
 
                         cctx.io().send(n, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                     }
-                    catch (ClusterTopologyException e) {
+                    catch (ClusterTopologyCheckedException e) {
                         fut.onResult(e);
                     }
                     catch (IgniteCheckedException e) {
@@ -1106,7 +1107,7 @@ public final class GridDhtLockFuture<K, V> extends GridCompoundIdentityFuture<Bo
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will ignore): " + this);
 

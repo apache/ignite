@@ -233,7 +233,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
     }

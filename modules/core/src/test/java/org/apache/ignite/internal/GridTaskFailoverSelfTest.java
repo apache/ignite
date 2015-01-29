@@ -18,8 +18,8 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -57,7 +57,7 @@ public class GridTaskFailoverSelfTest extends GridCommonAbstractTest {
 
             assert false : "Should never be reached due to exception thrown.";
         }
-        catch (ClusterTopologyException e) {
+        catch (ClusterTopologyCheckedException e) {
             info("Received correct exception: " + e);
         }
         finally {

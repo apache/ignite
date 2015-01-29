@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -140,7 +141,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     // Remove previous mapping.
                     mappings.remove(nodeId);
 
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will fail): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will fail): " + nodeId));
 
                     return true;
                 }
@@ -392,7 +393,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (!isSync() && !m.explicitLock())
                     fut.onDone();
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 // Remove previous mapping.
                 mappings.remove(m.node().id());
 
@@ -476,7 +477,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Remote node left grid while sending or waiting for reply (will fail): " + this);
 

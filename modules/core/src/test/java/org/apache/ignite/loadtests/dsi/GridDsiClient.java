@@ -140,7 +140,7 @@ public class GridDsiClient implements Callable {
                 if (res2 != null)
                     srvStats = res2;
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 e.printStackTrace();
             }
         }

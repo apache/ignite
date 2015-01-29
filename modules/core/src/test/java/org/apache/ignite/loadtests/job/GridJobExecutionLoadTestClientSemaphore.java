@@ -58,8 +58,8 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
     /** {@inheritDoc} */
     @SuppressWarnings("InfiniteLoopStatement")
     @Nullable @Override public Object call() throws Exception {
-        final IgniteInClosure<IgniteInternalFuture<?>> lsnr = new CI1<IgniteInternalFuture<?>>() {
-            @Override public void apply(IgniteInternalFuture<?> t) {
+        final IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
+            @Override public void apply(IgniteFuture<?> t) {
                 tasksSem.release();
             }
         };
@@ -217,7 +217,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 try {
                     rmts.execute(GridJobExecutionLoadTestTask.class, null);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
 
@@ -233,7 +233,7 @@ public class GridJobExecutionLoadTestClientSemaphore implements Callable<Object>
                 }
             });
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new IllegalStateException(e);
         }
     }

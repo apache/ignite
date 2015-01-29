@@ -70,12 +70,10 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCompute#affinityRun(String, Object, Runnable)}
+     * Collocates jobs with keys they need to work on using {@link IgniteCompute#affinityRun(String, Object, Runnable)}
      * method.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingAffinityRun() throws IgniteCheckedException {
+    private static void visitUsingAffinityRun() {
         Ignite g = Ignition.ignite();
 
         final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
@@ -97,13 +95,11 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link org.apache.ignite.IgniteCluster#mapKeysToNodes(String, Collection)}
+     * Collocates jobs with keys they need to work on using {@link IgniteCluster#mapKeysToNodes(String, Collection)}
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    private static void visitUsingMapKeysToNodes() throws IgniteCheckedException {
+    private static void visitUsingMapKeysToNodes() {
         final Ignite g = Ignition.ignite();
 
         Collection<Integer> keys = new ArrayList<>(KEY_CNT);

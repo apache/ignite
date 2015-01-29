@@ -18,7 +18,8 @@
 package org.apache.ignite.scalar.pimps
 
 import org.apache.ignite._
-import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterNode}
+import org.apache.ignite.cluster.{ClusterGroup, ClusterNode}
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException
 import org.apache.ignite.internal.{IgniteFutureCancelledCheckedException, IgniteInterruptedCheckedException, IgniteInternalFuture}
 import org.apache.ignite.lang.IgnitePredicate
 import org.jetbrains.annotations._
@@ -209,7 +210,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
         try
             call$(s, p)
         catch {
-            case _: ClusterGroupEmptyException => dflt()
+            case _: ClusterGroupEmptyCheckedException => dflt()
         }
     }
 
@@ -253,7 +254,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
         try
             call$(Seq(s), p)
         catch {
-            case _: ClusterGroupEmptyException => dflt()
+            case _: ClusterGroupEmptyCheckedException => dflt()
         }
     }
 
@@ -307,7 +308,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
             run$(s, p)
         }
         catch {
-            case _: ClusterGroupEmptyException => if (dflt != null) dflt() else ()
+            case _: ClusterGroupEmptyCheckedException => if (dflt != null) dflt() else ()
         }
     }
 
@@ -349,7 +350,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
             run$(s, p)
         }
         catch {
-            case _: ClusterGroupEmptyException => if (dflt != null) dflt() else ()
+            case _: ClusterGroupEmptyCheckedException => if (dflt != null) dflt() else ()
         }
     }
 
@@ -554,7 +555,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
         try
             reduceAsync$(s, r, p).get
         catch {
-            case _: ClusterGroupEmptyException => dflt()
+            case _: ClusterGroupEmptyCheckedException => dflt()
         }
     }
 
@@ -596,7 +597,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
      * @throws IgniteCheckedException Thrown in case of any error.
-     * @throws ClusterGroupEmptyException Thrown in case when this projection is empty.
+     * @throws ClusterGroupEmptyCheckedException Thrown in case when this projection is empty.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.
@@ -640,7 +641,7 @@ class ScalarProjectionPimp[A <: ClusterGroup] extends PimpedType[A] with Iterabl
      *      If `null` - this method is no-op.
      * @param p Optional filtering predicate. If `null` provided - all nodes in this projection will be used for topology.
      * @throws IgniteCheckedException Thrown in case of any error.
-     * @throws ClusterGroupEmptyException Thrown in case when this projection is empty.
+     * @throws ClusterGroupEmptyCheckedException Thrown in case when this projection is empty.
      *      Note that in case of dynamic projection this method will take a snapshot of all the
      *      nodes at the time of this call, apply all filtering predicates, if any, and if the
      *      resulting collection of nodes is empty - the exception will be thrown.

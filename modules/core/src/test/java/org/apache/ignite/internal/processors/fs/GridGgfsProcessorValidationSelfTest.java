@@ -466,7 +466,7 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
 
             fail("No exception has been thrown.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             if (testLoc) {
                 if ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
                     e.getCause().getMessage().contains(excMsgSnippet))

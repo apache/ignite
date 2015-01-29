@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -159,7 +160,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                     try {
                         cctx.io().send(id, req);
                     }
-                    catch (ClusterTopologyException ignored) {
+                    catch (ClusterTopologyCheckedException ignored) {
                         fut.onNodeLeft();
                     }
                     catch (IgniteCheckedException e) {
@@ -180,7 +181,7 @@ public class GridCacheOptimisticCheckPreparedTxFuture<K, V> extends GridCompound
                 try {
                     cctx.io().send(nodeId, req);
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     fut.onNodeLeft();
                 }
                 catch (IgniteCheckedException e) {

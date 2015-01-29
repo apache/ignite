@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -938,7 +939,7 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
     public IgniteInternalFuture<?> finishAtomicUpdates(long topVer) {
         GridCompoundFuture<Object, Object> res = new GridCompoundFuture<>(cctx.kernalContext());
 
-        res.ignoreChildFailures(ClusterTopologyException.class, CachePartialUpdateCheckedException.class);
+        res.ignoreChildFailures(ClusterTopologyCheckedException.class, CachePartialUpdateCheckedException.class);
 
         for (GridCacheAtomicFuture<K, ?> fut : atomicFuts.values()) {
             if (fut.waitForPartitionExchange() && fut.topologyVersion() < topVer)

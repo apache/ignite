@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -193,7 +194,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 if (ggfsCtx.ggfsNode(discoEvt.eventNode())) {
                     for (WriteCompletionFuture future : pendingWrites.values()) {
                         future.onError(discoEvt.eventNode().id(),
-                            new ClusterTopologyException("Node left grid before write completed: " + evt.node().id()));
+                            new ClusterTopologyCheckedException("Node left grid before write completed: " + evt.node().id()));
                     }
                 }
             }

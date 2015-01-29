@@ -15,34 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.cluster;
 
 import org.jetbrains.annotations.*;
 
 /**
- * Deployment or re-deployment failed.
+ * This exception defines illegal call on empty projection. Thrown by projection when operation
+ * that requires at least one node is called on empty projection.
  */
-public class IgniteDeploymentException extends IgniteException {
+public class ClusterGroupEmptyCheckedException extends ClusterTopologyCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new exception with default error message.
+     */
+    public ClusterGroupEmptyCheckedException() {
+        super("Cluster group is empty.");
+    }
 
     /**
      * Creates new exception with given error message.
      *
      * @param msg Error message.
      */
-    public IgniteDeploymentException(String msg) {
+    public ClusterGroupEmptyCheckedException(String msg) {
         super(msg);
-    }
-
-    /**
-     * Creates new exception with given throwable as a nested cause and
-     * source of error message.
-     *
-     * @param cause Non-null throwable cause.
-     */
-    public IgniteDeploymentException(Throwable cause) {
-        this(cause.getMessage(), cause);
     }
 
     /**
@@ -51,7 +49,7 @@ public class IgniteDeploymentException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteDeploymentException(String msg, @Nullable Throwable cause) {
+    public ClusterGroupEmptyCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

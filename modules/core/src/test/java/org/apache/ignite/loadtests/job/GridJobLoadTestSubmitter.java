@@ -20,6 +20,7 @@ package org.apache.ignite.loadtests.job;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -83,7 +84,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
                 futures.add(comp.<Integer>future());
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 // Should not be thrown since uses asynchronous execution.
                 throw new IgniteException(e);
             }
@@ -106,10 +107,10 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
                     ignite.log().info(">>> Task completed successfully. Task id: " + fut.getTaskSession().getId());
                 }
-                catch (IgniteFutureCancelledCheckedException ignored) {
+                catch (IgniteFutureCancelledException ignored) {
                     ignite.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     ignite.log().warning(
                         ">>> Get operation for completed task failed: " + fut.getTaskSession().getId(), e);
                 }
@@ -132,9 +133,10 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
             try {
                 futToCancel.cancel();
+
                 ignite.log().info("Task canceled: " + futToCancel.getTaskSession().getId());
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 ignite.log().warning(">>> Future cancellation failed: " + futToCancel.getTaskSession().getId(), e);
             }
         }

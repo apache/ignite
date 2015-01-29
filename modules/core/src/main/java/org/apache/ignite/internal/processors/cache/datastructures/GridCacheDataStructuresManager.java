@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -1225,7 +1226,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException e) {
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("BlockSet job failed, will retry: " + e);
 
@@ -1238,7 +1239,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                         nodes,
                         true).get();
                 }
-                catch (ClusterTopologyException e) {
+                catch (ClusterTopologyCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("RemoveSetData job failed, will retry: " + e);
 
@@ -1329,10 +1330,10 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 try {
                     return call.call();
                 }
-                catch (ClusterGroupEmptyException e) {
+                catch (ClusterGroupEmptyCheckedException e) {
                     throw new IgniteException(e);
                 }
-                catch (IgniteTxRollbackException | CachePartialUpdateCheckedException | ClusterTopologyException e) {
+                catch (IgniteTxRollbackException | CachePartialUpdateCheckedException | ClusterTopologyCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

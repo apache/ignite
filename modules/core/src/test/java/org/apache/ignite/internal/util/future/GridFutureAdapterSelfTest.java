@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.util.io.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -277,14 +277,14 @@ public class GridFutureAdapterSelfTest extends GridCommonAbstractTest {
             fut = new GridFutureAdapter<>(ctx);
             chain = fut.chain(passThrough);
 
-            fut.onDone(new ClusterGroupEmptyException("test exception"));
+            fut.onDone(new ClusterGroupEmptyCheckedException("test exception"));
 
             try {
                 chain.get();
 
                 fail("Expects failed with exception.");
             }
-            catch (ClusterGroupEmptyException e) {
+            catch (ClusterGroupEmptyCheckedException e) {
                 info("Expected exception: " + e.getMessage());
             }
 

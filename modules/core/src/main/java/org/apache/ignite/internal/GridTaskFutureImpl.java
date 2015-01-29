@@ -31,7 +31,7 @@ import java.util.*;
  * This class provide implementation for task future.
  * @param <R> Type of the task result returning from {@link org.apache.ignite.compute.ComputeTask#reduce(List)} method.
  */
-public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements ComputeTaskFuture<R> {
+public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -40,6 +40,9 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
 
     /** */
     private GridKernalContext ctx;
+
+    /** */
+    private ComputeFuture<R> userFut;
 
     /**
      * Required by {@link Externalizable}.
@@ -60,6 +63,15 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
 
         this.ses = ses;
         this.ctx = ctx;
+
+        userFut = new ComputeFuture<>(this);
+    }
+
+    /**
+     * @return Future returned by public API.
+     */
+    public ComputeTaskFuture<R> publicFuture() {
+        return userFut;
     }
 
     /**
@@ -67,7 +79,7 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
      *
      * @return Task timeout.
      */
-    @Override public ComputeTaskSession getTaskSession() {
+    public ComputeTaskSession getTaskSession() {
         if (ses == null)
             throw new IllegalStateException("Cannot access task session after future has been deserialized.");
 
@@ -118,5 +130,22 @@ public class GridTaskFutureImpl<R> extends GridFutureAdapter<R> implements Compu
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridTaskFutureImpl.class, this, "super", super.toString());
+    }
+
+    /**
+     *
+     */
+    private static class ComputeFuture<R> extends IgniteFutureImpl<R> implements ComputeTaskFuture<R> {
+        /**
+         * @param fut Future.
+         */
+        private ComputeFuture(GridTaskFutureImpl<R> fut) {
+            super(fut);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ComputeTaskSession getTaskSession() {
+            return ((GridTaskFutureImpl<R>)fut).getTaskSession();
+        }
     }
 }

@@ -515,7 +515,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
             GridDeployment dep = ctx.deploy().deploy(cls, U.detectClassLoader(cls));
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to deploy object: " + obj);
+                throw new IgniteDeploymentCheckedException("Failed to deploy object: " + obj);
 
             depInfo = new GridDeploymentInfoBean(dep);
 
@@ -535,7 +535,7 @@ class GridCacheContinuousQueryHandler<K, V> implements GridContinuousHandler {
                 depInfo.userVersion(), nodeId, depInfo.classLoaderId(), depInfo.participants(), null);
 
             if (dep == null)
-                throw new IgniteDeploymentException("Failed to obtain deployment for class: " + clsName);
+                throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
             return ctx.config().getMarshaller().unmarshal(bytes, dep.classLoader());
         }

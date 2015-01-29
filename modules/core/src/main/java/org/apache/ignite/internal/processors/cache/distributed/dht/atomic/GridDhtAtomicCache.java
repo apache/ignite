@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -2534,7 +2535,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());
             }
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send DHT atomic update response to node because it left grid: " +
                 req.nodeId());
         }
@@ -2641,7 +2642,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         try {
             ctx.io().send(nodeId, res);
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send near update reply to node because it left grid: " +
                 nodeId);
         }
@@ -2933,7 +2934,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     log.debug("Failed to send deferred dht update response to remote node (grid is stopping) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');
             }
-            catch (ClusterTopologyException ignored) {
+            catch (ClusterTopologyCheckedException ignored) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send deferred dht update response to remote node (did node leave grid?) " +
                         "[nodeId=" + nodeId + ", msg=" + msg + ']');

@@ -27,6 +27,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -1309,7 +1310,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (fut != null)
                 fut.get();
         }
-        catch (ClusterGroupEmptyException ignore) {
+        catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
         }
@@ -4163,7 +4164,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             return globalSize;
         }
-        catch (ClusterGroupEmptyException ignore) {
+        catch (ClusterGroupEmptyCheckedException ignore) {
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
 

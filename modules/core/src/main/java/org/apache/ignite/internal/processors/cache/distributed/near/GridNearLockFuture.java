@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -735,7 +736,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
             assert topVer > 0;
 
             if (CU.affinityNodes(cctx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyException("Failed to map keys for near-only cache (all " +
+                onDone(new ClusterTopologyCheckedException("Failed to map keys for near-only cache (all " +
                     "partition nodes left the grid)."));
 
                 return;
@@ -1122,7 +1123,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                     cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                 }
-                catch (ClusterTopologyException ex) {
+                catch (ClusterTopologyCheckedException ex) {
                     assert fut != null;
 
                     fut.onResult(ex);
@@ -1137,7 +1138,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
 
                             cctx.io().send(node, req, cctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
                         }
-                        catch (ClusterTopologyException ex) {
+                        catch (ClusterTopologyCheckedException ex) {
                             assert fut != null;
 
                             fut.onResult(ex);
@@ -1194,8 +1195,8 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
      * @param nodeId Node ID.
      * @return Topology exception with user-friendly message.
      */
-    private ClusterTopologyException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
-        return new ClusterTopologyException("Failed to acquire lock for keys (primary node left grid, " +
+    private ClusterTopologyCheckedException newTopologyException(@Nullable Throwable nested, UUID nodeId) {
+        return new ClusterTopologyCheckedException("Failed to acquire lock for keys (primary node left grid, " +
             "retry transaction if possible) [keys=" + keys + ", node=" + nodeId + ']', nested);
     }
 
@@ -1314,7 +1315,7 @@ public final class GridNearLockFuture<K, V> extends GridCompoundIdentityFuture<B
         /**
          * @param e Node left exception.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (isDone())
                 return;
 

@@ -1093,7 +1093,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
                 else {
                     // Deployment is null.
-                    IgniteCheckedException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
+                    IgniteCheckedException ex = new IgniteDeploymentCheckedException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
                         ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
                         ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +

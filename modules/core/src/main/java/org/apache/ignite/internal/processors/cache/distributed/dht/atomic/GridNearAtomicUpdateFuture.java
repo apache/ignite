@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
@@ -275,7 +276,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
             if (singleNodeId.equals(nodeId)) {
                 onDone(addFailedKeys(
                     singleReq.keys(),
-                    new ClusterTopologyException("Primary node left grid before response is received: " + nodeId)));
+                    new ClusterTopologyCheckedException("Primary node left grid before response is received: " + nodeId)));
 
                 return true;
             }
@@ -286,7 +287,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         GridNearAtomicUpdateRequest<K, V> req = mappings.get(nodeId);
 
         if (req != null) {
-            addFailedKeys(req.keys(), new ClusterTopologyException("Primary node left grid before response is " +
+            addFailedKeys(req.keys(), new ClusterTopologyCheckedException("Primary node left grid before response is " +
                 "received: " + nodeId));
 
             mappings.remove(nodeId);
@@ -500,7 +501,7 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
         Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
 
         if (F.isEmpty(topNodes)) {
-            onDone(new ClusterTopologyException("Failed to map keys for cache (all partition nodes left the grid)."));
+            onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all partition nodes left the grid)."));
 
             return;
         }

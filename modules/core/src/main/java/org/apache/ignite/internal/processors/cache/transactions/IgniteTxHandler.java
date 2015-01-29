@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -688,7 +689,7 @@ public class IgniteTxHandler<K, V> {
             ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
         }
         catch (IgniteCheckedException e) {
-            if (e instanceof ClusterTopologyException) {
+            if (e instanceof ClusterTopologyCheckedException) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to send tx response to remote node (node left grid) [node=" + nodeId +
                         ", xid=" + req.version());
@@ -1408,7 +1409,7 @@ public class IgniteTxHandler<K, V> {
 
             ctx.io().send(nodeId, res);
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send check prepared transaction response (did node leave grid?) [nodeId=" +
                     nodeId + ", res=" + res + ']');
@@ -1508,7 +1509,7 @@ public class IgniteTxHandler<K, V> {
 
             ctx.io().send(nodeId, res);
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send check committed transaction response (did node leave grid?) [nodeId=" +
                     nodeId + ", res=" + res + ']');

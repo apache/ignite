@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.portable.*;
@@ -2727,7 +2728,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         try {
                             compute(forNodes(neighbors)).execute(GridKillTask.class, false);
                         }
-                        catch (ClusterGroupEmptyException ignored) {
+                        catch (ClusterGroupEmptyCheckedException ignored) {
                             // No-op, nothing to restart.
                         }
                     }

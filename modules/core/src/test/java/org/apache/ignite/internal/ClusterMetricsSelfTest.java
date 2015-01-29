@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -72,7 +73,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (ClusterGroupEmptyException e) {
+        catch (ClusterGroupEmptyCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

@@ -15,43 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal.cluster;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
- * Deployment or re-deployment failed.
+ * This exception is used to indicate error with grid topology (e.g., crashed node, etc.).
  */
-public class IgniteDeploymentException extends IgniteException {
+public class ClusterTopologyCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
     /**
-     * Creates new exception with given error message.
+     * Creates new topology exception with given error message.
      *
      * @param msg Error message.
      */
-    public IgniteDeploymentException(String msg) {
+    public ClusterTopologyCheckedException(String msg) {
         super(msg);
     }
 
     /**
-     * Creates new exception with given throwable as a nested cause and
-     * source of error message.
-     *
-     * @param cause Non-null throwable cause.
-     */
-    public IgniteDeploymentException(Throwable cause) {
-        this(cause.getMessage(), cause);
-    }
-
-    /**
-     * Creates a new exception with given error message and optional nested cause exception.
+     * Creates new topology exception with given error message and optional
+     * nested exception.
      *
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteDeploymentException(String msg, @Nullable Throwable cause) {
+    public ClusterTopologyCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

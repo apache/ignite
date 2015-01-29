@@ -23,6 +23,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
@@ -419,7 +420,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             processDelayedResponses();
         }
-        catch (ClusterGroupEmptyException e) {
+        catch (ClusterGroupEmptyCheckedException e) {
             U.warn(log, "Failed to map task jobs to nodes (topology projection is empty): " + ses);
 
             finishTask(null, e);
@@ -540,7 +541,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         int size = subgrid.size();
 
         if (size == 0)
-            throw new ClusterGroupEmptyException("Topology projection is empty.");
+            throw new ClusterGroupEmptyCheckedException("Topology projection is empty.");
 
         List<ClusterNode> shuffledNodes = new ArrayList<>(size);
 
@@ -928,7 +929,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
             recordTaskEvent(EVT_TASK_REDUCED, "Task reduced.");
         }
-        catch (ClusterTopologyException e) {
+        catch (ClusterTopologyCheckedException e) {
             U.warn(log, "Failed to reduce job results for task (any nodes from task topology left grid?): " + task);
 
             userE = e;
@@ -974,7 +975,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 if (log.isDebugEnabled())
                     log.debug(msg);
 
-                Throwable e = new ClusterTopologyException(msg, jobRes.getException());
+                Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
 
                 finishTask(null, e);
 
@@ -1100,7 +1101,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(node.id(), ses.getId(),
                     res.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
-                fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " + node));
+                fakeRes.setFakeException(new ClusterTopologyCheckedException("Failed to send job due to node failure: " + node));
 
                 onResponse(fakeRes);
             }
@@ -1177,7 +1178,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 res.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
             if (deadNode)
-                fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " +
+                fakeRes.setFakeException(new ClusterTopologyCheckedException("Failed to send job due to node failure: " +
                     node, e));
             else
                 fakeRes.setFakeException(e);
@@ -1209,7 +1210,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         GridJobExecuteResponse fakeRes = new GridJobExecuteResponse(nodeId, ses.getId(),
                             jr.getJobContext().getJobId(), null, null, null, null, null, null, false);
 
-                        fakeRes.setFakeException(new ClusterTopologyException("Node has left grid: " + nodeId));
+                        fakeRes.setFakeException(new ClusterTopologyCheckedException("Node has left grid: " + nodeId));
 
                         if (resList == null)
                             resList = new ArrayList<>();

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -180,7 +181,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
                     @Override public Object call() throws Exception {
                         return nearOnly.get(key);
                     }
-                }, ClusterTopologyException.class, null);
+                }, ClusterTopologyCheckedException.class, null);
             }
 
             // Test optimistic transaction.
@@ -194,7 +195,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ClusterTopologyException.class, null);
+            }, ClusterTopologyCheckedException.class, null);
 
             // Test pessimistic transaction.
             GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -207,7 +208,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ClusterTopologyException.class, null);
+            }, ClusterTopologyCheckedException.class, null);
 
         }
         finally {

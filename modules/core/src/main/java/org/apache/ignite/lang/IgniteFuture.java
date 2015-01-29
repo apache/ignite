@@ -29,9 +29,20 @@ import java.util.concurrent.*;
  * @param <V> Type of the result for the future.
  */
 public interface IgniteFuture<V> extends Future<V> {
+    /**
+     * @throws IgniteException
+     * @throws IgniteInterruptedException
+     */
     @Override public V get() throws IgniteException, IgniteInterruptedException;
 
-    @Override public V get(long timeout, TimeUnit unit)throws IgniteException, IgniteInterruptedException;
+    /**
+     * @param timeout
+     * @param unit
+     * @return
+     * @throws IgniteException
+     * @throws IgniteInterruptedException
+     */
+    @Override public V get(long timeout, TimeUnit unit) throws IgniteException, IgniteInterruptedException, IgniteFutureTimeoutException;
 
     /**
      * Cancels this future.

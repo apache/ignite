@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
@@ -389,12 +390,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(ClusterTopologyException.class)) {
+                if (e.hasCause(ClusterTopologyCheckedException.class)) {
                     if (log.isDebugEnabled())
                         log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
 
@@ -434,7 +435,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return fut;
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while deploying service (will retry): " + e.getMessage());
             }
@@ -552,11 +553,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param sticky Whether multi-node request should be done.
      * @param <T> Service interface type.
      * @return The proxy of a service by its name and class.
+     * @throws IgniteException If failed to create proxy.
      */
     @SuppressWarnings("unchecked")
     public <T> T serviceProxy(ClusterGroup prj, String name, Class<? super T> svcItf, boolean sticky)
         throws IgniteException {
-
         if (hasLocalNode(prj)) {
             ManagedServiceContextImpl ctx = serviceContext(name);
 
@@ -735,7 +736,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 break;
             }
-            catch (ClusterTopologyException e) {
+            catch (ClusterTopologyCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Topology changed while reassigning (will retry): " + e.getMessage());
 
@@ -1008,7 +1009,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     reassign(dep, topVer);
             }
             catch (IgniteCheckedException e) {
-                if (!(e instanceof ClusterTopologyException))
+                if (!(e instanceof ClusterTopologyCheckedException))
                     log.error("Failed to do service reassignment (will retry): " + dep.configuration().getName(), e);
 
                 long newTopVer = ctx.discovery().topologyVersion();
@@ -1088,7 +1089,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                         reassign(dep, topVer);
                                     }
                                     catch (IgniteCheckedException ex) {
-                                        if (!(e instanceof ClusterTopologyException))
+                                        if (!(e instanceof ClusterTopologyCheckedException))
                                             LT.error(log, ex, "Failed to do service reassignment (will retry): " +
                                                 dep.configuration().getName());
 
@@ -1158,7 +1159,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         it.remove();
                     }
                     catch (IgniteCheckedException e) {
-                        if (!(e instanceof ClusterTopologyException))
+                        if (!(e instanceof ClusterTopologyCheckedException))
                             LT.error(log, e, "Failed to do service reassignment (will retry): " +
                                 dep.configuration().getName());
                     }

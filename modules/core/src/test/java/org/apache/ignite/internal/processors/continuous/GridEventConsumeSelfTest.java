@@ -22,6 +22,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -523,7 +524,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             assert false : "Exception was not thrown.";
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().startsWith(
                 "Failed to register remote continuous listener (projection is empty)."));
         }
@@ -978,7 +979,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         queue.add(F.t(idx, consumeId));
                     }
-                    catch (ClusterTopologyException ignored) {
+                    catch (ClusterTopologyCheckedException ignored) {
                         // No-op.
                     }
 
@@ -1011,7 +1012,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         stopped.add(consumeId);
                     }
-                    catch (ClusterTopologyException ignored) {
+                    catch (ClusterTopologyCheckedException ignored) {
                         // No-op.
                     }
                 }

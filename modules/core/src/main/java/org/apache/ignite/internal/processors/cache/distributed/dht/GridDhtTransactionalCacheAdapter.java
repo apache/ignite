@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -440,7 +441,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 // Reply back to sender.
                 ctx.io().send(nodeId, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
             }
-            catch (ClusterTopologyException ignored) {
+            catch (ClusterTopologyCheckedException ignored) {
                 U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
 
                 fail = true;
@@ -1430,7 +1431,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 ctx.io().send(n, req);
             }
-            catch (ClusterTopologyException ignore) {
+            catch (ClusterTopologyCheckedException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Node left while sending unlock request: " + n);
             }
@@ -1458,7 +1459,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     ctx.io().send(n, req);
                 }
-                catch (ClusterTopologyException ignore) {
+                catch (ClusterTopologyCheckedException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Node left while sending unlock request: " + n);
                 }

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -79,10 +79,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     }
                 }
                 catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyException)
+                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyException) {
+                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else {
@@ -130,10 +130,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     break;
                 }
                 catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyException)
+                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyException) {
+                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else {
@@ -191,10 +191,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     break;
                 }
                 catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyException)
+                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyException) {
+                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else {
@@ -238,10 +238,10 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                     break;
                 }
                 catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyException)
+                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyException) {
+                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
                         if (cnt++ == MAX_UPDATE_RETRIES)
                             throw e;
                         else {

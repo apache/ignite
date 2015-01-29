@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.streamer;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
@@ -302,7 +303,7 @@ public class GridStreamerStageExecutionFuture extends GridFutureAdapter<Object> 
      */
     public void onNodeLeft(UUID leftNodeId) {
         if (execNodeIds.contains(leftNodeId))
-            onFailed(leftNodeId, new ClusterTopologyException("Failed to wait for streamer pipeline future completion " +
+            onFailed(leftNodeId, new ClusterTopologyCheckedException("Failed to wait for streamer pipeline future completion " +
                 "(execution node has left the grid). All running stages will be cancelled " +
                 "[fut=" + this + ", leftNodeId=" + leftNodeId + ']'));
     }

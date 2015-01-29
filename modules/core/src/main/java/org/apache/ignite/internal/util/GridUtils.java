@@ -24,6 +24,7 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -4172,9 +4173,9 @@ public abstract class GridUtils {
      *
      * @return Empty projection exception.
      */
-    public static ClusterGroupEmptyException emptyTopologyException() {
-        return new ClusterGroupEmptyException("Topology projection is empty. Note that predicate based " +
-            "projection can be empty from call to call.");
+    public static ClusterGroupEmptyCheckedException emptyTopologyException() {
+        return new ClusterGroupEmptyCheckedException("Clouster group is empty. Note that predicate based " +
+            "cluster group can be empty from call to call.");
     }
 
     /**
@@ -9109,6 +9110,12 @@ public abstract class GridUtils {
             return new IgniteFutureCancelledException(e.getMessage(), e.getCause());
         else if (e instanceof IgniteFutureTimeoutCheckedException)
             return new IgniteFutureTimeoutException(e.getMessage(), e.getCause());
+        else if (e instanceof ClusterGroupEmptyCheckedException)
+            return new ClusterGroupEmptyException(e.getMessage(), e.getCause());
+        else if (e instanceof ClusterTopologyCheckedException)
+            return new ClusterTopologyException(e.getMessage(), e.getCause());
+        else if (e instanceof IgniteDeploymentCheckedException)
+            return new IgniteDeploymentException(e.getMessage(), e.getCause());
         else if (e.getCause() instanceof IgniteException)
             return (IgniteException)e.getCause();
 

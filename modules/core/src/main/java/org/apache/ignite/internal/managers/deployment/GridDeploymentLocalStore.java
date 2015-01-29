@@ -349,7 +349,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             if (e.getCause() instanceof IgniteCheckedException)
                 throw (IgniteCheckedException)e.getCause();
 
-            throw new IgniteDeploymentException("Failed to deploy class: " + cls.getName(), e);
+            throw new IgniteDeploymentCheckedException("Failed to deploy class: " + cls.getName(), e);
         }
     }
 

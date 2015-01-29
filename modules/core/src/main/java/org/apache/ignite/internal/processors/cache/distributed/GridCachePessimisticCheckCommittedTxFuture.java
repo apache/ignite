@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -119,7 +120,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
 
                 if (nearNode == null) {
                     // Near node failed, separate check prepared future will take care of it.
-                    onDone(new ClusterTopologyException("Failed to check near transaction state (near node left grid): " +
+                    onDone(new ClusterTopologyCheckedException("Failed to check near transaction state (near node left grid): " +
                         tx.eventNodeId()));
 
                     return;
@@ -150,7 +151,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
                 try {
                     cctx.io().send(rmtNode.id(), req);
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     fut.onNodeLeft();
                 }
                 catch (IgniteCheckedException e) {
@@ -329,7 +330,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
                 log.debug("Transaction node left grid (will ignore) [fut=" + this + ']');
 
             if (nearCheck) {
-                onDone(new ClusterTopologyException("Failed to check near transaction state (near node left grid): " +
+                onDone(new ClusterTopologyCheckedException("Failed to check near transaction state (near node left grid): " +
                     nodeId));
 
                 return;

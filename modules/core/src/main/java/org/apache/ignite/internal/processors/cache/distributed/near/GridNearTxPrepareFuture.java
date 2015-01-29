@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -171,7 +172,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 MiniFuture f = (MiniFuture)fut;
 
                 if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyException("Remote node left grid (will retry): " + nodeId));
+                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will retry): " + nodeId));
 
                     found = true;
                 }
@@ -478,7 +479,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
             if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
-                onDone(new ClusterTopologyException("Failed to map keys for cache (all " +
+                onDone(new ClusterTopologyCheckedException("Failed to map keys for cache (all " +
                     "partition nodes left the grid): " + cacheCtx.name()));
 
                 return;
@@ -812,7 +813,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyException e) {
+        void onResult(ClusterTopologyCheckedException e) {
             if (isDone())
                 return;
 

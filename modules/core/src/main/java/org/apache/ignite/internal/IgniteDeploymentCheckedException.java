@@ -15,14 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal;
 
+import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Deployment or re-deployment failed.
  */
-public class IgniteDeploymentException extends IgniteException {
+public class IgniteDeploymentCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -31,7 +32,7 @@ public class IgniteDeploymentException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public IgniteDeploymentException(String msg) {
+    public IgniteDeploymentCheckedException(String msg) {
         super(msg);
     }
 
@@ -41,7 +42,7 @@ public class IgniteDeploymentException extends IgniteException {
      *
      * @param cause Non-null throwable cause.
      */
-    public IgniteDeploymentException(Throwable cause) {
+    public IgniteDeploymentCheckedException(Throwable cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -51,7 +52,7 @@ public class IgniteDeploymentException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteDeploymentException(String msg, @Nullable Throwable cause) {
+    public IgniteDeploymentCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

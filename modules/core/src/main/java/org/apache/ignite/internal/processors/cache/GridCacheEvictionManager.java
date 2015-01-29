@@ -23,6 +23,7 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -476,7 +477,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 log.debug("Sent eviction response [node=" + nodeId + ", localNode=" + cctx.nodeId() +
                     ", res" + res + ']');
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             if (log.isDebugEnabled())
                 log.debug("Failed to send eviction response since initiating node left grid " +
                     "[node=" + nodeId + ", localNode=" + cctx.nodeId() + ']');
@@ -1734,7 +1735,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
                 try {
                     cctx.io().send(nodeId, req);
                 }
-                catch (ClusterTopologyException ignored) {
+                catch (ClusterTopologyCheckedException ignored) {
                     // Node left the topology.
                     onNodeLeft(nodeId);
                 }

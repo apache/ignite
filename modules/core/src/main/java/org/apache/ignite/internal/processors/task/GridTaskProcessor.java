@@ -278,7 +278,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
+    public <T, R> GridTaskFutureImpl<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
 
         lock.readLock();
@@ -301,7 +301,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
+    public <T, R> GridTaskFutureImpl<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
         return execute(task, arg, false);
     }
 
@@ -313,7 +313,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+    public <T, R> GridTaskFutureImpl<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
@@ -349,7 +349,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskFuture<R> execute(String taskName, @Nullable T arg) {
+    public <T, R> GridTaskFutureImpl<R> execute(String taskName, @Nullable T arg) {
         assert taskName != null;
 
         lock.readLock();
@@ -375,7 +375,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> ComputeTaskFuture<R> startTask(
+    private <T, R> GridTaskFutureImpl<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<T, R> task,
@@ -426,13 +426,13 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().getDeployment(taskName);
 
                 if (dep == null)
-                    throw new IgniteDeploymentException("Unknown task name or failed to auto-deploy " +
+                    throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?): " + taskName);
 
                 taskCls = dep.deployedClass(taskName);
 
                 if (taskCls == null)
-                    throw new IgniteDeploymentException("Unknown task name or failed to auto-deploy " +
+                    throw new IgniteDeploymentCheckedException("Unknown task name or failed to auto-deploy " +
                         "task (was task (re|un)deployed?) [taskName=" + taskName + ", dep=" + dep + ']');
 
                 if (!ComputeTask.class.isAssignableFrom(taskCls))
@@ -452,7 +452,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(taskCls, U.detectClassLoader(taskCls));
 
                 if (dep == null)
-                    throw new IgniteDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " +
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task (was task (re|un)deployed?): " +
                         taskCls);
 
                 taskName = taskName(dep, taskCls, map);
@@ -492,7 +492,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 dep = ctx.deploy().deploy(cls, ldr);
 
                 if (dep == null)
-                    throw new IgniteDeploymentException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
+                    throw new IgniteDeploymentCheckedException("Failed to auto-deploy task (was task (re|un)deployed?): " + cls);
 
                 taskName = taskName(dep, taskCls, map);
             }
@@ -550,7 +550,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
         if (deployEx == null && securityEx == null) {
             if (dep == null || !dep.acquire())
-                handleException(new IgniteDeploymentException("Task not deployed: " + ses.getTaskName()), fut);
+                handleException(new IgniteDeploymentCheckedException("Task not deployed: " + ses.getTaskName()), fut);
             else {
                 GridTaskWorker<?, ?> taskWorker = new GridTaskWorker<>(
                     ctx,
@@ -631,9 +631,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         Map<IgniteUuid, ComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
 
         for (GridTaskWorker taskWorker : tasks.values()) {
-            ComputeTaskFuture<R> fut = taskWorker.getTaskFuture();
+            GridTaskFutureImpl<R> fut = taskWorker.getTaskFuture();
 
-            res.put(fut.getTaskSession().getId(), fut);
+            res.put(fut.getTaskSession().getId(), fut.publicFuture());
         }
 
         return res;

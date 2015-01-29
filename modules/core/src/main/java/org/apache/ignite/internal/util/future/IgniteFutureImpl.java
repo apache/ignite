@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  */
 public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     /** */
-    private final IgniteInternalFuture<V> fut;
+    protected final IgniteInternalFuture<V> fut;
 
     /**
      * @param fut Future.

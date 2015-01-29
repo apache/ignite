@@ -104,7 +104,7 @@ public class GridHibernateRegionFactory implements RegionFactory {
             try {
                 ignite = G.start(gridCfg);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 throw new CacheException(e);
             }
         }

@@ -77,9 +77,6 @@ public class GridFactoryVmShutdownTest {
                 try {
                     G.start(cfg);
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException("Failed to start grid in shutdown hook.", e);
-                }
                 finally {
                     X.println("States: " + states);
                 }

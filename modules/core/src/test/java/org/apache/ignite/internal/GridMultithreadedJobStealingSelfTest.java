@@ -98,7 +98,7 @@ public class GridMultithreadedJobStealingSelfTest extends GridCommonAbstractTest
                         }
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     log.error("Failed to execute task.", e);
 
                     fail.getAndSet(e);

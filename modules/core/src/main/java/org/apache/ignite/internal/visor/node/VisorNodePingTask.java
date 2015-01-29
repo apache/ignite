@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -46,7 +46,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
         try {
             return super.reduce0(results);
         }
-        catch (ClusterTopologyException ignored) {
+        catch (ClusterTopologyCheckedException ignored) {
             return new GridTuple3<>(false, -1L, -1L);
         }
     }

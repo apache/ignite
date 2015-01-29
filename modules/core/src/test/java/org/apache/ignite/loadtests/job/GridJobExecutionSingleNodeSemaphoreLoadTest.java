@@ -164,8 +164,8 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
         final LongAdder iterCntr) {
         final Semaphore sem = new Semaphore(taskCnt);
 
-        final IgniteInClosure<IgniteInternalFuture> lsnr = new CI1<IgniteInternalFuture>() {
-            @Override public void apply(IgniteInternalFuture t) {
+        final IgniteInClosure<IgniteFuture> lsnr = new CI1<IgniteFuture>() {
+            @Override public void apply(IgniteFuture t) {
                 sem.release();
             }
         };

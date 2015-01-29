@@ -145,10 +145,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @throws IgniteCheckedException If failed to deploy service.
+     * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployClusterSingleton(String name, ManagedService svc) throws IgniteCheckedException;
+    public void deployClusterSingleton(String name, ManagedService svc) throws IgniteException;
 
     /**
      * Deploys a per-node singleton service. GridGain will guarantee that there is always
@@ -163,10 +163,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      *
      * @param name Service name.
      * @param svc Service instance.
-     * @throws IgniteCheckedException If failed to deploy service.
+     * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deployNodeSingleton(String name, ManagedService svc) throws IgniteCheckedException;
+    public void deployNodeSingleton(String name, ManagedService svc) throws IgniteException;
 
     /**
      * Deploys one instance of this service on the primary node for a given affinity key.
@@ -199,14 +199,14 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param cacheName Name of the cache on which affinity for key should be calculated, {@code null} for
      *      default cache.
      * @param affKey Affinity cache key.
-     * @throws IgniteCheckedException If failed to deploy service.
+     * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
     public void deployKeyAffinitySingleton(String name,
         ManagedService svc,
         @Nullable String cacheName,
         Object affKey)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Deploys multiple instances of the service on the grid. GridGain will deploy a
@@ -238,14 +238,14 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param svc Service instance.
      * @param totalCnt Maximum number of deployed services in the grid, {@code 0} for unlimited.
      * @param maxPerNodeCnt Maximum number of deployed services on each node, {@code 0} for unlimited.
-     * @throws IgniteCheckedException If failed to deploy service.
+     * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
     public void deployMultiple(String name,
         ManagedService svc,
         int totalCnt,
         int maxPerNodeCnt)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Deploys multiple instances of the service on the grid according to provided
@@ -283,10 +283,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * </pre>
      *
      * @param cfg Service configuration.
-     * @throws IgniteCheckedException If failed to deploy service.
+     * @throws IgniteException If failed to deploy service.
      */
     @IgniteAsyncSupported
-    public void deploy(ManagedServiceConfiguration cfg) throws IgniteCheckedException;
+    public void deploy(ManagedServiceConfiguration cfg) throws IgniteException;
 
     /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
@@ -299,10 +299,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
      * @param name Name of service to cancel.
-     * @throws IgniteCheckedException If failed to cancel service.
+     * @throws IgniteException If failed to cancel service.
      */
     @IgniteAsyncSupported
-    public void cancel(String name) throws IgniteCheckedException;
+    public void cancel(String name) throws IgniteException;
 
     /**
      * Cancels all deployed services.
@@ -312,10 +312,10 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * <p>
      * Supports asynchronous execution (see {@link IgniteAsyncSupport}).
      *
-     * @throws IgniteCheckedException If failed to cancel services.
+     * @throws IgniteException If failed to cancel services.
      */
     @IgniteAsyncSupported
-    public void cancelAll() throws IgniteCheckedException;
+    public void cancelAll() throws IgniteException;
 
     /**
      * Gets metadata about all deployed services.
@@ -352,6 +352,7 @@ public interface IgniteManaged extends IgniteAsyncSupport {
      * @param sticky Whether or not GridGain should always contact the same remote
      *      service or try to load-balance between services.
      * @return Either proxy over remote service or local service if it is deployed locally.
+     * @throws IgniteException If failed to create service proxy.
      */
     public <T> T serviceProxy(String name, Class<? super T> svcItf, boolean sticky) throws IgniteException;
 

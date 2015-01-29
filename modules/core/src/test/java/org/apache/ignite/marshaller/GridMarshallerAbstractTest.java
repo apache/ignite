@@ -622,7 +622,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     public void testScheduler() throws Exception {
         IgniteScheduler scheduler = grid().scheduler();
 
-        IgniteInternalFuture<?> fut = scheduler.runLocal(new Runnable() {
+        IgniteFuture<?> fut = scheduler.runLocal(new Runnable() {
             @Override public void run() {
                 // No-op.
             }
