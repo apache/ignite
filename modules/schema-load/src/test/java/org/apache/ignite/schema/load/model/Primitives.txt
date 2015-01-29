@@ -44,7 +44,7 @@ public class Primitives implements Serializable {
     private int intcol;
 
     /** Value for longcol. */
-    private int longcol;
+    private long longcol;
 
     /** Value for floatcol. */
     private float floatcol;
@@ -89,7 +89,7 @@ public class Primitives implements Serializable {
         byte bytecol,
         short shortcol,
         int intcol,
-        int longcol,
+        long longcol,
         float floatcol,
         double doublecol,
         double doublecol2,
@@ -212,7 +212,7 @@ public class Primitives implements Serializable {
      *
      * @return Value for longcol.
      */
-    public int getLongcol() {
+    public long getLongcol() {
         return longcol;
     }
 
@@ -221,7 +221,7 @@ public class Primitives implements Serializable {
      *
      * @param longcol New value for longcol.
      */
-    public void setLongcol(int longcol) {
+    public void setLongcol(long longcol) {
         this.longcol = longcol;
     }
 
@@ -457,7 +457,7 @@ public class Primitives implements Serializable {
 
         res = 31 * res + intcol;
 
-        res = 31 * res + longcol;
+        res = 31 * res + (int)(longcol ^ (longcol >>> 32));
 
         res = 31 * res + (floatcol != +0.0f ? Float.floatToIntBits(floatcol) : 0);
 

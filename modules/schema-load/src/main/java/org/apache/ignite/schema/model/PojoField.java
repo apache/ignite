@@ -375,7 +375,7 @@ public class PojoField {
     }
 
     /**
-     * @return {@code true}
+     * @return {@code true} if type of field is primitive type.
      */
     public boolean primitive() {
         return PRIMITIVES.contains(javaTypeName());
