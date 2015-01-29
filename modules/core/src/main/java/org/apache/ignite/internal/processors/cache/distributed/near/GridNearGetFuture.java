@@ -295,8 +295,15 @@ public final class GridNearGetFuture<K, V> extends GridCompoundIdentityFuture<Ma
 
         // Assign keys to primary nodes.
         for (K key : keys) {
-            if (key != null)
-                savedVers = map(key, mappings, topVer, mapped, savedVers);
+            if (key == null) {
+                NullPointerException err = new NullPointerException("Null key.");
+
+                onDone(err);
+
+                throw err;
+            }
+
+            savedVers = map(key, mappings, topVer, mapped, savedVers);
         }
 
         if (isDone())

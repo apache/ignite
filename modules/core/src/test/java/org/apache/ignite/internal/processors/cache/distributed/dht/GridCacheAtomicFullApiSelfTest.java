@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.*;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -74,7 +76,14 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
         cache().put("key1", 1);
         cache().put("key2", 2);
 
-        assert cache().getAll((Collection<String>)null).isEmpty();
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                cache().getAll(null).isEmpty();
+
+                return null;
+            }
+        }, NullPointerException.class, null);
+
         assert cache().getAll(Collections.<String>emptyList()).isEmpty();
 
         Map<String, Integer> map1 = cache().getAll(F.asList("key1", "key2", "key9999"));

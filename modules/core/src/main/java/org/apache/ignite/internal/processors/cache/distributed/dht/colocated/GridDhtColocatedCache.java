@@ -265,6 +265,9 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             // Optimistically expect that all keys are available locally (avoid creation of get future).
             for (K key : keys) {
+                if (key == null)
+                    throw new NullPointerException("Null key.");
+
                 GridCacheEntryEx<K, V> entry = null;
 
                 while (true) {
