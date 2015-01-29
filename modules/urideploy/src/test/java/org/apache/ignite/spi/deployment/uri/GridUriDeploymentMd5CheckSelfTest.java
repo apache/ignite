@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.*;
 /**
  * Redundancy for URI deployment test
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
 public class GridUriDeploymentMd5CheckSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * Used to count number of unit undeployments.

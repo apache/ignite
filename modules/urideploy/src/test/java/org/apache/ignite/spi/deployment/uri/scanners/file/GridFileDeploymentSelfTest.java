@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Test file protocol scanner.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
 public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @return List of URI to use as deployment source.

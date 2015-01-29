@@ -44,15 +44,15 @@ import java.util.concurrent.atomic.*;
  * {@link #setHibernateProperties(Properties)} should be set.
  * <p>
  * If session factory is provided it should contain
- * {@link GridCacheHibernateBlobStoreEntry} persistent class (via provided
+ * {@link IgniteCacheHibernateBlobStoreEntry} persistent class (via provided
  * mapping file {@code GridCacheHibernateStoreEntry.hbm.xml} or by
- * adding {@link GridCacheHibernateBlobStoreEntry} to annotated classes
+ * adding {@link IgniteCacheHibernateBlobStoreEntry} to annotated classes
  * of session factory.
  * <p>
  * Path to hibernate configuration may be either an URL or a file path or
  * a classpath resource. This configuration file should include provided
  * mapping {@code GridCacheHibernateStoreEntry.hbm.xml} or include annotated
- * class {@link GridCacheHibernateBlobStoreEntry}.
+ * class {@link IgniteCacheHibernateBlobStoreEntry}.
  * <p>
  * If hibernate properties are provided, mapping
  * {@code GridCacheHibernateStoreEntry.hbm.xml} is included automatically.
@@ -61,7 +61,7 @@ import java.util.concurrent.atomic.*;
  * In this example existing session factory is provided.
  * <pre name="code" class="java">
  *     ...
- *     GridCacheHibernateBlobStore&lt;String, String&gt; store = new GridCacheHibernateBlobStore&lt;String, String&gt;();
+ *     IgniteCacheHibernateBlobStore&lt;String, String&gt; store = new IgniteCacheHibernateBlobStore&lt;String, String&gt;();
  *
  *     store.setSessionFactory(sesFactory);
  *     ...
@@ -71,7 +71,7 @@ import java.util.concurrent.atomic.*;
  * <pre name="code" class="xml">
  *   ...
  *   &lt;bean id=&quot;cache.hibernate.store&quot;
- *       class=&quot;org.apache.ignite.cache.store.hibernate.GridCacheHibernateBlobStore&quot;&gt;
+ *       class=&quot;org.apache.ignite.cache.store.hibernate.IgniteCacheHibernateBlobStore&quot;&gt;
  *       &lt;property name=&quot;sessionFactory&quot;&gt;
  *           &lt;bean class=&quot;org.springframework.orm.hibernate3.LocalSessionFactoryBean&quot;&gt;
  *               &lt;property name=&quot;hibernateProperties&quot;&gt;
@@ -85,7 +85,7 @@ import java.util.concurrent.atomic.*;
  *               &lt;property name=&quot;mappingResources&quot;&gt;
  *                   &lt;list&gt;
  *                       &lt;value&gt;
- *                           org/gridgain/grid/cache/store/hibernate/GridCacheHibernateBlobStoreEntry.hbm.xml
+ *                           org/gridgain/grid/cache/store/hibernate/IgniteCacheHibernateBlobStoreEntry.hbm.xml
  *                       &lt;/value&gt;
  *                   &lt;/list&gt;
  *               &lt;/property&gt;
@@ -99,7 +99,7 @@ import java.util.concurrent.atomic.*;
  * <pre name="code" class="xml">
  *     ...
  *     &lt;bean id=&quot;cache.hibernate.store1&quot;
- *         class=&quot;org.apache.ignite.cache.store.hibernate.GridCacheHibernateBlobStore&quot;&gt;
+ *         class=&quot;org.apache.ignite.cache.store.hibernate.IgniteCacheHibernateBlobStore&quot;&gt;
  *         &lt;property name=&quot;sessionFactory&quot;&gt;
  *             &lt;bean class=&quot;org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean&quot;&gt;
  *                 &lt;property name=&quot;hibernateProperties&quot;&gt;
@@ -113,7 +113,7 @@ import java.util.concurrent.atomic.*;
  *                 &lt;property name=&quot;annotatedClasses&quot;&gt;
  *                     &lt;list&gt;
  *                         &lt;value&gt;
- *                             org.apache.ignite.cache.store.hibernate.GridCacheHibernateBlobStoreEntry
+ *                             org.apache.ignite.cache.store.hibernate.IgniteCacheHibernateBlobStoreEntry
  *                         &lt;/value&gt;
  *                     &lt;/list&gt;
  *                 &lt;/property&gt;
@@ -127,7 +127,7 @@ import java.util.concurrent.atomic.*;
  * <pre name="code" class="xml">
  *     ...
  *     &lt;bean id=&quot;cache.hibernate.store2&quot;
- *         class=&quot;org.apache.ignite.cache.store.hibernate.GridCacheHibernateBlobStore&quot;&gt;
+ *         class=&quot;org.apache.ignite.cache.store.hibernate.IgniteCacheHibernateBlobStore&quot;&gt;
  *         &lt;property name=&quot;hibernateProperties&quot;&gt;
  *             &lt;props&gt;
  *                 &lt;prop key=&quot;connection.url&quot;&gt;jdbc:h2:mem:&lt;/prop&gt;
@@ -143,7 +143,7 @@ import java.util.concurrent.atomic.*;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
+public class IgniteCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
     /**
      * Default connection URL
      * (value is <tt>jdbc:h2:mem:hibernateCacheStore;DB_CLOSE_DELAY=-1;DEFAULT_LOCK_TIMEOUT=5000</tt>).
@@ -162,7 +162,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** Name of Hibarname mapping resource. */
     private static final String MAPPING_RESOURCE =
-        "org/apache/ignite/cache/store/hibernate/GridCacheHibernateBlobStoreEntry.hbm.xml";
+            "org/apache/ignite/cache/store/hibernate/IgniteCacheHibernateBlobStoreEntry.hbm.xml";
 
     /** Init guard. */
     @GridToStringExclude
@@ -204,8 +204,8 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         Session ses = session(tx);
 
         try {
-            GridCacheHibernateBlobStoreEntry entry = (GridCacheHibernateBlobStoreEntry)
-                ses.get(GridCacheHibernateBlobStoreEntry.class, toBytes(key));
+            IgniteCacheHibernateBlobStoreEntry entry = (IgniteCacheHibernateBlobStoreEntry)
+                ses.get(IgniteCacheHibernateBlobStoreEntry.class, toBytes(key));
 
             if (entry == null)
                 return null;
@@ -243,7 +243,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         Session ses = session(tx);
 
         try {
-            GridCacheHibernateBlobStoreEntry entry0 = new GridCacheHibernateBlobStoreEntry(toBytes(key), toBytes(val));
+            IgniteCacheHibernateBlobStoreEntry entry0 = new IgniteCacheHibernateBlobStoreEntry(toBytes(key), toBytes(val));
 
             ses.saveOrUpdate(entry0);
         }
@@ -270,7 +270,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
         Session ses = session(tx);
 
         try {
-            Object obj = ses.get(GridCacheHibernateBlobStoreEntry.class, toBytes(key));
+            Object obj = ses.get(IgniteCacheHibernateBlobStoreEntry.class, toBytes(key));
 
             if (obj != null)
                 ses.delete(obj);
@@ -553,7 +553,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheHibernateBlobStore.class, this);
+        return S.toString(IgniteCacheHibernateBlobStore.class, this);
     }
 
     /**

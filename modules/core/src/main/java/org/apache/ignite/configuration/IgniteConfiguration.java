@@ -526,7 +526,7 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private GridQueryConfiguration qryCfg;
+    private IgniteQueryConfiguration qryCfg;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -3169,14 +3169,14 @@ public class IgniteConfiguration {
     /**
      * @return Query configuration.
      */
-    public GridQueryConfiguration getQueryConfiguration() {
+    public IgniteQueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
     /**
      * @param qryCfg Query configuration.
      */
-    public void setQueryConfiguration(GridQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 

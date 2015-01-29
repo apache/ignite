@@ -41,7 +41,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridUriDeploymentSpi deploymentSpi = new GridUriDeploymentSpi();
+        IgniteUriDeploymentSpi deploymentSpi = new IgniteUriDeploymentSpi();
 
         deploymentSpi.setUriList(
             Arrays.asList(U.resolveGridGainUrl("modules/core/src/test/resources/").toURI().toString()));

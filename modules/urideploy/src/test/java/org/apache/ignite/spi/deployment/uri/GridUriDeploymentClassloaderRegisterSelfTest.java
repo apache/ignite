@@ -30,8 +30,8 @@ import java.util.*;
 /**
  * Test for classloader registering.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
+@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstractTest<IgniteUriDeploymentSpi> {
     /** */
     private static Map<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>> tasks =
         Collections.synchronizedMap(new HashMap<ClassLoader, Set<Class<? extends ComputeTask<?, ?>>>>());

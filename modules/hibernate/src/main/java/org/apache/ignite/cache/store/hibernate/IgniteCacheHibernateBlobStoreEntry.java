@@ -20,7 +20,7 @@ package org.apache.ignite.cache.store.hibernate;
 import javax.persistence.*;
 
 /**
- * Entry that is used by {@link GridCacheHibernateBlobStore} implementation.
+ * Entry that is used by {@link IgniteCacheHibernateBlobStore} implementation.
  * <p>
  * Note that this is a reference implementation for tests only.
  * When running on production systems use concrete key-value types to
@@ -28,7 +28,7 @@ import javax.persistence.*;
  */
 @Entity
 @Table(name = "ENTRIES")
-public class GridCacheHibernateBlobStoreEntry {
+public class IgniteCacheHibernateBlobStoreEntry {
     /** Key (use concrete key type in production). */
     @Id
     @Column(length = 65535)
@@ -41,7 +41,7 @@ public class GridCacheHibernateBlobStoreEntry {
     /**
      * Constructor.
      */
-    GridCacheHibernateBlobStoreEntry() {
+    IgniteCacheHibernateBlobStoreEntry() {
         // No-op.
     }
 
@@ -51,7 +51,7 @@ public class GridCacheHibernateBlobStoreEntry {
      * @param key Key.
      * @param val Value.
      */
-    GridCacheHibernateBlobStoreEntry(byte[] key, byte[] val) {
+    IgniteCacheHibernateBlobStoreEntry(byte[] key, byte[] val) {
         this.key = key;
         this.val = val;
     }

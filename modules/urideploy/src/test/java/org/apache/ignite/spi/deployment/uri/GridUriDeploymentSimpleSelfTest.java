@@ -31,8 +31,8 @@ import java.util.*;
 /**
  *
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
-public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUriDeploymentSpi> {
+@GridSpiTest(spi = IgniteUriDeploymentSpi.class, group = "Deployment SPI")
+public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<IgniteUriDeploymentSpi> {
     /**
      * @return List of URI to use as deployment source.
      */
@@ -47,7 +47,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      * @throws Exception If failed.
      */
     public void testSimpleDeploy() throws Exception {
-        GridUriDeploymentSpi spi = getSpi();
+        IgniteUriDeploymentSpi spi = getSpi();
 
         spi.register(TestTask.class.getClassLoader(), TestTask.class);
 
@@ -74,7 +74,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      * @throws Exception If failed.
      */
     public void testSimpleDeployWithName() throws Exception {
-        GridUriDeploymentSpi spi = getSpi();
+        IgniteUriDeploymentSpi spi = getSpi();
 
         spi.register(TestTaskWithName.class.getClassLoader(), TestTaskWithName.class);
 
@@ -101,7 +101,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      * @throws Exception If failed.
      */
     public void testSimpleDeployTwoTasks() throws Exception {
-        GridUriDeploymentSpi spi = getSpi();
+        IgniteUriDeploymentSpi spi = getSpi();
 
         spi.register(TestTask.class.getClassLoader(), TestTask.class);
         spi.register(TestTaskWithName.class.getClassLoader(), TestTaskWithName.class);

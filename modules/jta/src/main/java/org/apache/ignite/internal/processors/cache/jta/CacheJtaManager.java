@@ -38,7 +38,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
     private TransactionManager jtaTm;
 
     /** */
-    private GridCacheTmLookup tmLookup;
+    private IgniteCacheTmLookup tmLookup;
 
     /** {@inheritDoc} */
     @Override public void createTmLookup(CacheConfiguration ccfg) throws IgniteCheckedException {
@@ -47,7 +47,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
         try {
             Class<?> cls = Class.forName(ccfg.getTransactionManagerLookupClassName());
 
-            tmLookup = (GridCacheTmLookup)cls.newInstance();
+            tmLookup = (IgniteCacheTmLookup)cls.newInstance();
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Failed to instantiate transaction manager lookup.", e);

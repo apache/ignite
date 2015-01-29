@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Grid cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
  * can be plugged into ongoing {@code JTA} transaction by properly implementing
- * {@ignitelink org.apache.ignite.cache.jta.GridCacheTmLookup}
+ * {@ignitelink org.apache.ignite.cache.jta.IgniteCacheTmLookup}
  * interface. Cache transactions can also be started explicitly directly from {@link org.apache.ignite.cache.CacheProjection} API
  * via any of the {@code 'CacheProjection.txStart(..)'} methods.
  * <p>

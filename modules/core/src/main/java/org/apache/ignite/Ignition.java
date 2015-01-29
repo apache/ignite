@@ -34,7 +34,7 @@ import java.util.*;
  * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@ignitelink org.apache.ignite.startup.servlet.GridServletStartup}</li>
+ * <li>{@ignitelink org.apache.ignite.startup.servlet.IgniteServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use

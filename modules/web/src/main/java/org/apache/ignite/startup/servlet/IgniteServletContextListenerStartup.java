@@ -36,7 +36,7 @@ import java.util.*;
  * This startup must be defined in {@code web.xml} file.
  * <pre name="code" class="xml">
  * &lt;listener&gt;
- *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
+ *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;context-param&gt;
@@ -66,7 +66,7 @@ import java.util.*;
  *     <li>Configure this startup in {@code $TOMCAT_HOME/conf/web.xml}
  *         <pre name="code" class="xml">
  *         &lt;listener&gt;
- *             &lt;listener-class&gt;org.apache.ignite.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
+ *             &lt;listener-class&gt;org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup&lt;/listener-class&gt;
  *         &lt;/listener&gt;
  *
  *         &lt;context-param&gt;
@@ -84,7 +84,7 @@ import java.util.*;
  * </li>
  * </ul>
  */
-public class GridServletContextListenerStartup implements ServletContextListener {
+public class IgniteServletContextListenerStartup implements ServletContextListener {
     /** Configuration file path parameter name. */
     public static final String GRIDGAIN_CFG_FILE_PATH_PARAM = "GridGainConfigurationFilePath";
 
@@ -144,7 +144,7 @@ public class GridServletContextListenerStartup implements ServletContextListener
 
                 Ignite ignite;
 
-                synchronized (GridServletContextListenerStartup.class) {
+                synchronized (IgniteServletContextListenerStartup.class) {
                     try {
                         ignite = G.ignite(cfg.getGridName());
                     }
@@ -176,6 +176,6 @@ public class GridServletContextListenerStartup implements ServletContextListener
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridServletContextListenerStartup.class, this);
+        return S.toString(IgniteServletContextListenerStartup.class, this);
     }
 }

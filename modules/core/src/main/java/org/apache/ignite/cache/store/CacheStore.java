@@ -50,7 +50,7 @@ import static javax.cache.Cache.*;
  * <p>
  * Provided implementations may be used for test purposes:
  * <ul>
- *     <li>{@ignitelink org.apache.ignite.cache.store.hibernate.GridCacheHibernateBlobStore}</li>
+ *     <li>{@ignitelink org.apache.ignite.cache.store.hibernate.IgniteCacheHibernateBlobStore}</li>
  *     <li>{@link CacheJdbcBlobStore}</li>
  * </ul>
  * <p>

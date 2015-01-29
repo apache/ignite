@@ -72,7 +72,7 @@ public class GridP2PDisabledSelfTest extends GridCommonAbstractTest {
         cfg.setDeploymentMode(depMode);
 
         if (initGar) {
-            GridUriDeploymentSpi depSpi = new GridUriDeploymentSpi();
+            IgniteUriDeploymentSpi depSpi = new IgniteUriDeploymentSpi();
 
             depSpi.setUriList(Collections.singletonList(garFile));
 

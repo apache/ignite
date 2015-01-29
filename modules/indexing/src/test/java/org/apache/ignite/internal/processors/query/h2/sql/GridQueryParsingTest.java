@@ -55,7 +55,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        GridQueryConfiguration idxCfg = new GridQueryConfiguration();
+        IgniteQueryConfiguration idxCfg = new IgniteQueryConfiguration();
 
         c.setQueryConfiguration(idxCfg);
 
