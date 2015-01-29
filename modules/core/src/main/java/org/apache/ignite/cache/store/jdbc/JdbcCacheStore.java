@@ -99,9 +99,9 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @GridToStringExclude
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
-    /** Init lock. */
+    /** Lock for metadata cache. */
     @GridToStringExclude
-    private final Lock initLock = new ReentrantLock();
+    private final Lock buildMetaCacheLock = new ReentrantLock();
 
     /** Successful initialization flag. */
     private boolean initOk;
@@ -174,11 +174,11 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     protected abstract Object keyId(String type) throws CacheException;
 
     /**
-     * Build cache for mapped types.
+     * Prepare internal store specific builders for provided type metadata.
      *
-     * @throws CacheException If failed to initialize.
+     * @throws CacheException If failed to prepare.
      */
-    protected abstract void buildTypeCache(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException;
+    protected abstract void prepareBuilders(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException;
 
     /**
      * Perform dialect resolution.
@@ -275,7 +275,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         Integer cacheKey = cacheKeyId();
 
         if (!cacheMappings.containsKey(cacheKey)) {
-            initLock.lock();
+            buildMetaCacheLock.lock();
 
             try {
                 if (!cacheMappings.containsKey(cacheKey)) {
@@ -289,11 +289,11 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
                     cacheMappings.put(cacheKey, Collections.unmodifiableMap(entryMappings));
 
-                    buildTypeCache(typeMetadata);
+                    prepareBuilders(typeMetadata);
                 }
             }
             finally {
-                initLock.unlock();
+                buildMetaCacheLock.unlock();
             }
         }
     }

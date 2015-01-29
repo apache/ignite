@@ -134,7 +134,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     protected Map<String, PojoMethodsCache> mtdsCache;
 
     /** {@inheritDoc} */
-    @Override protected void buildTypeCache(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException {
+    @Override protected void prepareBuilders(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException {
         mtdsCache = U.newHashMap(typeMetadata.size() * 2);
 
         for (CacheQueryTypeMetadata type : typeMetadata) {

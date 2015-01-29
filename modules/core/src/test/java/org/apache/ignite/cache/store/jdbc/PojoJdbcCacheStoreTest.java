@@ -131,7 +131,7 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
             for (CacheQueryTypeMetadata type : typeMetadata)
                 entryMappings.put(store.keyId(type.getKeyType()), new JdbcCacheStore.EntryMapping(dialect, type));
 
-            store.buildTypeCache(typeMetadata);
+            store.prepareBuilders(typeMetadata);
 
             cacheMappings.put(0, Collections.unmodifiableMap(entryMappings));
 
