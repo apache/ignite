@@ -920,7 +920,7 @@ public class GridGainEx {
         GridNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
-            GridKernal g = dfltGrid0.grid();
+            IgniteKernal g = dfltGrid0.grid();
 
             if (g != null)
                 allIgnites.add(g);
@@ -947,14 +947,14 @@ public class GridGainEx {
         GridNamedInstance dfltGrid0 = dfltGrid;
 
         if (dfltGrid0 != null) {
-            GridKernal g = dfltGrid0.grid();
+            IgniteKernal g = dfltGrid0.grid();
 
             if (g != null && g.getLocalNodeId().equals(locNodeId))
                 return g;
         }
 
         for (GridNamedInstance grid : grids.values()) {
-            GridKernal g = grid.grid();
+            IgniteKernal g = grid.grid();
 
             if (g != null && g.getLocalNodeId().equals(locNodeId))
                 return g;
@@ -998,10 +998,10 @@ public class GridGainEx {
      * @param name Grid name.
      * @return Grid instance.
      */
-    public static GridKernal gridx(@Nullable String name) {
+    public static IgniteKernal gridx(@Nullable String name) {
         GridNamedInstance grid = name != null ? grids.get(name) : dfltGrid;
 
-        GridKernal res;
+        IgniteKernal res;
 
         if (grid == null || (res = grid.gridx()) == null)
             throw new IllegalStateException("Grid instance was not properly started or was already stopped: " + name);
@@ -1151,7 +1151,7 @@ public class GridGainEx {
         private final String name;
 
         /** Grid instance. */
-        private volatile GridKernal grid;
+        private volatile IgniteKernal grid;
 
         /** Executor service. */
         private ExecutorService execSvc;
@@ -1255,7 +1255,7 @@ public class GridGainEx {
          *
          * @return Grid instance.
          */
-        GridKernal grid() {
+        IgniteKernal grid() {
             if (starterThread != Thread.currentThread())
                 U.awaitQuiet(startLatch);
 
@@ -1267,7 +1267,7 @@ public class GridGainEx {
          *
          * @return Grid instance.
          */
-        public GridKernal gridx() {
+        public IgniteKernal gridx() {
             return grid;
         }
 
@@ -1930,7 +1930,7 @@ public class GridGainEx {
             boolean started = false;
 
             try {
-                GridKernal grid0 = new GridKernal(startCtx.springContext());
+                IgniteKernal grid0 = new IgniteKernal(startCtx.springContext());
 
                 // Init here to make grid available to lifecycle listeners.
                 grid = grid0;
@@ -2103,7 +2103,7 @@ public class GridGainEx {
          *      should be cancelled.
          */
         private synchronized void stop0(boolean cancel) {
-            GridKernal grid0 = grid;
+            IgniteKernal grid0 = grid;
 
             // Double check.
             if (grid0 == null) {

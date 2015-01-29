@@ -135,7 +135,7 @@ public class GridCacheMixedPartitionExchangeSelfTest extends GridCommonAbstractT
 
             // Check all grids have all exchange futures completed.
             for (int i = 0; i < 4; i++) {
-                GridKernal grid = (GridKernal)grid(i);
+                IgniteKernal grid = (IgniteKernal)grid(i);
 
                 GridCacheContext<Object, Object> cctx = grid.internalCache(null).context();
 

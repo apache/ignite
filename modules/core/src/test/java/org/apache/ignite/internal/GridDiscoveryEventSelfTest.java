@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -403,7 +402,7 @@ public class GridDiscoveryEventSelfTest extends GridCommonAbstractTest {
 
             daemon = true;
 
-            GridKernal daemon = (GridKernal)startGrid(3);
+            IgniteKernal daemon = (IgniteKernal)startGrid(3);
 
             IgniteDiscoveryEvent join = daemon.context().discovery().localJoinEvent();
 

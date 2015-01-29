@@ -638,7 +638,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            GridKernal g = GridGainEx.gridx(gridName);
+            IgniteKernal g = GridGainEx.gridx(gridName);
 
             return ids != null ? new ClusterGroupAdapter(g, g.context(), subjId, ids) :
                 p != null ? new ClusterGroupAdapter(g, g.context(), subjId, p) : g;

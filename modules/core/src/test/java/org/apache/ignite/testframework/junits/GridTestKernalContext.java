@@ -34,7 +34,7 @@ public class GridTestKernalContext extends GridKernalContextImpl {
      */
     public GridTestKernalContext() {
         super(null,
-            new GridKernal(null),
+            new IgniteKernal(null),
             new IgniteConfiguration(),
             new GridKernalGatewayImpl(null),
             null,

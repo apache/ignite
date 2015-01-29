@@ -693,7 +693,7 @@ public class GridCacheAtomicNearCacheSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("ConstantConditions")
     private void checkEntry(Ignite ignite, Integer key, @Nullable Integer val, boolean expectNear, UUID... expReaders)
         throws Exception {
-        GridCacheAdapter<Integer, Integer> near = ((GridKernal) ignite).internalCache();
+        GridCacheAdapter<Integer, Integer> near = ((IgniteKernal) ignite).internalCache();
 
         assertTrue(near.isNear());
 

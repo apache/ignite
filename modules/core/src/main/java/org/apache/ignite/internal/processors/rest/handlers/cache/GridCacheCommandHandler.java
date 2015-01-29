@@ -433,7 +433,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         final Long d = delta;
 
-        return ((GridKernal)cache.gridProjection().ignite()).context().closure().callLocalSafe(new Callable<Object>() {
+        return ((IgniteKernal)cache.gridProjection().ignite()).context().closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return l.addAndGet(decr ? -d : d);
             }
@@ -719,7 +719,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
             // exception processing should be consistent with local execution.
-            return op.apply((CacheProjection<Object, Object>)prj, ((GridKernal)g).context()).
+            return op.apply((CacheProjection<Object, Object>)prj, ((IgniteKernal)g).context()).
                 chain(resultWrapper((CacheProjection<Object, Object>)prj, key)).get();
         }
     }
@@ -768,7 +768,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
             // exception processing should be consistent with local execution.
-            return op.apply(cache, ((GridKernal)g).context()).chain(resultWrapper(cache, key)).get();
+            return op.apply(cache, ((IgniteKernal)g).context()).chain(resultWrapper(cache, key)).get();
         }
     }
 

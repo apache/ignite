@@ -212,7 +212,7 @@ public class GridCacheDhtPreloadStartStopSelfTest extends GridCommonAbstractTest
             info(">>> Waiting for preload futures...");
 
             GridCachePartitionExchangeManager<Object, Object> exchMgr
-                = ((GridKernal)g1).context().cache().context().exchange();
+                = ((IgniteKernal)g1).context().cache().context().exchange();
 
             // Wait for exchanges to complete.
             for (IgniteInternalFuture<?> fut : exchMgr.exchangeFutures())

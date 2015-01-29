@@ -191,7 +191,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
     }
 
     /**
@@ -200,7 +200,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridNearCacheAdapter<Integer, String> near(Ignite g) {
-        return (GridNearCacheAdapter)((GridKernal)g).internalCache();
+        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache();
     }
 
     /**
@@ -219,7 +219,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = new HashMap<>();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridEx grid = grid(i);
+            IgniteEx grid = grid(i);
 
             map.put(grid.cluster().localNode().id(), new T2<Set<Integer>, Set<Integer>>(new HashSet<Integer>(),
                 new HashSet<Integer>()));

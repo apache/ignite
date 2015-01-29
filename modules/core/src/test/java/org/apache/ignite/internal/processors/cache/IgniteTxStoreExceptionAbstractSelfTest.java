@@ -349,7 +349,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
         info("Check key: " + key);
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal) grid(i);
 
             GridCacheAdapter cache = grid.internalCache(null);
 

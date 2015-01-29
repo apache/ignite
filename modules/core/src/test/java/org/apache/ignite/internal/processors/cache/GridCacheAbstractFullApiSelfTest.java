@@ -3242,7 +3242,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveAfterClear() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
 
@@ -3290,7 +3290,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveFilteredAfterClear() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         CacheDistributionMode distroMode = grid.cache(null).configuration().getDistributionMode();
 

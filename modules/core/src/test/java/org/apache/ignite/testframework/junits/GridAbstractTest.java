@@ -794,8 +794,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param name Name.
      * @return Grid instance.
      */
-    protected GridEx grid(String name) {
-        return (GridEx)G.ignite(name);
+    protected IgniteEx grid(String name) {
+        return (IgniteEx)G.ignite(name);
     }
 
     /**
@@ -804,8 +804,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @param idx Index.
      * @return Grid instance.
      */
-    protected GridEx grid(int idx) {
-        return (GridEx)G.ignite(getTestGridName(idx));
+    protected IgniteEx grid(int idx) {
+        return (IgniteEx)G.ignite(getTestGridName(idx));
     }
 
     /**
@@ -821,8 +821,8 @@ public abstract class GridAbstractTest extends TestCase {
      *
      * @return Grid for given test.
      */
-    protected GridEx grid() {
-        return (GridEx)G.ignite(getTestGridName());
+    protected IgniteEx grid() {
+        return (IgniteEx)G.ignite(getTestGridName());
     }
 
     /**
