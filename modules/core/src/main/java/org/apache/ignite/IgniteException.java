@@ -20,7 +20,7 @@ package org.apache.ignite;
 import org.apache.ignite.internal.util.typedef.*;
 import org.jetbrains.annotations.*;
 
-import static org.apache.ignite.internal.util.GridUtils.*;
+import static org.apache.ignite.internal.util.IgniteUtils.*;
 
 /**
  * General grid exception. This exception is used to indicate any error condition

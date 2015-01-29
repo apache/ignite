@@ -148,7 +148,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower). For troubleshooting see " +
-        GridIpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
+        IpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
 
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
@@ -689,7 +689,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private GridNioServer<GridTcpCommunicationMessageAdapter> nioSrvr;
 
     /** Shared memory server. */
-    private GridIpcSharedMemoryServerEndpoint shmemSrv;
+    private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
@@ -1610,7 +1610,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
+    @Nullable private IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
@@ -1622,8 +1622,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv =
-                    new GridIpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
+                IpcSharedMemoryServerEndpoint srv =
+                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
 
                 srv.setPort(port);
 
@@ -1908,8 +1908,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 return createShmemClient(node, shmemPort);
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(GridIpcOutOfSystemResourcesException.class))
-                    // Has cause or is itself the GridIpcOutOfSystemResourcesException.
+                if (e.hasCause(IpcOutOfSystemResourcesException.class))
+                    // Has cause or is itself the IpcOutOfSystemResourcesException.
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
                 else if (getSpiContext().node(node.id()) != null)
                     LT.warn(log, null, e.getMessage());
@@ -2454,12 +2454,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class ShmemAcceptWorker extends GridWorker {
         /** */
-        private final GridIpcSharedMemoryServerEndpoint srv;
+        private final IpcSharedMemoryServerEndpoint srv;
 
         /**
          * @param srv Server.
          */
-        ShmemAcceptWorker(GridIpcSharedMemoryServerEndpoint srv) {
+        ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
             super(gridName, "shmem-communication-acceptor", log);
 
             this.srv = srv;
@@ -2498,12 +2498,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class ShmemWorker extends GridWorker {
         /** */
-        private final GridIpcEndpoint endpoint;
+        private final IpcEndpoint endpoint;
 
         /**
          * @param endpoint Endpoint.
          */
-        private ShmemWorker(GridIpcEndpoint endpoint) {
+        private ShmemWorker(IpcEndpoint endpoint) {
             super(gridName, "shmem-worker", log);
 
             this.endpoint = endpoint;
@@ -2512,7 +2512,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                GridIpcToNioAdapter<GridTcpCommunicationMessageAdapter> adapter = new GridIpcToNioAdapter<>(
+                IpcToNioAdapter<GridTcpCommunicationMessageAdapter> adapter = new IpcToNioAdapter<>(
                     metricsLsnr,
                     log,
                     endpoint,

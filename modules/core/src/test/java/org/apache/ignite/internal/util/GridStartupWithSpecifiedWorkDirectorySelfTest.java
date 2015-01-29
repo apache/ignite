@@ -31,7 +31,7 @@ import java.io.*;
 import java.util.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.util.GridUtils.*;
+import static org.apache.ignite.internal.util.IgniteUtils.*;
 
 /**
  * Checks creation of work folder.

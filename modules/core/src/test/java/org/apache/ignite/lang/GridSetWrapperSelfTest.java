@@ -120,7 +120,7 @@ public class GridSetWrapperSelfTest extends GridCommonAbstractTest {
         set.add("v4");
         set.add("v5");
 
-        set.removeAll(GridUtils.addAll(new HashSet<String>(), "v2", "v4", "v5"));
+        set.removeAll(IgniteUtils.addAll(new HashSet<String>(), "v2", "v4", "v5"));
 
         assertEquals(2, set.size());
 

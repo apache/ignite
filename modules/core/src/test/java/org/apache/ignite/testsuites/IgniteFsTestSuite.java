@@ -52,7 +52,7 @@ public class IgniteFsTestSuite extends TestSuite {
 
         suite.addTest(new TestSuite(GridGgfsStreamsSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsModesSelfTest.class));
-        suite.addTest(new TestSuite(GridIpcServerEndpointDeserializerSelfTest.class));
+        suite.addTest(new TestSuite(IpcServerEndpointDeserializerSelfTest.class));
         suite.addTest(new TestSuite(GridGgfsMetricsSelfTest.class));
 
         suite.addTest(new TestSuite(GridGgfsPrimarySelfTest.class));

@@ -52,7 +52,7 @@ public class GridGgfsServer {
     private final Map<String,String> endpointCfg;
 
     /** Server endpoint. */
-    private GridIpcServerEndpoint srvEndpoint;
+    private IpcServerEndpoint srvEndpoint;
 
     /** Server message handler. */
     private GridGgfsServerHandler hnd;
@@ -91,15 +91,15 @@ public class GridGgfsServer {
      * @throws IgniteCheckedException If failed.
      */
     public void start() throws IgniteCheckedException {
-        srvEndpoint = GridIpcServerEndpointDeserializer.deserialize(endpointCfg);
+        srvEndpoint = IpcServerEndpointDeserializer.deserialize(endpointCfg);
 
-        if (U.isWindows() && srvEndpoint instanceof GridIpcSharedMemoryServerEndpoint)
-            throw new IgniteCheckedException(GridIpcSharedMemoryServerEndpoint.class.getSimpleName() +
+        if (U.isWindows() && srvEndpoint instanceof IpcSharedMemoryServerEndpoint)
+            throw new IgniteCheckedException(IpcSharedMemoryServerEndpoint.class.getSimpleName() +
                 " should not be configured on Windows (configure " +
-                GridIpcServerTcpEndpoint.class.getSimpleName() + ")");
+                IpcServerTcpEndpoint.class.getSimpleName() + ")");
 
-        if (srvEndpoint instanceof GridIpcServerTcpEndpoint) {
-            GridIpcServerTcpEndpoint srvEndpoint0 = (GridIpcServerTcpEndpoint)srvEndpoint;
+        if (srvEndpoint instanceof IpcServerTcpEndpoint) {
+            IpcServerTcpEndpoint srvEndpoint0 = (IpcServerTcpEndpoint)srvEndpoint;
 
             srvEndpoint0.setManagement(mgmt);
 
@@ -124,7 +124,7 @@ public class GridGgfsServer {
 
         srvEndpoint.start();
 
-        // GridIpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
+        // IpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
         if (srvEndpoint.getPort() >= 0)
             ggfsCtx.kernalContext().ports().registerPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
@@ -172,7 +172,7 @@ public class GridGgfsServer {
 
         U.join(clientWorkers, log);
 
-        // GridIpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
+        // IpcServerEndpoint.getPort contract states return -1 if there is no port to be registered.
         if (srvEndpoint.getPort() >= 0)
             ggfsCtx.kernalContext().ports().deregisterPort(srvEndpoint.getPort(), TCP, srvEndpoint.getClass());
 
@@ -189,7 +189,7 @@ public class GridGgfsServer {
      *
      * @return IPC server endpoint.
      */
-    public GridIpcServerEndpoint getIpcServerEndpoint() {
+    public IpcServerEndpoint getIpcServerEndpoint() {
         return srvEndpoint;
     }
 
@@ -198,7 +198,7 @@ public class GridGgfsServer {
      */
     private class ClientWorker extends GridWorker {
         /** Connected client endpoint. */
-        private GridIpcEndpoint endpoint;
+        private IpcEndpoint endpoint;
 
         /** Data output stream. */
         private final GridGgfsDataOutputStream out;
@@ -216,7 +216,7 @@ public class GridGgfsServer {
          * @param endpoint Connected client endpoint.
          * @throws IgniteCheckedException If endpoint output stream cannot be obtained.
          */
-        protected ClientWorker(GridIpcEndpoint endpoint, int idx) throws IgniteCheckedException {
+        protected ClientWorker(IpcEndpoint endpoint, int idx) throws IgniteCheckedException {
             super(ggfsCtx.kernalContext().gridName(), "ggfs-client-worker-" + idx, log);
 
             this.endpoint = endpoint;
@@ -391,7 +391,7 @@ public class GridGgfsServer {
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    GridIpcEndpoint client = srvEndpoint.accept();
+                    IpcEndpoint client = srvEndpoint.accept();
 
                     if (log.isDebugEnabled())
                         log.debug("GGFS client connected [ggfsName=" + ggfsCtx.kernalContext().gridName() +

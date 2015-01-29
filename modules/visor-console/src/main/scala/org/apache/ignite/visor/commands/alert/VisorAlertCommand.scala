@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.alert
 
-import org.apache.ignite.internal.util.{GridUtils => U}
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite._
@@ -278,7 +278,7 @@ class VisorAlertCommand {
                             // Grid-wide metrics (not node specific).
                             case "cc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalCpus)
                             case "nc" if v != null => gf = makeGridFilter(v, gf, grid.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(grid.nodes()).size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf, IgniteUtils.neighborhood(grid.nodes()).size)
                             case "cl" if v != null => gf = makeGridFilter(v, gf,
                                 () => (grid.metrics().getAverageCpuLoad * 100).toLong)
 

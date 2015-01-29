@@ -482,7 +482,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ManagedServiceDescriptorImpl desc = new ManagedServiceDescriptorImpl(dep);
 
             try {
-                GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagsOn(CacheFlag.GET_PRIMARY).
+                GridServiceAssignments assigns = (GridServiceAssignments)cache.//flagOn(CacheFlag.GET_PRIMARY).
                     get(new GridServiceAssignmentsKey(dep.configuration().getName()));
 
                 if (assigns != null) {

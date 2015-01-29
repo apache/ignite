@@ -248,8 +248,8 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
                             return fut;
                         }
-                        // Rewriting flagsOn result to keep intercepting invocations after it.
-                        else if ("flagsOn".equals(mtd.getName()))
+                        // Rewriting flagOn result to keep intercepting invocations after it.
+                        else if ("flagOn".equals(mtd.getName()))
                             return proxy;
                         else if ("forSubjectId".equals(mtd.getName()))
                             return proxy;
