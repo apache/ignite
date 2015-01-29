@@ -53,8 +53,8 @@ public class VisorQueryUtils {
         if (o != null) {
             Class<?> clazz = o.getClass();
 
-            return clazz.isArray() ? GridUtils.compact(clazz.getComponentType().getName()) + "[]"
-                : GridUtils.compact(o.getClass().getName());
+            return clazz.isArray() ? IgniteUtils.compact(clazz.getComponentType().getName()) + "[]"
+                : IgniteUtils.compact(o.getClass().getName());
         }
         else
             return "n/a";

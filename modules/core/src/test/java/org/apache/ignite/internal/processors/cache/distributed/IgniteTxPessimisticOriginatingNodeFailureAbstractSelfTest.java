@@ -128,12 +128,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
     protected void testTxOriginatingNodeFails(Collection<Integer> keys, final boolean fullFailure) throws Exception {
         assertFalse(keys.isEmpty());
 
-        final Collection<GridKernal> grids = new ArrayList<>();
+        final Collection<IgniteKernal> grids = new ArrayList<>();
 
         ClusterNode txNode = grid(originatingNode()).localNode();
 
         for (int i = 1; i < gridCount(); i++)
-            grids.add((GridKernal)grid(i));
+            grids.add((IgniteKernal)grid(i));
 
         failingNodeId = grid(0).localNode().id();
 
@@ -149,7 +149,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(1)).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(1)).internalCache();
 
         info("Node being checked: " + grid(1).localNode().id());
 
@@ -164,12 +164,12 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         }
 
         info("Starting tx [values=" + map + ", topVer=" +
-            ((GridKernal)grid(1)).context().discovery().topologyVersion() + ']');
+            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
 
         if (fullFailure)
             ignoreMessages(ignoreMessageClasses(), F.asList(grid(1).localNode().id()));
 
-        final GridEx originatingNodeGrid = grid(originatingNode());
+        final IgniteEx originatingNodeGrid = grid(originatingNode());
 
         GridTestUtils.runAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -184,11 +184,11 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     info("Before commitAsync");
 
-                    tx = (IgniteTx)tx.enableAsync();
+                    tx = (IgniteTx)tx.withAsync();
 
                     tx.commit();
 
-                    IgniteFuture<IgniteTx> fut = tx.future();
+                    IgniteInternalFuture<IgniteTx> fut = tx.future();
 
                     info("Got future for commitAsync().");
 
@@ -212,7 +212,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                for (GridKernal g : grids) {
+                for (IgniteKernal g : grids) {
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
                     IgniteTxManager txMgr = cache.isNear() ?
@@ -280,13 +280,13 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         for (int i = 0; i < 20; i++)
             keys.add(i);
 
-        final Collection<GridKernal> grids = new ArrayList<>();
+        final Collection<IgniteKernal> grids = new ArrayList<>();
 
         ClusterNode primaryNode = grid(1).localNode();
 
         for (int i = 0; i < gridCount(); i++) {
             if (i != 1)
-                grids.add((GridKernal)grid(i));
+                grids.add((IgniteKernal)grid(i));
         }
 
         failingNodeId = primaryNode.id();
@@ -318,7 +318,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
         }
 
         info("Starting tx [values=" + map + ", topVer=" +
-            ((GridKernal)grid(1)).context().discovery().topologyVersion() + ']');
+            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
 
         assertNotNull(cache);
 
@@ -358,7 +358,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                for (GridKernal g : grids) {
+                for (IgniteKernal g : grids) {
                     GridCacheAdapter<?, ?> cache = g.internalCache();
 
                     IgniteTxManager txMgr = cache.isNear() ?

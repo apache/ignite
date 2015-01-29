@@ -46,7 +46,7 @@ public class GridHadoopExternalCommunication {
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower). For troubleshooting see " +
-        GridIpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
+        IpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
 
     /** Default port which node sets listener to (value is <tt>47100</tt>). */
     public static final int DFLT_PORT = 27100;
@@ -187,7 +187,7 @@ public class GridHadoopExternalCommunication {
     private GridNioServer<GridHadoopMessage> nioSrvr;
 
     /** Shared memory server. */
-    private GridIpcSharedMemoryServerEndpoint shmemSrv;
+    private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
@@ -643,7 +643,7 @@ public class GridHadoopExternalCommunication {
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
+    @Nullable private IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
@@ -655,8 +655,8 @@ public class GridHadoopExternalCommunication {
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(
-                    log.getLogger(GridIpcSharedMemoryServerEndpoint.class),
+                IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
+                    log.getLogger(IpcSharedMemoryServerEndpoint.class),
                     locProcDesc.processId(), gridName);
 
                 srv.setPort(port);
@@ -808,8 +808,8 @@ public class GridHadoopExternalCommunication {
                 return createShmemClient(desc, shmemPort);
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(GridIpcOutOfSystemResourcesException.class))
-                    // Has cause or is itself the GridIpcOutOfSystemResourcesException.
+                if (e.hasCause(IpcOutOfSystemResourcesException.class))
+                    // Has cause or is itself the IpcOutOfSystemResourcesException.
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
                 else if (log.isDebugEnabled())
                     log.debug("Failed to establish shared memory connection with local hadoop process: " +
@@ -835,10 +835,10 @@ public class GridHadoopExternalCommunication {
         long connTimeout0 = connTimeout;
 
         while (true) {
-            GridIpcEndpoint clientEndpoint;
+            IpcEndpoint clientEndpoint;
 
             try {
-                clientEndpoint = new GridIpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
+                clientEndpoint = new IpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
             }
             catch (IgniteCheckedException e) {
                 // Reconnect for the second time, if connection is not established.
@@ -1077,12 +1077,12 @@ public class GridHadoopExternalCommunication {
      */
     private class ShmemAcceptWorker extends GridWorker {
         /** */
-        private final GridIpcSharedMemoryServerEndpoint srv;
+        private final IpcSharedMemoryServerEndpoint srv;
 
         /**
          * @param srv Server.
          */
-        ShmemAcceptWorker(GridIpcSharedMemoryServerEndpoint srv) {
+        ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
             super(gridName, "shmem-communication-acceptor", log);
 
             this.srv = srv;
@@ -1121,7 +1121,7 @@ public class GridHadoopExternalCommunication {
      */
     private class ShmemWorker extends GridWorker {
         /** */
-        private final GridIpcEndpoint endpoint;
+        private final IpcEndpoint endpoint;
 
         /** Adapter. */
         private GridHadoopIpcToNioAdapter<GridHadoopMessage> adapter;
@@ -1129,7 +1129,7 @@ public class GridHadoopExternalCommunication {
         /**
          * @param endpoint Endpoint.
          */
-        private ShmemWorker(GridIpcEndpoint endpoint, boolean accepted) {
+        private ShmemWorker(IpcEndpoint endpoint, boolean accepted) {
             super(gridName, "shmem-worker", log);
 
             this.endpoint = endpoint;

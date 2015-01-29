@@ -19,6 +19,7 @@ package org.apache.ignite.storevalbytes;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -201,8 +202,8 @@ public class GridCacheStoreValueBytesTest {
 
         final Semaphore sem = new Semaphore(concurrentGetNum);
 
-        final IgniteInClosure<IgniteFuture> lsnr = new CI1<IgniteFuture>() {
-            @Override public void apply(IgniteFuture t) {
+        final IgniteInClosure<IgniteInternalFuture> lsnr = new CI1<IgniteInternalFuture>() {
+            @Override public void apply(IgniteInternalFuture t) {
                 sem.release();
             }
         };
@@ -231,7 +232,7 @@ public class GridCacheStoreValueBytesTest {
                             if (keys.size() == getKeyNum) {
                                 sem.acquire();
 
-                                IgniteFuture<Map<Integer, String>> f = cache.getAllAsync(keys);
+                                IgniteInternalFuture<Map<Integer, String>> f = cache.getAllAsync(keys);
 
                                 f.listenAsync(lsnr);
 

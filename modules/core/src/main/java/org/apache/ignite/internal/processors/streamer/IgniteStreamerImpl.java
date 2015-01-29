@@ -751,8 +751,8 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
             execSvc.submit(worker);
 
-            batchFut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> t) {
+            batchFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> t) {
                     BatchExecutionFuture fut = (BatchExecutionFuture)t;
 
                     if (log.isDebugEnabled())

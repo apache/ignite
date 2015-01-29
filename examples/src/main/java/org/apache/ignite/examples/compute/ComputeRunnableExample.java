@@ -19,6 +19,7 @@ package org.apache.ignite.examples.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -44,10 +45,10 @@ public class ComputeRunnableExample {
             System.out.println();
             System.out.println("Compute runnable example started.");
 
-            Collection<IgniteFuture> futs = new ArrayList<>();
+            Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
             // Enable asynchronous mode.
-            IgniteCompute compute = g.compute().enableAsync();
+            IgniteCompute compute = g.compute().withAsync();
 
             // Iterate through all words in the sentence and create callable jobs.
             for (final String word : "Print words using runnable".split(" ")) {
@@ -63,7 +64,7 @@ public class ComputeRunnableExample {
             }
 
             // Wait for all futures to complete.
-            for (IgniteFuture<?> f : futs)
+            for (IgniteInternalFuture<?> f : futs)
                 f.get();
 
             System.out.println();

@@ -17,8 +17,8 @@
 
 package org.apache.ignite.util;
 
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -58,7 +58,7 @@ public class GridSpinReadWriteLockSelfTest extends GridCommonAbstractTest {
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        IgniteFuture<?> f = multithreadedAsync(
+        IgniteInternalFuture<?> f = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     assert !lock.tryWriteLock();

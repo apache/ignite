@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -374,7 +376,7 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
      *
      * @return Future for prepare step.
      */
-    public IgniteFuture<IgniteTxEx<K, V>> prepareAsync();
+    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -398,7 +400,7 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     /**
      * @return Future for transaction completion.
      */
-    public IgniteFuture<IgniteTx> finishFuture();
+    public IgniteInternalFuture<IgniteTx> finishFuture();
 
     /**
      * @param state Transaction state.
@@ -426,14 +428,14 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
      *
      * @return Rollback future.
      */
-    public IgniteFuture<IgniteTx> rollbackAsync();
+    public IgniteInternalFuture<IgniteTx> rollbackAsync();
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
      *
      * @return Future for commit operation.
      */
-    public IgniteFuture<IgniteTx> commitAsync();
+    public IgniteInternalFuture<IgniteTx> commitAsync();
 
     /**
      * Callback invoked whenever there is a lock that has been acquired

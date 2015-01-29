@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 
@@ -57,11 +58,11 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                 assert e.isLocked();
 
-                IgniteCompute comp = compute(grid(i).forLocal()).enableAsync();
+                IgniteCompute comp = compute(grid(i).forLocal()).withAsync();
 
                 comp.call(new Callable<Boolean>() {
                     @Override public Boolean call() throws Exception {
-                        IgniteFuture<Boolean> f = e.lockAsync(1000);
+                        IgniteInternalFuture<Boolean> f = e.lockAsync(1000);
 
                         try {
                             f.get(100);
@@ -83,7 +84,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
                     }
                 });
 
-                IgniteFuture<Boolean> f = comp.future();
+                IgniteInternalFuture<Boolean> f = comp.future();
 
                 // Let another thread start.
                 Thread.sleep(300);

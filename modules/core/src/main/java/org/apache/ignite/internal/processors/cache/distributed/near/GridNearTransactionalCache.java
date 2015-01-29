@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.transactions.*;
@@ -92,7 +94,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllAsync(
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable final Collection<? extends K> keys,
         boolean forcePrimary,
         boolean skipTx,
@@ -112,7 +114,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
 
         if (tx != null && !tx.implicit() && !skipTx) {
             return asyncOp(tx, new AsyncOp<Map<K, V>>(keys) {
-                @Override public IgniteFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
+                @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter<K, V> tx) {
                     return ctx.wrapCloneMap(tx.getAllAsync(ctx, keys, entry, deserializePortable, filter));
                 }
             });
@@ -142,7 +144,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param expiryPlc Expiry policy.
      * @return Future.
      */
-    IgniteFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
+    IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal<K, V> tx,
         @Nullable Collection<? extends K> keys,
         boolean readThrough,
         @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter,
@@ -405,7 +407,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    @Override protected IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
         long timeout,
         IgniteTxLocalEx<K, V> tx,
         boolean isInvalidate,

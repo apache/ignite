@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -335,14 +337,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest<K, V> req) {
-        IgniteFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
+        IgniteInternalFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
             ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
 
         if (keyFut == null || keyFut.isDone())
             processDhtLockRequest0(nodeId, req);
         else {
-            keyFut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> t) {
+            keyFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> t) {
                     processDhtLockRequest0(nodeId, req);
                 }
             });
@@ -513,7 +515,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         }
 
         // Group lock can be only started from local node, so we never start group lock transaction on remote node.
-        IgniteFuture<?> f = lockAllAsync(ctx, nearNode, req, null);
+        IgniteInternalFuture<?> f = lockAllAsync(ctx, nearNode, req, null);
 
         // Register listener just so we print out errors.
         // Exclude lock timeout exception since it's not a fatal exception.
@@ -542,7 +544,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(@Nullable Collection<? extends K> keys,
         long timeout,
         IgniteTxLocalEx<K, V> txx,
         boolean isInvalidate,
@@ -657,14 +659,14 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param filter0 Filter.
      * @return Future.
      */
-    public IgniteFuture<GridNearLockResponse<K, V>> lockAllAsync(
+    public IgniteInternalFuture<GridNearLockResponse<K, V>> lockAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         final ClusterNode nearNode,
         final GridNearLockRequest<K, V> req,
         @Nullable final IgnitePredicate<CacheEntry<K, V>>[] filter0) {
         final List<K> keys = req.keys();
 
-        IgniteFuture<Object> keyFut = null;
+        IgniteInternalFuture<Object> keyFut = null;
 
         if (req.onePhaseCommit()) {
             boolean forceKeys = req.hasTransforms() || req.filter() != null;
@@ -682,8 +684,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             keyFut = new GridFinishedFutureEx<>();
 
         return new GridEmbeddedFuture<>(true, keyFut,
-            new C2<Object, Exception, IgniteFuture<GridNearLockResponse<K,V>>>() {
-                @Override public IgniteFuture<GridNearLockResponse<K, V>> apply(Object o, Exception exx) {
+            new C2<Object, Exception, IgniteInternalFuture<GridNearLockResponse<K,V>>>() {
+                @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(Object o, Exception exx) {
                     if (exx != null)
                         return new GridDhtFinishedFuture<>(ctx.kernalContext(), exx);
 
@@ -821,7 +823,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (log.isDebugEnabled())
                                 log.debug("Performing DHT lock [tx=" + tx + ", entries=" + entries + ']');
 
-                            IgniteFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
+                            IgniteInternalFuture<GridCacheReturn<V>> txFut = tx.lockAllAsync(
                                 cacheCtx,
                                 entries,
                                 req.onePhaseCommit(),
@@ -833,8 +835,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                             return new GridDhtEmbeddedFuture<>(
                                 txFut,
-                                new C2<GridCacheReturn<V>, Exception, IgniteFuture<GridNearLockResponse<K, V>>>() {
-                                    @Override public IgniteFuture<GridNearLockResponse<K, V>> apply(
+                                new C2<GridCacheReturn<V>, Exception, IgniteInternalFuture<GridNearLockResponse<K, V>>>() {
+                                    @Override public IgniteInternalFuture<GridNearLockResponse<K, V>> apply(
                                         GridCacheReturn<V> o, Exception e) {
                                         if (e != null)
                                             e = U.unwrap(e);
@@ -853,8 +855,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             assert t.implicit();
 
                                             return t.commitAsync().chain(
-                                                new C1<IgniteFuture<IgniteTx>, GridNearLockResponse<K, V>>() {
-                                                    @Override public GridNearLockResponse<K, V> apply(IgniteFuture<IgniteTx> f) {
+                                                new C1<IgniteInternalFuture<IgniteTx>, GridNearLockResponse<K, V>>() {
+                                                    @Override public GridNearLockResponse<K, V> apply(IgniteInternalFuture<IgniteTx> f) {
                                                         try {
                                                             // Check for error.
                                                             f.get();

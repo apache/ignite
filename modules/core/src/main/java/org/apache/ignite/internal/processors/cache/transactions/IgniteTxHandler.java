@@ -19,10 +19,11 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
@@ -51,7 +52,7 @@ public class IgniteTxHandler<K, V> {
     /** Shared cache context. */
     private GridCacheSharedContext<K, V> ctx;
 
-    public IgniteFuture<IgniteTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
+    public IgniteInternalFuture<IgniteTxEx<K, V>> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         return prepareTx(nearNodeId, null, req);
     }
@@ -133,7 +134,7 @@ public class IgniteTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Future for transaction.
      */
-    public IgniteFuture<IgniteTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareTx(final UUID nearNodeId, @Nullable GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
         assert nearNodeId != null;
         assert req != null;
@@ -159,20 +160,20 @@ public class IgniteTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteFuture<IgniteTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
+    private IgniteInternalFuture<IgniteTxEx<K, V>> prepareColocatedTx(final GridNearTxLocal<K, V> locTx,
         final GridNearTxPrepareRequest<K, V> req) {
 
-        IgniteFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
+        IgniteInternalFuture<Object> fut = new GridFinishedFutureEx<>(); // TODO force preload keys.
 
         return new GridEmbeddedFuture<>(
             ctx.kernalContext(),
             fut,
-            new C2<Object, Exception, IgniteFuture<IgniteTxEx<K, V>>>() {
-                @Override public IgniteFuture<IgniteTxEx<K, V>> apply(Object o, Exception ex) {
+            new C2<Object, Exception, IgniteInternalFuture<IgniteTxEx<K, V>>>() {
+                @Override public IgniteInternalFuture<IgniteTxEx<K, V>> apply(Object o, Exception ex) {
                     if (ex != null)
                         throw new GridClosureException(ex);
 
-                    IgniteFuture<IgniteTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
+                    IgniteInternalFuture<IgniteTxEx<K, V>> fut = locTx.prepareAsyncLocal(req.reads(), req.writes(),
                         req.transactionNodes(), req.last(), req.lastBackups());
 
                     if (locTx.isRollbackOnly())
@@ -205,7 +206,7 @@ public class IgniteTxHandler<K, V> {
      * @param req Near prepare request.
      * @return Prepare future.
      */
-    private IgniteFuture<IgniteTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
+    private IgniteInternalFuture<IgniteTxEx<K, V>> prepareNearTx(final UUID nearNodeId,
         final GridNearTxPrepareRequest<K, V> req) {
         ClusterNode nearNode = ctx.node(nearNodeId);
 
@@ -285,7 +286,7 @@ public class IgniteTxHandler<K, V> {
             if (req.returnValue())
                 tx.needReturnValue(true);
 
-            IgniteFuture<IgniteTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
+            IgniteInternalFuture<IgniteTxEx<K, V>> fut = tx.prepareAsync(req.reads(), req.writes(),
                 req.dhtVersions(), req.messageId(), req.miniId(), req.transactionNodes(), req.last(),
                 req.lastBackups());
 
@@ -300,8 +301,8 @@ public class IgniteTxHandler<K, V> {
 
             final GridDhtTxLocal<K, V> tx0 = tx;
 
-            fut.listenAsync(new CI1<IgniteFuture<IgniteTxEx<K, V>>>() {
-                @Override public void apply(IgniteFuture<IgniteTxEx<K, V>> txFut) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<IgniteTxEx<K, V>>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteTxEx<K, V>> txFut) {
                     try {
                         txFut.get();
                     }
@@ -401,7 +402,7 @@ public class IgniteTxHandler<K, V> {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteFuture<IgniteTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
+    @Nullable public IgniteInternalFuture<IgniteTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest<K, V> req) {
         return finish(nodeId, null, req);
     }
 
@@ -410,7 +411,7 @@ public class IgniteTxHandler<K, V> {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteFuture<IgniteTx> finish(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    @Nullable public IgniteInternalFuture<IgniteTx> finish(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
         GridNearTxFinishRequest<K, V> req) {
         assert nodeId != null;
         assert req != null;
@@ -422,12 +423,12 @@ public class IgniteTxHandler<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing near tx finish request [nodeId=" + nodeId + ", req=" + req + "]");
 
-        IgniteFuture<IgniteTx> colocatedFinishFut = null;
+        IgniteInternalFuture<IgniteTx> colocatedFinishFut = null;
 
         if (locTx != null && locTx.colocatedLocallyMapped())
             colocatedFinishFut = finishColocatedLocal(req.commit(), locTx);
 
-        IgniteFuture<IgniteTx> nearFinishFut = null;
+        IgniteInternalFuture<IgniteTx> nearFinishFut = null;
 
         if (locTx == null || locTx.nearLocallyMapped())
             nearFinishFut = finishDhtLocal(nodeId, locTx, req);
@@ -455,7 +456,7 @@ public class IgniteTxHandler<K, V> {
      * @param req Finish request.
      * @return Finish future.
      */
-    private IgniteFuture<IgniteTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
+    private IgniteInternalFuture<IgniteTx> finishDhtLocal(UUID nodeId, @Nullable GridNearTxLocal<K, V> locTx,
         GridNearTxFinishRequest<K, V> req) {
         GridCacheVersion dhtVer = ctx.tm().mappedVersion(req.version());
 
@@ -545,7 +546,7 @@ public class IgniteTxHandler<K, V> {
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
 
-                IgniteFuture<IgniteTx> commitFut = tx.commitAsync();
+                IgniteInternalFuture<IgniteTx> commitFut = tx.commitAsync();
 
                 // Only for error logging.
                 commitFut.listenAsync(CU.errorLogger(log));
@@ -561,7 +562,7 @@ public class IgniteTxHandler<K, V> {
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
 
-                IgniteFuture<IgniteTx> rollbackFut = tx.rollbackAsync();
+                IgniteInternalFuture<IgniteTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
                 rollbackFut.listenAsync(CU.errorLogger(log));
@@ -573,7 +574,7 @@ public class IgniteTxHandler<K, V> {
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
             if (tx != null) {
-                IgniteFuture<IgniteTx> rollbackFut = tx.rollbackAsync();
+                IgniteInternalFuture<IgniteTx> rollbackFut = tx.rollbackAsync();
 
                 // Only for error logging.
                 rollbackFut.listenAsync(CU.errorLogger(log));
@@ -590,7 +591,7 @@ public class IgniteTxHandler<K, V> {
      * @param tx Transaction to commit.
      * @return Future.
      */
-    public IgniteFuture<IgniteTx> finishColocatedLocal(boolean commit, GridNearTxLocal<K, V> tx) {
+    public IgniteInternalFuture<IgniteTx> finishColocatedLocal(boolean commit, GridNearTxLocal<K, V> tx) {
         try {
             if (commit) {
                 if (!tx.markFinalizing(USER_FINISH)) {

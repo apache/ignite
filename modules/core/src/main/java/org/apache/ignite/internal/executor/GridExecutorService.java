@@ -87,7 +87,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     private boolean isBeingShutdown;
 
     /** List of executing or scheduled for execution tasks. */
-    private List<IgniteFuture<?>> futs = new ArrayList<>();
+    private List<IgniteInternalFuture<?>> futs = new ArrayList<>();
 
     /** Rejected or completed tasks listener. */
     private TaskTerminateListener lsnr = new TaskTerminateListener<>();
@@ -115,7 +115,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         this.prj = prj;
         this.log = log.getLogger(GridExecutorService.class);
 
-        comp = prj.compute().enableAsync();
+        comp = prj.compute().withAsync();
     }
 
     /** {@inheritDoc} */
@@ -151,7 +151,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
     /** {@inheritDoc} */
     @Override public List<Runnable> shutdownNow() {
-        List<IgniteFuture<?>> cpFuts;
+        List<IgniteInternalFuture<?>> cpFuts;
 
         // Cancel all tasks.
         synchronized (mux) {
@@ -160,7 +160,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             isBeingShutdown = true;
         }
 
-        for (IgniteFuture<?> task : cpFuts) {
+        for (IgniteInternalFuture<?> task : cpFuts) {
             try {
                 task.cancel();
             }
@@ -198,17 +198,17 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         if (end < 0)
             end = Long.MAX_VALUE;
 
-        List<IgniteFuture<?>> locTasks;
+        List<IgniteInternalFuture<?>> locTasks;
 
         // Cancel all tasks.
         synchronized (mux) {
             locTasks = new ArrayList<>(futs);
         }
 
-        Iterator<IgniteFuture<?>> iter = locTasks.iterator();
+        Iterator<IgniteInternalFuture<?>> iter = locTasks.iterator();
 
         while (iter.hasNext() && now < end) {
-            IgniteFuture<?> fut = iter.next();
+            IgniteInternalFuture<?> fut = iter.next();
 
             try {
                 fut.get(end - now);
@@ -261,8 +261,8 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         try {
             comp.run(task);
 
-            IgniteFuture<T> fut = comp.future().chain(new CX1<IgniteFuture<?>, T>() {
-                @Override public T applyx(IgniteFuture<?> fut) throws IgniteCheckedException {
+            IgniteInternalFuture<T> fut = comp.future().chain(new CX1<IgniteInternalFuture<?>, T>() {
+                @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                     fut.get();
 
                     return res;
@@ -345,14 +345,14 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         checkShutdown();
 
-        Collection<IgniteFuture<T>> taskFuts = new ArrayList<>();
+        Collection<IgniteInternalFuture<T>> taskFuts = new ArrayList<>();
 
         assert comp.isAsync();
 
         for (Callable<T> task : tasks) {
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
-            IgniteFuture<T> fut;
+            IgniteInternalFuture<T> fut;
 
             try {
                 comp.call(task);
@@ -371,7 +371,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         boolean isInterrupted = false;
 
-        for (IgniteFuture<T> fut : taskFuts) {
+        for (IgniteInternalFuture<T> fut : taskFuts) {
             if (!isInterrupted && now < end) {
                 try {
                     fut.get(end - now);
@@ -403,7 +403,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         List<Future<T>> futs = new ArrayList<>(taskFuts.size());
 
         // Convert futures.
-        for (IgniteFuture<T> fut : taskFuts) {
+        for (IgniteInternalFuture<T> fut : taskFuts) {
             // Per executor service contract any task that was not completed
             // should be cancelled upon return.
             if (!fut.isDone())
@@ -420,7 +420,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      *
      * @param fut Future to cancel.
      */
-    private void cancelFuture(IgniteFuture<?> fut) {
+    private void cancelFuture(IgniteInternalFuture<?> fut) {
         try {
             fut.cancel();
         }
@@ -485,13 +485,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         checkShutdown();
 
-        Collection<IgniteFuture<T>> taskFuts = new ArrayList<>();
+        Collection<IgniteInternalFuture<T>> taskFuts = new ArrayList<>();
 
         assert comp.isAsync();
 
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
-            IgniteFuture<T> fut;
+            IgniteInternalFuture<T> fut;
 
             try
             {
@@ -514,7 +514,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         int errCnt = 0;
 
-        for (IgniteFuture<T> fut : taskFuts) {
+        for (IgniteInternalFuture<T> fut : taskFuts) {
             now = U.currentTimeMillis();
 
             boolean cancel = false;
@@ -601,7 +601,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      * @return Future for command.
      */
     @SuppressWarnings("unchecked")
-    private <T> Future<T> addFuture(IgniteFuture<T> fut) {
+    private <T> Future<T> addFuture(IgniteInternalFuture<T> fut) {
         synchronized (mux) {
             if (!fut.isDone()) {
                 fut.listenAsync(lsnr);
@@ -616,12 +616,12 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     /**
      * Listener to track tasks.
      */
-    private class TaskTerminateListener<T> implements IgniteInClosure<IgniteFuture<T>> {
+    private class TaskTerminateListener<T> implements IgniteInClosure<IgniteInternalFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void apply(IgniteFuture<T> taskFut) {
+        @Override public void apply(IgniteInternalFuture<T> taskFut) {
             synchronized (mux) {
                 futs.remove(taskFut);
             }
@@ -629,20 +629,20 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     }
 
     /**
-     * Wrapper for {@link org.apache.ignite.lang.IgniteFuture}.
+     * Wrapper for {@link org.apache.ignite.internal.IgniteInternalFuture}.
      * Used for compatibility {@link Future} interface.
      * @param <T> The result type of the {@link Future} argument.
      */
     private class TaskFutureWrapper<T> implements Future<T> {
         /** */
-        private final IgniteFuture<T> fut;
+        private final IgniteInternalFuture<T> fut;
 
         /**
          * Creates wrapper.
          *
          * @param fut Grid future.
          */
-        TaskFutureWrapper(IgniteFuture<T> fut) {
+        TaskFutureWrapper(IgniteInternalFuture<T> fut) {
             assert fut != null;
 
             this.fut = fut;

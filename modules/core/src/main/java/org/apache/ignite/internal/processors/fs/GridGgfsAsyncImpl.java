@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -29,7 +30,7 @@ import java.util.*;
 /**
  * Ggfs supporting asynchronous operations.
  */
-public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements GridGgfsEx {
+public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter<IgniteFs> implements GridGgfsEx {
     /** */
     private final GridGgfsImpl ggfs;
 
@@ -40,11 +41,6 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
         super(true);
 
         this.ggfs = ggfs;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFs enableAsync() {
-        return this;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +131,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter implements Grid
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
         return ggfs.awaitDeletesAsync();
     }
 

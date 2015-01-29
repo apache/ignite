@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.future.*;
@@ -499,15 +500,15 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgnitePredicate<IgniteFuture<?>> FINISHED_FUTURE = new IgnitePredicate<IgniteFuture<?>>() {
-        @Override public boolean apply(IgniteFuture<?> f) {
+    private static final IgnitePredicate<IgniteInternalFuture<?>> FINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
+        @Override public boolean apply(IgniteInternalFuture<?> f) {
             return f.isDone();
         }
     };
 
     /** */
-    private static final IgnitePredicate<IgniteFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<IgniteFuture<?>>() {
-        @Override public boolean apply(IgniteFuture<?> f) {
+    private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
+        @Override public boolean apply(IgniteInternalFuture<?> f) {
             return !f.isDone();
         }
     };
@@ -2741,13 +2742,13 @@ public class GridFunc {
     }
 
     /**
-     * Converts given object with interface {@link org.apache.ignite.lang.IgniteFuture} into an object implementing {@link Future}.
+     * Converts given object with interface {@link org.apache.ignite.internal.IgniteInternalFuture} into an object implementing {@link Future}.
      *
      * @param fut Future to convert.
      * @param <T> Type of computation result.
      * @return Instance implementing {@link Future}.
      */
-    public static <T> Future<T> as(final IgniteFuture<T> fut) {
+    public static <T> Future<T> as(final IgniteInternalFuture<T> fut) {
         A.notNull(fut, "fut");
 
         return new GridSerializableFuture<T>() {
@@ -2809,14 +2810,14 @@ public class GridFunc {
     }
 
     /**
-     * Gets closure that converts {@link org.apache.ignite.lang.IgniteFuture} to {@link Future}.
+     * Gets closure that converts {@link org.apache.ignite.internal.IgniteInternalFuture} to {@link Future}.
      *
      * @param <T> Type of future.
-     * @return Closure that converts {@link org.apache.ignite.lang.IgniteFuture} to {@link Future}.
+     * @return Closure that converts {@link org.apache.ignite.internal.IgniteInternalFuture} to {@link Future}.
      */
-    public static <T> IgniteClosure<IgniteFuture<T>, Future<T>> future() {
-        return new C1<IgniteFuture<T>, Future<T>>() {
-            @Override public Future<T> apply(IgniteFuture<T> fut) {
+    public static <T> IgniteClosure<IgniteInternalFuture<T>, Future<T>> future() {
+        return new C1<IgniteInternalFuture<T>, Future<T>>() {
+            @Override public Future<T> apply(IgniteInternalFuture<T> fut) {
                 return as(fut);
             }
         };
@@ -8440,7 +8441,7 @@ public class GridFunc {
      * @param futs Futures. If none provided - this method is no-op.
      * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(@Nullable IgniteFuture<T>... futs) throws IgniteCheckedException {
+    public static <T> void awaitAll(@Nullable IgniteInternalFuture<T>... futs) throws IgniteCheckedException {
         if (!isEmpty(futs))
             awaitAll(asList(futs));
     }
@@ -8451,7 +8452,7 @@ public class GridFunc {
      * @param futs Futures. If none provided - this method is no-op.
      * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(@Nullable Collection<IgniteFuture<T>> futs) throws IgniteCheckedException {
+    public static <T> void awaitAll(@Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
         awaitAll(0, null, futs);
     }
 
@@ -8462,7 +8463,7 @@ public class GridFunc {
      * @param futs Futures. If none provided - this method is no-op.
      * @throws IgniteCheckedException If any of the futures failed.
      */
-    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteFuture<T>> futs) throws IgniteCheckedException {
+    public static <T> void awaitAll(long timeout, @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
         awaitAll(timeout, null, futs);
     }
 
@@ -8478,7 +8479,7 @@ public class GridFunc {
      * @throws IgniteCheckedException If any of the futures failed.
      */
     @Nullable public static <T, R> R awaitAll(long timeout, @Nullable IgniteReducer<T, R> rdc,
-        @Nullable Collection<IgniteFuture<T>> futs) throws IgniteCheckedException {
+        @Nullable Collection<IgniteInternalFuture<T>> futs) throws IgniteCheckedException {
         if (futs == null || futs.isEmpty())
             return null;
 
@@ -8491,7 +8492,7 @@ public class GridFunc {
         // Note that it is important to wait in the natural order of collection and
         // not via listen method, because caller may actually add to this collection
         // concurrently while this method is in progress.
-        for (IgniteFuture<T> fut : futs) {
+        for (IgniteInternalFuture<T> fut : futs) {
             T t;
 
             if (timeout > 0) {
@@ -8523,7 +8524,7 @@ public class GridFunc {
      * @param <T> Type of computation result.
      * @return Completed future.
      */
-    public static <T> IgniteFuture<T> awaitOne(IgniteFuture<T>... futs) {
+    public static <T> IgniteInternalFuture<T> awaitOne(IgniteInternalFuture<T>... futs) {
         return isEmpty(futs) ? new GridFinishedFutureEx<T>() : awaitOne(asList(futs));
     }
 
@@ -8534,22 +8535,22 @@ public class GridFunc {
      * @param <T> Type of computation result.
      * @return Completed future.
      */
-    public static <T> IgniteFuture<T> awaitOne(Iterable<IgniteFuture<T>> futs) {
+    public static <T> IgniteInternalFuture<T> awaitOne(Iterable<IgniteInternalFuture<T>> futs) {
         if (F.isEmpty(futs))
             return new GridFinishedFutureEx<>();
 
         final CountDownLatch latch = new CountDownLatch(1);
 
-        final AtomicReference<IgniteFuture<T>> t = new AtomicReference<>();
+        final AtomicReference<IgniteInternalFuture<T>> t = new AtomicReference<>();
 
-        IgniteInClosure<IgniteFuture<T>> c = null;
+        IgniteInClosure<IgniteInternalFuture<T>> c = null;
 
-        for (IgniteFuture<T> fut : futs) {
+        for (IgniteInternalFuture<T> fut : futs) {
             if (fut != null) {
                 if (!fut.isDone()) {
                     if (c == null) {
-                        c = new CI1<IgniteFuture<T>>() {
-                            @Override public void apply(IgniteFuture<T> fut) {
+                        c = new CI1<IgniteInternalFuture<T>>() {
+                            @Override public void apply(IgniteInternalFuture<T> fut) {
                                 if (t.compareAndSet(null, fut))
                                     latch.countDown();
                             }
@@ -8581,7 +8582,7 @@ public class GridFunc {
         if (interrupted)
             Thread.currentThread().interrupt();
 
-        IgniteFuture<T> f = t.get();
+        IgniteInternalFuture<T> f = t.get();
 
         assert f != null;
 
@@ -8593,7 +8594,7 @@ public class GridFunc {
      *
      * @return Predicate for filtering finished futures.
      */
-    public static IgnitePredicate<IgniteFuture<?>> finishedFutures() {
+    public static IgnitePredicate<IgniteInternalFuture<?>> finishedFutures() {
         return FINISHED_FUTURE;
     }
 
@@ -8602,7 +8603,7 @@ public class GridFunc {
      *
      * @return Predicate for filtering unfinished futures.
      */
-    public static IgnitePredicate<IgniteFuture<?>> unfinishedFutures() {
+    public static IgnitePredicate<IgniteInternalFuture<?>> unfinishedFutures() {
         return UNFINISHED_FUTURE;
     }
 }

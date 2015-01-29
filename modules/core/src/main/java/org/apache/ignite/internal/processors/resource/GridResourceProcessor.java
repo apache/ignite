@@ -60,7 +60,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         IgniteServiceResource.class);
 
     /** Grid instance injector. */
-    private GridResourceBasicInjector<GridEx> gridInjector;
+    private GridResourceBasicInjector<IgniteEx> gridInjector;
 
     /** Spring application context injector. */
     private GridResourceInjector springCtxInjector;

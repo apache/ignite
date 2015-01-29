@@ -45,10 +45,10 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Test p2p task. */
-    private static final String TEST_TASK = "org.gridgain.grid.tests.p2p.GridSingleSplitTestTask";
+    private static final String TEST_TASK = "org.apache.ignite.tests.p2p.SingleSplitTestTask";
 
     /** Test p2p value. */
-    private static final String TEST_VALUE = "org.gridgain.grid.tests.p2p.GridCacheDeploymentTestValue";
+    private static final String TEST_VALUE = "org.apache.ignite.tests.p2p.CacheDeploymentTestValue";
 
     /** SPIs. */
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap8<>();

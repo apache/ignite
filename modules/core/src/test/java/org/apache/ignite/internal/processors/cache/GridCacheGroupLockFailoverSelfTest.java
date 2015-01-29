@@ -23,6 +23,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -320,14 +321,14 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
         throws IgniteCheckedException {
         ClusterGroup prj = master.cluster().forPredicate(workerNodesFilter);
 
-        IgniteCompute comp = master.compute(prj).enableAsync();
+        IgniteCompute comp = master.compute(prj).withAsync();
 
         comp.execute(new GridCacheGroupLockPutTask(preferredNodeId, CACHE_NAME, optimisticTx()), dataChunk);
 
         ComputeTaskFuture<Void> fut = comp.future();
 
-        fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-            @Override public void apply(IgniteFuture<Void> f) {
+        fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+            @Override public void apply(IgniteInternalFuture<Void> f) {
                 ComputeTaskFuture taskFut = (ComputeTaskFuture)f;
 
                 boolean fail = false;

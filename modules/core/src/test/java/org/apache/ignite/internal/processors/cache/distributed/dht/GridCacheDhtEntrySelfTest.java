@@ -131,7 +131,7 @@ public class GridCacheDhtEntrySelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
     }
 
     /**

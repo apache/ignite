@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -171,10 +173,10 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
-    @Override public IgniteFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
+    @Override public IgniteInternalFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
         IgniteTxEx<K, V> tx, IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
         IgniteBiInClosure<K, V> vis) {
-        return (IgniteFuture)loadAsync(tx,
+        return (IgniteInternalFuture)loadAsync(tx,
             keys,
             reload,
             false,
@@ -195,7 +197,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys,
+    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable Collection<? extends K> keys,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
@@ -234,7 +236,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public IgniteFuture<?> reloadAllAsync() {
+    @Override public IgniteInternalFuture<?> reloadAllAsync() {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync());
@@ -247,7 +249,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public IgniteFuture<?> reloadAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>> filter) {
+    @Override public IgniteInternalFuture<?> reloadAllAsync(@Nullable IgnitePredicate<CacheEntry<K, V>> filter) {
         GridCompoundFuture fut = new GridCompoundFuture(ctx.kernalContext());
 
         fut.add(super.reloadAllAsync());
@@ -270,7 +272,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @return Loaded values.
      */
-    public IgniteFuture<Map<K, V>> loadAsync(@Nullable IgniteTxEx tx,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteTxEx tx,
         @Nullable Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,
@@ -318,7 +320,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, Object[] args) {
+    @Override public IgniteInternalFuture<?> loadCacheAsync(IgniteBiPredicate<K, V> p, long ttl, Object[] args) {
         return dht().loadCacheAsync(p, ttl, args);
     }
 

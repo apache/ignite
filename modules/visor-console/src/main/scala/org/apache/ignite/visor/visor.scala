@@ -33,11 +33,11 @@ import org.apache.ignite.internal.GridNodeAttributes._
 import org.apache.ignite.internal.processors.spring.IgniteSpringProcessor
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 import org.apache.ignite.internal.util.typedef._
-import org.apache.ignite.internal.util.{GridConfigurationFinder, GridUtils}
+import org.apache.ignite.internal.util.{GridConfigurationFinder, IgniteUtils}
 import org.apache.ignite.internal.visor.VisorTaskArgument
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg
-import org.apache.ignite.internal.{GridEx, GridProductImpl}
+import org.apache.ignite.internal.{IgniteEx, GridProductImpl}
 import org.apache.ignite.lang.{IgniteNotPeerDeployable, IgnitePredicate}
 import org.apache.ignite.lifecycle.IgniteListener
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi
@@ -228,7 +228,7 @@ object visor extends VisorTag {
     @volatile var cfgPath: String = null
 
     /** */
-    @volatile var grid: GridEx = null
+    @volatile var grid: IgniteEx = null
 
     /**
      * Get grid node for specified ID.
@@ -1475,7 +1475,7 @@ object visor extends VisorTag {
                         new URL(path)
                     catch {
                         case e: Exception =>
-                            val url = GridUtils.resolveGridGainUrl(path)
+                            val url = IgniteUtils.resolveGridGainUrl(path)
 
                             if (url == null)
                                 throw new IgniteCheckedException("GridGain configuration path is invalid: " + path, e)
@@ -1486,7 +1486,7 @@ object visor extends VisorTag {
                 // Add no-op logger to remove no-appender warning.
                 val log4jTup =
                     if (classOf[Ignition].getClassLoader.getResource("org/apache/log4j/Appender.class") != null)
-                        GridUtils.addLog4jNoOpLogger()
+                        IgniteUtils.addLog4jNoOpLogger()
                     else
                         null
 
@@ -1499,7 +1499,7 @@ object visor extends VisorTag {
                             "drSenderHubConfiguration", "drReceiverHubConfiguration").get1()
                     finally {
                         if (log4jTup != null)
-                            GridUtils.removeLog4jNoOpLogger(log4jTup)
+                            IgniteUtils.removeLog4jNoOpLogger(log4jTup)
                     }
 
                 if (cfgs == null || cfgs.isEmpty)
@@ -1603,7 +1603,7 @@ object visor extends VisorTag {
 
         grid =
             try
-                Ignition.ignite(startedGridName).asInstanceOf[GridEx]
+                Ignition.ignite(startedGridName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
@@ -1903,7 +1903,7 @@ object visor extends VisorTag {
 
         t #= ("#", "Int./Ext. IPs", "Node ID8(@)", "OS", "CPUs", "MACs", "CPU Load")
 
-        val neighborhood = GridUtils.neighborhood(grid.nodes()).values().toIndexedSeq
+        val neighborhood = IgniteUtils.neighborhood(grid.nodes()).values().toIndexedSeq
 
         if (neighborhood.isEmpty) {
             warn("Topology is empty.")
@@ -2355,7 +2355,7 @@ object visor extends VisorTag {
         val folder = Option(f.getParent).getOrElse("")
         val fileName = f.getName
 
-        logFile = new File(GridUtils.resolveWorkDirectory(folder, false), fileName)
+        logFile = new File(IgniteUtils.resolveWorkDirectory(folder, false), fileName)
 
         logFile.createNewFile()
 
@@ -2449,7 +2449,7 @@ object visor extends VisorTag {
                                         out,
                                         formatDateTime(e.timestamp),
                                         nodeId8Addr(e.nid()),
-                                        GridUtils.compact(e.shortDisplay())
+                                        IgniteUtils.compact(e.shortDisplay())
                                     )
 
                                     if (EVTS_DISCOVERY.contains(e.typeId()))
@@ -2457,7 +2457,7 @@ object visor extends VisorTag {
                                 })
                             }
                             finally {
-                                GridUtils.close(out, null)
+                                IgniteUtils.close(out, null)
                             }
                         }
                     }
@@ -2522,7 +2522,7 @@ object visor extends VisorTag {
         }
 
         logText("H/N/C" + pipe +
-            GridUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
+            IgniteUtils.neighborhood(grid.nodes()).size.toString.padTo(4, ' ') + pipe +
             grid.nodes().size().toString.padTo(4, ' ') + pipe +
             m.getTotalCpus.toString.padTo(4, ' ') + pipe +
             bar(m.getAverageCpuLoad, m.getHeapMemoryUsed / m.getHeapMemoryMaximum) + pipe
@@ -2554,7 +2554,7 @@ object visor extends VisorTag {
                 case e: IOException => ()
             }
             finally {
-                GridUtils.close(out, null)
+                IgniteUtils.close(out, null)
             }
         }
     }

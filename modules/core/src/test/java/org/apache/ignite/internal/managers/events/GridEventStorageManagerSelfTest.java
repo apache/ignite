@@ -20,6 +20,7 @@ package org.apache.ignite.internal.managers.events;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -61,7 +62,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
         final int usrType = Integer.MAX_VALUE - 1;
 
-        IgniteFuture<IgniteEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<IgniteEvent>() {
+        IgniteInternalFuture<IgniteEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent e) {
                 return e.type() == usrType;
             }

@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -493,7 +495,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param topVer Topology version.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteFuture<Boolean> finishTxs(long topVer) {
+    public IgniteInternalFuture<Boolean> finishTxs(long topVer) {
         GridCompoundFuture<IgniteTx, Boolean> res =
             new GridCompoundFuture<>(context().kernalContext(),
                 new IgniteReducer<IgniteTx, Boolean>() {
@@ -1471,7 +1473,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param threadId Near tx thread ID.
      * @return {@code null} if ack was received or future that will be completed when ack is received.
      */
-    @Nullable public IgniteFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
+    @Nullable public IgniteInternalFuture<?> awaitFinishAckAsync(UUID rmtNodeId, long threadId) {
         if (finishSyncDisabled)
             return null;
 
@@ -2068,7 +2070,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
-    private class CommitListener implements CI1<IgniteFuture<IgniteTx>> {
+    private class CommitListener implements CI1<IgniteInternalFuture<IgniteTx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2083,7 +2085,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(IgniteFuture<IgniteTx> t) {
+        @Override public void apply(IgniteInternalFuture<IgniteTx> t) {
             try {
                 t.get();
             }

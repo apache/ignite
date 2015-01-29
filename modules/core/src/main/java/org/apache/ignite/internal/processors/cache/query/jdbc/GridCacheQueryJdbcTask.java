@@ -192,7 +192,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 assert args != null;
                 assert futId == null;
 
-                GridCache<?, ?> cache = ((GridEx) ignite).cachex(cacheName);
+                GridCache<?, ?> cache = ((IgniteEx) ignite).cachex(cacheName);
 
                 CacheQuery<List<?>> qry =
                     ((GridCacheQueriesEx<?, ?>)cache.queries()).createSqlFieldsQuery(sql, true);

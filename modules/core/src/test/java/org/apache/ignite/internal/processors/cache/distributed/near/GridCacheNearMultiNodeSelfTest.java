@@ -40,6 +40,7 @@ import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
@@ -190,7 +191,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
     }
 
     /**
@@ -199,7 +200,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridNearCacheAdapter<Integer, String> near(Ignite g) {
-        return (GridNearCacheAdapter)((GridKernal)g).internalCache();
+        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache();
     }
 
     /**
@@ -218,7 +219,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         Map<UUID, T2<Set<Integer>, Set<Integer>>> map = new HashMap<>();
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridEx grid = grid(i);
+            IgniteEx grid = grid(i);
 
             map.put(grid.cluster().localNode().id(), new T2<Set<Integer>, Set<Integer>>(new HashSet<Integer>(),
                 new HashSet<Integer>()));
@@ -756,7 +757,9 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
 
         String val = Integer.toString(key);
 
-        near.lock(key).lock();
+        Lock lock = near.lock(key);
+
+        lock.lock();
 
         try {
             near.put(key, val);
@@ -764,10 +767,10 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             assertEquals(val, near.localPeek(key));
             assertEquals(val, dht(primaryGrid(key)).peek(key));
 
-            assertTrue(near.isLocked(key));
-            assertTrue(near.isLockedByThread(key));
+            assertTrue(near.isLocalLocked(key, false));
+            assertTrue(near.isLocalLocked(key, true));
 
-            near.lock(key).lock(); // Reentry.
+            lock.lock(); // Reentry.
 
             try {
                 assertEquals(val, near.get(key));
@@ -776,15 +779,15 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 assertNull(near.localPeek(key));
                 assertNull(dht(primaryGrid(key)).peek(key));
 
-                assertTrue(near.isLocked(key));
-                assertTrue(near.isLockedByThread(key));
+                assertTrue(near.isLocalLocked(key, false));
+                assertTrue(near.isLocalLocked(key, true));
             }
             finally {
-                near.lock(key).unlock();
+                lock.unlock();
             }
 
-            assertTrue(near.isLocked(key));
-            assertTrue(near.isLockedByThread(key));
+            assertTrue(near.isLocalLocked(key, false));
+            assertTrue(near.isLocalLocked(key, true));
         }
         catch (Throwable t) {
             error("Test failed.", t);
@@ -792,11 +795,11 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
             throw t;
         }
         finally {
-            near.lock(key).unlock();
+            lock.unlock();
         }
 
         assertFalse(near(0).isLockedNearOnly(key));
-        assertFalse(near.isLockedByThread(key));
+        assertFalse(near.isLocalLocked(key, true));
     }
 
     /** @throws Exception If failed. */

@@ -29,8 +29,8 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -88,7 +88,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCache<?, ?>> publicProxies;
 
     /** Map of preload finish futures grouped by preload order. */
-    private final NavigableMap<Integer, IgniteFuture<?>> preloadFuts;
+    private final NavigableMap<Integer, IgniteInternalFuture<?>> preloadFuts;
 
     /** Maximum detected preload order. */
     private int maxPreloadOrder;
@@ -1335,7 +1335,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (IgniteFuture<?> fut : preloadFuts.values())
+        for (IgniteInternalFuture<?> fut : preloadFuts.values())
             ((GridCompoundFuture<Object, Object>)fut).markInitialized();
 
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -1474,8 +1474,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param order Cache order.
      * @return Compound preload future or {@code null} if order is minimal order found.
      */
-    @Nullable public IgniteFuture<?> orderedPreloadFuture(int order) {
-        Map.Entry<Integer, IgniteFuture<?>> entry = preloadFuts.lowerEntry(order);
+    @Nullable public IgniteInternalFuture<?> orderedPreloadFuture(int order) {
+        Map.Entry<Integer, IgniteInternalFuture<?>> entry = preloadFuts.lowerEntry(order);
 
         return entry == null ? null : entry.getValue();
     }

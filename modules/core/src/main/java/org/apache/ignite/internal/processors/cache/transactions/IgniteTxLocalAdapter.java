@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -336,7 +338,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> loadMissing(
+    @Override public IgniteInternalFuture<Boolean> loadMissing(
         final GridCacheContext<K, V> cacheCtx,
         final boolean readThrough,
         boolean async,
@@ -762,31 +764,45 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         }
                                     }
 
-                                    GridDrResolveResult<V> drRes = cacheCtx.dr().resolveTx(cached,
-                                        txEntry,
-                                        explicitVer,
-                                        op,
-                                        val,
-                                        valBytes,
-                                        txEntry.ttl(),
-                                        txEntry.drExpireTime());
+                                    boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
-                                    if (drRes != null) {
-                                        op = drRes.operation();
-                                        val = drRes.value();
-                                        valBytes = drRes.valueBytes();
+                                    if (drNeedResolve) {
+                                        IgniteBiTuple<GridCacheOperation, GridCacheVersionConflictContextImpl<K, V>>
+                                            drRes = conflictResolve(op, txEntry.key(), val, valBytes, txEntry.ttl(),
+                                                txEntry.drExpireTime(), explicitVer, cached);
 
-                                        if (drRes.isMerge())
+                                        assert drRes != null;
+
+                                        GridCacheVersionConflictContextImpl<K, V> conflictCtx = drRes.get2();
+
+                                        if (conflictCtx.isUseOld())
+                                            op = NOOP;
+                                        else if (conflictCtx.isUseNew()) {
+                                            txEntry.ttl(conflictCtx.ttl());
+
+                                            if (conflictCtx.newEntry().dataCenterId() != cctx.dataCenterId())
+                                                txEntry.drExpireTime(conflictCtx.expireTime());
+                                            else
+                                                txEntry.drExpireTime(-1L);
+                                        }
+                                        else {
+                                            assert conflictCtx.isMerge();
+
+                                            op = drRes.get1();
+                                            val = conflictCtx.mergeValue();
+                                            valBytes = null;
                                             explicitVer = writeVersion();
-                                        else if (op == NOOP)
-                                            txEntry.ttl(-1L);
+
+                                            txEntry.ttl(conflictCtx.ttl());
+                                            txEntry.drExpireTime(-1L);
+                                        }
                                     }
                                     else
                                         // Nullify explicit version so that innerSet/innerRemove will work as usual.
                                         explicitVer = null;
 
-                                    if (sndTransformedVals || (drRes != null)) {
-                                        assert sndTransformedVals && cacheCtx.isReplicated() || (drRes != null);
+                                    if (sndTransformedVals || drNeedResolve) {
+                                        assert sndTransformedVals && cacheCtx.isReplicated() || drNeedResolve;
 
                                         txEntry.value(val, true, false);
                                         txEntry.valueBytes(valBytes);
@@ -1381,7 +1397,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param filter Filter.
      * @return Loaded key-value pairs.
      */
-    private IgniteFuture<Map<K, V>> checkMissed(
+    private IgniteInternalFuture<Map<K, V>> checkMissed(
         final GridCacheContext<K, V> cacheCtx,
         final Map<K, V> map,
         final Map<K, GridCacheVersion> missedMap,
@@ -1566,7 +1582,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Map<K, V>> getAllAsync(
+    @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         final GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -1612,7 +1628,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                 long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : -1L;
 
-                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
+                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     lockTimeout(),
                     this,
                     true,
@@ -1623,7 +1639,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     CU.<K, V>empty());
 
                 PLC2<Map<K, V>> plc2 = new PLC2<Map<K, V>>() {
-                    @Override public IgniteFuture<Map<K, V>> postLock() throws IgniteCheckedException {
+                    @Override public IgniteInternalFuture<Map<K, V>> postLock() throws IgniteCheckedException {
                         if (log.isDebugEnabled())
                             log.debug("Acquired transaction lock for read on keys: " + lockKeys);
 
@@ -1725,7 +1741,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                 if (fut.isDone()) {
                     try {
-                        IgniteFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
+                        IgniteInternalFuture<Map<K, V>> fut1 = plc2.apply(fut.get(), null);
 
                         return fut1.isDone() ?
                             new GridFinishedFutureEx<>(finClos.apply(fut1.get(), null)) :
@@ -1771,7 +1787,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         checkMissed(cacheCtx, retMap, missed, redos, deserializePortable, filter),
                         // Closure that returns another future, based on result from first.
                         new PMC<Map<K, V>>() {
-                            @Override public IgniteFuture<Map<K, V>> postMiss(Map<K, V> map) {
+                            @Override public IgniteInternalFuture<Map<K, V>> postMiss(Map<K, V> map) {
                                 if (redos.isEmpty())
                                     return new GridFinishedFuture<>(cctx.kernalContext(),
                                         Collections.<K, V>emptyMap());
@@ -1818,7 +1834,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteFuture<GridCacheReturn<V>> putAllAsync(
+    @Override public IgniteInternalFuture<GridCacheReturn<V>> putAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, ? extends V> map,
         boolean retval,
@@ -1826,7 +1842,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         long ttl,
         IgnitePredicate<CacheEntry<K, V>>[] filter
     ) {
-        return (IgniteFuture<GridCacheReturn<V>>)putAllAsync0(cacheCtx,
+        return (IgniteInternalFuture<GridCacheReturn<V>>)putAllAsync0(cacheCtx,
             map,
             null,
             null,
@@ -1837,7 +1853,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> putAllDrAsync(
+    @Override public IgniteInternalFuture<?> putAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheDrInfo<V>> drMap
     ) {
@@ -1853,12 +1869,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <T> IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
+    @Override public <T> IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>> invokeAsync(
         GridCacheContext<K, V> cacheCtx,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs
     ) {
-        return (IgniteFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)putAllAsync0(cacheCtx,
+        return (IgniteInternalFuture<GridCacheReturn<Map<K, EntryProcessorResult<T>>>>)putAllAsync0(cacheCtx,
             null,
             map,
             invokeArgs,
@@ -1869,7 +1885,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> removeAllDrAsync(
+    @Override public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext<K, V> cacheCtx,
         Map<? extends K, GridCacheVersion> drMap
     ) {
@@ -1909,7 +1925,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param drRmvMap DR remove map (optional).
      * @return Future with skipped keys (the ones that didn't pass filter for pessimistic transactions).
      */
-    protected IgniteFuture<Set<K>> enlistWrite(
+    protected IgniteInternalFuture<Set<K>> enlistWrite(
         final GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -1950,6 +1966,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             groupLockSanityCheck(cacheCtx, keys);
 
             for (K key : keys) {
+                if (key == null) {
+                    setRollbackOnly();
+
+                    throw new NullPointerException("Null key.");
+                }
+
                 V val = rmv || lookup == null ? null : lookup.get(key);
                 EntryProcessor entryProcessor = invokeMap == null ? null : invokeMap.get(key);
 
@@ -1979,13 +2001,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     drExpireTime = -1L;
                 }
 
-                if (key == null)
-                    continue;
-
                 if (!rmv && val == null && entryProcessor == null) {
-                    skipped = skip(skipped, key);
+                    setRollbackOnly();
 
-                    continue;
+                    throw new NullPointerException("Null value.");
                 }
 
                 if (cacheCtx.portableEnabled())
@@ -2121,7 +2140,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                         // one key in the keys collection.
                                         assert keys.size() == 1;
 
-                                        IgniteFuture<Boolean> fut = loadMissing(
+                                        IgniteInternalFuture<Boolean> fut = loadMissing(
                                             cacheCtx,
                                             op == TRANSFORM || cacheCtx.loadPreviousValue(),
                                             true,
@@ -2261,7 +2280,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             assert optimistic();
             assert invokeMap != null;
 
-            IgniteFuture<Boolean> fut = loadMissing(
+            IgniteInternalFuture<Boolean> fut = loadMissing(
                 cacheCtx,
                 true,
                 true,
@@ -2490,7 +2509,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @return Operation future.
      */
     @SuppressWarnings("unchecked")
-    private IgniteFuture putAllAsync0(
+    private IgniteInternalFuture putAllAsync0(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
@@ -2600,7 +2619,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
             GridCacheProjectionImpl<K, V> prj = cacheCtx.projectionPerCall();
 
-            final IgniteFuture<Set<K>> loadFut = enlistWrite(
+            final IgniteInternalFuture<Set<K>> loadFut = enlistWrite(
                 cacheCtx,
                 keySet,
                 cached,
@@ -2637,7 +2656,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + keys);
 
-                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(keys,
+                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(keys,
                     lockTimeout(),
                     this,
                     false,
@@ -2702,8 +2721,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                         return new GridFinishedFutureEx<>(new GridCacheReturn<V>(), e);
                     }
 
-                    return commitAsync().chain(new CX1<IgniteFuture<IgniteTx>, GridCacheReturn<V>>() {
-                        @Override public GridCacheReturn<V> applyx(IgniteFuture<IgniteTx> txFut) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTx>, GridCacheReturn<V>>() {
+                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<IgniteTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;
@@ -2711,8 +2730,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     });
                 }
                 else
-                    return loadFut.chain(new CX1<IgniteFuture<Set<K>>, GridCacheReturn<V>>() {
-                        @Override public GridCacheReturn<V> applyx(IgniteFuture<Set<K>> f) throws IgniteCheckedException {
+                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<K>>, GridCacheReturn<V>>() {
+                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<Set<K>> f) throws IgniteCheckedException {
                             f.get();
 
                             return ret;
@@ -2728,7 +2747,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheReturn<V>> removeAllAsync(
+    @Override public IgniteInternalFuture<GridCacheReturn<V>> removeAllAsync(
         GridCacheContext<K, V> cacheCtx,
         Collection<? extends K> keys,
         @Nullable GridCacheEntryEx<K, V> cached,
@@ -2747,7 +2766,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param filter Filter.
      * @return Future for asynchronous remove.
      */
-    private IgniteFuture<GridCacheReturn<V>> removeAllAsync0(
+    private IgniteInternalFuture<GridCacheReturn<V>> removeAllAsync0(
         final GridCacheContext<K, V> cacheCtx,
         @Nullable final Collection<? extends K> keys,
         @Nullable Map<? extends  K, GridCacheVersion> drMap,
@@ -2830,7 +2849,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             else
                 plc = null;
 
-            final IgniteFuture<Set<K>> loadFut = enlistWrite(
+            final IgniteInternalFuture<Set<K>> loadFut = enlistWrite(
                 cacheCtx,
                 keys0,
                 /** cached entry */null,
@@ -2861,7 +2880,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for remove on keys: " + passedKeys);
 
-                IgniteFuture<Boolean> fut = cacheCtx.cache().txLockAsync(passedKeys,
+                IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(passedKeys,
                     lockTimeout(),
                     this,
                     false,
@@ -2919,8 +2938,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     // with prepare response, if required.
                     assert loadFut.isDone();
 
-                    return commitAsync().chain(new CX1<IgniteFuture<IgniteTx>, GridCacheReturn<V>>() {
-                        @Override public GridCacheReturn<V> applyx(IgniteFuture<IgniteTx> txFut) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTx>, GridCacheReturn<V>>() {
+                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<IgniteTx> txFut) throws IgniteCheckedException {
                             txFut.get();
 
                             return implicitRes;
@@ -2928,8 +2947,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     });
                 }
                 else
-                    return loadFut.chain(new CX1<IgniteFuture<Set<K>>, GridCacheReturn<V>>() {
-                        @Override public GridCacheReturn<V> applyx(IgniteFuture<Set<K>> f) throws IgniteCheckedException {
+                    return loadFut.chain(new CX1<IgniteInternalFuture<Set<K>>, GridCacheReturn<V>>() {
+                        @Override public GridCacheReturn<V> applyx(IgniteInternalFuture<Set<K>> f) throws IgniteCheckedException {
                             f.get();
 
                             return ret;
@@ -3003,7 +3022,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * Performs keys locking for affinity-based group lock transactions.
      * @return Lock future.
      */
-    @Override public IgniteFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys) {
+    @Override public IgniteInternalFuture<?> groupLockAsync(GridCacheContext<K, V> cacheCtx, Collection<K> keys) {
         assert groupLock();
 
         try {
@@ -3441,7 +3460,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      *
      * @param <T> Return type.
      */
-    protected abstract class PostLockClosure1<T> implements IgniteBiClosure<Boolean, Exception, IgniteFuture<T>> {
+    protected abstract class PostLockClosure1<T> implements IgniteBiClosure<Boolean, Exception, IgniteInternalFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -3472,13 +3491,13 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
         }
 
         /** {@inheritDoc} */
-        @Override public final IgniteFuture<T> apply(Boolean locked, @Nullable final Exception e) {
+        @Override public final IgniteInternalFuture<T> apply(Boolean locked, @Nullable final Exception e) {
             if (e != null) {
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteFuture<IgniteTx>, T>() {
-                        @Override public T apply(IgniteFuture<IgniteTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteTx> f) {
                             throw new GridClosureException(e);
                         }
                     });
@@ -3494,8 +3513,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     ", tx=" + this + ']'));
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteFuture<IgniteTx>, T>() {
-                        @Override public T apply(IgniteFuture<IgniteTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteTx> f) {
                             throw ex;
                         }
                     });
@@ -3512,8 +3531,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (commit && commitAfterLock()) {
                     rollback = false;
 
-                    return commitAsync().chain(new CX1<IgniteFuture<IgniteTx>, T>() {
-                        @Override public T applyx(IgniteFuture<IgniteTx> f) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTx>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<IgniteTx> f) throws IgniteCheckedException {
                             f.get();
 
                             return r;
@@ -3527,8 +3546,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteFuture<IgniteTx>, T>() {
-                        @Override public T apply(IgniteFuture<IgniteTx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteTx> f) {
                             throw new GridClosureException(ex);
                         }
                     });
@@ -3556,12 +3575,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      *
      * @param <T> Return type.
      */
-    protected abstract class PostLockClosure2<T> implements IgniteBiClosure<Boolean, Exception, IgniteFuture<T>> {
+    protected abstract class PostLockClosure2<T> implements IgniteBiClosure<Boolean, Exception, IgniteInternalFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public final IgniteFuture<T> apply(Boolean locked, @Nullable Exception e) {
+        @Override public final IgniteInternalFuture<T> apply(Boolean locked, @Nullable Exception e) {
             boolean rollback = true;
 
             try {
@@ -3572,7 +3591,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     throw new GridClosureException(new IgniteTxTimeoutException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() + ", tx=" + this + ']'));
 
-                IgniteFuture<T> fut = postLock();
+                IgniteInternalFuture<T> fut = postLock();
 
                 rollback = false;
 
@@ -3593,7 +3612,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
          * @return Future return value.
          * @throws IgniteCheckedException If operation failed.
          */
-        protected abstract IgniteFuture<T> postLock() throws IgniteCheckedException;
+        protected abstract IgniteInternalFuture<T> postLock() throws IgniteCheckedException;
     }
 
     /**
@@ -3601,19 +3620,19 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      *
      * @param <T> Return type.
      */
-    protected abstract class PostMissClosure<T> implements IgniteBiClosure<T, Exception, IgniteFuture<T>> {
+    protected abstract class PostMissClosure<T> implements IgniteBiClosure<T, Exception, IgniteInternalFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public final IgniteFuture<T> apply(T t, Exception e) {
+        @Override public final IgniteInternalFuture<T> apply(T t, Exception e) {
             boolean rollback = true;
 
             try {
                 if (e != null)
                     throw new GridClosureException(e);
 
-                IgniteFuture<T> fut = postMiss(t);
+                IgniteInternalFuture<T> fut = postMiss(t);
 
                 rollback = false;
 
@@ -3635,7 +3654,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
          * @return Future return value.
          * @throws IgniteCheckedException If operation failed.
          */
-        protected abstract IgniteFuture<T> postMiss(T t) throws IgniteCheckedException;
+        protected abstract IgniteInternalFuture<T> postMiss(T t) throws IgniteCheckedException;
     }
 
     /**

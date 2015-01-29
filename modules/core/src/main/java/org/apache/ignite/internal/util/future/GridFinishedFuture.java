@@ -31,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
 /**
  * Future that is completed at creation time.
  */
-public class GridFinishedFuture<T> implements IgniteFuture<T>, Externalizable {
+public class GridFinishedFuture<T> implements IgniteInternalFuture<T>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -166,7 +166,7 @@ public class GridFinishedFuture<T> implements IgniteFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void listenAsync(final IgniteInClosure<? super IgniteFuture<T>> lsnr) {
+    @Override public void listenAsync(final IgniteInClosure<? super IgniteInternalFuture<T>> lsnr) {
         if (ctx == null)
             throw new IllegalStateException("Cannot attach listener to deserialized future (context is null): " + this);
 
@@ -183,12 +183,12 @@ public class GridFinishedFuture<T> implements IgniteFuture<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<T>>... lsnr) {
+    @Override public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<T>>... lsnr) {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> chain(final IgniteClosure<? super IgniteFuture<T>, R> doneCb) {
+    @Override public <R> IgniteInternalFuture<R> chain(final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb) {
         GridFutureAdapter<R> fut = new GridFutureAdapter<R>(ctx, syncNotify) {
             @Override public String toString() {
                 return "ChainFuture[orig=" + GridFinishedFuture.this + ", doneCb=" + doneCb + ']';

@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -59,7 +61,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> txLockAsync(
+    @Override public IgniteInternalFuture<Boolean> txLockAsync(
         Collection<? extends K> keys,
         long timeout,
         IgniteTxLocalEx<K, V> tx,
@@ -76,7 +78,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys, long timeout,
         IgnitePredicate<CacheEntry<K, V>>... filter) {
         IgniteTxLocalEx<K, V> tx = ctx.tm().userTxx();
 
@@ -96,7 +98,7 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
      * @param filter Optional filter.
      * @return Future for locks.
      */
-    protected abstract IgniteFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
+    protected abstract IgniteInternalFuture<Boolean> lockAllAsync(Collection<? extends K> keys,
         long timeout,
         @Nullable IgniteTxLocalEx<K, V> tx,
         boolean isInvalidate,

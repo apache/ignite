@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -137,7 +139,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param topVer Topology version.
      * @return {@code True} if reader was added as a result of this call.
      */
-    @Nullable protected abstract IgniteFuture<Boolean> addReader(long msgId,
+    @Nullable protected abstract IgniteInternalFuture<Boolean> addReader(long msgId,
         GridDhtCacheEntry<K, V> cached,
         IgniteTxEntry<K, V> entry,
         long topVer);
@@ -423,7 +425,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @return Future for active transactions for the time when reader was added.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteFuture<Boolean> addEntry(long msgId, IgniteTxEntry<K, V> e) throws IgniteCheckedException {
+    @Nullable public IgniteInternalFuture<Boolean> addEntry(long msgId, IgniteTxEntry<K, V> e) throws IgniteCheckedException {
         init();
 
         IgniteTxState state = state();
@@ -510,7 +512,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @return Lock future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    IgniteFuture<GridCacheReturn<V>> lockAllAsync(
+    IgniteInternalFuture<GridCacheReturn<V>> lockAllAsync(
         GridCacheContext<K, V> cacheCtx,
         List<GridCacheEntryEx<K, V>> entries,
         boolean onePhaseCommit,
@@ -616,7 +618,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
      * @param filter Entry write filter.
      * @return Future for lock acquisition.
      */
-    private IgniteFuture<GridCacheReturn<V>> obtainLockAsync(
+    private IgniteInternalFuture<GridCacheReturn<V>> obtainLockAsync(
         final GridCacheContext<K, V> cacheCtx,
         GridCacheReturn<V> ret,
         final Collection<? extends K> passedKeys,
@@ -633,7 +635,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
 
         GridDhtTransactionalCacheAdapter<K, V> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
 
-        IgniteFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
+        IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             lockTimeout(),
             this,
             isInvalidate(),

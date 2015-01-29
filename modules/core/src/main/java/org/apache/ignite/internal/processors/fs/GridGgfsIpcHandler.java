@@ -104,7 +104,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridGgfsMessage> handleAsync(final GridGgfsClientSession ses,
+    @Override public IgniteInternalFuture<GridGgfsMessage> handleAsync(final GridGgfsClientSession ses,
         final GridGgfsMessage msg, DataInput in) {
         if (!mgmt)
             GridLicenseUseRegistry.onUsage(HADOOP, getClass());
@@ -116,7 +116,7 @@ class GridGgfsIpcHandler implements GridGgfsServerHandler {
 
             final GridGgfsIpcCommand cmd = msg.command();
 
-            IgniteFuture<GridGgfsMessage> fut;
+            IgniteInternalFuture<GridGgfsMessage> fut;
 
             switch (cmd) {
                 // Execute not-blocking command synchronously in worker thread.

@@ -222,10 +222,10 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override @Nullable public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
         GridGgfsContext ggfsCtx = ggfsCache.get(maskName(name));
 
-        return ggfsCtx == null ? Collections.<GridIpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
+        return ggfsCtx == null ? Collections.<IpcServerEndpoint>emptyList() : ggfsCtx.server().endpoints();
     }
 
     /** {@inheritDoc} */
