@@ -823,7 +823,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
             if (verCheckErr != null)
                 U.error(log, verCheckErr.getMessage());
-            else if (X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class))
+            else if (X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class))
                 U.warn(log, "Grid startup routine has been interrupted (will rollback).");
             else
                 U.error(log, "Got exception while starting (will rollback startup routine).", e);
@@ -2624,7 +2624,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
      * @throws IgniteCheckedException In case of error.
-     * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
+     * @see {@link IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws IgniteCheckedException {
         A.notNull(file, "file");
@@ -2653,8 +2653,13 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
     /** {@inheritDoc} */
     @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(
-        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-        int maxConn) throws IgniteCheckedException {
+        Collection<Map<String, Object>> hosts,
+        @Nullable Map<String, Object> dflts,
+        boolean restart,
+        int timeout,
+        int maxConn)
+        throws IgniteCheckedException
+    {
         return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
     }
 
@@ -2666,11 +2671,16 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
      * @throws IgniteCheckedException In case of error.
-     * @see {@link org.apache.ignite.IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
+     * @see {@link IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
-        Collection<Map<String, Object>> hosts, @Nullable Map<String, Object> dflts, boolean restart, int timeout,
-        int maxConn) throws IgniteCheckedException {
+        Collection<Map<String, Object>> hosts,
+        @Nullable Map<String, Object> dflts,
+        boolean restart,
+        int timeout,
+        int maxConn)
+        throws IgniteCheckedException
+    {
         A.notNull(hosts, "hosts");
 
         guard();
@@ -3110,7 +3120,7 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
     /** {@inheritDoc} */
     @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        @Nullable Collection<? extends K> keys) {
         if (F.isEmpty(keys))
             return Collections.emptyMap();
 
@@ -3119,19 +3129,25 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
         try {
             return ctx.affinity().mapKeysToNodes(cacheName, keys);
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             unguard();
         }
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(String cacheName, K key) throws IgniteCheckedException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(String cacheName, K key) {
         A.notNull(key, "key");
 
         guard();
 
         try {
             return ctx.affinity().mapKeyToNode(cacheName, key);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             unguard();

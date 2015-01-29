@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal;
+
+import org.apache.ignite.*;
 
 /**
- * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteException}.
+ * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteCheckedException}.
  */
-public class IgniteInterruptedException extends IgniteException {
+@SuppressWarnings({"TypeMayBeWeakened"})
+public class IgniteInterruptedCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -30,7 +33,7 @@ public class IgniteInterruptedException extends IgniteException {
      *
      * @param cause Non-null throwable cause.
      */
-    public IgniteInterruptedException(InterruptedException cause) {
+    public IgniteInterruptedCheckedException(InterruptedException cause) {
         this(cause.getMessage(), cause);
     }
 
@@ -39,7 +42,7 @@ public class IgniteInterruptedException extends IgniteException {
      *
      * @param msg Error message.
      */
-    public IgniteInterruptedException(String msg) {
+    public IgniteInterruptedCheckedException(String msg) {
         super(msg);
     }
 
@@ -49,7 +52,7 @@ public class IgniteInterruptedException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteInterruptedException(String msg, InterruptedException cause) {
+    public IgniteInterruptedCheckedException(String msg, InterruptedException cause) {
         super(msg, cause);
     }
 }

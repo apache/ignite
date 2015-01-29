@@ -1215,11 +1215,11 @@ public final class GridTestUtils {
      * @param retryInterval Interval between retries in milliseconds.
      * @param c Closure with assertion. All {@link AssertionError}s thrown
      *      from this closure will be ignored {@code retries} times.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public static void retryAssert(@Nullable IgniteLogger log, int retries, long retryInterval, GridAbsClosure c)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         for (int i = 0; i < retries; i++) {
             try {
                 c.apply();
@@ -1272,9 +1272,9 @@ public final class GridTestUtils {
      * @param sleepDur Sleep duration in milliseconds.
      * @param i Integer to increment.
      * @return Incremented value.
-     * @throws org.apache.ignite.IgniteInterruptedException If sleep was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If sleep was interrupted.
      */
-    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedException {
+    public static int sleepAndIncrement(int sleepDur, int i) throws IgniteInterruptedCheckedException {
         U.sleep(sleepDur);
 
         return i + 1;
@@ -1286,9 +1286,9 @@ public final class GridTestUtils {
      * @param cond Condition to wait for.
      * @param timeout Max time to wait in milliseconds.
      * @return {@code true} if condition was achieved, {@code false} otherwise.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedException {
+    public static boolean waitForCondition(GridAbsPredicate cond, long timeout) throws IgniteInterruptedCheckedException {
         long curTime = U.currentTimeMillis();
         long endTime = curTime + timeout;
 

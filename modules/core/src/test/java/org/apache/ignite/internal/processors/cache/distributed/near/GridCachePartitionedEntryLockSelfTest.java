@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 
 import java.util.concurrent.*;
 
@@ -69,7 +68,7 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
 
                             fail();
                         }
-                        catch (IgniteFutureTimeoutException ex) {
+                        catch (IgniteFutureTimeoutCheckedException ex) {
                             info("Caught expected exception: " + ex);
                         }
 

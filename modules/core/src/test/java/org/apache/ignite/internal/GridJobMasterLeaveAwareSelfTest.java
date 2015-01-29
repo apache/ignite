@@ -144,7 +144,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 try {
                     U.sleep(500);
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     // No-op.
                 }
 
@@ -757,7 +757,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                         try {
                             U.await(waitLatch);
                         }
-                        catch (IgniteInterruptedException ignore) {
+                        catch (IgniteInterruptedCheckedException ignore) {
                             // No-op.
                         }
                     }
@@ -792,9 +792,9 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
         /**
          * Await for job execution response to come.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws IgniteInterruptedCheckedException If interrupted.
          */
-        private void awaitResponse() throws IgniteInterruptedException {
+        private void awaitResponse() throws IgniteInterruptedCheckedException {
             U.await(respLatch);
         }
     }

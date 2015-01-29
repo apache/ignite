@@ -1339,9 +1339,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /**
          * @return Waits for initialization.
-         * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted.
          */
-        boolean await() throws IgniteInterruptedException {
+        boolean await() throws IgniteInterruptedCheckedException {
             return initializer.await();
         }
 

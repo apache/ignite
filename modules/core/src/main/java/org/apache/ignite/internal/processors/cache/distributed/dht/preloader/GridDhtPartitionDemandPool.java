@@ -478,7 +478,7 @@ public class GridDhtPartitionDemandPool<K, V> {
          * @param entry Preloaded entry.
          * @param topVer Topology version.
          * @return {@code False} if partition has become invalid during preloading.
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
         private boolean preloadEntry(ClusterNode pick, int p, GridCacheEntryInfo<K, V> entry, long topVer)
             throws IgniteCheckedException {
@@ -539,7 +539,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                     return false;
                 }
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -806,7 +806,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 int preloadOrder = cctx.config().getPreloadOrder();
 
@@ -822,7 +822,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                             fut.get();
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         if (log.isDebugEnabled())
                             log.debug("Failed to wait for ordered preload future (grid is stopping): " +
                                 "[cacheName=" + cctx.name() + ", preloadOrder=" + preloadOrder + ']');
@@ -902,7 +902,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                                         missed.addAll(set);
                                     }
                                 }
-                                catch (IgniteInterruptedException e) {
+                                catch (IgniteInterruptedCheckedException e) {
                                     throw e;
                                 }
                                 catch (ClusterTopologyException e) {

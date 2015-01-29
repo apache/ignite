@@ -137,7 +137,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 U.join(delWorker0);
             }
-            catch (IgniteInterruptedException ignored) {
+            catch (IgniteInterruptedCheckedException ignored) {
                 // No-op.
             }
         }

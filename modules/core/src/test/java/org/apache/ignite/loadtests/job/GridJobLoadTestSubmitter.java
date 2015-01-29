@@ -19,7 +19,7 @@ package org.apache.ignite.loadtests.job;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 
 import java.util.*;
 
@@ -106,7 +106,7 @@ public class GridJobLoadTestSubmitter implements Runnable {
 
                     ignite.log().info(">>> Task completed successfully. Task id: " + fut.getTaskSession().getId());
                 }
-                catch (IgniteFutureCancelledException ignored) {
+                catch (IgniteFutureCancelledCheckedException ignored) {
                     ignite.log().info(">>> Task cancelled: " + fut.getTaskSession().getId());
                 }
                 catch (IgniteCheckedException e) {

@@ -815,14 +815,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             try {
                                 cp.execute(svcCtx);
                             }
-                            catch (InterruptedException | IgniteInterruptedException ignore) {
+                            catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
                                 if (log.isDebugEnabled())
                                     log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
                                         svcCtx.executionId() + ']');
                             }
                             catch (IgniteException e) {
                                 if (e.hasCause(InterruptedException.class) ||
-                                    e.hasCause(IgniteInterruptedException.class)) {
+                                    e.hasCause(IgniteInterruptedCheckedException.class)) {
                                     if (log.isDebugEnabled())
                                         log.debug("Service thread was interrupted [name=" + svcCtx.name() +
                                             ", execId=" + svcCtx.executionId() + ']');

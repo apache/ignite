@@ -100,7 +100,7 @@ public class GridContinuousOperationsLoadTest {
 
                     qry.callback(new PX2<UUID, Collection<Map.Entry<Object, Object>>>() {
                         @Override public boolean applyx(UUID uuid, Collection<Map.Entry<Object, Object>> entries)
-                            throws IgniteInterruptedException {
+                            throws IgniteInterruptedCheckedException {
                             if (cbSleepMs > 0)
                                 U.sleep(cbSleepMs);
 
@@ -111,7 +111,7 @@ public class GridContinuousOperationsLoadTest {
                     });
 
                     qry.filter(new PX2<Object, Object>() {
-                        @Override public boolean applyx(Object key, Object val) throws IgniteInterruptedException {
+                        @Override public boolean applyx(Object key, Object val) throws IgniteInterruptedCheckedException {
                             if (filterSleepMs > 0)
                                 U.sleep(filterSleepMs);
 
@@ -132,7 +132,7 @@ public class GridContinuousOperationsLoadTest {
                         new PX2<UUID, IgniteEvent>() {
                             @Override
                             public boolean applyx(UUID uuid, IgniteEvent evt)
-                                throws IgniteInterruptedException {
+                                throws IgniteInterruptedCheckedException {
                                 if (cbSleepMs > 0)
                                     U.sleep(cbSleepMs);
 
@@ -143,7 +143,7 @@ public class GridContinuousOperationsLoadTest {
                         },
                         new PX1<IgniteEvent>() {
                             @Override
-                            public boolean applyx(IgniteEvent evt) throws IgniteInterruptedException {
+                            public boolean applyx(IgniteEvent evt) throws IgniteInterruptedCheckedException {
                                 if (filterSleepMs > 0)
                                     U.sleep(filterSleepMs);
 
@@ -172,7 +172,7 @@ public class GridContinuousOperationsLoadTest {
                                 ", updatesPerSec=" + updDelta + ']');
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }

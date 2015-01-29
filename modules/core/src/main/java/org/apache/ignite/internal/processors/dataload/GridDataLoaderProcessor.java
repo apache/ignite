@@ -79,7 +79,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             return;
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
-            @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
                 while (!isCancelled()) {
                     IgniteDataLoaderImpl<K, V> ldr = flushQ.take();
 
@@ -126,7 +126,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
             try {
                 ldr.close(cancel);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Interrupted while waiting for completion of the data loader: " + ldr, e);
             }
             catch (IgniteCheckedException e) {

@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp.ipfinder.multicast;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.resources.*;
@@ -483,7 +484,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
             return rmtAddrs;
         }
-        catch (IgniteInterruptedException ignored) {
+        catch (IgniteInterruptedCheckedException ignored) {
             U.warn(log, "Got interrupted while sending address request.");
 
             Thread.currentThread().interrupt();

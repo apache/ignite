@@ -244,7 +244,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 

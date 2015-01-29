@@ -3469,7 +3469,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 try {
                     return fut.get();
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // Interrupted status of current thread was cleared, retry to get lock.
                     isInterrupted = true;
                 }
@@ -4220,7 +4220,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 return t;
             }
-            catch (IgniteInterruptedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
+            catch (IgniteInterruptedCheckedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
@@ -4392,7 +4392,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            return new GridFinishedFutureEx<>(new IgniteInterruptedException("Failed to wait for asynchronous " +
+            return new GridFinishedFutureEx<>(new IgniteInterruptedCheckedException("Failed to wait for asynchronous " +
                 "operation permit (thread got interrupted).", e));
         }
     }

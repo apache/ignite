@@ -318,7 +318,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.id());
                     }
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     Thread.currentThread().interrupt();
                 }
             }

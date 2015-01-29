@@ -3799,7 +3799,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                         f.get(100);
 
                         fail();
-                    } catch (IgniteFutureTimeoutException ex) {
+                    } catch (IgniteFutureTimeoutCheckedException ex) {
                         info("Caught expected exception: " + ex);
                     }
 

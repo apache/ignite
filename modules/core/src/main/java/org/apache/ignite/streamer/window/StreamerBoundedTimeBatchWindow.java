@@ -18,6 +18,7 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -273,7 +274,7 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
         try {
             return enqueue0(evt, U.currentTimeMillis());
         }
-        catch (IgniteInterruptedException ignored) {
+        catch (IgniteInterruptedCheckedException ignored) {
             return false;
         }
     }
@@ -285,9 +286,9 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
      * @param ts Event timestamp.
      * @return {@code True} if event was added.
      *
-     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread was interrupted.
      */
-    private boolean enqueue0(E evt, long ts) throws IgniteInterruptedException {
+    private boolean enqueue0(E evt, long ts) throws IgniteInterruptedCheckedException {
         WindowHolder tup = ref.get();
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
@@ -704,9 +705,9 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
         /**
          * Waits for latch count down after last event was added.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If wait was interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If wait was interrupted.
          */
-        public void finish() throws IgniteInterruptedException {
+        public void finish() throws IgniteInterruptedCheckedException {
             writeLock().lock();
 
             try {

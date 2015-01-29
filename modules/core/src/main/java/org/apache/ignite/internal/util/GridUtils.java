@@ -5644,17 +5644,17 @@ public abstract class GridUtils {
      * Converts {@link InterruptedException} to {@link IgniteCheckedException}.
      *
      * @param mux Mux to wait on.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     @SuppressWarnings({"WaitNotInLoop", "WaitWhileNotSynced"})
-    public static void wait(Object mux) throws IgniteInterruptedException {
+    public static void wait(Object mux) throws IgniteInterruptedCheckedException {
         try {
             mux.wait();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6873,16 +6873,16 @@ public abstract class GridUtils {
      * Awaits for condition.
      *
      * @param cond Condition to await for.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
-    public static void await(Condition cond) throws IgniteInterruptedException {
+    public static void await(Condition cond) throws IgniteInterruptedCheckedException {
         try {
             cond.await();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6893,16 +6893,16 @@ public abstract class GridUtils {
      * @param time The maximum time to wait,
      * @param unit The unit of the {@code time} argument.
      * @return {@code false} if the waiting time detectably elapsed before return from the method, else {@code true}
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}
      */
-    public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedException {
+    public static boolean await(Condition cond, long time, TimeUnit unit) throws IgniteInterruptedCheckedException {
         try {
             return cond.await(time, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6910,9 +6910,9 @@ public abstract class GridUtils {
      * Awaits for the latch.
      *
      * @param latch Latch to wait for.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void await(CountDownLatch latch) throws IgniteInterruptedException {
+    public static void await(CountDownLatch latch) throws IgniteInterruptedCheckedException {
         try {
             if (latch.getCount() > 0)
                 latch.await();
@@ -6920,7 +6920,7 @@ public abstract class GridUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -6932,17 +6932,17 @@ public abstract class GridUtils {
      * @param unit Time unit for timeout.
      * @return {@code True} if the count reached zero and {@code false}
      *      if the waiting time elapsed before the count reached zero.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
     public static boolean await(CountDownLatch latch, long timeout, TimeUnit unit)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         try {
             return latch.await(timeout, unit);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7006,16 +7006,16 @@ public abstract class GridUtils {
      * Sleeps for given number of milliseconds.
      *
      * @param ms Time to sleep.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void sleep(long ms) throws IgniteInterruptedException {
+    public static void sleep(long ms) throws IgniteInterruptedCheckedException {
         try {
             Thread.sleep(ms);
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7023,9 +7023,9 @@ public abstract class GridUtils {
      * Joins worker.
      *
      * @param w Worker.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(GridWorker w) throws IgniteInterruptedException {
+    public static void join(GridWorker w) throws IgniteInterruptedCheckedException {
         try {
             if (w != null)
                 w.join();
@@ -7033,7 +7033,7 @@ public abstract class GridUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7054,7 +7054,7 @@ public abstract class GridUtils {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
         catch (CancellationException e) {
             throw new IgniteCheckedException(e);
@@ -7065,16 +7065,16 @@ public abstract class GridUtils {
      * Joins thread.
      *
      * @param t Thread.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void join(Thread t) throws IgniteInterruptedException {
+    public static void join(Thread t) throws IgniteInterruptedCheckedException {
         try {
             t.join();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -7082,16 +7082,16 @@ public abstract class GridUtils {
      * Acquires a permit from provided semaphore.
      *
      * @param sem Semaphore.
-     * @throws org.apache.ignite.IgniteInterruptedException Wrapped {@link InterruptedException}.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException Wrapped {@link InterruptedException}.
      */
-    public static void acquire(Semaphore sem) throws IgniteInterruptedException {
+    public static void acquire(Semaphore sem) throws IgniteInterruptedCheckedException {
         try {
             sem.acquire();
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -9096,5 +9096,22 @@ public abstract class GridUtils {
         }
 
         return list;
+    }
+
+    /**
+     * @param e Ingite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static IgniteException convertException(IgniteCheckedException e) {
+        if (e instanceof IgniteInterruptedCheckedException)
+            return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
+        else if (e instanceof IgniteFutureCancelledCheckedException)
+            return new IgniteFutureCancelledException(e.getMessage(), e.getCause());
+        else if (e instanceof IgniteFutureTimeoutCheckedException)
+            return new IgniteFutureTimeoutException(e.getMessage(), e.getCause());
+        else if (e.getCause() instanceof IgniteException)
+            return (IgniteException)e.getCause();
+
+        return new IgniteException(e);
     }
 }

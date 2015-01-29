@@ -238,7 +238,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             // Always wait thread exit.
             U.join(delWorker);
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             log.warning("Got interrupter while waiting for delete worker to stop (will continue stopping).", e);
         }
 
@@ -1083,7 +1083,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
             try {
                 ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
             }
-            catch (IgniteFutureTimeoutException ignore) {
+            catch (IgniteFutureTimeoutCheckedException ignore) {
                 // Ignore.
             }
 
@@ -1250,7 +1250,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 try {
                     ggfs.awaitDeletesAsync().get(trashPurgeTimeout);
                 }
-                catch (IgniteFutureTimeoutException ignore) {
+                catch (IgniteFutureTimeoutCheckedException ignore) {
                     // Ignore.
                 }
 
@@ -1690,7 +1690,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {
                     IgniteBiTuple<GridFutureAdapter<Object>, GridGgfsFileInfo> req = delReqs.take();
@@ -1721,7 +1721,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                     block));
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // Ignore interruption during shutdown.
                     }
                     catch (IgniteCheckedException e) {

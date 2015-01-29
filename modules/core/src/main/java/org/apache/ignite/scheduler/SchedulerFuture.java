@@ -133,7 +133,7 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      *
      * @return Result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public R get() throws IgniteCheckedException;
@@ -146,8 +146,8 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      * @param timeout {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException {@inheritDoc}
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public R get(long timeout) throws IgniteCheckedException;
@@ -160,8 +160,8 @@ public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
      * @param unit {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException {@inheritDoc}
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;

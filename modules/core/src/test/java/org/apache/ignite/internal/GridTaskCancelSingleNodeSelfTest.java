@@ -138,7 +138,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledException e) {
+        catch (IgniteFutureCancelledCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

@@ -17,10 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -181,9 +181,9 @@ public class GridCacheWriteBehindStorePartitionedMultiNodeSelfTest extends GridC
     }
 
     /**
-     * @throws IgniteInterruptedException If sleep was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If sleep was interrupted.
      */
-    private void checkWrites() throws IgniteInterruptedException {
+    private void checkWrites() throws IgniteInterruptedCheckedException {
         U.sleep(WRITE_BEHIND_FLUSH_FREQ * 2);
 
         Collection<Integer> allKeys = new ArrayList<>(100);

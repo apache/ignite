@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
@@ -108,7 +109,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} is
+     *      For fully replicated caches, {@link CacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -117,10 +118,10 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param cacheName Cache name, if {@code null}, then default cache instance is used.
      * @param keys Cache keys to map to nodes.
      * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
-     * @throws IgniteCheckedException If failed to map cache keys.
+     * @throws IgniteException If failed to map cache keys.
      */
     public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+        @Nullable Collection<? extends K> keys) throws IgniteException;
 
     /**
      * This method provides ability to detect which cache keys are mapped to which nodes
@@ -131,7 +132,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}
+     *      For fully replicated caches first node ID returned by {@link CacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
@@ -141,9 +142,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param key Cache key to map to a node.
      * @return Primary node for the key or {@code null} if cache with given name
      *      is not present in the grid.
-     * @throws IgniteCheckedException If failed to map key.
+     * @throws IgniteException If failed to map key.
      */
-    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException;
+    @Nullable public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).

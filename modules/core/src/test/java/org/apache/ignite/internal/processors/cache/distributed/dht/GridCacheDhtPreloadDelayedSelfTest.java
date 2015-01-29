@@ -413,7 +413,7 @@ public class GridCacheDhtPreloadDelayedSelfTest extends GridCommonAbstractTest {
      * @param caches Maps to compare.
      */
     private void checkMaps(final boolean strict, final GridDhtCacheAdapter<String, Integer>... caches)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         if (caches.length < 2)
             return;
 

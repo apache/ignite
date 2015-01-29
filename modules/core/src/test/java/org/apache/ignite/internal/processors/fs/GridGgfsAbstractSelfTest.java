@@ -1141,7 +1141,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         try {
                             U.sleep(10);
                         }
-                        catch (IgniteInterruptedException ignored) {
+                        catch (IgniteInterruptedCheckedException ignored) {
                             // nO-op.
                         }
                     }
@@ -1460,7 +1460,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         try {
                             U.sleep(10);
                         }
-                        catch (IgniteInterruptedException ignored) {
+                        catch (IgniteInterruptedCheckedException ignored) {
                             // nO-op.
                         }
                     }

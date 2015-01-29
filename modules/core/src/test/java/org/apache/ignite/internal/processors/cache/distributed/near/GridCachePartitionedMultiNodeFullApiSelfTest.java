@@ -462,7 +462,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                                 ", backup=" + e.backup() + ']');
 
                             fail();
-                        } catch (IgniteFutureTimeoutException ex) {
+                        } catch (IgniteFutureTimeoutCheckedException ex) {
                             info("Caught expected exception: " + ex);
                         }
 

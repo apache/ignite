@@ -747,9 +747,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
      * Wrapper around {@link GridTestUtils#retryAssert(org.apache.ignite.IgniteLogger, int, long, GridAbsClosure)}.
      * For the given closure provides count of retries, configured by {@link #retries} attribute.
      * @param assertion Closure with assertion inside.
-     * @throws org.apache.ignite.IgniteInterruptedException If was interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If was interrupted.
      */
-    private static void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedException {
+    private static void assertWithRetries(GridAbsClosureX assertion) throws IgniteInterruptedCheckedException {
         GridTestUtils.retryAssert(null, retries, 5000, assertion);
     }
 }

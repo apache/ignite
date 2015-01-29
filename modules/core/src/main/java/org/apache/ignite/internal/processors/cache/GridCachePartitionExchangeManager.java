@@ -228,7 +228,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     break;
                 }
-                catch (IgniteFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
                     if (first) {
                         U.warn(log, "Failed to wait for initial partition map exchange. " +
                             "Possible reasons are: " + U.nl() +
@@ -246,7 +246,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
                 cacheCtx.preloader().onInitialExchangeComplete(null);
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             IgniteCheckedException err = new IgniteCheckedException("Timed out waiting for exchange future: " + fut, e);
 
             for (GridCacheContext<K, V> cacheCtx : cctx.cacheContexts())
@@ -263,7 +263,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     @Override protected void onKernalStop0(boolean cancel) {
         // Finish all exchange futures.
         for (GridDhtPartitionsExchangeFuture<K, V> f : exchFuts.values())
-            f.onDone(new IgniteInterruptedException("Grid is stopping: " + cctx.gridName()));
+            f.onDone(new IgniteInterruptedCheckedException("Grid is stopping: " + cctx.gridName()));
 
         U.cancel(exchWorker);
 
@@ -734,7 +734,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
             boolean startEvtFired = false;
@@ -861,7 +861,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

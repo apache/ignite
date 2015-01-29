@@ -530,7 +530,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             try {
                 f = buf.update(entriesForNode, lsnr);
             }
-            catch (IgniteInterruptedException e1) {
+            catch (IgniteInterruptedCheckedException e1) {
                 resFut.onDone(e1);
 
                 return;
@@ -655,7 +655,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
      * Does not wait for result and does not fail on errors assuming that this method
      * should be called periodically.
      */
-    @Override public void tryFlush() throws IgniteInterruptedException {
+    @Override public void tryFlush() throws IgniteInterruptedCheckedException {
         if (!busyLock.enterBusy())
             return;
 
@@ -805,11 +805,11 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param newEntries Infos.
          * @param lsnr Listener for the operation future.
-         * @throws org.apache.ignite.IgniteInterruptedException If failed.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If failed.
          * @return Future for operation.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
-            IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedException {
+            IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedCheckedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
@@ -850,10 +850,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @return Future if any submitted.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If thread has been interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread has been interrupted.
          */
         @Nullable
-        IgniteInternalFuture<?> flush() throws IgniteInterruptedException {
+        IgniteInternalFuture<?> flush() throws IgniteInterruptedCheckedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
@@ -897,9 +897,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * Increments active tasks count.
          *
-         * @throws org.apache.ignite.IgniteInterruptedException If thread has been interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread has been interrupted.
          */
-        private void incrementActiveTasks() throws IgniteInterruptedException {
+        private void incrementActiveTasks() throws IgniteInterruptedCheckedException {
             U.acquire(sem);
         }
 
@@ -915,10 +915,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param entries Entries to submit.
          * @param curFut Current future.
-         * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+         * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
          */
         private void submit(final Collection<Map.Entry<K, V>> entries, final GridFutureAdapter<Object> curFut)
-            throws IgniteInterruptedException {
+            throws IgniteInterruptedCheckedException {
             assert entries != null;
             assert !entries.isEmpty();
             assert curFut != null;

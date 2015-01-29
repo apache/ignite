@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.worker;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -143,7 +144,7 @@ public abstract class GridWorker implements Runnable {
 
             body();
         }
-        catch (IgniteInterruptedException e) {
+        catch (IgniteInterruptedCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Caught interrupted exception: " + e);
         }
@@ -192,9 +193,9 @@ public abstract class GridWorker implements Runnable {
      * The implementation should provide the execution body for this runnable.
      *
      * @throws InterruptedException Thrown in case of interruption.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    protected abstract void body() throws InterruptedException, IgniteInterruptedException;
+    protected abstract void body() throws InterruptedException, IgniteInterruptedCheckedException;
 
     /**
      * Optional method that will be called after runnable is finished. Default

@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.cache.eviction.CacheEvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.CacheFifoEvictionPolicy;
@@ -281,10 +282,10 @@ public abstract class GridCacheEmptyEntriesAbstractSelfTest extends GridCommonAb
      * Checks that cache is empty.
      *
      * @param cache Cache to check.
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted while sleeping.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted while sleeping.
      */
     @SuppressWarnings({"ErrorNotRethrown", "TypeMayBeWeakened"})
-    private void checkEmpty(GridCache<String, String> cache) throws IgniteInterruptedException {
+    private void checkEmpty(GridCache<String, String> cache) throws IgniteInterruptedCheckedException {
         for (int i = 0; i < 3; i++) {
             try {
                 assertTrue(cache.entrySet().toString(), cache.entrySet().isEmpty());

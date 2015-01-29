@@ -62,6 +62,7 @@ public class IgniteLangSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridEmbeddedFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioFutureSelfTest.class));
         suite.addTest(new TestSuite(GridNioEmbeddedFutureSelfTest.class));
+        suite.addTest(new TestSuite(IgniteFutureImplTest.class));
 
         // Consistent hash tests.
         suite.addTest(new TestSuite(GridConsistentHashSelfTest.class));

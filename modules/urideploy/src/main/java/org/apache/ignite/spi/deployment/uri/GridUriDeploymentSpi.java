@@ -19,6 +19,7 @@ package org.apache.ignite.spi.deployment.uri;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -537,7 +538,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
                     try {
                         U.sleep(10000);
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op
                     }
 

@@ -1001,7 +1001,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                             try {
                                 U.sleep(interval0);
                             }
-                            catch (IgniteInterruptedException ignored) {
+                            catch (IgniteInterruptedCheckedException ignored) {
                                 break;
                             }
 
@@ -1153,7 +1153,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
                     break;
                 }
-                catch (IgniteInterruptedException e) {
+                catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
                 catch (IgniteCheckedException e) {

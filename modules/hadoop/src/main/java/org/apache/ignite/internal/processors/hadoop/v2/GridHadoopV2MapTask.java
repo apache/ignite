@@ -25,6 +25,7 @@ import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 
 /**
  * Hadoop map task implementation for v2 API.
@@ -89,7 +90,7 @@ public class GridHadoopV2MapTask extends GridHadoopV2Task {
 
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
         catch (Exception e) {
             err = e;

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.ipc.shmem;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.thread.*;
@@ -318,7 +319,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             }
         } // while
 
-        throw new IgniteInterruptedException("Socket accept was interrupted.");
+        throw new IgniteInterruptedCheckedException("Socket accept was interrupted.");
     }
 
     /**
@@ -448,7 +449,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
             try {
                 U.join(gcWorker);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Interrupted when stopping GC worker.", e);
             }
             finally {
@@ -519,7 +520,7 @@ public class GridIpcSharedMemoryServerEndpoint implements GridIpcServerEndpoint 
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (log.isDebugEnabled())
                 log.debug("GC worker started.");
 

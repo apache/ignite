@@ -339,7 +339,7 @@ public class GridClockSyncProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 GridDiscoveryTopologySnapshot top = lastSnapshot;
 

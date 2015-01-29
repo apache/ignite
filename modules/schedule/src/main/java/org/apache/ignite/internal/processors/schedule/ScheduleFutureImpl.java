@@ -691,12 +691,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
      * Checks that the future is in valid state for get operation.
      *
      * @return Latch or {@code null} if future has been finished.
-     * @throws org.apache.ignite.lang.IgniteFutureCancelledException If was cancelled.
+     * @throws org.apache.ignite.internal.IgniteFutureCancelledCheckedException If was cancelled.
      */
-    @Nullable private CountDownLatch ensureGet() throws IgniteFutureCancelledException {
+    @Nullable private CountDownLatch ensureGet() throws IgniteFutureCancelledCheckedException {
         synchronized (mux) {
             if (cancelled)
-                throw new IgniteFutureCancelledException("Scheduling has been cancelled: " + this);
+                throw new IgniteFutureCancelledCheckedException("Scheduling has been cancelled: " + this);
 
             if (done)
                 return null;
@@ -717,12 +717,12 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
                 Thread.currentThread().interrupt();
 
                 if (isCancelled())
-                    throw new IgniteFutureCancelledException(e);
+                    throw new IgniteFutureCancelledCheckedException(e);
 
                 if (isDone())
                     return last();
 
-                throw new IgniteInterruptedException(e);
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 
@@ -743,19 +743,19 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
                 if (latch.await(timeout, unit))
                     return last();
                 else
-                    throw new IgniteFutureTimeoutException("Timed out waiting for completion of next " +
+                    throw new IgniteFutureTimeoutCheckedException("Timed out waiting for completion of next " +
                         "scheduled computation: " + this);
             }
             catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 if (isCancelled())
-                    throw new IgniteFutureCancelledException(e);
+                    throw new IgniteFutureCancelledCheckedException(e);
 
                 if (isDone())
                     return last();
 
-                throw new IgniteInterruptedException(e);
+                throw new IgniteInterruptedCheckedException(e);
             }
         }
 

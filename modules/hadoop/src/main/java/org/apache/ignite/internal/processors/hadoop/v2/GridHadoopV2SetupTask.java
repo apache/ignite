@@ -21,6 +21,7 @@ import org.apache.hadoop.mapred.JobContextImpl;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.ignite.*;
 import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.*;
 
 import java.io.*;
 
@@ -58,7 +59,7 @@ public class GridHadoopV2SetupTask extends GridHadoopV2Task {
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 }

@@ -18,6 +18,7 @@
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.io.*;
 
@@ -64,9 +65,9 @@ class IgniteOptimizedObjectStreamRegistry {
      * Gets output stream.
      *
      * @return Object output stream.
-     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted while trying to take holder from pool.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    static IgniteOptimizedObjectOutputStream out() throws IgniteInterruptedException {
+    static IgniteOptimizedObjectOutputStream out() throws IgniteInterruptedCheckedException {
         return holder().acquireOut();
     }
 
@@ -74,9 +75,9 @@ class IgniteOptimizedObjectStreamRegistry {
      * Gets input stream.
      *
      * @return Object input stream.
-     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted while trying to take holder from pool.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    static IgniteOptimizedObjectInputStream in() throws IgniteInterruptedException {
+    static IgniteOptimizedObjectInputStream in() throws IgniteInterruptedCheckedException {
         return holder().acquireIn();
     }
 
@@ -127,9 +128,9 @@ class IgniteOptimizedObjectStreamRegistry {
      * Gets holder from pool or thread local.
      *
      * @return Stream holder.
-     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted while trying to take holder from pool.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted while trying to take holder from pool.
      */
-    private static StreamHolder holder() throws IgniteInterruptedException {
+    private static StreamHolder holder() throws IgniteInterruptedCheckedException {
         StreamHolder holder = holders.get();
 
         if (holder == null) {
@@ -137,7 +138,7 @@ class IgniteOptimizedObjectStreamRegistry {
                 holders.set(holder = pool != null ? pool.take() : new StreamHolder());
             }
             catch (InterruptedException e) {
-                throw new IgniteInterruptedException("Failed to take object stream from pool (thread interrupted).", e);
+                throw new IgniteInterruptedCheckedException("Failed to take object stream from pool (thread interrupted).", e);
             }
         }
 

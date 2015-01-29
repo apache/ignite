@@ -19,6 +19,7 @@ package org.apache.ignite.cache.store.hibernate;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -511,7 +512,7 @@ public class GridCacheHibernateBlobStore<K, V> extends CacheStoreAdapter<K, V> {
             try {
                 U.await(initLatch);
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteException(e);
             }
         }

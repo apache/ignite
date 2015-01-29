@@ -227,7 +227,7 @@ public class GridGgfsServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 GridGgfsDataInputStream dis = new GridGgfsDataInputStream(endpoint.inputStream());
 
@@ -388,7 +388,7 @@ public class GridGgfsServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     GridIpcEndpoint client = srvEndpoint.accept();

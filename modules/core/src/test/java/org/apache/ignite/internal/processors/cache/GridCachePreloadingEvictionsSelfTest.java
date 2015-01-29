@@ -184,10 +184,10 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @param ignite1 Grid 1.
      * @param ignite2 Grid 2.
      * @param oldSize Old size, stable size should be .
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
     private void sleepUntilCashesEqualize(final Ignite ignite1, final Ignite ignite2, final int oldSize)
-        throws IgniteInterruptedException {
+        throws IgniteInterruptedCheckedException {
         info("Sleeping...");
 
         assertTrue(GridTestUtils.waitForCondition(new PA() {

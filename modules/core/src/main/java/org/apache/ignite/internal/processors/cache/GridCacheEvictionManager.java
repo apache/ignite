@@ -1120,7 +1120,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
             try {
                 t = fut.get();
             }
-            catch (IgniteFutureCancelledException ignored) {
+            catch (IgniteFutureCancelledCheckedException ignored) {
                 assert false : "Future has been cancelled, but manager is not stopping: " + fut;
 
                 return;
@@ -1387,7 +1387,7 @@ public class GridCacheEvictionManager<K, V> extends GridCacheManagerAdapter<K, V
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 assert !cctx.isNear() && evictSync;
 

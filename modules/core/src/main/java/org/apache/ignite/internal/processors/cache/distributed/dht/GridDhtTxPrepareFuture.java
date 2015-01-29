@@ -420,7 +420,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             try {
                 get();
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 onError(new IgniteCheckedException("Got interrupted while waiting for replies to be sent.", e));
             }
             catch (IgniteCheckedException ignored) {

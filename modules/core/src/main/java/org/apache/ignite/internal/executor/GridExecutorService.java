@@ -528,7 +528,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
                     // Cancel next tasks (avoid current task cancellation below in loop).
                     continue;
                 }
-                catch (IgniteFutureTimeoutException ignored) {
+                catch (IgniteFutureTimeoutCheckedException ignored) {
                     if (log.isDebugEnabled())
                         log.debug("Timeout occurred during getting task result: " + fut);
 
@@ -708,7 +708,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
                 return res;
             }
-            catch (IgniteFutureTimeoutException e) {
+            catch (IgniteFutureTimeoutCheckedException e) {
                 TimeoutException e2 = new TimeoutException();
 
                 e2.initCause(e);

@@ -159,7 +159,7 @@ public class GridStreamerIndexLoadTest {
                         prevEvict = curEvict;
                     }
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // No-op.
                 }
 

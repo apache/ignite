@@ -74,12 +74,12 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter<IgniteClus
 
     /** {@inheritDoc} */
     @Override public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
-        @Nullable Collection<? extends K> keys) throws IgniteCheckedException {
+        @Nullable Collection<? extends K> keys) {
         return grid.mapKeysToNodes(cacheName, keys);
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteCheckedException {
+    @Nullable @Override public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) {
         return grid.mapKeyToNode(cacheName, key);
     }
 

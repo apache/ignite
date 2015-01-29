@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.util.worker.*;
@@ -178,7 +179,7 @@ public class GridHadoopExecutorService {
             workerName = task.toString();
 
         GridWorker w = new GridWorker(gridName, workerName, log, lsnr) {
-            @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+            @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
                 try {
                     task.call();
                 }

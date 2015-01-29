@@ -174,7 +174,7 @@ public class GridClockServer {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedException {
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             DatagramPacket packet = new DatagramPacket(new byte[GridClockMessage.PACKET_SIZE],
                 GridClockMessage.PACKET_SIZE);
 

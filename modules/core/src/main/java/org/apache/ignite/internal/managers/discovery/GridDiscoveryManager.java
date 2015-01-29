@@ -1591,7 +1591,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws IgniteInterruptedException {
+        @Override protected void body() throws IgniteInterruptedCheckedException {
             while (!isCancelled()) {
                 U.sleep(METRICS_UPDATE_FREQ);
 

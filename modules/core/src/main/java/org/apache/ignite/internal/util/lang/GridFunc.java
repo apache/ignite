@@ -2777,10 +2777,10 @@ public class GridFunc {
                 try {
                     return fut.get();
                 }
-                catch (IgniteFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledCheckedException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
                 catch (IgniteCheckedException e) {
@@ -2793,13 +2793,13 @@ public class GridFunc {
                 try {
                     return fut.get(timeout, unit);
                 }
-                catch (IgniteFutureCancelledException ignore) {
+                catch (IgniteFutureCancelledCheckedException ignore) {
                     throw new CancellationException("The computation was cancelled.");
                 }
-                catch (IgniteInterruptedException ignore) {
+                catch (IgniteInterruptedCheckedException ignore) {
                     throw new InterruptedException("The computation was interrupted.");
                 }
-                catch (IgniteFutureTimeoutException e) {
+                catch (IgniteFutureTimeoutCheckedException e) {
                     throw new TimeoutException("The computation timed out: " + e.getMessage());
                 }
                 catch (IgniteCheckedException e) {
@@ -8499,7 +8499,7 @@ public class GridFunc {
                 long left = end - U.currentTimeMillis();
 
                 if (left <= 0 && !fut.isDone())
-                    throw new IgniteFutureTimeoutException("Timed out waiting for all futures: " + futs);
+                    throw new IgniteFutureTimeoutCheckedException("Timed out waiting for all futures: " + futs);
 
                 if (fut.isDone() && left < 0)
                     left = 0;

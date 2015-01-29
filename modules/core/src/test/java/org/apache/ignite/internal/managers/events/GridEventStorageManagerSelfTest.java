@@ -73,7 +73,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
             fail("GridFutureTimeoutException must have been thrown.");
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -100,7 +100,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
             fail("GridFutureTimeoutException must have been thrown.");
         }
-        catch (IgniteFutureTimeoutException e) {
+        catch (IgniteFutureTimeoutCheckedException e) {
             info("Caught expected exception: " + e);
         }
     }

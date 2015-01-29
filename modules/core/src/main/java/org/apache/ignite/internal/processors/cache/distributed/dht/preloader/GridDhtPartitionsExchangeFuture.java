@@ -404,9 +404,9 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
     /**
      * Starts activity.
      *
-     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted.
      */
-    public void init() throws IgniteInterruptedException {
+    public void init() throws IgniteInterruptedCheckedException {
         assert oldestNode.get() != null;
 
         if (init.compareAndSet(false, true)) {
@@ -494,7 +494,7 @@ public class GridDhtPartitionsExchangeFuture<K, V> extends GridFutureAdapter<Lon
                     top.beforeExchange(exchId);
                 }
             }
-            catch (IgniteInterruptedException e) {
+            catch (IgniteInterruptedCheckedException e) {
                 onDone(e);
 
                 throw e;

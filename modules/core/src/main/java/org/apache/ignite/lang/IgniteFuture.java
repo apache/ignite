@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.lang;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.util.concurrent.*;
@@ -27,69 +26,20 @@ import java.util.concurrent.*;
  * Extension for standard {@link Future} interface. It adds simplified exception handling,
  * functional programming support and ability to listen for future completion via functional
  * callback.
- * @param <R> Type of the result for the future.
+ * @param <V> Type of the result for the future.
  */
-public interface IgniteInternalFuture<R> {
-    /**
-     * Synchronously waits for completion of the computation and
-     * returns computation result.
-     *
-     * @return Computation result.
-     * @throws IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
-     * @throws IgniteCheckedException If computation failed.
-     */
-    public R get() throws IgniteCheckedException;
+public interface IgniteFuture<V> extends Future<V> {
+    @Override public V get() throws IgniteException, IgniteInterruptedException;
 
-    /**
-     * Synchronously waits for completion of the computation for
-     * up to the timeout specified and returns computation result.
-     * This method is equivalent to calling {@link #get(long, TimeUnit) get(long, TimeUnit.MILLISECONDS)}.
-     *
-     * @param timeout The maximum time to wait in milliseconds.
-     * @return Computation result.
-     * @throws IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
-     * @throws IgniteCheckedException If computation failed.
-     */
-    public R get(long timeout) throws IgniteCheckedException;
-
-    /**
-     * Synchronously waits for completion of the computation for
-     * up to the timeout specified and returns computation result.
-     *
-     * @param timeout The maximum time to wait.
-     * @param unit The time unit of the {@code timeout} argument.
-     * @return Computation result.
-     * @throws IgniteInterruptedCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was interrupted.
-     * @throws IgniteFutureTimeoutCheckedException Subclass of {@link IgniteCheckedException} thrown if the wait was timed out.
-     * @throws IgniteFutureCancelledCheckedException Subclass of {@link IgniteCheckedException} throws if computation was cancelled.
-     * @throws IgniteCheckedException If computation failed.
-     */
-    public R get(long timeout, TimeUnit unit) throws IgniteCheckedException;
+    @Override public V get(long timeout, TimeUnit unit)throws IgniteException, IgniteInterruptedException;
 
     /**
      * Cancels this future.
      *
      * @return {@code True} if future was canceled (i.e. was not finished prior to this call).
-     * @throws IgniteCheckedException If cancellation failed.
+     * @throws IgniteException If cancellation failed.
      */
-    public boolean cancel() throws IgniteCheckedException;
-
-    /**
-     * Checks if computation is done.
-     *
-     * @return {@code True} if computation is done, {@code false} otherwise.
-     */
-    public boolean isDone();
-
-    /**
-     * Returns {@code true} if this computation was cancelled before it completed normally.
-     *
-     * @return {@code True} if this computation was cancelled before it completed normally.
-     */
-    public boolean isCancelled();
+    public boolean cancel() throws IgniteException;
 
     /**
      * Gets start time for this future.
@@ -169,7 +119,7 @@ public interface IgniteInternalFuture<R> {
      *
      * @param lsnr Listener closure to register. If not provided - this method is no-op.
      */
-    public void listenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>> lsnr);
+    public void listenAsync(@Nullable IgniteInClosure<? super IgniteFuture<V>> lsnr);
 
     /**
      * Removes given listeners from the future. If no listener is passed in, then all listeners
@@ -177,7 +127,7 @@ public interface IgniteInternalFuture<R> {
      *
      * @param lsnr Listeners to remove.
      */
-    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteInternalFuture<R>>... lsnr);
+    public void stopListenAsync(@Nullable IgniteInClosure<? super IgniteFuture<V>>... lsnr);
 
     /**
      * Make a chained future to convert result of this future (when complete) into a new format.
@@ -186,5 +136,6 @@ public interface IgniteInternalFuture<R> {
      * @param doneCb Done callback that is applied to this future when it finishes to produce chained future result.
      * @return Chained future that finishes after this future completes and done callback is called.
      */
-    public <T> IgniteInternalFuture<T> chain(IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb);
+    public <T> IgniteFuture<T> chain(IgniteClosure<? super IgniteFuture<V>, T> doneCb);
+
 }

@@ -109,7 +109,7 @@ public class GridJobExecutionSingleNodeSemaphoreLoadTest {
                                 avgTasksPerSec.update(curTasksPerSec);
                             }
                         }
-                        catch (IgniteInterruptedException ignored) {
+                        catch (IgniteInterruptedCheckedException ignored) {
                             X.println(">>> Interrupted.");
 
                             Thread.currentThread().interrupt();

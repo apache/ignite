@@ -300,7 +300,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                         try {
                             U.sleep(RESEND_FREQ);
                         }
-                        catch (IgniteInterruptedException e1) {
+                        catch (IgniteInterruptedCheckedException e1) {
                             U.error(log,
                                 "Waiting for queries response resending was interrupted (response will not be sent) " +
                                 "[nodeId=" + nodeId + ", response=" + res + "]", e1);

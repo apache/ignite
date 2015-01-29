@@ -15,14 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite;
+package org.apache.ignite.internal;
+
+import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
 
 /**
- * This exception is used to wrap standard {@link InterruptedException} into {@link IgniteException}.
+ * Future computation cannot be retrieved because it was cancelled.
  */
-public class IgniteInterruptedException extends IgniteException {
+public class IgniteFutureCancelledCheckedException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * Creates new exception with given error message.
+     *
+     * @param msg Error message.
+     */
+    public IgniteFutureCancelledCheckedException(String msg) {
+        super(msg);
+    }
 
     /**
      * Creates new exception with given throwable as a nested cause and
@@ -30,17 +42,8 @@ public class IgniteInterruptedException extends IgniteException {
      *
      * @param cause Non-null throwable cause.
      */
-    public IgniteInterruptedException(InterruptedException cause) {
+    public IgniteFutureCancelledCheckedException(Throwable cause) {
         this(cause.getMessage(), cause);
-    }
-
-    /**
-     * Creates a new exception with given error message and optional nested cause exception.
-     *
-     * @param msg Error message.
-     */
-    public IgniteInterruptedException(String msg) {
-        super(msg);
     }
 
     /**
@@ -49,7 +52,7 @@ public class IgniteInterruptedException extends IgniteException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public IgniteInterruptedException(String msg, InterruptedException cause) {
+    public IgniteFutureCancelledCheckedException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

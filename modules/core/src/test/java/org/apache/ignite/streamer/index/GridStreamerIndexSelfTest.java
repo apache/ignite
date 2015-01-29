@@ -319,7 +319,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                                 U.sleep(50);
                         }
                     }
-                    catch (IgniteInterruptedException ignored) {
+                    catch (IgniteInterruptedCheckedException ignored) {
                         // No-op.
                     }
                 }

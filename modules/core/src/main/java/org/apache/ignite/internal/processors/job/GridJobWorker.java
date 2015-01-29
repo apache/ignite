@@ -489,7 +489,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             }
         }
         catch (IgniteCheckedException e) {
-            if (sysStopping && e.hasCause(IgniteInterruptedException.class, InterruptedException.class)) {
+            if (sysStopping && e.hasCause(IgniteInterruptedCheckedException.class, InterruptedException.class)) {
                 ex = handleThrowable(e);
 
                 assert ex != null;
@@ -560,7 +560,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
             ex = new ComputeUserUndeclaredException(msg, e);
         }
-        else if (sysStopping && X.hasCause(e, InterruptedException.class, IgniteInterruptedException.class)) {
+        else if (sysStopping && X.hasCause(e, InterruptedException.class, IgniteInterruptedCheckedException.class)) {
             msg = "Job got interrupted due to system stop (will attempt failover).";
 
             ex = new ComputeExecutionRejectedException(e);

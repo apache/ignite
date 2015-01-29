@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -496,9 +497,9 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     /**
      * Loads all left pages.
      *
-     * @throws org.apache.ignite.IgniteInterruptedException If thread is interrupted.
+     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If thread is interrupted.
      */
-    protected abstract void loadAllPages() throws IgniteInterruptedException;
+    protected abstract void loadAllPages() throws IgniteInterruptedCheckedException;
 
     /**
      * Clears future.
@@ -538,7 +539,7 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
         try {
             cancelQuery();
 
-            onDone(new IgniteFutureTimeoutException("Query timed out."));
+            onDone(new IgniteFutureTimeoutCheckedException("Query timed out."));
         }
         catch (IgniteCheckedException e) {
             onDone(e);

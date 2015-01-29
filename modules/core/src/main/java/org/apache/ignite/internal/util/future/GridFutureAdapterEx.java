@@ -151,7 +151,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
                 acquireSharedInterruptibly(0);
 
             if (getState() == CANCELLED)
-                throw new IgniteFutureCancelledException("Future was cancelled: " + this);
+                throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
             if (err != null)
                 throw U.cast(err);
@@ -161,7 +161,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException(e);
+            throw new IgniteInterruptedCheckedException(e);
         }
     }
 
@@ -184,7 +184,7 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedException("Got interrupted while waiting for future to complete.", e);
+            throw new IgniteInterruptedCheckedException("Got interrupted while waiting for future to complete.", e);
         }
     }
 
@@ -192,15 +192,15 @@ public class GridFutureAdapterEx<R> extends AbstractQueuedSynchronizer implement
      * @param nanosTimeout Timeout (nanoseconds).
      * @return Result.
      * @throws InterruptedException If interrupted.
-     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException If timeout reached before computation completed.
+     * @throws org.apache.ignite.internal.IgniteFutureTimeoutCheckedException If timeout reached before computation completed.
      * @throws IgniteCheckedException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {
         if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
-            throw new IgniteFutureTimeoutException("Timeout was reached before computation completed.");
+            throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
 
         if (getState() == CANCELLED)
-            throw new IgniteFutureCancelledException("Future was cancelled: " + this);
+            throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
         if (err != null)
             throw U.cast(err);

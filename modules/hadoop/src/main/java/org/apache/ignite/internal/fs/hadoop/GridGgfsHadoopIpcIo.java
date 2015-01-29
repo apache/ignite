@@ -278,7 +278,7 @@ public class GridGgfsHadoopIpcIo implements GridGgfsHadoopIo {
 
                 reader = null;
             }
-            catch (IgniteInterruptedException ignored) {
+            catch (IgniteInterruptedCheckedException ignored) {
                 Thread.currentThread().interrupt();
 
                 log.warn("Got interrupted while waiting for reader thread to shut down (will return).");

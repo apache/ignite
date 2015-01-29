@@ -174,7 +174,7 @@ public class GridIoManagerBenchmark {
                         queries = newQueries;
                     }
                 }
-                catch (IgniteInterruptedException ignored) {
+                catch (IgniteInterruptedCheckedException ignored) {
                     // No-op.
                 }
 
@@ -207,7 +207,7 @@ public class GridIoManagerBenchmark {
         try {
             U.sleep(duration > 0 ? duration * 1000 + WARM_UP_DUR : Long.MAX_VALUE);
         }
-        catch (IgniteInterruptedException ignored) {
+        catch (IgniteInterruptedCheckedException ignored) {
             // No-op.
         }
 
