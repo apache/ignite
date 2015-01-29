@@ -616,6 +616,18 @@ public class SchemaLoadApp extends Application {
             @Override public void handle(ActionEvent evt) {
                 FileChooser fc = new FileChooser();
 
+                try {
+                    File jarFolder = new File(jdbcDrvJarTf.getText()).getParentFile();
+
+                    if (jarFolder.exists())
+                        fc.setInitialDirectory(jarFolder);
+                }
+                catch (Throwable ignored) {
+                    // No-op.
+                }
+
+                jdbcDrvJarTf.getText();
+
                 fc.getExtensionFilters().addAll(
                     new FileChooser.ExtensionFilter("JDBC Drivers (*.jar)", "*.jar"),
                     new FileChooser.ExtensionFilter("ZIP archives (*.zip)", "*.zip"));
