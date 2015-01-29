@@ -617,6 +617,56 @@ public abstract class GridCacheAbstractProjectionSelfTest extends GridCacheAbstr
     /**
      * @throws Exception if failed.
      */
+    public void testSkipStoreIterator() throws Exception {
+        assertNull(cache().put("1", 100500));
+
+        IgniteCache<String, Integer> c = jcache().withSkipStore();
+
+        Iterator i = c.iterator();
+
+        assertTrue(i.hasNext());
+
+        i.next();
+
+        i.remove();
+
+        i = c.iterator();
+
+        assertFalse(i.hasNext());
+
+        assertNull(c.get("1"));
+
+        assertEquals(100500, map.get("1"));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testNotSkipStoreIterator() throws Exception {
+        assertNull(cache().put("1", 100500));
+
+        IgniteCache<String, Integer> c = jcache();
+
+        Iterator i = c.iterator();
+
+        assertTrue(i.hasNext());
+
+        i.next();
+
+        i.remove();
+
+        i = c.iterator();
+
+        assertFalse(i.hasNext());
+
+        assertNull(c.get("1"));
+
+        assertNull(map.get("1"));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     // TODO: enable when GG-7579 is fixed.
     public void _testSkipStoreFlagMultinode() throws Exception {
         final int nGrids = 3;
