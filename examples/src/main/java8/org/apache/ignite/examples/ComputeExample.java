@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.examples;
+package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
