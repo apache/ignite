@@ -23,11 +23,11 @@ import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -1314,7 +1314,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             if (log.isDebugEnabled())
                 log.debug("All remote nodes left while cache clear [cacheName=" + name() + "]");
         }
-        catch (ComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutCheckedException e) {
             U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 
@@ -3832,7 +3832,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @param args Arguments.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+    IgniteFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
         ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
 
@@ -4170,7 +4170,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
             return primaryOnly ? primarySize() : size();
         }
-        catch (ComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutCheckedException e) {
             U.warn(log, "Timed out waiting for remote nodes to finish cache clear (consider increasing " +
                 "'networkTimeout' configuration property) [cacheName=" + name() + "]");
 

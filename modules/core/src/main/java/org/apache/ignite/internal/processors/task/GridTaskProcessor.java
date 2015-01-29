@@ -278,7 +278,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridTaskFutureImpl<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(Class<? extends ComputeTask<T, R>> taskCls, @Nullable T arg) {
         assert taskCls != null;
 
         lock.readLock();
@@ -301,7 +301,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridTaskFutureImpl<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
         return execute(task, arg, false);
     }
 
@@ -313,7 +313,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridTaskFutureImpl<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
         lock.readLock();
 
         try {
@@ -349,7 +349,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <T> Task argument type.
      * @param <R> Task return value type.
      */
-    public <T, R> GridTaskFutureImpl<R> execute(String taskName, @Nullable T arg) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(String taskName, @Nullable T arg) {
         assert taskName != null;
 
         lock.readLock();
@@ -375,7 +375,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
-    private <T, R> GridTaskFutureImpl<R> startTask(
+    private <T, R> ComputeTaskInternalFuture<R> startTask(
         @Nullable String taskName,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<T, R> task,
@@ -535,7 +535,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             fullSup,
             subjId);
 
-        GridTaskFutureImpl<R> fut = new GridTaskFutureImpl<>(ses, ctx);
+        ComputeTaskInternalFuture<R> fut = new ComputeTaskInternalFuture<>(ses, ctx);
 
         IgniteCheckedException securityEx = null;
 
@@ -631,7 +631,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         Map<IgniteUuid, ComputeTaskFuture<R>> res = U.newHashMap(tasks.size());
 
         for (GridTaskWorker taskWorker : tasks.values()) {
-            GridTaskFutureImpl<R> fut = taskWorker.getTaskFuture();
+            ComputeTaskInternalFuture<R> fut = taskWorker.getTaskFuture();
 
             res.put(fut.getTaskSession().getId(), fut.publicFuture());
         }
@@ -719,7 +719,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param fut Task future.
      * @param <R> Result type.
      */
-    private <R> void handleException(Throwable ex, GridTaskFutureImpl<R> fut) {
+    private <R> void handleException(Throwable ex, ComputeTaskInternalFuture<R> fut) {
         assert ex != null;
         assert fut != null;
 

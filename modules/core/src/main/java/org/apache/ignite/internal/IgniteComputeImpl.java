@@ -507,6 +507,13 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
     }
 
     /** {@inheritDoc} */
+    @Override protected <R> IgniteFuture<R> createFuture(IgniteInternalFuture<R> fut) {
+        assert fut instanceof ComputeTaskInternalFuture : fut;
+
+        return ((ComputeTaskInternalFuture<R>)fut).publicFuture();
+    }
+
+    /** {@inheritDoc} */
     @Override public <R> ComputeTaskFuture<R> future() {
         return (ComputeTaskFuture<R>)super.future();
     }

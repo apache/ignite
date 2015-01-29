@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -85,7 +86,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
             assert false : "GridComputeTaskTimeoutException was not thrown (synchronous apply)";
         }
-        catch (ComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutCheckedException e) {
             info("Received expected timeout exception (synchronous apply): " + e);
         }
 
@@ -150,7 +151,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
                         assert false : "Task has not been timed out. Future: " + fut;
                     }
-                    catch (ComputeTaskTimeoutException ignored) {
+                    catch (ComputeTaskTimeoutCheckedException ignored) {
                         // Expected.
                     }
                     catch (IgniteCheckedException e) {

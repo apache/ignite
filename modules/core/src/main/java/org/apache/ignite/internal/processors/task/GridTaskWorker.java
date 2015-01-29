@@ -24,6 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
@@ -89,7 +90,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     private final GridTaskSessionImpl ses;
 
     /** */
-    private final GridTaskFutureImpl<R> fut;
+    private final ComputeTaskInternalFuture<R> fut;
 
     /** */
     private final T arg;
@@ -194,7 +195,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         GridKernalContext ctx,
         @Nullable T arg,
         GridTaskSessionImpl ses,
-        GridTaskFutureImpl<R> fut,
+        ComputeTaskInternalFuture<R> fut,
         @Nullable Class<?> taskCls,
         @Nullable ComputeTask<T, R> task,
         GridDeployment dep,
@@ -258,7 +259,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
     /**
      * @return Task future.
      */
-    GridTaskFutureImpl<R> getTaskFuture() {
+    ComputeTaskInternalFuture<R> getTaskFuture() {
         return fut;
     }
 
@@ -308,7 +309,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
 
         recordTaskEvent(EVT_TASK_TIMEDOUT, "Task has timed out.");
 
-        Throwable e = new ComputeTaskTimeoutException("Task timed out (check logs for error messages): " + ses);
+        Throwable e = new ComputeTaskTimeoutCheckedException("Task timed out (check logs for error messages): " + ses);
 
         finishTask(null, e);
     }

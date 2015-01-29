@@ -32,14 +32,14 @@ public interface ComputeTaskFuture<R> extends IgniteFuture<R> {
     /**
      * {@inheritDoc}
      *
-     * @throws ComputeTaskTimeoutException If task execution timed out.
+     * @throws org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException If task execution timed out.
      */
     @Override public R get();
 
     /**
      * {@inheritDoc}
      *
-     * @throws ComputeTaskTimeoutException If task execution timed out.
+     * @throws org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException If task execution timed out.
      */
     @Override public R get(long timeout, TimeUnit unit);
 

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.client.*;
 import org.apache.ignite.testframework.*;
@@ -200,7 +201,7 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            ComputeTaskTimeoutException.class,
+            ComputeTaskTimeoutCheckedException.class,
             null
         );
 

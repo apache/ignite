@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.executor;
 
 import org.apache.ignite.*;
-import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -213,7 +213,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             try {
                 fut.get(end - now);
             }
-            catch (ComputeTaskTimeoutException e) {
+            catch (ComputeTaskTimeoutCheckedException e) {
                 U.error(log, "Failed to get task result: " + fut, e);
 
                 return false;
@@ -242,9 +242,11 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         try {
             comp.call(task);
 
-            return addFuture(comp.<T>future());
+            IgniteFutureImpl<T> fut = (IgniteFutureImpl<T>)comp.future();
+
+            return addFuture(fut.internalFuture());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Should not be thrown since uses asynchronous execution.
             return addFuture(new GridFinishedFutureEx<T>(e));
         }
@@ -261,7 +263,9 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         try {
             comp.run(task);
 
-            IgniteInternalFuture<T> fut = comp.future().chain(new CX1<IgniteInternalFuture<?>, T>() {
+            IgniteInternalFuture<T> fut0 = ((IgniteFutureImpl<T>)comp.future()).internalFuture();
+
+            IgniteInternalFuture<T> fut = fut0.chain(new CX1<IgniteInternalFuture<?>, T>() {
                 @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                     fut.get();
 
@@ -271,7 +275,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
             return addFuture(fut);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Should not be thrown since uses asynchronous execution.
             return addFuture(new GridFinishedFutureEx<T>(e));
         }
@@ -288,9 +292,11 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         try {
             comp.run(task);
 
-            return addFuture(comp.future());
+            IgniteFutureImpl<?> fut = (IgniteFutureImpl<?>)comp.future();
+
+            return addFuture(fut.internalFuture());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Should not be thrown since uses asynchronous execution.
             return addFuture(new GridFinishedFutureEx<>(e));
         }
@@ -376,7 +382,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
                 try {
                     fut.get(end - now);
                 }
-                catch (ComputeTaskTimeoutException ignore) {
+                catch (ComputeTaskTimeoutCheckedException ignore) {
                     if (log.isDebugEnabled())
                         log.debug("Timeout occurred during getting task result: " + fut);
 
@@ -715,7 +721,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
                 throw e2;
             }
-            catch (ComputeTaskTimeoutException e) {
+            catch (ComputeTaskTimeoutCheckedException e) {
                 throw new ExecutionException("Task execution timed out during waiting for task result: " + fut, e);
             }
             catch (IgniteCheckedException e) {

@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
@@ -189,7 +190,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
             assert false : "Task should fail.";
         }
-        catch (ComputeTaskTimeoutException e) {
+        catch (ComputeTaskTimeoutCheckedException e) {
             info("Expected timeout exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 

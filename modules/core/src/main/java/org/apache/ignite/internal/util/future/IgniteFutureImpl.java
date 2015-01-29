@@ -43,6 +43,13 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
         this.fut = fut;
     }
 
+    /**
+     * @return Internal future.
+     */
+    public IgniteInternalFuture<V> internalFuture() {
+        return fut;
+    }
+
     /** {@inheritDoc} */
     @Override public long startTime() {
         return fut.startTime();

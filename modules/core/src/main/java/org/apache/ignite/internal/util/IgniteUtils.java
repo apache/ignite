@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
@@ -9157,6 +9158,8 @@ public abstract class IgniteUtils {
             return new ClusterTopologyException(e.getMessage(), e.getCause());
         else if (e instanceof IgniteDeploymentCheckedException)
             return new IgniteDeploymentException(e.getMessage(), e.getCause());
+        else if (e instanceof ComputeTaskTimeoutCheckedException)
+            return new ComputeTaskTimeoutException(e.getMessage(), e.getCause());
         else if (e.getCause() instanceof IgniteException)
             return (IgniteException)e.getCause();
 
