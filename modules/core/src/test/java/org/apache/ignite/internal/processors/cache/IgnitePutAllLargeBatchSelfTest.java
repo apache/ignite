@@ -183,7 +183,7 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
 
             //  Check that no stale transactions left and all locks are released.
             for (int g = 0; g < GRID_CNT; g++) {
-                GridKernal k = (GridKernal)grid(g);
+                IgniteKernal k = (IgniteKernal)grid(g);
 
                 GridCacheAdapter<Object, Object> cacheAdapter = k.context().cache().internalCache();
 
