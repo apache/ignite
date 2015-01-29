@@ -180,7 +180,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object keyId(Object key) throws CacheException {
+    @Override protected Object keyTypeId(Object key) throws CacheException {
         return key.getClass();
     }
 

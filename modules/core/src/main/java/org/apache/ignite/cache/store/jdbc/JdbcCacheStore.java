@@ -163,7 +163,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      * @param key Key object.
      * @return Type id.
      */
-    protected abstract Object keyId(Object key) throws CacheException;
+    protected abstract Object keyTypeId(Object key) throws CacheException;
 
     /**
      * Extract type id from key class name.
@@ -218,7 +218,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         if (dbProductName.startsWith("DB2/"))
             return new DB2Dialect();
 
-        log.warning("Unknown database: " + dbProductName + ". BasicJdbcDialect will be used.");
+        U.warn(log, "Failed to resolve dialect (BasicJdbcDialect will be used): " + dbProductName);
 
         return new BasicJdbcDialect();
     }
@@ -578,7 +578,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @Nullable @Override public V load(K key) throws CacheLoaderException {
         assert key != null;
 
-        EntryMapping em = entryMapping(keyId(key), key);
+        EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
             log.debug("Start load value from database by key: " + key);
@@ -623,19 +623,19 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             Map<K, V> res = new HashMap<>();
 
             for (K key : keys) {
-                Object keyId = keyId(key);
+                Object keyTypeId = keyTypeId(key);
 
-                EntryMapping em = entryMapping(keyId, key);
+                EntryMapping em = entryMapping(keyTypeId, key);
 
-                LoadWorker<K, V> worker = workers.get(keyId);
+                LoadWorker<K, V> worker = workers.get(keyTypeId);
 
                 if (worker == null)
-                    workers.put(keyId, worker = new LoadWorker<>(conn, em));
+                    workers.put(keyTypeId, worker = new LoadWorker<>(conn, em));
 
                 worker.keys.add(key);
 
                 if (worker.keys.size() == em.maxKeysPerStmt)
-                    res.putAll(workers.remove(keyId).call());
+                    res.putAll(workers.remove(keyTypeId).call());
             }
 
             for (LoadWorker<K, V> worker : workers.values())
@@ -660,7 +660,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
         K key = entry.getKey();
 
-        EntryMapping em = entryMapping(keyId(key), key);
+        EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
             log.debug("Start write entry to database: " + entry);
@@ -726,7 +726,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             if (dialect.hasMerge()) {
                 Map<Object, PreparedStatement> stmts = U.newHashMap(cacheMappings.get(cacheKeyId()).size());
 
-                Object prevKeyId = null;
+                Object prevKeyTypeId  = null;
 
                 PreparedStatement mergeStmt = null;
 
@@ -735,24 +735,24 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 for (Cache.Entry<? extends K, ? extends V> entry : entries) {
                     K key = entry.getKey();
 
-                    Object keyId = keyId(key);
+                    Object keyTypeId = keyTypeId(key);
 
-                    EntryMapping em = entryMapping(keyId, key);
+                    EntryMapping em = entryMapping(keyTypeId, key);
 
-                    if (prevKeyId != null && !prevKeyId.equals(keyId)) {
-                        mergeStmt = stmts.get(prevKeyId);
+                    if (prevKeyTypeId != null && !prevKeyTypeId.equals(keyTypeId)) {
+                        mergeStmt = stmts.get(prevKeyTypeId);
 
                         mergeStmt.executeBatch();
 
                         cnt = 0;
                     }
 
-                    prevKeyId = keyId;
+                    prevKeyTypeId  = keyTypeId;
 
-                    mergeStmt = stmts.get(keyId);
+                    mergeStmt = stmts.get(keyTypeId);
 
                     if (mergeStmt == null)
-                        stmts.put(keyId, mergeStmt = conn.prepareStatement(em.mergeQry));
+                        stmts.put(keyTypeId, mergeStmt = conn.prepareStatement(em.mergeQry));
 
                     int i = fillKeyParameters(mergeStmt, em, key);
 
@@ -777,14 +777,14 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 for (Cache.Entry<? extends K, ? extends V> entry : entries) {
                     K key = entry.getKey();
 
-                    Object keyId = keyId(key);
+                    Object keyTypeId = keyTypeId(key);
 
-                    EntryMapping em = entryMapping(keyId, key);
+                    EntryMapping em = entryMapping(keyTypeId, key);
 
-                    T2<PreparedStatement, PreparedStatement> pair = stmts.get(keyId);
+                    T2<PreparedStatement, PreparedStatement> pair = stmts.get(keyTypeId);
 
                     if (pair == null)
-                        stmts.put(keyId,
+                        stmts.put(keyTypeId,
                             pair = new T2<>(conn.prepareStatement(em.updQry), conn.prepareStatement(em.insQry)));
 
                     PreparedStatement updStmt = pair.get1();
@@ -827,7 +827,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     @Override public void delete(Object key) throws CacheWriterException {
         assert key != null;
 
-        EntryMapping em = entryMapping(keyId(key), key);
+        EntryMapping em = entryMapping(keyTypeId(key), key);
 
         if (log.isDebugEnabled())
             log.debug("Start remove value from database by key: " + key);
@@ -864,31 +864,31 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
             Map<Object, PreparedStatement> stmts = U.newHashMap(cacheMappings.get(cacheKeyId()).size());
 
-            Object prevKeyId = null;
+            Object prevKeyTypeId  = null;
 
             PreparedStatement delStmt = null;
 
             int cnt = 0;
 
             for (Object key : keys) {
-                Object keyId = keyId(key);
+                Object keyTypeId = keyTypeId(key);
 
-                EntryMapping em = entryMapping(keyId, key);
+                EntryMapping em = entryMapping(keyTypeId, key);
 
-                if (prevKeyId != null && !prevKeyId.equals(keyId)) {
-                    delStmt = stmts.get(prevKeyId);
+                if (prevKeyTypeId != null && !prevKeyTypeId.equals(keyTypeId)) {
+                    delStmt = stmts.get(prevKeyTypeId);
 
                     delStmt.executeBatch();
 
                     cnt = 0;
                 }
 
-                prevKeyId = keyId;
+                prevKeyTypeId  = keyTypeId;
 
-                delStmt = stmts.get(keyId);
+                delStmt = stmts.get(keyTypeId);
 
                 if (delStmt == null)
-                    stmts.put(keyId, delStmt = conn.prepareStatement(em.remQry));
+                    stmts.put(keyTypeId, delStmt = conn.prepareStatement(em.remQry));
 
                 fillKeyParameters(delStmt, em, key);
 
@@ -1320,7 +1320,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 }
 
                 return null;
-            } catch (SQLException e) {
+            }
+            catch (SQLException e) {
                 throw new CacheLoaderException("Failed to execute custom query for load cache", e);
             }
             finally {
