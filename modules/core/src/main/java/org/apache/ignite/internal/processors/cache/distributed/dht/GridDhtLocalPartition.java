@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -390,7 +391,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
      * @param updateSeq Update sequence.
      * @return Future to signal that this node is no longer an owner or backup.
      */
-    IgniteFuture<?> rent(boolean updateSeq) {
+    IgniteInternalFuture<?> rent(boolean updateSeq) {
         while (true) {
             int reservations = state.getStamp();
 
@@ -418,7 +419,7 @@ public class GridDhtLocalPartition<K, V> implements Comparable<GridDhtLocalParti
      * @param updateSeq Update sequence.
      * @return Future for evict attempt.
      */
-    private IgniteFuture<Boolean> tryEvictAsync(boolean updateSeq) {
+    private IgniteInternalFuture<Boolean> tryEvictAsync(boolean updateSeq) {
         if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);

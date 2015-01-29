@@ -305,7 +305,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
             final String val = "v" + i;
 
-            IgniteFuture<?> f = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> f = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     l.await();
 
@@ -333,7 +333,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         final ConcurrentLinkedQueue<String> execQueue = new ConcurrentLinkedQueue<>();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override
             public void run() {
                 long processed;
@@ -412,7 +412,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
 
         assertEquals(NODES_CNT, client.compute().refreshTopology(false, false).size());
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @SuppressWarnings("OverlyStrongTypeCast")
             @Override public void run() {
                 try {
@@ -506,7 +506,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
     private void printAffinityState(Iterable<Ignite> grids) {
         for (Ignite g : grids) {
             GridAffinityAssignmentCache affCache = getFieldValue(
-                ((GridKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
+                ((IgniteKernal)g).internalCache(PARTITIONED_CACHE_NAME).context().affinity(),
                 "aff");
 
             CacheAffinityFunction aff = getFieldValue(affCache, "aff");

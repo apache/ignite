@@ -18,6 +18,7 @@
 package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -439,5 +440,5 @@ public interface ComputeTaskSession {
      *
      * @return Future that will be completed when task "<tt>map</tt>" step has completed.
      */
-    public IgniteFuture<?> mapFuture();
+    public IgniteInternalFuture<?> mapFuture();
 }

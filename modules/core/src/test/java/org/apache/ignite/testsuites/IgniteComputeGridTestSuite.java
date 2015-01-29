@@ -71,10 +71,10 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridDeploymentSelfTest.class);
         suite.addTestSuite(GridDeploymentMultiThreadedSelfTest.class);
         suite.addTestSuite(GridMultipleVersionsDeploymentSelfTest.class);
-        suite.addTestSuite(GridExplicitImplicitDeploymentSelfTest.class);
+        suite.addTestSuite(IgniteExplicitImplicitDeploymentSelfTest.class);
         suite.addTestSuite(GridEventStorageCheckAllEventsSelfTest.class);
         suite.addTestSuite(GridCommunicationManagerListenersSelfTest.class);
-        suite.addTestSuite(GridExecutorServiceTest.class);
+        suite.addTestSuite(IgniteExecutorServiceTest.class);
         suite.addTestSuite(GridTaskInstantiationSelfTest.class);
         suite.addTestSuite(GridManagementJobSelfTest.class);
         suite.addTestSuite(GridMultipleJobsSelfTest.class);

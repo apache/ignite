@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -47,7 +48,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     private boolean async;
 
     /** Async call result. */
-    private IgniteFuture asyncRes;
+    private IgniteInternalFuture asyncRes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -196,7 +197,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> IgniteInternalFuture<R> future() {
         return asyncRes;
     }
 
@@ -232,7 +233,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         enter();
 
         try {
-            IgniteFuture<IgniteTx> commitFut = cctx.commitTxAsync(tx);
+            IgniteInternalFuture<IgniteTx> commitFut = cctx.commitTxAsync(tx);
 
             if (async)
                 asyncRes = commitFut;
@@ -261,7 +262,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         enter();
 
         try {
-            IgniteFuture rollbackFut = cctx.rollbackTxAsync(tx);
+            IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
 
             if (async)
                 asyncRes = rollbackFut;

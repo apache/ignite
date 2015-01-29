@@ -20,7 +20,7 @@ package org.apache.ignite.loadtests.colocation;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.springframework.beans.factory.*;
@@ -73,7 +73,7 @@ public class GridTestMain {
 
         final GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
-        final BlockingQueue<IgniteFuture> q = new ArrayBlockingQueue<>(400);
+        final BlockingQueue<IgniteInternalFuture> q = new ArrayBlockingQueue<>(400);
 
         long start = System.currentTimeMillis();
 
@@ -93,12 +93,12 @@ public class GridTestMain {
                 }
             });
 
-            final IgniteFuture<?> f = comp.future();
+            final IgniteInternalFuture<?> f = comp.future();
 
             q.put(f);
 
-            f.listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> o) {
+            f.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> o) {
                     q.poll();
                 }
             });

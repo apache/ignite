@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.fs;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -130,7 +131,7 @@ public class GridGgfsAsyncImpl extends IgniteAsyncSupportAdapter<IgniteFs> imple
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
         return ggfs.awaitDeletesAsync();
     }
 

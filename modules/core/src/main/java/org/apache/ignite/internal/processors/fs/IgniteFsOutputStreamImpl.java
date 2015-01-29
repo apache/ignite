@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -68,7 +69,7 @@ class IgniteFsOutputStreamImpl extends IgniteFsOutputStreamAdapter {
     private int remainderDataLen;
 
     /** Write completion future. */
-    private final IgniteFuture<Boolean> writeCompletionFut;
+    private final IgniteInternalFuture<Boolean> writeCompletionFut;
 
     /** GGFS mode. */
     private final IgniteFsMode mode;

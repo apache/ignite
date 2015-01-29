@@ -114,12 +114,12 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** Active futures of this data loader. */
     @GridToStringInclude
-    private final Collection<IgniteFuture<?>> activeFuts = new GridConcurrentHashSet<>();
+    private final Collection<IgniteInternalFuture<?>> activeFuts = new GridConcurrentHashSet<>();
 
     /** Closure to remove from active futures. */
     @GridToStringExclude
-    private final IgniteInClosure<IgniteFuture<?>> rmvActiveFut = new IgniteInClosure<IgniteFuture<?>>() {
-        @Override public void apply(IgniteFuture<?> t) {
+    private final IgniteInClosure<IgniteInternalFuture<?>> rmvActiveFut = new IgniteInClosure<IgniteInternalFuture<?>>() {
+        @Override public void apply(IgniteInternalFuture<?> t) {
             boolean rmv = activeFuts.remove(t);
 
             assert rmv;
@@ -257,7 +257,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> future() {
+    @Override public IgniteInternalFuture<?> future() {
         return fut;
     }
 
@@ -356,14 +356,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
+    @Override public IgniteInternalFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
         A.notNull(entries, "entries");
 
         return addData(entries.entrySet());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
+    @Override public IgniteInternalFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
         enterBusy();
@@ -397,21 +397,21 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteInternalFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IllegalStateException {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> addData(K key, V val) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteInternalFuture<?> addData(K key, V val) throws IgniteCheckedException, IllegalStateException {
         A.notNull(key, "key");
 
         return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> removeData(K key) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteInternalFuture<?> removeData(K key) throws IgniteCheckedException, IllegalStateException {
         return addData(key, null);
     }
 
@@ -491,8 +491,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             final Collection<Map.Entry<K, V>> entriesForNode = e.getValue();
 
-            IgniteInClosure<IgniteFuture<?>> lsnr = new IgniteInClosure<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> t) {
+            IgniteInClosure<IgniteInternalFuture<?>> lsnr = new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> t) {
                     try {
                         t.get();
 
@@ -555,11 +555,11 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     private void doFlush() throws IgniteCheckedException {
         lastFlushTime = U.currentTimeMillis();
 
-        List<IgniteFuture> activeFuts0 = null;
+        List<IgniteInternalFuture> activeFuts0 = null;
 
         int doneCnt = 0;
 
-        for (IgniteFuture<?> f : activeFuts) {
+        for (IgniteInternalFuture<?> f : activeFuts) {
             if (!f.isDone()) {
                 if (activeFuts0 == null)
                     activeFuts0 = new ArrayList<>((int)(activeFuts.size() * 1.2));
@@ -577,10 +577,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             return;
 
         while (true) {
-            Queue<IgniteFuture<?>> q = null;
+            Queue<IgniteInternalFuture<?>> q = null;
 
             for (Buffer buf : bufMappings.values()) {
-                IgniteFuture<?> flushFut = buf.flush();
+                IgniteInternalFuture<?> flushFut = buf.flush();
 
                 if (flushFut != null) {
                     if (q == null)
@@ -595,7 +595,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 boolean err = false;
 
-                for (IgniteFuture fut = q.poll(); fut != null; fut = q.poll()) {
+                for (IgniteInternalFuture fut = q.poll(); fut != null; fut = q.poll()) {
                     try {
                         fut.get();
                     }
@@ -615,7 +615,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             doneCnt = 0;
 
             for (int i = 0; i < activeFuts0.size(); i++) {
-                IgniteFuture f = activeFuts0.get(i);
+                IgniteInternalFuture f = activeFuts0.get(i);
 
                 if (f == null)
                     doneCnt++;
@@ -752,7 +752,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         private final ClusterNode node;
 
         /** Active futures. */
-        private final Collection<IgniteFuture<Object>> locFuts;
+        private final Collection<IgniteInternalFuture<Object>> locFuts;
 
         /** Buffered entries. */
         private List<Map.Entry<K, V>> entries;
@@ -775,8 +775,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
         /** Closure to signal on task finish. */
         @GridToStringExclude
-        private final IgniteInClosure<IgniteFuture<Object>> signalC = new IgniteInClosure<IgniteFuture<Object>>() {
-            @Override public void apply(IgniteFuture<Object> t) {
+        private final IgniteInClosure<IgniteInternalFuture<Object>> signalC = new IgniteInClosure<IgniteInternalFuture<Object>>() {
+            @Override public void apply(IgniteInternalFuture<Object> t) {
                 signalTaskFinished(t);
             }
         };
@@ -809,7 +809,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
          * @return Future for operation.
          */
         @Nullable GridFutureAdapter<?> update(Iterable<Map.Entry<K, V>> newEntries,
-            IgniteInClosure<IgniteFuture<?>> lsnr) throws IgniteInterruptedException {
+            IgniteInClosure<IgniteInternalFuture<?>> lsnr) throws IgniteInterruptedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0;
 
@@ -853,7 +853,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
          * @throws org.apache.ignite.IgniteInterruptedException If thread has been interrupted.
          */
         @Nullable
-        IgniteFuture<?> flush() throws IgniteInterruptedException {
+        IgniteInternalFuture<?> flush() throws IgniteInterruptedException {
             List<Map.Entry<K, V>> entries0 = null;
             GridFutureAdapter<Object> curFut0 = null;
 
@@ -874,14 +874,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             // Create compound future for this flush.
             GridCompoundFuture<Object, Object> res = null;
 
-            for (IgniteFuture<Object> f : locFuts) {
+            for (IgniteInternalFuture<Object> f : locFuts) {
                 if (res == null)
                     res = new GridCompoundFuture<>(ctx);
 
                 res.add(f);
             }
 
-            for (IgniteFuture<Object> f : reqs.values()) {
+            for (IgniteInternalFuture<Object> f : reqs.values()) {
                 if (res == null)
                     res = new GridCompoundFuture<>(ctx);
 
@@ -906,7 +906,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         /**
          * @param f Future that finished.
          */
-        private void signalTaskFinished(IgniteFuture<Object> f) {
+        private void signalTaskFinished(IgniteInternalFuture<Object> f) {
             assert f != null;
 
             sem.release();
@@ -925,7 +925,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             incrementActiveTasks();
 
-            IgniteFuture<Object> fut;
+            IgniteInternalFuture<Object> fut;
 
             if (isLocNode) {
                 fut = ctx.closure().callLocalSafe(
@@ -933,8 +933,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
                 locFuts.add(fut);
 
-                fut.listenAsync(new IgniteInClosure<IgniteFuture<Object>>() {
-                    @Override public void apply(IgniteFuture<Object> t) {
+                fut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                    @Override public void apply(IgniteInternalFuture<Object> t) {
                         try {
                             boolean rmv = locFuts.remove(t);
 
@@ -1123,7 +1123,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
         void cancelAll() {
             IgniteCheckedException err = new IgniteCheckedException("Data loader has been cancelled: " + IgniteDataLoaderImpl.this);
 
-            for (IgniteFuture<?> f : locFuts) {
+            for (IgniteInternalFuture<?> f : locFuts) {
                 try {
                     f.cancel();
                 }

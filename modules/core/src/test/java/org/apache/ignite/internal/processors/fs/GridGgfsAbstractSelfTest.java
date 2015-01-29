@@ -771,7 +771,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
     // TODO Enable after GG-8578.
     @SuppressWarnings("ConstantConditions")
     public void _testFormat() throws Exception {
-        GridKernal grid = (GridKernal)G.ignite("grid");
+        IgniteKernal grid = (IgniteKernal)G.ignite("grid");
         GridCache cache = grid.internalCache("dataCache");
 
         if (dual)
@@ -1121,7 +1121,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         int threadCnt = 5;
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
                     IgniteFsOutputStream os = null;
@@ -1440,7 +1440,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
         int threadCnt = 5;
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 while (!stop.get()) {
                     IgniteFsOutputStream os = null;

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.spi.checkpoint.sharedfs;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.spi.*;
@@ -66,7 +66,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
 
         final AtomicBoolean fail = new AtomicBoolean();
 
-        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     try {
@@ -86,7 +86,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
             "writer-1"
         );
 
-        IgniteFuture fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     try{
@@ -106,7 +106,7 @@ public class GridSharedFsCheckpointSpiMultiThreadedSelfTest extends
             "writer-2"
         );
 
-        IgniteFuture fut3 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut3 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     while (writeFinished.get() < THREAD_CNT * 2) {

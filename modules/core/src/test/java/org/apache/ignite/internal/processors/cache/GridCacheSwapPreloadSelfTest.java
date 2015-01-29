@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -149,7 +149,7 @@ public class GridCacheSwapPreloadSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     private void checkSwapMultithreaded() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
-        IgniteFuture<?> fut = null;
+        IgniteInternalFuture<?> fut = null;
 
         try {
             startGrid(0);

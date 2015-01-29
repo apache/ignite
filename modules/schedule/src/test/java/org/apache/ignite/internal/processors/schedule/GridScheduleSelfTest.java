@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.schedule;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.scheduler.*;
@@ -62,7 +63,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      */
     public void testRunLocal() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            IgniteFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
+            IgniteInternalFuture<?> fut = grid(i).scheduler().runLocal(new TestRunnable());
 
             assert fut.get() == null;
 
@@ -75,7 +76,7 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
      */
     public void testCallLocal() throws Exception {
         for (int i = 0; i < NODES_CNT; i++) {
-            IgniteFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
+            IgniteInternalFuture<?> fut = grid(i).scheduler().callLocal(new TestCallable());
 
             assertEquals(1, fut.get());
 
@@ -112,8 +113,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> e) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> e) {
                     notifyCnt.incrementAndGet();
                 }
             });
@@ -170,8 +171,8 @@ public class GridScheduleSelfTest extends GridCommonAbstractTest {
 
             final AtomicInteger notifyCnt = new AtomicInteger();
 
-            fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> e) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> e) {
                     notifyCnt.incrementAndGet();
                 }
             });

@@ -74,7 +74,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
      */
     public void testWarningOutput() throws Exception {
         try {
-            GridKernal g = (GridKernal)startGrid(1);
+            IgniteKernal g = (IgniteKernal)startGrid(1);
 
             info(">>> Slow tx timeout is not set, long-live txs simulated.");
 
@@ -109,7 +109,7 @@ public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {
     private void checkCache(Ignite g, String cacheName, boolean simulateTimeout,
         boolean configureTimeout) throws Exception {
         if (configureTimeout) {
-            GridCacheAdapter<Integer, Integer> cache = ((GridKernal)g).internalCache(cacheName);
+            GridCacheAdapter<Integer, Integer> cache = ((IgniteKernal)g).internalCache(cacheName);
 
             cache.context().tm().slowTxWarnTimeout(500);
         }

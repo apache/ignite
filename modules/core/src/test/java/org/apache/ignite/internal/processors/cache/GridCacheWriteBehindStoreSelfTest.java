@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
@@ -139,7 +139,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
             final AtomicInteger actualPutCnt = new AtomicInteger();
 
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {
@@ -199,7 +199,7 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
         try {
             final AtomicBoolean running = new AtomicBoolean(true);
 
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @SuppressWarnings({"NullableProblems"})
                 @Override public void run() {
                     try {

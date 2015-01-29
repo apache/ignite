@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
 import javax.cache.*;
@@ -127,7 +127,7 @@ class CacheLockImpl<K, V> implements Lock {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            IgniteFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
+            IgniteInternalFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
             try {
                 boolean res = fut.get();

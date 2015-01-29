@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.util.offheap;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
@@ -662,7 +663,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        IgniteFuture<?> itFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> itFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     startLatch.await();
@@ -687,7 +688,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             }
         }, 1);
 
-        IgniteFuture<?> putFut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> putFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     startLatch.await();
@@ -746,7 +747,7 @@ public abstract class GridOffHeapMapAbstractSelfTest extends GridCommonAbstractT
             keys[i][0] = (byte)i; // hash
         }
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Void>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Void>() {
             @Override
             public Void call() throws IgniteCheckedException {
                 Random rnd = new Random();

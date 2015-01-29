@@ -81,7 +81,7 @@ public class IgniteFsEventsTestSuite extends TestSuite {
 
             ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
                 put("type", "shmem");
-                put("port", String.valueOf(GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
+                put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
             }});
 
             return ggfsCfg;
@@ -98,7 +98,7 @@ public class IgniteFsEventsTestSuite extends TestSuite {
 
             ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
                 put("type", "tcp");
-                put("port", String.valueOf(GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
+                put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + 1));
             }});
 
             return ggfsCfg;

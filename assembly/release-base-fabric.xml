@@ -29,7 +29,7 @@
         </file>
 
         <file>
-            <source>docs/gridgain_readme.pdf</source>
+            <source>docs/ignite_readme.pdf</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
     </files>

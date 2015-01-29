@@ -40,10 +40,10 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     private static final long serialVersionUID = 0L;
 
     /** Futures. */
-    private final ConcurrentLinkedDeque8<IgniteFuture<T>> futs = new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDeque8<IgniteInternalFuture<T>> futs = new ConcurrentLinkedDeque8<>();
 
     /** Pending futures. */
-    private final Collection<IgniteFuture<T>> pending = new ConcurrentLinkedDeque8<>();
+    private final Collection<IgniteInternalFuture<T>> pending = new ConcurrentLinkedDeque8<>();
 
     /** Listener call count. */
     private final AtomicInteger lsnrCalls = new AtomicInteger();
@@ -97,7 +97,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @param futs Futures to add.
      */
     public GridCompoundFuture(GridKernalContext ctx, @Nullable IgniteReducer<T, R> rdc,
-        @Nullable Iterable<IgniteFuture<T>> futs) {
+        @Nullable Iterable<IgniteInternalFuture<T>> futs) {
         super(ctx);
 
         this.rdc = rdc;
@@ -108,7 +108,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
         if (onCancelled()) {
-            for (IgniteFuture<T> fut : futs)
+            for (IgniteInternalFuture<T> fut : futs)
                 fut.cancel();
 
             return true;
@@ -122,7 +122,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return Collection of futures.
      */
-    public Collection<IgniteFuture<T>> futures() {
+    public Collection<IgniteInternalFuture<T>> futures() {
         return futs;
     }
 
@@ -131,7 +131,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return Pending futures.
      */
-    public Collection<IgniteFuture<T>> pending() {
+    public Collection<IgniteInternalFuture<T>> pending() {
         return pending;
     }
 
@@ -166,7 +166,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @param fut Future to add.
      */
-    public void add(IgniteFuture<T> fut) {
+    public void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
         pending.add(fut);
@@ -188,7 +188,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @param futs Futures to add.
      */
-    public void addAll(@Nullable IgniteFuture<T>... futs) {
+    public void addAll(@Nullable IgniteInternalFuture<T>... futs) {
         addAll(F.asList(futs));
     }
 
@@ -197,9 +197,9 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @param futs Futures to add.
      */
-    public void addAll(@Nullable Iterable<IgniteFuture<T>> futs) {
+    public void addAll(@Nullable Iterable<IgniteInternalFuture<T>> futs) {
         if (futs != null)
-            for (IgniteFuture<T> fut : futs)
+            for (IgniteInternalFuture<T> fut : futs)
                 add(fut);
     }
 
@@ -291,8 +291,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             "cancelled", isCancelled(),
             "err", error(),
             "futs",
-                F.viewReadOnly(futs, new C1<IgniteFuture<T>, String>() {
-                    @Override public String apply(IgniteFuture<T> f) {
+                F.viewReadOnly(futs, new C1<IgniteInternalFuture<T>, String>() {
+                    @Override public String apply(IgniteInternalFuture<T> f) {
                         return Boolean.toString(f.isDone());
                     }
                 })
@@ -302,12 +302,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /**
      * Listener for futures.
      */
-    private class Listener implements IgniteInClosure<IgniteFuture<T>> {
+    private class Listener implements IgniteInClosure<IgniteInternalFuture<T>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public void apply(IgniteFuture<T> fut) {
+        @Override public void apply(IgniteInternalFuture<T> fut) {
             pending.remove(fut);
 
             try {
