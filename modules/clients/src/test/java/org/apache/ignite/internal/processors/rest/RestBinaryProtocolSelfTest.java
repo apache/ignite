@@ -553,7 +553,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testLog() throws Exception {
-        String path = "work/log/gridgain.log." + System.currentTimeMillis();
+        String path = "work/log/ignite.log." + System.currentTimeMillis();
 
         File file = new File(U.getGridGainHome(), path);
 

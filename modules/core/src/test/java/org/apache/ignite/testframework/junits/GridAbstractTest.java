@@ -231,7 +231,7 @@ public abstract class GridAbstractTest extends TestCase {
 
             file.setName("FILE");
             file.setThreshold(log4jLevel);
-            file.setFile(home() + "/work/log/gridgain.log");
+            file.setFile(home() + "/work/log/ignite.log");
             file.setAppend(false);
             file.setMaxFileSize("10MB");
             file.setMaxBackupIndex(10);

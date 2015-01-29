@@ -121,7 +121,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
         IgniteLog4jRollingFileAppender appender = new IgniteLog4jRollingFileAppender();
 
         appender.setLayout(new PatternLayout("[%d{ABSOLUTE}][%-5p][%t][%c{1}] %m%n"));
-        appender.setFile("work/log/gridgain.log");
+        appender.setFile("work/log/ignite.log");
         appender.setName(IgniteLog4jRollingFileAppender.class.getSimpleName());
 
         LevelRangeFilter lvlFilter = new LevelRangeFilter();

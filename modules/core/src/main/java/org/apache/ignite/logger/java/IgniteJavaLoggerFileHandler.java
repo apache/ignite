@@ -85,7 +85,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
         String ptrn = manager.getProperty(clsName + ".pattern");
 
         if (ptrn == null)
-            ptrn = "gridgain-%{id8}.%g.log";
+            ptrn = "ignite-%{id8}.%g.log";
 
         ptrn = new File(logDirectory(), ptrn.replace("%{id8}", U.id8(nodeId))).getAbsolutePath();
 
