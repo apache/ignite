@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.alert
 
-import org.apache.ignite.internal.util.IgniteUtils
+import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
 
 import org.apache.ignite._
