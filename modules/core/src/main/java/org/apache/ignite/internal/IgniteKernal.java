@@ -107,7 +107,7 @@ import static org.apache.ignite.internal.util.nodestart.GridNodeStartUtils.*;
  * See <a href="http://en.wikipedia.org/wiki/Kernal">http://en.wikipedia.org/wiki/Kernal</a> for information on the
  * misspelling.
  */
-public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXBean {
+public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, IgniteMXBean {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -235,14 +235,14 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
     /**
      * No-arg constructor is required by externalization.
      */
-    public GridKernal() {
+    public IgniteKernal() {
         this(null);
     }
 
     /**
      * @param rsrcCtx Optional Spring application context.
      */
-    public GridKernal(@Nullable GridSpringResourceContext rsrcCtx) {
+    public IgniteKernal(@Nullable GridSpringResourceContext rsrcCtx) {
         super(null, null, null, (IgnitePredicate<ClusterNode>)null);
 
         this.rsrcCtx = rsrcCtx;
@@ -3333,6 +3333,6 @@ public class GridKernal extends ClusterGroupAdapter implements GridEx, IgniteMXB
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridKernal.class, this);
+        return S.toString(IgniteKernal.class, this);
     }
 }

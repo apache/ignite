@@ -118,7 +118,7 @@ public class GridIoManagerBenchmark {
         X.println("Duration: " + duration);
         X.println("Output file name: " + outputFilename);
 
-        GridKernal g = (GridKernal)G.start(path);
+        IgniteKernal g = (IgniteKernal)G.start(path);
 
         if (g.localNode().order() > 1) {
             try {
@@ -139,7 +139,7 @@ public class GridIoManagerBenchmark {
      * @param outputFilename Output file name.
      */
     @SuppressWarnings("deprecation")
-    private static void sendMessages(GridKernal g, int threads, int duration, @Nullable final String outputFilename) {
+    private static void sendMessages(IgniteKernal g, int threads, int duration, @Nullable final String outputFilename) {
         X.println(">>> Sending messages.");
 
         g.context().io().addMessageListener(TEST_TOPIC, new SenderMessageListener());
@@ -221,7 +221,7 @@ public class GridIoManagerBenchmark {
      * @param g Kernal.
      */
     @SuppressWarnings("deprecation")
-    private static void receiveMessages(final GridKernal g) {
+    private static void receiveMessages(final IgniteKernal g) {
         X.println(">>> Receiving messages.");
 
         final GridIoManager io = g.context().io();
@@ -254,12 +254,12 @@ public class GridIoManagerBenchmark {
      */
     private static class SendThread extends Thread {
         /** */
-        private final GridKernal g;
+        private final IgniteKernal g;
 
         /**
          * @param g Kernal.
          */
-        SendThread(GridKernal g) {
+        SendThread(IgniteKernal g) {
             this.g = g;
         }
 

@@ -34,9 +34,9 @@ import java.util.*;
  *
  */
 @GridCommonTest(group = "Kernal Self")
-public class GridExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTest {
+public class IgniteExplicitImplicitDeploymentSelfTest extends GridCommonAbstractTest {
     /** */
-    public GridExplicitImplicitDeploymentSelfTest() {
+    public IgniteExplicitImplicitDeploymentSelfTest() {
         super(/*start grid*/false);
     }
 

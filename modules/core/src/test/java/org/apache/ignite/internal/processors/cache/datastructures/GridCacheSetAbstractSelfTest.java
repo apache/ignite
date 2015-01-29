@@ -93,7 +93,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
         assertSetIteratorsCleared();
 
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal)grid(i);
+            IgniteKernal grid = (IgniteKernal)grid(i);
 
             GridCacheDataStructuresManager ds = grid.internalCache(null).context().dataStructures();
 
@@ -112,7 +112,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
      */
     private void assertSetIteratorsCleared() {
         for (int i = 0; i < gridCount(); i++) {
-            GridKernal grid = (GridKernal) grid(i);
+            IgniteKernal grid = (IgniteKernal) grid(i);
 
             GridCacheQueryManager queries = grid.internalCache(null).context().queries();
 
@@ -623,7 +623,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
             UUID setNodeId = null;
 
             for (int i = 0; i < gridCount(); i++) {
-                GridKernal grid = (GridKernal)grid(i);
+                IgniteKernal grid = (IgniteKernal)grid(i);
 
                 Iterator<GridCacheEntryEx<Object, Object>> entries =
                     grid.context().cache().internalCache("noBackupsCache").map().allEntries0().iterator();
@@ -805,7 +805,7 @@ public abstract class GridCacheSetAbstractSelfTest extends GridCacheAbstractSelf
 
         for (int i = 0; i < gridCount(); i++) {
             Iterator<GridCacheEntryEx<Object, Object>> entries =
-                    ((GridKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
+                    ((IgniteKernal)grid(i)).context().cache().internalCache().map().allEntries0().iterator();
 
             while (entries.hasNext()) {
                 GridCacheEntryEx<Object, Object> entry = entries.next();

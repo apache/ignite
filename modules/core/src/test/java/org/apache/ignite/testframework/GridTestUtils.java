@@ -843,7 +843,7 @@ public final class GridTestUtils {
      * @return Cache context.
      */
     public static <K, V> GridCacheContext<K, V> cacheContext(CacheProjection<K, V> cache) {
-        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
+        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache().context();
     }
 
     /**
@@ -880,7 +880,7 @@ public final class GridTestUtils {
     public static <K, V> void waitTopologyUpdate(@Nullable String cacheName, int backups, IgniteLogger log)
         throws Exception {
         for (Ignite g : Ignition.allGrids()) {
-            GridCache<K, V> cache = ((GridEx)g).cachex(cacheName);
+            GridCache<K, V> cache = ((IgniteEx)g).cachex(cacheName);
 
             GridDhtPartitionTopology<?, ?> top = dht(cache).topology();
 

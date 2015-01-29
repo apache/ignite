@@ -91,7 +91,7 @@ public class GridCacheTtlManagerSelfTest extends GridCommonAbstractTest {
     private void checkTtl(CacheMode mode) throws Exception {
         cacheMode = mode;
 
-        final GridKernal g = (GridKernal)startGrid(0);
+        final IgniteKernal g = (IgniteKernal)startGrid(0);
 
         try {
             final String key = "key";

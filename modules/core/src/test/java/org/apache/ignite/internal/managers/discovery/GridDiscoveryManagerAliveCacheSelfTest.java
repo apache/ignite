@@ -165,7 +165,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
             assertEquals(PERM_NODES_CNT, g.cluster().nodes().size());
 
         for (final Ignite g : alive) {
-            GridKernal k = (GridKernal)g;
+            IgniteKernal k = (IgniteKernal)g;
 
             GridDiscoveryManager discoMgr = k.context().discovery();
 

@@ -241,7 +241,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
     private Collection<Integer> nearKeys(Ignite ignite) {
         final Collection<Integer> keys = new ArrayList<>(KEY_CNT);
 
-        GridKernal kernal = (GridKernal) ignite;
+        IgniteKernal kernal = (IgniteKernal) ignite;
 
         GridCacheAffinityManager<Object, Object> affMgr = kernal.internalCache().context().affinity();
 

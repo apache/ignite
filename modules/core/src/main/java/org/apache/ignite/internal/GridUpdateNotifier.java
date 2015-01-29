@@ -219,7 +219,7 @@ class GridUpdateNotifier {
                     throttle(log, false, "Your version is up to date.");
             }
             else
-                throttle(log, true, "New version is available at " + GridKernal.SITE + ": " + latestVer);
+                throttle(log, true, "New version is available at " + IgniteKernal.SITE + ": " + latestVer);
         else
             if (!reportOnlyNew)
                 throttle(log, false, "Update status is not available.");

@@ -103,7 +103,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
             grid(0).cache(null).putAll(map);
 
             for (int g = 0; g < 3; g++) {
-                GridKernal grid = (GridKernal)grid(g);
+                IgniteKernal grid = (IgniteKernal)grid(g);
 
                 for (Integer key : map.keySet()) {
                     GridCacheAdapter<Object, Object> cache = grid.internalCache();
@@ -130,7 +130,7 @@ public class GridCacheEntryVersionSelfTest extends GridCommonAbstractTest {
             grid(0).cache(null).putAll(map);
 
             for (int g = 0; g < 4; g++) {
-                GridKernal grid = (GridKernal)grid(g);
+                IgniteKernal grid = (IgniteKernal)grid(g);
 
                 for (Integer key : map.keySet()) {
                     GridCacheAdapter<Object, Object> cache = grid.internalCache();

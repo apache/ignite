@@ -75,7 +75,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsSyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             true);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -100,7 +100,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsAsyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             false);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -175,7 +175,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException In case of any grid exception.
      */
     private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
-        GridRestCommandHandler hnd = new GridCacheCommandHandler(((GridKernal)grid()).context());
+        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
 

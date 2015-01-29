@@ -31,12 +31,12 @@ import java.util.*;
  */
 public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter<IgniteCluster> implements IgniteCluster {
     /** */
-    private final GridKernal grid;
+    private final IgniteKernal grid;
 
     /**
      * @param grid Grid.
      */
-    public IgniteClusterAsyncImpl(GridKernal grid) {
+    public IgniteClusterAsyncImpl(IgniteKernal grid) {
         super(true);
 
         this.grid = grid;
