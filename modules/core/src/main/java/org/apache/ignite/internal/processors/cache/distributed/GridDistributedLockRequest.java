@@ -396,33 +396,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
         }
 
         switch (commState.idx) {
-            case 8:
-                if (drVersByIdx != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(drVersByIdx.length))
-                            return false;
-
-                        commState.it = arrayIterator(drVersByIdx);
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putCacheVersion((GridCacheVersion)commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
             case 9:
                 if (!commState.putGridUuid(futId))
                     return false;
@@ -527,13 +500,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                     return false;
 
                 commState.idx++;
-
-            case 23:
-                if (!commState.putByteArray(writeEntriesBytes))
-                    return false;
-
-                commState.idx++;
-
         }
 
         return true;
@@ -548,35 +514,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
             return false;
 
         switch (commState.idx) {
-            case 8:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (drVersByIdx == null)
-                        drVersByIdx = new GridCacheVersion[commState.readSize];
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        GridCacheVersion _val = commState.getCacheVersion();
-
-                        if (_val == CACHE_VER_NOT_READ)
-                            return false;
-
-                        drVersByIdx[i] = (GridCacheVersion)_val;
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
             case 9:
                 IgniteUuid futId0 = commState.getGridUuid();
 
@@ -721,17 +658,6 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
                 txSize = commState.getInt();
 
                 commState.idx++;
-
-            case 23:
-                byte[] writeEntriesBytes0 = commState.getByteArray();
-
-                if (writeEntriesBytes0 == BYTE_ARR_NOT_READ)
-                    return false;
-
-                writeEntriesBytes = writeEntriesBytes0;
-
-                commState.idx++;
-
         }
 
         return true;

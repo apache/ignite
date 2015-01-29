@@ -603,10 +603,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 tx,
                 tx.optimistic() && tx.serializable() ? m.reads() : null,
                 m.writes(),
-                    /*grp lock key*/null,
-                    /*part lock*/false,
-                tx.syncCommit(),
-                tx.syncRollback(),
+                /*grp lock key*/null,
+                /*part lock*/false,
+                m.near(),
                 txMapping.transactionNodes(),
                 true,
                 txMapping.transactionNodes().get(node.id()),
@@ -652,8 +651,15 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                     IgniteTxEntry<K, V> dhtTxEntry = dhtTx.entry(key);
 
-                                    if (dhtTxEntry.op() == NOOP)
-                                        tx.entry(key).op(NOOP);
+                                    assert dhtTxEntry != null;
+
+                                    if (dhtTxEntry.op() == NOOP) {
+                                        IgniteTxEntry<K, V> txEntry = tx.entry(key);
+
+                                        assert txEntry != null;
+
+                                        txEntry.op(NOOP);
+                                    }
                                 }
 
                                 tx.addDhtVersion(m.node().id(), dhtTx.xidVersion());
@@ -662,7 +668,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                                 GridCacheVersion min = dhtTx.minVersion();
 
-                                IgniteTxManager<K, V> tm = cctx.near().dht().context().tm();
+                                IgniteTxManager<K, V> tm = cctx.tm();
 
                                 tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
                                     tm.committedVersions(min), tm.rolledbackVersions(min));
@@ -700,13 +706,17 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * One-phase commit can be done if transaction maps to one primary node and not more than one backup.
      */
     private void checkOnePhase() {
-        if (cctx.isStoreEnabled())
+        if (tx.storeUsed())
             return;
 
         Map<UUID, Collection<UUID>> map = txMapping.transactionNodes();
 
         if (map.size() == 1) {
-            Collection<UUID> backups = F.firstEntry(map).getValue();
+            Map.Entry<UUID, Collection<UUID>> entry = F.firstEntry(map);
+
+            assert entry != null;
+
+            Collection<UUID> backups = entry.getValue();
 
             if (backups.size() <= 1)
                 tx.onePhaseCommit(true);

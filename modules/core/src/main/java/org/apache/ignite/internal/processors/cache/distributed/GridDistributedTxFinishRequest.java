@@ -195,20 +195,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
     }
 
     /**
-     * @return Write entries.
-     */
-    public Collection<IgniteTxEntry<K, V>> writes() {
-        return writeEntries;
-    }
-
-    /**
-     * @return Recover entries.
-     */
-    public Collection<IgniteTxEntry<K, V>> recoveryWrites() {
-        return recoveryWrites;
-    }
-
-    /**
      * @return Expected tx size.
      */
     public int txSize() {
@@ -351,33 +337,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 16:
-                if (recoveryWritesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(recoveryWritesBytes.size()))
-                            return false;
-
-                        commState.it = recoveryWritesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
             case 17:
                 if (!commState.putLong(threadId))
                     return false;
@@ -387,33 +346,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
             case 18:
                 if (!commState.putInt(txSize))
                     return false;
-
-                commState.idx++;
-
-            case 19:
-                if (writeEntriesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(writeEntriesBytes.size()))
-                            return false;
-
-                        commState.it = writeEntriesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
 
                 commState.idx++;
 
@@ -508,35 +440,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
 
                 commState.idx++;
 
-            case 16:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (recoveryWritesBytes == null)
-                        recoveryWritesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        recoveryWritesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
             case 17:
                 if (buf.remaining() < 8)
                     return false;
@@ -550,35 +453,6 @@ public class GridDistributedTxFinishRequest<K, V> extends GridDistributedBaseMes
                     return false;
 
                 txSize = commState.getInt();
-
-                commState.idx++;
-
-            case 19:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (writeEntriesBytes == null)
-                        writeEntriesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        writeEntriesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
 
                 commState.idx++;
 

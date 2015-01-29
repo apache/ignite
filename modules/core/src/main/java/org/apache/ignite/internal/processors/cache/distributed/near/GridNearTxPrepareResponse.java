@@ -78,7 +78,7 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
 
     /** Filter failed keys. */
     @GridDirectTransient
-    private Collection<K> filterFailedKeys;
+    private Collection<IgniteTxKey<K>> filterFailedKeys;
 
     /** Filter failed key bytes. */
     private byte[] filterFailedKeyBytes;
@@ -195,15 +195,15 @@ public class GridNearTxPrepareResponse<K, V> extends GridDistributedTxPrepareRes
     /**
      * @param filterFailedKeys Collection of keys that did not pass the filter.
      */
-    public void filterFailedKeys(Collection<K> filterFailedKeys) {
+    public void filterFailedKeys(Collection<IgniteTxKey<K>> filterFailedKeys) {
         this.filterFailedKeys = filterFailedKeys;
     }
 
     /**
      * @return Collection of keys that did not pass the filter.
      */
-    public Collection<K> filterFailedKeys() {
-        return filterFailedKeys == null ? Collections.<K>emptyList() : filterFailedKeys;
+    public Collection<IgniteTxKey<K>> filterFailedKeys() {
+        return filterFailedKeys == null ? Collections.<IgniteTxKey<K>>emptyList() : filterFailedKeys;
     }
 
     /**

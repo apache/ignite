@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
@@ -346,39 +345,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 24:
-                if (nearWritesBytes != null) {
-                    if (commState.it == null) {
-                        if (!commState.putInt(nearWritesBytes.size()))
-                            return false;
-
-                        commState.it = nearWritesBytes.iterator();
-                    }
-
-                    while (commState.it.hasNext() || commState.cur != NULL) {
-                        if (commState.cur == NULL)
-                            commState.cur = commState.it.next();
-
-                        if (!commState.putByteArray((byte[])commState.cur))
-                            return false;
-
-                        commState.cur = NULL;
-                    }
-
-                    commState.it = null;
-                } else {
-                    if (!commState.putInt(-1))
-                        return false;
-                }
-
-                commState.idx++;
-
-            case 25:
-                if (!commState.putBoolean(onePhaseCommit))
-                    return false;
-
-                commState.idx++;
-
             case 26:
                 if (pendingVers != null) {
                     if (commState.it == null) {
@@ -489,43 +455,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                     return false;
 
                 nearNodeId = nearNodeId0;
-
-                commState.idx++;
-
-            case 24:
-                if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
-                    commState.readSize = commState.getInt();
-                }
-
-                if (commState.readSize >= 0) {
-                    if (nearWritesBytes == null)
-                        nearWritesBytes = new ArrayList<>(commState.readSize);
-
-                    for (int i = commState.readItems; i < commState.readSize; i++) {
-                        byte[] _val = commState.getByteArray();
-
-                        if (_val == BYTE_ARR_NOT_READ)
-                            return false;
-
-                        nearWritesBytes.add((byte[])_val);
-
-                        commState.readItems++;
-                    }
-                }
-
-                commState.readSize = -1;
-                commState.readItems = 0;
-
-                commState.idx++;
-
-            case 25:
-                if (buf.remaining() < 1)
-                    return false;
-
-                onePhaseCommit = commState.getBoolean();
 
                 commState.idx++;
 

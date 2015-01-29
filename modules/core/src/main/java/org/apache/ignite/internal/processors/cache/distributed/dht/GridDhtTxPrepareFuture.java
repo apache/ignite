@@ -539,7 +539,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /**
-     * @throws GridException If failed to send response.
+     * @throws IgniteCheckedException If failed to send response.
      */
     private void sendPrepareResponse(GridNearTxPrepareResponse<K, V> res) throws IgniteCheckedException {
         if (!tx.nearNodeId().equals(cctx.localNodeId()))
@@ -798,7 +798,6 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         tx.nearXidVersion(),
                         true,
                         tx.onePhaseCommit(),
-                        lastBackup(n.id()),
                         tx.subjectId(),
                         tx.taskNameHash());
 

@@ -826,7 +826,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 entries,
                                 req.onePhaseCommit(),
                                 req.messageId(),
-                                req.implicitTx(),
                                 req.txRead(),
                                 req.accessTtl());
 
