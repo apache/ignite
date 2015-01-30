@@ -81,7 +81,7 @@ public class GridLog4jCorrectFileNameTest extends TestCase {
     private void checkOneNode(int id) throws Exception {
         try (Ignite ignite = G.start(getConfiguration("grid" + id))) {
             String id8 = U.id8(ignite.cluster().localNode().id());
-            String logPath = "work/log/gridgain-" + id8 + ".log";
+            String logPath = "work/log/ignite-" + id8 + ".log";
             File logFile = U.resolveGridGainPath(logPath);
 
             assertNotNull("Failed to resolve path: " + logPath, logFile);
