@@ -104,7 +104,7 @@ public class GridRouterCommandLineStartup {
             " _/ // (_ /    // /  / / / _/   ",
             "/___/\\___/_/|_/___/ /_/ /___/  ",
             " ",
-            "GridGain Router Command Line Loader",
+            "Ignite Router Command Line Loader",
             "ver. " + ACK_VER,
             COPYRIGHT,
             " "

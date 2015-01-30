@@ -2009,13 +2009,13 @@ public class IgnitionEx {
                     }
 
                     if (log4jCls != null) {
-                        URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
+                        URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
 
                         if (url == null) {
-                            File cfgFile = new File("config/gridgain-log4j.xml");
+                            File cfgFile = new File("config/ignite-log4j.xml");
 
                             if (!cfgFile.exists())
-                                cfgFile = new File("../config/gridgain-log4j.xml");
+                                cfgFile = new File("../config/ignite-log4j.xml");
 
                             if (cfgFile.exists()) {
                                 try {

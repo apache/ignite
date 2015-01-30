@@ -41,7 +41,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
 
     /** Default log path. */
-    private static final String DFLT_PATH = "work/log/gridgain.log";
+    private static final String DFLT_PATH = "work/log/ignite.log";
 
     /** Approximate line length. */
     private static final int LINE_LENGTH = 120;

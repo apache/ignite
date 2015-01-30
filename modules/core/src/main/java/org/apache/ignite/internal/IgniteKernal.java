@@ -851,7 +851,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             verChecker.reportOnlyNew(true);
             verChecker.licenseProcessor(ctx.license());
 
-            updateNtfTimer = new Timer("gridgain-update-notifier-timer");
+            updateNtfTimer = new Timer("ignite-update-notifier-timer");
 
             // Setup periodic version check.
             updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -878,7 +878,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (starveCheck) {
             final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
-            starveTimer = new Timer("gridgain-starvation-checker");
+            starveTimer = new Timer("ignite-starvation-checker");
 
             starveTimer.scheduleAtFixedRate(new GridTimerTask() {
                 /** Last completed task count. */
@@ -907,7 +907,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
 
         if (!isDaemon()) {
-            licTimer = new Timer("gridgain-license-checker");
+            licTimer = new Timer("ignite-license-checker");
 
             // Setup periodic license check.
             licTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -952,7 +952,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
-            metricsLogTimer = new Timer("gridgain-metrics-logger");
+            metricsLogTimer = new Timer("ignite-metrics-logger");
 
             metricsLogTimer.scheduleAtFixedRate(new GridTimerTask() {
                 /** */

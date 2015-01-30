@@ -28,7 +28,7 @@
         </file>
 
         <file>
-            <source>config/gridgain-log4j.xml</source>
+            <source>config/ignite-log4j.xml</source>
             <outputDirectory>/config</outputDirectory>
         </file>
 
