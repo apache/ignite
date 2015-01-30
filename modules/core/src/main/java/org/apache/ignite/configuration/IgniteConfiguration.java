@@ -389,9 +389,6 @@ public class IgniteConfiguration {
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
-    /** Interop configuration. */
-    private InteropConfiguration interopCfg;
-
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
 
@@ -585,7 +582,6 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
-        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
         jettyPath = cfg.getRestJettyPath();
         licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
@@ -3114,24 +3110,6 @@ public class IgniteConfiguration {
      */
     public void setWarmupClosure(IgniteInClosure<IgniteConfiguration> warmupClos) {
         this.warmupClos = warmupClos;
-    }
-
-    /**
-     * Gets interop configuration.
-     *
-     * @return Interop configuration.
-     */
-    @Nullable public InteropConfiguration getInteropConfiguration() {
-        return interopCfg;
-    }
-
-    /**
-     * Sets interop configuration.
-     *
-     * @param interopCfg Interop configuration.
-     */
-    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
-        this.interopCfg = interopCfg;
     }
 
     /**
