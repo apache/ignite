@@ -260,7 +260,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     public ExecutorService executorService() {
         assert ctx != null;
 
-        return new GridExecutorService(this, ctx.log());
+        return new GridExecutorService(this, ctx);
     }
 
     /** {@inheritDoc} */

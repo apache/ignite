@@ -295,7 +295,7 @@ public class GridWebSessionFilter implements Filter {
                 else
                     sesId = doFilter0(httpReq, res, chain);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Failed to update web session: " + sesId, e);
             }
         }
@@ -310,10 +310,10 @@ public class GridWebSessionFilter implements Filter {
      * @return Session ID.
      * @throws IOException In case of I/O error.
      * @throws ServletException In case oif servlet error.
-     * @throws IgniteCheckedException In case of other error.
+     * @throws CacheException In case of other error.
      */
     private String doFilter0(HttpServletRequest httpReq, ServletResponse res, FilterChain chain) throws IOException,
-        ServletException, IgniteCheckedException {
+        ServletException, CacheException {
         GridWebSession cached;
 
         String sesId = httpReq.getRequestedSessionId();

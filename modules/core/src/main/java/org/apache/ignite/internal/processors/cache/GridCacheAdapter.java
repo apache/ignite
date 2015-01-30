@@ -3558,6 +3558,13 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteTxEx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+        IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
+
+        return txs.txStartEx(ctx, concurrency, isolation);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteTx txStart(IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, long timeout, int txSize) throws IllegalStateException {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
@@ -4034,7 +4041,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Transaction commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<IgniteTx> commitTxAsync(final IgniteTxEx tx) {
+    public IgniteInternalFuture<IgniteTxEx> commitTxAsync(final IgniteTxEx tx) {
         FutureHolder holder = lastFut.get();
 
         holder.lock();
@@ -4043,9 +4050,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             IgniteInternalFuture fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteTx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteInternalFuture<IgniteTx>>() {
-                        @Override public IgniteInternalFuture<IgniteTx> apply(Object o, Exception e) {
+                IgniteInternalFuture<IgniteTxEx> f = new GridEmbeddedFuture<>(fut,
+                    new C2<Object, Exception, IgniteInternalFuture<IgniteTxEx>>() {
+                        @Override public IgniteInternalFuture<IgniteTxEx> apply(Object o, Exception e) {
                             return tx.commitAsync();
                         }
                     }, ctx.kernalContext());
@@ -4055,7 +4062,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return f;
             }
 
-            IgniteInternalFuture<IgniteTx> f = tx.commitAsync();
+            IgniteInternalFuture<IgniteTxEx> f = tx.commitAsync();
 
             saveFuture(holder, f);
 
@@ -4066,42 +4073,6 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         finally {
             holder.unlock();
         }
-    }
-
-    /**
-     * Synchronously commits transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @throws IgniteCheckedException If commit failed.
-     */
-    void commitTx(IgniteTx tx) throws IgniteCheckedException {
-        awaitLastFut();
-
-        tx.commit();
-    }
-
-    /**
-     * Synchronously rolls back transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @throws IgniteCheckedException If commit failed.
-     */
-    void rollbackTx(IgniteTx tx) throws IgniteCheckedException {
-        awaitLastFut();
-
-        tx.rollback();
-    }
-
-    /**
-     * Synchronously ends transaction after all previous asynchronous operations are completed.
-     *
-     * @param tx Transaction to commit.
-     * @throws IgniteCheckedException If commit failed.
-     */
-    void endTx(IgniteTx tx) throws IgniteCheckedException {
-        awaitLastFut();
-
-        tx.close();
     }
 
     /**

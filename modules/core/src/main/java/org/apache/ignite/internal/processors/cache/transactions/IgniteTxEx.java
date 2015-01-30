@@ -33,7 +33,7 @@ import java.util.*;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
+public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
     /**
      *
      */
@@ -51,6 +51,165 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
         /** Transaction is being finalized by recovery procedure. */
         RECOVERY_FINISH
     }
+
+    /**
+     * Gets unique identifier for this transaction.
+     *
+     * @return Transaction UID.
+     */
+    public IgniteUuid xid();
+
+    /**
+     * ID of the node on which this transaction started.
+     *
+     * @return Originating node ID.
+     */
+    public UUID nodeId();
+
+    /**
+     * ID of the thread in which this transaction started.
+     *
+     * @return Thread ID.
+     */
+    public long threadId();
+
+    /**
+     * Start time of this transaction.
+     *
+     * @return Start time of this transaction on this node.
+     */
+    public long startTime();
+
+    /**
+     * Cache transaction isolation level.
+     *
+     * @return Isolation level.
+     */
+    public IgniteTxIsolation isolation();
+
+    /**
+     * Cache transaction concurrency mode.
+     *
+     * @return Concurrency mode.
+     */
+    public IgniteTxConcurrency concurrency();
+
+    /**
+     * Flag indicating whether transaction was started automatically by the
+     * system or not. System will start transactions implicitly whenever
+     * any cache {@code put(..)} or {@code remove(..)} operation is invoked
+     * outside of transaction.
+     *
+     * @return {@code True} if transaction was started implicitly.
+     */
+    public boolean implicit();
+
+    /**
+     * Get invalidation flag for this transaction. If set to {@code true}, then
+     * remote values will be {@code invalidated} (set to {@code null}) instead
+     * of updated.
+     * <p>
+     * Invalidation messages don't carry new values, so they are a lot lighter
+     * than update messages. However, when a value is accessed on a node after
+     * it's been invalidated, it must be loaded from persistent store.
+     *
+     * @return Invalidation flag.
+     */
+    public boolean isInvalidate();
+
+    /**
+     * Gets current transaction state value.
+     *
+     * @return Current transaction state.
+     */
+    public IgniteTxState state();
+
+    /**
+     * Gets timeout value in milliseconds for this transaction. If transaction times
+     * out prior to it's completion, {@link IgniteTxTimeoutException} will be thrown.
+     *
+     * @return Transaction timeout value.
+     */
+    public long timeout();
+
+    /**
+     * Sets transaction timeout value. This value can be set only before a first operation
+     * on transaction has been performed.
+     *
+     * @param timeout Transaction timeout value.
+     * @return Previous timeout.
+     */
+    public long timeout(long timeout);
+
+    /**
+     * Modify the transaction associated with the current thread such that the
+     * only possible outcome of the transaction is to roll back the
+     * transaction.
+     *
+     * @return {@code True} if rollback-only flag was set as a result of this operation,
+     *      {@code false} if it was already set prior to this call or could not be set
+     *      because transaction is already finishing up committing or rolling back.
+     */
+    public boolean setRollbackOnly();
+
+    /**
+     * If transaction was marked as rollback-only.
+     *
+     * @return {@code True} if transaction can only be rolled back.
+     */
+    public boolean isRollbackOnly();
+
+    /**
+     * Commits this transaction by initiating {@code two-phase-commit} process.
+     *
+     * @throws IgniteCheckedException If commit failed.
+     */
+    @IgniteAsyncSupported
+    public void commit() throws IgniteCheckedException;
+
+    /**
+     * Ends the transaction. Transaction will be rolled back if it has not been committed.
+     *
+     * @throws IgniteCheckedException If transaction could not be gracefully ended.
+     */
+    @Override public void close() throws IgniteCheckedException;
+
+    /**
+     * Rolls back this transaction.
+     *
+     * @throws IgniteCheckedException If rollback failed.
+     */
+    @IgniteAsyncSupported
+    public void rollback() throws IgniteCheckedException;
+
+    /**
+     * Removes metadata by name.
+     *
+     * @param name Name of the metadata to remove.
+     * @param <T> Type of the value.
+     * @return Value of removed metadata or {@code null}.
+     */
+    @Nullable public <T> T removeMeta(String name);
+
+    /**
+     * Gets metadata by name.
+     *
+     * @param name Metadata name.
+     * @param <T> Type of the value.
+     * @return Metadata value or {@code null}.
+     */
+    @Nullable public <T> T meta(String name);
+
+    /**
+     * Adds a new metadata.
+     *
+     * @param name Metadata name.
+     * @param val Metadata value.
+     * @param <T> Type of the value.
+     * @return Metadata previously associated with given name, or
+     *      {@code null} if there was none.
+     */
+    @Nullable public <T> T addMeta(String name, T val);
 
     /**
      * @return Size of the transaction.
@@ -407,7 +566,7 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
     /**
      * @return Future for transaction completion.
      */
-    public IgniteInternalFuture<IgniteTx> finishFuture();
+    public IgniteInternalFuture<IgniteTxEx> finishFuture();
 
     /**
      * @param state Transaction state.
@@ -435,14 +594,14 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
      *
      * @return Rollback future.
      */
-    public IgniteInternalFuture<IgniteTx> rollbackAsync();
+    public IgniteInternalFuture<IgniteTxEx> rollbackAsync();
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
      *
      * @return Future for commit operation.
      */
-    public IgniteInternalFuture<IgniteTx> commitAsync();
+    public IgniteInternalFuture<IgniteTxEx> commitAsync();
 
     /**
      * Callback invoked whenever there is a lock that has been acquired
@@ -538,4 +697,9 @@ public interface IgniteTxEx<K, V> extends IgniteTx, GridTimeoutObject {
      *      transactions.
      */
     public boolean hasTransforms();
+
+    /**
+     * @return Public API proxy.
+     */
+    public IgniteTxProxy proxy();
 }

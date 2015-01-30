@@ -229,36 +229,42 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void commit() throws IgniteCheckedException {
+    @Override public void commit() {
         enter();
 
         try {
-            IgniteInternalFuture<IgniteTx> commitFut = cctx.commitTxAsync(tx);
+            IgniteInternalFuture<IgniteTxEx> commitFut = cctx.commitTxAsync(tx);
 
             if (async)
                 asyncRes = new IgniteFutureImpl(commitFut);
             else
                 commitFut.get();
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             leave();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
+    @Override public void close() {
         enter();
 
         try {
             cctx.endTx(tx);
         }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             leave();
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void rollback() throws IgniteCheckedException {
+    @Override public void rollback() {
         enter();
 
         try {
@@ -268,6 +274,9 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
                 asyncRes = new IgniteFutureImpl(rollbackFut);
             else
                 rollbackFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             leave();

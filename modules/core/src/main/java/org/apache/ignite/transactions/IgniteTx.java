@@ -226,25 +226,25 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
     /**
      * Commits this transaction by initiating {@code two-phase-commit} process.
      *
-     * @throws IgniteCheckedException If commit failed.
+     * @throws IgniteException If commit failed.
      */
     @IgniteAsyncSupported
-    public void commit() throws IgniteCheckedException;
+    public void commit() throws IgniteException;
 
     /**
      * Ends the transaction. Transaction will be rolled back if it has not been committed.
      *
-     * @throws IgniteCheckedException If transaction could not be gracefully ended.
+     * @throws IgniteException If transaction could not be gracefully ended.
      */
-    @Override public void close() throws IgniteCheckedException;
+    @Override public void close() throws IgniteException;
 
     /**
      * Rolls back this transaction.
      *
-     * @throws IgniteCheckedException If rollback failed.
+     * @throws IgniteException If rollback failed.
      */
     @IgniteAsyncSupported
-    public void rollback() throws IgniteCheckedException;
+    public void rollback() throws IgniteException;
 
     /**
      * Removes metadata by name.

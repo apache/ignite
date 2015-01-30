@@ -21,13 +21,14 @@ import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.*;
+
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 
 /**
  * An {@link ExecutorService} that executes each submitted task in grid
@@ -77,8 +78,8 @@ public class GridExecutorService implements ExecutorService, Externalizable {
     /** Projection. */
     private ClusterGroupAdapter prj;
 
-    /** Compute. */
-    private IgniteCompute comp;
+    /** */
+    private GridKernalContext ctx;
 
     /** Logger. */
     private IgniteLogger log;
@@ -106,16 +107,15 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      * Creates executor service.
      *
      * @param prj Projection.
-     * @param log Grid logger.
+     * @param ctx Grid logger.
      */
-    public GridExecutorService(ClusterGroupAdapter prj, IgniteLogger log) {
+    public GridExecutorService(ClusterGroupAdapter prj, GridKernalContext ctx) {
         assert prj != null;
-        assert log != null;
+        assert ctx != null;
 
         this.prj = prj;
-        this.log = log.getLogger(GridExecutorService.class);
-
-        comp = prj.compute().withAsync();
+        this.ctx = ctx;
+        this.log = ctx.log().getLogger(GridExecutorService.class);
     }
 
     /** {@inheritDoc} */
@@ -237,18 +237,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         checkShutdown();
 
-        assert comp.isAsync();
+        ctx.gateway().readLock();
 
         try {
-            comp.call(task);
-
-            IgniteFutureImpl<T> fut = (IgniteFutureImpl<T>)comp.future();
-
-            return addFuture(fut.internalFuture());
+            return addFuture(ctx.closure().callAsync(BALANCE, task, prj.nodes()));
         }
-        catch (IgniteException e) {
-            // Should not be thrown since uses asynchronous execution.
-            return addFuture(new GridFinishedFutureEx<T>(e));
+        finally {
+            ctx.gateway().readUnlock();
         }
     }
 
@@ -258,16 +253,12 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         checkShutdown();
 
-        assert comp.isAsync();
+        ctx.gateway().readLock();
 
         try {
-            comp.run(task);
-
-            IgniteInternalFuture<T> fut0 = ((IgniteFutureImpl<T>)comp.future()).internalFuture();
-
-            IgniteInternalFuture<T> fut = fut0.chain(new CX1<IgniteInternalFuture<?>, T>() {
-                @Override
-                public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+            IgniteInternalFuture<T> fut = ctx.closure().runAsync(BALANCE, task, prj.nodes()).chain(
+                new CX1<IgniteInternalFuture<?>, T>() {
+                @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                     fut.get();
 
                     return res;
@@ -276,9 +267,8 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
             return addFuture(fut);
         }
-        catch (IgniteException e) {
-            // Should not be thrown since uses asynchronous execution.
-            return addFuture(new GridFinishedFutureEx<T>(e));
+        finally {
+            ctx.gateway().readUnlock();
         }
     }
 
@@ -288,18 +278,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         checkShutdown();
 
-        assert comp.isAsync();
+        ctx.gateway().readLock();
 
         try {
-            comp.run(task);
-
-            IgniteFutureImpl<?> fut = (IgniteFutureImpl<?>)comp.future();
-
-            return addFuture(fut.internalFuture());
+            return addFuture(ctx.closure().runAsync(BALANCE, task, prj.nodes()));
         }
-        catch (IgniteException e) {
-            // Should not be thrown since uses asynchronous execution.
-            return addFuture(new GridFinishedFutureEx<>(e));
+        finally {
+            ctx.gateway().readUnlock();
         }
     }
 
@@ -353,23 +338,18 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         Collection<IgniteInternalFuture<T>> taskFuts = new ArrayList<>();
 
-        assert comp.isAsync();
-
         for (Callable<T> task : tasks) {
             // Execute task without predefined timeout.
             // GridFuture.cancel() will be called if timeout elapsed.
             IgniteInternalFuture<T> fut;
 
+            ctx.gateway().readLock();
+
             try {
-                comp.call(task);
-
-                IgniteFutureImpl<T> fut0 = (IgniteFutureImpl<T>)comp.future();
-
-                fut = fut0.internalFuture();
+                fut = ctx.closure().callAsync(BALANCE, task, prj.nodes());
             }
-            catch (IgniteException e) {
-                // Should not be thrown since uses asynchronous execution.
-                fut = new GridFinishedFutureEx<>(e);
+            finally {
+                ctx.gateway().readUnlock();
             }
 
             taskFuts.add(fut);
@@ -495,23 +475,17 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         Collection<IgniteInternalFuture<T>> taskFuts = new ArrayList<>();
 
-        assert comp.isAsync();
-
         for (Callable<T> cmd : tasks) {
             // Execute task with predefined timeout.
             IgniteInternalFuture<T> fut;
 
-            try
-            {
-                comp.call(cmd);
+            ctx.gateway().readLock();
 
-                IgniteFutureImpl<T> fut0 = (IgniteFutureImpl<T>)comp.future();
-
-                fut = fut0.internalFuture();
+            try {
+                fut = ctx.closure().callAsync(BALANCE, cmd, prj.nodes());
             }
-            catch (IgniteException e) {
-                // Should not be thrown since uses asynchronous execution.
-                fut = new GridFinishedFutureEx<>(e);
+            finally {
+                ctx.gateway().readUnlock();
             }
 
             taskFuts.add(fut);
@@ -582,18 +556,13 @@ public class GridExecutorService implements ExecutorService, Externalizable {
 
         checkShutdown();
 
-        assert comp.isAsync();
+        ctx.gateway().readLock();
 
         try {
-            comp.run(cmd);
-
-            IgniteFutureImpl<?> fut0 = (IgniteFutureImpl<?>)comp.future();
-
-            addFuture(fut0.internalFuture());
+            addFuture(ctx.closure().runAsync(BALANCE, cmd, prj.nodes()));
         }
-        catch (IgniteException e) {
-            // Should not be thrown since uses asynchronous execution.
-            addFuture(new GridFinishedFutureEx(e));
+        finally {
+            ctx.gateway().readUnlock();
         }
     }
 

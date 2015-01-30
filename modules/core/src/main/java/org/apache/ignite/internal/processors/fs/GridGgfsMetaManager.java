@@ -24,6 +24,7 @@ import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -408,7 +409,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert validTxState(false);
                 assert fileId != null;
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     // Lock file ID for this transaction.
@@ -491,7 +492,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 IgniteUuid fileId = info.id();
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     // Lock file ID for this transaction.
@@ -692,7 +693,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 IgniteUuid res = null;
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     res = putIfAbsentNonTx(parentId, fileName, newFileInfo);
@@ -781,7 +782,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     moveNonTx(fileId, srcFileName, srcParentId, destFileName, destParentId);
@@ -901,7 +902,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     if (parentId != null)
@@ -1015,7 +1016,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     if (parentId == null)
@@ -1136,7 +1137,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert listing != null;
                 assert validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     Collection<IgniteUuid> res = new HashSet<>();
@@ -1221,7 +1222,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     boolean res = false;
@@ -1394,7 +1395,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridGgfsFileInfo info = updatePropertiesNonTx(parentId, fileId, fileName, props);
@@ -1464,7 +1465,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Update file info [fileId=" + fileId + ", c=" + c + ']');
 
-                IgniteTx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStart(PESSIMISTIC,
+                IgniteTxEx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStartEx(PESSIMISTIC,
                     REPEATABLE_READ);
 
                 try {
@@ -1527,7 +1528,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             try {
                 validTxState(false);
 
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     Object prev = val != null ? metaCache.put(sampling, val) : metaCache.remove(sampling);
@@ -2361,7 +2362,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 pathIds.add(fileIds(path));
 
             // Start pessimistic.
-            IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+            IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
             try {
                 // Lock the very first existing parents and possibly the leaf as well.
@@ -2583,7 +2584,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 assert validTxState(false);
 
                 // Start pessimistic transaction.
-                IgniteTx tx = metaCache.txStart(PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     Map<IgniteUuid, GridGgfsFileInfo> infoMap = lockIds(fileId, parentId);

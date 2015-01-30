@@ -278,7 +278,7 @@ public class GridCacheNearMultiGetSelfTest extends GridCommonAbstractTest {
             try {
                 tx.rollback();
             }
-            catch (IgniteCheckedException ex) {
+            catch (IgniteException ex) {
                 error("Failed to rollback optimistic failure: " + tx, ex);
 
                 throw ex;

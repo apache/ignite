@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -219,8 +220,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
     private Callable<Boolean> internalSet(final T val, final S stamp) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-
-                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);
@@ -262,7 +262,7 @@ public final class GridCacheAtomicStampedImpl<T, S> implements GridCacheAtomicSt
         final IgniteClosure<S, S> newStampClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                IgniteTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteTxEx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicStampedValue<T, S> stmp = atomicView.get(key);

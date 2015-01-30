@@ -532,12 +532,12 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public void commit() throws IgniteCheckedException {
+        @Override public void commit() {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void close() throws IgniteCheckedException {
+        @Override public void close() {
             // No-op.
         }
 
@@ -557,7 +557,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public void rollback() throws IgniteCheckedException {
+        @Override public void rollback() {
             // No-op.
         }
     }

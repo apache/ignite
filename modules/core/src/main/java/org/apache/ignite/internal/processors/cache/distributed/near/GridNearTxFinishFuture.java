@@ -45,8 +45,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  *
  */
-public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteTx>
-    implements GridCacheFuture<IgniteTx> {
+public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteTxEx>
+    implements GridCacheFuture<IgniteTxEx> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -91,7 +91,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param commit Commit flag.
      */
     public GridNearTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridNearTxLocal<K, V> tx, boolean commit) {
-        super(cctx.kernalContext(), F.<IgniteTx>identityReducer(tx));
+        super(cctx.kernalContext(), F.<IgniteTxEx>identityReducer(tx));
 
         assert cctx != null;
 
@@ -200,7 +200,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     public void onResult(UUID nodeId, GridNearTxFinishResponse<K, V> res) {
         if (!isDone())
-            for (IgniteInternalFuture<IgniteTx> fut : futures()) {
+            for (IgniteInternalFuture<IgniteTxEx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -214,7 +214,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTx tx, Throwable err) {
+    @Override public boolean onDone(IgniteTxEx tx, Throwable err) {
         if ((initialized() || err != null)) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
@@ -283,7 +283,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             // Finish local mapping only as we need send commit message to backups.
             for (GridDistributedTxMapping<K, V> m : mappings.values()) {
                 if (m.node().isLocal()) {
-                    IgniteInternalFuture<IgniteTx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
+                    IgniteInternalFuture<IgniteTxEx> fut = cctx.tm().txHandler().finishColocatedLocal(commit, tx);
 
                     // Add new future.
                     if (fut != null)
@@ -370,7 +370,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (n.isLocal()) {
             req.miniId(IgniteUuid.randomUuid());
 
-            IgniteInternalFuture<IgniteTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
+            IgniteInternalFuture<IgniteTxEx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
             // Add new future.
             if (fut != null)
@@ -415,7 +415,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTx> {
+    private class MiniFuture extends GridFutureAdapter<IgniteTxEx> {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -265,7 +265,7 @@ public class IgniteExecutorServiceTest extends GridCommonAbstractTest {
     private ExecutorService createExecutorService(Ignite ignite) {
         assert ignite != null;
 
-        return new GridExecutorService((ClusterGroupAdapter) ignite, log());
+        return ignite.executorService();
     }
 
     /**

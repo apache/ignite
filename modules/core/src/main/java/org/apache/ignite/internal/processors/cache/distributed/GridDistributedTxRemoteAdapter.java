@@ -718,11 +718,11 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx> commitAsync() {
         try {
             commit();
 
-            return new GridFinishedFutureEx<IgniteTx>(this);
+            return new GridFinishedFutureEx<IgniteTxEx>(this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFutureEx<>(e);
@@ -749,10 +749,10 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx> rollbackAsync() {
         rollback();
 
-        return new GridFinishedFutureEx<IgniteTx>(this);
+        return new GridFinishedFutureEx<IgniteTxEx>(this);
     }
 
     /** {@inheritDoc} */

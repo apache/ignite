@@ -762,7 +762,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public IgniteInternalFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx> commitAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing near local tx: " + this);
 
@@ -808,7 +808,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx> rollbackAsync() {
         if (log.isDebugEnabled())
             log.debug("Rolling back near tx: " + this);
 
@@ -956,7 +956,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      * @return Commit future.
      */
-    public IgniteInternalFuture<IgniteTx> commitAsyncLocal() {
+    public IgniteInternalFuture<IgniteTxEx> commitAsyncLocal() {
         if (log.isDebugEnabled())
             log.debug("Committing colocated tx locally: " + this);
 
@@ -969,9 +969,9 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
         // Do not create finish future if there are no remote nodes.
         if (F.isEmpty(dhtMap) && F.isEmpty(nearMap)) {
             if (prep != null)
-                return (IgniteInternalFuture<IgniteTx>)(IgniteInternalFuture)prep;
+                return (IgniteInternalFuture<IgniteTxEx>)(IgniteInternalFuture)prep;
 
-            return new GridFinishedFuture<IgniteTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTxEx>(cctx.kernalContext(), this);
         }
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
@@ -1029,7 +1029,7 @@ public class GridNearTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> {
      *
      * @return Commit future.
      */
-    public IgniteInternalFuture<IgniteTx> rollbackAsyncLocal() {
+    public IgniteInternalFuture<IgniteTxEx> rollbackAsyncLocal() {
         if (log.isDebugEnabled())
             log.debug("Rolling back colocated tx locally: " + this);
 

@@ -57,7 +57,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     protected final GridCacheContext<?, ?> cctx;
 
     /** Cache. */
-    protected final IgniteCache cache;
+    protected final GridCacheAdapter cache;
 
     /** Queue name. */
     protected final String queueName;
@@ -98,7 +98,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         cap = hdr.capacity();
         collocated = hdr.collocated();
         queueKey = new GridCacheQueueHeaderKey(queueName);
-        cache = cctx.kernalContext().cache().jcache(cctx.name());
+        cache = cctx.kernalContext().cache().internalCache(cctx.name());
 
         log = cctx.logger(getClass());
 
@@ -137,24 +137,34 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public int size() {
-        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+        try {
+            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-        checkRemoved(hdr);
+            checkRemoved(hdr);
 
-        return hdr.size();
+            return hdr.size();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public T peek() throws IgniteException {
-        GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
+        try {
+            GridCacheQueueHeader hdr = (GridCacheQueueHeader)cache.get(queueKey);
 
-        checkRemoved(hdr);
+            checkRemoved(hdr);
 
-        if (hdr.empty())
-            return null;
+            if (hdr.empty())
+                return null;
 
-        return (T)cache.get(itemKey(hdr.head()));
+            return (T)cache.get(itemKey(hdr.head()));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -381,7 +391,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
-    static void removeKeys(IgniteCache cache,
+    static void removeKeys(GridCacheAdapter cache,
         IgniteUuid id,
         String name,
         boolean collocated,
@@ -579,19 +589,24 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
             if (next == null)
                 throw new NoSuchElementException();
 
-            cur = next;
-            curIdx = idx;
+            try {
+                cur = next;
+                curIdx = idx;
 
-            idx++;
+                idx++;
 
-            if (rmvIdxs != null) {
-                while (F.contains(rmvIdxs, idx) && idx < endIdx)
-                    idx++;
+                if (rmvIdxs != null) {
+                    while (F.contains(rmvIdxs, idx) && idx < endIdx)
+                        idx++;
+                }
+
+                next = idx < endIdx ? (T)cache.get(itemKey(idx)) : null;
+
+                return cur;
             }
-
-            next = idx < endIdx ? (T)cache.get(itemKey(idx)) : null;
-
-            return cur;
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** {@inheritDoc} */

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.transactions.*;
+import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
@@ -34,9 +34,6 @@ import static org.apache.ignite.transactions.IgniteTxIsolation.*;
  * {@link org.apache.ignite.cache.datastructures.CacheQueue} implementation using transactional cache.
  */
 public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
-    /** */
-    private final IgniteTransactions txs;
-
     /**
      * @param queueName Queue name.
      * @param hdr Queue header.
@@ -44,8 +41,6 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
      */
     public GridTransactionalCacheQueueImpl(String queueName, GridCacheQueueHeader hdr, GridCacheContext<?, ?> cctx) {
         super(queueName, hdr, cctx);
-
-        txs = cctx.kernalContext().grid().transactions();
     }
 
     /** {@inheritDoc} */
@@ -60,8 +55,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try {
-                    try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, 1));
+                    try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                        Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, 1)).get();
 
                         if (idx != null) {
                             checkRemoved(idx);
@@ -78,28 +73,24 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         break;
                     }
                 }
-                catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
+                catch (ClusterTopologyCheckedException e) {
+                    if (e instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
-                        if (cnt++ == MAX_UPDATE_RETRIES)
-                            throw e;
-                        else {
-                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
 
-                            U.sleep(RETRY_DELAY);
-                        }
+                        U.sleep(RETRY_DELAY);
                     }
-                    else
-                        throw e;
                 }
             }
 
             return retVal;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -112,13 +103,13 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             T retVal;
 
             while (true) {
-                try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id));
+                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id)).get();
 
                     if (idx != null) {
                         checkRemoved(idx);
 
-                        retVal = (T)cache.getAndRemove(itemKey(idx));
+                        retVal = (T)cache.remove(itemKey(idx), null);
 
                         assert retVal != null;
                     }
@@ -129,28 +120,24 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
+                catch (ClusterTopologyCheckedException e) {
+                    if (e instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
-                        if (cnt++ == MAX_UPDATE_RETRIES)
-                            throw e;
-                        else {
-                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
 
-                            U.sleep(RETRY_DELAY);
-                        }
+                        U.sleep(RETRY_DELAY);
                     }
-                    else
-                        throw e;
                 }
             }
 
             return retVal;
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 
@@ -165,8 +152,8 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, items.size()));
+                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, items.size())).get();
 
                     if (idx != null) {
                         checkRemoved(idx);
@@ -179,7 +166,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                             idx++;
                         }
 
-                        cache.putAll(putMap);
+                        cache.putAll(putMap, null);
 
                         retVal = true;
                     }
@@ -190,21 +177,17 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
+                catch (ClusterTopologyCheckedException e) {
+                    if (e instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
-                        if (cnt++ == MAX_UPDATE_RETRIES)
-                            throw e;
-                        else {
-                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
 
-                            U.sleep(RETRY_DELAY);
-                        }
+                        U.sleep(RETRY_DELAY);
                     }
-                    else
-                        throw e;
                 }
             }
 
@@ -222,13 +205,13 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (IgniteTx tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx));
+                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx)).get();
 
                     if (idx != null) {
                         checkRemoved(idx);
 
-                        boolean rmv = cache.remove(itemKey(idx));
+                        boolean rmv = cache.removex(itemKey(idx));
 
                         assert rmv;
                     }
@@ -237,26 +220,22 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
                     break;
                 }
-                catch (CacheException e) {
-                    if (e.getCause() instanceof ClusterGroupEmptyCheckedException)
+                catch (ClusterTopologyCheckedException e) {
+                    if (e instanceof ClusterGroupEmptyCheckedException)
                         throw e;
 
-                    if (e.getCause() instanceof ClusterTopologyCheckedException) {
-                        if (cnt++ == MAX_UPDATE_RETRIES)
-                            throw e;
-                        else {
-                            U.warn(log, "Failed to add item, will retry [err=" + e + ']');
+                    if (cnt++ == MAX_UPDATE_RETRIES)
+                        throw e;
+                    else {
+                        U.warn(log, "Failed to add item, will retry [err=" + e + ']');
 
-                            U.sleep(RETRY_DELAY);
-                        }
+                        U.sleep(RETRY_DELAY);
                     }
-                    else
-                        throw e;
                 }
             }
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException(e);
+            throw U.convertException(e);
         }
     }
 }

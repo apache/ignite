@@ -159,7 +159,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                         tx.commit();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         error("Failed tx thread", e);
                     }
                 }
@@ -252,7 +252,7 @@ public class GridCacheNestedTxAbstractTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             error("Failed tx thread", e);
                         }
 

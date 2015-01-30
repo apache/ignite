@@ -146,7 +146,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public IgniteInternalFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx> commitAsync() {
         try {
             prepare();
         }
@@ -177,7 +177,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
 
@@ -185,7 +185,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
             state(ROLLED_BACK);
 
-            return new GridFinishedFuture<IgniteTx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteTxEx>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);

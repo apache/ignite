@@ -516,10 +516,10 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @return Future that will be completed when all ongoing transactions are finished.
      */
     public IgniteInternalFuture<Boolean> finishTxs(long topVer) {
-        GridCompoundFuture<IgniteTx, Boolean> res =
+        GridCompoundFuture<IgniteTxEx, Boolean> res =
             new GridCompoundFuture<>(context().kernalContext(),
-                new IgniteReducer<IgniteTx, Boolean>() {
-                    @Override public boolean collect(IgniteTx e) {
+                new IgniteReducer<IgniteTxEx, Boolean>() {
+                    @Override public boolean collect(IgniteTxEx e) {
                         return true;
                     }
 
@@ -671,7 +671,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * @return User transaction for current thread.
      */
-    @Nullable public IgniteTx userTx() {
+    @Nullable public IgniteTxEx userTx() {
         IgniteTxEx<K, V> tx = txContext();
 
         if (tx != null && tx.user() && tx.state() == ACTIVE)
@@ -1692,10 +1692,10 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
      * @param newState New state.
      * @param tx Cache transaction.
      */
-    public void onTxStateChange(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteTx tx) {
+    public void onTxStateChange(@Nullable IgniteTxState prevState, IgniteTxState newState, IgniteTxEx tx) {
         // Notify synchronizations.
         for (IgniteTxSynchronization s : syncs)
-            s.onStateChanged(prevState, newState, tx);
+            s.onStateChanged(prevState, newState, tx.proxy());
     }
 
     /**
@@ -1993,8 +1993,8 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
 
             final IgniteTxEx<K, V> tx0 = tx;
 
-            return tx.finishFuture().chain(new C1<IgniteInternalFuture<IgniteTx>, GridCacheCommittedTxInfo<K, V>>() {
-                @Override public GridCacheCommittedTxInfo<K, V> apply(IgniteInternalFuture<IgniteTx> txFut) {
+            return tx.finishFuture().chain(new C1<IgniteInternalFuture<IgniteTxEx>, GridCacheCommittedTxInfo<K, V>>() {
+                @Override public GridCacheCommittedTxInfo<K, V> apply(IgniteInternalFuture<IgniteTxEx> txFut) {
                     GridCacheCommittedTxInfo<K, V> info = null;
 
                     if (tx0.state() == COMMITTED)
@@ -2190,7 +2190,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     /**
      * Commit listener. Checks if commit succeeded and rollbacks if case of error.
      */
-    private class CommitListener implements CI1<IgniteInternalFuture<IgniteTx>> {
+    private class CommitListener implements CI1<IgniteInternalFuture<IgniteTxEx>> {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -2205,7 +2205,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(IgniteInternalFuture<IgniteTx> t) {
+        @Override public void apply(IgniteInternalFuture<IgniteTxEx> t) {
             try {
                 t.get();
             }

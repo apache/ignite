@@ -166,17 +166,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Converts transaction to XID. */
-    private static final IgniteClosure<IgniteTx, IgniteUuid> tx2xid = new C1<IgniteTx, IgniteUuid>() {
-        @Override public IgniteUuid apply(IgniteTx tx) {
-            return tx.xid();
-        }
-
-        @Override public String toString() {
-            return "Transaction to XID converter.";
-        }
-    };
-
     /** Converts transaction to XID version. */
     private static final IgniteClosure tx2xidVer = new C1<IgniteTxEx, GridCacheVersion>() {
         @Override public GridCacheVersion apply(IgniteTxEx tx) {
@@ -806,13 +795,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Closure which converts transaction to xid.
-     */
-    public static IgniteClosure<IgniteTx, IgniteUuid> tx2xid() {
-        return tx2xid;
-    }
-
-    /**
      * @return Closure that converts entry to key.
      */
     @SuppressWarnings({"unchecked"})
@@ -1210,21 +1192,21 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteTxEx txStartInternal(GridCacheContext ctx, CacheProjection prj,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
 
         ctx.tm().txContextReset();
 
-        return prj.txStart(concurrency, isolation);
+        return prj.txStartEx(concurrency, isolation);
     }
 
     /**
      * @param tx Transaction.
      * @return String view of all safe-to-print transaction properties.
      */
-    public static String txString(@Nullable IgniteTx tx) {
+    public static String txString(@Nullable IgniteTxEx tx) {
         if (tx == null)
             return "null";
 
@@ -1627,7 +1609,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteTx tx = cache.txStart(concurrency, isolation)) {
+        try (IgniteTxEx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
 
             tx.commit();
