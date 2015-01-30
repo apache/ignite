@@ -102,9 +102,9 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
         int shmem = 0;
 
         for (GridPortRecord record : ctx.ports().records()) {
-            if (record.clazz() == GridIpcSharedMemoryServerEndpoint.class)
+            if (record.clazz() == IpcSharedMemoryServerEndpoint.class)
                 shmem++;
-            else if (record.clazz() == GridIpcServerTcpEndpoint.class)
+            else if (record.clazz() == IpcServerTcpEndpoint.class)
                 tcp++;
         }
 

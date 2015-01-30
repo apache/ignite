@@ -31,11 +31,11 @@ import java.util.concurrent.atomic.*;
  * communications.
  *
  * Note that this class consumes an entire thread inside {@link #serve()} method
- * in order to serve one {@link GridIpcEndpoint}.
+ * in order to serve one {@link org.apache.ignite.internal.util.ipc.IpcEndpoint}.
  */
 public class GridHadoopIpcToNioAdapter<T> {
     /** */
-    private final GridIpcEndpoint endp;
+    private final IpcEndpoint endp;
 
     /** */
     private final GridNioFilterChain<T> chain;
@@ -55,7 +55,7 @@ public class GridHadoopIpcToNioAdapter<T> {
      * @param lsnr Listener.
      * @param filters Filters.
      */
-    public GridHadoopIpcToNioAdapter(IgniteLogger log, GridIpcEndpoint endp, boolean accepted,
+    public GridHadoopIpcToNioAdapter(IgniteLogger log, IpcEndpoint endp, boolean accepted,
         GridNioServerListener<T> lsnr, GridNioFilter... filters) {
         this.endp = endp;
 
