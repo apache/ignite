@@ -210,7 +210,7 @@ public class OptimizedClassNamesGenerator {
     private void checkSerialVersionUid(Class cls) {
         // Check only GridGain classes.
         if (cls.isEnum() || cls.getSimpleName().isEmpty() || (!cls.getName().startsWith("org.gridgain.grid") &&
-            !cls.getName().startsWith("org.gridgain.client")))
+            !cls.getName().startsWith("org.gridgain.client") && !cls.getName().startsWith("org.apache.ignite")))
             return;
 
         try {
@@ -285,14 +285,14 @@ public class OptimizedClassNamesGenerator {
         File dir;
 
         if (args.length > 0 && args[0] != null && !args[0].isEmpty())
-            dir = new File(args[0], "/org/gridgain/grid/marshaller/optimized");
+            dir = new File(args[0], "/org/apache/ignite/marshaller/optimized");
         else {
             String home = home();
 
             if (home == null)
                 throw new Exception("Failed to find GridGain home.");
 
-            dir = new File(home, "/os/modules/core/src/main/java/org/gridgain/grid/marshaller/optimized");
+            dir = new File(home, "/os/modules/core/src/main/java/org/apache/ignite/marshaller/optimized");
         }
 
         if (!dir.exists())
