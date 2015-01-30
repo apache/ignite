@@ -1684,7 +1684,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     if (idx.type() == SORTED)
                         idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
                     else if (idx.type() == GEO_SPATIAL)
-                        idxs.add(new GridH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
+                        idxs.add(SpatialIndexInitiator.createH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
                     else
                         throw new IllegalStateException();
                 }
