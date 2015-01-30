@@ -34,7 +34,6 @@
     </parent>
 
     <artifactId>ignite-geospatial</artifactId>
-    <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
@@ -47,6 +46,14 @@
             <groupId>com.vividsolutions</groupId>
             <artifactId>jts</artifactId>
             <version>1.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-core</artifactId>
+            <version>${ignite.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
