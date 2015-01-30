@@ -23,10 +23,10 @@ import org.apache.ignite.spi.*;
 import java.util.*;
 
 /**
- * Management bean for {@link GridUriDeploymentSpi}.
+ * Management bean for {@link UriDeploymentSpi}.
  */
 @IgniteMXBeanDescription("MBean that provides access to URI deployment SPI configuration.")
-public interface GridUriDeploymentSpiMBean extends IgniteSpiManagementMBean {
+public interface UriDeploymentSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets temporary directory path.
      *

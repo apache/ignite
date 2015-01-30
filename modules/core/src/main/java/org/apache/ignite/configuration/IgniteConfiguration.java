@@ -526,7 +526,7 @@ public class IgniteConfiguration {
     private IgniteInClosure<IgniteConfiguration> warmupClos;
 
     /** */
-    private GridQueryConfiguration qryCfg;
+    private IgniteQueryConfiguration qryCfg;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -1073,7 +1073,7 @@ public class IgniteConfiguration {
 
     /**
      * Should return an instance of logger to use in grid. If not provided,
-     * {@gglink org.gridgain.grid.logger.log4j.GridLog4jLogger}
+     * {@ignitelink org.apache.ignite.logger.log4j.IgniteLog4jLogger}
      * will be used.
      *
      * @return Logger to use in grid.
@@ -3169,14 +3169,14 @@ public class IgniteConfiguration {
     /**
      * @return Query configuration.
      */
-    public GridQueryConfiguration getQueryConfiguration() {
+    public IgniteQueryConfiguration getQueryConfiguration() {
         return qryCfg;
     }
 
     /**
      * @param qryCfg Query configuration.
      */
-    public void setQueryConfiguration(GridQueryConfiguration qryCfg) {
+    public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
     }
 

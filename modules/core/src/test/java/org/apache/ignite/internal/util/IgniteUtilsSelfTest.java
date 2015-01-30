@@ -46,7 +46,7 @@ import static org.junit.Assert.assertArrayEquals;
  * Grid utils tests.
  */
 @GridCommonTest(group = "Utils")
-public class GridUtilsSelfTest extends GridCommonAbstractTest {
+public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     /** */
     public static final int[] EMPTY = new int[0];
 
@@ -478,7 +478,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             UUID id = UUID.randomUUID();
 
-            byte[] bytes = GridUtils.uuidToBytes(id);
+            byte[] bytes = IgniteUtils.uuidToBytes(id);
             BigInteger n = new BigInteger(bytes);
 
             assert n.shiftRight(Long.SIZE).longValue() == id.getMostSignificantBits();
@@ -696,7 +696,7 @@ public class GridUtilsSelfTest extends GridCommonAbstractTest {
 
 
     public void testMD5Calculation() throws Exception {
-        String md5 = GridUtils.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
+        String md5 = IgniteUtils.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
 
         assertEquals("d7dbe555be2eee7fa658299850169fa1", md5);
     }

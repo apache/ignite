@@ -25,10 +25,10 @@ import javax.transaction.*;
 import java.lang.reflect.*;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.jta.GridCacheTmLookup} interface that attempts to obtain
+ * Implementation of {@link org.apache.ignite.cache.jta.CacheTmLookup} interface that attempts to obtain
  * JTA manager by calling static method on the class.
  */
-public class GridCacheReflectionTmLookup implements GridCacheTmLookup {
+public class CacheReflectionTmLookup implements CacheTmLookup {
     /** */
     private String cls;
 
@@ -38,7 +38,7 @@ public class GridCacheReflectionTmLookup implements GridCacheTmLookup {
     /**
      * Creates uninitialized reflection TM lookup.
      */
-    public GridCacheReflectionTmLookup() { /* No-op. */ }
+    public CacheReflectionTmLookup() { /* No-op. */ }
 
     /**
      * Creates generic TM lookup with given class and method name.
@@ -46,7 +46,7 @@ public class GridCacheReflectionTmLookup implements GridCacheTmLookup {
      * @param cls Class name.
      * @param mtd Method name on that the class.
      */
-    public GridCacheReflectionTmLookup(String cls, String mtd) {
+    public CacheReflectionTmLookup(String cls, String mtd) {
         A.notNull(cls, "cls");
         A.notNull(mtd, "mtd");
 

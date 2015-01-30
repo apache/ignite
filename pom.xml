@@ -593,7 +593,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -800,7 +800,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -1022,7 +1022,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
