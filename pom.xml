@@ -105,6 +105,7 @@
         <module>modules/aop</module>
         <module>modules/urideploy</module>
         <module>modules/indexing</module>
+        <module>modules/geospatial</module>
         <module>modules/ssh</module>
         <module>modules/rest-http</module>
         <module>modules/email</module>
