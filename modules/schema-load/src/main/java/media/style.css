@@ -34,12 +34,17 @@
     -fx-background-color: -fx-text-box-border, -fx-control-inner-background, -fx-control-inner-background;
 }
 
-.tree-view {
+.table-view {
     -fx-focus-color: gray;
 }
 
-.table-view {
-    -fx-focus-color: gray;
+.table-view .table-row-cell:selected {
+    -fx-background-color: -fx-table-cell-border-color, -fx-cell-hover-color;
+    -fx-background-insets: 0, 0 0 1 0;
+}
+
+.table-view:focused .table-row-cell:selected {
+     -fx-background-color: -fx-focus-color, -fx-cell-focus-inner-border, -fx-selection-bar;
 }
 
 .table-row-cell:empty {

@@ -849,9 +849,9 @@ public class SchemaLoadApp extends Application {
 
                         String target = "\"" + sel + "\"";
 
-                        Collection<PojoDescriptor> selItems = selectedItems();
+                        Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
 
-                        if (selItems.isEmpty()) {
+                        if (selPojos.isEmpty()) {
                             MessageBox.warningDialog(owner, "Please select " + src + " to rename " + target + "!");
 
                             return;
@@ -867,13 +867,13 @@ public class SchemaLoadApp extends Application {
 
                         try {
                             switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                                case 0: renameKeyClassNames(regex, replace);
+                                case 0: renameKeyClassNames(selPojos, regex, replace);
                                     break;
 
-                                case 1: renameValueClassNames(regex, replace);
+                                case 1: renameValueClassNames(selPojos, regex, replace);
                                     break;
 
-                                default: renameJavaNames(regex, replace);
+                                default: renameJavaNames(selPojos, regex, replace);
                             }
                         }
                         catch (Exception e) {
@@ -883,8 +883,6 @@ public class SchemaLoadApp extends Application {
                 }),
             button("Reset Selected", "Revert changes for selected items to initial values", new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
-                    Collection<PojoDescriptor> selItems = selectedItems();
-
                     String sel = replaceCb.getSelectionModel().getSelectedItem();
 
                     boolean renFields = "Java names".equals(sel);
@@ -893,7 +891,9 @@ public class SchemaLoadApp extends Application {
 
                     String target = "\"" + sel + "\"";
 
-                    if (selItems.isEmpty()) {
+                    Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
+
+                    if (selPojos.isEmpty()) {
                         MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
 
                         return;
@@ -904,13 +904,13 @@ public class SchemaLoadApp extends Application {
                         return;
 
                     switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                        case 0: revertKeyClassNames();
+                        case 0: revertKeyClassNames(selPojos);
                             break;
 
-                        case 1: revertValueClassNames();
+                        case 1: revertValueClassNames(selPojos);
                             break;
 
-                        default: revertJavaNames();
+                        default: revertJavaNames(selPojos);
                     }
                 }
             })
@@ -945,58 +945,67 @@ public class SchemaLoadApp extends Application {
     /**
      * Rename key class name for selected tables.
      *
+     * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameKeyClassNames(String regex, String replace) {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void renameKeyClassNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.keyClassName(pojo.keyClassName().replaceAll(regex, replace));
     }
 
     /**
      * Rename value class name for selected tables.
      *
+     * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameValueClassNames(String regex, String replace) {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void renameValueClassNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.valueClassName(pojo.valueClassName().replaceAll(regex, replace));
     }
 
     /**
      * Rename fields java name for current or selected tables.
      *
+     * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameJavaNames(String regex, String replace) {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void renameJavaNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+        for (PojoDescriptor pojo : selPojos)
             for (PojoField field : pojo.fields())
                 field.javaName(field.javaName().replaceAll(regex, replace));
     }
 
     /**
      * Revert key class name for selected tables to initial value.
+     *
+     * @param selPojos Selected POJOs to revert.
      */
-    private void revertKeyClassNames() {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void revertKeyClassNames(Collection<PojoDescriptor> selPojos) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.revertKeyClassName();
     }
 
     /**
      * Revert value class name for selected tables to initial value.
+     *
+     * @param selPojos Selected POJOs to revert.
      */
-    private void revertValueClassNames() {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void revertValueClassNames(Collection<PojoDescriptor> selPojos) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.revertValueClassName();
     }
 
     /**
      * Revert fields java name for selected or current table to initial value.
+     *
+     * @param selPojos Selected POJOs to revert.
      */
-    private void revertJavaNames() {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void revertJavaNames(Collection<PojoDescriptor> selPojos) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.revertJavaNames();
     }
 
