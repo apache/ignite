@@ -39,15 +39,15 @@
             <outputDirectory>/docs</outputDirectory>
         </file>
         <file>
-            <source>docs/core-site.gridgain.xml</source>
+            <source>docs/core-site.ignite.xml</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
         <file>
-            <source>docs/mapred-site.gridgain.xml</source>
+            <source>docs/mapred-site.ignite.xml</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
         <file>
-            <source>docs/hive-site.gridgain.xml</source>
+            <source>docs/hive-site.ignite.xml</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
     </files>

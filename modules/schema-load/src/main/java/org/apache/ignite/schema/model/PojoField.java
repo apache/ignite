@@ -152,16 +152,16 @@ public class PojoField {
     }
 
     /**
-     * @param key {@code true} if this field belongs to primary key.
+     * @param isKey {@code true} if this field belongs to primary key.
      * @param desc Field type descriptor.
      * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
      */
-    public PojoField(boolean key, CacheQueryTypeDescriptor desc, boolean nullable) {
-        keyPrev = key;
+    public PojoField(boolean isKey, CacheQueryTypeDescriptor desc, boolean nullable) {
+        keyPrev = isKey;
 
         use = new SimpleBooleanProperty(true);
 
-        this.key = new SimpleBooleanProperty(key);
+        key = new SimpleBooleanProperty(keyPrev);
 
         ak = new SimpleBooleanProperty(false);
 
@@ -184,6 +184,13 @@ public class PojoField {
         conversions = conversions(dbType, nullable, javaNamePrev);
 
         this.desc = desc;
+
+        key.addListener(new ChangeListener<Boolean>() {
+            @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                if (!newVal)
+                    ak.set(false);
+            }
+        });
 
         ak.addListener(new ChangeListener<Boolean>() {
             @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
