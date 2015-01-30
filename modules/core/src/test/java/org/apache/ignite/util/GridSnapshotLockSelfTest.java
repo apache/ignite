@@ -18,8 +18,8 @@
 package org.apache.ignite.util;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
@@ -54,7 +54,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        IgniteFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 
@@ -82,7 +82,7 @@ public class GridSnapshotLockSelfTest extends GridCommonAbstractTest {
             }
         }, 15, "update");
 
-        IgniteFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 while(!stop.get()) {
                     T3<Long, Long, Long> t;

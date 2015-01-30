@@ -22,7 +22,6 @@ import org.apache.ignite.dataload.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.managers.communication.*;
@@ -153,8 +152,8 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
             ldrs.add(ldr);
 
-            ldr.future().listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> f) {
+            ldr.future().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
 
                     assert b : "Loader has not been added to set: " + ldr;

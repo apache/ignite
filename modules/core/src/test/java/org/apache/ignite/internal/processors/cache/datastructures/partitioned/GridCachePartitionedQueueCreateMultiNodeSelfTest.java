@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -87,7 +87,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
     public void testQueueCreation() throws Exception {
         final AtomicInteger idx = new AtomicInteger();
 
-        IgniteFuture<?> fut = multithreadedAsync(
+        IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Ignite ignite = startGrid(idx.getAndIncrement());
@@ -139,7 +139,7 @@ public class GridCachePartitionedQueueCreateMultiNodeSelfTest extends GridCommon
 
         final CountDownLatch latch = new CountDownLatch(threadCnt);
 
-        IgniteFuture<?> fut = multithreadedAsync(
+        IgniteInternalFuture<?> fut = multithreadedAsync(
             new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     Ignite ignite = startGrid(idx.getAndIncrement());

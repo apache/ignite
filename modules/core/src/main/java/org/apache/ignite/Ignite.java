@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import org.apache.ignite.cache.*;
+import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.IgniteFsConfiguration;
@@ -319,4 +320,13 @@ public interface Ignite extends AutoCloseable {
      * @throws IgniteCheckedException If failed to stop grid.
      */
     @Override public void close() throws IgniteCheckedException;
+
+    /**
+     * Gets affinity service to provide information about data partitioning
+     * and distribution.
+     * @param cacheName Cache name.
+     * @param <K> Cache key type.
+     * @return Affinity.
+     */
+    public <K> CacheAffinity<K> affinity(String cacheName);
 }

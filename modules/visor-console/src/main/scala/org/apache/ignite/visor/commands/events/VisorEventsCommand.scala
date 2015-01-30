@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.events
 
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.internal.visor.event.VisorGridEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
@@ -395,7 +395,7 @@ class VisorEventsCommand {
             all #= ("Timestamp", "Description")
 
             sorted.take(cnt).foreach(evt =>
-                all += (formatDateTime(evt.timestamp()), GridUtils.compact(evt.shortDisplay))
+                all += (formatDateTime(evt.timestamp()), IgniteUtils.compact(evt.shortDisplay))
             )
 
             all.render()

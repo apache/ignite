@@ -23,7 +23,7 @@ import org.apache.ignite.spi.*;
 /**
  * Management bean for {@link JobStealingFailoverSpi}.
  */
-@IgniteMBeanDescription("MBean that provides access to job stealing failover SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to job stealing failover SPI configuration.")
 public interface JobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets maximum number of attempts to execute a failed job on another node.
@@ -33,7 +33,7 @@ public interface JobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum number of attempts to execute a failed job on another node.
      */
-    @IgniteMBeanDescription("Maximum number of attempts to execute a failed job on another node.")
+    @IgniteMXBeanDescription("Maximum number of attempts to execute a failed job on another node.")
     public int getMaximumFailoverAttempts();
 
     /**
@@ -41,7 +41,7 @@ public interface JobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Total number of failed over jobs.
      */
-    @IgniteMBeanDescription("Total number of jobs that were failed over including stolen ones.")
+    @IgniteMXBeanDescription("Total number of jobs that were failed over including stolen ones.")
     public int getTotalFailedOverJobsCount();
 
     /**
@@ -49,6 +49,6 @@ public interface JobStealingFailoverSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Total number of stolen jobs.
      */
-    @IgniteMBeanDescription("Total number of jobs that were stolen.")
+    @IgniteMXBeanDescription("Total number of jobs that were stolen.")
     public int getTotalStolenJobsCount();
 }

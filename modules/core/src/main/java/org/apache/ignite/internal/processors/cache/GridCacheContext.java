@@ -23,6 +23,7 @@ import org.apache.ignite.cache.cloner.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -189,6 +190,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Cache weak query iterator holder. */
     private CacheWeakQueryIteratorsHolder<Map.Entry<K, V>> itHolder;
 
+    /** Conflict resolver. */
+    private GridCacheVersionAbstractConflictResolver conflictRslvr;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -305,6 +309,14 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+
+        // Conflict resolver is determined in two stages:
+        // 1. If DR receiver hub is enabled, then pick it from DR manager.
+        // 2. Otherwise instantiate default resolver in case local store is configured.
+        conflictRslvr = drMgr.conflictResolver();
+
+        if (conflictRslvr == null && storeMgr.isLocalStore())
+            conflictRslvr = new GridCacheVersionConflictResolver();
     }
 
     /**
@@ -518,7 +530,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Grid instance.
      */
-    public GridEx grid() {
+    public IgniteEx grid() {
         return ctx.grid();
     }
 
@@ -1266,12 +1278,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param f Target future.
      * @return Wrapped future that is aware of cloning behaviour.
      */
-    public IgniteFuture<V> wrapClone(IgniteFuture<V> f) {
+    public IgniteInternalFuture<V> wrapClone(IgniteInternalFuture<V> f) {
         if (!hasFlag(CLONE))
             return f;
 
-        return f.chain(new CX1<IgniteFuture<V>, V>() {
-            @Override public V applyx(IgniteFuture<V> f) throws IgniteCheckedException {
+        return f.chain(new CX1<IgniteInternalFuture<V>, V>() {
+            @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
                 return cloneValue(f.get());
             }
         });
@@ -1281,12 +1293,12 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param f Target future.
      * @return Wrapped future that is aware of cloning behaviour.
      */
-    public IgniteFuture<Map<K, V>> wrapCloneMap(IgniteFuture<Map<K, V>> f) {
+    public IgniteInternalFuture<Map<K, V>> wrapCloneMap(IgniteInternalFuture<Map<K, V>> f) {
         if (!hasFlag(CLONE))
             return f;
 
-        return f.chain(new CX1<IgniteFuture<Map<K, V>>, Map<K, V>>() {
-            @Override public Map<K, V> applyx(IgniteFuture<Map<K, V>> f) throws IgniteCheckedException {
+        return f.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
+            @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
                 Map<K, V> map = new GridLeanMap<>();
 
                 for (Map.Entry<K, V> e : f.get().entrySet())
@@ -1542,6 +1554,38 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return false;
+    }
+
+    /**
+     * Check whether conflict resolution is required.
+     *
+     * @param oldVer Old version.
+     * @param newVer New version.
+     * @return {@code True} in case DR is required.
+     */
+    public boolean conflictNeedResolve(GridCacheVersion oldVer, GridCacheVersion newVer) {
+        return conflictRslvr != null;
+    }
+
+    /**
+     * Resolve DR conflict.
+     *
+     * @param oldEntry Old entry.
+     * @param newEntry New entry.
+     * @param atomicVerComparator Whether to use atomic version comparator.
+     * @return Conflict resolution result.
+     * @throws IgniteCheckedException In case of exception.
+     */
+    public GridCacheVersionConflictContextImpl<K, V> conflictResolve(GridCacheVersionedEntryEx<K, V> oldEntry,
+        GridCacheVersionedEntryEx<K, V> newEntry, boolean atomicVerComparator) throws IgniteCheckedException {
+        assert conflictRslvr != null : "Should not reach this place.";
+
+        GridCacheVersionConflictContextImpl<K, V> ctx = conflictRslvr.resolve(oldEntry, newEntry, atomicVerComparator);
+
+        if (ctx.isManualResolve())
+            drMgr.onReceiveCacheConflictResolved(ctx.isUseNew(), ctx.isUseOld(), ctx.isMerge());
+
+        return ctx;
     }
 
     /**
@@ -1844,7 +1888,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         try {
             IgniteBiTuple<String, String> t = stash.get();
 
-            GridKernal grid = GridGainEx.gridx(t.get1());
+            IgniteKernal grid = IgnitionEx.gridx(t.get1());
 
             GridCacheAdapter<K, V> cache = grid.internalCache(t.get2());
 

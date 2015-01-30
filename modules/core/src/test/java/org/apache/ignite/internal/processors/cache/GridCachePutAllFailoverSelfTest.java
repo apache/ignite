@@ -23,6 +23,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -235,7 +236,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
                 dataChunk.add(key);
@@ -258,8 +259,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-                        @Override public void apply(IgniteFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+                        @Override public void apply(IgniteInternalFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
@@ -402,7 +403,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             final AtomicBoolean inputExhausted = new AtomicBoolean();
 
-            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).enableAsync();
+            IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
                 ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
@@ -430,8 +431,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-                        @Override public void apply(IgniteFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+                        @Override public void apply(IgniteInternalFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
@@ -481,8 +482,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                 resQueue.put(fut); // Blocks if queue is full.
 
-                fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-                    @Override public void apply(IgniteFuture<Void> f) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+                    @Override public void apply(IgniteInternalFuture<Void> f) {
                         ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                         try {

@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
@@ -439,8 +441,8 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                 snapshot = fut.topologySnapshot();
             }
             else {
-                fut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                    @Override public void apply(IgniteFuture<Long> t) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                    @Override public void apply(IgniteInternalFuture<Long> t) {
                         mapOnTopology(keys, remap, oldNodeId);
                     }
                 });
@@ -548,15 +550,19 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             // We still can get here if user pass map with single element.
             if (key == null) {
-                onDone(new GridCacheReturn<>(null, false));
+                NullPointerException err = new NullPointerException("Null key.");
 
-                return;
+                onDone(err);
+
+                throw err;
             }
 
             if (val == null && op != GridCacheOperation.DELETE) {
-                onDone(new GridCacheReturn<>(null, false));
+                NullPointerException err = new NullPointerException("Null value.");
 
-                return;
+                onDone(err);
+
+                throw err;
             }
 
             if (cctx.portableEnabled()) {
@@ -625,8 +631,13 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
 
             // Create mappings first, then send messages.
             for (K key : keys) {
-                if (key == null)
-                    continue;
+                if (key == null) {
+                    NullPointerException err = new NullPointerException("Null key.");
+
+                    onDone(err);
+
+                    throw err;
+                }
 
                 Object val;
                 long drTtl;
@@ -638,6 +649,14 @@ public class GridNearAtomicUpdateFuture<K, V> extends GridFutureAdapter<Object>
                     drTtl = -1;
                     drExpireTime = -1;
                     drVer = null;
+
+                    if (val == null) {
+                        NullPointerException err = new NullPointerException("Null value.");
+
+                        onDone(err);
+
+                        throw err;
+                    }
                 }
                 else if (drPutVals != null) {
                     GridCacheDrInfo<V> drPutVal =  drPutValsIt.next();

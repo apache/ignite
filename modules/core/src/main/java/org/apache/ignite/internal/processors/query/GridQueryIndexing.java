@@ -54,7 +54,7 @@ public interface GridQueryIndexing {
      * @param qry Query.
      * @return Future.
      */
-    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space,  GridCacheTwoStepQuery qry);
+    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space,  GridCacheTwoStepQuery qry);
 
     /**
      * @param space Space.
@@ -62,7 +62,7 @@ public interface GridQueryIndexing {
      * @param params Parameters.
      * @return Result.
      */
-    public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params);
+    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params);
 
     /**
      * Queries individual fields (generally used by JDBC drivers).

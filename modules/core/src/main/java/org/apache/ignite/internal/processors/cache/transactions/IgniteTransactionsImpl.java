@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -221,7 +220,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
         if (ctx.hasFlag(SYNC_COMMIT))
             tx0.syncCommit(true);
 
-        IgniteFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
+        IgniteInternalFuture<?> lockFut = tx0.groupLockAsync(ctx, (Collection)F.asList(grpLockKey));
 
         try {
             lockFut.get();

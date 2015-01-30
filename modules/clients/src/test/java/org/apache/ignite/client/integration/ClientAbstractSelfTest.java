@@ -610,7 +610,13 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
             }
         }, proto == GridClientProtocol.TCP ? GridClientException.class : IllegalArgumentException.class, null);
 
-        dfltData.getAll(Collections.singleton(null));
+        assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                dfltData.getAll(Collections.singleton(null));
+
+                return null;
+            }
+        }, proto == GridClientProtocol.TCP ? GridClientException.class : IllegalArgumentException.class, null);
     }
 
     /**
@@ -941,8 +947,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         GridClientData dfltData = client.data();
         GridClientData namedData = client.data(CACHE_NAME);
 
-        grid().cache(null).resetMetrics();
-        grid().cache(CACHE_NAME).resetMetrics();
+        grid().cache(null).mxBean().clear();
+        grid().cache(CACHE_NAME).mxBean().clear();
 
         grid().cache(null).putx("key1", "val1");
         grid().cache(null).putx("key2", "val2");
@@ -965,28 +971,28 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         CacheMetrics metrics = grid().cache(null).metrics();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
 
         m = dfltData.metricsAsync().get();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
 
         m = namedData.metrics();
 
         metrics = grid().cache(CACHE_NAME).metrics();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
 
         m = namedData.metricsAsync().get();
 
         assertNotNull(m);
-        assertEquals(metrics.reads(), m.reads());
-        assertEquals(metrics.writes(), m.writes());
+        assertEquals(metrics.getCacheGets(), m.reads());
+        assertEquals(metrics.getCachePuts(), m.writes());
     }
 
     /**

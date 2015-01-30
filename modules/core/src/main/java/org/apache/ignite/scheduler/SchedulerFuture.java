@@ -18,7 +18,7 @@
 package org.apache.ignite.scheduler;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 
 import java.util.concurrent.*;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.*;
  * when calling {@link org.apache.ignite.IgniteScheduler#scheduleLocal(Callable, String)} or
  * {@link org.apache.ignite.IgniteScheduler#scheduleLocal(Runnable, String)} methods.
  */
-public interface SchedulerFuture<R> extends IgniteFuture<R> {
+public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
     /**
      * Gets scheduled task ID.
      *

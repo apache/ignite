@@ -64,10 +64,12 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxNearEnabledInvokeTest.class);
         suite.addTestSuite(IgniteCacheTxLocalInvokeTest.class);
+        suite.addTestSuite(IgniteCrossCacheTxStoreSelfTest.class);
 
         // Affinity tests.
         suite.addTestSuite(GridCachePartitionFairAffinityNodesSelfTest.class);
         suite.addTestSuite(GridCacheAffinityBackupsSelfTest.class);
+        suite.addTestSuite(IgniteCacheAffinitySelfTest.class);
 
         // Swap tests.
         suite.addTestSuite(GridCacheSwapPreloadSelfTest.class);

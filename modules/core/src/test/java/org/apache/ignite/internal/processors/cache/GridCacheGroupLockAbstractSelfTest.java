@@ -42,6 +42,7 @@ import javax.cache.configuration.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.concurrent.locks.*;
 
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -392,17 +393,19 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
         final CountDownLatch unlockLatch = new CountDownLatch(1);
         final CountDownLatch lockLatch = new CountDownLatch(1);
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
-                    cache.lock(key1).lock();
+                    Lock lock = cache.lock(key1);
+
+                    lock.lock();
 
                     try {
                         lockLatch.countDown();
                         unlockLatch.await();
                     }
                     finally {
-                        cache.lock(key1).unlock();
+                        lock.unlock();
                     }
                 }
                 catch (CacheException e) {
@@ -458,7 +461,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
     private void checkSanityCheckDisabled(final IgniteTxConcurrency concurrency) throws Exception {
         assert !sanityCheckEnabled();
 
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         final UUID affinityKey = primaryKeyForCache(grid);
 
@@ -478,7 +481,9 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
                 assertEquals("For index: " + i, "val1", gCache.peek(key1));
         }
 
-        cache.lock(key1).lock();
+        Lock lock = cache.lock(key1);
+
+        lock.lock();
 
         try {
             try (IgniteTx tx = grid.transactions().txStartAffinity(null, affinityKey, concurrency, READ_COMMITTED, 0, 1)) {
@@ -497,7 +502,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             }
         }
         finally {
-            cache.lock(key1).unlock();
+            lock.unlock();
         }
     }
 
@@ -540,7 +545,7 @@ public abstract class GridCacheGroupLockAbstractSelfTest extends GridCommonAbstr
             assertEquals("Unexpected number of unlock events: " + unlocks.affectedKeys(), 0,
                 unlocks.affectedKeys().size());
 
-            GridCacheAdapter<Object, Object> cacheAdapter = ((GridKernal)grid(0)).internalCache();
+            GridCacheAdapter<Object, Object> cacheAdapter = ((IgniteKernal)grid(0)).internalCache();
 
             GridCacheAffinityManager<Object, Object> affMgr = cacheAdapter.context().affinity();
 

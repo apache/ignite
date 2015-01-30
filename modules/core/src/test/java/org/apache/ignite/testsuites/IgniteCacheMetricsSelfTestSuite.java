@@ -33,7 +33,7 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Metrics Test Suite");
 
-//        suite.addTest(new TestSuite(GridCacheLocalMetricsSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheLocalMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedMetricsSelfTest.class));
@@ -43,6 +43,8 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheAtomicLocalMetricsNoStoreSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicReplicatedMetricsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicPartitionedMetricsSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheAtomicPartitionedTckMetricsSelfTestImpl.class));
+        suite.addTest(new TestSuite(GridCacheAtomicLocalTckMetricsSelfTestImpl.class));
 
         return suite;
     }

@@ -52,7 +52,7 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
      * @throws Exception In case of error.
      */
     public void testInvalidateFlag() throws Exception {
-        long topVer = ((GridKernal)grid(0)).context().discovery().topologyVersion();
+        long topVer = ((IgniteKernal)grid(0)).context().discovery().topologyVersion();
 
         try {
             // Top ver + 2.
@@ -105,7 +105,7 @@ public class GridCachePartitionedProjectionSelfTest extends GridCacheAbstractPro
                 stopGrid(i);
 
             for (Ignite g : G.allGrids()) {
-                GridKernal grid = (GridKernal)g;
+                IgniteKernal grid = (IgniteKernal)g;
 
                 // Wait until all nodes get topology version event.
                 grid.context().discovery().topologyFuture(topVer + 4).get();

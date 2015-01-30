@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.thread.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -125,6 +126,9 @@ public class GridCacheTtlManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                         if (wrapper.entry.onTtlExpired(obsoleteVer))
                             wrapper.entry.context().cache().removeEntry(wrapper.entry);
+
+                        if (wrapper.entry.context().cache().configuration().isStatisticsEnabled())
+                            wrapper.entry.context().cache().metrics0().onEvict();
 
                         it.remove();
                     }

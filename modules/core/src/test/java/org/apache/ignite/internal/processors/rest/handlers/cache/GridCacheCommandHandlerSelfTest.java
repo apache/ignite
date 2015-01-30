@@ -22,7 +22,6 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.internal.processors.rest.*;
@@ -76,7 +75,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsSyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             true);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -101,7 +100,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsAsyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((GridKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             false);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -176,7 +175,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException In case of any grid exception.
      */
     private <T> T testAppend(T curVal, T newVal, boolean append) throws IgniteCheckedException {
-        GridRestCommandHandler hnd = new GridCacheCommandHandler(((GridKernal)grid()).context());
+        GridRestCommandHandler hnd = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
 
         String key = UUID.randomUUID().toString();
 
@@ -242,15 +241,15 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                 new InvocationHandler() {
                     @Override public Object invoke(Object proxy, Method mtd, Object[] args) throws Throwable {
                         if (failMtd.equals(mtd.getName())) {
-                            IgniteFuture<Object> fut = new GridFinishedFuture<>(ctx,
+                            IgniteInternalFuture<Object> fut = new GridFinishedFuture<>(ctx,
                                 new IgniteCheckedException("Operation failed"));
 
                             fut.syncNotify(sync);
 
                             return fut;
                         }
-                        // Rewriting flagsOn result to keep intercepting invocations after it.
-                        else if ("flagsOn".equals(mtd.getName()))
+                        // Rewriting flagOn result to keep intercepting invocations after it.
+                        else if ("flagOn".equals(mtd.getName()))
                             return proxy;
                         else if ("forSubjectId".equals(mtd.getName()))
                             return proxy;

@@ -74,7 +74,7 @@ public class GridGgfsHadoopFileSystemIpcCacheSelfTest extends GridGgfsCommonAbst
 
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "shmem");
-            put("port", String.valueOf(GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
+            put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
         }});
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.

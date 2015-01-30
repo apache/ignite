@@ -1550,7 +1550,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      *
      * @return Future.
      */
-    IgniteFuture<?> formatAsync() throws IgniteCheckedException {
+    IgniteInternalFuture<?> formatAsync() throws IgniteCheckedException {
         IgniteUuid id = meta.softDelete(null, null, ROOT_ID);
 
         if (id == null)
@@ -1576,7 +1576,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException {
         Collection<IgniteUuid> ids = meta.pendingDeletes();
 
         if (!ids.isEmpty()) {
@@ -1588,7 +1588,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
             for (IgniteUuid id : ids) {
                 GridFutureAdapter<Object> fut = new GridFutureAdapter<>(ggfsCtx.kernalContext());
 
-                IgniteFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
+                IgniteInternalFuture<Object> oldFut = delFuts.putIfAbsent(id, fut);
 
                 if (oldFut != null)
                     resFut.add(oldFut);
@@ -1708,7 +1708,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) {
         return executeAsync(task, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
@@ -1727,7 +1727,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
+    <T, R> IgniteInternalFuture<R> executeAsync(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute(task, new IgniteFsTaskArgsImpl<>(cfg.getName(), paths, rslvr,
             skipNonExistentFiles, maxRangeLen, arg));
@@ -1742,7 +1742,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteFuture<R> executeAsync(Class<? extends IgniteFsTask<T, R>> taskCls,
+    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
         return executeAsync(taskCls, rslvr, paths, true, cfg.getMaximumTaskRangeLength(), arg);
     }
@@ -1760,7 +1760,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param arg Optional task argument.
      * @return Execution future.
      */
-    <T, R> IgniteFuture<R> executeAsync(Class<? extends IgniteFsTask<T, R>> taskCls,
+    <T, R> IgniteInternalFuture<R> executeAsync(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) {
         return ggfsCtx.kernalContext().task().execute((Class<IgniteFsTask<T, R>>)taskCls,
@@ -1825,7 +1825,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFs enableAsync() {
+    @Override public IgniteFs withAsync() {
         return new GridGgfsAsyncImpl(this);
     }
 
@@ -1835,7 +1835,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> IgniteInternalFuture<R> future() {
         throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 
@@ -2013,7 +2013,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                     private Ignite g;
 
                     @Nullable @Override public IgniteBiTuple<Long, Long> execute() throws IgniteCheckedException {
-                        IgniteFs ggfs = ((GridKernal)g).context().ggfs().ggfs(ggfsName);
+                        IgniteFs ggfs = ((IgniteKernal)g).context().ggfs().ggfs(ggfsName);
 
                         if (ggfs == null)
                             return F.t(0L, 0L);

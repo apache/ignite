@@ -272,10 +272,10 @@ public final class IgniteSystemProperties {
     /**
      * Name of the system property or environment variable to activate synchronous
      * listener notification for future objects implemented in GridGain. I.e.
-     * closure passed into method {@link org.apache.ignite.lang.IgniteFuture#listenAsync(org.apache.ignite.lang.IgniteInClosure)} will
+     * closure passed into method {@link org.apache.ignite.internal.IgniteInternalFuture#listenAsync(org.apache.ignite.lang.IgniteInClosure)} will
      * be evaluated in the same thread that will end the future.
      *
-     * @see org.apache.ignite.lang.IgniteFuture#syncNotify()
+     * @see org.apache.ignite.internal.IgniteInternalFuture#syncNotify()
      */
     public static final String GG_FUT_SYNC_NOTIFICATION = "GRIDGAIN_FUTURE_SYNC_NOTIFICATION";
 
@@ -285,7 +285,7 @@ public final class IgniteSystemProperties {
      * upon future completion every listener will be notified concurrently in a
      * separate thread.
      *
-     * @see org.apache.ignite.lang.IgniteFuture#concurrentNotify()
+     * @see org.apache.ignite.internal.IgniteInternalFuture#concurrentNotify()
      */
     public static final String GG_FUT_CONCURRENT_NOTIFICATION = "GRIDGAIN_FUTURE_CONCURRENT_NOTIFICATION";
 

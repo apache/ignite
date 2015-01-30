@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -74,7 +74,7 @@ public abstract class GridCacheAbstractFlagsTest extends GridCacheAbstractSelfTe
 
             final AtomicInteger cntr = new AtomicInteger();
 
-            IgniteFuture<?> f = multithreadedAsync(new Callable() {
+            IgniteInternalFuture<?> f = multithreadedAsync(new Callable() {
                 @Override public Object call() throws Exception {
                     int idx = cntr.getAndIncrement() % gridCount();
 

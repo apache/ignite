@@ -127,7 +127,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
                 nodes.add(new GridDiscoveryTestNode());
 
             @SuppressWarnings("deprecation")
-            long hash = ((GridKernal) ignite).context().discovery().topologyHash(nodes);
+            long hash = ((IgniteKernal) ignite).context().discovery().topologyHash(nodes);
 
             boolean isHashed = hashes.add(hash);
 
@@ -236,7 +236,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testCacheNodes() throws Exception {
         // Validate only original node is available.
-        GridDiscoveryManager discoMgr = ((GridKernal) ignite).context().discovery();
+        GridDiscoveryManager discoMgr = ((IgniteKernal) ignite).context().discovery();
 
         Collection<ClusterNode> nodes = discoMgr.allNodes();
 
@@ -370,7 +370,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public ClusterNodeMetrics metrics() {
+        @Nullable @Override public ClusterMetrics metrics() {
             return null;
         }
 

@@ -233,7 +233,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /**
      * Returns timestamp at the method call moment, but sleeps before return,
-     * to allow pass {@link GridUtils#currentTimeMillis()}.
+     * to allow pass {@link IgniteUtils#currentTimeMillis()}.
      *
      * @return Call timestamp.
      * @throws InterruptedException If sleep was interrupted.
@@ -289,7 +289,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     private ComputeTaskFuture<?> generateEvents(@Nullable Long timeout, ComputeJob job) throws Exception {
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         if (timeout == null)
             comp.execute(GridAllEventsTestTask.class.getName(), job);

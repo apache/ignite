@@ -21,7 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.transactions.*;
@@ -175,17 +177,17 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             }
         }
 
-        if (!cctx.config().isKeepPortableInStore()) {
-            if (cctx.config().isPortableEnabled()) {
-                if (store instanceof GridInteropAware)
-                    ((GridInteropAware)store).configure(true);
-                else
-                    convertPortable = true;
-            }
+        boolean convertPortable = !cctx.config().isKeepPortableInStore();
+
+        if (cctx.config().isPortableEnabled()) {
+            if (store instanceof GridInteropAware)
+                ((GridInteropAware)store).configure(cctx.cache().name(), convertPortable);
             else
-                U.warn(log, "GridCacheConfiguration.isKeepPortableInStore() configuration property will " +
-                    "be ignored because portable mode is not enabled for cache: " + cctx.namex());
+                this.convertPortable = convertPortable;
         }
+        else if (convertPortable)
+            U.warn(log, "GridCacheConfiguration.isKeepPortableInStore() configuration property will " +
+                "be ignored because portable mode is not enabled for cache: " + cctx.namex());
     }
 
     /** {@inheritDoc} */
@@ -784,6 +786,9 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
 
                 tx.addMeta(SES_ATTR, ses);
             }
+            else
+                // Session cache name may change in cross-cache transaction.
+                ses.cacheName(cctx.name());
         }
         else
             ses = new SessionData(null, cctx.name());
@@ -796,12 +801,14 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
      */
     private static class SessionData {
         /** */
+        @GridToStringExclude
         private final IgniteTx tx;
 
         /** */
-        private final String cacheName;
+        private String cacheName;
 
         /** */
+        @GridToStringInclude
         private Map<Object, Object> props;
 
         /**
@@ -835,6 +842,18 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
          */
         private String cacheName() {
             return cacheName;
+        }
+
+        /**
+         * @param cacheName Cache name.
+         */
+        private void cacheName(String cacheName) {
+            this.cacheName = cacheName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SessionData.class, this, "tx", CU.txString(tx));
         }
     }
 
@@ -872,6 +891,11 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
             SessionData ses0 = sesHolder.get();
 
             return ses0 != null ? ses0.cacheName() : null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ThreadLocalSession.class, this);
         }
     }
 

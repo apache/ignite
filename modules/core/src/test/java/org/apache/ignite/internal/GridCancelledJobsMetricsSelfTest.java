@@ -70,7 +70,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
 
         Collection<ComputeTaskFuture<?>> futs = new ArrayList<>();
 
-        IgniteCompute comp = ignite.compute().enableAsync();
+        IgniteCompute comp = ignite.compute().withAsync();
 
         for (int i = 1; i <= 10; i++) {
             comp.execute(CancelledTask.class, null);

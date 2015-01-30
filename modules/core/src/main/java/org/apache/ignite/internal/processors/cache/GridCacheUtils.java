@@ -22,7 +22,9 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
+import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -1059,10 +1061,10 @@ public class GridCacheUtils {
      * @param excl Excludes.
      * @return Future listener that logs errors.
      */
-    public static IgniteInClosure<IgniteFuture<?>> errorLogger(final IgniteLogger log,
+    public static IgniteInClosure<IgniteInternalFuture<?>> errorLogger(final IgniteLogger log,
         final Class<? extends Exception>... excl) {
-        return new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> f) {
+        return new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     f.get();
                 }

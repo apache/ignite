@@ -42,7 +42,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Util Test Suite");
 
         suite.addTestSuite(GridThreadPoolExecutorServiceSelfTest.class);
-        suite.addTestSuite(GridUtilsSelfTest.class);
+        suite.addTestSuite(IgniteUtilsSelfTest.class);
         suite.addTestSuite(GridSpinReadWriteLockSelfTest.class);
         suite.addTestSuite(GridQueueSelfTest.class);
         suite.addTestSuite(GridStringBuilderFactorySelfTest.class);
@@ -53,7 +53,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheUtilsSelfTest.class);
 
         // Metrics.
-        suite.addTestSuite(GridDiscoveryMetricsHelperSelfTest.class);
+        suite.addTestSuite(ClusterMetricsSnapshotSerializeSelfTest.class);
 
         // Unsafe.
         suite.addTestSuite(GridUnsafeMemorySelfTest.class);

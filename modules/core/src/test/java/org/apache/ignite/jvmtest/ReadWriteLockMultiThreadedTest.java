@@ -18,7 +18,7 @@
 package org.apache.ignite.jvmtest;
 
 import junit.framework.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
@@ -62,7 +62,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         X.println("Read lock acquired.");
 
-        IgniteFuture fut1 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     X.println("Attempting to acquire write lock: " + lock);
@@ -85,7 +85,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         Thread.sleep(2000);
 
-        IgniteFuture fut2 = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     X.println("Attempting to acquire read lock: " + lock);
@@ -131,7 +131,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         X.println("Write lock acquired: " + lock);
 
-        IgniteFuture fut = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     X.println("Attempting to acquire read lock: " + lock);
@@ -176,7 +176,7 @@ public class ReadWriteLockMultiThreadedTest extends TestCase {
 
         X.println("Read lock acquired.");
 
-        IgniteFuture fut = GridTestUtils.runMultiThreadedAsync(
+        IgniteInternalFuture fut = GridTestUtils.runMultiThreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     boolean res = lock.writeLock().tryLock();

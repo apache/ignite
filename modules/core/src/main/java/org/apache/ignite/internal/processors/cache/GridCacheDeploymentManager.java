@@ -504,7 +504,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     allParticipants.put(nodeId, ldrVer);
 
                     if (added == null)
-                        added = GridUtils.newHashMap(participants.size());
+                        added = IgniteUtils.newHashMap(participants.size());
 
                     added.put(nodeId, ldrVer);
                 }

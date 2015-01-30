@@ -307,7 +307,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
 
         // Ensure that cache was marked as GGFS data cache.
         for (int i = 0; i < GRID_CNT; i++) {
-            GridEx g = grid(i);
+            IgniteEx g = grid(i);
 
             GridCacheProjectionEx cache = (GridCacheProjectionEx)g.cachex(DATA_CACHE_NAME).cache();
 
@@ -688,7 +688,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Node ID.
      */
     private UUID primary(GridGgfsBlockKey key) {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         for (ClusterNode node : grid.nodes()) {
             if (grid.cachex(DATA_CACHE_NAME).affinity().isPrimary(node, key))
@@ -705,7 +705,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Collection of node IDs.
      */
     private Collection<UUID> primaryOrBackups(GridGgfsBlockKey key) {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         Collection<UUID> ids = new HashSet<>();
 
@@ -746,7 +746,7 @@ public class GridGgfsSizeSelfTest extends GridGgfsCommonAbstractTest {
      * @return Data cache.
      */
     private GridCacheAdapter<GridGgfsBlockKey, byte[]> cache(UUID nodeId) {
-        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((GridEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
+        return (GridCacheAdapter<GridGgfsBlockKey, byte[]>)((IgniteEx)G.ignite(nodeId)).cachex(DATA_CACHE_NAME)
             .<GridGgfsBlockKey, byte[]>cache();
     }
 

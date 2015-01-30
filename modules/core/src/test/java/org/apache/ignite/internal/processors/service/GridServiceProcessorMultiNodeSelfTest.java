@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.service;
 
 import junit.framework.*;
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 
 import java.util.concurrent.*;
 
@@ -44,11 +44,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployClusterSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -91,12 +91,12 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         String name = "serviceAffinityUpdateTopology";
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployKeyAffinitySingleton(name, new AffinityService(affKey),
             CACHE_NAME, affKey);
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
@@ -130,11 +130,11 @@ public class GridServiceProcessorMultiNodeSelfTest extends GridServiceProcessorA
 
         DummyService.exeLatch(name, latch);
 
-        IgniteManaged svcs = g.managed().enableAsync();
+        IgniteManaged svcs = g.managed().withAsync();
 
         svcs.deployNodeSingleton(name, new DummyService());
 
-        IgniteFuture<?> fut = svcs.future();
+        IgniteInternalFuture<?> fut = svcs.future();
 
         info("Deployed service: " + name);
 
