@@ -108,7 +108,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testWriteThrough() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         TestStore firstStore = (TestStore)grid(0).configuration().getCacheConfiguration()[1].getCacheStoreFactory().create();
 
@@ -153,7 +153,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncompatibleCaches1() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         try (IgniteTx ignored = grid.transactions().txStart()) {
             GridCache<Object, Object> cacheA = grid.cache("cacheA");
@@ -174,7 +174,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testIncompatibleCaches2() throws Exception {
-        GridEx grid = grid(0);
+        IgniteEx grid = grid(0);
 
         try (IgniteTx ignored = grid.transactions().txStart()) {
             GridCache<Object, Object> cacheA = grid.cache("cacheA");
