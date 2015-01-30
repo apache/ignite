@@ -618,10 +618,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 tx.taskNameHash());
 
             for (IgniteTxEntry<K, V> txEntry : m.writes()) {
-                assert txEntry.cached().detached() : "Expected detached entry while preparing transaction " +
-                    "[locNodeId=" + cctx.localNodeId() +
-                    ", txEntry=" + txEntry + ']';
-
                 if (txEntry.op() == TRANSFORM)
                     req.addDhtVersion(txEntry.txKey(), null);
             }

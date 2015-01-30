@@ -1879,7 +1879,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             map,
             invokeArgs,
             null,
-            false,
+            true,
             null,
             null);
     }
@@ -1956,12 +1956,14 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         boolean rmv = lookup == null && invokeMap == null;
 
-        Set<K> missedForInvoke = null;
+        Set<K> missedForLoad = null;
 
         try {
             // Set transform flag for transaction.
             if (invokeMap != null)
                 transform = true;
+
+            assert !transform || retval;
 
             groupLockSanityCheck(cacheCtx, keys);
 
@@ -2132,69 +2134,24 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                 if (old == null) {
                                     boolean load = retval && !readThrough;
 
-                                    // Check for transform here to avoid map creation.
-                                    load |= (op == TRANSFORM && keys.size() == 1);
-
                                     if (load) {
-                                        // If return value is required, then we know for sure that there is only
-                                        // one key in the keys collection.
-                                        assert keys.size() == 1;
+                                        if (missedForLoad == null)
+                                            missedForLoad = new HashSet<>();
 
-                                        IgniteInternalFuture<Boolean> fut = loadMissing(
-                                            cacheCtx,
-                                            op == TRANSFORM || cacheCtx.loadPreviousValue(),
-                                            true,
-                                            F.asList(key),
-                                            deserializePortables(cacheCtx),
-                                            new CI2<K, V>() {
-                                                @Override public void apply(K k, V v) {
-                                                    if (log.isDebugEnabled())
-                                                        log.debug("Loaded value from remote node [key=" + k + ", val=" +
-                                                            v + ']');
-
-                                                    if (op == TRANSFORM) {
-                                                        IgniteTxEntry<K, V> e =
-                                                            entry(new IgniteTxKey<>(k, cacheCtx.cacheId()));
-
-                                                        assert e != null && e.op() == TRANSFORM : e;
-
-                                                        addInvokeResult(e, v, ret);
-                                                    }
-                                                    else
-                                                        ret.set(v, true);
-                                                }
-                                            });
-
-                                        return new GridEmbeddedFuture<>(
-                                            cctx.kernalContext(),
-                                            fut,
-                                            new C2<Boolean, Exception, Set<K>>() {
-                                                @Override public Set<K> apply(Boolean b, Exception e) {
-                                                    if (e != null)
-                                                        throw new GridClosureException(e);
-
-                                                    return Collections.emptySet();
-                                                }
-                                            }
-                                        );
+                                        missedForLoad.add(key);
                                     }
                                     else {
+                                        assert !transform;
+                                        assert txEntry.op() != TRANSFORM;
+
                                         if (retval)
                                             ret.set(null, true);
-                                        else {
-                                            if (txEntry.op() == TRANSFORM) {
-                                                if (missedForInvoke == null)
-                                                    missedForInvoke = new HashSet<>();
-
-                                                missedForInvoke.add(key);
-                                            }
-                                            else
-                                                ret.success(true);
-                                        }
+                                        else
+                                            ret.success(true);
                                     }
                                 }
                                 else {
-                                    if (retval)
+                                    if (retval && !transform)
                                         ret.set(old, true);
                                     else {
                                         if (txEntry.op() == TRANSFORM)
@@ -2206,7 +2163,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             }
                             // Pessimistic.
                             else {
-                                if (retval)
+                                if (retval && !transform)
                                     ret.set(old, true);
                                 else
                                     ret.success(true);
@@ -2264,7 +2221,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     if (!pessimistic()) {
                         txEntry.markValid();
 
-                        if (retval)
+                        if (retval && !transform)
                             ret.set(v, true);
                         else
                             ret.success(true);
@@ -2276,15 +2233,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
         }
 
-        if (missedForInvoke != null) {
-            assert optimistic();
-            assert invokeMap != null;
-
+        if (missedForLoad != null) {
             IgniteInternalFuture<Boolean> fut = loadMissing(
                 cacheCtx,
                 true,
                 true,
-                missedForInvoke,
+                missedForLoad,
                 deserializePortables(cacheCtx),
                 new CI2<K, V>() {
                     @Override public void apply(K key, V val) {
@@ -2484,6 +2438,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 EntryProcessor<K, V, ?> entryProcessor = t.get1();
 
                 res = entryProcessor.process(invokeEntry, t.get2());
+
+                val = invokeEntry.getValue();
             }
 
             if (res != null)

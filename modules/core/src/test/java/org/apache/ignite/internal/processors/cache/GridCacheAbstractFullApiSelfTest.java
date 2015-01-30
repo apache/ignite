@@ -1080,10 +1080,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try {
             if (startVal)
                 cache.put("key", 2);
+            else
+                assertEquals(null, cache.get("key"));
 
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
+            Integer expectedRes = startVal ? 2 : null;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+
+            expectedRes = startVal ? 3 : 1;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
+
+            expectedRes++;
+
+            assertEquals(String.valueOf(expectedRes), cache.invoke("key", INCR_PROCESSOR));
 
             if (tx != null)
                 tx.commit();

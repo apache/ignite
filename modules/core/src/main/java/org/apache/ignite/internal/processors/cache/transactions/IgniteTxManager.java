@@ -1162,7 +1162,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         Boolean committed = completedVers.get(tx.xidVersion());
 
         // 1. Make sure that committed version has been recorded.
-        if (!(committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate()) {
+        if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
             uncommitTx(tx);
 
             throw new IgniteException("Missing commit version (consider increasing " +

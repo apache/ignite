@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
@@ -322,8 +323,38 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         null,
                         null);
 
-                    if (retVal)
-                        ret.value(val);
+                    if (retVal) {
+                        if (!F.isEmpty(txEntry.entryProcessors())) {
+                            K key = txEntry.key();
+
+                            Object procRes = null;
+                            Exception err = null;
+
+
+                            for (T2<EntryProcessor<K, V, ?>, Object[]> t : txEntry.entryProcessors()) {
+                                try {
+                                    CacheInvokeEntry<K, V> invokeEntry = new CacheInvokeEntry<>(key, val);
+
+                                    EntryProcessor<K, V, ?> processor = t.get1();
+
+                                    procRes = processor.process(invokeEntry, t.get2());
+
+                                    val = invokeEntry.getValue();
+                                }
+                                catch (Exception e) {
+                                    err = e;
+
+                                    break;
+                                }
+                            }
+
+                            if (err != null || procRes != null)
+                                ret.addEntryProcessResult(key,
+                                    err == null ? new CacheInvokeResult<>(procRes) : new CacheInvokeResult<>(err));
+                        }
+                        else
+                            ret.value(val);
+                    }
 
                     if (hasFilters && !cacheCtx.isAll(cached, txEntry.filters())) {
                         txEntry.op(GridCacheOperation.NOOP);
