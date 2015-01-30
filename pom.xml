@@ -1275,6 +1275,33 @@
                             </execution>
                         </executions>
                     </plugin>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>license-maven-plugin</artifactId>
+                        <version>1.8</version>
+                        <configuration>
+                            <inceptionYear>2014</inceptionYear>
+                            <organizationName>Apache</organizationName>
+                            <projectName>Ignite</projectName>
+                            <licenseName>apache_v2</licenseName>
+                            <addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
+                            <failOnMissingHeader>true</failOnMissingHeader>
+                            <failOnNotUptodateHeader>true</failOnNotUptodateHeader>
+                            <roots>
+                                <root>src/main/java</root>
+                                <root>src/test/java</root>
+                            </roots>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>check-file-header</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
