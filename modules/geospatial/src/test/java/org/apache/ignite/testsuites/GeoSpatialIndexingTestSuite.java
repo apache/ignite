@@ -18,15 +18,12 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.*;
-import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.processors.query.h2.*;
-import org.apache.ignite.internal.processors.query.h2.opt.*;
 
 /**
- * H2 indexing SPI tests.
+ * Geo spatial indexing tests.
  */
-public class IgniteH2IndexingSpiTestSuite extends TestSuite {
+public class GeoSpatialIndexingTestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
@@ -34,24 +31,8 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("H2 Indexing SPI Test Suite");
 
-        // H2 Optimized table test.
-        suite.addTest(new TestSuite(GridH2TableSelfTest.class));
-
-        // H2 Indexing in-memory.
-        suite.addTest(new TestSuite(GridH2IndexingInMemSelfTest.class));
-
-        // H2 Off-heap memory.
-        suite.addTest(new TestSuite(GridH2IndexingOffheapSelfTest.class));
-
-        // Index rebuilding.
-        suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
-
-        // Tests moved to this suite since they require GridH2IndexingSpi.
-        suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
-        suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSelfTest.class);
-        suite.addTestSuite(GridCacheOffHeapSelfTest.class);
+        // Geo.
+        suite.addTestSuite(GridH2IndexingGeoSelfTest.class);
 
         return suite;
     }
