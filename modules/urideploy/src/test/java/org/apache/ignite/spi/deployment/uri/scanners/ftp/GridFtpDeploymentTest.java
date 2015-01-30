@@ -25,7 +25,7 @@ import java.util.*;
 /**
  * Test for FTP deployment.
  */
-@GridSpiTest(spi = GridUriDeploymentSpi.class, group = "Deployment SPI")
+@GridSpiTest(spi = UriDeploymentSpi.class, group = "Deployment SPI")
 public class GridFtpDeploymentTest extends GridUriDeploymentAbstractSelfTest {
     /**
      * @throws Exception  If failed.

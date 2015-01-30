@@ -118,7 +118,7 @@ import java.util.Map.*;
  * set to {@code true}.
  * <p>
  * <h1 class="header">Configuration</h1>
- * {@code GridUriDeploymentSpi} has the following optional configuration
+ * {@code UriDeploymentSpi} has the following optional configuration
  * parameters (there are no mandatory parameters):
  * <ul>
  * <li>
@@ -252,9 +252,9 @@ import java.util.Map.*;
  * {@code http://username:password;freq=10000@www.mysite.com:110/gridgain/deployment}
  * </blockquote>
  * <h2 class="header">Java Example</h2>
- * GridUriDeploymentSpi needs to be explicitly configured to override default local deployment SPI.
+ * UriDeploymentSpi needs to be explicitly configured to override default local deployment SPI.
  * <pre name="code" class="java">
- * GridUriDeploymentSpi deploySpi = new GridUriDeploymentSpi();
+ * UriDeploymentSpi deploySpi = new UriDeploymentSpi();
  *
  * GridConfiguration cfg = new GridConfiguration();
  *
@@ -279,12 +279,12 @@ import java.util.Map.*;
  * </pre>
  * <p>
  * <h2 class="header">Spring Example</h2>
- * GridUriDeploymentSpi can be configured from Spring XML configuration file:
+ * UriDeploymentSpi can be configured from Spring XML configuration file:
  * <pre name="code" class="xml">
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *         ...
  *         &lt;property name="deploymentSpi"&gt;
- *             &lt;bean class="org.gridgain.grid.spi.deployment.uri.GridUriDeploymentSpi"&gt;
+ *             &lt;bean class="org.gridgain.grid.spi.deployment.uri.UriDeploymentSpi"&gt;
  *                 &lt;property name="temporaryDirectoryPath" value="c:/tmp/grid"/&gt;
  *                 &lt;property name="uriList"&gt;
  *                     &lt;list&gt;
@@ -308,7 +308,7 @@ import java.util.Map.*;
 @IgniteSpiMultipleInstancesSupport(true)
 @IgniteSpiConsistencyChecked(optional = false)
 @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
-public class GridUriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, GridUriDeploymentSpiMBean {
+public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, UriDeploymentSpiMBean {
     /**
      * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
      * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
@@ -512,7 +512,7 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
 
         initializeTemporaryDirectoryPath();
 
-        registerMBean(gridName, this, GridUriDeploymentSpiMBean.class);
+        registerMBean(gridName, this, UriDeploymentSpiMBean.class);
 
         FilenameFilter filter = new FilenameFilter() {
             @Override public boolean accept(File dir, String name) {
@@ -1362,6 +1362,6 @@ public class GridUriDeploymentSpi extends IgniteSpiAdapter implements Deployment
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridUriDeploymentSpi.class, this);
+        return S.toString(UriDeploymentSpi.class, this);
     }
 }

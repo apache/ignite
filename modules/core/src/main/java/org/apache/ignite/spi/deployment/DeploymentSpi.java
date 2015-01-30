@@ -48,7 +48,7 @@ import org.jetbrains.annotations.*;
  * Gridgain provides the following {@code GridDeploymentSpi} implementations:
  * <ul>
  * <li>{@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi}</li>
- * <li>{@gglink org.apache.ignite.spi.deployment.uri.GridUriDeploymentSpi}</li>
+ * <li>{@ignitelink org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}</li>
  * </ul>
  * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
  * internal view on the subsystem and is used internally by GridGain kernal. In rare use cases when

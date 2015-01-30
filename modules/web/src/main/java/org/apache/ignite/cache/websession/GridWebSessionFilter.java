@@ -42,10 +42,10 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
  * Filter for web sessions caching.
  * <p>
  * This is a request filter, that you need to specify in your {@code web.xml} along
- * with {@link org.apache.ignite.startup.servlet.GridServletContextListenerStartup} to enable web sessions caching:
+ * with {@link org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup} to enable web sessions caching:
  * <pre name="code" class="xml">
  * &lt;listener&gt;
- *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.GridServletContextListenerStartup&lt;/listener-class&gt;
+ *     &lt;listener-class&gt;org.apache.ignite.startup.servlet.IgniteServletContextListenerStartup&lt;/listener-class&gt;
  * &lt;/listener&gt;
  *
  * &lt;filter&gt;
