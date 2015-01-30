@@ -28,7 +28,7 @@ import java.lang.reflect.*;
  */
 public class SpatialIndexInitiator {
     /** Class for instantiation. */
-    private static final String CLASS_NAME = "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex";
+    private static final String CLASS_NAME = "org.apache.ignite.internal.processors.query.h2.opt.GridH2SpatialIndex_unknown_class";
 
     /**
      * @param tbl Table.
