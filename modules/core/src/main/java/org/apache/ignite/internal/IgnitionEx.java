@@ -1422,6 +1422,7 @@ public class IgnitionEx {
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());
+            myCfg.setClassLoader(cfg.getClassLoader());
 
             ClientConnectionConfiguration clientCfg = cfg.getClientConnectionConfiguration();
 

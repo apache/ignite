@@ -50,6 +50,10 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
+import javax.cache.processor.*;
+import javax.cache.expiry.*;
+import javax.cache.integration.*;
+import javax.cache.event.*;
 import java.lang.management.*;
 import java.net.*;
 import java.util.*;
@@ -528,6 +532,9 @@ public class IgniteConfiguration {
     /** */
     private IgniteQueryConfiguration qryCfg;
 
+    /** User's class loader. */
+    private ClassLoader classLdr;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -653,6 +660,7 @@ public class IgniteConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
+        classLdr = cfg.getClassLoader();
     }
 
     /**
@@ -3178,6 +3186,24 @@ public class IgniteConfiguration {
      */
     public void setQueryConfiguration(IgniteQueryConfiguration qryCfg) {
         this.qryCfg = qryCfg;
+    }
+
+    /**
+     * Sets loader which will be used for instantiating execution context ({@link EntryProcessor EntryProcessors},
+     * {@link CacheEntryListener CacheEntryListeners}, {@link CacheLoader CacheLoaders} and
+     * {@link ExpiryPolicy ExpiryPolicys}).
+     *
+     * @param classLdr Class loader.
+     */
+    public void setClassLoader(ClassLoader classLdr) {
+        this.classLdr = classLdr;
+    }
+
+    /**
+     * @return User's class loader.
+     */
+    public ClassLoader getClassLoader() {
+        return classLdr;
     }
 
     /** {@inheritDoc} */
