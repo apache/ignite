@@ -60,7 +60,7 @@ import org.jetbrains.annotations.*;
  * will operate in normal un-suppressed logging mode. Note that all output in "quiet" mode is
  * done through standard output (STDOUT).
  * <p>
- * Note that GridGain's standard startup scripts <tt>$IGNITE_HOME/bin/ggstart.{sh|bat}</tt> start
+ * Note that GridGain's standard startup scripts <tt>$IGNITE_HOME/bin/ignite.{sh|bat}</tt> start
  * by default in "quiet" mode. Both scripts accept {@code -v} arguments to turn off "quiet" mode.
  */
 @GridToStringExclude

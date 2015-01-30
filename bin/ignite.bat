@@ -91,7 +91,7 @@ if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
 ::
 :: Set program name.
 ::
-set PROG_NAME=ggstart.bat
+set PROG_NAME=ignite.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run

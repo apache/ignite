@@ -46,7 +46,7 @@ import java.util.concurrent.*;
  * with purpose to demonstrate multi-stage streaming processing.
  * <p>
  * Remote nodes should always be started with special configuration file:
- * {@code 'ggstart.{sh|bat} examples/config/example-streamer.xml'}.
+ * {@code 'ignite.{sh|bat} examples/config/example-streamer.xml'}.
  * When starting nodes this way JAR file containing the examples code
  * should be placed to {@code IGNITE_HOME/libs} folder. You can build
  * {@code gridgain-examples.jar} by running {@code mvn package} in

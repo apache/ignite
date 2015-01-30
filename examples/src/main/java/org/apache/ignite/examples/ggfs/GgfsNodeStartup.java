@@ -22,8 +22,8 @@ import org.apache.ignite.*;
 /**
  * Starts up an empty node with GGFS configuration.
  * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/filesystem/example-ggfs.xml'}.
+ * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
+ * {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.

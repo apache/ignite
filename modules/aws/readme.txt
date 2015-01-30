@@ -4,7 +4,7 @@ Apache Ignite AWS Module
 Apache Ignite AWS module provides S3-based implementations of checkpoint SPI and IP finder for TCP discovery.
 
 To enable AWS module when starting a standalone node, move 'optional/ignite-aws' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing AWS Module In Maven Project

@@ -57,4 +57,4 @@ export MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
 #
 # Start utility.
 #
-. "${SCRIPTS_HOME}/ggstart.sh" $@
+. "${SCRIPTS_HOME}/ignite.sh" $@

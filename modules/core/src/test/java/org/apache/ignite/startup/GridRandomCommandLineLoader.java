@@ -125,7 +125,7 @@ public final class GridRandomCommandLineLoader {
         if (errMsg != null)
             echo("ERROR: " + errMsg);
 
-        String runner = System.getProperty(IGNITE_PROG_NAME, "randggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "randignite.{sh|bat}");
 
         int space = runner.indexOf(' ');
 

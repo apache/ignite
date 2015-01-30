@@ -27,7 +27,7 @@
  * You can use default cache configuration from examples/config folder to
  * start up an instance of GridGain with cache enabled as follows:
  * ----
- * ${IGNITE_HOME}/bin/ggstart.sh examples/config/example-cache-default.xml
+ * ${IGNITE_HOME}/bin/ignite.sh examples/config/example-cache-default.xml
  * ----
  */
 

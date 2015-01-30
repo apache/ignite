@@ -55,7 +55,7 @@
             </includes>
             <excludes>
                 <exclude>**/*hadoop*.bat</exclude>
-                <exclude>ggrouter.bat</exclude>
+                <exclude>igniterouter.bat</exclude>
                 <exclude>**/target-classpath.bat</exclude>
             </excludes>
         </fileSet>
@@ -69,7 +69,7 @@
             </includes>
             <excludes>
                 <exclude>**/*hadoop*.sh</exclude>
-                <exclude>ggrouter.sh</exclude>
+                <exclude>igniterouter.sh</exclude>
                 <exclude>**/target-classpath.sh</exclude>
                 <exclude>**/service.sh</exclude>
             </excludes>

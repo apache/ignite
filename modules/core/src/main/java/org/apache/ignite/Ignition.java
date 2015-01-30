@@ -85,7 +85,7 @@ public class Ignition {
      * for a JVM to restart itself from Java application and therefore we rely on
      * external tools to provide that capability.
      * <p>
-     * Note that standard <tt>ggstart.{sh|bat}</tt> scripts support restarting when
+     * Note that standard <tt>ignite.{sh|bat}</tt> scripts support restarting when
      * JVM process exits with this code.
      */
     public static final int RESTART_EXIT_CODE = 250;
@@ -226,7 +226,7 @@ public class Ignition {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ggstart.{sh|bat}</tt>
+     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on

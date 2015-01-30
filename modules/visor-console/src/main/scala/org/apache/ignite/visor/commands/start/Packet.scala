@@ -66,8 +66,8 @@ package org.apache.ignite.visor.commands
  *         If not provided, default GridGain configuration is used.
  *     -s=<path>
  *         Path to start script (relative to GridGain home).
- *         Default is "bin/ggstart.sh" for Unix or
- *         "bin\ggstart.bat" for Windows.
+ *         Default is "bin/ignite.sh" for Unix or
+ *         "bin\ignite.bat" for Windows.
  *     -m=<num>
  *         Defines maximum number of nodes that can be started in parallel on one host.
  *         This actually means number of parallel SSH connections to each SSH server.

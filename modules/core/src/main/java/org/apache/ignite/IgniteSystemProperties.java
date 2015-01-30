@@ -114,7 +114,7 @@ public final class IgniteSystemProperties {
      * of Ignite. In quiet mode, only warning and errors are printed into the log
      * additionally to a shortened version of standard output on the start.
      * <p>
-     * Note that if you use <tt>ggstart.{sh|bat}</tt> scripts to start Ignite they
+     * Note that if you use <tt>ignite.{sh|bat}</tt> scripts to start Ignite they
      * start by default in quiet mode. You can supply <tt>-v</tt> flag to override it.
      */
     public static final String IGNITE_QUIET = "IGNITE_QUIET";
@@ -135,7 +135,7 @@ public final class IgniteSystemProperties {
     /**
      * Name of the system property defining success file name. This file
      * is used with auto-restarting functionality when Ignite is started
-     * by supplied <tt>ggstart.{bat|sh}</tt> scripts.
+     * by supplied <tt>ignite.{bat|sh}</tt> scripts.
      */
     public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
 

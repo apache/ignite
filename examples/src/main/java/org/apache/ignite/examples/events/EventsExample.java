@@ -33,7 +33,7 @@ import static org.apache.ignite.events.IgniteEventType.*;
  * Note that grid events are disabled by default and must be specifically enabled,
  * just like in {@code examples/config/example-compute.xml} file.
  * <p>
- * Remote nodes should always be started with configuration: {@code 'ggstart.sh examples/config/example-compute.xml'}.
+ * Remote nodes should always be started with configuration: {@code 'ignite.sh examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/example-compute.xml} configuration.

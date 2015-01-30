@@ -336,7 +336,7 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ggstart.{sh|bat}</tt>
+     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on

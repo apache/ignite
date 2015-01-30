@@ -5,7 +5,7 @@ Apache Ignite URI Deploy module provides capabilities to deploy tasks from diffe
 File System, HTTP, FTP, or even Email.
 
 To enable URI Deploy module when starting a standalone node, move 'optional/ignite-urideploy' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing URI Deploy Module In Maven Project

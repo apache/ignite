@@ -1678,7 +1678,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (ctx.isEnterprise())
             U.quietAndInfo(log, "To start GUI Management & Monitoring run ggvisorui.{sh|bat}");
         else
-            U.quietAndInfo(log, "To start Console Management & Monitoring run ggvisorcmd.{sh|bat}");
+            U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
     }
 
     /**
@@ -1718,7 +1718,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     U.quiet(false, "  ^-- Logging to file '" +  fileName + '\'');
 
                 U.quiet(false,
-                    "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ggstart.{sh|bat}",
+                    "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
                     "");
             }
 
@@ -2226,7 +2226,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * Whether or not node restart is enabled. Node restart us supported when this node was started
-     * with {@code bin/ggstart.{sh|bat}} script using {@code -r} argument. Node can be
+     * with {@code bin/ignite.{sh|bat}} script using {@code -r} argument. Node can be
      * programmatically restarted using {@link org.apache.ignite.Ignition#restart(boolean)}} method.
      *
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.

@@ -125,7 +125,7 @@ import java.util.*;
  * <h1>Starting Remote Nodes</h1>
  * Remember that the node started inside your application is an entry point
  * to the whole topology it connects to. You can start as many remote standalone
- * nodes as you need using {@code bin/ggstart.{sh|bat}} scripts provided in
+ * nodes as you need using {@code bin/ignite.{sh|bat}} scripts provided in
  * GridGain distribution, and all these nodes will participate
  * in caching data.
  */

@@ -25,8 +25,8 @@ import javax.swing.*;
 /**
  * Starts up an empty node with cache configuration.
  * You can also start a stand-alone GridGain instance by passing the path
- * to configuration file to {@code 'ggstart.{sh|bat}'} script, like so:
- * {@code 'ggstart.sh examples/config/example-cache.xml'}.
+ * to configuration file to {@code 'ignite.{sh|bat}'} script, like so:
+ * {@code 'ignite.sh examples/config/example-cache.xml'}.
  * <p>
  * The difference is that running this class from IDE adds all example classes to classpath
  * but running from command line doesn't.

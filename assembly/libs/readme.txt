@@ -2,7 +2,7 @@ Apache Ignite Dependencies
 --------------------------
 
 Current folder contains JAR files for all Apache Ignite modules along with their dependencies.
-When node is started using 'ggstart.{sh|bat}' script, all JARs and classes located in
+When node is started using 'ignite.{sh|bat}' script, all JARs and classes located in
 'libs' folder and all its sub-folders except 'optional' are added to classpath of the node.
 
 By default, only Apache Ignite core JAR and a minimum set of modules is enabled, while other
@@ -10,7 +10,7 @@ modules are located in 'optional' folder and therefore disabled.
 
 To enable any of optional Ignite modules when starting a standalone node,
 move corresponding module folder from 'libs/optional' to 'libs' before running
-'ggstart.{sh|bat}' script. The content of the module folder will be added to
+'ignite.{sh|bat}' script. The content of the module folder will be added to
 classpath in this case.
 
 If you need to add your own classes to classpath of the node (e.g., task classes), put them

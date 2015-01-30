@@ -61,7 +61,7 @@ import org.jetbrains.annotations.*;
  * <ol>
  *  <li>
  *      Simply startup stand-alone GridGain nodes by executing
- *      {@code IGNITE_HOME/ggstart.{sh|bat}} scripts.
+ *      {@code IGNITE_HOME/ignite.{sh|bat}} scripts.
  *  </li>
  *  <li>
  *      Now, all jobs executing locally or remotely can have a single instance of cache

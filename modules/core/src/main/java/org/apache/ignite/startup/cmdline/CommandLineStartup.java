@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.GridProductImpl.*;
  * parameter which is Spring XML configuration file path. You can run this class from command
  * line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${IGNITE_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/ignite.{sh|bat}} shipped with GridGain use
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})
@@ -144,23 +144,23 @@ public final class CommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(IGNITE_PROG_NAME, "ggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "ignite.{sh|bat}");
 
         int space = runner.indexOf(' ');
 
         runner = runner.substring(0, space == -1 ? runner.length() : space);
 
         if (showUsage) {
-            boolean ggstart = runner.contains("ggstart.");
+            boolean ignite = runner.contains("ignite.");
 
             X.error(
                 "Usage:",
-                "    " + runner + (ggstart ? " [?]|[path {-v}]|[-i]" : " [?]|[-v]"),
+                "    " + runner + (ignite ? " [?]|[path {-v}]|[-i]" : " [?]|[-v]"),
                 "    Where:",
                 "    ?, /help, -help - show this message.",
                 "    -v              - verbose mode (quiet by default).");
 
-            if (ggstart) {
+            if (ignite) {
                 X.error(
                     "    -i              - interactive mode (choose configuration file from list).",
                     "    path            - path to Spring XML configuration file.",

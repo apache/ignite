@@ -63,7 +63,7 @@ do
     LOG_FILE=${IGNITE_HOME}/work/log/node-${iter}.log
 
     echo Start node ${iter}: ${LOG_FILE}
-    nohup /bin/bash $BIN_PATH/ggstart.sh $CONFIG_DIR/spring-server-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+    nohup /bin/bash $BIN_PATH/ignite.sh $CONFIG_DIR/spring-server-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 done
 
 for iter in {1..2}
@@ -71,7 +71,7 @@ do
     LOG_FILE=${IGNITE_HOME}/work/log/node-ssl-${iter}.log
 
     echo Start SSL node ${iter}: ${LOG_FILE}
-    nohup /bin/bash $BIN_PATH/ggstart.sh $CONFIG_DIR/spring-server-ssl-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+    nohup /bin/bash $BIN_PATH/ignite.sh $CONFIG_DIR/spring-server-ssl-node.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 done
 
 echo Wait 60 seconds while nodes start.
@@ -79,14 +79,14 @@ sleep 60
 
 LOG_FILE=${IGNITE_HOME}/work/log/router.log
 echo Start Router: ${LOG_FILE}
-nohup /bin/bash $BIN_PATH/ggrouter.sh $CONFIG_DIR/spring-router.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+nohup /bin/bash $BIN_PATH/igniterouter.sh $CONFIG_DIR/spring-router.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 
 # Disable hostname verification for self-signed certificates.
 export JVM_OPTS="${JVM_OPTS} -DIGNITE_DISABLE_HOSTNAME_VERIFIER=true"
 
 LOG_FILE=${IGNITE_HOME}/work/log/router-ssl.log
 echo Start Router SSL: ${LOG_FILE}
-nohup /bin/bash $BIN_PATH/ggrouter.sh $CONFIG_DIR/spring-router-ssl.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
+nohup /bin/bash $BIN_PATH/igniterouter.sh $CONFIG_DIR/spring-router-ssl.xml -v < /dev/null > ${LOG_FILE} 2>&1 &
 
 echo Wait 30 seconds while router starts.
 sleep 30

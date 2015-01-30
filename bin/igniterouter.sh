@@ -47,4 +47,4 @@ export MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
 #
 # Start router service.
 #
-. "${SCRIPTS_HOME}"/ggstart.sh $@
+. "${SCRIPTS_HOME}"/ignite.sh $@

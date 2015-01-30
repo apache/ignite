@@ -21,7 +21,7 @@
     Default rest router configuration.
 
     This file is automatically scanned by
-    $IGNITE_HOME/bin/ggrouter.sh and $IGNITE_HOME/bin/ggrouter.bat
+    $IGNITE_HOME/bin/igniterouter.sh and $IGNITE_HOME/bin/igniterouter.bat
     for org.gridgain.client.router.GridTcpRestRouterConfiguration and
     org.gridgain.client.router.GridHttpRestRouterConfiguration bean definitions.
     First found are used to start corresponding router instances.

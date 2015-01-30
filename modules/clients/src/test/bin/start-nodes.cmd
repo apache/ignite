@@ -35,9 +35,9 @@ mkdir %IGNITE_HOME%\work\log
 
 set JVM_OPTS=-DCLIENTS_MODULE_PATH=%CLIENTS_MODULE_PATH%
 
-FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-node.xml >> %IGNITE_HOME%\work\log\node-%%G.log 2>&1"
-FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "SSL Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-server-ssl-node.xml >> %IGNITE_HOME%\work\log\node-ssl-%%G.log 2>&1"
-FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Cache Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ggstart.bat -v %CONFIG_DIR%\spring-cache.xml >> %IGNITE_HOME%\work\log\cache-node-%%G.log 2>&1"
+FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ignite.bat -v %CONFIG_DIR%\spring-server-node.xml >> %IGNITE_HOME%\work\log\node-%%G.log 2>&1"
+FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "SSL Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ignite.bat -v %CONFIG_DIR%\spring-server-ssl-node.xml >> %IGNITE_HOME%\work\log\node-ssl-%%G.log 2>&1"
+FOR /L %%G IN (1,1,%NODES_COUNT%) DO start "Cache Node #%%G" /low /MIN cmd /C "%BIN_PATH%\ignite.bat -v %CONFIG_DIR%\spring-cache.xml >> %IGNITE_HOME%\work\log\cache-node-%%G.log 2>&1"
 
 echo Wait 60 seconds while nodes started.
 ping -n 60 127.0.0.1 > NUL
@@ -45,8 +45,8 @@ ping -n 60 127.0.0.1 > NUL
 rem Disable hostname verification for self-signed certificates.
 set JVM_OPTS=%JVM_OPTS% -DIGNITE_DISABLE_HOSTNAME_VERIFIER=true
 
-FOR /L %%G IN (1,1,1) DO start "Router #%%G" /low /MIN cmd /C "%BIN_PATH%\ggrouter.bat -v %CONFIG_DIR%\spring-router.xml >> %IGNITE_HOME%\work\log\router-%%G.log 2>&1"
-FOR /L %%G IN (1,1,1) DO start "SSL Router #%%G" /low /MIN cmd /C "%BIN_PATH%\ggrouter.bat -v %CONFIG_DIR%\spring-router-ssl.xml >> %IGNITE_HOME%\work\log\router-ssl-%%G.log 2>&1"
+FOR /L %%G IN (1,1,1) DO start "Router #%%G" /low /MIN cmd /C "%BIN_PATH%\igniterouter.bat -v %CONFIG_DIR%\spring-router.xml >> %IGNITE_HOME%\work\log\router-%%G.log 2>&1"
+FOR /L %%G IN (1,1,1) DO start "SSL Router #%%G" /low /MIN cmd /C "%BIN_PATH%\igniterouter.bat -v %CONFIG_DIR%\spring-router-ssl.xml >> %IGNITE_HOME%\work\log\router-ssl-%%G.log 2>&1"
 
 echo Wait 10 seconds while routers started.
 ping -n 10 127.0.0.1 > NUL

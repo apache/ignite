@@ -21,7 +21,7 @@
     GridGain Spring configuration file to startup grid with streamers.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {IGNITE_HOME}/bin/ggstart.{bat|sh} examples/config/example-streamer.xml
+    {IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-streamer.xml
     When starting nodes this way JAR file containing the examples code
     should be placed to {IGNITE_HOME}/libs folder. You can build
     gridgain-examples.jar by running "mvn package" in {IGNITE_HOME}/examples folder.

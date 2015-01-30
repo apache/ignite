@@ -41,10 +41,10 @@ public class GridNodeCallableImpl implements GridNodeCallable {
     private static final String DFLT_IGNITE_HOME_LINUX = "$IGNITE_HOME";
 
     /** Default start script path for Windows. */
-    private static final String DFLT_SCRIPT_WIN = "bin\\ggstart.bat -v -np";
+    private static final String DFLT_SCRIPT_WIN = "bin\\ignite.bat -v -np";
 
     /** Default start script path for Linux. */
-    private static final String DFLT_SCRIPT_LINUX = "bin/ggstart.sh -v";
+    private static final String DFLT_SCRIPT_LINUX = "bin/ignite.sh -v";
 
     /**
      * Logs folder for Windows.
@@ -301,11 +301,11 @@ public class GridNodeCallableImpl implements GridNodeCallable {
     }
 
     /**
-     * Builds ggstart.sh attributes to set up SSH username and password and log directory for started node.
+     * Builds ignite.sh attributes to set up SSH username and password and log directory for started node.
      *
      * @param username SSH user name.
      * @param host Host.
-     * @return {@code ggstart.sh} script arguments.
+     * @return {@code ignite.sh} script arguments.
      */
     private String buildRemoteLogArguments(String username, String host) {
         assert username != null;
