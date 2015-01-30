@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -261,12 +262,12 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     /**
      * @return Start future.
      */
-    @Override public IgniteFuture<Object> startFuture() {
+    @Override public IgniteInternalFuture<Object> startFuture() {
         return startFut;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> syncFuture() {
+    @Override public IgniteInternalFuture<?> syncFuture() {
         return demandPool.syncFuture();
     }
 
@@ -315,13 +316,13 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
      * @param msg Force keys message.
      */
     private void processForceKeysRequest(final ClusterNode node, final GridDhtForceKeysRequest<K, V> msg) {
-        IgniteFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
+        IgniteInternalFuture<?> fut = cctx.mvcc().finishKeys(msg.keys(), msg.topologyVersion());
 
         if (fut.isDone())
             processForceKeysRequest0(node, msg);
         else
-            fut.listenAsync(new CI1<IgniteFuture<?>>() {
-                @Override public void apply(IgniteFuture<?> t) {
+            fut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> t) {
                     processForceKeysRequest0(node, msg);
                 }
             });
@@ -426,8 +427,8 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing affinity assignment request [node=" + node + ", req=" + req + ']');
 
-        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<IgniteFuture<Long>>() {
-            @Override public void apply(IgniteFuture<Long> fut) {
+        cctx.affinity().affinityReadyFuture(req.topologyVersion()).listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+            @Override public void apply(IgniteInternalFuture<Long> fut) {
                 if (log.isDebugEnabled())
                     log.debug("Affinity is ready for topology version, will send response [topVer=" + topVer +
                         ", node=" + node + ']');
@@ -481,27 +482,27 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
     @Override public GridDhtFuture<Object> request(Collection<? extends K> keys, long topVer) {
         final GridDhtForceKeysFuture<K, V> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 
-        IgniteFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
+        IgniteInternalFuture<?> topReadyFut = cctx.affinity().affinityReadyFuturex(topVer);
 
         if (startFut.isDone() && topReadyFut == null)
             fut.init();
         else {
             if (topReadyFut == null)
-                startFut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> syncFut) {
+                startFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> syncFut) {
                         fut.init();
                     }
                 });
             else {
                 GridCompoundFuture<Object, Object> compound = new GridCompoundFuture<>(cctx.kernalContext());
 
-                compound.add((IgniteFuture<Object>)startFut);
-                compound.add((IgniteFuture<Object>)topReadyFut);
+                compound.add((IgniteInternalFuture<Object>)startFut);
+                compound.add((IgniteInternalFuture<Object>)topReadyFut);
 
                 compound.markInitialized();
 
-                compound.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> syncFut) {
+                compound.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> syncFut) {
                         fut.init();
                     }
                 });

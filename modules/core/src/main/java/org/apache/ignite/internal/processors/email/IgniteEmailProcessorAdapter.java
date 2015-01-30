@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.email;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
-import org.apache.ignite.lang.*;
 
 import java.util.*;
 
@@ -68,7 +67,7 @@ public abstract class IgniteEmailProcessorAdapter extends GridProcessorAdapter {
      * @param html HTML format flag.
      * @return Future for scheduled email.
      */
-    public abstract IgniteFuture<Boolean> schedule(String subj, String body, boolean html);
+    public abstract IgniteInternalFuture<Boolean> schedule(String subj, String body, boolean html);
 
     /**
      * Schedules sending of given email. If SMTP is disabled - this method is no-op. Emails will be send
@@ -81,5 +80,5 @@ public abstract class IgniteEmailProcessorAdapter extends GridProcessorAdapter {
      * @param addrs Addresses.
      * @return Future for scheduled email.
      */
-    public abstract IgniteFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs);
+    public abstract IgniteInternalFuture<Boolean> schedule(String subj, String body, boolean html, Collection<String> addrs);
 }

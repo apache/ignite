@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.rest.handlers.metadata;
 
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.portables.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.client.message.*;
@@ -55,7 +54,7 @@ public class GridPortableMetadataHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert SUPPORTED_COMMANDS.contains(req.command()) : req.command();
 
         try {

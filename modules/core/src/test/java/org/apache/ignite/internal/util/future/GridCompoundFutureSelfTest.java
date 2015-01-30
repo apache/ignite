@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.util.future;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -39,7 +39,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
         GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>();
 
         for (int i = 0; i < 5; i++) {
-            IgniteFuture<Boolean> part = new GridFinishedFuture<>(ctx, true);
+            IgniteInternalFuture<Boolean> part = new GridFinishedFuture<>(ctx, true);
 
             part.syncNotify(true);
 
@@ -143,7 +143,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
 
         fut.markInitialized();
 
-        IgniteFuture<?> complete = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> complete = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridFutureAdapter<Boolean> part;
 
@@ -178,7 +178,7 @@ public class GridCompoundFutureSelfTest extends GridCommonAbstractTest {
 
         fut.markInitialized();
 
-        IgniteFuture<?> complete = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> complete = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 GridFutureAdapter<Boolean> part;
 

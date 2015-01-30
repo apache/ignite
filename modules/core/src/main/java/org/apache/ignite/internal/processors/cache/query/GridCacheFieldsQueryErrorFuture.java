@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.query.*;
 import org.apache.ignite.internal.util.future.*;
 
@@ -48,7 +47,7 @@ public class GridCacheFieldsQueryErrorFuture extends GridCacheQueryErrorFuture<L
     /**
      * @return Metadata.
      */
-    public IgniteFuture<List<GridQueryFieldMetadata>> metadata() {
+    public IgniteInternalFuture<List<GridQueryFieldMetadata>> metadata() {
         return new GridFinishedFuture<>(ctx, incMeta ? Collections.<GridQueryFieldMetadata>emptyList() : null);
     }
 }

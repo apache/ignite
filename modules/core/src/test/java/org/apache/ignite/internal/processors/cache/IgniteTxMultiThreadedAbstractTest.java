@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
@@ -218,7 +218,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
         cache.put(key, 0L);
 
-        List<IgniteFuture<Collection<Long>>> futs = new ArrayList<>(THREADS);
+        List<IgniteInternalFuture<Collection<Long>>> futs = new ArrayList<>(THREADS);
 
         for (int i = 0; i < THREADS; i++) {
             futs.add(GridTestUtils.runAsync(new Callable<Collection<Long>>() {
@@ -251,7 +251,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
         List<Collection<Long>> cols = new ArrayList<>(THREADS);
 
-        for (IgniteFuture<Collection<Long>> fut : futs) {
+        for (IgniteInternalFuture<Collection<Long>> fut : futs) {
             Collection<Long> col = fut.get();
 
             assertEquals(ITERATIONS, col.size());

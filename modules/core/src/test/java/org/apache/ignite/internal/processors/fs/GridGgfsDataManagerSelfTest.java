@@ -21,6 +21,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -166,7 +167,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            IgniteFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
@@ -253,7 +254,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             info = new GridGgfsFileInfo(info, info.length() + data.length + remainder.length);
 
-            IgniteFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
             GridGgfsFileAffinityRange range = new GridGgfsFileAffinityRange();
 
@@ -338,7 +339,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
 
             info = new GridGgfsFileInfo(info, info.length() + data.length * writesCnt);
 
-            IgniteFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
@@ -375,7 +376,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
                 pos += stored.length;
             }
 
-            IgniteFuture<Object> delFut = mgr.delete(info);
+            IgniteInternalFuture<Object> delFut = mgr.delete(info);
 
             delFut.get();
 

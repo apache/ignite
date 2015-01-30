@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.fs;
 
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -100,7 +101,7 @@ public interface GridGgfsEx extends IgniteFs {
      * @return Future which will be completed when all entries existed in trash by the time of invocation are removed.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
+    public IgniteInternalFuture<?> awaitDeletesAsync() throws IgniteCheckedException;
 
     /**
      * Gets client file system log directory.

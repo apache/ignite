@@ -31,7 +31,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.*;
  */
 public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     @IgniteInstanceResource
-    protected transient GridEx g;
+    protected transient IgniteEx g;
 
     /** Job start time. */
     protected transient long start;

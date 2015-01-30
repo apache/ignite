@@ -128,7 +128,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         try {
             return handleAsyncUnsafe(req);
         }
@@ -148,7 +148,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
      * @return Future.
      * @throws IgniteCheckedException On any handling exception.
      */
-    private IgniteFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws IgniteCheckedException {
+    private IgniteInternalFuture<GridRestResponse> handleAsyncUnsafe(final GridRestRequest req) throws IgniteCheckedException {
         assert req instanceof GridRestTaskRequest : "Invalid command for topology handler: " + req;
 
         assert SUPPORTED_COMMANDS.contains(req.command());
@@ -226,8 +226,8 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     fut.onDone(res);
                 }
 
-                taskFut.listenAsync(new IgniteInClosure<IgniteFuture<Object>>() {
-                    @Override public void apply(IgniteFuture<Object> f) {
+                taskFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
+                    @Override public void apply(IgniteInternalFuture<Object> f) {
                         try {
                             TaskDescriptor desc;
 
@@ -590,7 +590,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** */
         @IgniteInstanceResource
-        private GridEx g;
+        private IgniteEx g;
 
         /**
          * Required by {@link Externalizable}.

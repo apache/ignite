@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.lang.*;
@@ -359,7 +360,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTxEx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync() {
         assert false;
         return null;
     }
@@ -717,7 +718,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteTx> commitAsync() {
         try {
             commit();
 
@@ -748,7 +749,7 @@ public class GridDistributedTxRemoteAdapter<K, V> extends IgniteTxAdapter<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<IgniteTx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteTx> rollbackAsync() {
         rollback();
 
         return new GridFinishedFutureEx<IgniteTx>(this);

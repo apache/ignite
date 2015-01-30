@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
@@ -281,7 +282,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     ses1.pauseReads().get();
 
-                    IgniteFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
+                    IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
                             for (int i = 0; i < 5000; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
@@ -391,7 +392,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     ses1.pauseReads().get();
 
-                    IgniteFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
+                    IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
                             for (int i = 0; i < 5000; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));
@@ -508,7 +509,7 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     ses1.pauseReads().get();
 
-                    IgniteFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
+                    IgniteInternalFuture<?> sndFut = GridTestUtils.runAsync(new Callable<Void>() {
                         @Override public Void call() throws Exception {
                             for (int i = 0; i < 5000; i++) {
                                 spi0.sendMessage(node1, new GridTestMessage(node0.id(), msgId.incrementAndGet(), 0));

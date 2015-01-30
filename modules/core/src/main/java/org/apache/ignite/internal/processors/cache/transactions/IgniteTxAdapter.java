@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -557,7 +558,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteFuture<R> future() {
+    @Override public <R> IgniteInternalFuture<R> future() {
         throw new UnsupportedOperationException("future() should not be called on IgniteTxAdapter directly.");
     }
 
@@ -949,7 +950,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public IgniteFuture<IgniteTx> finishFuture() {
+    @Override public IgniteInternalFuture<IgniteTx> finishFuture() {
         GridFutureAdapter<IgniteTx> fut = finFut.get();
 
         if (fut == null) {
@@ -1569,7 +1570,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
+        @Override public <R> IgniteInternalFuture<R> future() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

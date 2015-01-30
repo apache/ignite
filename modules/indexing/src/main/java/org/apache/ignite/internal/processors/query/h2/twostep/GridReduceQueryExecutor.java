@@ -110,7 +110,7 @@ public class GridReduceQueryExecutor {
      * @param qry Query.
      * @return Future.
      */
-    public IgniteFuture<GridCacheSqlResult> query(String space, GridCacheTwoStepQuery qry) {
+    public IgniteInternalFuture<GridCacheSqlResult> query(String space, GridCacheTwoStepQuery qry) {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();

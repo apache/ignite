@@ -112,7 +112,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private GridCheckpointManager checkpoints(Ignite ignite) {
         assert ignite != null;
 
-        return ((GridKernal) ignite).context().checkpoint();
+        return ((IgniteKernal) ignite).context().checkpoint();
     }
 
     /** {@inheritDoc} */
@@ -250,7 +250,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             Ignite ignite = startGrid(gridName);
 
-            IgniteFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
+            IgniteInternalFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 
             executeAsync(ignite.compute(), GridMultiNodeTestCheckPointTask.class, null).get(2 * 60 * 1000);
 

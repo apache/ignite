@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -117,7 +118,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> getAsync() {
+    @Override public IgniteInternalFuture<V> getAsync() {
         throw new UnsupportedOperationException("getAsync");
     }
 
@@ -132,7 +133,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> reloadAsync() {
+    @Override public IgniteInternalFuture<V> reloadAsync() {
         throw new UnsupportedOperationException("reloadAsync");
     }
 
@@ -209,7 +210,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<V> setAsync(V val, @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("setAsync");
     }
 
@@ -219,7 +220,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> setIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<V> setIfAbsentAsync(V val) {
         throw new UnsupportedOperationException("setIfAbsentAsync");
     }
 
@@ -230,7 +231,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxAsync(V val,
+    @Override public IgniteInternalFuture<Boolean> setxAsync(V val,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("setxAsync");
     }
@@ -241,7 +242,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> setxIfAbsentAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> setxIfAbsentAsync(V val) {
         throw new UnsupportedOperationException("setxIfAbsentAsync");
     }
 
@@ -251,7 +252,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> replaceAsync(V val) {
+    @Override public IgniteInternalFuture<V> replaceAsync(V val) {
         throw new UnsupportedOperationException("replaceAsync");
     }
 
@@ -261,7 +262,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replacexAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> replacexAsync(V val) {
         throw new UnsupportedOperationException("replacexAsync");
     }
 
@@ -271,7 +272,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> replaceAsync(V oldVal, V newVal) {
+    @Override public IgniteInternalFuture<Boolean> replaceAsync(V oldVal, V newVal) {
         throw new UnsupportedOperationException("replaceAsync");
     }
 
@@ -282,7 +283,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<V> removeAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("removeAsync");
     }
 
@@ -292,7 +293,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
+    @Override public IgniteInternalFuture<Boolean> removexAsync(@Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("removexAsync");
     }
 
@@ -302,7 +303,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> removeAsync(V val) {
+    @Override public IgniteInternalFuture<Boolean> removeAsync(V val) {
         throw new UnsupportedOperationException("removeAsync");
     }
 
@@ -329,7 +330,7 @@ public class GridCacheFilterEvaluationEntry<K, V> implements CacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Boolean> lockAsync(long timeout,
+    @Override public IgniteInternalFuture<Boolean> lockAsync(long timeout,
         @Nullable IgnitePredicate<CacheEntry<K, V>>... filter) {
         throw new UnsupportedOperationException("lockAsync");
     }

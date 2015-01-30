@@ -21,8 +21,8 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -137,7 +137,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
             GridCache<Integer, String> cache1 = ignite1.cache(null);
             GridCache<Integer, String> cache3 = ignite3.cache(null);
 
-            IgniteFuture<?> fut = multithreadedAsync(
+            IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
                         Thread.sleep(1000);

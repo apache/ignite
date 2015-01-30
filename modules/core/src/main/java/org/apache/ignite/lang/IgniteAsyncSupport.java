@@ -17,6 +17,8 @@
 
 package org.apache.ignite.lang;
 
+import org.apache.ignite.internal.*;
+
 /**
  * TODO: Add interface description.
  */
@@ -38,5 +40,5 @@ public interface IgniteAsyncSupport {
      *
      * @return Future for previous asynchronous operation.
      */
-    public <R> IgniteFuture<R> future();
+    public <R> IgniteInternalFuture<R> future();
 }
