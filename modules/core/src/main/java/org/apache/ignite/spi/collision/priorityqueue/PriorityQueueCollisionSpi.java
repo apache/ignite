@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.collision.priorityqueue;
@@ -14,8 +22,8 @@ import org.apache.ignite.compute.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.collision.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
@@ -94,11 +102,11 @@ import java.util.*;
  * be activated first (one by one) and jobs from {@code MyGridUsualTask} with lowest priority
  * will wait. Once higher priority jobs complete, lower priority jobs will be scheduled.
  * <pre name="code" class="java">
- * public class MyGridUsualTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyGridUsualTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 20;
  *
- *    &#64;GridTaskSessionResource
- *    private GridComputeTaskSession taskSes;
+ *    &#64;IgniteTaskSessionResource
+ *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -110,7 +118,7 @@ import java.util.*;
  *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
- *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
+ *            jobs.add(new ComputeJobAdapter&lt;Integer&gt;(i) {
  *                ...
  *            });
  *        }
@@ -120,11 +128,11 @@ import java.util.*;
  * </pre>
  * and
  * <pre name="code" class="java">
- * public class MyGridUrgentTask extends GridComputeTaskSplitAdapter&lt;Object, Object&gt; {
+ * public class MyGridUrgentTask extends ComputeTaskSplitAdapter&lt;Object, Object&gt; {
  *    public static final int SPLIT_COUNT = 5;
  *
- *    &#64;GridTaskSessionResource
- *    private GridComputeTaskSession taskSes;
+ *    &#64;IgniteTaskSessionResource
+ *    private ComputeTaskSession taskSes;
  *
  *    &#64;Override
  *    protected Collection&lt;? extends ComputeJob&gt; split(int gridSize, Object arg) throws IgniteCheckedException {
@@ -136,7 +144,7 @@ import java.util.*;
  *        Collection&lt;ComputeJob&gt; jobs = new ArrayList&lt;ComputeJob&gt;(SPLIT_COUNT);
  *
  *        for (int i = 1; i &lt;= SPLIT_COUNT; i++) {
- *            jobs.add(new GridComputeJobAdapter&lt;Integer&gt;(i) {
+ *            jobs.add(new ComputeJobAdapter&lt;Integer&gt;(i) {
  *                ...
  *            });
  *        }

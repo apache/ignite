@@ -1,30 +1,37 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.discovery.tcp.internal;
 
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.product.*;
-import org.gridgain.grid.kernal.*;
 import org.apache.ignite.spi.discovery.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Node for {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}.
@@ -64,7 +71,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** Node metrics. */
     @GridToStringExclude
-    private volatile ClusterNodeMetrics metrics;
+    private volatile ClusterMetrics metrics;
 
     /** Node order in the topology. */
     private volatile long order;
@@ -131,7 +138,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         consistentId = U.consistentId(addrs, discPort);
 
-        metrics = metricsProvider.getMetrics();
+        metrics = metricsProvider.metrics();
         sockAddrs = U.toSocketAddresses(this, discPort);
     }
 
@@ -184,9 +191,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNodeMetrics metrics() {
+    @Override public ClusterMetrics metrics() {
         if (metricsProvider != null)
-            metrics = metricsProvider.getMetrics();
+            metrics = metricsProvider.metrics();
 
         return metrics;
     }
@@ -196,7 +203,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
      *
      * @param metrics Node metrics.
      */
-    public void setMetrics(ClusterNodeMetrics metrics) {
+    public void setMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
         this.metrics = metrics;
@@ -389,9 +396,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         byte[] mtr = null;
 
         if (metrics != null) {
-            mtr = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+            mtr = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
-            DiscoveryMetricsHelper.serialize(mtr, 0, metrics);
+            ClusterMetricsSnapshot.serialize(mtr, 0, metrics);
         }
 
         U.writeByteArray(out, mtr);
@@ -418,7 +425,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         byte[] mtr = U.readByteArray(in);
 
         if (mtr != null)
-            metrics = DiscoveryMetricsHelper.deserialize(mtr, 0);
+            metrics = ClusterMetricsSnapshot.deserialize(mtr, 0);
 
         order = in.readLong();
         intOrder = in.readLong();

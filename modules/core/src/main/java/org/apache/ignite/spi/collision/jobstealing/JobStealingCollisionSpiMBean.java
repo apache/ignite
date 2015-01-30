@@ -1,15 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.collision.jobstealing;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 import java.io.*;
@@ -18,7 +26,7 @@ import java.util.*;
 /**
  * Management MBean for job stealing based collision SPI.
  */
-@IgniteMBeanDescription("MBean for job stealing based collision SPI.")
+@IgniteMXBeanDescription("MBean for job stealing based collision SPI.")
 public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets current number of jobs to be stolen. This is outstanding
@@ -26,7 +34,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of jobs to be stolen.
      */
-    @IgniteMBeanDescription("Number of jobs to be stolen.")
+    @IgniteMXBeanDescription("Number of jobs to be stolen.")
     public int getCurrentJobsToStealNumber();
 
     /**
@@ -34,7 +42,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of jobs that wait for execution.
      */
-    @IgniteMBeanDescription("Number of jobs that wait for execution.")
+    @IgniteMXBeanDescription("Number of jobs that wait for execution.")
     public int getCurrentWaitJobsNumber();
 
     /**
@@ -42,7 +50,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of active jobs.
      */
-    @IgniteMBeanDescription("Number of active jobs.")
+    @IgniteMXBeanDescription("Number of active jobs.")
     public int getCurrentActiveJobsNumber();
 
     /*
@@ -50,7 +58,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of currently running (not {@code 'held}) jobs.
      */
-    @IgniteMBeanDescription("Number of running jobs.")
+    @IgniteMXBeanDescription("Number of running jobs.")
     public int getCurrentRunningJobsNumber();
 
     /**
@@ -58,7 +66,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of currently {@code 'held'} jobs.
      */
-    @IgniteMBeanDescription("Number of held jobs.")
+    @IgniteMXBeanDescription("Number of held jobs.")
     public int getCurrentHeldJobsNumber();
 
     /**
@@ -66,7 +74,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of stolen jobs.
      */
-    @IgniteMBeanDescription("Number of stolen jobs.")
+    @IgniteMXBeanDescription("Number of stolen jobs.")
     public int getTotalStolenJobsNumber();
 
     /**
@@ -74,7 +82,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Number of jobs that can be executed in parallel.
      */
-    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMXBeanDescription("Number of jobs that can be executed in parallel.")
     public int getActiveJobsThreshold();
 
     /**
@@ -82,7 +90,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param activeJobsTreshold Number of jobs that can be executed in parallel.
      */
-    @IgniteMBeanDescription("Number of jobs that can be executed in parallel.")
+    @IgniteMXBeanDescription("Number of jobs that can be executed in parallel.")
     public void setActiveJobsThreshold(int activeJobsTreshold);
 
     /**
@@ -91,7 +99,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Job count threshold.
      */
-    @IgniteMBeanDescription("Job count threshold.")
+    @IgniteMXBeanDescription("Job count threshold.")
     public int getWaitJobsThreshold();
 
     /**
@@ -100,7 +108,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param waitJobsThreshold Job count threshold.
      */
-    @IgniteMBeanDescription("Job count threshold.")
+    @IgniteMXBeanDescription("Job count threshold.")
     public void setWaitJobsThreshold(int waitJobsThreshold);
 
     /**
@@ -111,7 +119,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Message expire time.
      */
-    @IgniteMBeanDescription("Message expire time.")
+    @IgniteMXBeanDescription("Message expire time.")
     public long getMessageExpireTime();
 
     /**
@@ -122,7 +130,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param msgExpireTime Message expire time.
      */
-    @IgniteMBeanDescription("Message expire time.")
+    @IgniteMXBeanDescription("Message expire time.")
     public void setMessageExpireTime(long msgExpireTime);
 
     /**
@@ -136,7 +144,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      * @return Flag indicating whether this node should attempt to steal jobs
      *      from other nodes.
      */
-    @IgniteMBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
+    @IgniteMXBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
     public boolean isStealingEnabled();
 
     /**
@@ -150,7 +158,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      * @param stealingEnabled Flag indicating whether this node should attempt to steal jobs
      *      from other nodes.
      */
-    @IgniteMBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
+    @IgniteMXBeanDescription("Flag indicating whether this node should attempt to steal jobs from other nodes.")
     public void setStealingEnabled(boolean stealingEnabled);
 
     /**
@@ -160,7 +168,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum number of attempts to steal job by another node.
      */
-    @IgniteMBeanDescription("Maximum number of attempts to steal job by another node.")
+    @IgniteMXBeanDescription("Maximum number of attempts to steal job by another node.")
     public int getMaximumStealingAttempts();
 
     /**
@@ -170,7 +178,7 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @param maximumStealingAttempts Maximum number of attempts to steal job by another node.
      */
-    @IgniteMBeanDescription("Maximum number of attempts to steal job by another node.")
+    @IgniteMXBeanDescription("Maximum number of attempts to steal job by another node.")
     public void setMaximumStealingAttempts(int maximumStealingAttempts);
 
     /**
@@ -180,6 +188,6 @@ public interface JobStealingCollisionSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Node attributes to enable job stealing for.
      */
-    @IgniteMBeanDescription("Node attributes to enable job stealing for.")
+    @IgniteMXBeanDescription("Node attributes to enable job stealing for.")
     public Map<String, ? extends Serializable> getStealingAttributes();
 }

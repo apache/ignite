@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.portables;
@@ -25,7 +33,7 @@ import java.util.*;
  * To work with the portable format directly, user should create a cache projection
  * over {@code GridPortableObject} class and then retrieve individual fields as needed:
  * <pre name=code class=java>
- * GridCacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj =
+ * CacheProjection&lt;GridPortableObject.class, GridPortableObject.class&gt; prj =
  *     cache.projection(GridPortableObject.class, GridPortableObject.class);
  *
  * // Convert instance of MyKey to portable format.
@@ -41,7 +49,7 @@ import java.util.*;
  * the keys are concrete deserialized objects and the values are returned in portable
  * format, like so:
  * <pre name=code class=java>
- * GridCacheProjection&lt;MyKey.class, GridPortableObject.class&gt; prj =
+ * CacheProjection&lt;MyKey.class, GridPortableObject.class&gt; prj =
  *     cache.projection(MyKey.class, GridPortableObject.class);
  *
  * GridPortableObject val = prj.get(new MyKey());
@@ -57,7 +65,7 @@ import java.util.*;
  * GridGain will only deserialize on the first access and will cache the deserialized object,
  * so it does not have to be deserialized again:
  * <pre name=code class=java>
- * GridCacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
+ * CacheProjection&lt;MyKey.class, MyValue.class&gt; prj =
  *     cache.projection(MyKey.class, MyValue.class);
  *
  * MyValue val = prj.get(new MyKey());

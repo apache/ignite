@@ -1,24 +1,30 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.spi.discovery.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 
 import java.io.*;
 import java.util.*;
-
-import static org.apache.ignite.spi.discovery.DiscoveryMetricsHelper.*;
 
 /**
  * Heartbeat message.
@@ -71,7 +77,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      * @param nodeId Node ID.
      * @param metrics Node metrics.
      */
-    public void setMetrics(UUID nodeId, ClusterNodeMetrics metrics) {
+    public void setMetrics(UUID nodeId, ClusterMetrics metrics) {
         assert nodeId != null;
         assert metrics != null;
         assert !this.metrics.containsKey(nodeId);
@@ -86,7 +92,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      * @param clientNodeId Client node ID.
      * @param metrics Node metrics.
      */
-    public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterNodeMetrics metrics) {
+    public void setClientMetrics(UUID nodeId, UUID clientNodeId, ClusterMetrics metrics) {
         assert nodeId != null;
         assert clientNodeId != null;
         assert metrics != null;
@@ -188,12 +194,12 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      * @param metrics Metrics.
      * @return Serialized metrics.
      */
-    private static byte[] serializeMetrics(ClusterNodeMetrics metrics) {
+    private static byte[] serializeMetrics(ClusterMetrics metrics) {
         assert metrics != null;
 
-        byte[] buf = new byte[DiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] buf = new byte[ClusterMetricsSnapshot.METRICS_SIZE];
 
-        serialize(buf, 0, metrics);
+        ClusterMetricsSnapshot.serialize(buf, 0, metrics);
 
         return buf;
     }
@@ -203,16 +209,16 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
      * @param metrics Metrics.
      * @return Serialized metrics.
      */
-    private static byte[] serializeMetrics(UUID nodeId, ClusterNodeMetrics metrics) {
+    private static byte[] serializeMetrics(UUID nodeId, ClusterMetrics metrics) {
         assert nodeId != null;
         assert metrics != null;
 
-        byte[] buf = new byte[16 + DiscoveryMetricsHelper.METRICS_SIZE];
+        byte[] buf = new byte[16 + ClusterMetricsSnapshot.METRICS_SIZE];
 
         U.longToBytes(nodeId.getMostSignificantBits(), buf, 0);
         U.longToBytes(nodeId.getLeastSignificantBits(), buf, 8);
 
-        serialize(buf, 16, metrics);
+        ClusterMetricsSnapshot.serialize(buf, 16, metrics);
 
         return buf;
     }
@@ -239,7 +245,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         /**
          * @param metrics Metrics.
          */
-        public MetricsSet(ClusterNodeMetrics metrics) {
+        public MetricsSet(ClusterMetrics metrics) {
             assert metrics != null;
 
             this.metrics = serializeMetrics(metrics);
@@ -248,19 +254,19 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
         /**
          * @return Deserialized metrics.
          */
-        public ClusterNodeMetrics metrics() {
-            return deserialize(metrics, 0);
+        public ClusterMetrics metrics() {
+            return ClusterMetricsSnapshot.deserialize(metrics, 0);
         }
 
         /**
          * @return Client metrics.
          */
-        public Collection<T2<UUID, ClusterNodeMetrics>> clientMetrics() {
-            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, ClusterNodeMetrics>>() {
-                @Override public T2<UUID, ClusterNodeMetrics> apply(byte[] bytes) {
+        public Collection<T2<UUID, ClusterMetrics>> clientMetrics() {
+            return F.viewReadOnly(clientMetrics, new C1<byte[], T2<UUID, ClusterMetrics>>() {
+                @Override public T2<UUID, ClusterMetrics> apply(byte[] bytes) {
                     UUID nodeId = new UUID(U.bytesToLong(bytes, 0), U.bytesToLong(bytes, 8));
 
-                    return new T2<>(nodeId, deserialize(bytes, 16));
+                    return new T2<>(nodeId, ClusterMetricsSnapshot.deserialize(bytes, 16));
                 }
             });
         }
@@ -269,7 +275,7 @@ public class TcpDiscoveryHeartbeatMessage extends TcpDiscoveryAbstractMessage {
          * @param nodeId Client node ID.
          * @param metrics Client metrics.
          */
-        private void addClientMetrics(UUID nodeId, ClusterNodeMetrics metrics) {
+        private void addClientMetrics(UUID nodeId, ClusterMetrics metrics) {
             assert nodeId != null;
             assert metrics != null;
 

@@ -1,19 +1,25 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
 
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.cache.affinity.*;
-import org.gridgain.grid.util.lang.*;
+import org.apache.ignite.internal.util.lang.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -102,7 +108,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node mapped to all keys.</li>
      * <li>
-     *      For fully replicated caches, {@link GridCacheAffinityFunction} is
+     *      For fully replicated caches, {@link org.apache.ignite.cache.affinity.CacheAffinityFunction} is
      *      used to determine which keys are mapped to which groups of nodes.
      * </li>
      * <li>For partitioned caches, the returned map represents node-to-key affinity.</li>
@@ -125,7 +131,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <ul>
      * <li>For local caches it returns only local node ID.</li>
      * <li>
-     *      For fully replicated caches first node ID returned by {@link GridCacheAffinityFunction}
+     *      For fully replicated caches first node ID returned by {@link org.apache.ignite.cache.affinity.CacheAffinityFunction}
      *      is returned.
      * </li>
      * <li>For partitioned caches, the returned node ID is the primary node for the key.</li>
@@ -166,8 +172,12 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      and error message (if any).
      * @throws IgniteCheckedException In case of error.
      */
-    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
-        int timeout, int maxConn) throws IgniteCheckedException;
+    @IgniteAsyncSupported
+    public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
+        boolean restart,
+        int timeout,
+        int maxConn)
+        throws IgniteCheckedException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -267,8 +277,13 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *      and error message (if any).
      * @throws IgniteCheckedException In case of error.
      */
+    @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
-        @Nullable Map<String, Object> dflts, boolean restart, int timeout, int maxConn) throws IgniteCheckedException;
+        @Nullable Map<String, Object> dflts,
+        boolean restart,
+        int timeout,
+        int maxConn)
+        throws IgniteCheckedException;
 
     /**
      * Stops nodes satisfying optional set of predicates.
@@ -320,5 +335,5 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
     public void resetMetrics();
 
     /** {@inheritDoc} */
-    public IgniteCluster enableAsync();
+    public IgniteCluster withAsync();
 }

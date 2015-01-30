@@ -1,19 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.marshaller.optimized;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.marshaller.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
@@ -56,7 +64,7 @@ import java.util.*;
  * &lt;bean id="grid.custom.cfg" class="org.gridgain.grid.GridConfiguration" singleton="true"&gt;
  *     ...
  *     &lt;property name="marshaller"&gt;
- *         &lt;bean class="org.gridgain.grid.marshaller.optimized.GridOptimizedMarshaller"&gt;
+ *         &lt;bean class="org.apache.ignite.marshaller.optimized.GridOptimizedMarshaller"&gt;
  *             &lt;property name="requireSerializable"&gt;true&lt;/property&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
@@ -67,29 +75,6 @@ import java.util.*;
  * <img src="http://www.gridgain.com/images/spring-small.png">
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
- * <h2 class="header">Injection Example</h2>
- * GridMarshaller can be injected in users task, job or SPI as following:
- * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
- *     ...
- *     &#64;GridMarshallerResource
- *     private GridMarshaller marshaller;
- *     ...
- * }
- * </pre>
- * or
- * <pre name="code" class="java">
- * public class MyGridJob implements ComputeJob {
- *     ...
- *     private GridMarshaller marshaller;
- *     ...
- *     &#64;GridMarshallerResource
- *     public void setMarshaller(GridMarshaller marshaller) {
- *         this.marshaller = marshaller;
- *     }
- *     ...
- * }
- * </pre>
  */
 public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
     /** Whether or not to require an object to be serializable in order to be marshalled. */
@@ -198,7 +183,7 @@ public class IgniteOptimizedMarshaller extends IgniteAbstractMarshaller {
         if (path == null)
             return;
 
-        URL url = GridUtils.resolveGridGainUrl(path, false);
+        URL url = IgniteUtils.resolveGridGainUrl(path, false);
 
         if (url == null)
             throw new IgniteCheckedException("Failed to find resource for name: " + path);

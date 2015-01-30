@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-    _________        _____ __________________        _____
-    __  ____/___________(_)______  /__  ____/______ ____(_)_______
-    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
-    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
-    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
 
-    @xml.file.header
-    Version: @xml.file.version
--->
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
 
 <!--
     GridGain Spring configuration file to startup grid cache.
@@ -49,11 +55,11 @@
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
+                CacheConfiguration interface can be configured here.
                 Note that absolutely all configuration properties are optional.
             -->
             <list>
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned1"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -67,7 +73,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -75,7 +81,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned2"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -89,7 +95,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -97,7 +103,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned3"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -111,7 +117,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -119,7 +125,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned4"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -133,7 +139,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -141,7 +147,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned5"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -156,7 +162,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -164,7 +170,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned6"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -178,7 +184,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -186,7 +192,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned7"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -200,7 +206,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>
@@ -208,7 +214,7 @@
                     <property name="backups" value="1"/>
                 </bean>
 
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="partitioned8"/>
 
                     <property name="cacheMode" value="PARTITIONED"/>
@@ -222,7 +228,7 @@
                     <property name="preloadMode" value="SYNC"/>
 
                     <property name="evictionPolicy">
-                        <bean class="org.gridgain.grid.cache.eviction.lru.GridCacheLruEvictionPolicy">
+                        <bean class="org.apache.ignite.cache.eviction.lru.CacheLruEvictionPolicy">
                             <property name="maxSize" value="100"/>
                         </bean>
                     </property>

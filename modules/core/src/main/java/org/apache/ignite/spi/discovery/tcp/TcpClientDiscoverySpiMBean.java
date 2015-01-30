@@ -1,15 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.discovery.tcp;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 import java.util.*;
@@ -23,7 +31,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Disconnect check interval.
      */
-    @IgniteMBeanDescription("Disconnect check interval.")
+    @IgniteMXBeanDescription("Disconnect check interval.")
     public long getDisconnectCheckInterval();
 
     /**
@@ -31,7 +39,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Socket timeout.
      */
-    @IgniteMBeanDescription("Socket timeout.")
+    @IgniteMXBeanDescription("Socket timeout.")
     public long getSocketTimeout();
 
     /**
@@ -39,7 +47,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Message acknowledgement timeout.
      */
-    @IgniteMBeanDescription("Message acknowledgement timeout.")
+    @IgniteMXBeanDescription("Message acknowledgement timeout.")
     public long getAckTimeout();
 
     /**
@@ -47,7 +55,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Network timeout.
      */
-    @IgniteMBeanDescription("Network timeout.")
+    @IgniteMXBeanDescription("Network timeout.")
     public long getNetworkTimeout();
 
     /**
@@ -55,7 +63,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Thread priority.
      */
-    @IgniteMBeanDescription("Threads priority.")
+    @IgniteMXBeanDescription("Threads priority.")
     public int getThreadPriority();
 
     /**
@@ -63,7 +71,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Time period in milliseconds.
      */
-    @IgniteMBeanDescription("Heartbeat frequency.")
+    @IgniteMXBeanDescription("Heartbeat frequency.")
     public long getHeartbeatFrequency();
 
     /**
@@ -71,7 +79,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return IPFinder (string representation).
      */
-    @IgniteMBeanDescription("IP Finder.")
+    @IgniteMXBeanDescription("IP Finder.")
     public String getIpFinderFormatted();
 
     /**
@@ -79,7 +87,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Message worker queue current size.
      */
-    @IgniteMBeanDescription("Message worker queue current size.")
+    @IgniteMXBeanDescription("Message worker queue current size.")
     public int getMessageWorkerQueueSize();
 
     /**
@@ -87,7 +95,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Nodes joined count.
      */
-    @IgniteMBeanDescription("Nodes joined count.")
+    @IgniteMXBeanDescription("Nodes joined count.")
     public long getNodesJoined();
 
     /**
@@ -95,7 +103,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Left nodes count.
      */
-    @IgniteMBeanDescription("Nodes left count.")
+    @IgniteMXBeanDescription("Nodes left count.")
     public long getNodesLeft();
 
     /**
@@ -103,7 +111,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Failed nodes count.
      */
-    @IgniteMBeanDescription("Nodes failed count.")
+    @IgniteMXBeanDescription("Nodes failed count.")
     public long getNodesFailed();
 
     /**
@@ -111,7 +119,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Avg message processing time.
      */
-    @IgniteMBeanDescription("Avg message processing time.")
+    @IgniteMXBeanDescription("Avg message processing time.")
     public long getAvgMessageProcessingTime();
 
     /**
@@ -119,7 +127,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Max message processing time.
      */
-    @IgniteMBeanDescription("Max message processing time.")
+    @IgniteMXBeanDescription("Max message processing time.")
     public long getMaxMessageProcessingTime();
 
     /**
@@ -127,7 +135,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Total received messages count.
      */
-    @IgniteMBeanDescription("Total received messages count.")
+    @IgniteMXBeanDescription("Total received messages count.")
     public int getTotalReceivedMessages();
 
     /**
@@ -135,7 +143,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @IgniteMBeanDescription("Received messages by type.")
+    @IgniteMXBeanDescription("Received messages by type.")
     public Map<String, Integer> getReceivedMessages();
 
     /**
@@ -143,7 +151,7 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Total processed messages count.
      */
-    @IgniteMBeanDescription("Total processed messages count.")
+    @IgniteMXBeanDescription("Total processed messages count.")
     public int getTotalProcessedMessages();
 
     /**
@@ -151,6 +159,6 @@ public interface TcpClientDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @IgniteMBeanDescription("Received messages by type.")
+    @IgniteMXBeanDescription("Received messages by type.")
     public Map<String, Integer> getProcessedMessages();
 }

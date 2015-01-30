@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
@@ -12,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.fs.mapreduce.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -43,8 +50,8 @@ import java.util.*;
  * <h1 class="header">Integration With Hadoop</h1>
  * In addition to direct file system API, {@code GGFS} can be integrated with {@code Hadoop} by
  * plugging in as {@code Hadoop FileSystem}. Refer to
- * {@code org.gridgain.grid.ggfs.hadoop.v1.GridGgfsHadoopFileSystem} or
- * {@code org.gridgain.grid.ggfs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
+ * {@code org.apache.ignite.fs.hadoop.v1.GridGgfsHadoopFileSystem} or
+ * {@code org.apache.ignite.fs.hadoop.v2.GridGgfsHadoopFileSystem} for more information.
  * <p>
  * <b>NOTE:</b> integration with Hadoop is available only in {@code In-Memory Accelerator For Hadoop} edition.
  */
@@ -255,6 +262,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      *
      * @throws IgniteCheckedException In case format has failed.
      */
+    @IgniteAsyncSupported
     public void format() throws IgniteCheckedException;
 
     /**
@@ -269,6 +277,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
@@ -289,6 +298,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
         Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
         throws IgniteCheckedException;
@@ -305,6 +315,7 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException;
 
@@ -324,10 +335,11 @@ public interface IgniteFs extends IgniteFsFileSystem, IgniteAsyncSupport {
      * @return Task result.
      * @throws IgniteCheckedException If execution failed.
      */
+    @IgniteAsyncSupported
     public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
         @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
         long maxRangeLen, @Nullable T arg) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
-    @Override public IgniteFs enableAsync();
+    @Override public IgniteFs withAsync();
 }

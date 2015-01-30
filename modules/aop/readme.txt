@@ -1,10 +1,10 @@
-GridGain AOP Module
--------------------
+Apache Ignite AOP Module
+------------------------
 
-GridGain AOP module provides capability to turn any Java method to a distributed closure by
+Apache Ignite AOP module provides capability to turn any Java method to a distributed closure by
 adding @Gridify annotation to it.
 
-To enable AOP module when starting a standalone node, move 'optional/gridgain-aop' folder to
+To enable AOP module when starting a standalone node, move 'optional/ignite-aop' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
@@ -12,7 +12,7 @@ Importing AOP Module In Maven Project
 -------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add AOP module
-dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -23,9 +23,9 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-aop</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-aop</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>

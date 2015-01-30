@@ -1,15 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 
 import java.util.*;
 
@@ -24,7 +32,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return String presentation of the start timestamp.
      */
-    @IgniteMBeanDescription("String presentation of the start timestamp.")
+    @IgniteMXBeanDescription("String presentation of the start timestamp.")
     public String getStartTimestampFormatted();
 
     /**
@@ -32,7 +40,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return String presentation of up-time for this SPI.
      */
-    @IgniteMBeanDescription("String presentation of up-time for this SPI.")
+    @IgniteMXBeanDescription("String presentation of up-time for this SPI.")
     public String getUpTimeFormatted();
 
     /**
@@ -40,7 +48,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Start timestamp of this SPI.
      */
-    @IgniteMBeanDescription("Start timestamp of this SPI.")
+    @IgniteMXBeanDescription("Start timestamp of this SPI.")
     public long getStartTimestamp();
 
     /**
@@ -48,7 +56,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Up-time of this SPI.
      */
-    @IgniteMBeanDescription("Up-time of this SPI in milliseconds.")
+    @IgniteMXBeanDescription("Up-time of this SPI in milliseconds.")
     public long getUpTime();
 
     /**
@@ -56,7 +64,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Gridgain installation home folder.
      */
-    @IgniteMBeanDescription("Gridgain installation home folder.")
+    @IgniteMXBeanDescription("Gridgain installation home folder.")
     public String getGridGainHome();
 
     /**
@@ -64,7 +72,7 @@ public interface IgniteSpiManagementMBean {
      *
      * @return ID of the local node.
      */
-    @IgniteMBeanDescription("ID of the local node.")
+    @IgniteMXBeanDescription("ID of the local node.")
     public UUID getLocalNodeId();
 
     /**
@@ -72,6 +80,6 @@ public interface IgniteSpiManagementMBean {
      *
      * @return Name of the SPI.
      */
-    @IgniteMBeanDescription("Name of the SPI.")
+    @IgniteMXBeanDescription("Name of the SPI.")
     public String getName();
 }

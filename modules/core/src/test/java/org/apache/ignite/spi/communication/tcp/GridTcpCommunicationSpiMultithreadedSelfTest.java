@@ -1,27 +1,35 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.*;
-import org.gridgain.testframework.junits.spi.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.*;
+import org.apache.ignite.testframework.junits.spi.*;
 import org.jdk8.backport.*;
 
 import java.util.*;
@@ -29,7 +37,7 @@ import java.util.Map.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
-import static org.gridgain.grid.kernal.GridNodeAttributes.*;
+import static org.apache.ignite.internal.GridNodeAttributes.*;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.
@@ -165,7 +173,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             /** Randomizer. */
             private Random rnd = new Random();
 
@@ -262,7 +270,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final int interval = 50;
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
                 try {
@@ -301,7 +309,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        IgniteFuture<?> fut2 = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (run.get() && !Thread.currentThread().isInterrupted()) {
@@ -310,7 +318,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
                         ((TcpCommunicationSpi)spis.get(from.id())).onNodeLeft(to.id());
                     }
                 }
-                catch (GridInterruptedException ignored) {
+                catch (IgniteInterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
             }
@@ -361,7 +369,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     ClusterNode from = nodes.get(0);

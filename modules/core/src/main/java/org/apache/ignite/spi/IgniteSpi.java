@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi;
@@ -17,18 +25,12 @@ import java.util.*;
  * this interface. Kernal will not load SPI that doesn't implement this interface.
  * <p>
  * Grid SPI's can be injected using IoC (dependency injection)
- * with grid resources. Both, field and method based injection are supported.
- * The following grid resources can be injected:
+ * with ignite resources. Both, field and method based injection are supported.
+ * The following ignite resources can be injected:
  * <ul>
  * <li>{@link org.apache.ignite.resources.IgniteLoggerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteLocalNodeIdResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteHomeResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMBeanServerResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteExecutorServiceResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteMarshallerResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringApplicationContextResource}</li>
  * <li>{@link org.apache.ignite.resources.IgniteSpringResource}</li>
- * <li>{@link org.apache.ignite.resources.IgniteAddressResolverResource}</li>
  * </ul>
  * Refer to corresponding resource documentation for more information.
  */

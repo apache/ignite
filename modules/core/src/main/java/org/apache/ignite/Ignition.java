@@ -1,18 +1,25 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
 
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lifecycle.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
 import org.jetbrains.annotations.*;
 
 import java.net.*;
@@ -113,7 +120,7 @@ public class Ignition {
      * @param daemon Daemon flag to set.
      */
     public static void setDaemon(boolean daemon) {
-        GridGainEx.setDaemon(daemon);
+        IgnitionEx.setDaemon(daemon);
     }
 
     /**
@@ -127,7 +134,7 @@ public class Ignition {
      * @return Daemon flag.
      */
     public static boolean isDaemon() {
-        return GridGainEx.isDaemon();
+        return IgnitionEx.isDaemon();
     }
 
     /**
@@ -136,7 +143,7 @@ public class Ignition {
      * @return Default grid state.
      */
     public static IgniteState state() {
-        return GridGainEx.state();
+        return IgnitionEx.state();
     }
 
     /**
@@ -148,7 +155,7 @@ public class Ignition {
      * @return Grid state.
      */
     public static IgniteState state(@Nullable String name) {
-        return GridGainEx.state(name);
+        return IgnitionEx.state(name);
     }
 
     /**
@@ -163,7 +170,7 @@ public class Ignition {
      *      {@code false} otherwise (if it was not started).
      */
     public static boolean stop(boolean cancel) {
-        return GridGainEx.stop(cancel);
+        return IgnitionEx.stop(cancel);
     }
 
     /**
@@ -186,7 +193,7 @@ public class Ignition {
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel) {
-        return GridGainEx.stop(name, cancel);
+        return IgnitionEx.stop(name, cancel);
     }
 
     /**
@@ -205,7 +212,7 @@ public class Ignition {
      *      up to the actual job to exit from execution
      */
     public static void stopAll(boolean cancel) {
-        GridGainEx.stopAll(cancel);
+        IgnitionEx.stopAll(cancel);
     }
 
     /**
@@ -229,7 +236,7 @@ public class Ignition {
      * @see #RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
-        GridGainEx.restart(cancel);
+        IgnitionEx.restart(cancel);
     }
 
     /**
@@ -252,7 +259,7 @@ public class Ignition {
      * @see #KILL_EXIT_CODE
      */
     public static void kill(boolean cancel) {
-        GridGainEx.kill(cancel);
+        IgnitionEx.kill(cancel);
     }
 
     /**
@@ -265,7 +272,7 @@ public class Ignition {
      *      also if default grid has already been started.
      */
     public static Ignite start() throws IgniteCheckedException {
-        return GridGainEx.start();
+        return IgnitionEx.start();
     }
 
     /**
@@ -278,7 +285,7 @@ public class Ignition {
      *      also if named grid has already been started.
      */
     public static Ignite start(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return GridGainEx.start(cfg);
+        return IgnitionEx.start(cfg);
     }
 
     /**
@@ -298,7 +305,7 @@ public class Ignition {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(@Nullable String springCfgPath) throws IgniteCheckedException {
-        return GridGainEx.start(springCfgPath);
+        return IgnitionEx.start(springCfgPath);
     }
 
     /**
@@ -318,7 +325,7 @@ public class Ignition {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl) throws IgniteCheckedException {
-        return GridGainEx.start(springCfgUrl);
+        return IgnitionEx.start(springCfgUrl);
     }
 
     /**
@@ -330,11 +337,11 @@ public class Ignition {
      *
      * @return An instance of default no-name grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite() throws GridIllegalStateException {
-        return GridGainEx.grid();
+    public static Ignite ignite() throws IgniteIllegalStateException {
+        return IgnitionEx.grid();
     }
 
     /**
@@ -343,7 +350,7 @@ public class Ignition {
      * @return List of all grids started so far.
      */
     public static List<Ignite> allGrids() {
-        return GridGainEx.allGrids();
+        return IgnitionEx.allGrids();
     }
 
     /**
@@ -355,11 +362,11 @@ public class Ignition {
      * @param locNodeId ID of local node the requested grid instance is managing.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if grid was not properly
+     * @throws IgniteIllegalStateException Thrown if grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite(UUID locNodeId) throws GridIllegalStateException {
-        return GridGainEx.grid(locNodeId);
+    public static Ignite ignite(UUID locNodeId) throws IgniteIllegalStateException {
+        return IgnitionEx.grid(locNodeId);
     }
 
     /**
@@ -375,11 +382,11 @@ public class Ignition {
      *      then grid instance belonging to a default no-name grid will be returned.
      * @return An instance of named grid. This method never returns
      *      {@code null}.
-     * @throws GridIllegalStateException Thrown if default grid was not properly
+     * @throws IgniteIllegalStateException Thrown if default grid was not properly
      *      initialized or grid instance was stopped or was not started.
      */
-    public static Ignite ignite(@Nullable String name) throws GridIllegalStateException {
-        return GridGainEx.grid(name);
+    public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
+        return IgnitionEx.grid(name);
     }
 
     /**
@@ -395,7 +402,7 @@ public class Ignition {
      *      this method is no-op.
      */
     public static void addListener(IgniteListener lsnr) {
-        GridGainEx.addListener(lsnr);
+        IgnitionEx.addListener(lsnr);
     }
 
     /**
@@ -405,6 +412,6 @@ public class Ignition {
      * @return {@code true} if lsnr was added before, {@code false} otherwise.
      */
     public static boolean removeListener(IgniteListener lsnr) {
-        return GridGainEx.removeListener(lsnr);
+        return IgnitionEx.removeListener(lsnr);
     }
 }

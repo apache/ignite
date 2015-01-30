@@ -1,11 +1,19 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
-*  __  ____/___________(_)______  /__  ____/______ ____(_)_______
-*  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
-*  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
-*  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
-*/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.ignite.cache;
 
@@ -13,9 +21,9 @@ import org.jetbrains.annotations.*;
 
 /**
  * Enumeration of all supported cache peek modes. Peek modes can be passed into various
- * {@code 'GridCacheProjection.peek(..)'} and {@code GridCacheEntry.peek(..)} methods,
- * such as {@link org.gridgain.grid.cache.GridCacheProjection#peek(Object, java.util.Collection)},
- * {@link org.gridgain.grid.cache.GridCacheEntry#peek()}, and others.
+ * {@code 'CacheProjection.peek(..)'} and {@code CacheEntry.peek(..)} methods,
+ * such as {@link CacheProjection#peek(Object, java.util.Collection)},
+ * {@link CacheEntry#peek()}, and others.
  * <p>
  * The following modes are supported:
  * <ul>
@@ -34,7 +42,7 @@ public enum CachePeekMode {
 
     /**
      * Peek into near cache only (don't peek into partitioned cache).
-     * In case of {@link org.gridgain.grid.cache.GridCacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
+     * In case of {@link CacheMode#LOCAL} cache, behaves as {@link #ALL} mode.
      */
     NEAR,
 

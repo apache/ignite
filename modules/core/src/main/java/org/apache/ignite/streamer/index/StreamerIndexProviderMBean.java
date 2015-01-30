@@ -1,15 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.streamer.index;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -21,7 +29,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index name.
      */
-    @IgniteMBeanDescription("Index name.")
+    @IgniteMXBeanDescription("Index name.")
     @Nullable public String name();
 
     /**
@@ -29,7 +37,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index updater class.
      */
-    @IgniteMBeanDescription("Index updater class name.")
+    @IgniteMXBeanDescription("Index updater class name.")
     public String updaterClass();
 
     /**
@@ -37,7 +45,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index unique flag.
      */
-    @IgniteMBeanDescription("Index unique flag.")
+    @IgniteMXBeanDescription("Index unique flag.")
     public boolean unique();
 
     /**
@@ -45,7 +53,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index sorted flag.
      */
-    @IgniteMBeanDescription("Index sorted flag.")
+    @IgniteMXBeanDescription("Index sorted flag.")
     public boolean sorted();
 
     /**
@@ -53,7 +61,7 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Index policy.
      */
-    @IgniteMBeanDescription("Index policy.")
+    @IgniteMXBeanDescription("Index policy.")
     public StreamerIndexPolicy policy();
 
     /**
@@ -61,6 +69,6 @@ public interface StreamerIndexProviderMBean {
      *
      * @return Current index size.
      */
-    @IgniteMBeanDescription("Current index size.")
+    @IgniteMXBeanDescription("Current index size.")
     public int size();
 }

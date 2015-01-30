@@ -1,10 +1,10 @@
-GridGain Hibernate Module
--------------------------
+Apache Ignite Hibernate Module
+------------------------------
 
-GridGain Hibernate module provides Hibernate second-level cache (L2 cache) implementation based
-on GridGain In-Memory Data Grid.
+Apache Ignite Hibernate module provides Hibernate second-level cache (L2 cache) implementation based
+on Apache Ignite In-Memory Data Grid.
 
-To enable Hibernate module when starting a standalone node, move 'optional/gridgain-hibernate' folder to
+To enable Hibernate module when starting a standalone node, move 'optional/ignite-hibernate' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
@@ -12,7 +12,7 @@ Importing Hibernate Module In Maven Project
 -------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Hibernate module
-dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -23,9 +23,9 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-hibernate</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-hibernate</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>

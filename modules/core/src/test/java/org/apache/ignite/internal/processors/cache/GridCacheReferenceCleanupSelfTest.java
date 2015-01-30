@@ -1,0 +1,502 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache;
+
+import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.marshaller.optimized.*;
+import org.apache.ignite.transactions.*;
+import org.apache.ignite.spi.discovery.tcp.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
+
+import java.lang.ref.*;
+import java.util.*;
+import java.util.concurrent.*;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.*;
+import static org.apache.ignite.cache.CacheDistributionMode.*;
+import static org.apache.ignite.testframework.GridTestUtils.*;
+
+/**
+ *
+ */
+public class GridCacheReferenceCleanupSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /** Cache mode for the current test. */
+    private CacheMode mode;
+
+    /** */
+    private boolean cancel;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+        disco.setIpFinder(ipFinder);
+
+        cfg.setDiscoverySpi(disco);
+
+        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+
+        cacheCfg.setCacheMode(mode);
+        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cacheCfg.setAtomicityMode(TRANSACTIONAL);
+        cacheCfg.setDistributionMode(NEAR_PARTITIONED);
+
+        cfg.setCacheConfiguration(cacheCfg);
+
+        cfg.setMarshaller(new IgniteOptimizedMarshaller(false));
+
+        return cfg;
+    }
+
+    /** @throws Exception If failed. */
+    public void testAtomicLongPartitioned() throws Exception {
+        mode = CacheMode.PARTITIONED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(atomicLongCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testAtomicLongReplicated() throws Exception {
+        mode = CacheMode.REPLICATED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(atomicLongCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testAtomicLongLocal() throws Exception {
+        mode = CacheMode.LOCAL;
+
+        try {
+            checkReferenceCleanup(atomicLongCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testOneAsyncOpPartitioned() throws Exception {
+        mode = CacheMode.PARTITIONED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(oneAsyncOpCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testOneAsyncOpReplicated() throws Exception {
+        mode = CacheMode.REPLICATED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(oneAsyncOpCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testOneAsyncOpLocal() throws Exception {
+        mode = CacheMode.LOCAL;
+
+        try {
+            checkReferenceCleanup(oneAsyncOpCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testSeveralAsyncOpsPartitioned() throws Exception {
+        mode = CacheMode.PARTITIONED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(severalAsyncOpsCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testSeveralAsyncOpsReplicated() throws Exception {
+        mode = CacheMode.REPLICATED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(severalAsyncOpsCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testSeveralAsyncOpsLocal() throws Exception {
+        mode = CacheMode.LOCAL;
+
+        try {
+            checkReferenceCleanup(severalAsyncOpsCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testSyncOpAsyncCommitPartitioned() throws Exception {
+        mode = CacheMode.PARTITIONED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(syncOpAsyncCommitCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testSyncOpAsyncCommitReplicated() throws Exception {
+        mode = CacheMode.REPLICATED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(syncOpAsyncCommitCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testSyncOpAsyncCommitLocal() throws Exception {
+        mode = CacheMode.LOCAL;
+
+        try {
+            checkReferenceCleanup(syncOpAsyncCommitCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testAsyncOpsAsyncCommitPartitioned() throws Exception {
+        mode = CacheMode.PARTITIONED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(asyncOpsAsyncCommitCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testAsyncOpsAsyncCommitReplicated() throws Exception {
+        mode = CacheMode.REPLICATED;
+
+        startGrids(2);
+
+        try {
+            checkReferenceCleanup(asyncOpsAsyncCommitCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /** @throws Exception If failed. */
+    public void testAsyncOpsAsyncCommitLocal() throws Exception {
+        mode = CacheMode.LOCAL;
+
+        try {
+            checkReferenceCleanup(asyncOpsAsyncCommitCallable());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @param call Callable.
+     * @throws Exception If failed.
+     */
+    public void checkReferenceCleanup(Callable<Collection<WeakReference<Object>>> call) throws Exception {
+        for (boolean cancel : new boolean[] {true, false}) {
+            this.cancel = cancel;
+
+            final Collection<WeakReference<Object>> refs = call.call();
+
+            GridTestUtils.retryAssert(log, 10, 1000, new CA() {
+                @Override public void apply() {
+                    System.gc();
+                    System.gc();
+                    System.gc();
+
+                    for (WeakReference<?> ref : refs)
+                        assertNull(ref.get());
+                }
+            });
+        }
+    }
+
+    /**
+     * Crates callable for atomic long test.
+     *
+     * @return Callable.
+     * @throws Exception If failed.
+     */
+    private Callable<Collection<WeakReference<Object>>> atomicLongCallable() throws Exception {
+        return new Callable<Collection<WeakReference<Object>>>() {
+            @Override public Collection<WeakReference<Object>> call() throws Exception {
+                Collection<WeakReference<Object>> refs = new ArrayList<>();
+
+                Ignite g = startGrid();
+
+                try {
+                    GridCache<Integer, TestValue> cache = g.cache(null);
+
+                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+
+                    Map<Integer, TestValue> m = new HashMap<>();
+
+                    for (int i = 0; i < 10; i++) {
+                        TestValue val = new TestValue(i);
+
+                        refs.add(new WeakReference<Object>(val));
+
+                        m.put(i, val);
+
+                        cache.dataStructures().atomicLong("testLong" + i, 0, true).incrementAndGet();
+                    }
+
+                    cache.putAll(m);
+                }
+                finally {
+                    G.stop(g.name(), cancel);
+                }
+
+                return refs;
+            }
+        };
+    }
+
+    /**
+     * Crates callable for one async op test.
+     *
+     * @return Callable.
+     * @throws Exception If failed.
+     */
+    private Callable<Collection<WeakReference<Object>>> oneAsyncOpCallable() throws Exception {
+        return new Callable<Collection<WeakReference<Object>>>() {
+            @Override public Collection<WeakReference<Object>> call() throws Exception {
+                Collection<WeakReference<Object>> refs = new ArrayList<>();
+
+                Ignite g = startGrid();
+
+                try {
+                    GridCache<Integer, TestValue> cache = g.cache(null);
+
+                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+
+                    TestValue val = new TestValue(0);
+
+                    refs.add(new WeakReference<Object>(val));
+
+                    cache.putxAsync(0, val).get();
+                }
+                finally {
+                    G.stop(g.name(), cancel);
+                }
+
+                return refs;
+            }
+        };
+    }
+
+    /**
+     * Crates callable for several async ops test.
+     *
+     * @return Callable.
+     * @throws Exception If failed.
+     */
+    private Callable<Collection<WeakReference<Object>>> severalAsyncOpsCallable() throws Exception {
+        return new Callable<Collection<WeakReference<Object>>>() {
+            @Override public Collection<WeakReference<Object>> call() throws Exception {
+                Collection<WeakReference<Object>> refs = new ArrayList<>();
+
+                Ignite g = startGrid();
+
+                try {
+                    GridCache<Integer, TestValue> cache = g.cache(null);
+
+                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+
+                    Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(1000);
+
+                    for (int i = 0; i < 1000; i++) {
+                        TestValue val = new TestValue(i);
+
+                        refs.add(new WeakReference<Object>(val));
+
+                        futs.add(cache.putxAsync(i, val));
+                    }
+
+                    for (IgniteInternalFuture<?> fut : futs)
+                        fut.get();
+                }
+                finally {
+                    G.stop(g.name(), cancel);
+                }
+
+                return refs;
+            }
+        };
+    }
+
+    /**
+     * Crates callable for sync op with async commit test.
+     *
+     * @return Callable.
+     * @throws Exception If failed.
+     */
+    private Callable<Collection<WeakReference<Object>>> syncOpAsyncCommitCallable() throws Exception {
+        return new Callable<Collection<WeakReference<Object>>>() {
+            @Override public Collection<WeakReference<Object>> call() throws Exception {
+                Collection<WeakReference<Object>> refs = new ArrayList<>();
+
+                Ignite g = startGrid();
+
+                try {
+                    GridCache<Integer, TestValue> cache = g.cache(null);
+
+                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+
+                    IgniteTx tx = cache.txStart();
+
+                    TestValue val = new TestValue(0);
+
+                    refs.add(new WeakReference<Object>(val));
+
+                    cache.putx(0, val);
+
+                    tx.commit();
+                }
+                finally {
+                    G.stop(g.name(), cancel);
+                }
+
+                return refs;
+            }
+        };
+    }
+
+    /**
+     * Crates callable for async ops with async commit test.
+     *
+     * @return Callable.
+     * @throws Exception If failed.
+     */
+    private Callable<Collection<WeakReference<Object>>> asyncOpsAsyncCommitCallable() throws Exception {
+        return new Callable<Collection<WeakReference<Object>>>() {
+            @Override public Collection<WeakReference<Object>> call() throws Exception {
+                Collection<WeakReference<Object>> refs = new ArrayList<>();
+
+                Ignite g = startGrid();
+
+                try {
+                    GridCache<Integer, TestValue> cache = g.cache(null);
+
+                    refs.add(new WeakReference<Object>(cacheContext(cache)));
+
+                    IgniteTx tx = cache.txStart();
+
+                    for (int i = 0; i < 1000; i++) {
+                        TestValue val = new TestValue(i);
+
+                        refs.add(new WeakReference<Object>(val));
+
+                        cache.putxAsync(i, val);
+                    }
+
+                    tx.commit();
+                }
+                finally {
+                    G.stop(g.name(), cancel);
+                }
+
+                return refs;
+            }
+        };
+    }
+
+    /** Test value class. Created mostly to simplify heap dump analysis. */
+    private static class TestValue {
+        /** */
+        @SuppressWarnings("UnusedDeclaration")
+        private final int i;
+
+        /** @param i Value. */
+        private TestValue(int i) {
+            this.i = i;
+        }
+    }
+}

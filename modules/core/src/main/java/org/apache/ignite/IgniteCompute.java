@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
@@ -68,17 +76,12 @@ import java.util.concurrent.*;
  * {@link FailoverSpi} in grid configuration.
  * <h1 class="header">Resource Injection</h1>
  * All compute jobs, including closures, runnables, callables, and tasks can be injected with
- * grid resources. Both, field and method based injections are supported. The following grid
+ * ignite resources. Both, field and method based injections are supported. The following grid
  * resources can be injected:
  * <ul>
  * <li>{@link IgniteTaskSessionResource}</li>
  * <li>{@link IgniteInstanceResource}</li>
  * <li>{@link IgniteLoggerResource}</li>
- * <li>{@link IgniteHomeResource}</li>
- * <li>{@link IgniteExecutorServiceResource}</li>
- * <li>{@link IgniteLocalNodeIdResource}</li>
- * <li>{@link IgniteMBeanServerResource}</li>
- * <li>{@link IgniteMarshallerResource}</li>
  * <li>{@link IgniteSpringApplicationContextResource}</li>
  * <li>{@link IgniteSpringResource}</li>
  * </ul>
@@ -87,7 +90,7 @@ import java.util.concurrent.*;
  * <pre name="code" class="java">
  * public class MyGridJob extends GridRunnable {
  *      ...
- *      &#64;GridInstanceResource
+ *      &#64;IgniteInstanceResource
  *      private Grid grid;
  *      ...
  *  }
@@ -440,5 +443,5 @@ public interface IgniteCompute extends IgniteAsyncSupport {
     @Override public <R> ComputeTaskFuture<R> future();
 
     /** {@inheritDoc} */
-    @Override public IgniteCompute enableAsync();
+    @Override public IgniteCompute withAsync();
 }

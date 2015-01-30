@@ -1,17 +1,24 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.scheduler;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
+import org.apache.ignite.internal.*;
 
 import java.util.concurrent.*;
 
@@ -20,7 +27,7 @@ import java.util.concurrent.*;
  * when calling {@link org.apache.ignite.IgniteScheduler#scheduleLocal(Callable, String)} or
  * {@link org.apache.ignite.IgniteScheduler#scheduleLocal(Runnable, String)} methods.
  */
-public interface SchedulerFuture<R> extends IgniteFuture<R> {
+public interface SchedulerFuture<R> extends IgniteInternalFuture<R> {
     /**
      * Gets scheduled task ID.
      *
@@ -126,7 +133,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      *
      * @return Result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws GridInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
     @Override public R get() throws IgniteCheckedException;
@@ -139,7 +146,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @param timeout {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws GridInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */
@@ -153,7 +160,7 @@ public interface SchedulerFuture<R> extends IgniteFuture<R> {
      * @param unit {@inheritDoc}
      * @return The computed result of the next execution.
      * @throws CancellationException {@inheritDoc}
-     * @throws GridInterruptedException {@inheritDoc}
+     * @throws org.apache.ignite.IgniteInterruptedException {@inheritDoc}
      * @throws org.apache.ignite.lang.IgniteFutureTimeoutException {@inheritDoc}
      * @throws IgniteCheckedException {@inheritDoc}
      */

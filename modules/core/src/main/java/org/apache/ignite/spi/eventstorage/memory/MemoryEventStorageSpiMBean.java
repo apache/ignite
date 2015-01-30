@@ -1,15 +1,23 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.eventstorage.memory;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
@@ -21,7 +29,7 @@ import org.apache.ignite.spi.*;
  * <li>Method that removes all items from queue (see {@link #clearAll()})</li>
  * </ul>
  */
-@IgniteMBeanDescription("MBean that provides access to memory event storage SPI configuration.")
+@IgniteMXBeanDescription("MBean that provides access to memory event storage SPI configuration.")
 public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets event time-to-live value. Implementation must guarantee
@@ -29,7 +37,7 @@ public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Event time-to-live.
      */
-    @IgniteMBeanDescription("Event time-to-live value.")
+    @IgniteMXBeanDescription("Event time-to-live value.")
     public long getExpireAgeMs();
 
     /**
@@ -38,7 +46,7 @@ public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Maximum event queue size.
      */
-    @IgniteMBeanDescription("Maximum event queue size.")
+    @IgniteMXBeanDescription("Maximum event queue size.")
     public long getExpireCount();
 
     /**
@@ -46,12 +54,12 @@ public interface MemoryEventStorageSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Current queue size of the event queue.
      */
-    @IgniteMBeanDescription("Current event queue size.")
+    @IgniteMXBeanDescription("Current event queue size.")
     public long getQueueSize();
 
     /**
      * Removes all events from the event queue.
      */
-    @IgniteMBeanDescription("Removes all events from the event queue.")
+    @IgniteMXBeanDescription("Removes all events from the event queue.")
     public void clearAll();
 }

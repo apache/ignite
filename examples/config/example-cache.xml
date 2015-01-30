@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-    _________        _____ __________________        _____
-    __  ____/___________(_)______  /__  ____/______ ____(_)_______
-    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
-    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
-    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
 
-    @xml.file.header
-    Version: @xml.file.version
--->
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
 
 <!--
     GridGain Spring configuration file to startup grid cache.
@@ -29,9 +35,6 @@
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to local host address just for examples. -->
-        <property name="localHost" value="127.0.0.1"/>
-
         <!-- Set to true to enable grid-aware class loading for examples, default is false. -->
         <property name="peerClassLoadingEnabled" value="true"/>
 
@@ -107,9 +110,9 @@
                         instead os static IP based discovery. For information on all options refer
                         to our documentation: http://doc.gridgain.org/latest/Automatic+Node+Discovery
                     -->
-                    <!-- Uncomment multicast IP finder to enable multicast-based discovery of initial nodes. -->
-                    <!--<bean class="org.gridgain.grid.spi.discovery.tcp.ipfinder.multicast.GridTcpDiscoveryMulticastIpFinder">-->
-                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                    <!-- Uncomment static IP finder to enable static-based discovery of initial nodes. -->
+                    <!--<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">-->
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder">
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
@@ -123,7 +126,7 @@
     </bean>
 
     <!-- Template for all example cache configurations. -->
-    <bean id="cache-template" abstract="true" class="org.gridgain.grid.cache.GridCacheConfiguration">
+    <bean id="cache-template" abstract="true" class="org.apache.ignite.cache.CacheConfiguration">
         <!-- Initial cache size. -->
         <property name="startSize" value="3000000"/>
 
@@ -138,7 +141,7 @@
 
         <!-- Allow to index primitive values. -->
         <property name="queryConfiguration">
-            <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+            <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                 <!-- Index primitives. -->
                 <property name="indexPrimitiveKey" value="true"/>
             </bean>

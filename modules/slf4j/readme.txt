@@ -1,9 +1,9 @@
-GridGain SLF4J Module
----------------------
+Apache Ignite SLF4J Module
+--------------------------
 
-GridGain SLF4J module provides GridLogger implementation based on SLF4J.
+Apache Ignite SLF4J module provides GridLogger implementation based on SLF4J.
 
-To enable SLF4J module when starting a standalone node, move 'optional/gridgain-slf4j' folder to
+To enable SLF4J module when starting a standalone node, move 'optional/ignite-slf4j' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
@@ -11,7 +11,7 @@ Importing SLF4J Module In Maven Project
 ---------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add SLF4J module
-dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -22,9 +22,9 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-slf4j</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-slf4j</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>

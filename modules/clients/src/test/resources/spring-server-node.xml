@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-    _________        _____ __________________        _____
-    __  ____/___________(_)______  /__  ____/______ ____(_)_______
-    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
-    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
-    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
 
-    @xml.file.header
-    Version: @xml.file.version
--->
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
 
 <!--
     GridGain Spring configuration file to startup grid cache.
@@ -74,13 +80,13 @@
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.GridClientTestPortable"/>
+                            <property name="className" value="org.apache.ignite.client.ClientTestPortable"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.model.GridPortablePerson"/>
+                            <property name="className" value="org.apache.ignite.client.model.GridPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
-                            <property name="className" value="org.gridgain.client.model.GridImplicitPortablePerson"/>
+                            <property name="className" value="org.apache.ignite.client.model.GridImplicitPortablePerson"/>
                         </bean>
                         <bean class="org.apache.ignite.portables.PortableTypeConfiguration">
                             <property name="className" value="GridNoDefPortablePerson"/>
@@ -101,13 +107,13 @@
         <property name="cacheConfiguration">
             <!--
                 Specify list of cache configurations here. Any property from
-                GridCacheConfiguration interface can be configured here.
+                CacheConfiguration interface can be configured here.
             -->
             <list>
                 <!--
                     Local cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is null. -->
                     <!--<property name="name"><null/></property>-->
 
@@ -120,7 +126,7 @@
                 <!--
                     Partitioned cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'partitioned'. -->
                     <property name="name" value="partitioned"/>
 
@@ -136,7 +142,7 @@
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
                     <property name="affinity">
-                        <bean class="org.gridgain.grid.cache.affinity.consistenthash.GridCacheConsistentHashAffinityFunction">
+                        <bean class="org.apache.ignite.cache.affinity.consistenthash.CacheConsistentHashAffinityFunction">
                             <constructor-arg value="1"/>
                         </bean>
                     </property>
@@ -147,10 +153,10 @@
                     <property name="queryIndexEnabled" value="true"/>
 
                     <property name="queryConfiguration">
-                        <bean class="org.gridgain.grid.cache.query.GridCacheQueryConfiguration">
+                        <bean class="org.apache.ignite.cache.query.CacheQueryConfiguration">
                             <property name="typeMetadata">
                                 <list>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -168,7 +174,7 @@
                                             </list>
                                         </property>
                                     </bean>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridImplicitPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -181,7 +187,7 @@
                                             </map>
                                         </property>
                                     </bean>
-                                    <bean class="org.gridgain.grid.cache.query.GridCacheQueryTypeMetadata">
+                                    <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
                                         <property name="type" value="GridNoDefPortablePerson"/>
                                         <property name="ascendingFields">
                                             <map>
@@ -203,7 +209,7 @@
                 <!--
                     Local cache with store.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <property name="name" value="local.store"/>
 
                     <property name="cacheMode" value="LOCAL"/>
@@ -213,14 +219,14 @@
                     <property name="queryIndexEnabled" value="false"/>
 
                     <property name="store">
-                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.HashMapStore"/>
                     </property>
                 </bean>
 
                 <!--
                     Replicated cache example configuration.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'replicated'. -->
                     <property name="name" value="replicated"/>
 
@@ -235,7 +241,7 @@
                 <!--
                     Replicated cache with in-memory store enabled.
                 -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration">
+                <bean class="org.apache.ignite.cache.CacheConfiguration">
                     <!-- Cache name is 'replicated.store'. -->
                     <property name="name" value="replicated.store"/>
 
@@ -248,7 +254,7 @@
 
                     <!-- Store.-->
                     <property name="store">
-                        <bean class="org.gridgain.client.GridHashMapStore"/>
+                        <bean class="org.apache.ignite.client.HashMapStore"/>
                     </property>
                 </bean>
             </list>

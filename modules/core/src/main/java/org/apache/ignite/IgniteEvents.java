@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite;
@@ -12,7 +20,6 @@ package org.apache.ignite;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
-import org.gridgain.grid.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -64,6 +71,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Collection of grid events returned from specified nodes.
      * @throws IgniteCheckedException If query failed.
      */
+    @IgniteAsyncSupported
     public <T extends IgniteEvent> List<T> remoteQuery(IgnitePredicate<T> p, long timeout, @Nullable int... types)
         throws IgniteCheckedException;
 
@@ -91,8 +99,11 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return {@code Operation ID} that can be passed to {@link #stopRemoteListen(UUID)} method to stop listening.
      * @throws IgniteCheckedException If failed to add listener.
      */
+    @IgniteAsyncSupported
     public <T extends IgniteEvent> UUID remoteListen(@Nullable IgniteBiPredicate<UUID, T> locLsnr,
-        @Nullable IgnitePredicate<T> rmtFilter, @Nullable int... types) throws IgniteCheckedException;
+        @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types)
+        throws IgniteCheckedException;
 
     /**
      * Adds event listener for specified events to all nodes in the projection (possibly including
@@ -129,9 +140,14 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #stopRemoteListen(UUID)
      * @throws IgniteCheckedException If failed to add listener.
      */
-    public <T extends IgniteEvent> UUID remoteListen(int bufSize, long interval,
-        boolean autoUnsubscribe, @Nullable IgniteBiPredicate<UUID, T> locLsnr, @Nullable IgnitePredicate<T> rmtFilter,
-        @Nullable int... types) throws IgniteCheckedException;
+    @IgniteAsyncSupported
+    public <T extends IgniteEvent> UUID remoteListen(int bufSize,
+        long interval,
+        boolean autoUnsubscribe,
+        @Nullable IgniteBiPredicate<UUID, T> locLsnr,
+        @Nullable IgnitePredicate<T> rmtFilter,
+        @Nullable int... types)
+        throws IgniteCheckedException;
 
     /**
      * Stops listening to remote events. This will unregister all listeners identified with provided
@@ -144,6 +160,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @see #remoteListen(org.apache.ignite.lang.IgniteBiPredicate, org.apache.ignite.lang.IgnitePredicate, int...)
      * @throws IgniteCheckedException If failed to stop listeners.
      */
+    @IgniteAsyncSupported
     public void stopRemoteListen(UUID opId) throws IgniteCheckedException;
 
     /**
@@ -157,6 +174,7 @@ public interface IgniteEvents extends IgniteAsyncSupport {
      * @return Grid event.
      * @throws IgniteCheckedException If wait was interrupted.
      */
+    @IgniteAsyncSupported
     public <T extends IgniteEvent> T waitForLocal(@Nullable IgnitePredicate<T> filter, @Nullable int... types)
         throws IgniteCheckedException;
 
@@ -239,6 +257,5 @@ public interface IgniteEvents extends IgniteAsyncSupport {
     public boolean isEnabled(int type);
 
     /** {@inheritDoc} */
-    @Override
-    IgniteEvents enableAsync();
+    @Override IgniteEvents withAsync();
 }

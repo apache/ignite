@@ -1,30 +1,38 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.checkpoint.jdbc;
 
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.apache.ignite.spi.*;
 
 /**
  * Management bean that provides general administrative and configuration information
  * about jdbc checkpoint SPI.
  */
-@IgniteMBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
+@IgniteMXBeanDescription("MBean that provides information about jdbc checkpoint SPI.")
 public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets number of retries in case of DB failure.
      *
      * @return Number of retries.
      */
-    @IgniteMBeanDescription("Number of retries.")
+    @IgniteMXBeanDescription("Number of retries.")
     public int getNumberOfRetries();
 
     /**
@@ -32,7 +40,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Description for data source.
      */
-    @IgniteMBeanDescription("Data source description.")
+    @IgniteMXBeanDescription("Data source description.")
     public String getDataSourceInfo();
 
     /**
@@ -40,7 +48,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return User name for checkpoint jdbc.
      */
-    @IgniteMBeanDescription("User name for checkpoint database.")
+    @IgniteMXBeanDescription("User name for checkpoint database.")
     public String getUser();
 
     /**
@@ -48,7 +56,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Password for checkpoint jdbc.
      */
-    @IgniteMBeanDescription("Password for checkpoint database.")
+    @IgniteMXBeanDescription("Password for checkpoint database.")
     public String getPwd();
 
     /**
@@ -56,7 +64,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Checkpoint table name.
      */
-    @IgniteMBeanDescription("Checkpoint table name.")
+    @IgniteMXBeanDescription("Checkpoint table name.")
     public String getCheckpointTableName();
 
     /**
@@ -64,7 +72,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Key field name for checkpoint table.
      */
-    @IgniteMBeanDescription("Key field name for checkpoint table.")
+    @IgniteMXBeanDescription("Key field name for checkpoint table.")
     public String getKeyFieldName();
 
     /**
@@ -72,7 +80,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Key field type for checkpoint table.
      */
-    @IgniteMBeanDescription("Key field type for checkpoint table.")
+    @IgniteMXBeanDescription("Key field type for checkpoint table.")
     public String getKeyFieldType();
 
     /**
@@ -80,7 +88,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Value field name for checkpoint table.
      */
-    @IgniteMBeanDescription("Value field name for checkpoint table.")
+    @IgniteMXBeanDescription("Value field name for checkpoint table.")
     public String getValueFieldName();
 
     /**
@@ -88,7 +96,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Value field type for checkpoint table.
      */
-    @IgniteMBeanDescription("Value field type for checkpoint table.")
+    @IgniteMXBeanDescription("Value field type for checkpoint table.")
     public String getValueFieldType();
 
     /**
@@ -96,7 +104,7 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Create date field name for checkpoint table.
      */
-    @IgniteMBeanDescription("Expiration date field name for checkpoint table.")
+    @IgniteMXBeanDescription("Expiration date field name for checkpoint table.")
     public String getExpireDateFieldName();
 
     /**
@@ -104,6 +112,6 @@ public interface JdbcCheckpointSpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Expiration date field type for checkpoint table.
      */
-    @IgniteMBeanDescription("Expiration date field type for checkpoint table.")
+    @IgniteMXBeanDescription("Expiration date field type for checkpoint table.")
     public String getExpireDateFieldType();
 }

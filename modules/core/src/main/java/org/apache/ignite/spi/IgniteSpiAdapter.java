@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi;
@@ -12,17 +20,16 @@ package org.apache.ignite.spi;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.plugin.extensions.communication.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.authentication.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.managers.communication.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.internal.managers.communication.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -48,17 +55,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** */
-    @IgniteMBeanServerResource
-    private MBeanServer jmx;
-
-    /** */
-    @IgniteHomeResource
-    private String ggHome;
-
-    /** */
-    @IgniteLocalNodeIdResource
-    private UUID nodeId;
+    /** Ignite instance */
+    @IgniteInstanceResource
+    protected Ignite ignite;
 
     /** SPI name. */
     private String name;
@@ -107,12 +106,12 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
 
     /** {@inheritDoc} */
     @Override public UUID getLocalNodeId() {
-        return nodeId;
+        return ignite.configuration().getNodeId();
     }
 
     /** {@inheritDoc} */
     @Override public final String getGridGainHome() {
-        return ggHome;
+        return ignite.configuration().getGridGainHome();
     }
 
     /** {@inheritDoc} */
@@ -315,6 +314,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected final <T extends IgniteSpiManagementMBean> void registerMBean(String gridName, T impl, Class<T> mbeanItf)
         throws IgniteSpiException {
+        MBeanServer jmx = ignite.configuration().getMBeanServer();
+
         assert mbeanItf == null || mbeanItf.isInterface();
         assert jmx != null;
 
@@ -337,6 +338,8 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     protected final void unregisterMBean() throws IgniteSpiException {
         // Unregister SPI MBean.
         if (spiMBean != null) {
+            MBeanServer jmx = ignite.configuration().getMBeanServer();
+
             assert jmx != null;
 
             try {

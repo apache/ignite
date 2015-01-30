@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.cache.query;
@@ -20,8 +28,8 @@ import javax.cache.event.*;
  * Continuous queries are executed as follows:
  * <ol>
  * <li>
- *  Query is sent to requested grid nodes. Note that for {@link org.gridgain.grid.cache.GridCacheMode#LOCAL LOCAL}
- *  and {@link org.gridgain.grid.cache.GridCacheMode#REPLICATED REPLICATED} caches query will be always executed
+ *  Query is sent to requested grid nodes. Note that for {@link org.apache.ignite.cache.CacheMode#LOCAL LOCAL}
+ *  and {@link org.apache.ignite.cache.CacheMode#REPLICATED REPLICATED} caches query will be always executed
  *  locally.
  * </li>
  * <li>
@@ -96,7 +104,7 @@ import javax.cache.event.*;
  * qry.cancel();
  * </pre>
  * Note that one query instance can be executed only once. After it's cancelled, it's non-operational.
- * If you need to repeat execution, use {@link org.gridgain.grid.cache.query.GridCacheQueries#createContinuousQuery()} method to create
+ * If you need to repeat execution, use {@link CacheQueries#createContinuousQuery()} method to create
  * new query.
  */
 // TODO: make class.
@@ -189,7 +197,7 @@ public final class QueryContinuousPredicate<K, V> extends QueryPredicate<K, V> i
     /**
      * Stops continuous query execution. <p> Note that one query instance can be executed only once. After it's
      * cancelled, it's non-operational. If you need to repeat execution, use {@link
-     * org.gridgain.grid.cache.query.GridCacheQueries#createContinuousQuery()} method to create new query.
+     * CacheQueries#createContinuousQuery()} method to create new query.
      *
      * @throws IgniteCheckedException In case of error.
      */

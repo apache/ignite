@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.communication.tcp;
@@ -13,24 +21,22 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.thread.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
-import org.gridgain.grid.util.*;
-import org.gridgain.grid.util.direct.*;
-import org.gridgain.grid.util.future.*;
-import org.gridgain.grid.util.ipc.*;
-import org.gridgain.grid.util.ipc.shmem.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.nio.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.grid.util.worker.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.internal.util.future.*;
+import org.apache.ignite.internal.util.ipc.*;
+import org.apache.ignite.internal.util.ipc.shmem.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.internal.util.worker.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -141,7 +147,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     /** IPC error message. */
     public static final String OUT_OF_RESOURCES_TCP_MSG = "Failed to allocate shared memory segment " +
         "(switching to TCP, may be slower). For troubleshooting see " +
-        GridIpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
+        IpcSharedMemoryServerEndpoint.TROUBLESHOOTING_URL;
 
     /** Node attribute that is mapped to node IP addresses (value is <tt>comm.tcp.addrs</tt>). */
     public static final String ATTR_ADDRS = "comm.tcp.addrs";
@@ -162,7 +168,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     public static final int DFLT_PORT = 47100;
 
     /** Default port which node sets listener for shared memory connections (value is <tt>48100</tt>). */
-    public static final int DFLT_SHMEM_PORT = -1;
+    public static final int DFLT_SHMEM_PORT = 48100;
 
     /** Default idle connection timeout (value is <tt>30000</tt>ms). */
     public static final long DFLT_IDLE_CONN_TIMEOUT = 30000;
@@ -511,7 +517,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     GridCommunicationClient oldClient = clients.putIfAbsent(node.id(), client);
 
-                    assert oldClient == null;
+                    assert oldClient == null : "Client already created [node=" + node + ", client=" + client +
+                            ", oldClient=" + oldClient + ", recoveryDesc=" + recovery + ']';
                 }
 
                 return client;
@@ -611,14 +618,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     @IgniteLoggerResource
     private IgniteLogger log;
 
-    /** Node ID. */
-    @IgniteLocalNodeIdResource
-    private UUID locNodeId;
-
-    /** Marshaller. */
-    @IgniteMarshallerResource
-    private IgniteMarshaller marsh;
-
     /** Local IP address. */
     private String locAddr;
 
@@ -635,7 +634,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int shmemPort = DFLT_SHMEM_PORT;
 
     /** Grid name. */
-    @IgniteNameResource
     private String gridName;
 
     /** Allocate direct buffer or heap buffer. */
@@ -683,7 +681,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private GridNioServer<GridTcpCommunicationMessageAdapter> nioSrvr;
 
     /** Shared memory server. */
-    private GridIpcSharedMemoryServerEndpoint shmemSrv;
+    private IpcSharedMemoryServerEndpoint shmemSrv;
 
     /** {@code TCP_NODELAY} option value for created sockets. */
     private boolean tcpNoDelay = DFLT_TCP_NODELAY;
@@ -788,11 +786,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @param addrRslvr Address resolver.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteAddressResolverResource
     public void setAddressResolver(IgniteAddressResolver addrRslvr) {
         // Injection should not override value already set by Spring or user.
         if (this.addrRslvr == null)
             this.addrRslvr = addrRslvr;
+    }
+
+    /**
+     * Injects resources.
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    protected void injectResources(Ignite ignite) {
+        if (ignite != null) {
+            setAddressResolver(ignite.configuration().getAddressResolver());
+            setLocalAddress(ignite.configuration().getLocalHost());
+            gridName = ignite.name();
+        }
     }
 
     /**
@@ -813,7 +824,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      *      IP address.
      */
     @IgniteSpiConfiguration(optional = true)
-    @IgniteLocalHostResource
     public void setLocalAddress(String locAddr) {
         // Injection should not override value already set by Spring or user.
         if (this.locAddr == null)
@@ -1264,7 +1274,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
-        nodeIdMsg = new NodeIdMessage(locNodeId);
+        nodeIdMsg = new NodeIdMessage(ignite.configuration().getNodeId());
 
         assertParameter(locPort > 1023, "locPort > 1023");
         assertParameter(locPort <= 0xffff, "locPort < 0xffff");
@@ -1436,7 +1446,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 if (log.isDebugEnabled())
                     log.debug("Context has been initialized.");
             }
-            catch (GridInterruptedException e) {
+            catch (IgniteInterruptedException e) {
                 U.warn(log, "Thread has been interrupted while waiting for SPI context initialization.", e);
             }
         }
@@ -1510,7 +1520,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * @return Server.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private GridIpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
+    @Nullable private IpcSharedMemoryServerEndpoint resetShmemServer() throws IgniteCheckedException {
         if (boundTcpShmemPort >= 0)
             throw new IgniteCheckedException("Shared memory server was already created on port " + boundTcpShmemPort);
 
@@ -1522,7 +1532,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         // If configured TCP port is busy, find first available in range.
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
-                GridIpcSharedMemoryServerEndpoint srv = new GridIpcSharedMemoryServerEndpoint(log, locNodeId, gridName);
+                IpcSharedMemoryServerEndpoint srv =
+                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
 
                 srv.setPort(port);
 
@@ -1662,6 +1673,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         if (log.isTraceEnabled())
             log.trace("Sending message to node [node=" + node + ", msg=" + msg + ']');
 
+        UUID locNodeId = ignite.configuration().getNodeId();
+
         if (node.id().equals(locNodeId))
             notifyListener(locNodeId, msg, NOOP);
         else {
@@ -1740,7 +1753,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             if (client0 != null) {
                                 GridCommunicationClient old = clients.put(nodeId, client0);
 
-                                assert old == null;
+                                assert old == null : "Client already created " +
+                                        "[node=" + node + ", client=" + client0 + ", oldClient=" + old + ']';
                             }
                             else
                                 U.sleep(200);
@@ -1804,8 +1818,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 return createShmemClient(node, shmemPort);
             }
             catch (IgniteCheckedException e) {
-                if (e.hasCause(GridIpcOutOfSystemResourcesException.class))
-                    // Has cause or is itself the GridIpcOutOfSystemResourcesException.
+                if (e.hasCause(IpcOutOfSystemResourcesException.class))
+                    // Has cause or is itself the IpcOutOfSystemResourcesException.
                     LT.warn(log, null, OUT_OF_RESOURCES_TCP_MSG);
                 else if (getSpiContext().node(node.id()) != null)
                     LT.warn(log, null, e.getMessage());
@@ -2147,7 +2161,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     ch.write(ByteBuffer.wrap(U.GG_HEADER));
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(locNodeId,
+                        HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
                             recovery.incrementConnectCount(),
                             recovery.receivedCount());
 
@@ -2260,7 +2274,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             int queueLimit = unackedMsgsBufSize != 0 ? unackedMsgsBufSize : (maxSize * 5);
 
             GridNioRecoveryDescriptor old =
-                recoveryDescs.put(id, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log));
+                recoveryDescs.putIfAbsent(id, recovery = new GridNioRecoveryDescriptor(queueLimit, node, log));
 
             if (old != null)
                 recovery = old;
@@ -2341,12 +2355,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class ShmemAcceptWorker extends GridWorker {
         /** */
-        private final GridIpcSharedMemoryServerEndpoint srv;
+        private final IpcSharedMemoryServerEndpoint srv;
 
         /**
          * @param srv Server.
          */
-        ShmemAcceptWorker(GridIpcSharedMemoryServerEndpoint srv) {
+        ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
             super(gridName, "shmem-communication-acceptor", log);
 
             this.srv = srv;
@@ -2385,12 +2399,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      */
     private class ShmemWorker extends GridWorker {
         /** */
-        private final GridIpcEndpoint endpoint;
+        private final IpcEndpoint endpoint;
 
         /**
          * @param endpoint Endpoint.
          */
-        private ShmemWorker(GridIpcEndpoint endpoint) {
+        private ShmemWorker(IpcEndpoint endpoint) {
             super(gridName, "shmem-worker", log);
 
             this.endpoint = endpoint;
@@ -2399,7 +2413,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
             try {
-                GridIpcToNioAdapter<GridTcpCommunicationMessageAdapter> adapter = new GridIpcToNioAdapter<>(
+                IpcToNioAdapter<GridTcpCommunicationMessageAdapter> adapter = new IpcToNioAdapter<>(
                     metricsLsnr,
                     log,
                     endpoint,
@@ -2910,7 +2924,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 out.flush();
 
                 if (log.isDebugEnabled())
-                    log.debug("Sent local node ID [locNodeId=" + locNodeId + ", rmtNodeId=" + rmtNodeId + ']');
+                    log.debug("Sent local node ID [locNodeId=" + ignite.configuration().getNodeId() + ", rmtNodeId="
+                        + rmtNodeId + ']');
             }
             catch (IOException e) {
                 throw new IgniteCheckedException("Failed to perform handshake.", e);

@@ -1,10 +1,18 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.spi.discovery.tcp;
@@ -12,20 +20,19 @@ package org.apache.ignite.spi.discovery.tcp;
 import org.apache.ignite.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.*;
-import org.gridgain.grid.kernal.processors.port.*;
+import org.apache.ignite.internal.processors.port.*;
 import org.apache.ignite.spi.discovery.*;
 import org.apache.ignite.spi.discovery.tcp.internal.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.spi.discovery.tcp.messages.*;
-import org.gridgain.grid.util.typedef.*;
-import org.gridgain.grid.util.typedef.internal.*;
-import org.gridgain.testframework.*;
-import org.gridgain.testframework.junits.common.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.testframework.*;
+import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -707,7 +714,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 boolean found = false;
 
-                for (GridPortRecord rec : ((GridKernal) g).context().ports().records()) {
+                for (GridPortRecord rec : ((IgniteKernal) g).context().ports().records()) {
                     if ((rec.protocol() == UDP) && rec.port() == ipFinder.getMulticastPort()) {
                         found = true;
 
@@ -890,12 +897,12 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             Long startTime = null;
 
-            GridKernal firstGrid = null;
+            IgniteKernal firstGrid = null;
 
-            Collection<GridKernal> grids = new ArrayList<>();
+            Collection<IgniteKernal> grids = new ArrayList<>();
 
             for (int i = 0; i < 5 ; i++) {
-                GridKernal grid = (GridKernal)grid(i);
+                IgniteKernal grid = (IgniteKernal)grid(i);
 
                 assertTrue(grid.context().discovery().gridStartTime() > 0);
 
@@ -914,12 +921,12 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             stopGrid(firstGrid.name());
 
-            for (GridKernal grid : grids)
+            for (IgniteKernal grid : grids)
                 assertEquals(startTime, (Long)grid.context().discovery().gridStartTime());
 
-            grids.add((GridKernal) startGrid(5));
+            grids.add((IgniteKernal) startGrid(5));
 
-            for (GridKernal grid : grids)
+            for (IgniteKernal grid : grids)
                 assertEquals(startTime, (Long)grid.context().discovery().gridStartTime());
         }
         finally {

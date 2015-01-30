@@ -1,28 +1,36 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.streamer;
 
-import org.apache.ignite.mbean.*;
+import org.apache.ignite.mxbean.*;
 import org.jetbrains.annotations.*;
 
 /**
  * Streamer MBean interface.
  */
-@IgniteMBeanDescription("MBean that provides access to streamer description and metrics.")
+@IgniteMXBeanDescription("MBean that provides access to streamer description and metrics.")
 public interface StreamerMBean {
     /**
      * Gets streamer name.
      *
      * @return Streamer name.
      */
-    @IgniteMBeanDescription("Streamer name.")
+    @IgniteMXBeanDescription("Streamer name.")
     @Nullable public String getName();
 
     /**
@@ -30,7 +38,7 @@ public interface StreamerMBean {
      *
      * @return {@code True} if {@code atLeastOnce} is configured.
      */
-    @IgniteMBeanDescription("True if atLeastOnce is configured.")
+    @IgniteMXBeanDescription("True if atLeastOnce is configured.")
     public boolean isAtLeastOnce();
 
     /**
@@ -39,7 +47,7 @@ public interface StreamerMBean {
      *
      * @return Stage future map size.
      */
-    @IgniteMBeanDescription("Stage future map size.")
+    @IgniteMXBeanDescription("Stage future map size.")
     public int getStageFutureMapSize();
 
     /**
@@ -47,7 +55,7 @@ public interface StreamerMBean {
      *
      * @return Batch future map size.
      */
-    @IgniteMBeanDescription("Batch future map size.")
+    @IgniteMXBeanDescription("Batch future map size.")
     public int getBatchFutureMapSize();
 
     /**
@@ -55,7 +63,7 @@ public interface StreamerMBean {
      *
      * @return Number of stages. Cannot be more than pool thread count.
      */
-    @IgniteMBeanDescription("Number of stages currently being executed in streamer pool.")
+    @IgniteMXBeanDescription("Number of stages currently being executed in streamer pool.")
     public int getStageActiveExecutionCount();
 
     /**
@@ -63,7 +71,7 @@ public interface StreamerMBean {
      *
      * @return Number of event batches waiting to be processed.
      */
-    @IgniteMBeanDescription("Number of event batches currently waiting to be executed.")
+    @IgniteMXBeanDescription("Number of event batches currently waiting to be executed.")
     public int getStageWaitingExecutionCount();
 
     /**
@@ -71,7 +79,7 @@ public interface StreamerMBean {
      *
      * @return Total number of stages executed since last reset.
      */
-    @IgniteMBeanDescription("Total number of stages executed since last reset.")
+    @IgniteMXBeanDescription("Total number of stages executed since last reset.")
     public long getStageTotalExecutionCount();
 
     /**
@@ -81,7 +89,7 @@ public interface StreamerMBean {
      *
      * @return Pipeline maximum execution time.
      */
-    @IgniteMBeanDescription("Pipeline maximum execution time.")
+    @IgniteMXBeanDescription("Pipeline maximum execution time.")
     public long getPipelineMaximumExecutionTime();
 
     /**
@@ -91,7 +99,7 @@ public interface StreamerMBean {
      *
      * @return Pipeline minimum execution time.
      */
-    @IgniteMBeanDescription("Pipeline minimum execution time.")
+    @IgniteMXBeanDescription("Pipeline minimum execution time.")
     public long getPipelineMinimumExecutionTime();
 
     /**
@@ -100,7 +108,7 @@ public interface StreamerMBean {
      *
      * @return Pipeline average execution time.
      */
-    @IgniteMBeanDescription("Pipeline average execution time.")
+    @IgniteMXBeanDescription("Pipeline average execution time.")
     public long getPipelineAverageExecutionTime();
 
     /**
@@ -109,7 +117,7 @@ public interface StreamerMBean {
      *
      * @return Maximum number of unique nodes in pipeline execution.
      */
-    @IgniteMBeanDescription("Maximum number of unique nodes participated in pipeline execution.")
+    @IgniteMXBeanDescription("Maximum number of unique nodes participated in pipeline execution.")
     public int getPipelineMaximumExecutionNodes();
 
     /**
@@ -118,7 +126,7 @@ public interface StreamerMBean {
      *
      * @return Minimum number of unique nodes in pipeline execution.
      */
-    @IgniteMBeanDescription("Minimum number of unique nodes participated in pipeline execution.")
+    @IgniteMXBeanDescription("Minimum number of unique nodes participated in pipeline execution.")
     public int getPipelineMinimumExecutionNodes();
 
     /**
@@ -127,7 +135,7 @@ public interface StreamerMBean {
      *
      * @return Average number of unique nodes in pipeline execution.
      */
-    @IgniteMBeanDescription("Average number of unique nodes participated in pipeline execution.")
+    @IgniteMXBeanDescription("Average number of unique nodes participated in pipeline execution.")
     public int getPipelineAverageExecutionNodes();
 
     /**
@@ -137,7 +145,7 @@ public interface StreamerMBean {
      *
      * @return Number of current active sessions.
      */
-    @IgniteMBeanDescription("Number of current active sessions.")
+    @IgniteMXBeanDescription("Number of current active sessions.")
     public int getCurrentActiveSessions();
 
     /**
@@ -147,7 +155,7 @@ public interface StreamerMBean {
      *
      * @return Maximum active sessions since last reset.
      */
-    @IgniteMBeanDescription("Maximum number of active sessions since last reset.")
+    @IgniteMXBeanDescription("Maximum number of active sessions since last reset.")
     public int getMaximumActiveSessions();
 
     /**
@@ -156,6 +164,6 @@ public interface StreamerMBean {
      *
      * @return Failures count.
      */
-    @IgniteMBeanDescription("Number of failures since last reset.")
+    @IgniteMXBeanDescription("Number of failures since last reset.")
     public int getFailuresCount();
 }

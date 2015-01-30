@@ -1,20 +1,27 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
-import org.gridgain.grid.*;
-import org.gridgain.grid.kernal.processors.streamer.*;
-import org.gridgain.grid.util.lang.*;
-import org.gridgain.grid.util.tostring.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.processors.streamer.*;
+import org.apache.ignite.internal.util.lang.*;
+import org.apache.ignite.internal.util.tostring.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -232,7 +239,7 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
         try {
             return enqueueInternal(evt);
         }
-        catch (GridInterruptedException ignored) {
+        catch (IgniteInterruptedException ignored) {
             return false;
         }
     }
@@ -243,10 +250,10 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
      * @param evt Event to add.
      * @return {@code True} if event was added.
      *
-     * @throws GridInterruptedException If thread was interrupted.
+     * @throws org.apache.ignite.IgniteInterruptedException If thread was interrupted.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean enqueueInternal(E evt) throws GridInterruptedException {
+    private boolean enqueueInternal(E evt) throws IgniteInterruptedException {
         QueueHolder tup = holder;
 
         ConcurrentLinkedDeque8<Batch> evts = tup.batchQueue();
@@ -617,9 +624,9 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
         /**
          * Waits for latch count down after last event was added.
          *
-         * @throws GridInterruptedException If wait was interrupted.
+         * @throws org.apache.ignite.IgniteInterruptedException If wait was interrupted.
          */
-        public void finish() throws GridInterruptedException {
+        public void finish() throws IgniteInterruptedException {
             writeLock().lock();
 
             try {

@@ -1,9 +1,9 @@
-GridGain Schedule Module
-------------------------
+Apache Ignite Schedule Module
+-----------------------------
 
-GridGain Schedule module provides functionality for scheduling jobs locally using UNIX cron-based syntax.
+Apache Ignite Schedule module provides functionality for scheduling jobs locally using UNIX cron-based syntax.
 
-To enable Schedule module when starting a standalone node, move 'optional/gridgain-schedule' folder to
+To enable Schedule module when starting a standalone node, move 'optional/ignite-schedule' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
@@ -11,7 +11,7 @@ Importing Schedule Module In Maven Project
 ------------------------------------------
 
 If you are using Maven to manage dependencies of your project, you can add Schedule module
-dependency like this (replace '${gridgain.version}' with actual GridGain version you are
+dependency like this (replace '${ignite.version}' with actual Ignite version you are
 interested in):
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -22,9 +22,9 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-schedule</artifactId>
-            <version>${gridgain.version}</version>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schedule</artifactId>
+            <version>${ignite.version}</version>
         </dependency>
         ...
     </dependencies>

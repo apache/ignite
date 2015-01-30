@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-    _________        _____ __________________        _____
-    __  ____/___________(_)______  /__  ____/______ ____(_)_______
-    _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
-    / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
-    \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
 
-    @xml.file.header
-    Version: @xml.file.version
--->
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
 
 <!--
     GridGain Spring configuration file.
@@ -58,7 +64,7 @@
     <!--
         Abstract cache configuration for GGFS file data to be used as a template.
     -->
-    <bean id="dataCacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true">
+    <bean id="dataCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="PARTITIONED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
@@ -74,7 +80,7 @@
     <!--
         Abstract cache configuration for GGFS metadata to be used as a template.
     -->
-    <bean id="metaCacheCfgBase" class="org.gridgain.grid.cache.GridCacheConfiguration" abstract="true">
+    <bean id="metaCacheCfgBase" class="org.apache.ignite.cache.CacheConfiguration" abstract="true">
         <property name="cacheMode" value="REPLICATED"/>
         <property name="atomicityMode" value="TRANSACTIONAL"/>
         <property name="writeSynchronizationMode" value="FULL_SYNC"/>
@@ -88,7 +94,7 @@
             Apache Hadoop Accelerator configuration.
         -->
         <property name="hadoopConfiguration">
-            <bean class="org.gridgain.grid.hadoop.GridHadoopConfiguration">
+            <bean class="org.apache.ignite.hadoop.GridHadoopConfiguration">
                 <!-- Information about finished jobs will be kept for 30 seconds. -->
                 <property name="finishedJobInfoTtl" value="30000"/>
             </bean>
@@ -129,12 +135,12 @@
         <property name="cacheConfiguration">
             <list>
                 <!-- File system metadata cache. -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration" parent="metaCacheCfgBase">
+                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="metaCacheCfgBase">
                     <property name="name" value="ggfs-meta"/>
                 </bean>
 
                 <!-- File system files data cache. -->
-                <bean class="org.gridgain.grid.cache.GridCacheConfiguration" parent="dataCacheCfgBase">
+                <bean class="org.apache.ignite.cache.CacheConfiguration" parent="dataCacheCfgBase">
                     <property name="name" value="ggfs-data"/>
                 </bean>
             </list>

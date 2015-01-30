@@ -1,15 +1,24 @@
-/* @java.file.header */
-
-/*  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.lang.*;
@@ -21,11 +30,10 @@ import org.apache.ignite.portables.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
-import org.gridgain.client.ssl.*;
-import org.gridgain.grid.cache.*;
-import org.gridgain.grid.dotnet.*;
-import org.gridgain.grid.hadoop.*;
-import org.gridgain.grid.kernal.managers.eventstorage.*;
+import org.apache.ignite.client.ssl.*;
+import org.apache.ignite.interop.*;
+import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
 import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
@@ -38,7 +46,7 @@ import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
-import org.gridgain.grid.util.typedef.internal.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
 import javax.management.*;
@@ -376,13 +384,13 @@ public class IgniteConfiguration {
     private IgniteAddressResolver addrRslvr;
 
     /** Cache configurations. */
-    private GridCacheConfiguration[] cacheCfg;
+    private CacheConfiguration[] cacheCfg;
 
     /** Transactions configuration. */
     private TransactionsConfiguration txCfg = new TransactionsConfiguration();
 
-    /** Configuration for .Net nodes. */
-    private GridDotNetConfiguration dotNetCfg;
+    /** Interop configuration. */
+    private InteropConfiguration interopCfg;
 
     /** */
     private Collection<? extends PluginConfiguration> pluginCfgs;
@@ -577,6 +585,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
+        interopCfg = cfg.getInteropConfiguration() != null ? cfg.getInteropConfiguration().copy() : null;
         jettyPath = cfg.getRestJettyPath();
         licUrl = cfg.getLicenseUrl();
         lifecycleBeans = cfg.getLifecycleBeans();
@@ -644,8 +653,6 @@ public class IgniteConfiguration {
         userAttrs = cfg.getUserAttributes();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        dotNetCfg = cfg.getDotNetConfiguration() == null ?
-            null : new GridDotNetConfiguration(cfg.getDotNetConfiguration());
     }
 
     /**
@@ -2233,7 +2240,7 @@ public class IgniteConfiguration {
      *
      * @return Array of fully initialized cache descriptors.
      */
-    public GridCacheConfiguration[] getCacheConfiguration() {
+    public CacheConfiguration[] getCacheConfiguration() {
         return cacheCfg;
     }
 
@@ -2243,8 +2250,8 @@ public class IgniteConfiguration {
      * @param cacheCfg Cache configurations.
      */
     @SuppressWarnings({"ZeroLengthArrayAllocation"})
-    public void setCacheConfiguration(GridCacheConfiguration... cacheCfg) {
-        this.cacheCfg = cacheCfg == null ? new GridCacheConfiguration[0] : cacheCfg;
+    public void setCacheConfiguration(CacheConfiguration... cacheCfg) {
+        this.cacheCfg = cacheCfg == null ? new CacheConfiguration[0] : cacheCfg;
     }
 
     /**
@@ -3110,19 +3117,21 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Returns configuration for .Net nodes.
-     * @return Configuration for .Net nodes.
+     * Gets interop configuration.
+     *
+     * @return Interop configuration.
      */
-    @Nullable public GridDotNetConfiguration getDotNetConfiguration() {
-        return dotNetCfg;
+    @Nullable public InteropConfiguration getInteropConfiguration() {
+        return interopCfg;
     }
 
     /**
-     * Sets configuration for .Net nodes.
-     * @param dotNetCfg Configuration for .Net nodes
+     * Sets interop configuration.
+     *
+     * @param interopCfg Interop configuration.
      */
-    public void setDotNetConfiguration(@Nullable GridDotNetConfiguration dotNetCfg) {
-        this.dotNetCfg = dotNetCfg;
+    public void setInteropConfiguration(@Nullable InteropConfiguration interopCfg) {
+        this.interopCfg = interopCfg;
     }
 
     /**
