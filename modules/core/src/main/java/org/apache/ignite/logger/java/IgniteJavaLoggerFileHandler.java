@@ -132,7 +132,7 @@ public final class IgniteJavaLoggerFileHandler extends StreamHandler {
      * @return Logging directory.
      */
     private static File logDirectory() throws IgniteCheckedException {
-        return !F.isEmpty(U.GRIDGAIN_LOG_DIR) ? new File(U.GRIDGAIN_LOG_DIR) : U.resolveWorkDirectory("log", false);
+        return !F.isEmpty(U.IGNITE_LOG_DIR) ? new File(U.IGNITE_LOG_DIR) : U.resolveWorkDirectory("log", false);
     }
 
     /**

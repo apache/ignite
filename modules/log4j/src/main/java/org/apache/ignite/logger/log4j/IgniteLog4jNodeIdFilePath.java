@@ -46,10 +46,10 @@ class IgniteLog4jNodeIdFilePath implements IgniteClosure<String, String> {
 
     /** {@inheritDoc} */
     @Override public String apply(String oldPath) {
-        if (!F.isEmpty(U.GRIDGAIN_LOG_DIR))
-            return U.nodeIdLogFileName(nodeId, new File(U.GRIDGAIN_LOG_DIR, "ignite.log").getAbsolutePath());
+        if (!F.isEmpty(U.IGNITE_LOG_DIR))
+            return U.nodeIdLogFileName(nodeId, new File(U.IGNITE_LOG_DIR, "ignite.log").getAbsolutePath());
 
-        if (oldPath != null) // fileName could be null if GRIDGAIN_HOME is not defined.
+        if (oldPath != null) // fileName could be null if IGNITE_HOME is not defined.
             return U.nodeIdLogFileName(nodeId, oldPath);
 
         String tmpDir = IgniteSystemProperties.getString("java.io.tmpdir");

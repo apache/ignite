@@ -210,8 +210,8 @@ public class IgniteJavaLogger implements IgniteLogger, IgniteLoggerNodeIdAware {
 
             defaultConfiguration();
 
-            boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
-            boolean useConsoleAppender = Boolean.valueOf(System.getProperty(GG_CONSOLE_APPENDER, "true"));
+            boolean quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
+            boolean useConsoleAppender = Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"));
 
             if (useConsoleAppender) {
                 ConsoleHandler consoleHnd = findHandler(impl, ConsoleHandler.class);

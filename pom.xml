@@ -1177,7 +1177,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
+                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
                                             <substitution expression=""/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
@@ -1185,16 +1185,16 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
-                                            <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
+                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
+                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
-                                            <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
+                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
+                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>

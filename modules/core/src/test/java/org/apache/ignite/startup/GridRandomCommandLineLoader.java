@@ -47,7 +47,7 @@ import static org.apache.ignite.IgniteState.*;
  */
 public final class GridRandomCommandLineLoader {
     /** Name of the system property defining name of command line program. */
-    private static final String GRIDGAIN_PROG_NAME = "GRIDGAIN_PROG_NAME";
+    private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** Copyright text. Ant processed. */
     private static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation.";
@@ -125,7 +125,7 @@ public final class GridRandomCommandLineLoader {
         if (errMsg != null)
             echo("ERROR: " + errMsg);
 
-        String runner = System.getProperty(GRIDGAIN_PROG_NAME, "randggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "randggstart.{sh|bat}");
 
         int space = runner.indexOf(' ');
 
@@ -156,7 +156,7 @@ public final class GridRandomCommandLineLoader {
      */
     @SuppressWarnings({"BusyWait"})
     public static void main(String[] args) {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         logo();
 
@@ -297,7 +297,7 @@ public final class GridRandomCommandLineLoader {
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
-                ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
+                ". Note that this path should be either absolute path or a relative path to IGNITE_HOME.");
 
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);

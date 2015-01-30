@@ -47,7 +47,7 @@ import static org.apache.ignite.internal.GridProductImpl.*;
  * parameter which is Spring XML configuration file path. You can run this class from command
  * line without parameters to get help message.
  * <p>
- * Note that scripts {@code ${GRIDGAIN_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
+ * Note that scripts {@code ${IGNITE_HOME}/bin/ggstart.{sh|bat}} shipped with GridGain use
  * this startup and you can use them as an example.
  */
 @SuppressWarnings({"CallToSystemExit"})
@@ -62,7 +62,7 @@ public final class CommandLineStartup {
      * Static initializer.
      */
     static {
-        String quiteStr = System.getProperty(IgniteSystemProperties.GG_QUIET);
+        String quiteStr = System.getProperty(IgniteSystemProperties.IGNITE_QUIET);
 
         boolean quite = true;
 
@@ -73,7 +73,7 @@ public final class CommandLineStartup {
                 if ("false".equalsIgnoreCase(quiteStr))
                     quite = false;
                 else if (!"true".equalsIgnoreCase(quiteStr)) {
-                    System.err.println("Invalid value for '" + IgniteSystemProperties.GG_QUIET +
+                    System.err.println("Invalid value for '" + IgniteSystemProperties.IGNITE_QUIET +
                         "' VM parameter (must be {true|false}): " + quiteStr);
 
                     quite = false;
@@ -144,7 +144,7 @@ public final class CommandLineStartup {
         if (errMsg != null)
             X.error(errMsg);
 
-        String runner = System.getProperty(GG_PROG_NAME, "ggstart.{sh|bat}");
+        String runner = System.getProperty(IGNITE_PROG_NAME, "ggstart.{sh|bat}");
 
         int space = runner.indexOf(' ');
 
@@ -164,7 +164,7 @@ public final class CommandLineStartup {
                 X.error(
                     "    -i              - interactive mode (choose configuration file from list).",
                     "    path            - path to Spring XML configuration file.",
-                    "                      Path can be absolute or relative to GRIDGAIN_HOME.",
+                    "                      Path can be absolute or relative to IGNITE_HOME.",
                     " ",
                     "Spring file should contain one bean definition of Java type",
                     "'org.gridgain.grid.GridConfiguration'. Note that bean will be",
@@ -321,7 +321,7 @@ public final class CommandLineStartup {
             X.error("Start was interrupted (exiting): " + e.getMessage());
         }
 
-        String code = System.getProperty(GG_RESTART_CODE);
+        String code = System.getProperty(IGNITE_RESTART_CODE);
 
         if (code != null)
             try {

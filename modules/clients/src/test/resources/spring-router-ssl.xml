@@ -21,7 +21,7 @@
     Default rest router configuration.
 
     This file is automatically scanned by
-    $GRIDGAIN_HOME/bin/ggrouter.sh and $GRIDGAIN_HOME/bin/ggrouter.bat
+    $IGNITE_HOME/bin/ggrouter.sh and $IGNITE_HOME/bin/ggrouter.bat
     for org.gridgain.client.router.GridTcpRestRouterConfiguration and
     org.gridgain.client.router.GridHttpRestRouterConfiguration bean definitions.
     First found are used to start corresponding router instances.
@@ -55,7 +55,7 @@
         <property name="targetMethod" value="putAll"/>
         <property name="arguments">
             <map>
-                <entry key="GRIDGAIN_JETTY_PORT" value="12400"/>
+                <entry key="IGNITE_JETTY_PORT" value="12400"/>
             </map>
         </property>
     </bean>

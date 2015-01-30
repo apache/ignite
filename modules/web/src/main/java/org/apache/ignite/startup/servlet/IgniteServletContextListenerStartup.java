@@ -40,7 +40,7 @@ import java.util.*;
  * &lt;/listener&gt;
  *
  * &lt;context-param&gt;
- *     &lt;param-name&gt;GridGainConfigurationFilePath&lt;/param-name&gt;
+ *     &lt;param-name&gt;IgniteConfigurationFilePath&lt;/param-name&gt;
  *     &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
  * &lt;/context-param&gt;
  * </pre>
@@ -60,8 +60,8 @@ import java.util.*;
  *     <ol>
  *     <li>Add GridGain libraries in Tomcat common loader.
  *         Add in file {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code common.loader}
- *         the following {@code $GRIDGAIN_HOME/*.jar,$GRIDGAIN_HOME/libs/*.jar}
- *         (replace {@code $GRIDGAIN_HOME} with absolute path).
+ *         the following {@code $IGNITE_HOME/*.jar,$IGNITE_HOME/libs/*.jar}
+ *         (replace {@code $IGNITE_HOME} with absolute path).
  *     </li>
  *     <li>Configure this startup in {@code $TOMCAT_HOME/conf/web.xml}
  *         <pre name="code" class="xml">
@@ -70,7 +70,7 @@ import java.util.*;
  *         &lt;/listener&gt;
  *
  *         &lt;context-param&gt;
- *             &lt;param-name&gt;GridGainConfigurationFilePath&lt;/param-name&gt;
+ *             &lt;param-name&gt;IgniteConfigurationFilePath&lt;/param-name&gt;
  *             &lt;param-value&gt;config/default-config.xml&lt;/param-value&gt;
  *         &lt;/context-param&gt;
  *         </pre>
@@ -86,7 +86,7 @@ import java.util.*;
  */
 public class IgniteServletContextListenerStartup implements ServletContextListener {
     /** Configuration file path parameter name. */
-    public static final String GRIDGAIN_CFG_FILE_PATH_PARAM = "GridGainConfigurationFilePath";
+    public static final String IGNITE_CFG_FILE_PATH_PARAM = "IgniteConfigurationFilePath";
 
     /** Names of started grids. */
     private final Collection<String> gridNames = new ArrayList<>();
@@ -95,7 +95,7 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
     @Override public void contextInitialized(ServletContextEvent evt) {
         ServletContext ctx = evt.getServletContext();
 
-        String cfgFile = ctx.getInitParameter(GRIDGAIN_CFG_FILE_PATH_PARAM);
+        String cfgFile = ctx.getInitParameter(IGNITE_CFG_FILE_PATH_PARAM);
 
         Collection<IgniteConfiguration> cfgs;
         GridSpringResourceContext rsrcCtx = null;
@@ -107,16 +107,16 @@ public class IgniteServletContextListenerStartup implements ServletContextListen
                 cfgUrl = evt.getServletContext().getResource("/META-INF/" + cfgFile);
             }
             catch (MalformedURLException ignored) {
-                // Ignore, we still need to try with GRIDGAIN_HOME.
+                // Ignore, we still need to try with IGNITE_HOME.
             }
 
             if (cfgUrl == null)
-                // Try with GRIDGAIN_HOME and with context class loader.
+                // Try with IGNITE_HOME and with context class loader.
                 cfgUrl = U.resolveGridGainUrl(cfgFile);
 
             if (cfgUrl == null)
                 throw new IgniteException("Failed to find Spring configuration file (path provided should be " +
-                    "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
+                    "either absolute, relative to IGNITE_HOME, or relative to META-INF folder): " + cfgFile);
 
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t;
 

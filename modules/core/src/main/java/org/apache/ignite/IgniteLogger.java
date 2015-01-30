@@ -56,11 +56,11 @@ import org.jetbrains.annotations.*;
  * injection.
  * <h1 class="header">Quiet Mode</h1>
  * By default GridGain 3.0 and later starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}
- * log output. If system property {@code GRIDGAIN_QUIET} is set to {@code false} than GridGain
+ * log output. If system property {@code IGNITE_QUIET} is set to {@code false} than GridGain
  * will operate in normal un-suppressed logging mode. Note that all output in "quiet" mode is
  * done through standard output (STDOUT).
  * <p>
- * Note that GridGain's standard startup scripts <tt>$GRIDGAIN_HOME/bin/ggstart.{sh|bat}</tt> start
+ * Note that GridGain's standard startup scripts <tt>$IGNITE_HOME/bin/ggstart.{sh|bat}</tt> start
  * by default in "quiet" mode. Both scripts accept {@code -v} arguments to turn off "quiet" mode.
  */
 @GridToStringExclude

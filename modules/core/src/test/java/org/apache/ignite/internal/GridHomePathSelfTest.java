@@ -64,7 +64,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             // Test no override.
             IgniteConfiguration c1 = getConfiguration(getTestGridName(1));
 
-            c1.setGridGainHome(System.getProperty(GG_HOME));
+            c1.setGridGainHome(System.getProperty(IGNITE_HOME));
 
             G.start(c1);
         }

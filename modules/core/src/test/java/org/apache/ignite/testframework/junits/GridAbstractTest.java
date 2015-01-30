@@ -94,7 +94,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static long ts = System.currentTimeMillis();
 
     static {
-        System.setProperty(IgniteSystemProperties.GG_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
+        System.setProperty(IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "10000");
 
         Thread timer = new Thread(new GridTestClockTimer(), "gridgain-clock-for-tests");
 

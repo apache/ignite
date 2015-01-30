@@ -287,7 +287,7 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
                 // Init logger impl.
                 impl = implInitC.apply(true);
 
-            boolean quiet = Boolean.valueOf(System.getProperty(GG_QUIET, "true"));
+            boolean quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
 
             boolean consoleAppenderFound = false;
             Category rootCategory = null;
@@ -326,12 +326,12 @@ public class IgniteLog4jLogger implements IgniteLogger, IgniteLoggerNodeIdAware,
                 // User configured console appender, but log is quiet.
                 quiet = false;
 
-            if (!consoleAppenderFound && !quiet && Boolean.valueOf(System.getProperty(GG_CONSOLE_APPENDER, "true"))) {
+            if (!consoleAppenderFound && !quiet && Boolean.valueOf(System.getProperty(IGNITE_CONSOLE_APPENDER, "true"))) {
                 // Console appender not found => we've looked through all categories up to root.
                 assert rootCategory != null;
 
                 // User launched gridgain in verbose mode and did not add console appender with INFO level
-                // to configuration and did not set GG_CONSOLE_APPENDER to false.
+                // to configuration and did not set IGNITE_CONSOLE_APPENDER to false.
                 if (errAppender != null) {
                     rootCategory.addAppender(createConsoleAppender(Level.INFO));
 

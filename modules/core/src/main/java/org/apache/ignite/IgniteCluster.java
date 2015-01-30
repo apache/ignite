@@ -234,7 +234,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *             <td><b>ggHome</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Path to GridGain installation folder. If not defined, GRIDGAIN_HOME
+     *                 Path to GridGain installation folder. If not defined, IGNITE_HOME
      *                 environment variable must be set on remote hosts.
      *             </td>
      *         </tr>

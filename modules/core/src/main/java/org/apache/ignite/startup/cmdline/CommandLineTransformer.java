@@ -147,7 +147,7 @@ public class CommandLineTransformer {
         StringBuilder sb = new StringBuilder();
 
         addArgWithValue(sb, "INTERACTIVE", formatBooleanValue(interactive));
-        addArgWithValue(sb, "QUIET", "-DGRIDGAIN_QUIET=" + !verbose);
+        addArgWithValue(sb, "QUIET", "-DIGNITE_QUIET=" + !verbose);
         addArgWithValue(sb, "NO_PAUSE", formatBooleanValue(noPause));
 
         parseJvmOptionsAndSpringConfig(args);

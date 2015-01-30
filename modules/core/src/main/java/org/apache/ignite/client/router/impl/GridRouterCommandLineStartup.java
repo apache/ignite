@@ -123,7 +123,7 @@ public class GridRouterCommandLineStartup {
         URL cfgUrl = U.resolveGridGainUrl(cfgPath);
 
         if (cfgUrl == null) {
-            X.error("Spring XML file not found (is GRIDGAIN_HOME set?): " + cfgPath);
+            X.error("Spring XML file not found (is IGNITE_HOME set?): " + cfgPath);
 
             System.exit(1);
         }

@@ -33,6 +33,6 @@ class ScalarExamplesSelfTestSuite extends Suites(
     new ScalarExamplesSelfTest,
     new ScalarExamplesMultiNodeSelfTest
 ) {
-    System.setProperty(GG_OVERRIDE_MCAST_GRP,
+    System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
         GridTestUtils.getNextMulticastGroup(classOf[ScalarExamplesSelfTest]))
 }

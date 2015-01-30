@@ -23,7 +23,7 @@
 
 # Define environment paths.
 SCRIPT_DIR=$(cd $(dirname "$0"); pwd)
-GG_HOME=$(cd $SCRIPT_DIR/../../..; pwd)
+IGNITE_HOME=$(cd $SCRIPT_DIR/../../..; pwd)
 
 SSH_COMMAND="ssh localhost /bin/bash $SCRIPT_DIR/start-nodes.sh"
 

@@ -62,8 +62,8 @@ import java.util.*;
  * <ol>
  *     <li>Add GridGain libraries in Tomcat common loader.
  *         Add in file {@code $TOMCAT_HOME/conf/catalina.properties} for property {@code shared.loader}
- *         the following {@code $GRIDGAIN_HOME/gridgain.jar,$GRIDGAIN_HOME/libs/*.jar}
- *         (replace {@code $GRIDGAIN_HOME} with absolute path).
+ *         the following {@code $IGNITE_HOME/gridgain.jar,$IGNITE_HOME/libs/*.jar}
+ *         (replace {@code $IGNITE_HOME} with absolute path).
  *     </li>
  *     <li>Configure startup in {@code $TOMCAT_HOME/conf/web.xml}
  *         <pre name="code" class="xml">
@@ -137,7 +137,7 @@ public class IgniteServletStartup extends HttpServlet {
 
         if (cfgUrl == null)
             throw new ServletException("Failed to find Spring configuration file (path provided should be " +
-                "either absolute, relative to GRIDGAIN_HOME, or relative to META-INF folder): " + cfgFile);
+                "either absolute, relative to IGNITE_HOME, or relative to META-INF folder): " + cfgFile);
 
         try {
             IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> t =

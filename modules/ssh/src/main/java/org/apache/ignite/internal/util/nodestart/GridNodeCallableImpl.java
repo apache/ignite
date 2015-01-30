@@ -35,10 +35,10 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class GridNodeCallableImpl implements GridNodeCallable {
     /** Default GridGain home path for Windows (taken from environment variable). */
-    private static final String DFLT_GG_HOME_WIN = "%GRIDGAIN_HOME%";
+    private static final String DFLT_IGNITE_HOME_WIN = "%IGNITE_HOME%";
 
     /** Default GridGain home path for Linux (taken from environment variable). */
-    private static final String DFLT_GG_HOME_LINUX = "$GRIDGAIN_HOME";
+    private static final String DFLT_IGNITE_HOME_LINUX = "$IGNITE_HOME";
 
     /** Default start script path for Windows. */
     private static final String DFLT_SCRIPT_WIN = "bin\\ggstart.bat -v -np";
@@ -119,7 +119,7 @@ public class GridNodeCallableImpl implements GridNodeCallable {
             String ggHome = spec.ggHome();
 
             if (ggHome == null)
-                ggHome = win ? DFLT_GG_HOME_WIN : DFLT_GG_HOME_LINUX;
+                ggHome = win ? DFLT_IGNITE_HOME_WIN : DFLT_IGNITE_HOME_LINUX;
 
             String script = spec.script();
 
@@ -313,8 +313,8 @@ public class GridNodeCallableImpl implements GridNodeCallable {
 
         SB sb = new SB();
 
-        sb.a(" -J-D").a(GG_SSH_HOST).a("=\"").a(host).a("\"").
-            a(" -J-D").a(GG_SSH_USER_NAME).a("=\"").a(username).a("\"");
+        sb.a(" -J-D").a(IGNITE_SSH_HOST).a("=\"").a(host).a("\"").
+            a(" -J-D").a(IGNITE_SSH_USER_NAME).a("=\"").a(username).a("\"");
 
         return sb.toString();
     }

@@ -34,9 +34,9 @@ import java.util.concurrent.*;
  * See {@link GridTcpRouter} for example on how to configure and start embedded router.
  * <h1 class="header">Standalone router startup</h1>
  * Alternatively you can run routers as a standalone processes by executing
- * {@code GRIDGAIN_HOME/bin/ggrouter.sh} or {@code GRIDGAIN_HOME/bin/ggrouter.bat}.
+ * {@code IGNITE_HOME/bin/ggrouter.sh} or {@code IGNITE_HOME/bin/ggrouter.bat}.
  * They both accept path to a configuration file as first command line argument.
- * See {@code GRIDGAIN_HOME/config/router/default-router.xml} for configuration example.
+ * See {@code IGNITE_HOME/config/router/default-router.xml} for configuration example.
  *
  * @see GridTcpRouter
  */

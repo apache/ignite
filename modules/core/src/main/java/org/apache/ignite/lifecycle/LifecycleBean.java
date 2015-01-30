@@ -65,8 +65,8 @@ import org.apache.ignite.*;
  * <h1 class="header">Usage</h1>
  * If you need to tie your application logic into GridGain lifecycle,
  * you can configure lifecycle beans via standard grid configuration, add your
- * application library dependencies into {@code GRIDGAIN_HOME/libs} folder, and
- * simply start {@code GRIDGAIN_HOME/ggstart.{sh|bat}} scripts.
+ * application library dependencies into {@code IGNITE_HOME/libs} folder, and
+ * simply start {@code IGNITE_HOME/ggstart.{sh|bat}} scripts.
  * <p>
  * <h1 class="header">Configuration</h1>
  * Grid lifecycle beans can be configured programmatically as follows:
