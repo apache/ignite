@@ -335,7 +335,7 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
 
                     latency.addAndGet(t1 - t0);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }
@@ -829,12 +829,12 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     @SuppressWarnings( {"UnusedDeclaration"})
     private static class ResponseTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) {
             return Collections.singletonList(new PerfJob(msg));
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -844,12 +844,12 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
      */
     private static class RequestTask extends ComputeTaskSplitAdapter<Message, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int arg0, Message msg) {
             return Collections.singletonList(new PerfJob(msg));
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

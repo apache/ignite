@@ -111,13 +111,12 @@ public class GridStreamerContextImpl implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws IgniteCheckedException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) {
         return query(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
-        throws IgniteCheckedException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes) {
         ctx.gateway().readLock();
 
         try {
@@ -140,13 +139,12 @@ public class GridStreamerContextImpl implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) throws IgniteCheckedException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) {
         broadcast(clo, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes)
-        throws IgniteCheckedException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes) {
         ctx.gateway().readLock();
 
         try {
@@ -163,14 +161,13 @@ public class GridStreamerContextImpl implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
-        throws IgniteCheckedException {
+    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) {
         return reduce(clo, rdc, Collections.<ClusterNode>emptyList());
     }
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
-        Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        Collection<ClusterNode> nodes) {
         ctx.gateway().readLock();
 
         try {

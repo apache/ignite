@@ -54,7 +54,7 @@ public class VisorThreadDumpTask extends VisorOneNodeTask<Void, IgniteBiTuple<Vi
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<VisorThreadInfo[], long[]> run(Void arg) throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<VisorThreadInfo[], long[]> run(Void arg) {
             ThreadMXBean mx = U.getThreadMx();
 
             ThreadInfo[] info = mx.dumpAllThreads(true, true);

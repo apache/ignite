@@ -979,7 +979,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         queue.add(F.t(idx, consumeId));
                     }
-                    catch (ClusterTopologyCheckedException ignored) {
+                    catch (ClusterTopologyException ignored) {
                         // No-op.
                     }
 
@@ -1012,7 +1012,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         stopped.add(consumeId);
                     }
-                    catch (ClusterTopologyCheckedException ignored) {
+                    catch (ClusterTopologyException ignored) {
                         // No-op.
                     }
                 }
@@ -1044,7 +1044,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
                         comp.future().get(3000);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         // Ignore all job execution related errors.
                     }
                 }

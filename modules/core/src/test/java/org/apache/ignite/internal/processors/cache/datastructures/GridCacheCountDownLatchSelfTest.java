@@ -246,7 +246,7 @@ public class GridCacheCountDownLatchSelfTest extends GridCommonAbstractTest impl
             }
         });
 
-        IgniteInternalFuture<Object> fut = comp.future();
+        IgniteFuture<Object> fut = comp.future();
 
         Thread.sleep(3000);
 

@@ -32,12 +32,12 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
     private static final long serialVersionUID = 1L;
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
         Collection<ChunkPopulationJob> jobs = new ArrayList<>();
 
         int maxElements = 10000;
@@ -82,7 +82,7 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
 
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked", "ConstantConditions"})
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             Map<Object, TestValue> map = new TreeMap<>();
 
             for (int i = startElementIdx; i < startElementIdx + maxElements; i++) {
@@ -97,7 +97,7 @@ public class GridCacheLoadPopulationTask extends ComputeTaskSplitAdapter<Void, V
             g.log().info("Putting values to partitioned cache [nodeId=" + g.cluster().localNode().id() + ", mapSize=" +
                 map.size() + ']');
 
-            g.cache(GridCacheMultiNodeLoadTest.CACHE_NAME).putAll(map);
+            g.jcache(GridCacheMultiNodeLoadTest.CACHE_NAME).putAll(map);
 
             return null;
         }

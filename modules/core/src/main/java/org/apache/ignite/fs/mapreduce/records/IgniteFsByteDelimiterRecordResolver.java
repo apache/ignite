@@ -78,7 +78,7 @@ public class IgniteFsByteDelimiterRecordResolver implements IgniteFsRecordResolv
 
     /** {@inheritDoc} */
     @Override public IgniteFsFileRange resolveRecords(IgniteFs ggfs, IgniteFsInputStream stream,
-        IgniteFsFileRange suggestedRecord) throws IgniteCheckedException, IOException {
+        IgniteFsFileRange suggestedRecord) throws IgniteException, IOException {
         long suggestedStart = suggestedRecord.start();
         long suggestedEnd = suggestedStart + suggestedRecord.length();
 

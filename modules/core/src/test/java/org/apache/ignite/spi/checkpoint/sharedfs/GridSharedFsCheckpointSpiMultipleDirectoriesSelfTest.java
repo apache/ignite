@@ -108,7 +108,7 @@ public class GridSharedFsCheckpointSpiMultipleDirectoriesSelfTest extends
         try {
             getSpi().saveCheckpoint(CHECK_POINT_KEY_PREFIX, GridTestIoUtils.serializeJdk(state), 0, true);
         }
-        catch (IgniteCheckedException ignored) {
+        catch (IgniteException ignored) {
             error = true;
         }
 

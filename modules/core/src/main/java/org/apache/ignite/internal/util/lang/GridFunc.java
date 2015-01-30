@@ -500,13 +500,6 @@ public class GridFunc {
     };
 
     /** */
-    private static final IgnitePredicate<IgniteInternalFuture<?>> FINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
-        @Override public boolean apply(IgniteInternalFuture<?> f) {
-            return f.isDone();
-        }
-    };
-
-    /** */
     private static final IgnitePredicate<IgniteInternalFuture<?>> UNFINISHED_FUTURE = new IgnitePredicate<IgniteInternalFuture<?>>() {
         @Override public boolean apply(IgniteInternalFuture<?> f) {
             return !f.isDone();
@@ -8587,15 +8580,6 @@ public class GridFunc {
         assert f != null;
 
         return f;
-    }
-
-    /**
-     * Returns predicate for filtering finished futures.
-     *
-     * @return Predicate for filtering finished futures.
-     */
-    public static IgnitePredicate<IgniteInternalFuture<?>> finishedFutures() {
-        return FINISHED_FUTURE;
     }
 
     /**

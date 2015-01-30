@@ -38,7 +38,7 @@ class EventClosure implements IgniteInClosure<IgniteStreamer> {
             try {
                 streamer.addEvent(rnd.nextInt(rndRange));
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 X.println("Failed to add streamer event: " + e);
             }
         }

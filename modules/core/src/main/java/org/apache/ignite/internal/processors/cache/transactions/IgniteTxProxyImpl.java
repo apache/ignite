@@ -48,7 +48,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     private boolean async;
 
     /** Async call result. */
-    private IgniteInternalFuture asyncRes;
+    private IgniteFuture asyncRes;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -197,7 +197,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public <R> IgniteInternalFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         return asyncRes;
     }
 
@@ -236,7 +236,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
             IgniteInternalFuture<IgniteTx> commitFut = cctx.commitTxAsync(tx);
 
             if (async)
-                asyncRes = commitFut;
+                asyncRes = new IgniteFutureImpl(commitFut);
             else
                 commitFut.get();
         }
@@ -265,7 +265,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
             IgniteInternalFuture rollbackFut = cctx.rollbackTxAsync(tx);
 
             if (async)
-                asyncRes = rollbackFut;
+                asyncRes = new IgniteFutureImpl(rollbackFut);
             else
                 rollbackFut.get();
         }
@@ -278,8 +278,9 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
      * @param res Result to convert to finished future.
      */
     private void save(Object res) {
-        asyncRes = new GridFinishedFutureEx<>(res);
+        asyncRes = new IgniteFinishedFutureImplEx<>(res);
     }
+
     /** {@inheritDoc} */
     @Override public <V1> V1 addMeta(String name, V1 val) {
         return tx.addMeta(name, val);

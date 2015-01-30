@@ -35,6 +35,8 @@ public interface IgniteFuture<V> extends Future<V> {
      */
     @Override public V get() throws IgniteException, IgniteInterruptedException;
 
+    public V get(long timeout);
+
     /**
      * @param timeout
      * @param unit

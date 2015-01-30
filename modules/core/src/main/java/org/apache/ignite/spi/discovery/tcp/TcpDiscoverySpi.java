@@ -1284,7 +1284,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
 
                     locNode.setAttributes(attrs);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     throw new IgniteSpiException("Failed to authenticate local node (will shutdown local node).", e);
                 }
 
@@ -3155,7 +3155,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                         node.setAttributes(attrs);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException | IgniteCheckedException e) {
                     LT.error(log, e, "Authentication failed [nodeId=" + node.id() + ", addrs=" +
                         U.addressesAsString(node) + ']');
 
@@ -3610,7 +3610,7 @@ public class TcpDiscoverySpi extends TcpDiscoverySpiAdapter implements TcpDiscov
                                 authFailed = false;
                         }
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException | IgniteCheckedException e) {
                         U.error(log, "Failed to verify node permissions consistency (will drop the node): " + node, e);
                     }
                     finally {

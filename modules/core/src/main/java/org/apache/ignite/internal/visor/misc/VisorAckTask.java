@@ -40,7 +40,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -62,7 +62,7 @@ public class VisorAckTask extends VisorMultiNodeTask<String, Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(String arg) throws IgniteCheckedException {
+        @Override protected Void run(String arg) {
             System.out.println("<visor>: ack: " + (arg == null ? g.localNode().id() : arg));
 
             return null;

@@ -166,7 +166,7 @@ public abstract class GridCacheQueueRotativeMultiNodeAbstractTest extends GridCo
                 try {
                     assert grid(1).compute().call(new TakeJob(queueName));
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     error(e.getMessage(), e);
                 }
             }

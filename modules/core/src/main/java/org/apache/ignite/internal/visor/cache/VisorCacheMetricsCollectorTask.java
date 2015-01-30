@@ -44,8 +44,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results)
-        throws IgniteCheckedException {
+    @Nullable @Override protected Iterable<VisorCacheAggregatedMetrics> reduce0(List<ComputeJobResult> results) {
         Map<String, VisorCacheAggregatedMetrics> grpAggrMetrics = U.newHashMap(results.size());
 
         for (ComputeJobResult res : results) {
@@ -89,7 +88,7 @@ public class VisorCacheMetricsCollectorTask extends VisorMultiNodeTask<IgniteBiT
 
         /** {@inheritDoc} */
         @Override protected Map<String, VisorCacheMetrics>
-            run(IgniteBiTuple<Boolean, String> arg) throws IgniteCheckedException {
+            run(IgniteBiTuple<Boolean, String> arg) {
             Collection<? extends GridCache<?, ?>> caches = arg.get1() ? g.cachesx() : F.asList(g.cachex(arg.get2()));
 
             if (caches != null) {

@@ -48,9 +48,11 @@ import java.util.concurrent.locks.*;
 import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.events.IgniteEventType.*;
+import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 import static org.apache.ignite.internal.GridTopic.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 import static org.jdk8.backport.ConcurrentLinkedHashMap.QueuePolicy.*;
 
 /**
@@ -186,34 +188,31 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
                 final UUID clientId = req.clientId();
 
-                final ComputeTaskFuture<Object> taskFut;
+                final IgniteInternalFuture<Object> taskFut;
 
                 if (locExec) {
-                    ClusterGroup prj = ctx.grid().forSubjectId(clientId);
-
-                    IgniteCompute comp = ctx.grid().compute(prj).withTimeout(timeout).withAsync();
+                    ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, clientId);
+                    ctx.task().setThreadContext(TC_TIMEOUT, timeout);
 
                     Object arg = !F.isEmpty(params) ? params.size() == 1 ? params.get(0) : params.toArray() : null;
 
-                    comp.execute(name, arg);
-
-                    taskFut = comp.future();
+                    taskFut = ctx.task().execute(name, arg);
                 }
                 else {
                     // Using predicate instead of node intentionally
                     // in order to provide user well-structured EmptyProjectionException.
                     ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(req.destinationId()));
 
-                    IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
+                    ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-                    comp.call(new ExeCallable(name, params, timeout, clientId));
-
-                    taskFut = comp.future();
+                    taskFut = ctx.closure().callAsync(
+                        BALANCE,
+                        new ExeCallable(name, params, timeout, clientId), prj.nodes());
                 }
 
                 if (async) {
                     if (locExec) {
-                        IgniteUuid tid = taskFut.getTaskSession().getId();
+                        IgniteUuid tid = ((ComputeTaskInternalFuture)taskFut).getTaskSession().getId();
 
                         taskDescs.put(tid, new TaskDescriptor(false, null, null));
 
@@ -228,12 +227,12 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 taskFut.listenAsync(new IgniteInClosure<IgniteInternalFuture<Object>>() {
-                    @Override public void apply(IgniteInternalFuture<Object> f) {
+                    @Override public void apply(IgniteInternalFuture<Object> taskFut) {
                         try {
                             TaskDescriptor desc;
 
                             try {
-                                desc = new TaskDescriptor(true, f.get(), null);
+                                desc = new TaskDescriptor(true, taskFut.get(), null);
                             }
                             catch (IgniteCheckedException e) {
                                 if (e.hasCause(ClusterTopologyCheckedException.class, ClusterGroupEmptyCheckedException.class))
@@ -248,9 +247,9 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             }
 
                             if (async && locExec) {
-                                assert taskFut instanceof ComputeTaskFuture;
+                                assert taskFut instanceof ComputeTaskInternalFuture;
 
-                                IgniteUuid tid = ((ComputeTaskFuture)taskFut).getTaskSession().getId();
+                                IgniteUuid tid = ((ComputeTaskInternalFuture)taskFut).getTaskSession().getId();
 
                                 taskDescs.put(tid, desc);
                             }

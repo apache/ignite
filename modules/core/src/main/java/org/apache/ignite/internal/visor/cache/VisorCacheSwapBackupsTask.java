@@ -59,7 +59,7 @@ public class VisorCacheSwapBackupsTask extends VisorOneNodeTask<Set<String>, Map
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) throws IgniteCheckedException {
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> names) {
             Map<String, IgniteBiTuple<Integer, Integer>> total = new HashMap<>();
 
             for (GridCache c: g.cachesx()) {

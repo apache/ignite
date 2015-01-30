@@ -154,11 +154,11 @@ public interface ComputeJob extends Serializable {
      * @return Job execution result (possibly {@code null}). This result will be returned
      *      in {@link ComputeJobResult#getData()} method passed into
      *      {@link ComputeTask#result(ComputeJobResult, List)} task method on caller node.
-     * @throws IgniteCheckedException If job execution caused an exception. This exception will be
+     * @throws IgniteException If job execution caused an exception. This exception will be
      *      returned in {@link ComputeJobResult#getException()} method passed into
      *      {@link ComputeTask#result(ComputeJobResult, List)} task method on caller node.
      *      If execution produces a {@link RuntimeException} or {@link Error}, then
      *      it will be wrapped into {@link IgniteCheckedException}.
      */
-    @Nullable public Object execute() throws IgniteCheckedException;
+    @Nullable public Object execute() throws IgniteException;
 }

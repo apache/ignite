@@ -91,7 +91,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
                     "Invalid collision resolution count: " + colResolutionCnt;
             }
         }
-        catch (ComputeTaskTimeoutCheckedException e) {
+        catch (ComputeTaskTimeoutException e) {
             error("Task execution got timed out.", e);
         }
         catch (Exception e) {

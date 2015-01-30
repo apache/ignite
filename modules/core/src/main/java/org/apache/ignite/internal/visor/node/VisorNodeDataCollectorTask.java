@@ -20,7 +20,6 @@ package org.apache.ignite.internal.visor.node;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.visor.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -41,7 +40,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
 
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
-        VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) throws IgniteCheckedException {
+        VisorTaskArgument<VisorNodeDataCollectorTaskArg> arg) {
         assert arg != null;
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(subgrid.size());
@@ -63,25 +62,25 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorNodeDataCollectorTaskResult reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected VisorNodeDataCollectorTaskResult reduce0(List<ComputeJobResult> results) {
         return reduce(new VisorNodeDataCollectorTaskResult(), results);
     }
 
     protected VisorNodeDataCollectorTaskResult reduce(VisorNodeDataCollectorTaskResult taskResult,
-        List<ComputeJobResult> results) throws IgniteCheckedException {
+        List<ComputeJobResult> results) {
         for (ComputeJobResult res : results) {
             VisorNodeDataCollectorJobResult jobResult = res.getData();
 
             if (jobResult != null) {
                 UUID nid = res.getNode().id();
 
-                IgniteCheckedException unhandledEx = res.getException();
+                IgniteException unhandledEx = res.getException();
 
                 if (unhandledEx == null)
                     reduceJobResult(taskResult, jobResult, nid);
                 else {
                     // Ignore nodes that left topology.
-                    if (!(unhandledEx instanceof ClusterGroupEmptyCheckedException))
+                    if (!(unhandledEx instanceof ClusterGroupEmptyException))
                         taskResult.unhandledEx().put(nid, unhandledEx);
                 }
             }
@@ -91,7 +90,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
     }
 
     protected void reduceJobResult(VisorNodeDataCollectorTaskResult taskResult,
-        VisorNodeDataCollectorJobResult jobResult, UUID nid) throws IgniteCheckedException {
+        VisorNodeDataCollectorJobResult jobResult, UUID nid) {
         taskResult.gridNames().put(nid, jobResult.gridName());
 
         taskResult.topologyVersions().put(nid, jobResult.topologyVersion());

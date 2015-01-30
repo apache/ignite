@@ -71,7 +71,7 @@ public class GridFailoverContextImpl implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(List<ClusterNode> top) throws IgniteCheckedException {
+    @Override public ClusterNode getBalancedNode(List<ClusterNode> top) {
         return loadMgr.getBalancedNode(taskSes, top, jobRes.getJob());
     }
 

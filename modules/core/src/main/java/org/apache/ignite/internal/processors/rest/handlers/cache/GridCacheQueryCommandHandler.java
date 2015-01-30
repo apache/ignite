@@ -40,7 +40,9 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.GridClosureCallMode.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 
 /**
  * Cache query command handler.
@@ -114,27 +116,24 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param c Closure to execute.
      * @return Execution future.
      */
-    private IgniteInternalFuture<GridRestResponse> execute(UUID destId, String cacheName, Callable<GridRestResponse> c) {
+    private IgniteInternalFuture<GridRestResponse> execute(UUID destId,
+        String cacheName,
+        Callable<GridRestResponse> c)
+    {
         boolean locExec = destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec)
             return ctx.closure().callLocalSafe(c, false);
         else {
             if (ctx.discovery().node(destId) == null)
-                return new GridFinishedFutureEx<>(new IgniteCheckedException("Destination node ID has left the grid (retry " +
-                    "the query): " + destId));
+                return new GridFinishedFutureEx<>(new IgniteCheckedException("Destination node ID has left the grid " +
+                    "(retry the query): " + destId));
 
-            try {
-                IgniteCompute comp = ctx.grid().compute(ctx.grid().forNodeId(destId)).withNoFailover().withAsync();
+            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-                comp.call(c);
+            ctx.closure().callAsync(BALANCE, c, ctx.grid().forNodeId(destId).nodes());
 
-                return comp.future();
-            }
-            catch (IgniteCheckedException e) {
-                // Should not be thrown since uses asynchronous execution.
-                return new GridFinishedFutureEx<>(e);
-            }
+            return ctx.closure().callAsync(BALANCE, c, ctx.grid().forNodeId(destId).nodes());
         }
     }
 
@@ -144,30 +143,24 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private IgniteInternalFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        IgniteCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().withAsync();
+        ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-        try {
-            comp.broadcast(c);
+        IgniteInternalFuture<Collection<Object>> fut = ctx.closure().callAsync(BROADCAST,
+            Arrays.asList(c),
+            ctx.grid().forCache(cacheName).nodes());
 
-            IgniteInternalFuture<Collection<Object>> fut = comp.future();
+        return fut.chain(new C1<IgniteInternalFuture<Collection<Object>>, GridRestResponse>() {
+            @Override public GridRestResponse apply(IgniteInternalFuture<Collection<Object>> fut) {
+                try {
+                    fut.get();
 
-            return fut.chain(new C1<IgniteInternalFuture<Collection<Object>>, GridRestResponse>() {
-                @Override public GridRestResponse apply(IgniteInternalFuture<Collection<Object>> fut) {
-                    try {
-                        fut.get();
-
-                        return new GridRestResponse();
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new GridClosureException(e);
-                    }
+                    return new GridRestResponse();
                 }
-            });
-        }
-        catch (IgniteCheckedException e) {
-            // Should not be thrown since uses asynchronous execution.
-            return new GridFinishedFutureEx<>(e);
-        }
+                catch (IgniteCheckedException e) {
+                    throw new GridClosureException(e);
+                }
+            }
+        });
     }
 
     /**

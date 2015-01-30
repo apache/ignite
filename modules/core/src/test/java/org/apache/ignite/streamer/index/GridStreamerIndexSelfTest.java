@@ -93,7 +93,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
             fail("Exception should have been thrown.");
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -261,7 +261,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
                     try {
                         win.enqueue(evt);
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         if (e.getMessage().contains("Index unique key violation"))
                             nIdxErrors.incrementAndGet();
                         else
@@ -532,7 +532,7 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
 
                 fail("Exception should have been thrown.");
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 info("Caught expected exception: " + e);
             }
         }
@@ -675,9 +675,8 @@ public class GridStreamerIndexSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt)
-            throws IgniteCheckedException {
-            throw new IgniteCheckedException("Unique key violation: " + evt);
+        @Nullable @Override public String onAdded(StreamerIndexEntry<String, String, String> entry, String evt) {
+            throw new IgniteException("Unique key violation: " + evt);
         }
 
         /** {@inheritDoc} */

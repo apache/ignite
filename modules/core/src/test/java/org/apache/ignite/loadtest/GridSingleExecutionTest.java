@@ -242,7 +242,7 @@ public final class GridSingleExecutionTest {
     /** */
     public static class TestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
@@ -250,7 +250,7 @@ public final class GridSingleExecutionTest {
                     @IgniteLoggerResource
                     private IgniteLogger log;
 
-                    @Override public Serializable execute() throws IgniteCheckedException {
+                    @Override public Serializable execute() {
                         if (log.isInfoEnabled())
                             log.info("Executing job [index=" + argument(0) + ']');
 
@@ -263,7 +263,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results != null : "Unexpected result [results=" + results + ']';
             assert results.size() == JOB_COUNT : "Unexpected result [results=" + results + ']';
 
@@ -278,7 +278,7 @@ public final class GridSingleExecutionTest {
         private ComputeTaskSession ses;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJob> jobs = new ArrayList<>(JOB_COUNT);
 
             for (int i = 0; i < JOB_COUNT; i++) {
@@ -286,7 +286,7 @@ public final class GridSingleExecutionTest {
                     @IgniteLoggerResource
                     private IgniteLogger log;
 
-                    @Override public Serializable execute() throws IgniteCheckedException {
+                    @Override public Serializable execute() {
                         if (log.isInfoEnabled())
                             log.info("Executing job [index=" + argument(0) + ']');
 
@@ -306,7 +306,7 @@ public final class GridSingleExecutionTest {
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-            List<ComputeJobResult> received) throws IgniteCheckedException {
+            List<ComputeJobResult> received) {
             ses.setAttribute("attr7", 7);
             ses.setAttribute("attr8", 8);
 
@@ -314,7 +314,7 @@ public final class GridSingleExecutionTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results != null : "Unexpected result [results=" + results + ']';
             assert results.size() == JOB_COUNT : "Unexpected result [results=" + results + ']';
 

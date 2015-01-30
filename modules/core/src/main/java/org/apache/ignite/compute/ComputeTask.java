@@ -242,10 +242,10 @@ public interface ComputeTask<T, R> extends Serializable {
      *      over time should result into all nodes being used equally.
      * @return Map of grid jobs assigned to subgrid node. Unless {@link ComputeTaskContinuousMapper} is
      *      injected into task, if {@code null} or empty map is returned, exception will be thrown.
-     * @throws IgniteCheckedException If mapping could not complete successfully. This exception will be
+     * @throws IgniteException If mapping could not complete successfully. This exception will be
      *      thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteCheckedException;
+    @Nullable public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable T arg) throws IgniteException;
 
     /**
      * Asynchronous callback invoked every time a result from remote execution is
@@ -259,10 +259,10 @@ public interface ComputeTask<T, R> extends Serializable {
      *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Result policy that dictates how to process further upcoming
      *       job results.
-     * @throws IgniteCheckedException If handling a job result caused an error. This exception will
+     * @throws IgniteException If handling a job result caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException;
+    public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException;
 
     /**
      * Reduces (or aggregates) results received so far into one compound result to be returned to
@@ -275,8 +275,8 @@ public interface ComputeTask<T, R> extends Serializable {
      * @param results Received results of broadcasted remote executions. Note that if task class has
      *      {@link ComputeTaskNoResultCache} annotation, then this list will be empty.
      * @return Grid job result constructed from results of remote executions.
-     * @throws IgniteCheckedException If reduction or results caused an error. This exception will
+     * @throws IgniteException If reduction or results caused an error. This exception will
      *      be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteCheckedException;
+    @Nullable public R reduce(List<ComputeJobResult> results) throws IgniteException;
 }

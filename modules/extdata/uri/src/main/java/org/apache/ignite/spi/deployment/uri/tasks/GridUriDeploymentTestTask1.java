@@ -49,14 +49,14 @@ public class GridUriDeploymentTestTask1 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         return null;
     }
 
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

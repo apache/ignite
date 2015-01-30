@@ -132,11 +132,12 @@ public class GridUriDeploymentClassloaderRegisterSelfTest extends GridSpiAbstrac
      */
     private static class GridFileDeploymentTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return null;
         }
+
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

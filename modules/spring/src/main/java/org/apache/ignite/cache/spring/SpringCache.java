@@ -48,8 +48,11 @@ class SpringCache implements Cache, Serializable {
      * @param cache Cache.
      * @param keyFactory Key factory.
      */
-    SpringCache(String name, Ignite ignite, CacheProjection<?, ?> cache,
-                IgniteClosure<Object, Object> keyFactory) {
+    SpringCache(String name,
+        Ignite ignite,
+        CacheProjection<?, ?> cache,
+        IgniteClosure<Object, Object> keyFactory)
+    {
         assert cache != null;
 
         this.name = name;
@@ -138,7 +141,7 @@ class SpringCache implements Cache, Serializable {
         try {
             ignite.compute(cache.gridProjection()).broadcast(new ClearClosure(cache));
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new IgniteException("Failed to clear cache [cacheName=" + cache.name() + ']', e);
         }
     }

@@ -309,7 +309,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         try {
             paths = ggfs.listFiles(SUBDIR);
         }
-        catch (IgniteCheckedException ignore) {
+        catch (IgniteException ignore) {
             // No-op.
         }
 
@@ -342,7 +342,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         try {
             info = ggfs.info(DIR);
         }
-        catch (IgniteCheckedException ignore) {
+        catch (IgniteException ignore) {
             // No-op.
         }
 
@@ -1531,7 +1531,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         ggfs.mkdirs(SUBSUBDIR);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
 
@@ -1546,7 +1546,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         return ggfs.delete(DIR, true);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1583,7 +1583,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1596,7 +1596,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         return ggfs.delete(SUBDIR, true);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1647,7 +1647,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1660,7 +1660,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                     try {
                         return ggfs.delete(SUBDIR_NEW, true);
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1703,7 +1703,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1718,7 +1718,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1763,7 +1763,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1778,7 +1778,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         return true;
                     }
-                    catch (IgniteCheckedException ignored) {
+                    catch (IgniteException ignored) {
                         return false;
                     }
                 }
@@ -1991,7 +1991,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         ggfs.rename(fromPath, toPath);
                     }
-                    catch (IgniteCheckedException ignore) {
+                    catch (IgniteException ignore) {
                         // No-op.
                     }
                 }
@@ -2015,7 +2015,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         ggfs.delete(path, true);
                     }
-                    catch (IgniteCheckedException ignore) {
+                    catch (IgniteException ignore) {
                         // No-op.
                     }
                 }
@@ -2039,7 +2039,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         ggfs.update(path, properties("owner", "group", null));
                     }
-                    catch (IgniteCheckedException ignore) {
+                    catch (IgniteException ignore) {
                         // No-op.
                     }
                 }
@@ -2066,7 +2066,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                         ggfs.mkdirs(path);
 
                     }
-                    catch (IgniteCheckedException ignore) {
+                    catch (IgniteException ignore) {
                         // No-op.
                     }
                 }
@@ -2101,7 +2101,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
                             U.closeQuiet(os);
                         }
                     }
-                    catch (IOException | IgniteCheckedException ignore) {
+                    catch (IOException | IgniteException ignore) {
                         // No-op.
                     }
                 }
@@ -2253,7 +2253,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
         try {
             ggfs.update(file, Collections.singletonMap("prop", "val"));
         }
-        catch (IgniteCheckedException ignore) {
+        catch (IgniteException ignore) {
             // No-op.
         }
     }

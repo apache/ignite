@@ -418,7 +418,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEvent(Object evt, Object... evts) throws IgniteCheckedException {
+    @Override public void addEvent(Object evt, Object... evts) {
         A.notNull(evt, "evt");
 
         if (!F.isEmpty(evts))
@@ -428,7 +428,7 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventToStage(String stageName, Object evt, Object... evts) throws IgniteCheckedException {
+    @Override public void addEventToStage(String stageName, Object evt, Object... evts) {
         A.notNull(stageName, "stageName");
         A.notNull(evt, "evt");
 
@@ -439,14 +439,14 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void addEvents(Collection<?> evts) throws IgniteCheckedException {
+    @Override public void addEvents(Collection<?> evts) {
         A.ensure(!F.isEmpty(evts), "evts cannot be null or empty");
 
         addEventsToStage(firstStage, evts);
     }
 
     /** {@inheritDoc} */
-    @Override public void addEventsToStage(String stageName, Collection<?> evts) throws IgniteCheckedException {
+    @Override public void addEventsToStage(String stageName, Collection<?> evts) {
         A.notNull(stageName, "stageName");
         A.ensure(!F.isEmpty(evts), "evts cannot be empty or null");
 
@@ -454,6 +454,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
         try {
             addEvents0(null, 0, U.currentTimeMillis(), null, Collections.singleton(ctx.localNodeId()), stageName, evts);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             ctx.gateway().readUnlock();

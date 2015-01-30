@@ -137,7 +137,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             assert taskSes != null;
 
             if (log.isInfoEnabled())
@@ -147,7 +147,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
 
             for (int i = 1; i <= SPLIT_COUNT; i++) {
                 jobs.add(new ComputeJobAdapter(i) {
-                    @Override public Serializable execute() throws IgniteCheckedException {
+                    @Override public Serializable execute() {
                         assert taskSes != null;
 
                         if (log.isInfoEnabled())
@@ -166,7 +166,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
                                 fail("Invalid test session value: " + val);
                             }
                             catch (InterruptedException e) {
-                                throw new IgniteCheckedException("Failed to get attribute due to interruption.", e);
+                                throw new IgniteException("Failed to get attribute due to interruption.", e);
                             }
                         }
 
@@ -179,8 +179,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult result, List<ComputeJobResult> received) {
             if (result.getException() != null)
                 throw result.getException();
 
@@ -196,7 +195,7 @@ public class GridSessionJobWaitTaskAttributeSelfTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

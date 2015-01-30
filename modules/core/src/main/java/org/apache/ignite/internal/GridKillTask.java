@@ -40,8 +40,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
     private boolean restart;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Boolean restart) {
         assert restart != null;
 
         this.restart = restart;
@@ -71,7 +70,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
     }
 
     /** {@inheritDoc} */
-    @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -83,7 +82,7 @@ class GridKillTask extends ComputeTaskAdapter<Boolean, Void> {
         private static final long serialVersionUID = 0L;
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             if (restart)
                 new Thread(new Runnable() {
                     @Override public void run() {

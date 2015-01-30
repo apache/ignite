@@ -60,8 +60,7 @@ public class GridComputeJobWrapper implements ComputeJob, Callable<Object>,
     }
 
     /** {@inheritDoc} */
-    @Nullable
-    @Override public final Object call() throws Exception {
+    @Nullable @Override public final Object call() throws Exception {
         return execute();
     }
 
@@ -87,7 +86,7 @@ public class GridComputeJobWrapper implements ComputeJob, Callable<Object>,
     }
 
     /** {@inheritDoc} */
-    @Override public Object execute() throws IgniteCheckedException {
+    @Override public Object execute() {
         return job.execute();
     }
 

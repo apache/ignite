@@ -266,7 +266,8 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             IgniteInternalFuture<T> fut0 = ((IgniteFutureImpl<T>)comp.future()).internalFuture();
 
             IgniteInternalFuture<T> fut = fut0.chain(new CX1<IgniteInternalFuture<?>, T>() {
-                @Override public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                @Override
+                public T applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
                     fut.get();
 
                     return res;
@@ -315,8 +316,7 @@ public class GridExecutorService implements ExecutorService, Externalizable {
      *     ...
      * </pre>
      */
-    @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+    @Override public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
         return invokeAll(tasks, 0, TimeUnit.MILLISECONDS);
     }
 
@@ -363,9 +363,11 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             try {
                 comp.call(task);
 
-                fut = comp.future();
+                IgniteFutureImpl<T> fut0 = (IgniteFutureImpl<T>)comp.future();
+
+                fut = fut0.internalFuture();
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 // Should not be thrown since uses asynchronous execution.
                 fut = new GridFinishedFutureEx<>(e);
             }
@@ -503,9 +505,11 @@ public class GridExecutorService implements ExecutorService, Externalizable {
             {
                 comp.call(cmd);
 
-                fut = comp.future();
+                IgniteFutureImpl<T> fut0 = (IgniteFutureImpl<T>)comp.future();
+
+                fut = fut0.internalFuture();
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 // Should not be thrown since uses asynchronous execution.
                 fut = new GridFinishedFutureEx<>(e);
             }
@@ -583,9 +587,11 @@ public class GridExecutorService implements ExecutorService, Externalizable {
         try {
             comp.run(cmd);
 
-            addFuture(comp.future());
+            IgniteFutureImpl<?> fut0 = (IgniteFutureImpl<?>)comp.future();
+
+            addFuture(fut0.internalFuture());
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Should not be thrown since uses asynchronous execution.
             addFuture(new GridFinishedFutureEx(e));
         }

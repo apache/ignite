@@ -26,6 +26,8 @@ import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
 
+import java.util.concurrent.*;
+
 import static org.apache.ignite.events.IgniteEventType.*;
 
 /**
@@ -62,7 +64,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
         final int usrType = Integer.MAX_VALUE - 1;
 
-        IgniteInternalFuture<IgniteEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<IgniteEvent>() {
+        IgniteFuture<IgniteEvent> fut = waitForLocalEvent(ignite.events(), new IgnitePredicate<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent e) {
                 return e.type() == usrType;
             }
@@ -73,7 +75,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
             fail("GridFutureTimeoutException must have been thrown.");
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutException e) {
             info("Caught expected exception: " + e);
         }
 
@@ -100,7 +102,7 @@ public class GridEventStorageManagerSelfTest extends GridCommonAbstractTest {
 
             fail("GridFutureTimeoutException must have been thrown.");
         }
-        catch (IgniteFutureTimeoutCheckedException e) {
+        catch (IgniteFutureTimeoutException e) {
             info("Caught expected exception: " + e);
         }
     }

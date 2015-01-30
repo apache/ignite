@@ -62,9 +62,8 @@ public class GridifyJobAdapter extends ComputeJobAdapter {
      * out of this method.
      *
      * @return {@inheritDoc}
-     * @throws IgniteCheckedException {@inheritDoc}
      */
-    @Override public Object execute() throws IgniteCheckedException {
+    @Override public Object execute() {
         GridifyArgument arg = argument(0);
 
         try {
@@ -78,7 +77,7 @@ public class GridifyJobAdapter extends ComputeJobAdapter {
                     mtd.setAccessible(true);
                 }
                 catch (SecurityException e) {
-                    throw new IgniteCheckedException("Got security exception when attempting to soften access control for " +
+                    throw new IgniteException("Got security exception when attempting to soften access control for " +
                         "@Gridify method: " + mtd, e);
                 }
 
@@ -92,16 +91,16 @@ public class GridifyJobAdapter extends ComputeJobAdapter {
             return mtd.invoke(obj, arg.getMethodParameters());
         }
         catch (InvocationTargetException e) {
-            if (e.getTargetException() instanceof IgniteCheckedException)
-                throw (IgniteCheckedException)e.getTargetException();
+            if (e.getTargetException() instanceof IgniteException)
+                throw (IgniteException)e.getTargetException();
 
-            throw new IgniteCheckedException("Failed to invoke a method due to user exception.", e.getTargetException());
+            throw new IgniteException("Failed to invoke a method due to user exception.", e.getTargetException());
         }
         catch (IllegalAccessException e) {
-            throw new IgniteCheckedException("Failed to access method for execution.", e);
+            throw new IgniteException("Failed to access method for execution.", e);
         }
         catch (NoSuchMethodException e) {
-            throw new IgniteCheckedException("Failed to find method for execution.", e);
+            throw new IgniteException("Failed to find method for execution.", e);
         }
     }
 }

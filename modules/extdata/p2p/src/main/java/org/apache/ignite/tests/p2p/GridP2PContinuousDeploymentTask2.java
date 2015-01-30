@@ -29,7 +29,7 @@ import java.util.*;
  */
 public class GridP2PContinuousDeploymentTask2 extends ComputeTaskSplitAdapter<Object, Object> {
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         return Collections.singleton(new ComputeJobAdapter() {
             @Override public Object execute() {
                 X.println(">>> Executing GridP2PContinuousDeploymentTask2 job.");
@@ -40,7 +40,7 @@ public class GridP2PContinuousDeploymentTask2 extends ComputeTaskSplitAdapter<Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

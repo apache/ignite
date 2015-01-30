@@ -176,6 +176,48 @@ public class IgniteComputeImpl extends IgniteAsyncSupportAdapter<IgniteCompute>
         }
     }
 
+    /**
+     * @param task Task.
+     * @param arg Task argument.
+     * @return Task future.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> executeAsync(ComputeTask<T, R> task, @Nullable T arg) {
+        A.notNull(task, "task");
+
+        guard();
+
+        try {
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
+
+            return ctx.task().execute(task, arg);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /**
+     * @param taskName Task name.
+     * @param arg Task argument.
+     * @return Task future.
+     */
+    public <T, R> ComputeTaskInternalFuture<R> executeAsync(String taskName, @Nullable T arg) {
+        A.notNull(taskName, "taskName");
+
+        guard();
+
+        try {
+            ctx.task().setThreadContextIfNotNull(TC_SUBGRID, prj.nodes());
+            ctx.task().setThreadContextIfNotNull(TC_SUBJ_ID, subjId);
+
+            return ctx.task().execute(taskName, arg);
+        }
+        finally {
+            unguard();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void broadcast(Runnable job) {
         A.notNull(job, "job");

@@ -185,7 +185,7 @@ public class StreamingPopularNumbersExample {
 
                     System.out.println("----------------");
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }
@@ -207,8 +207,7 @@ public class StreamingPopularNumbersExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> nums)
-            throws IgniteCheckedException {
+        @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> nums) {
             StreamerWindow<Integer> win = ctx.window();
 
             // Add numbers to window.

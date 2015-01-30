@@ -58,8 +58,13 @@ public class VisorQueryNextPageTask extends VisorOneNodeTask<IgniteBiTuple<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) throws IgniteCheckedException {
-            return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+        @Override protected VisorQueryResult run(IgniteBiTuple<String, Integer> arg) {
+            try {
+                return arg.get1().startsWith(VisorQueryUtils.SCAN_QRY_NAME) ? nextScanPage(arg) : nextSqlPage(arg);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         /** Collect data from SQL query */

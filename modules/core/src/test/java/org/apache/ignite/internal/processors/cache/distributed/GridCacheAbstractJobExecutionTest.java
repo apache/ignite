@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
@@ -121,7 +122,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
 
         Ignite ignite = grid(0);
 
-        Collection<IgniteInternalFuture<?>> futs = new LinkedList<>();
+        Collection<ComputeTaskFuture<?>> futs = new LinkedList<>();
 
         IgniteCompute comp = ignite.compute().withAsync();
 
@@ -158,7 +159,7 @@ public abstract class GridCacheAbstractJobExecutionTest extends GridCommonAbstra
             futs.add(comp.future());
         }
 
-        for (IgniteInternalFuture<?> fut : futs)
+        for (ComputeTaskFuture<?> fut : futs)
             fut.get(); // Wait for completion.
 
         for (int i = 0; i < GRID_CNT; i++) {

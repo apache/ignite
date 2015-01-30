@@ -79,7 +79,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyArgument arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, GridifyArgument arg) {
         assert !subgrid.isEmpty() : "Subgrid should not be empty: " + subgrid;
 
         assert ignite != null : "Grid instance could not be injected";
@@ -98,7 +98,7 @@ public class GridifyDefaultTask extends ComputeTaskAdapter<GridifyArgument, Obje
     }
 
     /** {@inheritDoc} */
-    @Override public final Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public final Object reduce(List<ComputeJobResult> results) {
         assert results.size() == 1;
 
         ComputeJobResult res = results.get(0);

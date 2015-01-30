@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
@@ -478,7 +479,7 @@ public class GridCachePartitionedMultiNodeFullApiSelfTest extends GridCacheParti
                     }
                 });
 
-            IgniteInternalFuture<Boolean> f = comp.future();
+            ComputeTaskFuture<Boolean> f = comp.future();
 
             syncLatch.await();
 

@@ -459,14 +459,9 @@ public class GridCacheGgfsPerBlockLruEvictionPolicySelfTest extends GridGgfsComm
     public void checkMetrics(final long blocksRead, final long blocksReadRmt) throws Exception {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                try {
-                    IgniteFsMetrics metrics = ggfsPrimary.metrics();
+                IgniteFsMetrics metrics = ggfsPrimary.metrics();
 
-                    return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
-                }
-                catch (IgniteCheckedException e) {
-                    throw new RuntimeException(e);
-                }
+                return metrics.blocksReadTotal() == blocksRead && metrics.blocksReadRemote() == blocksReadRmt;
             }
         }, 5000) : "Unexpected metrics [expectedBlocksReadTotal=" + blocksRead + ", actualBlocksReadTotal=" +
             ggfsPrimary.metrics().blocksReadTotal() + ", expectedBlocksReadRemote=" + blocksReadRmt +

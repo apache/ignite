@@ -57,7 +57,7 @@ public class VisorCacheClearTask extends VisorOneNodeTask<Set<String>, Map<Strin
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> arg) throws IgniteCheckedException {
+        @Override protected Map<String, IgniteBiTuple<Integer, Integer>> run(Set<String> arg) {
             Map<String, IgniteBiTuple<Integer, Integer>> res = new HashMap<>();
 
             for(GridCache cache : g.cachesx()) {

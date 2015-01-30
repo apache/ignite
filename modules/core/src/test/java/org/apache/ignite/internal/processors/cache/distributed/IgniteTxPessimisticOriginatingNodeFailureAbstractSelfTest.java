@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.transactions.*;
@@ -189,7 +190,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     tx.commit();
 
-                    IgniteInternalFuture<IgniteTx> fut = tx.future();
+                    IgniteFuture<IgniteTx> fut = tx.future();
 
                     info("Got future for commitAsync().");
 

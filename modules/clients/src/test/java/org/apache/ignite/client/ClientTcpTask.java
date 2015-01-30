@@ -32,7 +32,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
 public class ClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-        throws IgniteCheckedException {
+        {
         Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
         if (list != null)
@@ -54,7 +54,7 @@ public class ClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int sum = 0;
 
         for (ComputeJobResult res : results)
@@ -64,7 +64,7 @@ public class ClientTcpTask extends ComputeTaskSplitAdapter<List<Object>, Integer
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 

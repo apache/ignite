@@ -20,6 +20,7 @@ package org.apache.ignite.loadtests.job;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.loadtests.util.*;
 import org.apache.ignite.testframework.*;
@@ -104,7 +105,7 @@ public class GridJobExecutionSingleNodeLoadTest {
                                 catch (ComputeTaskCancelledException ignored) {
                                     // No-op.
                                 }
-                                catch (IgniteCheckedException e) {
+                                catch (IgniteException e) {
                                     e.printStackTrace();
                                 }
                             }
@@ -204,18 +205,17 @@ public class GridJobExecutionSingleNodeLoadTest {
      */
     private static class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
         /** {@inheritDoc} */
-        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
-            throws IgniteCheckedException {
+        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
             return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             return REDUCE;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -225,7 +225,7 @@ public class GridJobExecutionSingleNodeLoadTest {
      */
     private static class GridJobExecutionLoadTestJob implements ComputeJob {
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             return null;
         }
 

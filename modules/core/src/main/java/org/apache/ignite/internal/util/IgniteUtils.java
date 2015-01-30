@@ -9160,6 +9160,8 @@ public abstract class IgniteUtils {
             return new IgniteDeploymentException(e.getMessage(), e.getCause());
         else if (e instanceof ComputeTaskTimeoutCheckedException)
             return new ComputeTaskTimeoutException(e.getMessage(), e.getCause());
+        else if (e instanceof ComputeTaskCancelledCheckedException)
+            return new ComputeTaskCancelledException(e.getMessage(), e.getCause());
         else if (e.getCause() instanceof IgniteException)
             return (IgniteException)e.getCause();
 

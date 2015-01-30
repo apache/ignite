@@ -125,7 +125,7 @@ public class GridTaskJobRejectSelfTest extends GridCommonAbstractTest {
             }
 
             /** {@inheritDoc} */
-            @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+            @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
                 return null;
             }
         }, null);

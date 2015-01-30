@@ -278,7 +278,7 @@ class VisorAlertCommand {
                             // Grid-wide metrics (not node specific).
                             case "cc" if v != null => gf = makeGridFilter(v, gf, grid.metrics().getTotalCpus)
                             case "nc" if v != null => gf = makeGridFilter(v, gf, grid.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf, IgniteUtils.neighborhood(grid.nodes()).size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf, U.neighborhood(grid.nodes()).size)
                             case "cl" if v != null => gf = makeGridFilter(v, gf,
                                 () => (grid.metrics().getAverageCpuLoad * 100).toLong)
 

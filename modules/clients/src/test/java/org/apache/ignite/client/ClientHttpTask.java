@@ -35,7 +35,7 @@ public class ClientHttpTask extends ComputeTaskSplitAdapter<String, Integer> {
     private final ClientTcpTask delegate = new ClientTcpTask();
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
         JSON json = JSONSerializer.toJSON(arg);
 
         List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
@@ -45,12 +45,12 @@ public class ClientHttpTask extends ComputeTaskSplitAdapter<String, Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         return delegate.reduce(results);
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 

@@ -55,19 +55,14 @@ public class ComputeScheduleExample {
                     @Override public Integer call() {
                         invocations++;
 
-                        try {
-                            g.compute().broadcast(
-                                new IgniteRunnable() {
-                                    @Override public void run() {
-                                        System.out.println();
-                                        System.out.println("Howdy! :) ");
-                                    }
+                        g.compute().broadcast(
+                            new IgniteRunnable() {
+                                @Override public void run() {
+                                    System.out.println();
+                                    System.out.println("Howdy! :) ");
                                 }
-                            );
-                        }
-                        catch (IgniteCheckedException e) {
-                            throw new IgniteException(e);
-                        }
+                            }
+                        );
 
                         return invocations;
                     }

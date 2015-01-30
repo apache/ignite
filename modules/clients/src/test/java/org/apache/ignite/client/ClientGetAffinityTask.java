@@ -36,7 +36,7 @@ public class ClientGetAffinityTask extends TaskSingleJobSplitAdapter<String, Int
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String arg) throws IgniteCheckedException {
+    @Override protected Object executeJob(int gridSize, String arg) {
         A.notNull(arg, "task argument");
 
         String[] split = arg.split(":", 2);
@@ -55,7 +55,7 @@ public class ClientGetAffinityTask extends TaskSingleJobSplitAdapter<String, Int
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return FAILOVER;
 

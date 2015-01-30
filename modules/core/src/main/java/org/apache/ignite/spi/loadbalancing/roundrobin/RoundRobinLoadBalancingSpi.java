@@ -276,8 +276,7 @@ public class RoundRobinLoadBalancingSpi extends IgniteSpiAdapter implements Load
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job)
-        throws IgniteCheckedException {
+    @Override public ClusterNode getBalancedNode(ComputeTaskSession ses, List<ClusterNode> top, ComputeJob job) {
         A.notNull(ses, "ses", top, "top");
 
         if (isPerTask) {

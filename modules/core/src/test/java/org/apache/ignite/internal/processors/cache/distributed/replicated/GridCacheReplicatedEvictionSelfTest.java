@@ -79,7 +79,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
                 assertNotNull(cache(g).peek(String.valueOf(i)));
         }
 
-        Collection<IgniteInternalFuture<IgniteEvent>> futs = new ArrayList<>();
+        Collection<IgniteFuture<IgniteEvent>> futs = new ArrayList<>();
 
         for (int g = 0 ; g < gridCount(); g++)
             futs.add(waitForLocalEvent(grid(g).events(), nodeEvent(grid(g).localNode().id()), EVT_CACHE_ENTRY_EVICTED));
@@ -91,7 +91,7 @@ public class GridCacheReplicatedEvictionSelfTest extends GridCacheAbstractSelfTe
             }
         }
 
-        for (IgniteInternalFuture<IgniteEvent> fut : futs)
+        for (IgniteFuture<IgniteEvent> fut : futs)
             fut.get(3000);
 
         boolean evicted = GridTestUtils.waitForCondition(new PA() {

@@ -31,8 +31,7 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  */
 public class GridJobLoadTestTask extends ComputeTaskAdapter<GridJobLoadTestParams, Integer> {
     /**{@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable GridJobLoadTestParams arg) {
         assert !subgrid.isEmpty();
 
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
@@ -54,13 +53,13 @@ public class GridJobLoadTestTask extends ComputeTaskAdapter<GridJobLoadTestParam
      *
      * {@inheritDoc}
      */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         return res.getException() == null ? WAIT :
             res.getException().getCause() instanceof AssertionError ? REDUCE : FAILOVER;
     }
 
     /**{@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int sum = 0;
 
         for (ComputeJobResult r: results) {

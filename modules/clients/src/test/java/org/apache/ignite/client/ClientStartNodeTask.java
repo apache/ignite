@@ -60,7 +60,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
     private transient Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected Object executeJob(int gridSize, String type) throws IgniteCheckedException {
+    @Override protected Object executeJob(int gridSize, String type) {
         log.info(">>> Starting new grid node [currGridSize=" + gridSize + ", arg=" + type + "]");
 
         if (type == null)
@@ -84,7 +84,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
 
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        throws IgniteCheckedException {
+        {
         if (res.getException() != null)
             return FAILOVER;
 

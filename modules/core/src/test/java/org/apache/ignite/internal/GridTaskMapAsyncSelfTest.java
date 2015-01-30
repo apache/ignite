@@ -76,7 +76,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     @ComputeTaskMapAsync
     private static class AsyncMappedTask extends BaseTask {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<? extends ComputeJob> res = super.split(gridSize, arg);
 
             assert mainThread != mapper;
@@ -90,7 +90,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
      */
     private static class SyncMappedTask extends BaseTask {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<? extends ComputeJob> res = super.split(gridSize, arg);
 
             assert mainThread == mapper;
@@ -117,7 +117,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         protected IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             mapper = Thread.currentThread();
 
             return Collections.singleton(new ComputeJobAdapter() {
@@ -134,7 +134,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

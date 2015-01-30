@@ -552,7 +552,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteInternalFuture<R> future() {
+        @Override public <R> IgniteFuture<R> future() {
             return null;
         }
 

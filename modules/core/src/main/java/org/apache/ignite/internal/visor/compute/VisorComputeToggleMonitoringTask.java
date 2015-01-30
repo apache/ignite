@@ -41,7 +41,7 @@ public class VisorComputeToggleMonitoringTask extends
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Boolean reduce0(List<ComputeJobResult> results) {
         Collection<Boolean> toggles = new HashSet<>();
 
         for (ComputeJobResult res: results)
@@ -72,7 +72,7 @@ public class VisorComputeToggleMonitoringTask extends
         }
 
         /** {@inheritDoc} */
-        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) throws IgniteCheckedException {
+        @Override protected Boolean run(IgniteBiTuple<String, Boolean> arg) {
             if (checkExplicitTaskMonitoring(g))
                 return true;
             else {

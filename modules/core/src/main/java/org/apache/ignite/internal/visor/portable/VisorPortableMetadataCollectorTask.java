@@ -55,7 +55,7 @@ public class VisorPortableMetadataCollectorTask extends VisorOneNodeTask<Long, I
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Long, Collection<VisorPortableMetadata>> run(Long lastUpdate) throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<Long, Collection<VisorPortableMetadata>> run(Long lastUpdate) {
             final IgnitePortables p = g.portables();
 
             final Collection<VisorPortableMetadata> data = new ArrayList<>(p.metadata().size());

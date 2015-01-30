@@ -124,7 +124,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -142,7 +142,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

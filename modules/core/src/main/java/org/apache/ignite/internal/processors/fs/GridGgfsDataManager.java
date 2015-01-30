@@ -1100,9 +1100,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
                     return;
                 }
 
-                completionFut.onLocalError(new IgniteFsOutOfSpaceException("Failed to write data block " +
+                IgniteFsOutOfSpaceException e = new IgniteFsOutOfSpaceException("Failed to write data block " +
                     "(GGFS maximum data size exceeded) [used=" + dataCachePrj.ggfsDataSpaceUsed() +
-                        ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']'));
+                    ", allowed=" + dataCachePrj.ggfsDataSpaceMax() + ']');
+
+                completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
+                    ggfsCtx.kernalContext().localNodeId(), e));
 
                 return;
             }
@@ -1843,25 +1846,12 @@ public class GridGgfsDataManager extends GridGgfsManager {
 
             // If waiting for ack from this node.
             if (reqIds != null && !reqIds.isEmpty()) {
-                if (e instanceof IgniteFsOutOfSpaceException)
+                if (e.getCause() instanceof IgniteFsOutOfSpaceException)
                     onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " + nodeId, e));
                 else
                     onDone(new IgniteCheckedException(
                         "Failed to wait for write completion (write failed on node): " + nodeId, e));
             }
-        }
-
-        /**
-         * @param e Error.
-         */
-        private void onLocalError(IgniteCheckedException e) {
-            if (e instanceof IgniteFsOutOfSpaceException)
-                onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                    ggfsCtx.kernalContext().localNodeId(), e));
-            else
-                onDone(new IgniteCheckedException(
-                    "Failed to wait for write completion (write failed on node): " +
-                        ggfsCtx.kernalContext().localNodeId(), e));
         }
 
         /**

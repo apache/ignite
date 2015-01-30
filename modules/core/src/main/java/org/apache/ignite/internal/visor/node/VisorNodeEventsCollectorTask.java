@@ -51,8 +51,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
 
     /** {@inheritDoc} */
     @Override protected Iterable<? extends VisorGridEvent> reduce0(
-        List<ComputeJobResult> results) throws IgniteCheckedException {
-
+        List<ComputeJobResult> results) {
         Collection<VisorGridEvent> allEvents = new ArrayList<>();
 
         for (ComputeJobResult r : results) {
@@ -262,8 +261,7 @@ public class VisorNodeEventsCollectorTask extends VisorMultiNodeTask<VisorNodeEv
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends VisorGridEvent> run(final VisorNodeEventsCollectorTaskArg arg) {
             final long startEvtTime = arg.timeArgument() == null ? 0L : System.currentTimeMillis() - arg.timeArgument();
 
             final ClusterNodeLocalMap<String, Long> nl = g.nodeLocalMap();

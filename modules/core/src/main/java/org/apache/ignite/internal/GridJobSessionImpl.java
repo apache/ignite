@@ -126,14 +126,19 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> refreshJobSiblings() throws IgniteCheckedException {
+    @Override public Collection<ComputeJobSibling> refreshJobSiblings() {
         if (!isTaskNode()) {
-            Collection<ComputeJobSibling> sibs = ctx.job().requestJobSiblings(this);
+            try {
+                Collection<ComputeJobSibling> sibs = ctx.job().requestJobSiblings(this);
 
-            // Request siblings list from task node (task is continuous).
-            ses.setJobSiblings(sibs);
+                // Request siblings list from task node (task is continuous).
+                ses.setJobSiblings(sibs);
 
-            return sibs;
+                return sibs;
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         if (!ses.isFullSupport()) {
@@ -147,7 +152,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ComputeJobSibling> getJobSiblings() throws IgniteCheckedException {
+    @Override public Collection<ComputeJobSibling> getJobSiblings() {
         Collection<ComputeJobSibling> sibs = ses.getJobSiblings();
 
         if (sibs == null) {
@@ -160,15 +165,20 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
                 return fut.getTaskSession().getJobSiblings();
             }
 
-            // Request siblings list from task node (task is continuous).
-            ses.setJobSiblings(sibs = ctx.job().requestJobSiblings(this));
+            try {
+                // Request siblings list from task node (task is continuous).
+                ses.setJobSiblings(sibs = ctx.job().requestJobSiblings(this));
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
 
         return sibs;
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) throws IgniteCheckedException {
+    @Override public ComputeJobSibling getJobSibling(IgniteUuid jobId) {
         for (ComputeJobSibling sib : getJobSiblings())
             if (sib.getJobId().equals(jobId))
                 return sib;
@@ -177,7 +187,7 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttribute(Object key, @Nullable Object val) throws IgniteCheckedException {
+    @Override public void setAttribute(Object key, @Nullable Object val) {
         setAttributes(Collections.singletonMap(key, val));
     }
 
@@ -188,13 +198,18 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void setAttributes(Map<?, ?> attrs) throws IgniteCheckedException {
+    @Override public void setAttributes(Map<?, ?> attrs) {
         ses.setAttributes(attrs);
 
-        if (!isTaskNode())
-            ctx.job().setAttributes(this, attrs);
+        if (!isTaskNode()) {
+            try {
+                ctx.job().setAttributes(this, attrs);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
     }
-
 
     /** {@inheritDoc} */
     @Override public Map<?, ?> getAttributes() {
@@ -234,30 +249,29 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state) throws IgniteCheckedException {
+    @Override public void saveCheckpoint(String key, Object state) {
         saveCheckpoint(key, state, ComputeTaskSessionScope.SESSION_SCOPE, 0);
     }
 
     /** {@inheritDoc} */
-    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout)
-        throws IgniteCheckedException {
+    @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope, long timeout) {
         saveCheckpoint(key, state, scope, timeout, true);
     }
 
     /** {@inheritDoc} */
     @Override public void saveCheckpoint(String key, Object state, ComputeTaskSessionScope scope,
-        long timeout, boolean overwrite) throws IgniteCheckedException {
+        long timeout, boolean overwrite) {
         ses.saveCheckpoint0(this, key, state, scope, timeout, overwrite);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override public <T> T loadCheckpoint(String key) throws IgniteCheckedException {
+    @Override public <T> T loadCheckpoint(String key) {
         return ses.loadCheckpoint0(this, key);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeCheckpoint(String key) throws IgniteCheckedException {
+    @Override public boolean removeCheckpoint(String key) {
         return ses.removeCheckpoint0(this, key);
     }
 

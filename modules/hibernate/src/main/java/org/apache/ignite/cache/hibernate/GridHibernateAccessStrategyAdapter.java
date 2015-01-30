@@ -286,7 +286,7 @@ public abstract class GridHibernateAccessStrategyAdapter {
         try {
             ignite.compute(cache.gridProjection()).call(new ClearKeyCallable(key, cache.name()));
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw new CacheException(e);
         }
     }

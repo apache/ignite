@@ -32,7 +32,7 @@ import java.util.*;
 public class CacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode, Object> {
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable ClusterNode node) throws IgniteCheckedException {
+        @Nullable ClusterNode node) {
         return F.asMap(
             new ComputeJobAdapter() {
                 @IgniteInstanceResource
@@ -50,7 +50,7 @@ public class CacheDeploymentTestTask2 extends ComputeTaskAdapter<ClusterNode, Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

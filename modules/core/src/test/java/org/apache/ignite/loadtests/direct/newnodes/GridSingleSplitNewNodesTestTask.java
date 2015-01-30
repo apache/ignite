@@ -38,7 +38,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
     private ComputeLoadBalancer balancer;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Integer arg) {
         assert !subgrid.isEmpty() : "Subgrid cannot be empty.";
 
         Map<ComputeJobAdapter, ClusterNode> jobs = new HashMap<>(subgrid.size());
@@ -55,7 +55,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
                 private ComputeTaskSession jobSes;
 
                 /** {@inheritDoc} */
-                @Override public Serializable execute() throws IgniteCheckedException {
+                @Override public Serializable execute() {
                     assert jobSes != null;
 
                     Integer arg = this.<Integer>argument(0);
@@ -81,7 +81,7 @@ public class GridSingleSplitNewNodesTestTask extends ComputeTaskAdapter<Integer,
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         int retVal = 0;
 
         for (ComputeJobResult res : results) {

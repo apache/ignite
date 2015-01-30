@@ -80,8 +80,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param ctx Grid kernal context.
      * @param p Predicate.
      */
-    protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                  @Nullable UUID subjId, @Nullable IgnitePredicate<ClusterNode> p) {
+    protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
+        @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId,
+        @Nullable IgnitePredicate<ClusterNode> p)
+    {
         this.parent = parent;
 
         if (ctx != null)
@@ -98,8 +101,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param ctx Grid kernal context.
      * @param ids Node IDs.
      */
-    protected ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                  @Nullable UUID subjId, Set<UUID> ids) {
+    protected ClusterGroupAdapter(@Nullable ClusterGroup parent,
+        @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId,
+        Set<UUID> ids)
+    {
         this.parent = parent;
 
         if (ctx != null)
@@ -119,8 +125,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      * @param p Predicate.
      * @param ids Node IDs.
      */
-    private ClusterGroupAdapter(@Nullable ClusterGroup parent, @Nullable GridKernalContext ctx,
-                                @Nullable UUID subjId, @Nullable IgnitePredicate<ClusterNode> p, Set<UUID> ids) {
+    private ClusterGroupAdapter(@Nullable ClusterGroup parent,
+        @Nullable GridKernalContext ctx,
+        @Nullable UUID subjId,
+        @Nullable IgnitePredicate<ClusterNode> p,
+        Set<UUID> ids)
+    {
         this.parent = parent;
 
         if (ctx != null)

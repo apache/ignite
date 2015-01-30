@@ -90,9 +90,9 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         comp.run(putJob);
 
-        IgniteInternalFuture<?> fut = comp.future();
+        IgniteFuture<?> fut = comp.future();
 
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
+        Collection<IgniteFuture<?>> futs = new ArrayList<>(GRID_CNT - 1);
 
         Collection<TakeJob> jobs = new ArrayList<>(GRID_CNT - 1);
 
@@ -135,7 +135,7 @@ public abstract class GridCacheQueueJoinedNodeSelfAbstractTest extends GridCommo
 
         info(">>> Joined node polled " + polled);
 
-        for (IgniteInternalFuture<?> f : futs)
+        for (IgniteFuture<?> f : futs)
             f.cancel();
 
         putJob.stop(true);

@@ -295,7 +295,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param sndReply {@code True} to send reply.
      */
     private void rejectJob(GridJobWorker job, boolean sndReply) {
-        IgniteCheckedException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
+        IgniteException e = new ComputeExecutionRejectedException("Job was cancelled before execution [taskSesId=" +
             job.getSession().getId() + ", jobId=" + job.getJobId() + ", job=" + job.getJob() + ']');
 
         job.finishJob(null, e, sndReply);
@@ -1013,9 +1013,9 @@ public class GridJobProcessor extends GridProcessorAdapter {
                         jobCtx = new GridJobContextImpl(ctx, req.getJobId(), jobAttrs);
                     }
                     catch (IgniteCheckedException e) {
-                        IgniteCheckedException ex = new IgniteCheckedException("Failed to deserialize task attributes [taskName=" +
-                            req.getTaskName() + ", taskClsName=" + req.getTaskClassName() + ", codeVer=" +
-                            req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
+                        IgniteException ex = new IgniteException("Failed to deserialize task attributes " +
+                            "[taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
+                            ", codeVer=" + req.getUserVersion() + ", taskClsLdr=" + dep.classLoader() + ']', e);
 
                         U.error(log, ex.getMessage(), e);
 
@@ -1093,7 +1093,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                 }
                 else {
                     // Deployment is null.
-                    IgniteCheckedException ex = new IgniteDeploymentCheckedException("Task was not deployed or was redeployed since " +
+                    IgniteException ex = new IgniteDeploymentException("Task was not deployed or was redeployed since " +
                         "task execution [taskName=" + req.getTaskName() + ", taskClsName=" + req.getTaskClassName() +
                         ", codeVer=" + req.getUserVersion() + ", clsLdrId=" + req.getClassLoaderId() +
                         ", seqNum=" + req.getClassLoaderId().localId() + ", depMode=" + req.getDeploymentMode() +
@@ -1176,7 +1176,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job has been removed from another thread, we need to reject it
             // here since job has never been executed.
-            IgniteCheckedException e2 = new ComputeExecutionRejectedException(
+            IgniteException e2 = new ComputeExecutionRejectedException(
                 "Job was cancelled before execution [jobSes=" + jobWorker.
                     getSession() + ", job=" + jobWorker.getJob() + ']');
 
@@ -1224,7 +1224,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
             // Even if job was removed from another thread, we need to reject it
             // here since job has never been executed.
-            IgniteCheckedException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
+            IgniteException e2 = new ComputeExecutionRejectedException("Job has been rejected " +
                 "[jobSes=" + jobWorker.getSession() + ", job=" + jobWorker.getJob() + ']', e);
 
             if (metricsUpdateFreq > -1L)
@@ -1244,7 +1244,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
      * @param ex Exception that happened.
      * @param endTime Job end time.
      */
-    private void handleException(ClusterNode node, GridJobExecuteRequest req, IgniteCheckedException ex, long endTime) {
+    private void handleException(ClusterNode node, GridJobExecuteRequest req, IgniteException ex, long endTime) {
         UUID locNodeId = ctx.localNodeId();
 
         ClusterNode sndNode = ctx.discovery().node(node.id());

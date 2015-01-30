@@ -107,7 +107,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
             try {
                 G.ignite(getTestGridName()).compute().execute(t.getClass(), null);
             }
-            catch (IgniteCheckedException e) {
+            catch (IgniteException e) {
                 assert false : "Failed to execute task [iteration=" + i + ", err=" + e.getMessage() + ']';
             }
 
@@ -129,7 +129,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         private AtomicBoolean stop = new AtomicBoolean();
 
         /** {@inheritDoc} */
-        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             ignite.message().localListen(null, new P2<UUID, Object>() {
                 @Override public boolean apply(UUID uuid, Object o) {
                     return stop.get();
@@ -144,7 +144,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             stop.set(true);
 
             return null;

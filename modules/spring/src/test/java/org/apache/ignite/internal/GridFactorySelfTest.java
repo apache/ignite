@@ -763,12 +763,12 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Void, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new TestJob());
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -779,7 +779,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     private static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
         @SuppressWarnings("StatementWithEmptyBody")
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             long start = System.currentTimeMillis();
 
             while (System.currentTimeMillis() - start < 3000);

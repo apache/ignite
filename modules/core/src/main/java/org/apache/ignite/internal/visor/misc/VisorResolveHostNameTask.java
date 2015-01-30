@@ -58,7 +58,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
         }
 
         /** {@inheritDoc} */
-        @Override protected Map<String, String> run(Void arg) throws IgniteCheckedException {
+        @Override protected Map<String, String> run(Void arg) {
             Map<String, String> res = new HashMap<>();
 
             try {
@@ -90,7 +90,7 @@ public class VisorResolveHostNameTask extends VisorOneNodeTask<Void, Map<String,
                 }
             }
             catch (Throwable e) {
-                throw new IgniteCheckedException("Failed to resolve host name", e);
+                throw new IgniteException("Failed to resolve host name", e);
             }
 
             return res;

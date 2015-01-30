@@ -51,7 +51,7 @@ public class VisorComputeResetMetricsTask extends VisorOneNodeTask<Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws IgniteCheckedException {
+        @Override protected Void run(Void arg) {
             g.resetMetrics();
 
             return null;

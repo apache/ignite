@@ -32,18 +32,17 @@ import static org.apache.ignite.compute.ComputeJobResultPolicy.*;
  */
 public class GridJobExecutionLoadTestTask implements ComputeTask<Object, Object> {
     /** {@inheritDoc} */
-    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg)
-        throws IgniteCheckedException {
+    @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
         return F.asMap(new GridJobExecutionLoadTestJob(), subgrid.get(0));
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         return REDUCE;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

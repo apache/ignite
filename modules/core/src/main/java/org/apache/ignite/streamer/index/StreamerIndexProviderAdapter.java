@@ -154,7 +154,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param sync Sync.
      * @param evt Event.
      */
-    @Override public void add(StreamerIndexUpdateSync sync, E evt) throws IgniteCheckedException {
+    @Override public void add(StreamerIndexUpdateSync sync, E evt) {
         assert evt != null;
 
         if (threadLocKey.get() != null)
@@ -182,7 +182,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param sync Sync.
      * @param evt Event.
      */
-    @Override public void remove(StreamerIndexUpdateSync sync, E evt) throws IgniteCheckedException {
+    @Override public void remove(StreamerIndexUpdateSync sync, E evt) {
         assert evt != null;
 
         if (threadLocKey.get() != null)
@@ -309,9 +309,9 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param evt Event.
      * @param key key.
      * @param sync Sync.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    protected abstract void add(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException;
+    protected abstract void add(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteException;
 
     /**
      * Remove event from the index.
@@ -319,18 +319,18 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      * @param evt Event.
      * @param key Key.
      * @param sync Sync.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    protected abstract void remove(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException;
+    protected abstract void remove(E evt, K key, StreamerIndexUpdateSync sync) throws IgniteException;
 
     /**
      * Lock updates on particular key.
      *
      * @param key Key.
      * @param sync Sync.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private void lockKey(K key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
+    private void lockKey(K key, StreamerIndexUpdateSync sync) throws IgniteException {
         assert key != null;
         assert sync != null;
 
@@ -342,7 +342,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
                     old.await();
                 }
                 catch (InterruptedException e) {
-                    throw new IgniteCheckedException("Failed to lock on key (thread has been interrupted): " + key, e);
+                    throw new IgniteException("Failed to lock on key (thread has been interrupted): " + key, e);
                 }
 
                 // No point to replace or remove sync here.
@@ -370,9 +370,9 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
      *
      * @param key Key.
      * @param sync Sync.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    protected void lockIndexKey(IndexKey<V> key, StreamerIndexUpdateSync sync) throws IgniteCheckedException {
+    protected void lockIndexKey(IndexKey<V> key, StreamerIndexUpdateSync sync) throws IgniteException {
         assert key != null;
         assert sync != null;
         assert isUnique();
@@ -385,7 +385,7 @@ public abstract class StreamerIndexProviderAdapter<E, K, V> implements StreamerI
                     old.await();
                 }
                 catch (InterruptedException e) {
-                    throw new IgniteCheckedException("Failed to lock on key (thread has been interrupted): " + key, e);
+                    throw new IgniteException("Failed to lock on key (thread has been interrupted): " + key, e);
                 }
 
                 // No point to replace or remove sync here.

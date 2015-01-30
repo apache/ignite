@@ -558,7 +558,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteInternalFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         throw new UnsupportedOperationException("future() should not be called on IgniteTxAdapter directly.");
     }
 
@@ -1570,7 +1570,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteInternalFuture<R> future() {
+        @Override public <R> IgniteFuture<R> future() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

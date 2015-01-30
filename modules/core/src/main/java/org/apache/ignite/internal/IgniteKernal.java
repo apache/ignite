@@ -2499,7 +2499,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             compute().undeployTask(taskName);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw U.jmException(e);
         }
     }
@@ -2510,7 +2510,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         try {
             return compute().<String, String>execute(taskName, arg);
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             throw U.jmException(e);
         }
     }
@@ -2648,7 +2648,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public <R> IgniteInternalFuture<R> future() {
+    @Override public <R> IgniteFuture<R> future() {
         throw new IllegalStateException("Asynchronous mode is not enabled.");
     }
 
@@ -2728,7 +2728,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                         try {
                             compute(forNodes(neighbors)).execute(GridKillTask.class, false);
                         }
-                        catch (ClusterGroupEmptyCheckedException ignored) {
+                        catch (ClusterGroupEmptyException ignored) {
                             // No-op, nothing to restart.
                         }
                     }

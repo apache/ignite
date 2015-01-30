@@ -188,8 +188,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTask.VisorQueryAr
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg)
-            throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<? extends Exception, VisorQueryResultEx> run(VisorQueryArg arg) {
             try {
                 Boolean scan = arg.queryTxt().toUpperCase().startsWith("SCAN");
 

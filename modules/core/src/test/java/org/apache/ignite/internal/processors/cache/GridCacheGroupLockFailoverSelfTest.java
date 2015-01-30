@@ -327,8 +327,8 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
 
         ComputeTaskFuture<Void> fut = comp.future();
 
-        fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
-            @Override public void apply(IgniteInternalFuture<Void> f) {
+        fut.listenAsync(new CI1<IgniteFuture<Void>>() {
+            @Override public void apply(IgniteFuture<Void> f) {
                 ComputeTaskFuture taskFut = (ComputeTaskFuture)f;
 
                 boolean fail = false;
@@ -336,7 +336,7 @@ public class GridCacheGroupLockFailoverSelfTest extends GridCommonAbstractTest {
                 try {
                     f.get(); //if something went wrong - we'll get exception here
                 }
-                catch (IgniteCheckedException ignore) {
+                catch (IgniteException ignore) {
                     info("Put task failed, going to remap keys: " + dataChunk.size());
 
                     fail = true;

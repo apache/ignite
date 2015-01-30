@@ -186,7 +186,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
             assertNull(ggfsAsync.execute(
                 new Task(), new IgniteFsStringDelimiterRecordResolver(" "), Collections.singleton(FILE), arg));
 
-            IgniteInternalFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
+            IgniteFuture<IgniteBiTuple<Long, Integer>> fut = ggfsAsync.future();
 
             assertNotNull(fut);
 
@@ -198,16 +198,11 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         ggfsAsync.format();
 
-        IgniteInternalFuture<?> fut = ggfsAsync.future();
+        IgniteFuture<?> fut = ggfsAsync.future();
 
         assertNotNull(fut);
 
         fut.get();
-    }
-
-    // TODO: Remove.
-    @Override protected long getTestTimeout() {
-        return Long.MAX_VALUE;
     }
 
     /**
@@ -239,12 +234,12 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
     private static class Task extends IgniteFsTask<String, IgniteBiTuple<Long, Integer>> {
         /** {@inheritDoc} */
         @Override public IgniteFsJob createJob(IgniteFsPath path, IgniteFsFileRange range,
-            IgniteFsTaskArgs<String> args) throws IgniteCheckedException {
+            IgniteFsTaskArgs<String> args) {
             return new Job();
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) throws IgniteCheckedException {
+        @Override public IgniteBiTuple<Long, Integer> reduce(List<ComputeJobResult> ress) {
             long totalLen = 0;
             int argCnt = 0;
 
@@ -276,7 +271,7 @@ public class GridGgfsTaskSelfTest extends GridGgfsCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public Object execute(IgniteFs ggfs, IgniteFsFileRange range, IgniteFsInputStream in)
-            throws IgniteCheckedException, IOException {
+            throws IOException {
             assert ignite != null;
             assert ses != null;
             assert ctx != null;

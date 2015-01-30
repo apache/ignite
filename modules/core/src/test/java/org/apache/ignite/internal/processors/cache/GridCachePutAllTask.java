@@ -54,7 +54,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable final Collection<Integer> data) throws IgniteCheckedException {
+        @Nullable final Collection<Integer> data) {
         assert !subgrid.isEmpty();
 
         // Give preference to wanted node. Otherwise, take the first one.
@@ -73,10 +73,10 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() throws IgniteCheckedException {
+                @Override public Object execute() {
                     log.info("Going to put data: " + data);
 
-                    CacheProjection<Object, Object> cache = ignite.cache(cacheName);
+                    IgniteCache<Object, Object> cache = ignite.jcache(cacheName);
 
                     assert cache != null;
 
@@ -118,7 +118,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         if (res.getException() != null)
             return ComputeJobResultPolicy.FAILOVER;
 
@@ -126,7 +126,7 @@ class GridCachePutAllTask extends ComputeTaskAdapter<Collection<Integer>, Void> 
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

@@ -89,7 +89,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract GridStreamerWindowIterator<E> iterator0();
 
     /** {@inheritDoc} */
-    @Override public boolean enqueue(E evt) throws IgniteCheckedException {
+    @Override public boolean enqueue(E evt) {
         lock.readLock();
 
         try {
@@ -110,12 +110,12 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enqueue(E... evts) throws IgniteCheckedException {
+    @Override public boolean enqueue(E... evts) {
         return enqueueAll(Arrays.asList(evts));
     }
 
     /** {@inheritDoc} */
-    @Override public boolean enqueueAll(Collection<E> evts) throws IgniteCheckedException {
+    @Override public boolean enqueueAll(Collection<E> evts) {
         lock.readLock();
 
         try {
@@ -152,17 +152,17 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract boolean enqueue0(E evt);
 
     /** {@inheritDoc} */
-    @Override public E dequeue() throws IgniteCheckedException {
+    @Override public E dequeue() {
         return F.first(dequeue(1));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> dequeueAll() throws IgniteCheckedException {
+    @Override public Collection<E> dequeueAll() {
         return dequeue(size());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> dequeue(int cnt) throws IgniteCheckedException {
+    @Override public Collection<E> dequeue(int cnt) {
         lock.readLock();
 
         try {
@@ -190,17 +190,17 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract Collection<E> dequeue0(int cnt);
 
     /** {@inheritDoc} */
-    @Override public E pollEvicted() throws IgniteCheckedException {
+    @Override public E pollEvicted() {
         return F.first(pollEvicted(1));
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> pollEvictedAll() throws IgniteCheckedException {
+    @Override public Collection<E> pollEvictedAll() {
         return pollEvicted(evictionQueueSize());
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<E> pollEvicted(int cnt) throws IgniteCheckedException {
+    @Override public Collection<E> pollEvicted(int cnt) {
         lock.readLock();
 
         try {
@@ -227,7 +227,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract Collection<E> pollEvicted0(int cnt);
 
     /** {@inheritDoc} */
-    @Override public Collection<E> pollEvictedBatch() throws IgniteCheckedException {
+    @Override public Collection<E> pollEvictedBatch() {
         lock.readLock();
 
         try {
@@ -434,7 +434,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     }
 
     /** {@inheritDoc} */
-    @Override public void clearEvicted() throws IgniteCheckedException {
+    @Override public void clearEvicted() {
         pollEvictedAll();
     }
 
@@ -443,9 +443,9 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
      *
      * @param evt Event.
      * @param rmv Remove flag.
-     * @throws IgniteCheckedException If index update failed.
+     * @throws IgniteException If index update failed.
      */
-    protected void updateIndexes(E evt, boolean rmv) throws IgniteCheckedException {
+    protected void updateIndexes(E evt, boolean rmv) throws IgniteException {
         if (idxs != null) {
             StreamerIndexUpdateSync sync = new StreamerIndexUpdateSync();
 
@@ -524,8 +524,8 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
                     try {
                         updateIndexes(evt, true);
                     }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException("Faied to remove event: " + evt, e);
+                    catch (IgniteException e) {
+                        throw new IgniteException("Failed to remove event: " + evt, e);
                      }
                 }
             }

@@ -154,12 +154,12 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Void arg) {
             return F.asSet(new ComputeJobAdapter() {
                 @IgniteTaskSessionResource
                 private ComputeTaskSession ses;
 
-                @Override public Object execute() throws IgniteCheckedException {
+                @Override public Object execute() {
                     CNT.incrementAndGet();
 
                     if (fail)
@@ -171,7 +171,7 @@ public class GridTaskExecutionContextSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             return F.first(results).getData();
         }
     }

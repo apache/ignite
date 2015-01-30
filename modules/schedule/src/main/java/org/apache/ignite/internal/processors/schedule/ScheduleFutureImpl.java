@@ -36,6 +36,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.regex.*;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 
 /**
@@ -757,6 +758,11 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public R get(long timeout) {
+        return get(timeout, MILLISECONDS);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public R get(long timeout, TimeUnit unit) throws IgniteException {
         CountDownLatch latch = ensureGet();
 
@@ -928,6 +934,11 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
         /** {@inheritDoc} */
         @Nullable @Override public R get() {
             return ref.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public R get(long timeout) {
+            return ref.get(timeout);
         }
 
         /** {@inheritDoc} */

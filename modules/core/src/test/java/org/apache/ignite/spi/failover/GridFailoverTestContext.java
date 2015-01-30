@@ -64,7 +64,7 @@ public class GridFailoverTestContext implements FailoverContext {
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) throws IgniteCheckedException {
+    @Override public ClusterNode getBalancedNode(List<ClusterNode> grid) {
         return grid.get(RAND.nextInt(grid.size()));
     }
 }

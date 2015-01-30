@@ -51,7 +51,7 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object execute() throws IgniteCheckedException {
+    @Nullable @Override public Object execute() {
         start = U.currentTimeMillis();
 
         A arg = argument(0);
@@ -71,7 +71,8 @@ public abstract class VisorJob<A, R> extends ComputeJobAdapter {
     /**
      * Execution logic of concrete task.
      *
+     * @param arg Task argument.
      * @return Result.
      */
-    protected abstract R run(@Nullable A arg) throws IgniteCheckedException;
+    protected abstract R run(@Nullable A arg) throws IgniteException;
 }

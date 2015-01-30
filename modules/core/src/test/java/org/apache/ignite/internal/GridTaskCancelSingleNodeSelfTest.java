@@ -138,7 +138,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (IgniteFutureCancelledCheckedException e) {
+        catch (IgniteFutureCancelledException e) {
             info("Caught expected exception: " + e);
         }
     }
@@ -178,7 +178,7 @@ public class GridTaskCancelSingleNodeSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

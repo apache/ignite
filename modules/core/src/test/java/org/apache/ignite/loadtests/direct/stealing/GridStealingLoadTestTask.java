@@ -39,7 +39,7 @@ public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> 
     private int stolenJobs;
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, UUID arg) {
         assert arg != null;
         assert subgrid.size() > 1: "Test requires at least 2 nodes. One with load and another one to steal.";
 
@@ -83,7 +83,7 @@ public class GridStealingLoadTestTask extends ComputeTaskAdapter<UUID, Integer> 
     }
 
     /** {@inheritDoc} */
-    @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Integer reduce(List<ComputeJobResult> results) {
         assert results != null;
 
         for (ComputeJobResult res : results) {

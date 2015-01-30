@@ -41,7 +41,7 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         // No-op, just awaiting all jobs done.
         return null;
     }
@@ -62,7 +62,7 @@ public class VisorComputeCancelSessionsTask extends VisorMultiNodeTask<Map<UUID,
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) throws IgniteCheckedException {
+        @Override protected Void run(Map<UUID, Set<IgniteUuid>> arg) {
             Set<IgniteUuid> sesIds = arg.get(g.localNode().id());
 
             if (sesIds != null && !sesIds.isEmpty()) {

@@ -148,6 +148,16 @@ public class IgniteFutureImpl<V> implements IgniteFuture<V> {
     }
 
     /** {@inheritDoc} */
+    @Override public V get(long timeout) {
+        try {
+            return fut.get(timeout);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public V get(long timeout, TimeUnit unit) {
         try {
             return fut.get(timeout, unit);

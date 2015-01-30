@@ -94,7 +94,7 @@ public class GridP2PMissedResourceCacheSizeSelfTest extends GridCommonAbstractTe
 
             assert false; // Exception must be thrown.
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             // Throwing exception is a correct behaviour.
             info("Received correct exception: " + e);
         }

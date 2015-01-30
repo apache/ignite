@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.hadoop.proto;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -33,18 +34,17 @@ import java.util.*;
 public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<GridHadoopProtocolTaskArguments, R> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable GridHadoopProtocolTaskArguments arg) throws IgniteCheckedException {
+        @Nullable GridHadoopProtocolTaskArguments arg) {
         return Collections.singletonMap(new Job(arg), subgrid.get(0));
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-        throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         return ComputeJobResultPolicy.REDUCE;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public R reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public R reduce(List<ComputeJobResult> results) {
         if (!F.isEmpty(results)) {
             ComputeJobResult res = results.get(0);
 
@@ -61,9 +61,11 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<Gr
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** */
         @IgniteInstanceResource
         private Ignite ignite;
 
+        /** */
         @SuppressWarnings("UnusedDeclaration")
         @IgniteJobContextResource
         private ComputeJobContext jobCtx;
@@ -86,8 +88,13 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<Gr
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws IgniteCheckedException {
-            return run(jobCtx, ignite.hadoop(), args);
+        @Nullable @Override public Object execute() {
+            try {
+                return run(jobCtx, ignite.hadoop(), args);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
         }
     }
 

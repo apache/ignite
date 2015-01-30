@@ -1268,15 +1268,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertNull(asyncCache.invoke("key1", INCR_PROCESSOR));
 
-        IgniteInternalFuture<?> fut0 = asyncCache.future();
+        IgniteFuture<?> fut0 = asyncCache.future();
 
         assertNull(asyncCache.invoke("key2", INCR_PROCESSOR));
 
-        IgniteInternalFuture<?> fut1 = asyncCache.future();
+        IgniteFuture<?> fut1 = asyncCache.future();
 
         assertNull(asyncCache.invoke("key3", RMV_PROCESSOR));
 
-        IgniteInternalFuture<?> fut2 = asyncCache.future();
+        IgniteFuture<?> fut2 = asyncCache.future();
 
         fut0.get();
         fut1.get();
@@ -1635,7 +1635,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         IgniteInternalFuture<Boolean> fut1 = cache().putxAsync("key1", 10);
         IgniteInternalFuture<Boolean> fut2 = cache().putxAsync("key2", 11);
 
-        IgniteInternalFuture<IgniteTx> f = null;
+        IgniteFuture<IgniteTx> f = null;
 
         if (tx != null) {
             tx = (IgniteTx)tx.withAsync();
@@ -3736,7 +3736,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             });
 
-            IgniteInternalFuture<Boolean> f = comp.future();
+            IgniteFuture<Boolean> f = comp.future();
 
                 // Let another thread start.
             latch.await();
@@ -3813,7 +3813,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 }
             });
 
-            IgniteInternalFuture<Boolean> f = comp.future();
+            IgniteFuture<Boolean> f = comp.future();
 
             syncLatch.await();
 

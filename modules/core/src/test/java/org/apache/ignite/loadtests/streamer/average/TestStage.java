@@ -34,8 +34,7 @@ class TestStage implements StreamerStage<Integer> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts)
-        throws IgniteCheckedException {
+    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Integer> evts) {
         ConcurrentMap<String, TestAverage> loc = ctx.localSpace();
 
         TestAverage avg = loc.get("avg");

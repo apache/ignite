@@ -177,7 +177,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
                         spi.sendMessage(remoteNode, msg);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     fail("Unable to send message: " + e.getMessage());
                 }
             }

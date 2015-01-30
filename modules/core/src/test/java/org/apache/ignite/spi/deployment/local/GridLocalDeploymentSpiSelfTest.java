@@ -156,12 +156,12 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
     @ComputeTaskName(value="GridDeploymentTestTask")
     public class GridDeploymentTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -173,12 +173,12 @@ public class GridLocalDeploymentSpiSelfTest extends GridSpiAbstractTest<LocalDep
     @ComputeTaskName(value="GridDeploymentTestTask")
     public class GridDeploymentTestTask1 extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

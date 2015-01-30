@@ -73,8 +73,7 @@ public class StreamerStageWrapper implements StreamerStage<Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts)
-        throws IgniteCheckedException {
+    @Override public Map<String, Collection<?>> run(StreamerContext ctx, Collection<Object> evts) {
         return delegate.run(ctx, evts);
     }
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.visor.node;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -42,11 +43,11 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected GridTuple3<Boolean, Long, Long> reduce0(List<ComputeJobResult> results) {
         try {
             return super.reduce0(results);
         }
-        catch (ClusterTopologyCheckedException ignored) {
+        catch (ClusterTopologyException ignored) {
             return new GridTuple3<>(false, -1L, -1L);
         }
     }
@@ -67,7 +68,7 @@ public class VisorNodePingTask extends VisorOneNodeTask<UUID, GridTuple3<Boolean
         }
 
         /** {@inheritDoc} */
-        @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) throws IgniteCheckedException {
+        @Override protected GridTuple3<Boolean, Long, Long> run(UUID nodeToPing) {
             long start = System.currentTimeMillis();
 
             return new GridTuple3<>(g.pingNode(nodeToPing), start, System.currentTimeMillis());

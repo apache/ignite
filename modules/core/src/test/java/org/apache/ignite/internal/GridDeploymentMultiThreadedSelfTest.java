@@ -64,7 +64,7 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
                         if (++iterCnt % 100 == 0)
                             info("Iterations count: " + iterCnt);
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         U.error(log, "Failed to undeploy task message.", e);
 
                         fail("See logs for details.");
@@ -107,14 +107,14 @@ public class GridDeploymentMultiThreadedSelfTest extends GridCommonAbstractTest 
      */
     private static class GridDeploymentTestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert false;
 
             return Collections.emptyMap();
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             return null;
         }
     }

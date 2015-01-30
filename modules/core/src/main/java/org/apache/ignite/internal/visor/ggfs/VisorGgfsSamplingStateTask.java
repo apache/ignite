@@ -50,14 +50,17 @@ public class VisorGgfsSamplingStateTask extends VisorOneNodeTask<IgniteBiTuple<S
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) throws IgniteCheckedException {
+        @Override protected Void run(IgniteBiTuple<String, Boolean> arg) {
             try {
-                ((GridGgfsEx) g.fileSystem(arg.get1())).globalSampling(arg.get2());
+                ((GridGgfsEx)g.fileSystem(arg.get1())).globalSampling(arg.get2());
 
                 return null;
             }
             catch (IllegalArgumentException iae) {
-                throw new IgniteCheckedException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+                throw new IgniteException("Failed to set sampling state for GGFS: " + arg.get1(), iae);
+            }
+            catch(IgniteCheckedException e) {
+                throw U.convertException(e);
             }
         }
 

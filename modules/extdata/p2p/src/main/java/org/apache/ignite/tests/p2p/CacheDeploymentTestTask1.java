@@ -36,20 +36,20 @@ public class CacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Ob
 
     /** {@inheritDoc} */
     @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable ClusterNode node) throws IgniteCheckedException {
+        @Nullable ClusterNode node) {
         return F.asMap(
             new ComputeJobAdapter() {
                 @IgniteInstanceResource
                 private Ignite ignite;
 
-                @Override public Object execute() throws IgniteCheckedException {
+                @Override public Object execute() {
                     X.println("Executing CacheDeploymentTestTask1 job on node " +
                         ignite.cluster().localNode().id());
 
-                    GridCache<String, CacheDeploymentTestValue> cache = ignite.cache(null);
+                    IgniteCache<String, CacheDeploymentTestValue> cache = ignite.jcache(null);
 
                     for (int i = 0; i < PUT_CNT; i++)
-                        cache.putx("1" + i, new CacheDeploymentTestValue());
+                        cache.put("1" + i, new CacheDeploymentTestValue());
 
                     return null;
                 }
@@ -59,7 +59,7 @@ public class CacheDeploymentTestTask1 extends ComputeTaskAdapter<ClusterNode, Ob
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Object reduce(List<ComputeJobResult> results) {
         return null;
     }
 }

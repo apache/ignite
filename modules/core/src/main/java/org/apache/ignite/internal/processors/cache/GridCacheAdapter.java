@@ -3888,10 +3888,10 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /**
-     * @param prj Projection.
+     * @param delegate Cache proxy.
      * @return Distributed ignite cache iterator.
      */
-    public Iterator<Cache.Entry<K, V>> igniteIterator(final GridCacheProjectionImpl<K, V> prj) {
+    public Iterator<Cache.Entry<K, V>> igniteIterator(final IgniteCacheProxy<K, V> delegate) {
         CacheQueryFuture<Map.Entry<K, V>> fut = queries().createScanQuery(null)
             .keepAll(false)
             .execute();
@@ -3902,17 +3902,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
 
             @Override protected void remove(Cache.Entry<K, V> item) {
-                GridCacheProjectionImpl<K, V> prev = ctx.gate().enter(prj);
-
-                try {
-                    GridCacheAdapter.this.removex(item.getKey());
-                }
-                catch (IgniteCheckedException e) {
-                    throw new CacheException(e);
-                }
-                finally {
-                    ctx.gate().leave(prev);
-                }
+                delegate.remove(item.getKey());
             }
         });
     }

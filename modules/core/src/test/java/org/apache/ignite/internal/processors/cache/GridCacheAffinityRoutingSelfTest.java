@@ -569,7 +569,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Integer arg) {
             return F.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
                     CacheAffinity<Object> aff = ignite.cache(null).affinity();
@@ -585,7 +585,7 @@ public class GridCacheAffinityRoutingSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Boolean reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Boolean reduce(List<ComputeJobResult> results) {
             return results.get(0).getData();
         }
     }

@@ -372,7 +372,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     boolean initialize(GridDeployment dep, Class<?> taskCls) {
         assert dep != null;
 
-        IgniteCheckedException ex = null;
+        IgniteException ex = null;
 
         try {
             if (job == null) {
@@ -391,7 +391,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to initialize job [jobId=" + ses.getJobId() + ", ses=" + ses + ']', e);
 
-            ex = e;
+            ex = new IgniteException(e);
         }
         catch (Throwable e) {
             ex = handleThrowable(e);
@@ -459,7 +459,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         Object res = null;
 
-        IgniteCheckedException ex = null;
+        IgniteException ex = null;
 
         try {
             ctx.job().currentTaskSession(ses);
@@ -488,7 +488,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                     log.debug("Job execution has successfully finished [job=" + job + ", res=" + res + ']');
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             if (sysStopping && e.hasCause(IgniteInterruptedCheckedException.class, InterruptedException.class)) {
                 ex = handleThrowable(e);
 
@@ -537,10 +537,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param e Exception.
      * @return Wrapped exception.
      */
-    private IgniteCheckedException handleThrowable(Throwable e) {
+    private IgniteException handleThrowable(Throwable e) {
         String msg = null;
 
-        IgniteCheckedException ex = null;
+        IgniteException ex = null;
 
         // Special handling for weird interrupted exception which
         // happens due to JDk 1.5 bug.
@@ -548,7 +548,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
             msg = "Failed to execute job due to interrupted exception.";
 
             // Turn interrupted exception into checked exception.
-            ex = new IgniteCheckedException(msg, e);
+            ex = new IgniteException(msg, e);
         }
         // Special 'NoClassDefFoundError' handling if P2P is on. We had many questions
         // about this exception and decided to change error message.
@@ -647,7 +647,10 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param ex Error.
      * @param sndReply If {@code true}, reply will be sent.
      */
-    void finishJob(@Nullable Object res, @Nullable IgniteCheckedException ex, boolean sndReply) {
+    void finishJob(@Nullable Object res,
+        @Nullable IgniteException ex,
+        boolean sndReply)
+    {
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
@@ -812,7 +815,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         log.debug("Successfully executed GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
                             "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     U.error(log, "Failed to execute GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
                         "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
                 }

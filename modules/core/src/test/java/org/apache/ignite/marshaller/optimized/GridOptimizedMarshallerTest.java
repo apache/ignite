@@ -640,7 +640,7 @@ public class GridOptimizedMarshallerTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             assert false;
 
             return null;

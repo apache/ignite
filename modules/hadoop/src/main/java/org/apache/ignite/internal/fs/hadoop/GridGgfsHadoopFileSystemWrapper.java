@@ -146,7 +146,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public boolean exists(IgniteFsPath path) throws IgniteCheckedException {
+    @Override public boolean exists(IgniteFsPath path) {
         try {
             return fileSys.exists(convert(path));
         }
@@ -156,7 +156,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) throws IgniteCheckedException {
+    @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
         GridGgfsHadoopFSProperties props0 = new GridGgfsHadoopFSProperties(props);
 
         try {
@@ -175,7 +175,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
+    @Override public void rename(IgniteFsPath src, IgniteFsPath dest) {
         // Delegate to the secondary file system.
         try {
             if (!fileSys.rename(convert(src), convert(dest)))
@@ -188,7 +188,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
+    @Override public boolean delete(IgniteFsPath path, boolean recursive) {
         try {
             return fileSys.delete(convert(path), recursive);
         }
@@ -198,10 +198,10 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path) throws IgniteCheckedException {
+    @Override public void mkdirs(IgniteFsPath path) {
         try {
             if (!fileSys.mkdirs(convert(path)))
-                throw new IgniteCheckedException("Failed to make directories [path=" + path + "]");
+                throw new IgniteException("Failed to make directories [path=" + path + "]");
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + "]");
@@ -209,10 +209,10 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException {
+    @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) {
         try {
             if (!fileSys.mkdirs(convert(path), new GridGgfsHadoopFSProperties(props).permission()))
-                throw new IgniteCheckedException("Failed to make directories [path=" + path + ", props=" + props + "]");
+                throw new IgniteException("Failed to make directories [path=" + path + ", props=" + props + "]");
         }
         catch (IOException e) {
             throw handleSecondaryFsError(e, "Failed to make directories [path=" + path + ", props=" + props + "]");
@@ -220,7 +220,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
+    @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
@@ -243,7 +243,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
+    @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) {
         try {
             FileStatus[] statuses = fileSys.listStatus(convert(path));
 
@@ -276,7 +276,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public OutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException {
+    @Override public OutputStream create(IgniteFsPath path, boolean overwrite) {
         try {
             return fileSys.create(convert(path), overwrite);
         }
@@ -287,7 +287,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
 
     /** {@inheritDoc} */
     @Override public OutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-        long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
+        long blockSize, @Nullable Map<String, String> props) {
         GridGgfsHadoopFSProperties props0 =
             new GridGgfsHadoopFSProperties(props != null ? props : Collections.<String, String>emptyMap());
 
@@ -304,7 +304,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
 
     /** {@inheritDoc} */
     @Override public OutputStream append(IgniteFsPath path, int bufSize, boolean create,
-        @Nullable Map<String, String> props) throws IgniteCheckedException {
+        @Nullable Map<String, String> props) {
         try {
             return fileSys.append(convert(path), bufSize);
         }
@@ -314,7 +314,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFsFile info(final IgniteFsPath path) throws IgniteCheckedException {
+    @Override public IgniteFsFile info(final IgniteFsPath path) {
         try {
             final FileStatus status = fileSys.getFileStatus(convert(path));
 
@@ -387,7 +387,7 @@ public class GridGgfsHadoopFileSystemWrapper implements IgniteFsFileSystem, Auto
     }
 
     /** {@inheritDoc} */
-    @Override public long usedSpaceSize() throws IgniteCheckedException {
+    @Override public long usedSpaceSize() {
         try {
             return fileSys.getContentSummary(new Path(fileSys.getUri())).getSpaceConsumed();
         }

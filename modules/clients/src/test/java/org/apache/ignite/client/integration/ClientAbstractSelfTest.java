@@ -1455,7 +1455,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static class TestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            throws IgniteCheckedException {
+            {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
@@ -1477,7 +1477,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -1493,7 +1493,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static class SleepTestTask extends ComputeTaskSplitAdapter<List<Object>, Integer> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, List<Object> list)
-            throws IgniteCheckedException {
+            {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>();
 
             if (list != null)
@@ -1515,7 +1515,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results)
@@ -1533,7 +1533,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             if (arg.endsWith("intercepted"))
                 arg = arg.substring(0, arg.length() - 11);
 
@@ -1545,7 +1545,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return delegate.reduce(results);
         }
     }
@@ -1558,7 +1558,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             JSON json = JSONSerializer.toJSON(arg);
 
             List list = json.isArray() ? JSONArray.toList((JSONArray)json, String.class, new JsonConfig()) : null;
@@ -1567,7 +1567,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             return delegate.reduce(results);
         }
     }

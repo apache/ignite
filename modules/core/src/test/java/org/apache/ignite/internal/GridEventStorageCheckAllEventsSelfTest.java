@@ -162,7 +162,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
             assert false : "Grid with locally executed job with timeout should throw GridComputeTaskTimeoutException.";
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             info("Expected exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
@@ -190,7 +190,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
             assert false : "Task should fail.";
         }
-        catch (ComputeTaskTimeoutCheckedException e) {
+        catch (ComputeTaskTimeoutException e) {
             info("Expected timeout exception caught [taskFuture=" + fut + ", exception=" + e + ']');
         }
 
@@ -348,7 +348,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert taskSes != null;
 
             taskSes.saveCheckpoint("testCheckpoint", "TestState");
@@ -402,7 +402,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         private ComputeTaskSession taskSes;
 
         /** {@inheritDoc} */
-        @Override public String execute() throws IgniteCheckedException {
+        @Override public String execute() {
             assert taskSes != null;
 
             taskSes.saveCheckpoint("testAllCheckpoint", "CheckpointTestState");
@@ -419,12 +419,12 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     @ComputeTaskSessionFullSupport
     private static class GridAllEventsTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             return Collections.singleton((ComputeJob)arg);
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
             assert results != null;
             assert results.size() == 1;
 

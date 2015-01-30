@@ -170,7 +170,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
         private volatile int taskNum = -1;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Serializable arg) {
             if (log.isInfoEnabled())
                 log.info("Splitting job [job=" + this + ", gridSize=" + gridSize + ", arg=" + arg + ']');
 
@@ -199,8 +199,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received) {
             if (res.getException() != null)
                 throw res.getException();
 
@@ -230,7 +229,7 @@ public class GridSessionFutureWaitTaskAttributeSelfTest extends GridCommonAbstra
         }
 
         /** {@inheritDoc} */
-        @Override public Integer reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Integer reduce(List<ComputeJobResult> results) {
             if (log.isInfoEnabled())
                 log.info("Reducing job [job=" + this + ", results=" + results + ']');
 

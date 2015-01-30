@@ -152,7 +152,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+            {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -176,7 +176,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             for (ComputeJobResult res : results) {

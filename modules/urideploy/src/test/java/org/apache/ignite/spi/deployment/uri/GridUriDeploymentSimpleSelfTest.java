@@ -139,7 +139,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
      */
     private static class TestTask extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -148,7 +148,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();
@@ -161,7 +161,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
     @ComputeTaskName("TestTaskWithName")
     private static class TestTaskWithName extends ComputeTaskAdapter<Object, Object> {
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             assert subgrid.size() == 1;
 
             return Collections.singletonMap(new ComputeJobAdapter() {
@@ -170,7 +170,7 @@ public class GridUriDeploymentSimpleSelfTest extends GridSpiAbstractTest<GridUri
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) {
             assert results.size() == 1;
 
             return results.get(0).getData();

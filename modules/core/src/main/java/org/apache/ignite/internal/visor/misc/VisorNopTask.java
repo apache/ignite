@@ -35,7 +35,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
 
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Integer arg) throws IgniteCheckedException {
+        @Nullable Integer arg) {
 
         Map<ComputeJob, ClusterNode> map = new GridLeanMap<>(subgrid.size());
 
@@ -47,12 +47,12 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
 
     /** {@inheritDoc} */
     @Override public ComputeJobResultPolicy result(ComputeJobResult res,
-        List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+        List<ComputeJobResult> rcvd) {
         return ComputeJobResultPolicy.WAIT;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -69,7 +69,7 @@ public class VisorNopTask implements ComputeTask<Integer, Void> {
 
         /** {@inheritDoc} */
         @SuppressWarnings("ConstantConditions")
-        @Nullable @Override public Object execute() throws IgniteCheckedException {
+        @Nullable @Override public Object execute() {
             try {
                 Integer maxTimeout = argument(0);
 

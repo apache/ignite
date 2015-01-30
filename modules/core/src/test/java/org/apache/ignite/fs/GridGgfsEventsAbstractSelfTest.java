@@ -516,7 +516,7 @@ public abstract class GridGgfsEventsAbstractSelfTest extends GridCommonAbstractT
         try {
             ggfs.delete(dir.parent(), false); // Will generate no events.
         }
-        catch (IgniteCheckedException ignore) {
+        catch (IgniteException ignore) {
             // No-op.
         }
 

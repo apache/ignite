@@ -55,8 +55,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
     }
 
     /** {@inheritDoc} */
-    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg)
-        throws IgniteCheckedException {
+    @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
         Map<ComputeJob, ClusterNode> res = U.newHashMap(subgrid.size());
 
         for (ClusterNode node : subgrid)
@@ -66,7 +65,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<R> reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Collection<R> reduce(List<ComputeJobResult> results) {
         Collection<R> res = new ArrayList<>(results.size());
 
         for (ComputeJobResult jobRes : results)
@@ -76,7 +75,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
     }
 
     /** {@inheritDoc} */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
         // No failover for this task.
         if (res.getException() != null)
             throw res.getException();
@@ -118,7 +117,7 @@ public class GridStreamerQueryTask<R> extends GridPeerDeployAwareTaskAdapter<Voi
         }
 
         /** {@inheritDoc} */
-        @Override public Object execute() throws IgniteCheckedException {
+        @Override public Object execute() {
             IgniteStreamer s = g.streamer(streamer);
 
             assert s != null;

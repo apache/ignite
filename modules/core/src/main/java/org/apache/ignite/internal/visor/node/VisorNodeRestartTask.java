@@ -35,7 +35,7 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List<ComputeJobResult> results) {
         return null;
     }
 
@@ -55,7 +55,7 @@ public class VisorNodeRestartTask extends VisorMultiNodeTask<Void, Void, Void> {
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Void arg) throws IgniteCheckedException {
+        @Override protected Void run(Void arg) {
             new Thread(new Runnable() {
                 @Override public void run() {
                     Ignition.restart(true);

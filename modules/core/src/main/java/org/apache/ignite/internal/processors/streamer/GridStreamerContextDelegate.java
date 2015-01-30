@@ -71,36 +71,33 @@ public class GridStreamerContextDelegate implements StreamerContext {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) throws IgniteCheckedException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo) {
         return delegate.query(clo);
     }
 
     /** {@inheritDoc} */
-    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes)
-        throws IgniteCheckedException {
+    @Override public <R> Collection<R> query(IgniteClosure<StreamerContext, R> clo, Collection<ClusterNode> nodes) {
         return delegate.query(clo, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) throws IgniteCheckedException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo) {
         delegate.broadcast(clo);
     }
 
     /** {@inheritDoc} */
-    @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes)
-        throws IgniteCheckedException {
+    @Override public void broadcast(IgniteInClosure<StreamerContext> clo, Collection<ClusterNode> nodes) {
         delegate.broadcast(clo, nodes);
     }
 
     /** {@inheritDoc} */
-    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc)
-        throws IgniteCheckedException {
+    @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc) {
         return delegate.reduce(clo, rdc);
     }
 
     /** {@inheritDoc} */
     @Override public <R1, R2> R2 reduce(IgniteClosure<StreamerContext, R1> clo, IgniteReducer<R1, R2> rdc,
-        Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        Collection<ClusterNode> nodes) {
         return delegate.reduce(clo, rdc, nodes);
     }
 }

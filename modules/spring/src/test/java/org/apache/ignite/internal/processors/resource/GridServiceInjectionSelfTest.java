@@ -138,7 +138,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
         }
     }
@@ -235,7 +235,7 @@ public class GridServiceInjectionSelfTest extends GridCommonAbstractTest impleme
 
             fail();
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             assertTrue(e.getMessage().startsWith("Remote job threw user exception"));
         }
     }

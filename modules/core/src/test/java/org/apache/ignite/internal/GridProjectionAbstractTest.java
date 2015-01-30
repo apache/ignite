@@ -327,7 +327,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(runJob);
 
-        IgniteFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -349,7 +349,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.run(jobs);
 
-        IgniteFuture  fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -369,7 +369,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(calJob);
 
-        IgniteFuture  fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -391,7 +391,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.call(jobs);
 
-        IgniteFuture  fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -411,7 +411,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, (String) null);
 
-        IgniteFuture  fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -433,7 +433,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, args);
 
-        IgniteFuture  fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -453,7 +453,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(new TestClosure(), "arg");
 
-        IgniteFuture <Collection<String>> fut = comp.future();
+        ComputeTaskFuture<Collection<String>> fut = comp.future();
 
         waitForExecution(fut);
 
@@ -480,7 +480,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, args, rdc);
 
-        IgniteFuture  fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -502,7 +502,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.call(jobs, rdc);
 
-        IgniteFuture fut = comp.future();
+        ComputeTaskFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -730,7 +730,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestTask extends ComputeTaskSplitAdapter<String, Void> {
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
             Collection<ComputeJob> jobs = new HashSet<>();
 
             for (int i = 0; i < gridSize; i++)
@@ -740,7 +740,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public Void reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Nullable @Override public Void reduce(List<ComputeJobResult> results) {
             return null;
         }
     }
@@ -751,7 +751,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
     @SuppressWarnings({"PublicInnerClass"})
     public static class TestJob extends ComputeJobAdapter {
         /** {@inheritDoc} */
-        @Nullable @Override public Object execute() throws IgniteCheckedException {
+        @Nullable @Override public Object execute() {
             return null;
         }
     }

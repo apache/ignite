@@ -226,7 +226,7 @@ public class AlwaysFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, 
 
             return node;
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             U.error(log, "Failed to get next balanced node for failover: " + ctx, e);
 
             return null;

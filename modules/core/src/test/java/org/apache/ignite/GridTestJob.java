@@ -42,7 +42,7 @@ public class GridTestJob extends ComputeJobAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public String execute() throws IgniteCheckedException {
+    @Override public String execute() {
         if (log.isDebugEnabled())
             log.debug("Executing job [job=" + this + ", arg=" + argument(0) + ']');
 

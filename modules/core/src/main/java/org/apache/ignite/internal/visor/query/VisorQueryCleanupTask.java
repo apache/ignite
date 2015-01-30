@@ -44,7 +44,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
 
     /** {@inheritDoc} */
     @Override protected Map<? extends ComputeJob, ClusterNode> map0(List<ClusterNode> subgrid,
-        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) throws IgniteCheckedException {
+        @Nullable VisorTaskArgument<Map<UUID, Collection<String>>> arg) {
         Set<UUID> nodeIds = taskArg.keySet();
 
         Map<ComputeJob, ClusterNode> map = U.newHashMap(nodeIds.size());
@@ -63,7 +63,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Void reduce0(List list) throws IgniteCheckedException {
+    @Nullable @Override protected Void reduce0(List list) {
         return null;
     }
 
@@ -85,7 +85,7 @@ public class VisorQueryCleanupTask extends VisorMultiNodeTask<Map<UUID, Collecti
         }
 
         /** {@inheritDoc} */
-        @Override protected Void run(Collection<String> qryIds) throws IgniteCheckedException {
+        @Override protected Void run(Collection<String> qryIds) {
             ClusterNodeLocalMap<String, VisorQueryTask.VisorFutureResultSetHolder> locMap = g.nodeLocalMap();
 
             for (String qryId : qryIds)

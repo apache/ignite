@@ -23,6 +23,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -136,7 +137,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         task.getTaskFuture().get();
                     }
-                    catch (ComputeTaskCancelledException e) {
+                    catch (ComputeTaskCancelledCheckedException e) {
                         U.warn(log, e.getMessage());
                     }
                     catch (IgniteCheckedException e) {
@@ -151,7 +152,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
                     task.cancel();
 
-                    Throwable ex = new ComputeTaskCancelledException("Task cancelled due to stopping of the grid: " +
+                    Throwable ex = new ComputeTaskCancelledCheckedException("Task cancelled due to stopping of the grid: " +
                         task);
 
                     task.finishTask(null, ex, false);
@@ -987,7 +988,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                 return;
             }
 
-            task.finishTask(null, new ComputeTaskCancelledException("Task was cancelled."), true);
+            task.finishTask(null, new ComputeTaskCancelledCheckedException("Task was cancelled."), true);
         }
         finally {
             lock.readUnlock();
@@ -1109,7 +1110,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                         ctx.io().removeMessageListener(s.taskTopic(), msgLsnr);
                     }
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     U.error(log, "Failed to unregister job communication message listeners and counters.", e);
                 }
             }
@@ -1203,7 +1204,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     try {
                         siblings = worker.getSession().getJobSiblings();
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         U.error(log, "Failed to get job siblings [request=" + msg +
                             ", ses=" + worker.getSession() + ']', e);
 

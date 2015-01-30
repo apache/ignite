@@ -83,7 +83,7 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
     private static class TestTask implements ComputeTask<Void, String> {
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Void arg) throws IgniteCheckedException {
+            @Nullable Void arg) {
             return F.asMap(new ComputeJobAdapter() {
                 @IgniteTaskSessionResource
                 private ComputeTaskSession ses;
@@ -95,13 +95,12 @@ public class GridTaskNameAnnotationSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd)
-            throws IgniteCheckedException {
+        @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             return WAIT;
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             return F.first(results).getData();
         }
     }

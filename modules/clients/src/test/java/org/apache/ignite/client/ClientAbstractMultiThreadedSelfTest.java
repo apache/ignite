@@ -572,8 +572,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         private int gridSize;
 
         /** {@inheritDoc} */
-        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg)
-            throws IgniteCheckedException {
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             Collection<ComputeJobAdapter> jobs = new ArrayList<>(gridSize);
 
             this.gridSize = gridSize;
@@ -592,7 +591,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         }
 
         /** {@inheritDoc} */
-        @Override public String reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public String reduce(List<ComputeJobResult> results) {
             int sum = 0;
 
             String locNodeId = null;

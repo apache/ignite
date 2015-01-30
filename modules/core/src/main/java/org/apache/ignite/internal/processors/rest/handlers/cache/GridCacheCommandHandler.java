@@ -43,6 +43,8 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.util.concurrent.TimeUnit.*;
+import static org.apache.ignite.internal.GridClosureCallMode.*;
+import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.*;
@@ -361,11 +363,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
-            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
+            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            comp.call(new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable));
-
-            return comp.future();
+            return ctx.closure().callAsync(BALANCE,
+                new FlaggedCacheOperationCallable(clientId, cacheName, flags, op, key, keepPortable),
+                prj.nodes());
         }
     }
 
@@ -399,11 +401,11 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         else {
             ClusterGroup prj = ctx.grid().forPredicate(F.nodeForNodeId(destId));
 
-            IgniteCompute comp = ctx.grid().compute(prj).withNoFailover().withAsync();
+            ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            comp.call(new CacheOperationCallable(clientId, cacheName, op, key));
-
-            return comp.future();
+            return ctx.closure().callAsync(BALANCE,
+                new CacheOperationCallable(clientId, cacheName, op, key),
+                prj.nodes());
         }
     }
 

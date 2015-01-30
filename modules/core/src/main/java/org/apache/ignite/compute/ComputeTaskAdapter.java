@@ -18,6 +18,7 @@
 package org.apache.ignite.compute;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.cluster.*;
 
 import java.util.*;
@@ -84,22 +85,22 @@ public abstract class ComputeTaskAdapter<T, R> implements ComputeTask<T, R> {
      * @param rcvd All previously received results.
      * @return Result policy that dictates how to process further upcoming
      *       job results.
-     * @throws IgniteCheckedException If handling a job result caused an error effectively rejecting
+     * @throws IgniteException If handling a job result caused an error effectively rejecting
      *      a failover. This exception will be thrown out of {@link ComputeTaskFuture#get()} method.
      */
-    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteCheckedException {
-        IgniteCheckedException e = res.getException();
+    @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+        IgniteException e = res.getException();
 
         // Try to failover if result is failed.
         if (e != null) {
             // Don't failover user's code errors.
             if (e instanceof ComputeExecutionRejectedException ||
-                e instanceof ClusterTopologyCheckedException ||
+                e instanceof ClusterTopologyException ||
                 // Failover exception is always wrapped.
                 e.hasCause(ComputeJobFailoverException.class))
                 return ComputeJobResultPolicy.FAILOVER;
 
-            throw new IgniteCheckedException("Remote job threw user exception (override or implement GridComputeTask.result(..) " +
+            throw new IgniteException("Remote job threw user exception (override or implement ComputeTask.result(..) " +
                 "method if you would like to have automatic failover for this exception).", e);
         }
 

@@ -60,7 +60,7 @@ public class VisorLatestTextFilesTask extends VisorOneNodeTask<IgniteBiTuple<Str
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Collection<VisorLogFile> run(final IgniteBiTuple<String, String> arg) throws IgniteCheckedException {
+        @Nullable @Override protected Collection<VisorLogFile> run(final IgniteBiTuple<String, String> arg) {
             String path = arg.get1();
             String regexp = arg.get2();
 

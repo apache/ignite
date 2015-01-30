@@ -53,7 +53,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) throws IgniteCheckedException {
+    @Override public Collection<? extends ComputeJob> split(int gridSize, Object arg) {
         System.out.println("Split is called: " + this);
 
         return null;
@@ -62,7 +62,7 @@ public class GridUriDeploymentTestTask2 extends ComputeTaskSplitAdapter<Object, 
     /**
      * {@inheritDoc}
      */
-    @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+    @Override public Object reduce(List<ComputeJobResult> results) {
         System.out.println("Reduce is called.");
 
         return null;

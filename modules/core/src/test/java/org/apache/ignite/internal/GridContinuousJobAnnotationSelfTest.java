@@ -104,12 +104,12 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         private ComputeTaskContinuousMapper mapper;
 
         /** {@inheritDoc} */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) throws IgniteCheckedException {
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, Object arg) {
             try {
                 mapper.send(((Class<ComputeJob>)arg).newInstance());
             }
             catch (Exception e) {
-                throw new IgniteCheckedException("Job instantination failed.", e);
+                throw new IgniteException("Job instantination failed.", e);
             }
 
             return null;
@@ -117,10 +117,10 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
 
         /** {@inheritDoc} */
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> received)
-            throws IgniteCheckedException {
+            throws IgniteException {
             if (res.getException() != null) {
                 if (res.getException() instanceof ComputeUserUndeclaredException)
-                    throw new IgniteCheckedException("Job threw unexpected exception.", res.getException());
+                    throw new IgniteException("Job threw unexpected exception.", res.getException());
 
                 return ComputeJobResultPolicy.FAILOVER;
             }
@@ -129,7 +129,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteCheckedException {
+        @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
             assert results.size() == 1 : "Unexpected result count: " + results.size();
 
             return null;
@@ -178,7 +178,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
         }
 
         /** {@inheritDoc} */
-        @Override public Serializable execute() throws IgniteCheckedException {
+        @Override public Serializable execute() throws IgniteException {
             X.println("Execute TestJob [this=" + this + ", identity=" + System.identityHashCode(this) +
                 ", flag=" + flag + "]");
 
@@ -194,7 +194,7 @@ public class GridContinuousJobAnnotationSelfTest extends GridCommonAbstractTest 
             if (fail.get()) {
                 fail.set(false);
 
-                throw new IgniteCheckedException("Expected test exception.");
+                throw new IgniteException("Expected test exception.");
             }
 
             return null;

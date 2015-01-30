@@ -43,8 +43,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results)
-        throws IgniteCheckedException {
+    @Nullable @Override protected Map<UUID, IgniteBiTuple<Long, Long>> reduce0(List<ComputeJobResult> results) {
         Map<UUID, IgniteBiTuple<Long, Long>> total = new HashMap<>();
 
         for (ComputeJobResult res: results) {
@@ -72,7 +71,7 @@ public class VisorNodeGcTask extends VisorMultiNodeTask<Void, Map<UUID, IgniteBi
         }
 
         /** {@inheritDoc} */
-        @Override protected IgniteBiTuple<Long, Long> run(Void arg) throws IgniteCheckedException {
+        @Override protected IgniteBiTuple<Long, Long> run(Void arg) {
             ClusterNode locNode = g.localNode();
 
             long before = freeHeap(locNode);

@@ -221,7 +221,7 @@ public class StreamingCheckInExample {
 
                     System.out.print(sb.toString());
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     e.printStackTrace();
                 }
             }
@@ -431,7 +431,7 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(
-            StreamerContext ctx, Collection<CheckInEvent> evts) throws IgniteCheckedException {
+            StreamerContext ctx, Collection<CheckInEvent> evts) {
             StreamerWindow<CheckInEvent> win = ctx.window(name());
 
             assert win != null;
@@ -447,7 +447,7 @@ public class StreamingCheckInExample {
 
                     evts0.add(evt);
                 }
-                catch (IgniteCheckedException e) {
+                catch (IgniteException e) {
                     if (e.getMessage().contains("Index unique key violation"))
                         System.err.println("Cannot check-in twice within the specified period of time [evt=" + evt + ']');
                     else
@@ -479,7 +479,7 @@ public class StreamingCheckInExample {
 
         /** {@inheritDoc} */
         @Nullable @Override public Map<String, Collection<?>> run(StreamerContext ctx,
-            Collection<CheckInEvent> evts) throws IgniteCheckedException {
+            Collection<CheckInEvent> evts) {
             StreamerWindow<LocationInfo> win = ctx.window(name());
 
             assert win != null;
@@ -529,15 +529,14 @@ public class StreamingCheckInExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override
-        public Location initialValue(CheckInEvent evt, String key) {
+        @Nullable @Override public Location initialValue(CheckInEvent evt, String key) {
             return evt.location(); // Index value is an event location.
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Location onAdded(
             StreamerIndexEntry<CheckInEvent, String, Location> entry,
-            CheckInEvent evt) throws IgniteCheckedException {
+            CheckInEvent evt) {
             throw new AssertionError("onAdded() shouldn't be called on unique index.");
         }
 
@@ -560,15 +559,14 @@ public class StreamingCheckInExample {
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override
-        public Place initialValue(LocationInfo info, String key) {
+        @Nullable @Override public Place initialValue(LocationInfo info, String key) {
             return info.place();
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public Place onAdded(
             StreamerIndexEntry<LocationInfo, String, Place> entry,
-            LocationInfo evt) throws IgniteCheckedException {
+            LocationInfo evt) {
             throw new AssertionError("onAdded() shouldn't be called on unique index.");
         }
 

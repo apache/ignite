@@ -666,14 +666,13 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len)
-            throws IgniteCheckedException {
+        @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len) {
             return BLOCK_MAP.get(new Block(path, start, len));
         }
 
         /** {@inheritDoc} */
         @Override public Collection<IgniteFsBlockLocation> affinity(IgniteFsPath path, long start, long len,
-            long maxLen) throws IgniteCheckedException {
+            long maxLen) {
             return null;
         }
 
@@ -693,18 +692,17 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch)
-            throws IgniteCheckedException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize, int seqReadsBeforePrefetch) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) throws IgniteCheckedException {
+        @Override public GridGgfsInputStreamAdapter open(IgniteFsPath path, int bufSize) {
             return null;
         }
 
@@ -764,58 +762,57 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public boolean exists(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public boolean exists(IgniteFsPath path) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFsFile info(IgniteFsPath path) throws IgniteCheckedException {
+        @Nullable @Override public IgniteFsFile info(IgniteFsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsPathSummary summary(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public IgniteFsPathSummary summary(IgniteFsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props)
-            throws IgniteCheckedException {
+        @Nullable @Override public IgniteFsFile update(IgniteFsPath path, Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void rename(IgniteFsPath src, IgniteFsPath dest) throws IgniteCheckedException {
+        @Override public void rename(IgniteFsPath src, IgniteFsPath dest) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public boolean delete(IgniteFsPath path, boolean recursive) throws IgniteCheckedException {
+        @Override public boolean delete(IgniteFsPath path, boolean recursive) {
             return false;
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public void mkdirs(IgniteFsPath path) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) throws IgniteCheckedException {
+        @Override public void mkdirs(IgniteFsPath path, @Nullable Map<String, String> props) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public Collection<IgniteFsPath> listPaths(IgniteFsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public Collection<IgniteFsFile> listFiles(IgniteFsPath path) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public long usedSpaceSize() throws IgniteCheckedException {
+        @Override public long usedSpaceSize() {
             return 0;
         }
 
@@ -825,83 +822,80 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) throws IgniteCheckedException {
+        @Override public IgniteFsOutputStream create(IgniteFsPath path, boolean overwrite) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite, int replication,
-            long blockSize, @Nullable Map<String, String> props) throws IgniteCheckedException {
+            long blockSize, @Nullable Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteFsOutputStream create(IgniteFsPath path, int bufSize, boolean overwrite,
-            @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props)
-            throws IgniteCheckedException {
+            @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) throws IgniteCheckedException {
+        @Override public IgniteFsOutputStream append(IgniteFsPath path, boolean create) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public IgniteFsOutputStream append(IgniteFsPath path, int bufSize, boolean create,
-            @Nullable Map<String, String> props) throws IgniteCheckedException {
+            @Nullable Map<String, String> props) {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) throws IgniteCheckedException {
+        @Override public void setTimes(IgniteFsPath path, long accessTime, long modificationTime) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteFsMetrics metrics() throws IgniteCheckedException {
+        @Override public IgniteFsMetrics metrics() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public void resetMetrics() throws IgniteCheckedException {
+        @Override public void resetMetrics() {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public long size(IgniteFsPath path) throws IgniteCheckedException {
+        @Override public long size(IgniteFsPath path) {
             return 0;
         }
 
         /** {@inheritDoc} */
-        @Override public void format() throws IgniteCheckedException {
+        @Override public void format() {
             // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-            Collection<IgniteFsPath> paths, @Nullable T arg) throws IgniteCheckedException {
+            Collection<IgniteFsPath> paths, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(IgniteFsTask<T, R> task, @Nullable IgniteFsRecordResolver rslvr,
-            Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg)
-            throws IgniteCheckedException {
+            Collection<IgniteFsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
-            @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg)
-            throws IgniteCheckedException {
+            @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, @Nullable T arg) {
             return null;
         }
 
         /** {@inheritDoc} */
         @Override public <T, R> R execute(Class<? extends IgniteFsTask<T, R>> taskCls,
             @Nullable IgniteFsRecordResolver rslvr, Collection<IgniteFsPath> paths, boolean skipNonExistentFiles,
-            long maxRangeLen, @Nullable T arg) throws IgniteCheckedException {
+            long maxRangeLen, @Nullable T arg) {
             return null;
         }
 
@@ -921,7 +915,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteInternalFuture<R> future() {
+        @Override public <R> IgniteFuture<R> future() {
             return null;
         }
     }
@@ -1215,7 +1209,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public <R> IgniteInternalFuture<R> future() {
+        @Override public <R> IgniteFuture<R> future() {
             return null;
         }
     }
