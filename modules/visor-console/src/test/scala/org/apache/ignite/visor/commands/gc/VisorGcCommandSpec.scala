@@ -17,26 +17,29 @@
 
 package org.apache.ignite.visor.commands.gc
 
-import org.apache.ignite.visor.visor
-import org.scalatest._
-
+import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.visor.commands.gc.VisorGcCommand._
-import org.apache.ignite.visor.commands.top.VisorTopologyCommand._
+import org.apache.ignite.visor.{VisorRuntimeBaseSpec, visor}
 
 /**
  * Unit test for 'gc' command.
  */
-class VisorGcCommandSpec extends FlatSpec with Matchers with BeforeAndAfterAll {
+class VisorGcCommandSpec extends VisorRuntimeBaseSpec(1) {
     behavior of "A 'gc' visor command"
 
-    override def beforeAll() {
-        visor.open("-d")
+    /**
+     * Creates grid configuration for provided grid host.
+     *
+     * @param name Grid name.
+     * @return Grid configuration.
+     */
+    override def config(name: String): IgniteConfiguration = {
+        val cfg = new IgniteConfiguration
 
-        visor.top()
-    }
+        cfg.setGridName(name)
+        cfg.setLifeCycleEmailNotification(false)
 
-    override def afterAll() {
-        visor.close()
+        cfg
     }
 
     it should "run GC on all nodes" in {

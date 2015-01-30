@@ -80,7 +80,7 @@ import static org.apache.ignite.internal.GridNodeAttributes.*;
  * Collection of utility methods used throughout the system.
  */
 @SuppressWarnings({"UnusedReturnValue", "UnnecessaryFullyQualifiedName"})
-public abstract class GridUtils {
+public abstract class IgniteUtils {
     /** Unsafe. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -233,8 +233,8 @@ public abstract class GridUtils {
     private static String jvmImplName;
 
     /** JMX domain as 'xxx.gridgain'. */
-    public static final String JMX_DOMAIN = GridUtils.class.getName().substring(0, GridUtils.class.getName().
-        indexOf('.', GridUtils.class.getName().indexOf('.') + 1));
+    public static final String JMX_DOMAIN = IgniteUtils.class.getName().substring(0, IgniteUtils.class.getName().
+        indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
     public static final byte[] GG_HEADER = U.intToBytes(0x00004747);
@@ -271,7 +271,7 @@ public abstract class GridUtils {
     private static final Map<Class<?>, Class<?>> boxedClsMap = new HashMap<>(16, .5f);
 
     /** Class loader used to load GridGain. */
-    private static final ClassLoader gridClassLoader = GridUtils.class.getClassLoader();
+    private static final ClassLoader gridClassLoader = IgniteUtils.class.getClassLoader();
 
     /** MAC OS invalid argument socket error message. */
     public static final String MAC_INVALID_ARG_MSG = "On MAC OS you may have too many file descriptors open " +
@@ -383,19 +383,19 @@ public abstract class GridUtils {
         osJdkStr = osLow + ", " + jdkStr;
 
         // Copy auto variables to static ones.
-        GridUtils.osName = osName;
-        GridUtils.jdkName = jdkName;
-        GridUtils.jdkVendor = jdkVendor;
-        GridUtils.jdkVer = jdkVer;
-        GridUtils.jdkStr = jdkStr;
-        GridUtils.osVer = osVer;
-        GridUtils.osArch = osArch;
-        GridUtils.jvmSpecName = jvmSpecName;
-        GridUtils.jvmImplVer = jvmImplVer;
-        GridUtils.jvmImplVendor = jvmImplVendor;
-        GridUtils.jvmImplName = jvmImplName;
-        GridUtils.javaRtName = javaRtName;
-        GridUtils.javaRtVer = javaRtVer;
+        IgniteUtils.osName = osName;
+        IgniteUtils.jdkName = jdkName;
+        IgniteUtils.jdkVendor = jdkVendor;
+        IgniteUtils.jdkVer = jdkVer;
+        IgniteUtils.jdkStr = jdkStr;
+        IgniteUtils.osVer = osVer;
+        IgniteUtils.osArch = osArch;
+        IgniteUtils.jvmSpecName = jvmSpecName;
+        IgniteUtils.jvmImplVer = jvmImplVer;
+        IgniteUtils.jvmImplVendor = jvmImplVendor;
+        IgniteUtils.jvmImplName = jvmImplName;
+        IgniteUtils.javaRtName = javaRtName;
+        IgniteUtils.javaRtVer = javaRtVer;
 
         primitiveMap.put("byte", byte.class);
         primitiveMap.put("short", short.class);
@@ -2266,7 +2266,7 @@ public abstract class GridUtils {
      * @return Project home directory (or {@code null} if it cannot be resolved).
      */
     @Nullable private static String resolveProjectHome() {
-        assert Thread.holdsLock(GridUtils.class);
+        assert Thread.holdsLock(IgniteUtils.class);
 
         // Resolve GridGain home via environment variables.
         String ggHome0 = IgniteSystemProperties.getString(GG_HOME);
@@ -2285,7 +2285,7 @@ public abstract class GridUtils {
 
         URI uri;
 
-        Class<GridUtils> cls = GridUtils.class;
+        Class<IgniteUtils> cls = IgniteUtils.class;
 
         try {
             ProtectionDomain domain = cls.getProtectionDomain();
@@ -2354,7 +2354,7 @@ public abstract class GridUtils {
         String ggHome0;
 
         if (ggHomeTup == null) {
-            synchronized (GridUtils.class) {
+            synchronized (IgniteUtils.class) {
                 // Double check.
                 ggHomeTup = ggHome;
 
@@ -2384,7 +2384,7 @@ public abstract class GridUtils {
         String ggHome0;
 
         if (ggHomeTup == null) {
-            synchronized (GridUtils.class) {
+            synchronized (IgniteUtils.class) {
                 // Double check.
                 ggHomeTup = ggHome;
 
@@ -7477,7 +7477,7 @@ public abstract class GridUtils {
         int totalCollisions = 0;
 
         for (int i = 0; i < segs.length; i++) {
-            int segCnt = GridUtils.<Integer>field(segs[i], "count");
+            int segCnt = IgniteUtils.<Integer>field(segs[i], "count");
 
             if (segCnt == 0) {
                 emptySegsCnt++;
@@ -8476,7 +8476,7 @@ public abstract class GridUtils {
         String ggWork0 = ggWork;
 
         if (ggWork0 == null) {
-            synchronized (GridUtils.class) {
+            synchronized (IgniteUtils.class) {
                 // Double check.
                 ggWork0 = ggWork;
 
@@ -9074,7 +9074,7 @@ public abstract class GridUtils {
     public static <T extends R, R> List<R> arrayList(Collection<T> c, @Nullable IgnitePredicate<? super T>... p) {
         assert c != null;
 
-        return GridUtils.<T, R>arrayList(c, c.size(), p);
+        return IgniteUtils.<T, R>arrayList(c, c.size(), p);
     }
 
     /**

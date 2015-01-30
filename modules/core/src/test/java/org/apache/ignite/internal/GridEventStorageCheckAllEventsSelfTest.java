@@ -233,7 +233,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /**
      * Returns timestamp at the method call moment, but sleeps before return,
-     * to allow pass {@link GridUtils#currentTimeMillis()}.
+     * to allow pass {@link IgniteUtils#currentTimeMillis()}.
      *
      * @return Call timestamp.
      * @throws InterruptedException If sleep was interrupted.

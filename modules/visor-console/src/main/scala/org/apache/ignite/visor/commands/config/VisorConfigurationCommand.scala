@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.config
 
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask
 
 import org.apache.ignite._
@@ -104,7 +104,7 @@ class VisorConfigurationCommand {
      * @return String.
      */
     private def arr2Str[T: ClassTag](arr: Array[T]): String = {
-        if (arr != null && arr.length > 0) GridUtils.compact(arr.mkString(", ")) else DFLT
+        if (arr != null && arr.length > 0) IgniteUtils.compact(arr.mkString(", ")) else DFLT
     }
 
     /**
@@ -352,7 +352,7 @@ class VisorConfigurationCommand {
 
             val evtsT = VisorTextTable()
 
-            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(GridUtils.gridEventName)))
+            val inclEvtTypes = Option(cfg.includeEventTypes()).fold(DFLT)(et => arr2Str(et.map(IgniteUtils.gridEventName)))
 
             evtsT += ("Included event types", inclEvtTypes)
 
