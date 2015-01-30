@@ -18,12 +18,11 @@
 package org.apache.ignite;
 
 import junit.framework.*;
-import org.apache.ignite.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
 
-import static org.apache.ignite.internal.util.GridUtils.*;
+import static org.apache.ignite.internal.util.IgniteUtils.*;
 
 /**
  * Tests for proper link output in stack traces.

@@ -20,7 +20,7 @@ package org.apache.ignite.fs;
 import java.util.*;
 
 import static org.apache.ignite.fs.IgniteFsMode.*;
-import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
  * Tests Hadoop 2.x file system in primary mode.

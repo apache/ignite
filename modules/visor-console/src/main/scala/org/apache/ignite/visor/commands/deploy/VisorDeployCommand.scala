@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.deploy
 
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.io.GridFilenameUtils
 import org.apache.ignite.internal.util.typedef.X
 
@@ -184,7 +184,7 @@ private case class VisorCopier(
                 ch.connect()
 
                 // Added to skip login message.
-                GridUtils.sleep(1000)
+                IgniteUtils.sleep(1000)
 
                 val writer = new PrintStream(ch.getOutputStream, true)
 

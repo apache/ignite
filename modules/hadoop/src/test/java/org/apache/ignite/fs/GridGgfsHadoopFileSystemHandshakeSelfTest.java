@@ -42,7 +42,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
 import static org.apache.ignite.fs.IgniteFsMode.*;
 import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
-import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
  * Tests for GGFS file system handshake.
