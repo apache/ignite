@@ -338,8 +338,8 @@ public class S3CheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi, 
     /** {@inheritDoc} */
     @Override public void spiStop() throws IgniteSpiException {
         if (timeoutWrk != null) {
-            GridUtils.interrupt(timeoutWrk);
-            GridUtils.join(timeoutWrk, log);
+            IgniteUtils.interrupt(timeoutWrk);
+            IgniteUtils.join(timeoutWrk, log);
         }
 
         unregisterMBean();

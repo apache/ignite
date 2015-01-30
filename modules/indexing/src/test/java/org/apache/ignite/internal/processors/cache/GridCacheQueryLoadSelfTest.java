@@ -101,7 +101,7 @@ public class GridCacheQueryLoadSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private long size(Class<?> cls) throws IgniteCheckedException {
-        GridCacheQueryManager<Object, Object> qryMgr = ((GridKernal)grid()).internalCache().context().queries();
+        GridCacheQueryManager<Object, Object> qryMgr = ((IgniteKernal)grid()).internalCache().context().queries();
 
         assert qryMgr != null;
 

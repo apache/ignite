@@ -205,7 +205,7 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @return Random entry from cache.
      */
     @Nullable private CacheEntry<Integer, Object> randomEntry(Ignite g) {
-        GridKernal g1 = (GridKernal)g;
+        IgniteKernal g1 = (IgniteKernal)g;
 
         return g1.<Integer, Object>internalCache().randomEntry();
     }
@@ -216,8 +216,8 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
      * @throws Exception If failed.
      */
     private void checkCachesConsistency(Ignite ignite1, Ignite ignite2) throws Exception {
-        GridKernal g1 = (GridKernal) ignite1;
-        GridKernal g2 = (GridKernal) ignite2;
+        IgniteKernal g1 = (IgniteKernal) ignite1;
+        IgniteKernal g2 = (IgniteKernal) ignite2;
 
         GridCacheAdapter<Integer, Object> cache1 = g1.internalCache();
         GridCacheAdapter<Integer, Object> cache2 = g2.internalCache();

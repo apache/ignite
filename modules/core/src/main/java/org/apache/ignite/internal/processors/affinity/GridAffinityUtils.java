@@ -158,7 +158,7 @@ class GridAffinityUtils {
             assert ignite != null;
             assert log != null;
 
-            GridKernal kernal = ((GridKernal) ignite);
+            IgniteKernal kernal = ((IgniteKernal) ignite);
 
             GridCacheContext<Object, Object> cctx = kernal.internalCache(cacheName).context();
 

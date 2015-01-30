@@ -40,7 +40,7 @@ public class GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
             @Override public Object call() throws Exception {
                 IgniteConfiguration cfg = gridConfiguration();
 
-                cfg.setGgfsConfiguration(igniteFsConfiguration("shmem", GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT,
+                cfg.setGgfsConfiguration(igniteFsConfiguration("shmem", IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT,
                     null));
 
                 return G.start(cfg);
@@ -48,6 +48,6 @@ public class GridGgfsServerManagerIpcEndpointRegistrationOnWindowsSelfTest
         }, IgniteCheckedException.class, null);
 
         assert e.getCause().getMessage().contains(" should not be configured on Windows (configure " +
-            GridIpcServerTcpEndpoint.class.getSimpleName() + ")");
+            IpcServerTcpEndpoint.class.getSimpleName() + ")");
     }
 }

@@ -59,7 +59,7 @@ public class GridCacheReplicatedFieldsQuerySelfTest extends GridCacheAbstractFie
 
         try {
             final Map<UUID, Map<Long, GridFutureAdapter<GridQueryFieldsResult>>> map =
-                U.field(((GridKernal)grid(0)).internalCache().context().queries(), "fieldsQryRes");
+                U.field(((IgniteKernal)grid(0)).internalCache().context().queries(), "fieldsQryRes");
 
             // Ensure that iterators map empty.
             map.clear();

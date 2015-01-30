@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class GridShmemCommunicationClient extends GridAbstractCommunicationClient {
     /** */
-    private final GridIpcSharedMemoryClientEndpoint shmem;
+    private final IpcSharedMemoryClientEndpoint shmem;
 
     /** */
     private final ByteBuffer writeBuf;
@@ -59,7 +59,7 @@ public class GridShmemCommunicationClient extends GridAbstractCommunicationClien
         assert port > 0 && port < 0xffff;
         assert connTimeout >= 0;
 
-        shmem = new GridIpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
+        shmem = new IpcSharedMemoryClientEndpoint(port, (int)connTimeout, log);
 
         this.msgWriter = msgWriter;
 

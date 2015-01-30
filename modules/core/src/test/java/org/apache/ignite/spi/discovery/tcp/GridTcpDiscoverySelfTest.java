@@ -714,7 +714,7 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
                 boolean found = false;
 
-                for (GridPortRecord rec : ((GridKernal) g).context().ports().records()) {
+                for (GridPortRecord rec : ((IgniteKernal) g).context().ports().records()) {
                     if ((rec.protocol() == UDP) && rec.port() == ipFinder.getMulticastPort()) {
                         found = true;
 
@@ -897,12 +897,12 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             Long startTime = null;
 
-            GridKernal firstGrid = null;
+            IgniteKernal firstGrid = null;
 
-            Collection<GridKernal> grids = new ArrayList<>();
+            Collection<IgniteKernal> grids = new ArrayList<>();
 
             for (int i = 0; i < 5 ; i++) {
-                GridKernal grid = (GridKernal)grid(i);
+                IgniteKernal grid = (IgniteKernal)grid(i);
 
                 assertTrue(grid.context().discovery().gridStartTime() > 0);
 
@@ -921,12 +921,12 @@ public class GridTcpDiscoverySelfTest extends GridCommonAbstractTest {
 
             stopGrid(firstGrid.name());
 
-            for (GridKernal grid : grids)
+            for (IgniteKernal grid : grids)
                 assertEquals(startTime, (Long)grid.context().discovery().gridStartTime());
 
-            grids.add((GridKernal) startGrid(5));
+            grids.add((IgniteKernal) startGrid(5));
 
-            for (GridKernal grid : grids)
+            for (IgniteKernal grid : grids)
                 assertEquals(startTime, (Long)grid.context().discovery().gridStartTime());
         }
         finally {

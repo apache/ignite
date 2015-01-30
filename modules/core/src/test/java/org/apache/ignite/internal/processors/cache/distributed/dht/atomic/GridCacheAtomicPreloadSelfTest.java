@@ -149,7 +149,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkTransactions() {
         for (int i = 0; i < 3; i++) {
-            IgniteTxManager<Object, Object> tm = ((GridKernal)grid(i)).context().cache().context().tm();
+            IgniteTxManager<Object, Object> tm = ((IgniteKernal)grid(i)).context().cache().context().tm();
 
             assertEquals("Uncommitted transactions found on node [idx=" + i + ", mapSize=" + tm.idMapSize() + ']',
                 0, tm.idMapSize());
@@ -162,7 +162,7 @@ public class GridCacheAtomicPreloadSelfTest extends GridCommonAbstractTest {
      */
     private void checkValues(int key, int val) {
         for (int i = 0; i < 3; i++) {
-            GridEx grid = grid(i);
+            IgniteEx grid = grid(i);
 
             ClusterNode node = grid.localNode();
 

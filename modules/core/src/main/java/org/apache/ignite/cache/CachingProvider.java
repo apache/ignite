@@ -40,7 +40,7 @@ public class CachingProvider implements javax.cache.spi.CachingProvider {
         URI uri = null;
 
         try {
-            URL dfltCfgURL = U.resolveGridGainUrl(GridGainEx.DFLT_CFG);
+            URL dfltCfgURL = U.resolveGridGainUrl(IgnitionEx.DFLT_CFG);
 
             if (dfltCfgURL != null)
                 uri = dfltCfgURL.toURI();

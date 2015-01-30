@@ -134,13 +134,13 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
         try {
             startGridsMultiThreaded(2);
 
-            GridKernal[] nodes = new GridKernal[] {(GridKernal)grid(0), (GridKernal)grid(1)};
+            IgniteKernal[] nodes = new IgniteKernal[] {(IgniteKernal)grid(0), (IgniteKernal)grid(1)};
 
             Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
             final CountDownLatch startLatch = new CountDownLatch(1);
 
-            for (final GridKernal node : nodes) {
+            for (final IgniteKernal node : nodes) {
                 List<Integer> parts = partitions(node, PARTITION_PRIMARY);
 
                 Map<Integer, Integer> keyMap = keysFor(node, parts);
@@ -217,11 +217,11 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private void checkTxNodeJoined(int nodeType) throws Exception {
         startGrids(3);
 
-        final GridKernal g0 = (GridKernal)grid(0);
-        final GridKernal g1 = (GridKernal)grid(1);
-        final GridKernal g2 = (GridKernal)grid(2);
+        final IgniteKernal g0 = (IgniteKernal)grid(0);
+        final IgniteKernal g1 = (IgniteKernal)grid(1);
+        final IgniteKernal g2 = (IgniteKernal)grid(2);
 
-        GridKernal[] nodes = new GridKernal[] {g0, g1, g2};
+        IgniteKernal[] nodes = new IgniteKernal[] {g0, g1, g2};
 
         try {
             info(">>> Started nodes [g0=" + g0.localNode().id() + ", g1=" + g1.localNode().id() + ", g2=" +
@@ -231,7 +231,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
-            for (final GridKernal node : nodes) {
+            for (final IgniteKernal node : nodes) {
                 printDistribution(node);
 
                 // Get partitions that does not reside on g0.
@@ -366,12 +366,12 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     private void checkTxNodeLeft(int nodeType) throws Exception {
         startGridsMultiThreaded(4);
 
-        final GridKernal g0 = (GridKernal)grid(0);
-        final GridKernal g1 = (GridKernal)grid(1);
-        final GridKernal g2 = (GridKernal)grid(2);
-        final GridKernal g3 = (GridKernal)grid(3);
+        final IgniteKernal g0 = (IgniteKernal)grid(0);
+        final IgniteKernal g1 = (IgniteKernal)grid(1);
+        final IgniteKernal g2 = (IgniteKernal)grid(2);
+        final IgniteKernal g3 = (IgniteKernal)grid(3);
 
-        GridKernal[] nodes = new GridKernal[] {g0, g1, g2};
+        IgniteKernal[] nodes = new IgniteKernal[] {g0, g1, g2};
 
         final CountDownLatch commitLatch = new CountDownLatch(1);
 
@@ -385,7 +385,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
 
             printDistribution(g3);
 
-            for (final GridKernal node : nodes) {
+            for (final IgniteKernal node : nodes) {
                 printDistribution(node);
 
                 // Get partitions that does not reside on g0.
@@ -488,7 +488,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
                 txFut.get(1000);
 
             for (int i = 0; i < 3; i++) {
-                CacheConsistentHashAffinityFunction affinity = (CacheConsistentHashAffinityFunction)((GridKernal)grid(i))
+                CacheConsistentHashAffinityFunction affinity = (CacheConsistentHashAffinityFunction)((IgniteKernal)grid(i))
                     .internalCache().context().config().getAffinity();
 
                 ConcurrentMap addedNodes = U.field(affinity, "addedNodes");
@@ -512,7 +512,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      *
      * @param node Node to detect partitions for.
      */
-    private void printDistribution(GridKernal node) {
+    private void printDistribution(IgniteKernal node) {
         List<Integer> primary = partitions(node, PARTITION_PRIMARY);
         List<Integer> backup = partitions(node, PARTITION_BACKUP);
         List<Integer> reader = partitions(node, PARTITION_READER);
@@ -529,7 +529,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
      * @param parts Partitions to get keys for.
      * @return Map from partition to key.
      */
-    private Map<Integer, Integer> keysFor(GridKernal node, Iterable<Integer> parts) {
+    private Map<Integer, Integer> keysFor(IgniteKernal node, Iterable<Integer> parts) {
         GridCacheContext<Object, Object> ctx = node.internalCache().context();
 
         Map<Integer, Integer> res = new HashMap<>();

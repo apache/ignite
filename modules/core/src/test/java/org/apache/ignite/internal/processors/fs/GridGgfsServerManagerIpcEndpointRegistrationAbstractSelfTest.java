@@ -96,15 +96,15 @@ public abstract class GridGgfsServerManagerIpcEndpointRegistrationAbstractSelfTe
      * @return Tuple2 where (tcp endpoints count, shmem endpoints count).
      */
     protected T2<Integer, Integer> checkRegisteredIpcEndpoints() throws Exception {
-        GridKernalContext ctx = ((GridKernal)grid()).context();
+        GridKernalContext ctx = ((IgniteKernal)grid()).context();
 
         int tcp = 0;
         int shmem = 0;
 
         for (GridPortRecord record : ctx.ports().records()) {
-            if (record.clazz() == GridIpcSharedMemoryServerEndpoint.class)
+            if (record.clazz() == IpcSharedMemoryServerEndpoint.class)
                 shmem++;
-            else if (record.clazz() == GridIpcServerTcpEndpoint.class)
+            else if (record.clazz() == IpcServerTcpEndpoint.class)
                 tcp++;
         }
 

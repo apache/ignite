@@ -39,7 +39,7 @@ import static org.apache.ignite.cache.CacheMode.*;
  */
 public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
     /** Grid instance hosting primary GGFS. */
-    private GridEx grid;
+    private IgniteEx grid;
 
     /** Primary GGFS. */
     private GridGgfsImpl ggfs;
@@ -133,7 +133,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setRestEnabled(false);
 
-        grid = (GridEx)G.start(cfg);
+        grid = (IgniteEx)G.start(cfg);
 
         ggfs = (GridGgfsImpl)grid.fileSystem("ggfs");
     }

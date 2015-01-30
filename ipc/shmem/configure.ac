@@ -28,6 +28,6 @@ dnl Libtool is used for building share libraries
 AC_PROG_LIBTOOL
 
 AC_CONFIG_FILES(Makefile
-                ggshmem/Makefile
+                igniteshmem/Makefile
                 include/Makefile)
 AC_OUTPUT

@@ -248,7 +248,6 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
     /**
      * @throws Exception If failed.
      */
-    // TODO IGNITE-109: fix test when fixed.
     public void testSessionCrossCacheTx() throws Exception {
         IgniteCache<Object, Object> cache0 = ignite(0).jcache(null);
 
@@ -262,8 +261,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             cache1.put(key2, 0);
 
-            expData.add(new ExpectedData(true, "writeAll", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "writeAll"), null));
+            expData.add(new ExpectedData(true, "write", new HashMap<>(), null));
+            expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), CACHE_NAME1));
+            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
 
             tx.commit();
         }
@@ -275,8 +275,9 @@ public class IgniteCacheTxStoreSessionTest extends IgniteCacheStoreSessionAbstra
 
             cache0.put(key2, 0);
 
-            expData.add(new ExpectedData(true, "writeAll", new HashMap<>(), null));
-            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "writeAll"), null));
+            expData.add(new ExpectedData(true, "write", new HashMap<>(), CACHE_NAME1));
+            expData.add(new ExpectedData(true, "write", F.<Object, Object>asMap(0, "write"), null));
+            expData.add(new ExpectedData(true, "txEnd", F.<Object, Object>asMap(0, "write", 1, "write"), null));
 
             tx.commit();
         }

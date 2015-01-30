@@ -1,1 +1,1 @@
-SUBDIRS=ggshmem include
+SUBDIRS=igniteshmem include

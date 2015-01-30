@@ -112,7 +112,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     private GridCheckpointManager checkpoints(Ignite ignite) {
         assert ignite != null;
 
-        return ((GridKernal) ignite).context().checkpoint();
+        return ((IgniteKernal) ignite).context().checkpoint();
     }
 
     /** {@inheritDoc} */

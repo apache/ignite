@@ -99,7 +99,7 @@ public abstract class GridCacheExpiredEntriesPreloadAbstractSelfTest extends Gri
         // Start another node.
         Ignite g1 = startGrid(1);
 
-        final GridCacheAdapter<String, Integer> cache1 = ((GridKernal)g1).context().cache().internalCache();
+        final GridCacheAdapter<String, Integer> cache1 = ((IgniteKernal)g1).context().cache().internalCache();
 
         cache1.preloader().syncFuture().get();
 

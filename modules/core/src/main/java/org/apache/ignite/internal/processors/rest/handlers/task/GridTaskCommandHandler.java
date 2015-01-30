@@ -590,7 +590,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** */
         @IgniteInstanceResource
-        private GridEx g;
+        private IgniteEx g;
 
         /**
          * Required by {@link Externalizable}.
