@@ -1,10 +1,10 @@
-[14:14:22,515][INFO ][main][GridListenActorSelfTest]
+[14:14:22,515][INFO ][main][GridListenActorSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -15,8 +15,8 @@
 [14:14:22,516][INFO ][main][GridListenActorSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:22,516][INFO ][main][GridListenActorSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:22,516][INFO ][main][GridListenActorSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:22,516][INFO ][main][GridListenActorSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:22,516][INFO ][main][GridListenActorSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:22,516][INFO ][main][GridListenActorSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:22,516][INFO ][main][GridListenActorSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:22,517][WARN ][main][GridListenActorSelfTest] SMTP is not configured - email notifications are off.
 [14:14:22,517][WARN ][main][GridListenActorSelfTest] Cache is not configured - data grid is off.
 [14:14:22,521][INFO ][main][GridListenActorSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -36,7 +36,7 @@
 [14:14:24,721][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:24,721][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:24,721][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:24,740][INFO ][main][GridListenActorSelfTest]
+[14:14:24,740][INFO ][main][GridListenActorSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -49,7 +49,7 @@
 >>> Grid name: kernal.GridListenActorSelfTest
 >>> Local node [ID=353D63B5-A2F0-41D1-A30E-37016F357233, order=1353320063496]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45010 UDP:50001 TCP:55010
+>>> Local ports: TCP:8080 TCP:11211 TCP:45010 UDP:50001 TCP:55010 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:24,740][INFO ][main][GridListenActorSelfTest] >>> Starting test: testListenByClosure <<<
@@ -61,13 +61,13 @@
 [14:14:30,938][INFO ][main][GridListenActorSelfTest] >>> Starting test: testReceiveAll <<<
 [14:14:32,948][INFO ][main][GridListenActorSelfTest] >>> Stopping test: testReceiveAll in 2010 ms <<<
 [14:14:32,956][INFO ][main][GridListenActorSelfTest] >>> Starting test: testRespondToRemote <<<
-[14:14:32,960][INFO ][test-runner][GridListenActorSelfTest1]
+[14:14:32,960][INFO ][test-runner][GridListenActorSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -78,8 +78,8 @@
 [14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:32,961][INFO ][test-runner][GridListenActorSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:32,961][WARN ][test-runner][GridListenActorSelfTest1] SMTP is not configured - email notifications are off.
 [14:14:32,961][WARN ][test-runner][GridListenActorSelfTest1] Cache is not configured - data grid is off.
 [14:14:32,964][INFO ][test-runner][GridListenActorSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -103,7 +103,7 @@
 [14:14:35,652][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:35,652][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:35,652][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:35,667][INFO ][test-runner][GridListenActorSelfTest1]
+[14:14:35,667][INFO ][test-runner][GridListenActorSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -116,7 +116,7 @@
 >>> Grid name: kernal.GridListenActorSelfTest1
 >>> Local node [ID=1F7E8040-8A17-4E14-A513-1709BEBE265B, order=1353320073559]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45011 UDP:50001 TCP:55011
+>>> Local ports: TCP:45011 UDP:50001 TCP:55011 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:36,672][INFO ][test-runner][GridListenActorSelfTest] >>> Stopping grid [name=kernal.GridListenActorSelfTest1, id=1f7e8040-8a17-4e14-a513-1709bebe265b]
@@ -125,7 +125,7 @@
 [14:14:36,679][INFO ][disco-event-worker-#15%kernal.GridListenActorSelfTest%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=1f7e8040-8a17-4e14-a513-1709bebe265b, state=LEFT, lastHeartbeat=1353320076673, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55011, startTime=1353320073559]
 [14:14:36,680][INFO ][disco-event-worker-#15%kernal.GridListenActorSelfTest%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x8C20EE0]
 [14:14:36,693][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320075676, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=e4269281b31-1f7e8040-8a17-4e14-a513-1709bebe265b, userVer=0, loc=true, sampleCls=class java.lang.String, sampleClsName=java.lang.String, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:36,701][INFO ][test-runner][GridListenActorSelfTest1]
+[14:14:36,701][INFO ][test-runner][GridListenActorSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -141,7 +141,7 @@
 [14:14:37,780][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:14:37,781][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:14:37,794][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320064744, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=a2269281b31-353d63b5-a2f0-41d1-a30e-37016f357233, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridListenActorSelfTest$1, sampleClsName=org.gridgain.grid.kernal.GridListenActorSelfTest$1, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:37,799][INFO ][main][GridListenActorSelfTest]
+[14:14:37,799][INFO ][main][GridListenActorSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -150,13 +150,13 @@
 >>> Grid uptime: 00:00:13:57
 
 
-[14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest]
+[14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -167,8 +167,8 @@
 [14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:37,814][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:37,814][WARN ][main][GridSessionCancelSiblingsFromFutureSelfTest] SMTP is not configured - email notifications are off.
 [14:14:37,815][WARN ][main][GridSessionCancelSiblingsFromFutureSelfTest] Cache is not configured - data grid is off.
 [14:14:37,815][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -188,7 +188,7 @@
 [14:14:39,448][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:39,448][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:39,448][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:39,468][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest]
+[14:14:39,468][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -201,7 +201,7 @@
 >>> Grid name: session.GridSessionCancelSiblingsFromFutureSelfTest
 >>> Local node [ID=741AF89C-78C4-453D-83D5-86B9A66DCA08, order=1353320078398]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45020 UDP:50002 TCP:55020
+>>> Local ports: TCP:8080 TCP:11211 TCP:45020 UDP:50002 TCP:55020 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:39,468][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] >>> Starting test: testCancelSiblings <<<
@@ -381,7 +381,7 @@
 [14:14:40,676][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:14:40,677][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:14:40,687][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320079467, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=95269281b31-741af89c-78c4-453d-83d5-86b9a66dca08, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionCancelSiblingsFromFutureSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionCancelSiblingsFromFutureSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:40,691][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest]
+[14:14:40,691][INFO ][main][GridSessionCancelSiblingsFromFutureSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -390,13 +390,13 @@
 >>> Grid uptime: 00:00:01:228
 
 
-[14:14:40,706][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest]
+[14:14:40,706][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -407,8 +407,8 @@
 [14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:40,707][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:40,707][WARN ][main][GridSessionCancelSiblingsFromJobSelfTest] SMTP is not configured - email notifications are off.
 [14:14:40,707][WARN ][main][GridSessionCancelSiblingsFromJobSelfTest] Cache is not configured - data grid is off.
 [14:14:40,708][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -428,7 +428,7 @@
 [14:14:42,296][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:42,296][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:42,296][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:42,301][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest]
+[14:14:42,301][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -441,7 +441,7 @@
 >>> Grid name: session.GridSessionCancelSiblingsFromJobSelfTest
 >>> Local node [ID=8993B4E0-A3E8-4C20-A054-CF7C39915903, order=1353320081250]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45030 UDP:50003 TCP:55030
+>>> Local ports: TCP:8080 TCP:11211 TCP:45030 UDP:50003 TCP:55030 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:42,301][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] >>> Starting test: testCancelSiblings <<<
@@ -581,7 +581,7 @@
 [14:14:43,460][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:14:43,461][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:14:43,469][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320082296, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=71469281b31-8993b4e0-a3e8-4c20-a054-cf7c39915903, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionCancelSiblingsFromJobSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionCancelSiblingsFromJobSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:43,473][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest]
+[14:14:43,473][INFO ][main][GridSessionCancelSiblingsFromJobSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -590,13 +590,13 @@
 >>> Grid uptime: 00:00:01:170
 
 
-[14:14:43,487][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest]
+[14:14:43,487][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -607,8 +607,8 @@
 [14:14:43,487][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:43,488][WARN ][main][GridSessionCancelSiblingsFromTaskSelfTest] SMTP is not configured - email notifications are off.
 [14:14:43,488][WARN ][main][GridSessionCancelSiblingsFromTaskSelfTest] Cache is not configured - data grid is off.
 [14:14:43,488][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -628,7 +628,7 @@
 [14:14:45,082][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:45,082][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:45,082][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:45,087][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest]
+[14:14:45,087][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -641,7 +641,7 @@
 >>> Grid name: session.GridSessionCancelSiblingsFromTaskSelfTest
 >>> Local node [ID=D7B39FFC-59FF-4354-B89A-F9F90A8D786C, order=1353320084041]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45040 UDP:50004 TCP:55040
+>>> Local ports: TCP:8080 TCP:11211 TCP:45040 UDP:50004 TCP:55040 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:45,087][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] >>> Starting test: testCancelSiblings <<<
@@ -781,7 +781,7 @@
 [14:14:46,233][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:14:46,233][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:14:46,240][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320085087, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=bc569281b31-d7b39ffc-59ff-4354-b89a-f9f90a8d786c, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionCancelSiblingsFromTaskSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionCancelSiblingsFromTaskSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:46,243][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest]
+[14:14:46,243][INFO ][main][GridSessionCancelSiblingsFromTaskSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -790,13 +790,13 @@
 >>> Grid uptime: 00:00:01:159
 
 
-[14:14:46,257][INFO ][main][GridSessionSetFutureAttributeSelfTest]
+[14:14:46,257][INFO ][main][GridSessionSetFutureAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -807,8 +807,8 @@
 [14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:46,258][INFO ][main][GridSessionSetFutureAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:46,259][WARN ][main][GridSessionSetFutureAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:14:46,259][WARN ][main][GridSessionSetFutureAttributeSelfTest] Cache is not configured - data grid is off.
 [14:14:46,260][INFO ][main][GridSessionSetFutureAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -828,7 +828,7 @@
 [14:14:47,838][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:47,838][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:47,838][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:47,847][INFO ][main][GridSessionSetFutureAttributeSelfTest]
+[14:14:47,847][INFO ][main][GridSessionSetFutureAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -841,7 +841,7 @@
 >>> Grid name: session.GridSessionSetFutureAttributeSelfTest
 >>> Local node [ID=19A0735F-3E28-48E1-AA00-737D4BBE7953, order=1353320086800]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45050 UDP:50005 TCP:55050
+>>> Local ports: TCP:8080 TCP:11211 TCP:45050 UDP:50005 TCP:55050 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:47,847][INFO ][main][GridSessionSetFutureAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -931,7 +931,7 @@
 [14:14:49,005][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:14:49,006][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:14:49,013][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320087847, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=f7769281b31-19a0735f-3e28-48e1-aa00-737d4bbe7953, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetFutureAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetFutureAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:49,018][INFO ][main][GridSessionSetFutureAttributeSelfTest]
+[14:14:49,018][INFO ][main][GridSessionSetFutureAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -940,13 +940,13 @@
 >>> Grid uptime: 00:00:01:177
 
 
-[14:14:49,033][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest]
+[14:14:49,033][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -957,8 +957,8 @@
 [14:14:49,034][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:49,034][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:49,035][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:49,035][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:49,035][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:49,035][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:49,035][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:49,035][WARN ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] SMTP is not configured - email notifications are off.
 [14:14:49,035][WARN ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] Cache is not configured - data grid is off.
 [14:14:49,036][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -978,7 +978,7 @@
 [14:14:50,611][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:50,611][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:50,611][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:50,619][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest]
+[14:14:50,619][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -991,7 +991,7 @@
 >>> Grid name: session.GridSessionSetFutureAttributeWaitListenerSelfTest
 >>> Local node [ID=F07B5F6E-FB13-4C51-B228-BE1F37F7ECDB, order=1353320089568]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45060 UDP:50006 TCP:55060
+>>> Local ports: TCP:8080 TCP:11211 TCP:45060 UDP:50006 TCP:55060 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:50,620][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] >>> Starting test: testSetAttribute <<<
@@ -1008,7 +1008,7 @@
 [14:14:51,692][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:14:51,692][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:14:51,699][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320090615, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=51969281b31-f07b5f6e-fb13-4c51-b228-be1f37f7ecdb, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetFutureAttributeWaitListenerSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetFutureAttributeWaitListenerSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:14:51,702][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest]
+[14:14:51,702][INFO ][main][GridSessionSetFutureAttributeWaitListenerSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -1017,13 +1017,13 @@
 >>> Grid uptime: 00:00:01:79
 
 
-[14:14:51,713][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest]
+[14:14:51,713][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -1034,8 +1034,8 @@
 [14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:14:51,714][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:14:51,714][WARN ][main][GridSessionSetJobAttributeWaitListenerSelfTest] SMTP is not configured - email notifications are off.
 [14:14:51,714][WARN ][main][GridSessionSetJobAttributeWaitListenerSelfTest] Cache is not configured - data grid is off.
 [14:14:51,715][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -1055,7 +1055,7 @@
 [14:14:53,295][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:14:53,295][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:14:53,295][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:14:53,300][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest]
+[14:14:53,300][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -1068,7 +1068,7 @@
 >>> Grid name: session.GridSessionSetJobAttributeWaitListenerSelfTest
 >>> Local node [ID=A31FA636-CFFE-4737-8BE5-A303AA1C4507, order=1353320092248]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45070 UDP:50007 TCP:55070
+>>> Local ports: TCP:8080 TCP:11211 TCP:45070 UDP:50007 TCP:55070 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:14:53,300][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] >>> Starting test: testSetAttribute <<<
@@ -1244,7 +1244,7 @@
 [14:16:34,407][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:34,408][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:34,416][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320093295, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=34969281b31-a31fa636-cffe-4737-8be5-a303aa1c4507, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetJobAttributeWaitListenerSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetJobAttributeWaitListenerSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:34,419][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest]
+[14:16:34,419][INFO ][main][GridSessionSetJobAttributeWaitListenerSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -1253,13 +1253,13 @@
 >>> Grid uptime: 00:01:41:116
 
 
-[14:16:34,433][INFO ][main][GridSessionSetJobAttributeSelfTest]
+[14:16:34,433][INFO ][main][GridSessionSetJobAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -1270,8 +1270,8 @@
 [14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:34,434][INFO ][main][GridSessionSetJobAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:34,434][WARN ][main][GridSessionSetJobAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:16:34,434][WARN ][main][GridSessionSetJobAttributeSelfTest] Cache is not configured - data grid is off.
 [14:16:34,438][INFO ][main][GridSessionSetJobAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -1291,7 +1291,7 @@
 [14:16:36,021][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:36,021][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:36,021][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:36,025][INFO ][main][GridSessionSetJobAttributeSelfTest]
+[14:16:36,025][INFO ][main][GridSessionSetJobAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -1304,7 +1304,7 @@
 >>> Grid name: session.GridSessionSetJobAttributeSelfTest
 >>> Local node [ID=46924B92-D354-4A08-87EA-5C8D6271E515, order=1353320194964]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45080 UDP:50008 TCP:55080
+>>> Local ports: TCP:8080 TCP:11211 TCP:45080 UDP:50008 TCP:55080 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:36,025][INFO ][main][GridSessionSetJobAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -1434,7 +1434,7 @@
 [14:16:37,133][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:37,134][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:37,140][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320196025, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=88a69281b31-46924b92-d354-4a08-87ea-5c8d6271e515, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetJobAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetJobAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:37,143][INFO ][main][GridSessionSetJobAttributeSelfTest]
+[14:16:37,143][INFO ][main][GridSessionSetJobAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -1444,13 +1444,13 @@
 
 
 [14:16:37,151][INFO ][main][GridSessionSetJobAttribute2SelfTest] >>> Starting test: testJobSetAttribute <<<
-[14:16:37,157][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1]
+[14:16:37,157][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -1461,8 +1461,8 @@
 [14:16:37,157][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:37,158][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:37,158][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:37,158][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:37,158][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:37,158][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:37,158][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:37,158][WARN ][test-runner][GridSessionSetJobAttribute2SelfTest1] SMTP is not configured - email notifications are off.
 [14:16:37,158][WARN ][test-runner][GridSessionSetJobAttribute2SelfTest1] Cache is not configured - data grid is off.
 [14:16:37,159][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -1482,7 +1482,7 @@
 [14:16:38,723][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:38,723][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:38,723][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:38,728][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1]
+[14:16:38,728][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -1495,16 +1495,16 @@
 >>> Grid name: session.GridSessionSetJobAttribute2SelfTest1
 >>> Local node [ID=EF330C54-275E-44C5-BB30-FFD93D498E2F, order=1353320197688]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45090 UDP:50009 TCP:55090
+>>> Local ports: TCP:8080 TCP:11211 TCP:45090 UDP:50009 TCP:55090 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:16:38,729][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2]
+[14:16:38,729][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -1515,8 +1515,8 @@
 [14:16:38,729][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:38,729][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:38,729][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:38,730][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:38,730][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:38,730][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:38,730][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:38,730][WARN ][test-runner][GridSessionSetJobAttribute2SelfTest2] SMTP is not configured - email notifications are off.
 [14:16:38,730][WARN ][test-runner][GridSessionSetJobAttribute2SelfTest2] Cache is not configured - data grid is off.
 [14:16:38,730][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -1540,7 +1540,7 @@
 [14:16:41,369][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:41,369][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:41,369][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:41,377][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2]
+[14:16:41,377][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -1553,7 +1553,7 @@
 >>> Grid name: session.GridSessionSetJobAttribute2SelfTest2
 >>> Local node [ID=50A69295-104F-4E04-90B2-F70E331E9A21, order=1353320199270]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45091 UDP:50009 TCP:55091
+>>> Local ports: TCP:45091 UDP:50009 TCP:55091 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:41,496][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest] >>> Stopping grid [name=session.GridSessionSetJobAttribute2SelfTest1, id=ef330c54-275e-44c5-bb30-ffd93d498e2f]
@@ -1562,7 +1562,7 @@
 [14:16:42,555][INFO ][disco-event-worker-#685%session.GridSessionSetJobAttribute2SelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=ef330c54-275e-44c5-bb30-ffd93d498e2f, state=LEFT, lastHeartbeat=1353320202554, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55090, startTime=1353320197688]
 [14:16:42,556][INFO ][disco-event-worker-#685%session.GridSessionSetJobAttribute2SelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x7C68505C]
 [14:16:42,559][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320201375, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=c2c69281b31-ef330c54-275e-44c5-bb30-ffd93d498e2f, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetJobAttribute2SelfTest$SessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetJobAttribute2SelfTest$SessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:42,561][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1]
+[14:16:42,561][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -1575,7 +1575,7 @@
 [14:16:42,562][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:42,562][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:42,568][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320201385, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=23c69281b31-50a69295-104f-4e04-90b2-f70e331e9a21, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetJobAttribute2SelfTest$SessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetJobAttribute2SelfTest$SessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:42,570][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2]
+[14:16:42,570][INFO ][test-runner][GridSessionSetJobAttribute2SelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -1585,13 +1585,13 @@
 
 
 [14:16:42,571][INFO ][main][GridSessionSetJobAttribute2SelfTest] >>> Stopping test: testJobSetAttribute in 5420 ms <<<
-[14:16:42,580][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest]
+[14:16:42,580][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -1602,8 +1602,8 @@
 [14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:42,581][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:42,582][WARN ][main][GridSessionJobWaitTaskAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:16:42,582][WARN ][main][GridSessionJobWaitTaskAttributeSelfTest] Cache is not configured - data grid is off.
 [14:16:42,583][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -1623,7 +1623,7 @@
 [14:16:44,144][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:44,144][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:44,144][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:44,148][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest]
+[14:16:44,148][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -1636,7 +1636,7 @@
 >>> Grid name: session.GridSessionJobWaitTaskAttributeSelfTest
 >>> Local node [ID=B39CEE3B-7910-40D6-97BF-85D584DA07C8, order=1353320203107]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45100 UDP:50010 TCP:55100
+>>> Local ports: TCP:8080 TCP:11211 TCP:45100 UDP:50010 TCP:55100 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:44,148][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -1856,7 +1856,7 @@
 [14:16:45,285][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:45,285][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:45,291][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320204144, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=44c69281b31-b39cee3b-7910-40d6-97bf-85d584da07c8, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionJobWaitTaskAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionJobWaitTaskAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:45,294][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest]
+[14:16:45,294][INFO ][main][GridSessionJobWaitTaskAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -1865,13 +1865,13 @@
 >>> Grid uptime: 00:00:01:141
 
 
-[14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest]
+[14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -1882,8 +1882,8 @@
 [14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:45,307][INFO ][main][GridSessionSetTaskAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:45,307][WARN ][main][GridSessionSetTaskAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:16:45,307][WARN ][main][GridSessionSetTaskAttributeSelfTest] Cache is not configured - data grid is off.
 [14:16:45,308][INFO ][main][GridSessionSetTaskAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -1903,7 +1903,7 @@
 [14:16:46,878][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:46,879][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:46,879][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:46,883][INFO ][main][GridSessionSetTaskAttributeSelfTest]
+[14:16:46,883][INFO ][main][GridSessionSetTaskAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -1916,7 +1916,7 @@
 >>> Grid name: session.GridSessionSetTaskAttributeSelfTest
 >>> Local node [ID=B9710CC2-6190-44C8-9214-43AC2125C016, order=1353320205839]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45110 UDP:50011 TCP:55110
+>>> Local ports: TCP:8080 TCP:11211 TCP:45110 UDP:50011 TCP:55110 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:46,883][INFO ][main][GridSessionSetTaskAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -2106,7 +2106,7 @@
 [14:16:47,991][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:47,991][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:47,997][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320206876, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=add69281b31-b9710cc2-6190-44c8-9214-43ac2125c016, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetTaskAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetTaskAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:47,999][INFO ][main][GridSessionSetTaskAttributeSelfTest]
+[14:16:47,999][INFO ][main][GridSessionSetTaskAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -2115,13 +2115,13 @@
 >>> Grid uptime: 00:00:01:118
 
 
-[14:16:48,012][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest]
+[14:16:48,012][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -2132,8 +2132,8 @@
 [14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:48,013][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:48,013][WARN ][main][GridSessionFutureWaitTaskAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:16:48,014][WARN ][main][GridSessionFutureWaitTaskAttributeSelfTest] Cache is not configured - data grid is off.
 [14:16:48,014][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -2153,7 +2153,7 @@
 [14:16:49,596][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:49,596][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:49,596][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:49,604][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest]
+[14:16:49,604][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -2166,7 +2166,7 @@
 >>> Grid name: session.GridSessionFutureWaitTaskAttributeSelfTest
 >>> Local node [ID=16566258-770B-4ECF-962F-A6A9D4076A69, order=1353320208548]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45120 UDP:50012 TCP:55120
+>>> Local ports: TCP:8080 TCP:11211 TCP:45120 UDP:50012 TCP:55120 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:49,604][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -2306,7 +2306,7 @@
 [14:16:50,720][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:50,721][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:50,726][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320209606, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=07f69281b31-16566258-770b-4ecf-962f-a6a9d4076a69, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionFutureWaitTaskAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionFutureWaitTaskAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:50,729][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest]
+[14:16:50,729][INFO ][main][GridSessionFutureWaitTaskAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -2315,13 +2315,13 @@
 >>> Grid uptime: 00:00:01:129
 
 
-[14:16:50,744][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest]
+[14:16:50,744][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -2332,8 +2332,8 @@
 [14:16:50,744][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:50,745][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:50,745][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:50,745][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:50,745][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:50,745][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:50,745][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:50,745][WARN ][main][GridSessionFutureWaitJobAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:16:50,745][WARN ][main][GridSessionFutureWaitJobAttributeSelfTest] Cache is not configured - data grid is off.
 [14:16:50,746][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -2353,7 +2353,7 @@
 [14:16:52,314][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:52,314][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:52,314][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:52,322][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest]
+[14:16:52,322][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -2366,7 +2366,7 @@
 >>> Grid name: session.GridSessionFutureWaitJobAttributeSelfTest
 >>> Local node [ID=6CB9A71D-90AF-4C65-B212-2D3AE90802F4, order=1353320211278]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45130 UDP:50013 TCP:55130
+>>> Local ports: TCP:8080 TCP:11211 TCP:45130 UDP:50013 TCP:55130 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:52,322][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -3026,7 +3026,7 @@
 [14:16:53,553][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:53,553][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:53,558][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320212315, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=e2179281b31-6cb9a71d-90af-4c65-b212-2d3ae90802f4, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionFutureWaitJobAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionFutureWaitJobAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:53,561][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest]
+[14:16:53,561][INFO ][main][GridSessionFutureWaitJobAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3035,13 +3035,13 @@
 >>> Grid uptime: 00:00:01:238
 
 
-[14:16:53,575][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest]
+[14:16:53,575][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3052,8 +3052,8 @@
 [14:16:53,575][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:53,575][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:53,576][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:53,576][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:53,576][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:53,576][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:53,576][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:53,576][WARN ][main][GridSessionTaskWaitJobAttributeSelfTest] SMTP is not configured - email notifications are off.
 [14:16:53,576][WARN ][main][GridSessionTaskWaitJobAttributeSelfTest] Cache is not configured - data grid is off.
 [14:16:53,577][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3073,7 +3073,7 @@
 [14:16:55,164][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:55,164][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:55,164][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:55,168][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest]
+[14:16:55,168][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3086,7 +3086,7 @@
 >>> Grid name: session.GridSessionTaskWaitJobAttributeSelfTest
 >>> Local node [ID=7DDF2AED-4B95-4046-9DA8-550D93BF2E73, order=1353320214117]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45140 UDP:50014 TCP:55140
+>>> Local ports: TCP:8080 TCP:11211 TCP:45140 UDP:50014 TCP:55140 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:16:55,168][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] >>> Starting test: testMultiThreaded <<<
@@ -3266,7 +3266,7 @@
 [14:16:56,275][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:16:56,276][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:16:56,281][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320215164, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=cc979281b31-7ddf2aed-4b95-4046-9da8-550d93bf2e73, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionTaskWaitJobAttributeSelfTest$GridTaskSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionTaskWaitJobAttributeSelfTest$GridTaskSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:16:56,283][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest]
+[14:16:56,283][INFO ][main][GridSessionTaskWaitJobAttributeSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3276,13 +3276,13 @@
 
 
 [14:16:56,291][INFO ][main][GridSessionSetJobAttributeOrderSelfTest] >>> Starting test: testJobSetAttribute <<<
-[14:16:56,296][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1]
+[14:16:56,296][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3293,8 +3293,8 @@
 [14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:56,297][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:56,297][WARN ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] SMTP is not configured - email notifications are off.
 [14:16:56,297][WARN ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] Cache is not configured - data grid is off.
 [14:16:56,298][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3314,7 +3314,7 @@
 [14:16:57,861][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:16:57,861][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:16:57,861][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:16:57,867][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1]
+[14:16:57,867][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3327,16 +3327,16 @@
 >>> Grid name: session.GridSessionSetJobAttributeOrderSelfTest1
 >>> Local node [ID=9A344E1E-1D8E-4789-8585-C13ECF2A5E74, order=1353320216820]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45150 UDP:50015 TCP:55150
+>>> Local ports: TCP:8080 TCP:11211 TCP:45150 UDP:50015 TCP:55150 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2]
+[14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3347,8 +3347,8 @@
 [14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:16:57,869][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:16:57,869][WARN ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] SMTP is not configured - email notifications are off.
 [14:16:57,869][WARN ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] Cache is not configured - data grid is off.
 [14:16:57,870][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3372,7 +3372,7 @@
 [14:17:00,489][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:00,489][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:00,489][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:00,497][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2]
+[14:17:00,497][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3385,7 +3385,7 @@
 >>> Grid name: session.GridSessionSetJobAttributeOrderSelfTest2
 >>> Local node [ID=FC7B929D-47EA-4297-B987-627DEC9BB923, order=1353320218391]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45151 UDP:50015 TCP:55151
+>>> Local ports: TCP:45151 UDP:50015 TCP:55151 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:00,507][INFO ][gridgain-#1202%session.GridSessionSetJobAttributeOrderSelfTest2%][GridSessionSetJobAttributeOrderSelfTest$SessionTestJob] Session attribute order was correct for job [res=100, expected=100]
@@ -3424,7 +3424,7 @@
 [14:17:01,602][INFO ][disco-event-worker-#1197%session.GridSessionSetJobAttributeOrderSelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=9a344e1e-1d8e-4789-8585-c13ecf2a5e74, state=LEFT, lastHeartbeat=1353320221594, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55150, startTime=1353320216820]
 [14:17:01,602][INFO ][disco-event-worker-#1197%session.GridSessionSetJobAttributeOrderSelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x66F881C2]
 [14:17:01,605][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320220496, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=89b79281b31-9a344e1e-1d8e-4789-8585-c13ecf2a5e74, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetJobAttributeOrderSelfTest$SessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetJobAttributeOrderSelfTest$SessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:01,607][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1]
+[14:17:01,607][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3437,7 +3437,7 @@
 [14:17:01,610][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:01,610][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:01,614][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320220496, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=f9b79281b31-fc7b929d-47ea-4297-b987-627dec9bb923, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionSetJobAttributeOrderSelfTest$SessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionSetJobAttributeOrderSelfTest$SessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:01,617][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2]
+[14:17:01,617][INFO ][test-runner][GridSessionSetJobAttributeOrderSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3447,13 +3447,13 @@
 
 
 [14:17:01,618][INFO ][main][GridSessionSetJobAttributeOrderSelfTest] >>> Stopping test: testJobSetAttribute in 5327 ms <<<
-[14:17:01,627][INFO ][main][GridSessionWaitAttributeSelfTest1]
+[14:17:01,627][INFO ][main][GridSessionWaitAttributeSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3464,8 +3464,8 @@
 [14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:01,628][INFO ][main][GridSessionWaitAttributeSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:01,628][WARN ][main][GridSessionWaitAttributeSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:01,628][WARN ][main][GridSessionWaitAttributeSelfTest1] Cache is not configured - data grid is off.
 [14:17:01,629][INFO ][main][GridSessionWaitAttributeSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3485,7 +3485,7 @@
 [14:17:03,197][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:03,197][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:03,197][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:03,200][INFO ][main][GridSessionWaitAttributeSelfTest1]
+[14:17:03,200][INFO ][main][GridSessionWaitAttributeSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3498,16 +3498,16 @@
 >>> Grid name: session.GridSessionWaitAttributeSelfTest1
 >>> Local node [ID=C79E224D-91A7-4B1B-AD35-07569A941306, order=1353320222158]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45160 UDP:50016 TCP:55160
+>>> Local ports: TCP:8080 TCP:11211 TCP:45160 UDP:50016 TCP:55160 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2]
+[14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3518,8 +3518,8 @@
 [14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:03,202][INFO ][main][GridSessionWaitAttributeSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:03,202][WARN ][main][GridSessionWaitAttributeSelfTest2] SMTP is not configured - email notifications are off.
 [14:17:03,202][WARN ][main][GridSessionWaitAttributeSelfTest2] Cache is not configured - data grid is off.
 [14:17:03,203][INFO ][main][GridSessionWaitAttributeSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3543,7 +3543,7 @@
 [14:17:05,816][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:05,816][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:05,816][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:05,823][INFO ][main][GridSessionWaitAttributeSelfTest2]
+[14:17:05,823][INFO ][main][GridSessionWaitAttributeSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3556,7 +3556,7 @@
 >>> Grid name: session.GridSessionWaitAttributeSelfTest2
 >>> Local node [ID=9C484CCC-607F-476B-93FA-96AB8D462CD9, order=1353320223728]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45161 UDP:50016 TCP:55161
+>>> Local ports: TCP:45161 UDP:50016 TCP:55161 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:05,824][INFO ][main][GridSessionWaitAttributeSelfTest] >>> Starting test: testWaitAttribute <<<
@@ -3749,7 +3749,7 @@
 [14:17:08,024][INFO ][disco-event-worker-#1284%session.GridSessionWaitAttributeSelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=c79e224d-91a7-4b1b-ad35-07569a941306, state=LEFT, lastHeartbeat=1353320228019, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55160, startTime=1353320222158]
 [14:17:08,024][INFO ][disco-event-worker-#1284%session.GridSessionWaitAttributeSelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x12DCDEE2]
 [14:17:08,026][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320225818, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=33c79281b31-c79e224d-91a7-4b1b-ad35-07569a941306, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionWaitAttributeSelfTest$TestSessionTask, sampleClsName=org.gridgain.grid.session.GridSessionWaitAttributeSelfTest$TestSessionTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:08,033][INFO ][main][GridSessionWaitAttributeSelfTest1]
+[14:17:08,033][INFO ][main][GridSessionWaitAttributeSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3762,7 +3762,7 @@
 [14:17:08,037][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:08,037][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:08,043][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320225828, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=86c79281b31-9c484ccc-607f-476b-93fa-96ab8d462cd9, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionWaitAttributeSelfTest$TestSessionTask, sampleClsName=org.gridgain.grid.session.GridSessionWaitAttributeSelfTest$TestSessionTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:08,046][INFO ][main][GridSessionWaitAttributeSelfTest2]
+[14:17:08,046][INFO ][main][GridSessionWaitAttributeSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3772,13 +3772,13 @@
 
 
 [14:17:08,052][INFO ][main][GridSessionJobFailoverSelfTest] >>> Starting test: testFailoverJobSession <<<
-[14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1]
+[14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3789,8 +3789,8 @@
 [14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:08,058][INFO ][test-runner][GridSessionJobFailoverSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:08,058][WARN ][test-runner][GridSessionJobFailoverSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:08,058][WARN ][test-runner][GridSessionJobFailoverSelfTest1] Cache is not configured - data grid is off.
 [14:17:08,059][INFO ][test-runner][GridSessionJobFailoverSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3810,7 +3810,7 @@
 [14:17:09,627][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:09,627][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:09,627][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:09,634][INFO ][test-runner][GridSessionJobFailoverSelfTest1]
+[14:17:09,634][INFO ][test-runner][GridSessionJobFailoverSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3823,16 +3823,16 @@
 >>> Grid name: session.GridSessionJobFailoverSelfTest1
 >>> Local node [ID=B5CED7B1-CAF4-4839-9A73-B6B3CCA8034B, order=1353320228584]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45170 UDP:50017 TCP:55170
+>>> Local ports: TCP:8080 TCP:11211 TCP:45170 UDP:50017 TCP:55170 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2]
+[14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3843,8 +3843,8 @@
 [14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:09,637][INFO ][test-runner][GridSessionJobFailoverSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:09,637][WARN ][test-runner][GridSessionJobFailoverSelfTest2] SMTP is not configured - email notifications are off.
 [14:17:09,637][WARN ][test-runner][GridSessionJobFailoverSelfTest2] Cache is not configured - data grid is off.
 [14:17:09,638][INFO ][test-runner][GridSessionJobFailoverSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -3868,7 +3868,7 @@
 [14:17:12,277][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:12,277][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:12,277][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:12,284][INFO ][test-runner][GridSessionJobFailoverSelfTest2]
+[14:17:12,284][INFO ][test-runner][GridSessionJobFailoverSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3881,7 +3881,7 @@
 >>> Grid name: session.GridSessionJobFailoverSelfTest2
 >>> Local node [ID=6FDA4BB2-66B5-407F-BAAD-71B8E587EE82, order=1353320230185]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45171 UDP:50017 TCP:55171
+>>> Local ports: TCP:45171 UDP:50017 TCP:55171 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:12,293][ERROR][gridgain-#1473%session.GridSessionJobFailoverSelfTest1%][GridJobWorker] Failed to execute job [jobId=3e3c9281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, ses=GridJobSessionImpl [ses=GridTaskSessionImpl [taskName=o.g.g.session.GridSessionJobFailoverSelfTest$SessionTestTask, dep=GridDeployment [ts=1353320232279, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=973c9281b31-b5ced7b1-caf4-4839-9a73-b6b3cca8034b, userVer=0, loc=true, sampleCls=class o.g.g.session.GridSessionJobFailoverSelfTest$SessionTestTask, sampleClsName=o.g.g.session.GridSessionJobFailoverSelfTest$SessionTestTask, undeployed=false, pendingUndeploy=false, usage=2], taskClsName=o.g.g.session.GridSessionJobFailoverSelfTest$SessionTestTask, sesId=c73c9281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320232279, endTime=9223372036854775807, taskNodeId=b5ced7b1-caf4-4839-9a73-b6b3cca8034b, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null], jobId=3e3c9281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6]]
@@ -3907,7 +3907,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:13,365][INFO ][disco-event-worker-#1469%session.GridSessionJobFailoverSelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=b5ced7b1-caf4-4839-9a73-b6b3cca8034b, state=LEFT, lastHeartbeat=1353320233357, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55170, startTime=1353320228584]
 [14:17:13,366][INFO ][disco-event-worker-#1469%session.GridSessionJobFailoverSelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0xEEF19EA1]
 [14:17:13,369][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320232279, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=973c9281b31-b5ced7b1-caf4-4839-9a73-b6b3cca8034b, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionJobFailoverSelfTest$SessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionJobFailoverSelfTest$SessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:13,372][INFO ][test-runner][GridSessionJobFailoverSelfTest1]
+[14:17:13,372][INFO ][test-runner][GridSessionJobFailoverSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3920,7 +3920,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:13,373][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:13,373][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:13,378][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320232299, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=f44c9281b31-6fda4bb2-66b5-407f-baad-71b8e587ee82, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionJobFailoverSelfTest$SessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionJobFailoverSelfTest$SessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:13,381][INFO ][test-runner][GridSessionJobFailoverSelfTest2]
+[14:17:13,381][INFO ][test-runner][GridSessionJobFailoverSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -3931,13 +3931,13 @@ class org.gridgain.grid.GridException: Job exception.
 
 [14:17:13,381][INFO ][main][GridSessionJobFailoverSelfTest] >>> Stopping test: testFailoverJobSession in 5329 ms <<<
 [14:17:13,386][INFO ][main][GridSessionLoadSelfTest] >>> Starting test: testSessionLoad <<<
-[14:17:13,391][INFO ][main][GridSessionLoadSelfTest0]
+[14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -3948,8 +3948,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:13,391][INFO ][main][GridSessionLoadSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:13,391][WARN ][main][GridSessionLoadSelfTest0] SMTP is not configured - email notifications are off.
 [14:17:13,391][WARN ][main][GridSessionLoadSelfTest0] Cache is not configured - data grid is off.
 [14:17:13,392][WARN ][main][GridSessionLoadSelfTest0] P2P class loading is disabled. Visor monitoring will not work. In most cases you should enabled P2P class loading but limit the classes that are P2P loaded using 'peerClassLoadingClassPathExclude' configuration property, if necessary.
@@ -3970,7 +3970,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:14,987][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:14,987][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:14,987][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:14,991][INFO ][main][GridSessionLoadSelfTest0]
+[14:17:14,991][INFO ][main][GridSessionLoadSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -3983,16 +3983,16 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: session.GridSessionLoadSelfTest0
 >>> Local node [ID=7FD460E8-2968-4FEB-95C7-B269CDA0695E, order=1353320233941]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45180 UDP:50018 TCP:55180
+>>> Local ports: TCP:8080 TCP:11211 TCP:45180 UDP:50018 TCP:55180 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:14,992][INFO ][main][GridSessionLoadSelfTest1]
+[14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4003,8 +4003,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:14,992][INFO ][main][GridSessionLoadSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:14,993][WARN ][main][GridSessionLoadSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:14,993][WARN ][main][GridSessionLoadSelfTest1] Cache is not configured - data grid is off.
 [14:17:14,993][WARN ][main][GridSessionLoadSelfTest1] P2P class loading is disabled. Visor monitoring will not work. In most cases you should enabled P2P class loading but limit the classes that are P2P loaded using 'peerClassLoadingClassPathExclude' configuration property, if necessary.
@@ -4029,7 +4029,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:17,608][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:17,608][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:17,608][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:17,615][INFO ][main][GridSessionLoadSelfTest1]
+[14:17:17,615][INFO ][main][GridSessionLoadSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4042,7 +4042,7 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: session.GridSessionLoadSelfTest1
 >>> Local node [ID=501F17FE-315A-4E0F-9F60-70288EF68609, order=1353320235512]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45181 UDP:50018 TCP:55181
+>>> Local ports: TCP:45181 UDP:50018 TCP:55181 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:17,615][INFO ][test-runner][GridSessionLoadSelfTest] Thread count: 40
@@ -4093,7 +4093,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:18,167][INFO ][disco-event-worker-#1492%session.GridSessionLoadSelfTest0%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=501f17fe-315a-4e0f-9f60-70288ef68609, state=LEFT, lastHeartbeat=1353320238158, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55181, startTime=1353320235512]
 [14:17:18,168][INFO ][disco-event-worker-#1492%session.GridSessionLoadSelfTest0%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x5AF7E055]
 [14:17:18,169][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320237615, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=674c9281b31-501f17fe-315a-4e0f-9f60-70288ef68609, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, sampleClsName=org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:18,171][INFO ][main][GridSessionLoadSelfTest1]
+[14:17:18,171][INFO ][main][GridSessionLoadSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4106,7 +4106,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:19,235][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:19,235][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:19,241][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320237625, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=a95c9281b31-7fd460e8-2968-4feb-95c7-b269cda0695e, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, sampleClsName=org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:19,243][INFO ][main][GridSessionLoadSelfTest0]
+[14:17:19,243][INFO ][main][GridSessionLoadSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4116,13 +4116,13 @@ class org.gridgain.grid.GridException: Job exception.
 
 
 [14:17:19,250][INFO ][main][GridSessionLoadSelfTest] >>> Starting test: testSessionLoadNoLocalMarshalling <<<
-[14:17:19,255][INFO ][main][GridSessionLoadSelfTest0]
+[14:17:19,255][INFO ][main][GridSessionLoadSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4133,8 +4133,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:19,255][INFO ][main][GridSessionLoadSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:19,255][INFO ][main][GridSessionLoadSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:19,256][INFO ][main][GridSessionLoadSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:19,256][INFO ][main][GridSessionLoadSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:19,256][INFO ][main][GridSessionLoadSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:19,256][INFO ][main][GridSessionLoadSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:19,256][INFO ][main][GridSessionLoadSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:19,256][WARN ][main][GridSessionLoadSelfTest0] SMTP is not configured - email notifications are off.
 [14:17:19,256][WARN ][main][GridSessionLoadSelfTest0] Cache is not configured - data grid is off.
 [14:17:19,256][WARN ][main][GridSessionLoadSelfTest0] P2P class loading is disabled. Visor monitoring will not work. In most cases you should enabled P2P class loading but limit the classes that are P2P loaded using 'peerClassLoadingClassPathExclude' configuration property, if necessary.
@@ -4155,7 +4155,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:20,827][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:20,827][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:20,827][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:20,830][INFO ][main][GridSessionLoadSelfTest0]
+[14:17:20,830][INFO ][main][GridSessionLoadSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4168,16 +4168,16 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: session.GridSessionLoadSelfTest0
 >>> Local node [ID=F8E2E302-6D15-4763-A7A9-FD88D6060C3F, order=1353320239789]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45180 UDP:50018 TCP:55180
+>>> Local ports: TCP:8080 TCP:11211 TCP:45180 UDP:50018 TCP:55180 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:20,831][INFO ][main][GridSessionLoadSelfTest1]
+[14:17:20,831][INFO ][main][GridSessionLoadSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4188,8 +4188,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:20,832][INFO ][main][GridSessionLoadSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:20,832][WARN ][main][GridSessionLoadSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:20,832][WARN ][main][GridSessionLoadSelfTest1] Cache is not configured - data grid is off.
 [14:17:20,832][WARN ][main][GridSessionLoadSelfTest1] P2P class loading is disabled. Visor monitoring will not work. In most cases you should enabled P2P class loading but limit the classes that are P2P loaded using 'peerClassLoadingClassPathExclude' configuration property, if necessary.
@@ -4214,7 +4214,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:23,467][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:23,467][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:23,467][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:23,472][INFO ][main][GridSessionLoadSelfTest1]
+[14:17:23,472][INFO ][main][GridSessionLoadSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4227,7 +4227,7 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: session.GridSessionLoadSelfTest1
 >>> Local node [ID=AD96AEF1-6BD5-473B-8730-CFB2F3A79215, order=1353320241369]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45181 UDP:50018 TCP:55181
+>>> Local ports: TCP:45181 UDP:50018 TCP:55181 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:23,473][INFO ][test-runner][GridSessionLoadSelfTest] Thread count: 40
@@ -4278,7 +4278,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:23,773][INFO ][disco-event-worker-#1677%session.GridSessionLoadSelfTest0%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=ad96aef1-6bd5-473b-8730-cfb2f3a79215, state=LEFT, lastHeartbeat=1353320243767, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55181, startTime=1353320241369]
 [14:17:23,773][INFO ][disco-event-worker-#1677%session.GridSessionLoadSelfTest0%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x429645D1]
 [14:17:23,775][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320243464, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=4e84a281b31-ad96aef1-6bd5-473b-8730-cfb2f3a79215, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, sampleClsName=org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:23,777][INFO ][main][GridSessionLoadSelfTest1]
+[14:17:23,777][INFO ][main][GridSessionLoadSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4291,7 +4291,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:24,845][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:24,845][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:24,851][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320243474, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=d394a281b31-f8e2e302-6d15-4763-a7a9-fd88d6060c3f, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, sampleClsName=org.gridgain.grid.session.GridSessionLoadSelfTest$SessionLoadTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:24,853][INFO ][main][GridSessionLoadSelfTest0]
+[14:17:24,853][INFO ][main][GridSessionLoadSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4300,13 +4300,13 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid uptime: 00:00:04:19
 
 
-[14:17:24,865][INFO ][main][GridSessionCollisionSpiSelfTest]
+[14:17:24,865][INFO ][main][GridSessionCollisionSpiSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4317,8 +4317,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:24,866][INFO ][main][GridSessionCollisionSpiSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:24,866][WARN ][main][GridSessionCollisionSpiSelfTest] SMTP is not configured - email notifications are off.
 [14:17:24,866][WARN ][main][GridSessionCollisionSpiSelfTest] Cache is not configured - data grid is off.
 [14:17:24,867][INFO ][main][GridSessionCollisionSpiSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4338,7 +4338,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:26,447][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:26,447][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:26,447][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:26,450][INFO ][main][GridSessionCollisionSpiSelfTest]
+[14:17:26,450][INFO ][main][GridSessionCollisionSpiSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4351,7 +4351,7 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: session.GridSessionCollisionSpiSelfTest
 >>> Local node [ID=DF6A4A43-973A-49CE-9398-081F75FD606A, order=1353320245409]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45190 UDP:50019 TCP:55190
+>>> Local ports: TCP:8080 TCP:11211 TCP:45190 UDP:50019 TCP:55190 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:26,450][INFO ][main][GridSessionCollisionSpiSelfTest] >>> Starting test: testCollisionSessionAttribute <<<
@@ -4362,7 +4362,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:27,510][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:27,510][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:27,515][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320246447, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=d8aca281b31-df6a4a43-973a-49ce-9398-081f75fd606a, userVer=0, loc=true, sampleCls=class org.gridgain.grid.session.GridSessionCollisionSpiSelfTest$GridSessionTestTask, sampleClsName=org.gridgain.grid.session.GridSessionCollisionSpiSelfTest$GridSessionTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:27,517][INFO ][main][GridSessionCollisionSpiSelfTest]
+[14:17:27,517][INFO ][main][GridSessionCollisionSpiSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4372,13 +4372,13 @@ class org.gridgain.grid.GridException: Job exception.
 
 
 [14:17:27,520][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Starting test: testFieldInjection <<<
-[14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1]
+[14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4389,8 +4389,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:27,532][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:27,532][WARN ][test-runner][GridResourceFieldInjectionSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:27,532][WARN ][test-runner][GridResourceFieldInjectionSelfTest1] Cache is not configured - data grid is off.
 [14:17:27,533][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4410,7 +4410,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:29,105][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:29,105][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:29,105][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:29,108][INFO ][test-runner][GridResourceFieldInjectionSelfTest1]
+[14:17:29,108][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4423,16 +4423,16 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: resource.GridResourceFieldInjectionSelfTest1
 >>> Local node [ID=A7950539-463F-4F64-BD03-FCE836D23D76, order=1353320248058]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200
+>>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:29,108][INFO ][test-runner][GridResourceFieldInjectionSelfTest2]
+[14:17:29,108][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4443,8 +4443,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:29,109][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:29,109][WARN ][test-runner][GridResourceFieldInjectionSelfTest2] SMTP is not configured - email notifications are off.
 [14:17:29,109][WARN ][test-runner][GridResourceFieldInjectionSelfTest2] Cache is not configured - data grid is off.
 [14:17:29,110][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4468,7 +4468,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:31,727][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:31,727][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:31,727][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:31,733][INFO ][test-runner][GridResourceFieldInjectionSelfTest2]
+[14:17:31,733][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4481,7 +4481,7 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: resource.GridResourceFieldInjectionSelfTest2
 >>> Local node [ID=9DE7E33F-41BC-494A-BC29-5D52E36F2741, order=1353320249629]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45201 UDP:50020 TCP:55201
+>>> Local ports: TCP:45201 UDP:50020 TCP:55201 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:31,762][INFO ][gridgain-#1908%resource.GridResourceFieldInjectionSelfTest1%][GridResourceFieldInjectionSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource1@3d6195b1
@@ -4585,7 +4585,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:32,855][INFO ][test-runner][GridResourceFieldInjectionSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource2@bfcebdb
 [14:17:32,855][INFO ][test-runner][GridResourceFieldInjectionSelfTest$UserResource5] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource5@3b300047
 [14:17:32,855][INFO ][test-runner][GridResourceFieldInjectionSelfTest$UserResource5] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource5@6b59def1
-[14:17:32,857][INFO ][test-runner][GridResourceFieldInjectionSelfTest1]
+[14:17:32,857][INFO ][test-runner][GridResourceFieldInjectionSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4607,7 +4607,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:32,864][INFO ][test-runner][GridResourceFieldInjectionSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource2@744c070c
 [14:17:32,864][INFO ][test-runner][GridResourceFieldInjectionSelfTest$UserResource5] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource5@4fb019d2
 [14:17:32,864][INFO ][test-runner][GridResourceFieldInjectionSelfTest$UserResource5] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UserResource5@4ef367c0
-[14:17:32,866][INFO ][test-runner][GridResourceFieldInjectionSelfTest2]
+[14:17:32,866][INFO ][test-runner][GridResourceFieldInjectionSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4618,13 +4618,13 @@ class org.gridgain.grid.GridException: Job exception.
 
 [14:17:32,866][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Stopping test: testFieldInjection in 5346 ms <<<
 [14:17:32,870][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Starting test: testNonTransientFieldInjection <<<
-[14:17:32,878][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:32,878][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4635,8 +4635,8 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:32,878][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:32,879][INFO ][test-runner][GridResourceFieldInjectionSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:32,879][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:32,879][INFO ][test-runner][GridResourceFieldInjectionSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:32,879][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:32,879][INFO ][test-runner][GridResourceFieldInjectionSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:32,879][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:32,879][WARN ][test-runner][GridResourceFieldInjectionSelfTest] SMTP is not configured - email notifications are off.
 [14:17:32,879][WARN ][test-runner][GridResourceFieldInjectionSelfTest] Cache is not configured - data grid is off.
 [14:17:32,880][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4656,7 +4656,7 @@ class org.gridgain.grid.GridException: Job exception.
 [14:17:34,441][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:34,441][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:34,441][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:34,444][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:34,444][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4669,7 +4669,7 @@ class org.gridgain.grid.GridException: Job exception.
 >>> Grid name: resource.GridResourceFieldInjectionSelfTest
 >>> Local node [ID=A02159AF-8A73-4938-9A62-3ECEB3FFF704, order=1353320253405]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200
+>>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:34,447][ERROR][gridgain-#1934%resource.GridResourceFieldInjectionSelfTest%][GridTaskWorker] Failed to map task jobs to nodes: GridTaskSessionImpl [taskName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientUserResourceTask, dep=GridDeployment [ts=1353320254442, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=acaca281b31-a02159af-8a73-4938-9a62-3eceb3fff704, userVer=0, loc=true, sampleCls=class o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientUserResourceTask, sampleClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientUserResourceTask, undeployed=false, pendingUndeploy=false, usage=1], taskClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientUserResourceTask, sesId=acaca281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320254442, endTime=9223372036854775807, taskNodeId=a02159af-8a73-4938-9a62-3eceb3fff704, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null]
@@ -4691,7 +4691,7 @@ class org.gridgain.grid.GridException: @GridUserResource must only be used with 
 [14:17:35,502][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:35,502][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:35,507][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320254442, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=acaca281b31-a02159af-8a73-4938-9a62-3eceb3fff704, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientUserResourceTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientUserResourceTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:35,508][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:35,508][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4702,13 +4702,13 @@ class org.gridgain.grid.GridException: @GridUserResource must only be used with 
 
 [14:17:35,509][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Stopping test: testNonTransientFieldInjection in 2639 ms <<<
 [14:17:35,512][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Starting test: testNonTransientSpringBeanFieldInjection <<<
-[14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4719,8 +4719,8 @@ class org.gridgain.grid.GridException: @GridUserResource must only be used with 
 [14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:35,518][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:35,519][WARN ][test-runner][GridResourceFieldInjectionSelfTest] SMTP is not configured - email notifications are off.
 [14:17:35,519][WARN ][test-runner][GridResourceFieldInjectionSelfTest] Cache is not configured - data grid is off.
 [14:17:35,519][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4740,7 +4740,7 @@ class org.gridgain.grid.GridException: @GridUserResource must only be used with 
 [14:17:37,082][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:37,082][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:37,082][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:37,085][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:37,085][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4753,7 +4753,7 @@ class org.gridgain.grid.GridException: @GridUserResource must only be used with 
 >>> Grid name: resource.GridResourceFieldInjectionSelfTest
 >>> Local node [ID=0F6B25D4-F549-4835-93DD-09058C795B97, order=1353320256043]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200
+>>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:37,087][ERROR][gridgain-#1955%resource.GridResourceFieldInjectionSelfTest%][GridTaskWorker] Failed to map task jobs to nodes: GridTaskSessionImpl [taskName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientSpringBeanResourceTask, dep=GridDeployment [ts=1353320257082, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=3daca281b31-0f6b25d4-f549-4835-93dd-09058c795b97, userVer=0, loc=true, sampleCls=class o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientSpringBeanResourceTask, sampleClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientSpringBeanResourceTask, undeployed=false, pendingUndeploy=false, usage=1], taskClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientSpringBeanResourceTask, sesId=3daca281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320257082, endTime=9223372036854775807, taskNodeId=0f6b25d4-f549-4835-93dd-09058c795b97, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null]
@@ -4776,7 +4776,7 @@ class org.gridgain.grid.GridException: @GridSpringResource must only be used wit
 [14:17:38,142][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:38,142][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:38,146][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320257082, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=3daca281b31-0f6b25d4-f549-4835-93dd-09058c795b97, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientSpringBeanResourceTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$NonTransientSpringBeanResourceTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:38,148][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:38,148][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4787,13 +4787,13 @@ class org.gridgain.grid.GridException: @GridSpringResource must only be used wit
 
 [14:17:38,149][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Stopping test: testNonTransientSpringBeanFieldInjection in 2637 ms <<<
 [14:17:38,152][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Starting test: testUnknownNameSpringBeanFieldInjection <<<
-[14:17:38,157][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:38,157][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4804,8 +4804,8 @@ class org.gridgain.grid.GridException: @GridSpringResource must only be used wit
 [14:17:38,157][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:38,158][WARN ][test-runner][GridResourceFieldInjectionSelfTest] SMTP is not configured - email notifications are off.
 [14:17:38,158][WARN ][test-runner][GridResourceFieldInjectionSelfTest] Cache is not configured - data grid is off.
 [14:17:38,158][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4825,7 +4825,7 @@ class org.gridgain.grid.GridException: @GridSpringResource must only be used wit
 [14:17:39,736][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:39,736][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:39,736][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:39,739][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:39,739][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4838,7 +4838,7 @@ class org.gridgain.grid.GridException: @GridSpringResource must only be used wit
 >>> Grid name: resource.GridResourceFieldInjectionSelfTest
 >>> Local node [ID=E3EDDC6D-2A0D-4124-9702-84DF12208608, order=1353320258703]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200
+>>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:39,741][ERROR][gridgain-#1976%resource.GridResourceFieldInjectionSelfTest%][GridTaskWorker] Failed to map task jobs to nodes due to undeclared user exception [cause=No bean named 'unknown-bean-name' is defined, ses=GridTaskSessionImpl [taskName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UnknownNameSpringBeanResourceTask, dep=GridDeployment [ts=1353320259740, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=cdaca281b31-e3eddc6d-2a0d-4124-9702-84df12208608, userVer=0, loc=true, sampleCls=class o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UnknownNameSpringBeanResourceTask, sampleClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UnknownNameSpringBeanResourceTask, undeployed=false, pendingUndeploy=false, usage=1], taskClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UnknownNameSpringBeanResourceTask, sesId=cdaca281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320259740, endTime=9223372036854775807, taskNodeId=e3eddc6d-2a0d-4124-9702-84df12208608, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null]]
@@ -4866,7 +4866,7 @@ org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named '
 [14:17:40,796][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:40,797][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:40,801][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320259740, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=cdaca281b31-e3eddc6d-2a0d-4124-9702-84df12208608, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UnknownNameSpringBeanResourceTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$UnknownNameSpringBeanResourceTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:40,803][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:40,803][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4877,13 +4877,13 @@ org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named '
 
 [14:17:40,803][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Stopping test: testUnknownNameSpringBeanFieldInjection in 2651 ms <<<
 [14:17:40,806][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Starting test: testInvalidTypeSpringBeanFieldInjection <<<
-[14:17:40,811][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:40,811][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4894,8 +4894,8 @@ org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named '
 [14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:40,812][INFO ][test-runner][GridResourceFieldInjectionSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:40,812][WARN ][test-runner][GridResourceFieldInjectionSelfTest] SMTP is not configured - email notifications are off.
 [14:17:40,812][WARN ][test-runner][GridResourceFieldInjectionSelfTest] Cache is not configured - data grid is off.
 [14:17:40,813][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -4915,7 +4915,7 @@ org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named '
 [14:17:42,372][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:42,372][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:42,372][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:42,377][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:42,377][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -4928,7 +4928,7 @@ org.springframework.beans.factory.NoSuchBeanDefinitionException: No bean named '
 >>> Grid name: resource.GridResourceFieldInjectionSelfTest
 >>> Local node [ID=A2370FE1-524D-4C42-9539-B6F47F78BE82, order=1353320261331]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200
+>>> Local ports: TCP:8080 TCP:11211 TCP:45200 UDP:50020 TCP:55200 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:42,380][ERROR][gridgain-#1997%resource.GridResourceFieldInjectionSelfTest%][GridTaskWorker] Failed to map task jobs to nodes: GridTaskSessionImpl [taskName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$InvalidTypeSpringBeanResourceTask, dep=GridDeployment [ts=1353320262369, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=5eaca281b31-a2370fe1-524d-4c42-9539-b6f47f78be82, userVer=0, loc=true, sampleCls=class o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$InvalidTypeSpringBeanResourceTask, sampleClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$InvalidTypeSpringBeanResourceTask, undeployed=false, pendingUndeploy=false, usage=1], taskClsName=o.g.g.kernal.processors.resource.GridResourceFieldInjectionSelfTest$InvalidTypeSpringBeanResourceTask, sesId=5eaca281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320262369, endTime=9223372036854775807, taskNodeId=a2370fe1-524d-4c42-9539-b6f47f78be82, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null]
@@ -4952,7 +4952,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:43,436][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:17:43,436][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:43,441][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320262369, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=5eaca281b31-a2370fe1-524d-4c42-9539-b6f47f78be82, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$InvalidTypeSpringBeanResourceTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceFieldInjectionSelfTest$InvalidTypeSpringBeanResourceTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:17:43,443][INFO ][test-runner][GridResourceFieldInjectionSelfTest]
+[14:17:43,443][INFO ][test-runner][GridResourceFieldInjectionSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -4963,13 +4963,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:17:43,443][INFO ][main][GridResourceFieldInjectionSelfTest] >>> Stopping test: testInvalidTypeSpringBeanFieldInjection in 2637 ms <<<
 [14:17:43,447][INFO ][main][GridResourceMethodInjectionSelfTest] >>> Starting test: testMethodInjection <<<
-[14:17:43,452][INFO ][test-runner][GridResourceMethodInjectionSelfTest1]
+[14:17:43,452][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -4980,8 +4980,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:43,453][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:43,453][WARN ][test-runner][GridResourceMethodInjectionSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:43,453][WARN ][test-runner][GridResourceMethodInjectionSelfTest1] Cache is not configured - data grid is off.
 [14:17:43,454][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5001,7 +5001,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:45,033][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:45,033][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:45,033][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:45,038][INFO ][test-runner][GridResourceMethodInjectionSelfTest1]
+[14:17:45,038][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5014,16 +5014,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceMethodInjectionSelfTest1
 >>> Local node [ID=2BE5B86E-565C-4860-AC9F-AF0700715884, order=1353320263990]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45210 UDP:50021 TCP:55210
+>>> Local ports: TCP:8080 TCP:11211 TCP:45210 UDP:50021 TCP:55210 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:45,039][INFO ][test-runner][GridResourceMethodInjectionSelfTest2]
+[14:17:45,039][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5034,8 +5034,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:45,040][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:45,040][WARN ][test-runner][GridResourceMethodInjectionSelfTest2] SMTP is not configured - email notifications are off.
 [14:17:45,040][WARN ][test-runner][GridResourceMethodInjectionSelfTest2] Cache is not configured - data grid is off.
 [14:17:45,041][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5059,7 +5059,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:47,649][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:47,649][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:47,649][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:47,654][INFO ][test-runner][GridResourceMethodInjectionSelfTest2]
+[14:17:47,654][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5072,7 +5072,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceMethodInjectionSelfTest2
 >>> Local node [ID=BC8A0D77-5408-4F9E-A0EB-DE1E2938247C, order=1353320265560]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45211 UDP:50021 TCP:55211
+>>> Local ports: TCP:45211 UDP:50021 TCP:55211 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:47,665][INFO ][gridgain-#2035%resource.GridResourceMethodInjectionSelfTest1%][GridResourceMethodInjectionSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource1@3b59109f
@@ -5174,7 +5174,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:48,768][INFO ][test-runner][GridResourceMethodInjectionSelfTest$UserResource3] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource3@6d88b7e1
 [14:17:48,768][INFO ][test-runner][GridResourceMethodInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource1@3b59109f
 [14:17:48,768][INFO ][test-runner][GridResourceMethodInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource1@542ae0b8
-[14:17:48,772][INFO ][test-runner][GridResourceMethodInjectionSelfTest1]
+[14:17:48,772][INFO ][test-runner][GridResourceMethodInjectionSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5196,7 +5196,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:48,778][INFO ][test-runner][GridResourceMethodInjectionSelfTest$UserResource3] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource3@1984ddf2
 [14:17:48,778][INFO ][test-runner][GridResourceMethodInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource1@58be34ef
 [14:17:48,778][INFO ][test-runner][GridResourceMethodInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodInjectionSelfTest$UserResource1@1c9e82eb
-[14:17:48,780][INFO ][test-runner][GridResourceMethodInjectionSelfTest2]
+[14:17:48,780][INFO ][test-runner][GridResourceMethodInjectionSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5207,13 +5207,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:17:48,780][INFO ][main][GridResourceMethodInjectionSelfTest] >>> Stopping test: testMethodInjection in 5333 ms <<<
 [14:17:48,782][INFO ][main][GridResourceFieldOverrideInjectionSelfTest] >>> Starting test: testFieldResourceOverride <<<
-[14:17:48,785][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1]
+[14:17:48,785][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5224,8 +5224,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:48,785][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:48,785][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:48,786][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:48,786][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:48,786][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:48,786][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:48,786][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:48,786][WARN ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:48,786][WARN ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] Cache is not configured - data grid is off.
 [14:17:48,786][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5245,7 +5245,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:50,356][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:50,356][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:50,356][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:50,359][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1]
+[14:17:50,359][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5258,16 +5258,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceFieldOverrideInjectionSelfTest1
 >>> Local node [ID=ACFB8821-E386-4BA5-A897-1C1AC27702C3, order=1353320269316]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45220 UDP:50022 TCP:55220
+>>> Local ports: TCP:8080 TCP:11211 TCP:45220 UDP:50022 TCP:55220 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2]
+[14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5278,8 +5278,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:50,360][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:50,360][WARN ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] SMTP is not configured - email notifications are off.
 [14:17:50,360][WARN ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] Cache is not configured - data grid is off.
 [14:17:50,361][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5303,7 +5303,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:52,976][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:52,976][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:52,976][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:52,981][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2]
+[14:17:52,981][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5316,7 +5316,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceFieldOverrideInjectionSelfTest2
 >>> Local node [ID=DF6E1E50-0E6F-46FF-B3F0-561FF2F4CAEB, order=1353320270887]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45221 UDP:50022 TCP:55221
+>>> Local ports: TCP:45221 UDP:50022 TCP:55221 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:52,987][INFO ][gridgain-#2078%resource.GridResourceFieldOverrideInjectionSelfTest1%][GridResourceFieldOverrideInjectionSelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$UserResource@7a3b66c0
@@ -5339,7 +5339,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:54,058][INFO ][disco-event-worker-#2075%resource.GridResourceFieldOverrideInjectionSelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x9BB05A83]
 [14:17:54,060][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320272972, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=72bca281b31-acfb8821-e386-4ba5-a897-1c1ac27702c3, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$ResourceOverrideTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$ResourceOverrideTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:17:54,061][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$UserResource@7a3b66c0
-[14:17:54,062][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1]
+[14:17:54,062][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5352,7 +5352,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:54,063][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:17:54,067][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320272992, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=e2bca281b31-df6e1e50-0e6f-46ff-b3f0-561ff2f4caeb, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$ResourceOverrideTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$ResourceOverrideTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:17:54,068][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceFieldOverrideInjectionSelfTest$UserResource@e5b3269
-[14:17:54,069][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2]
+[14:17:54,069][INFO ][test-runner][GridResourceFieldOverrideInjectionSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5363,13 +5363,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:17:54,070][INFO ][main][GridResourceFieldOverrideInjectionSelfTest] >>> Stopping test: testFieldResourceOverride in 5288 ms <<<
 [14:17:54,074][INFO ][main][GridResourceMethodOverrideInjectionSelfTest] >>> Starting test: testMethodResourceOverride <<<
-[14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1]
+[14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5380,8 +5380,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:54,079][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:54,079][WARN ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] SMTP is not configured - email notifications are off.
 [14:17:54,079][WARN ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] Cache is not configured - data grid is off.
 [14:17:54,080][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5401,7 +5401,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:55,652][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:55,652][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:55,652][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:55,655][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1]
+[14:17:55,655][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5414,16 +5414,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceMethodOverrideInjectionSelfTest1
 >>> Local node [ID=276B5A84-1B92-40DD-9F47-C17C7756B849, order=1353320274604]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45230 UDP:50023 TCP:55230
+>>> Local ports: TCP:8080 TCP:11211 TCP:45230 UDP:50023 TCP:55230 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2]
+[14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5434,8 +5434,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:55,656][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:55,656][WARN ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] SMTP is not configured - email notifications are off.
 [14:17:55,656][WARN ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] Cache is not configured - data grid is off.
 [14:17:55,657][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5459,7 +5459,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:58,270][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:17:58,270][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:17:58,270][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:17:58,275][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2]
+[14:17:58,275][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5472,7 +5472,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceMethodOverrideInjectionSelfTest2
 >>> Local node [ID=304E3373-82E4-409A-8F96-5B52BABDDB5B, order=1353320276179]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45231 UDP:50023 TCP:55231
+>>> Local ports: TCP:45231 UDP:50023 TCP:55231 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:17:58,286][INFO ][gridgain-#2121%resource.GridResourceMethodOverrideInjectionSelfTest1%][GridResourceMethodOverrideInjectionSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource1@500493a0
@@ -5544,7 +5544,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:59,369][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource2@1c7ef938
 [14:17:59,369][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource1@500493a0
 [14:17:59,369][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource1@2ae6e3f1
-[14:17:59,371][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1]
+[14:17:59,371][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5560,7 +5560,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:59,377][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource2@229b654e
 [14:17:59,377][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource1@163c5415
 [14:17:59,377][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceMethodOverrideInjectionSelfTest$UserResource1@38e290f7
-[14:17:59,379][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2]
+[14:17:59,379][INFO ][test-runner][GridResourceMethodOverrideInjectionSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5577,13 +5577,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:59,394][INFO ][main][GridResourceProcessorSelfTest] >>> Starting test: testInjectResourceInnerClasses <<<
 [14:17:59,403][INFO ][main][GridResourceProcessorSelfTest] >>> Stopping test: testInjectResourceInnerClasses in 9 ms <<<
 [14:17:59,406][INFO ][main][GridResourceProcessorSelfTest] >>> Starting test: testInjectResourceGridTaskAndJob <<<
-[14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest]
+[14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5594,8 +5594,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:17:59,412][INFO ][test-runner][GridResourceProcessorSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:17:59,411][INFO ][test-runner][GridResourceProcessorSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:17:59,412][INFO ][test-runner][GridResourceProcessorSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:17:59,412][WARN ][test-runner][GridResourceProcessorSelfTest] SMTP is not configured - email notifications are off.
 [14:17:59,412][WARN ][test-runner][GridResourceProcessorSelfTest] Cache is not configured - data grid is off.
 [14:17:59,413][INFO ][test-runner][GridResourceProcessorSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5615,7 +5615,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:00,977][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:00,977][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:00,977][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:00,983][INFO ][test-runner][GridResourceProcessorSelfTest]
+[14:18:00,983][INFO ][test-runner][GridResourceProcessorSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5628,14 +5628,14 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceProcessorSelfTest
 >>> Local node [ID=77ED8EA9-22B6-40DF-9BC5-F22A3D17F045, order=1353320279935]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45240 UDP:50024 TCP:55240
+>>> Local ports: TCP:8080 TCP:11211 TCP:45240 UDP:50024 TCP:55240 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:00,989][INFO ][test-runner][GridResourceProcessorSelfTest] >>> Stopping grid [name=resource.GridResourceProcessorSelfTest, id=77ed8ea9-22b6-40df-9bc5-f22a3d17f045]
 [14:18:02,046][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:18:02,046][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:18:02,051][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320280983, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=17bca281b31-77ed8ea9-22b6-40df-9bc5-f22a3d17f045, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceProcessorSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceProcessorSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:18:02,052][INFO ][test-runner][GridResourceProcessorSelfTest]
+[14:18:02,052][INFO ][test-runner][GridResourceProcessorSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5649,13 +5649,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:02,092][INFO ][test-runner][GridResourceProcessorSelfTest] Resource injection takes 6.8E-4 msec per target object.
 [14:18:02,092][INFO ][main][GridResourceProcessorSelfTest] >>> Stopping test: testInjectResourcePerformance in 36 ms <<<
 [14:18:02,094][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Starting test: testSameTask <<<
-[14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5666,8 +5666,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:02,096][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:02,096][WARN ][test-runner][GridResourceIsolatedTaskSelfTest] SMTP is not configured - email notifications are off.
 [14:18:02,097][WARN ][test-runner][GridResourceIsolatedTaskSelfTest] Cache is not configured - data grid is off.
 [14:18:02,097][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5687,7 +5687,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:03,698][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:03,698][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:03,698][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:03,701][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:03,701][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5700,7 +5700,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest
 >>> Local node [ID=85FC7FA4-5BB7-4A16-9909-C344977D63C2, order=1353320282654]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250
+>>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:03,704][INFO ][gridgain-#2170%resource.GridResourceIsolatedTaskSelfTest%][GridResourceIsolatedTaskSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@4092ca06
@@ -5742,7 +5742,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:04,769][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource2@4969463b
 [14:18:04,769][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@4092ca06
 [14:18:04,770][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@373e07aa
-[14:18:04,771][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:04,771][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5753,13 +5753,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:04,772][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Stopping test: testSameTask in 2678 ms <<<
 [14:18:04,775][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Starting test: testDifferentTasks <<<
-[14:18:04,780][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1]
+[14:18:04,780][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5770,8 +5770,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:04,781][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:04,781][WARN ][test-runner][GridResourceIsolatedTaskSelfTest1] SMTP is not configured - email notifications are off.
 [14:18:04,781][WARN ][test-runner][GridResourceIsolatedTaskSelfTest1] Cache is not configured - data grid is off.
 [14:18:04,782][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5791,7 +5791,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:06,339][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:06,339][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:06,339][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:06,341][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1]
+[14:18:06,341][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5804,16 +5804,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest1
 >>> Local node [ID=D20378C3-039B-41E1-921D-360820C94632, order=1353320285302]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250
+>>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2]
+[14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5824,8 +5824,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:06,343][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:06,343][WARN ][test-runner][GridResourceIsolatedTaskSelfTest2] SMTP is not configured - email notifications are off.
 [14:18:06,343][WARN ][test-runner][GridResourceIsolatedTaskSelfTest2] Cache is not configured - data grid is off.
 [14:18:06,344][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -5849,7 +5849,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:08,976][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:08,976][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:08,976][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:08,982][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2]
+[14:18:08,982][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -5862,7 +5862,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest2
 >>> Local node [ID=1E777BBB-BF96-43B9-ACFD-4E143856F17D, order=1353320286882]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45251 UDP:50025 TCP:55251
+>>> Local ports: TCP:45251 UDP:50025 TCP:55251 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:08,986][INFO ][gridgain-#2213%resource.GridResourceIsolatedTaskSelfTest1%][GridResourceIsolatedTaskSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@2d706e0b
@@ -5952,7 +5952,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:10,081][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource2@7a6f31f4
 [14:18:10,081][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@2d706e0b
 [14:18:10,081][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@72f23100
-[14:18:10,083][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1]
+[14:18:10,083][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5964,7 +5964,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:10,084][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:18:10,084][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:18:10,088][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320288986, depMode=PRIVATE, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=8bbca281b31-1e777bbb-bf96-43b9-acfd-4e143856f17d, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$SharedResourceTask1, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$SharedResourceTask1, undeployed=true, pendingUndeploy=false, usage=0]
-[14:18:10,090][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2]
+[14:18:10,090][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -5975,13 +5975,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:10,090][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Stopping test: testDifferentTasks in 5315 ms <<<
 [14:18:10,094][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Starting test: testUndeployedTask <<<
-[14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1]
+[14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -5992,8 +5992,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:10,100][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:10,099][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:10,100][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:10,100][WARN ][test-runner][GridResourceIsolatedTaskSelfTest1] SMTP is not configured - email notifications are off.
 [14:18:10,100][WARN ][test-runner][GridResourceIsolatedTaskSelfTest1] Cache is not configured - data grid is off.
 [14:18:10,100][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6013,7 +6013,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:11,673][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:11,673][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:11,673][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:11,676][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1]
+[14:18:11,676][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6026,16 +6026,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest1
 >>> Local node [ID=0F502F09-2C01-4B17-A148-9B5EBFA6F548, order=1353320290627]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250
+>>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:18:11,677][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2]
+[14:18:11,677][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6046,8 +6046,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:11,677][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:11,677][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:11,678][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:11,678][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:11,678][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:11,678][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:11,678][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:11,678][WARN ][test-runner][GridResourceIsolatedTaskSelfTest2] SMTP is not configured - email notifications are off.
 [14:18:11,678][WARN ][test-runner][GridResourceIsolatedTaskSelfTest2] Cache is not configured - data grid is off.
 [14:18:11,678][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6071,7 +6071,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:14,290][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:14,290][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:14,290][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:14,295][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2]
+[14:18:14,295][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6084,7 +6084,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest2
 >>> Local node [ID=5F4BE84E-85D9-48E8-928F-22B8071EDA10, order=1353320292198]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45251 UDP:50025 TCP:55251
+>>> Local ports: TCP:45251 UDP:50025 TCP:55251 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:14,299][INFO ][gridgain-#2262%resource.GridResourceIsolatedTaskSelfTest1%][GridResourceIsolatedTaskSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@2f5b3602
@@ -6179,7 +6179,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:18,390][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource2@32a86613
 [14:18:18,390][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@15128d25
 [14:18:18,390][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@a7c1a43
-[14:18:18,392][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1]
+[14:18:18,392][INFO ][test-runner][GridResourceIsolatedTaskSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6191,7 +6191,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:18,392][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:18:18,393][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:18:18,397][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320297313, depMode=PRIVATE, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=a1cca281b31-5f4be84e-85d9-48e8-928f-22b8071eda10, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$SharedResourceTask1, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$SharedResourceTask1, undeployed=true, pendingUndeploy=false, usage=0]
-[14:18:18,399][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2]
+[14:18:18,399][INFO ][test-runner][GridResourceIsolatedTaskSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6202,13 +6202,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:18,399][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Stopping test: testUndeployedTask in 8305 ms <<<
 [14:18:18,403][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Starting test: testRedeployedTask <<<
-[14:18:18,408][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:18,408][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6219,8 +6219,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:18,409][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:18,409][WARN ][test-runner][GridResourceIsolatedTaskSelfTest] SMTP is not configured - email notifications are off.
 [14:18:18,409][WARN ][test-runner][GridResourceIsolatedTaskSelfTest] Cache is not configured - data grid is off.
 [14:18:18,410][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6240,7 +6240,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:19,990][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:19,990][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:19,990][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:19,993][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:19,993][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6253,7 +6253,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest
 >>> Local node [ID=0AAB0C27-882B-475D-977F-379F5B92489F, order=1353320298955]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250
+>>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:19,997][INFO ][gridgain-#2295%resource.GridResourceIsolatedTaskSelfTest%][GridResourceIsolatedTaskSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@7bb7d5fa
@@ -6305,7 +6305,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:21,076][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource2@4c1e596d
 [14:18:21,076][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@1eb63181
 [14:18:21,076][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@269c0160
-[14:18:21,078][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:21,078][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6316,13 +6316,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:21,078][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Stopping test: testRedeployedTask in 2675 ms <<<
 [14:18:21,082][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Starting test: testDuplicateTaskName <<<
-[14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6333,8 +6333,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:21,087][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:21,087][WARN ][test-runner][GridResourceIsolatedTaskSelfTest] SMTP is not configured - email notifications are off.
 [14:18:21,087][WARN ][test-runner][GridResourceIsolatedTaskSelfTest] Cache is not configured - data grid is off.
 [14:18:21,088][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6354,7 +6354,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:22,658][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:22,658][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:22,658][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:22,661][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:22,661][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6367,7 +6367,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedTaskSelfTest
 >>> Local node [ID=99095536-88C2-4BE0-897B-1CA11DC8E57F, order=1353320301624]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250
+>>> Local ports: TCP:8080 TCP:11211 TCP:45250 UDP:50025 TCP:55250 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:22,666][INFO ][gridgain-#2321%resource.GridResourceIsolatedTaskSelfTest%][GridResourceIsolatedTaskSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@5bd20a14
@@ -6397,7 +6397,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:23,741][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource2@6d7d44cb
 [14:18:23,741][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@5bd20a14
 [14:18:23,741][INFO ][test-runner][GridResourceIsolatedTaskSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedTaskSelfTest$UserResource1@3fcff387
-[14:18:23,743][INFO ][test-runner][GridResourceIsolatedTaskSelfTest]
+[14:18:23,743][INFO ][test-runner][GridResourceIsolatedTaskSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6408,13 +6408,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:23,743][INFO ][main][GridResourceIsolatedTaskSelfTest] >>> Stopping test: testDuplicateTaskName in 2661 ms <<<
 [14:18:23,746][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Starting test: testSameTask <<<
-[14:18:23,751][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:23,751][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6425,8 +6425,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:23,752][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:23,752][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest] SMTP is not configured - email notifications are off.
 [14:18:23,752][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Cache is not configured - data grid is off.
 [14:18:23,753][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6446,7 +6446,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:25,310][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:25,310][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:25,310][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:25,313][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:25,313][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6459,7 +6459,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest
 >>> Local node [ID=F044825E-B679-4E18-BD40-F03F49161189, order=1353320304273]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260
+>>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:25,319][INFO ][gridgain-#2344%resource.GridResourceIsolatedClassLoaderSelfTest%][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@5f380a0c
@@ -6501,7 +6501,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:26,388][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@3dd248d0
 [14:18:26,388][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@5f380a0c
 [14:18:26,388][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@53c73e68
-[14:18:26,390][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:26,390][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6512,13 +6512,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:26,391][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Stopping test: testSameTask in 2644 ms <<<
 [14:18:26,394][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Starting test: testDifferentTasks <<<
-[14:18:26,399][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1]
+[14:18:26,399][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6529,8 +6529,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:26,399][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:26,399][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:26,399][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:26,400][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:26,400][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:26,400][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:26,400][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:26,400][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] SMTP is not configured - email notifications are off.
 [14:18:26,400][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] Cache is not configured - data grid is off.
 [14:18:26,401][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6550,7 +6550,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:27,959][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:27,959][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:27,959][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:27,964][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1]
+[14:18:27,964][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6563,16 +6563,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest1
 >>> Local node [ID=9E86D2EC-C775-4E4E-BAA0-94CAB44DE2F9, order=1353320306921]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260
+>>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2]
+[14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6583,8 +6583,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:27,967][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:27,967][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] SMTP is not configured - email notifications are off.
 [14:18:27,967][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] Cache is not configured - data grid is off.
 [14:18:27,968][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6608,7 +6608,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:30,598][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:30,598][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:30,598][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:30,603][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2]
+[14:18:30,603][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6621,7 +6621,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest2
 >>> Local node [ID=F4F0A876-9ECA-4C48-B252-9845CA5DC156, order=1353320308501]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45261 UDP:50026 TCP:55261
+>>> Local ports: TCP:45261 UDP:50026 TCP:55261 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:30,607][INFO ][gridgain-#2387%resource.GridResourceIsolatedClassLoaderSelfTest1%][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@429fc68a
@@ -6687,7 +6687,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:31,697][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@31d17247
 [14:18:31,697][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@429fc68a
 [14:18:31,698][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@b84a689
-[14:18:31,699][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1]
+[14:18:31,699][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6703,7 +6703,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:31,705][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@159db490
 [14:18:31,705][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@19e4b853
 [14:18:31,705][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@7ade417d
-[14:18:31,707][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2]
+[14:18:31,707][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6714,13 +6714,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:31,708][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Stopping test: testDifferentTasks in 5314 ms <<<
 [14:18:31,712][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Starting test: testUndeployedTask <<<
-[14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1]
+[14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6731,8 +6731,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:31,717][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:31,717][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] SMTP is not configured - email notifications are off.
 [14:18:31,717][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] Cache is not configured - data grid is off.
 [14:18:31,718][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6752,7 +6752,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:33,281][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:33,281][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:33,281][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:33,284][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1]
+[14:18:33,284][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6765,16 +6765,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest1
 >>> Local node [ID=281D23D1-D410-4BC1-9791-33B1C8BB3708, order=1353320312245]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260
+>>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:18:33,285][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2]
+[14:18:33,285][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -6785,8 +6785,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:33,286][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] SMTP is not configured - email notifications are off.
 [14:18:33,286][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] Cache is not configured - data grid is off.
 [14:18:33,286][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -6810,7 +6810,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:35,900][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:35,900][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:35,900][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:35,906][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2]
+[14:18:35,906][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -6823,7 +6823,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest2
 >>> Local node [ID=8A5B8594-CEB9-4BE3-8FD2-7B8D8521D703, order=1353320313815]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45261 UDP:50026 TCP:55261
+>>> Local ports: TCP:45261 UDP:50026 TCP:55261 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:35,909][INFO ][gridgain-#2436%resource.GridResourceIsolatedClassLoaderSelfTest1%][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@bcbd247
@@ -6959,7 +6959,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:43,018][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@5c4ef935
 [14:18:43,018][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@1981009
 [14:18:43,018][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@6b84cf70
-[14:18:43,021][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1]
+[14:18:43,021][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6975,7 +6975,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:44,082][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@7b8236f4
 [14:18:44,082][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@a78226e
 [14:18:44,082][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@3c39df87
-[14:18:44,083][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2]
+[14:18:44,083][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -6986,13 +6986,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:44,084][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Stopping test: testUndeployedTask in 12372 ms <<<
 [14:18:44,088][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Starting test: testRedeployedTask <<<
-[14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7003,8 +7003,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:44,094][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:44,093][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:44,094][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:44,094][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest] SMTP is not configured - email notifications are off.
 [14:18:44,094][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Cache is not configured - data grid is off.
 [14:18:44,094][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7024,7 +7024,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:45,667][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:45,667][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:45,667][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:45,672][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:45,672][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7037,7 +7037,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest
 >>> Local node [ID=02BD2778-8E65-4235-98BF-05AB667E028A, order=1353320324631]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260
+>>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:45,675][INFO ][gridgain-#2482%resource.GridResourceIsolatedClassLoaderSelfTest%][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@413c8f3e
@@ -7089,7 +7089,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:46,747][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@7c9c6b98
 [14:18:46,747][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@2756fa
 [14:18:46,747][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@63beb210
-[14:18:46,749][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:46,749][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7100,13 +7100,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:46,750][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Stopping test: testRedeployedTask in 2662 ms <<<
 [14:18:46,754][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Starting test: testDuplicateTaskName <<<
-[14:18:46,758][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:46,758][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7117,8 +7117,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:46,759][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:46,759][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest] SMTP is not configured - email notifications are off.
 [14:18:46,759][WARN ][test-runner][GridResourceIsolatedClassLoaderSelfTest] Cache is not configured - data grid is off.
 [14:18:46,760][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7138,7 +7138,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:48,362][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:48,362][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:48,362][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:48,368][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:48,368][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7151,7 +7151,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIsolatedClassLoaderSelfTest
 >>> Local node [ID=3A24D885-FBF5-4A62-9CA5-0D11178F9C48, order=1353320327319]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260
+>>> Local ports: TCP:8080 TCP:11211 TCP:45260 UDP:50026 TCP:55260 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:48,373][INFO ][gridgain-#2508%resource.GridResourceIsolatedClassLoaderSelfTest%][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@386cf713
@@ -7181,7 +7181,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:49,441][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource2@7395e464
 [14:18:49,441][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@386cf713
 [14:18:49,441][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIsolatedClassLoaderSelfTest$UserResource1@fdcf5ee
-[14:18:49,443][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest]
+[14:18:49,443][INFO ][test-runner][GridResourceIsolatedClassLoaderSelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7192,13 +7192,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:49,443][INFO ][main][GridResourceIsolatedClassLoaderSelfTest] >>> Stopping test: testDuplicateTaskName in 2689 ms <<<
 [14:18:49,447][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testDifferentTasks <<<
-[14:18:49,451][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:18:49,451][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7209,8 +7209,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:49,452][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:49,452][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:18:49,452][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:18:49,453][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7230,7 +7230,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:51,009][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:51,009][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:51,009][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:51,014][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:18:51,014][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7243,16 +7243,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest1
 >>> Local node [ID=B8C0ED15-D1B7-4811-BFF4-062E8D74554A, order=1353320329978]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:18:51,016][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:18:51,016][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7263,8 +7263,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:51,017][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:51,017][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:18:51,017][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:18:51,018][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7288,7 +7288,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:53,634][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:53,634][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:53,634][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:53,640][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:18:53,640][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7301,7 +7301,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest2
 >>> Local node [ID=13CDEE88-61AC-4276-8759-62C7FBA80D05, order=1353320331539]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45271 UDP:50027 TCP:55271
+>>> Local ports: TCP:45271 UDP:50027 TCP:55271 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:53,646][INFO ][gridgain-#2548%resource.GridResourceSharedUndeploySelfTest1%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@670115c8
@@ -7367,7 +7367,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:54,738][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@58d92201
 [14:18:54,738][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@670115c8
 [14:18:54,738][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@6a5a7583
-[14:18:54,740][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:18:54,740][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7383,7 +7383,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:54,745][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@614894ac
 [14:18:54,745][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@3abe9a77
 [14:18:54,745][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@5997609f
-[14:18:54,747][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:18:54,747][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7394,13 +7394,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:18:54,748][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testDifferentTasks in 5301 ms <<<
 [14:18:54,751][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testUndeployedTask <<<
-[14:18:54,756][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:18:54,756][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7411,8 +7411,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:54,757][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:54,757][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:18:54,757][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:18:54,758][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7432,7 +7432,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:56,316][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:56,316][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:56,316][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:56,318][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:18:56,318][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7445,16 +7445,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest1
 >>> Local node [ID=7BA749DF-C4B8-43A3-8647-97C1063FB1D3, order=1353320335284]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:18:56,319][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:18:56,319][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7465,8 +7465,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:18:56,320][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:18:56,320][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:18:56,320][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:18:56,321][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7490,7 +7490,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:18:58,948][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:18:58,948][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:18:58,948][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:18:58,953][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:18:58,953][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7503,7 +7503,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest2
 >>> Local node [ID=76B17C77-BF91-4B59-9341-D0A90B32DCEE, order=1353320336855]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45271 UDP:50027 TCP:55271
+>>> Local ports: TCP:45271 UDP:50027 TCP:55271 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:18:58,957][INFO ][gridgain-#2597%resource.GridResourceSharedUndeploySelfTest1%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@7928c138
@@ -7639,7 +7639,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:06,059][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@66927625
 [14:19:06,060][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@361f250
 [14:19:06,060][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@6f6d24e9
-[14:19:06,061][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:06,061][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7655,7 +7655,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:07,123][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@74010208
 [14:19:07,123][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@61221baf
 [14:19:07,123][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@4c728af5
-[14:19:07,125][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:07,125][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7666,13 +7666,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:07,126][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testUndeployedTask in 12375 ms <<<
 [14:19:07,130][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testRedeployedTask <<<
-[14:19:07,134][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:07,134][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7683,8 +7683,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:07,135][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:07,135][WARN ][test-runner][GridResourceSharedUndeploySelfTest] SMTP is not configured - email notifications are off.
 [14:19:07,135][WARN ][test-runner][GridResourceSharedUndeploySelfTest] Cache is not configured - data grid is off.
 [14:19:07,136][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7704,7 +7704,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:08,715][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:08,715][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:08,715][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:08,717][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:08,717][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7717,7 +7717,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest
 >>> Local node [ID=42FECC3A-D19D-4C04-B22D-B680DA357D1B, order=1353320347672]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:08,721][INFO ][gridgain-#2643%resource.GridResourceSharedUndeploySelfTest%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@6d2771e6
@@ -7769,7 +7769,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:09,802][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@15411d8a
 [14:19:09,803][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@4424e471
 [14:19:09,803][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@25e8e0b2
-[14:19:09,804][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:09,804][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7780,13 +7780,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:09,805][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testRedeployedTask in 2675 ms <<<
 [14:19:09,808][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testSameTaskLocally <<<
-[14:19:09,813][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:09,813][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7797,8 +7797,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:09,814][WARN ][test-runner][GridResourceSharedUndeploySelfTest] SMTP is not configured - email notifications are off.
 [14:19:09,814][WARN ][test-runner][GridResourceSharedUndeploySelfTest] Cache is not configured - data grid is off.
 [14:19:09,814][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7818,7 +7818,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:11,394][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:11,394][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:11,394][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:11,400][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:11,400][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7831,7 +7831,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest
 >>> Local node [ID=8A22A7AD-A793-4F5A-8857-BD5B33992F2E, order=1353320350350]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:11,402][INFO ][gridgain-#2669%resource.GridResourceSharedUndeploySelfTest%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@4c30a89d
@@ -7873,7 +7873,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:12,467][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@68553bfe
 [14:19:12,467][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@4c30a89d
 [14:19:12,467][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@d45e750
-[14:19:12,469][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:12,469][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7884,13 +7884,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:12,470][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testSameTaskLocally in 2662 ms <<<
 [14:19:12,473][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testDifferentTaskLocally <<<
-[14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -7901,8 +7901,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:12,478][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:12,478][WARN ][test-runner][GridResourceSharedUndeploySelfTest] SMTP is not configured - email notifications are off.
 [14:19:12,478][WARN ][test-runner][GridResourceSharedUndeploySelfTest] Cache is not configured - data grid is off.
 [14:19:12,479][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -7922,7 +7922,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:14,028][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:14,028][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:14,028][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:14,031][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:14,031][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -7935,7 +7935,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest
 >>> Local node [ID=8F965662-BDE7-4EBD-9A62-58FB00F28668, order=1353320352998]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:14,034][INFO ][gridgain-#2695%resource.GridResourceSharedUndeploySelfTest%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@3b6f931
@@ -7977,7 +7977,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:15,105][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@1a5bb60a
 [14:19:15,105][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@3b6f931
 [14:19:15,105][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@5328c7e5
-[14:19:15,107][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:15,107][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -7988,13 +7988,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:15,108][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testDifferentTaskLocally in 2635 ms <<<
 [14:19:15,111][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testDifferentTaskNameLocally <<<
-[14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8005,8 +8005,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:15,116][INFO ][test-runner][GridResourceSharedUndeploySelfTest] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:15,116][WARN ][test-runner][GridResourceSharedUndeploySelfTest] SMTP is not configured - email notifications are off.
 [14:19:15,116][WARN ][test-runner][GridResourceSharedUndeploySelfTest] Cache is not configured - data grid is off.
 [14:19:15,117][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8026,7 +8026,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:16,697][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:16,697][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:16,697][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:16,700][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:16,700][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8039,7 +8039,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest
 >>> Local node [ID=84364010-FCE9-407D-85ED-04580D549573, order=1353320355664]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:16,704][INFO ][gridgain-#2721%resource.GridResourceSharedUndeploySelfTest%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@5725a913
@@ -8069,7 +8069,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:17,770][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@6af3616f
 [14:19:17,770][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@5725a913
 [14:19:17,770][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@241b091d
-[14:19:17,772][INFO ][test-runner][GridResourceSharedUndeploySelfTest]
+[14:19:17,772][INFO ][test-runner][GridResourceSharedUndeploySelfTest] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8080,13 +8080,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:17,773][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testDifferentTaskNameLocally in 2662 ms <<<
 [14:19:17,776][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testSameTaskFromTwoNodesUndeploy <<<
-[14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8097,8 +8097,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:17,781][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:17,781][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:19:17,781][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:19:17,782][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8118,7 +8118,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:19,339][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:19,339][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:19,339][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:19,342][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:19,342][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8131,16 +8131,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest1
 >>> Local node [ID=99385FCB-D153-41BD-A627-A37F35D72846, order=1353320358303]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8151,8 +8151,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:19,343][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:19,343][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:19:19,343][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:19:19,344][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8176,7 +8176,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:21,949][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:21,949][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:21,949][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:21,954][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:21,954][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8189,16 +8189,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest2
 >>> Local node [ID=D7BC4E32-C0BA-4DF5-8226-BDD0C6C5D756, order=1353320359863]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45271 UDP:50027 TCP:55271
+>>> Local ports: TCP:45271 UDP:50027 TCP:55271 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:19:21,956][INFO ][test-runner][GridResourceSharedUndeploySelfTest3]
+[14:19:21,956][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8209,8 +8209,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:21,957][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:21,957][WARN ][test-runner][GridResourceSharedUndeploySelfTest3] SMTP is not configured - email notifications are off.
 [14:19:21,957][WARN ][test-runner][GridResourceSharedUndeploySelfTest3] Cache is not configured - data grid is off.
 [14:19:21,958][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8237,7 +8237,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:24,571][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:24,571][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:24,571][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:24,577][INFO ][test-runner][GridResourceSharedUndeploySelfTest3]
+[14:19:24,577][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8250,7 +8250,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest3
 >>> Local node [ID=336B1E74-B509-4C73-A747-C0E2CBD833CE, order=1353320362483]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45272 UDP:50027 TCP:55272
+>>> Local ports: TCP:45272 UDP:50027 TCP:55272 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:24,580][INFO ][gridgain-#2778%resource.GridResourceSharedUndeploySelfTest1%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@28e2668e
@@ -8355,7 +8355,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:31,658][INFO ][disco-event-worker-#2775%resource.GridResourceSharedUndeploySelfTest3%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=99385fcb-d153-41bd-a627-a37f35d72846, state=LEFT, lastHeartbeat=1353320371648, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55270, startTime=1353320358303]
 [14:19:31,658][INFO ][disco-event-worker-#2758%resource.GridResourceSharedUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=2, CPUs=4, hash=0xD706F393]
 [14:19:31,658][INFO ][disco-event-worker-#2775%resource.GridResourceSharedUndeploySelfTest3%][GridDiscoveryManager] Topology snapshot [nodes=2, CPUs=4, hash=0xD706F393]
-[14:19:31,663][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:31,663][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8368,7 +8368,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:31,664][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:19:31,666][INFO ][disco-event-worker-#2775%resource.GridResourceSharedUndeploySelfTest3%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=d7bc4e32-c0ba-4df5-8226-bdd0c6c5d756, state=LEFT, lastHeartbeat=1353320371658, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55271, startTime=1353320359863]
 [14:19:31,667][INFO ][disco-event-worker-#2775%resource.GridResourceSharedUndeploySelfTest3%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0xC5FE02BC]
-[14:19:31,670][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:31,670][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8379,7 +8379,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:32,725][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:19:32,725][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:19:32,731][INFO ][test-runner][GridResourceSharedUndeploySelfTest3]
+[14:19:32,731][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8390,13 +8390,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:32,732][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Stopping test: testSameTaskFromTwoNodesUndeploy in 14956 ms <<<
 [14:19:32,736][INFO ][main][GridResourceSharedUndeploySelfTest] >>> Starting test: testSameTaskFromTwoNodesLeft <<<
-[14:19:32,740][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:32,740][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8407,8 +8407,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:32,741][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:32,741][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:19:32,741][WARN ][test-runner][GridResourceSharedUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:19:32,742][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8428,7 +8428,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:34,311][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:34,311][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:34,311][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:34,314][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:34,314][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8441,16 +8441,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest1
 >>> Local node [ID=3D459673-51A3-4312-9008-676712903C62, order=1353320373279]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270
+>>> Local ports: TCP:8080 TCP:11211 TCP:45270 UDP:50027 TCP:55270 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:19:34,315][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:34,315][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8461,8 +8461,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:34,315][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:34,315][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:34,315][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:34,316][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:34,316][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:34,316][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:34,316][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:34,316][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:19:34,316][WARN ][test-runner][GridResourceSharedUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:19:34,316][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8486,7 +8486,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:36,923][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:36,923][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:36,923][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:36,928][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:36,928][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8499,16 +8499,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest2
 >>> Local node [ID=4E34A31E-7470-49E8-BA75-FCF95FEEAE8D, order=1353320374840]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45271 UDP:50027 TCP:55271
+>>> Local ports: TCP:45271 UDP:50027 TCP:55271 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3]
+[14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8519,8 +8519,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:36,931][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:36,932][WARN ][test-runner][GridResourceSharedUndeploySelfTest3] SMTP is not configured - email notifications are off.
 [14:19:36,932][WARN ][test-runner][GridResourceSharedUndeploySelfTest3] Cache is not configured - data grid is off.
 [14:19:36,932][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8547,7 +8547,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:39,542][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:39,542][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:39,542][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:39,548][INFO ][test-runner][GridResourceSharedUndeploySelfTest3]
+[14:19:39,548][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8560,7 +8560,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceSharedUndeploySelfTest3
 >>> Local node [ID=9EA6241B-2A18-4E29-B457-A10D1C67F2D1, order=1353320377458]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45272 UDP:50027 TCP:55272
+>>> Local ports: TCP:45272 UDP:50027 TCP:55272 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:39,552][INFO ][gridgain-#2854%resource.GridResourceSharedUndeploySelfTest1%][GridResourceSharedUndeploySelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@df3584e
@@ -8652,7 +8652,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:40,634][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@3ce6c917
 [14:19:40,634][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@df3584e
 [14:19:40,635][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@772191bb
-[14:19:40,636][INFO ][test-runner][GridResourceSharedUndeploySelfTest1]
+[14:19:40,636][INFO ][test-runner][GridResourceSharedUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8672,7 +8672,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:42,698][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@62e301f1
 [14:19:42,698][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@4b760467
 [14:19:42,698][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@7f00c2f2
-[14:19:42,699][INFO ][test-runner][GridResourceSharedUndeploySelfTest2]
+[14:19:42,699][INFO ][test-runner][GridResourceSharedUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8688,7 +8688,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:44,760][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource2@2594a7ef
 [14:19:44,760][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@311b2ce5
 [14:19:44,760][INFO ][test-runner][GridResourceSharedUndeploySelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceSharedUndeploySelfTest$UserResource1@afedf02
-[14:19:44,762][INFO ][test-runner][GridResourceSharedUndeploySelfTest3]
+[14:19:44,762][INFO ][test-runner][GridResourceSharedUndeploySelfTest3] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8703,13 +8703,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:44,771][INFO ][test-runner][GridResourceIocSelfTest] Cleanup resources.
 [14:19:44,772][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testIoc in 4 ms <<<
 [14:19:44,775][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testUndeployPrivateMode <<<
-[14:19:44,779][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:44,779][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8720,8 +8720,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:44,780][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:44,780][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:19:44,780][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:19:44,781][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8741,7 +8741,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:46,340][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:46,340][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:46,340][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:46,342][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:46,342][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8754,7 +8754,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=A2531DAC-D626-4FEA-8814-F6C1EEE90384, order=1353320385304]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:46,346][INFO ][gridgain-#2892%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@7873df20
@@ -8765,7 +8765,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:46,350][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=a2531dac-d626-4fea-8814-f6c1eee90384]
 [14:19:47,405][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:19:47,405][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:19:47,411][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:47,411][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8776,13 +8776,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:47,412][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testUndeployPrivateMode in 2637 ms <<<
 [14:19:47,415][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testUndeployIsolatedMode <<<
-[14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8793,8 +8793,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:47,420][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:47,420][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:19:47,421][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:19:47,421][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8814,7 +8814,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:48,977][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:48,977][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:48,977][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:48,980][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:48,980][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8827,7 +8827,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=11E41B8E-4451-4905-B95A-DAC80127E0DD, order=1353320387943]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:48,982][INFO ][gridgain-#2915%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@29df30f6
@@ -8838,7 +8838,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:48,985][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=11e41b8e-4451-4905-b95a-dac80127e0dd]
 [14:19:50,041][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:19:50,041][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:19:50,048][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:50,048][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8849,13 +8849,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:50,048][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testUndeployIsolatedMode in 2633 ms <<<
 [14:19:50,051][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testUndeployContinuousMode <<<
-[14:19:50,056][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:50,056][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8866,8 +8866,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:50,057][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:50,057][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:19:50,057][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:19:50,058][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8887,7 +8887,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:51,643][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:51,643][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:51,643][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:51,646][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:51,646][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8900,7 +8900,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=84145631-55EF-4F30-8CBE-AA1700D06D43, order=1353320390603]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:51,647][INFO ][gridgain-#2938%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@59f55e0c
@@ -8911,7 +8911,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:51,649][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=84145631-55ef-4f30-8cbe-aa1700d06d43]
 [14:19:52,705][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:19:52,705][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:19:52,711][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:52,711][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8922,13 +8922,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:52,712][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testUndeployContinuousMode in 2661 ms <<<
 [14:19:52,715][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testUndeploySharedMode <<<
-[14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -8939,8 +8939,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:52,721][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:52,720][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:52,721][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:52,721][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:19:52,721][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:19:52,721][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -8960,7 +8960,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:54,278][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:54,278][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:54,278][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:54,280][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:54,280][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -8973,7 +8973,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=5B7B66DA-0A7D-4945-9E3A-BF6AA108B8F3, order=1353320393240]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:54,283][INFO ][gridgain-#2961%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@51df2e32
@@ -8984,7 +8984,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:54,286][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=5b7b66da-0a7d-4945-9e3a-bf6aa108b8f3]
 [14:19:55,343][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:19:55,343][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:19:55,350][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:55,350][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -8995,13 +8995,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:19:55,350][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testUndeploySharedMode in 2635 ms <<<
 [14:19:55,353][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testStopNodePrivateMode <<<
-[14:19:55,358][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:55,358][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9012,8 +9012,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:55,358][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:55,359][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:55,359][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:55,359][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:55,359][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:55,359][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:55,359][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:55,359][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:19:55,359][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:19:55,360][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9033,7 +9033,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:56,923][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:56,923][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:56,923][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:56,926][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:19:56,926][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9046,16 +9046,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=74A905EB-65DE-4F4F-8D3E-8E23F3FEFD6A, order=1353320395879]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:19:56,927][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:19:56,927][INFO ][test-runner][GridResourceIocSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9066,8 +9066,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:19:56,928][WARN ][test-runner][GridResourceIocSelfTest2] SMTP is not configured - email notifications are off.
 [14:19:56,928][WARN ][test-runner][GridResourceIocSelfTest2] Cache is not configured - data grid is off.
 [14:19:56,928][INFO ][test-runner][GridResourceIocSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9091,7 +9091,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:19:59,547][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:19:59,547][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:19:59,547][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:19:59,553][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:19:59,553][INFO ][test-runner][GridResourceIocSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9104,7 +9104,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest2
 >>> Local node [ID=CC89D784-BDBD-450F-BA6C-4A9A5E38D1AB, order=1353320397449]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45281 UDP:50028 TCP:55281
+>>> Local ports: TCP:45281 UDP:50028 TCP:55281 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:19:59,556][INFO ][gridgain-#3001%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@342d0af4
@@ -9122,7 +9122,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:00,641][INFO ][disco-event-worker-#2998%resource.GridResourceIocSelfTest2%][GridResourceIocSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@f6d2b62
 [14:20:00,642][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320399554, depMode=PRIVATE, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=b20da281b31-74a905eb-65de-4f4f-8d3e-8e23f3fefd6a, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:20:00,642][INFO ][test-runner][GridResourceIocSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@342d0af4
-[14:20:00,644][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:00,644][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9137,7 +9137,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:03,700][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:03,700][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:20:03,708][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320399564, depMode=PRIVATE, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=730da281b31-cc89d784-bdbd-450f-ba6c-4a9a5e38d1ab, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:20:03,710][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:03,710][INFO ][test-runner][GridResourceIocSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9148,13 +9148,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:03,711][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testStopNodePrivateMode in 8357 ms <<<
 [14:20:03,714][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testStopNodeIsolatedMode <<<
-[14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9165,8 +9165,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:03,720][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:03,719][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:03,720][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:03,720][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:20:03,720][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:20:03,720][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9186,7 +9186,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:05,306][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:05,306][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:05,306][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:05,309][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:05,309][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9199,16 +9199,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=66EB4EA6-47BB-4D31-91BE-AC33637113E5, order=1353320404269]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9219,8 +9219,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:05,310][INFO ][test-runner][GridResourceIocSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:05,310][WARN ][test-runner][GridResourceIocSelfTest2] SMTP is not configured - email notifications are off.
 [14:20:05,310][WARN ][test-runner][GridResourceIocSelfTest2] Cache is not configured - data grid is off.
 [14:20:05,311][INFO ][test-runner][GridResourceIocSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9244,7 +9244,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:07,917][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:07,917][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:07,917][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:07,922][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:07,922][INFO ][test-runner][GridResourceIocSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9257,7 +9257,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest2
 >>> Local node [ID=AE6E38B5-91FE-4BB4-BD7B-B627C4212BD1, order=1353320405831]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45281 UDP:50028 TCP:55281
+>>> Local ports: TCP:45281 UDP:50028 TCP:55281 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:07,925][INFO ][gridgain-#3054%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@49677bfc
@@ -9275,7 +9275,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:09,006][INFO ][disco-event-worker-#3051%resource.GridResourceIocSelfTest2%][GridResourceIocSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@433ad7f2
 [14:20:09,007][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320407915, depMode=ISOLATED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=060da281b31-66eb4ea6-47bb-4d31-91be-ac33637113e5, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:20:09,007][INFO ][test-runner][GridResourceIocSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@49677bfc
-[14:20:09,009][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:09,009][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9290,7 +9290,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:12,066][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:12,066][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:20:12,071][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320407926, depMode=ISOLATED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=760da281b31-ae6e38b5-91fe-4bb4-bd7b-b627c4212bd1, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:20:12,073][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:12,073][INFO ][test-runner][GridResourceIocSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9301,13 +9301,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:12,074][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testStopNodeIsolatedMode in 8360 ms <<<
 [14:20:12,077][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testStopNodeSharedMode <<<
-[14:20:12,082][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:12,082][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9318,8 +9318,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:12,083][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:12,083][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:20:12,083][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:20:12,084][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9339,7 +9339,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:13,657][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:13,657][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:13,657][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:13,660][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:13,660][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9352,16 +9352,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=A26EF5FB-E674-493F-BB78-C0864866220F, order=1353320412628]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9372,8 +9372,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:13,661][INFO ][test-runner][GridResourceIocSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:13,661][WARN ][test-runner][GridResourceIocSelfTest2] SMTP is not configured - email notifications are off.
 [14:20:13,661][WARN ][test-runner][GridResourceIocSelfTest2] Cache is not configured - data grid is off.
 [14:20:13,662][INFO ][test-runner][GridResourceIocSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9397,7 +9397,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:16,270][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:16,270][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:16,270][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:16,275][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:16,275][INFO ][test-runner][GridResourceIocSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9410,7 +9410,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest2
 >>> Local node [ID=A2D743B6-DF82-4DFD-B409-56E9C82E9BA4, order=1353320414179]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45281 UDP:50028 TCP:55281
+>>> Local ports: TCP:45281 UDP:50028 TCP:55281 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:16,278][INFO ][gridgain-#3107%resource.GridResourceIocSelfTest1%][GridResourceIocSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@36ef39e5
@@ -9428,7 +9428,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:17,360][INFO ][disco-event-worker-#3104%resource.GridResourceIocSelfTest2%][GridResourceIocSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@57b32bf7
 [14:20:17,361][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320416273, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=690da281b31-a26ef5fb-e674-493f-bb78-c0864866220f, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:20:17,361][INFO ][test-runner][GridResourceIocSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceIocSelfTest$UserResource1@36ef39e5
-[14:20:17,363][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:17,363][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9442,7 +9442,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:19,364][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest2, id=a2d743b6-df82-4dfd-b409-56e9c82e9ba4]
 [14:20:20,419][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:20,420][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:20:20,427][INFO ][test-runner][GridResourceIocSelfTest2]
+[14:20:20,427][INFO ][test-runner][GridResourceIocSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9453,13 +9453,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:20,428][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testStopNodeSharedMode in 8350 ms <<<
 [14:20:20,431][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testGarPrivateMode <<<
-[14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9470,8 +9470,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:20,444][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:20,444][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:20:20,444][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:20:20,445][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9492,7 +9492,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:22,014][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:22,014][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:22,014][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:22,017][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:22,017][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9505,7 +9505,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=CF41B024-E947-4053-AC02-570AA3FB18F7, order=1353320420976]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:22,050][INFO ][test-runner][GridDeploymentLocalStore] User version is not explicitly defined (will use default version) [file=META-INF/gridgain.xml, clsLdr=GridUriDeploymentClassLoader [urls=[file:/tmp/gg.uri.deployment.tmp/cf41b024-e947-4053-ac02-570aa3fb18f7/dirzip_p2p2597877142523783363.gar/]]]
@@ -9517,7 +9517,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:28,059][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=cf41b024-e947-4053-ac02-570aa3fb18f7]
 [14:20:29,114][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:29,114][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:20:29,121][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:29,121][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9528,13 +9528,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:29,122][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testGarPrivateMode in 8691 ms <<<
 [14:20:29,125][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testGarIsolatedMode <<<
-[14:20:29,130][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:29,130][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9545,8 +9545,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:29,131][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:29,131][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:20:29,131][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:20:29,132][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9567,7 +9567,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:30,715][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:30,715][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:30,715][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:30,718][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:30,718][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9580,7 +9580,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=FD28E2A3-1265-4325-B5AF-2C4061E03E8D, order=1353320429675]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:30,739][INFO ][test-runner][GridDeploymentLocalStore] User version is not explicitly defined (will use default version) [file=META-INF/gridgain.xml, clsLdr=GridUriDeploymentClassLoader [urls=[file:/tmp/gg.uri.deployment.tmp/fd28e2a3-1265-4325-b5af-2c4061e03e8d/dirzip_p2p5649070182098927287.gar/]]]
@@ -9592,7 +9592,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:36,748][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=fd28e2a3-1265-4325-b5af-2c4061e03e8d]
 [14:20:37,804][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:37,804][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:20:37,810][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:37,810][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9603,13 +9603,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:37,811][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testGarIsolatedMode in 8686 ms <<<
 [14:20:37,815][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testGarContinuousMode <<<
-[14:20:37,820][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:37,820][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9620,8 +9620,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:37,820][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:37,820][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:37,821][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:37,821][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:37,821][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:37,821][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:37,821][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:37,821][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:20:37,821][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:20:37,822][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9642,7 +9642,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:39,418][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:39,418][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:39,418][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:39,423][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:39,423][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9655,7 +9655,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=B0685083-9394-423E-9FD7-2BFFCD6CB51A, order=1353320438385]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:39,444][INFO ][test-runner][GridDeploymentLocalStore] User version is not explicitly defined (will use default version) [file=META-INF/gridgain.xml, clsLdr=GridUriDeploymentClassLoader [urls=[file:/tmp/gg.uri.deployment.tmp/b0685083-9394-423e-9fd7-2bffcd6cb51a/dirzip_p2p998565344693616667.gar/]]]
@@ -9667,7 +9667,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:45,453][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=b0685083-9394-423e-9fd7-2bffcd6cb51a]
 [14:20:46,509][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:46,509][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:20:46,515][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:46,515][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9678,13 +9678,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:46,516][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testGarContinuousMode in 8701 ms <<<
 [14:20:46,520][INFO ][main][GridResourceIocSelfTest] >>> Starting test: testGarSharedMode <<<
-[14:20:46,525][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:46,525][INFO ][test-runner][GridResourceIocSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9695,8 +9695,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:46,525][INFO ][test-runner][GridResourceIocSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:46,525][INFO ][test-runner][GridResourceIocSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:46,526][INFO ][test-runner][GridResourceIocSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:46,526][INFO ][test-runner][GridResourceIocSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:46,526][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:46,526][INFO ][test-runner][GridResourceIocSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:46,526][INFO ][test-runner][GridResourceIocSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:46,526][WARN ][test-runner][GridResourceIocSelfTest1] SMTP is not configured - email notifications are off.
 [14:20:46,526][WARN ][test-runner][GridResourceIocSelfTest1] Cache is not configured - data grid is off.
 [14:20:46,527][INFO ][test-runner][GridResourceIocSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9717,7 +9717,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:48,095][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:48,095][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:48,095][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:48,100][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:48,100][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9730,7 +9730,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceIocSelfTest1
 >>> Local node [ID=A325B411-E039-4DDB-BE4E-74513F7BC419, order=1353320447055]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280
+>>> Local ports: TCP:8080 TCP:11211 TCP:45280 UDP:50028 TCP:55280 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:48,123][INFO ][test-runner][GridDeploymentLocalStore] User version is not explicitly defined (will use default version) [file=META-INF/gridgain.xml, clsLdr=GridUriDeploymentClassLoader [urls=[file:/tmp/gg.uri.deployment.tmp/a325b411-e039-4ddb-be4e-74513f7bc419/dirzip_p2p8485450160477270427.gar/]]]
@@ -9742,7 +9742,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:54,133][INFO ][test-runner][GridResourceIocSelfTest] >>> Stopping grid [name=resource.GridResourceIocSelfTest1, id=a325b411-e039-4ddb-be4e-74513f7bc419]
 [14:20:55,189][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:20:55,189][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:20:55,196][INFO ][test-runner][GridResourceIocSelfTest1]
+[14:20:55,196][INFO ][test-runner][GridResourceIocSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9753,13 +9753,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:20:55,197][INFO ][main][GridResourceIocSelfTest] >>> Stopping test: testGarSharedMode in 8677 ms <<<
 [14:20:55,200][INFO ][main][GridResourceUserExternalTest] >>> Starting test: testExternalResources <<<
-[14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1]
+[14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9770,8 +9770,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:55,210][INFO ][test-runner][GridResourceUserExternalTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:55,211][WARN ][test-runner][GridResourceUserExternalTest1] SMTP is not configured - email notifications are off.
 [14:20:55,211][WARN ][test-runner][GridResourceUserExternalTest1] Cache is not configured - data grid is off.
 [14:20:55,211][INFO ][test-runner][GridResourceUserExternalTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9791,7 +9791,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:56,777][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:56,777][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:56,777][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:56,780][INFO ][test-runner][GridResourceUserExternalTest1]
+[14:20:56,780][INFO ][test-runner][GridResourceUserExternalTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9804,16 +9804,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceUserExternalTest1
 >>> Local node [ID=2241AB27-6B07-4B08-A7EF-A0028129DDD4, order=1353320455746]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45290 UDP:50029 TCP:55290
+>>> Local ports: TCP:8080 TCP:11211 TCP:45290 UDP:50029 TCP:55290 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2]
+[14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9824,8 +9824,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:20:56,782][INFO ][test-runner][GridResourceUserExternalTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:20:56,781][INFO ][test-runner][GridResourceUserExternalTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:20:56,782][INFO ][test-runner][GridResourceUserExternalTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:20:56,782][WARN ][test-runner][GridResourceUserExternalTest2] SMTP is not configured - email notifications are off.
 [14:20:56,782][WARN ][test-runner][GridResourceUserExternalTest2] Cache is not configured - data grid is off.
 [14:20:56,782][INFO ][test-runner][GridResourceUserExternalTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9849,7 +9849,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:20:59,388][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:20:59,388][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:20:59,388][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:20:59,394][INFO ][test-runner][GridResourceUserExternalTest2]
+[14:20:59,394][INFO ][test-runner][GridResourceUserExternalTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -9862,7 +9862,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceUserExternalTest2
 >>> Local node [ID=753F0699-7180-423F-97F7-24D2AC7A7E1D, order=1353320457306]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45291 UDP:50029 TCP:55291
+>>> Local ports: TCP:45291 UDP:50029 TCP:55291 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:20:59,404][INFO ][gridgain-#3252%resource.GridResourceUserExternalTest1%][GridUserExternalResource1] Deploying resource: GridUserExternalResource1 []
@@ -9935,7 +9935,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:00,522][INFO ][test-runner][GridUserExternalResource1] Undeploying resource: GridUserExternalResource1 []
 [14:21:00,522][INFO ][test-runner][GridUserExternalResource2] Undeploying resource: GridUserExternalResource2 []
 [14:21:00,523][INFO ][test-runner][GridUserExternalResource2] Undeploying resource: GridUserExternalResource2 []
-[14:21:00,525][INFO ][test-runner][GridResourceUserExternalTest1]
+[14:21:00,525][INFO ][test-runner][GridResourceUserExternalTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9946,7 +9946,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:00,526][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:00,526][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:00,532][INFO ][test-runner][GridResourceUserExternalTest2]
+[14:21:00,532][INFO ][test-runner][GridResourceUserExternalTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -9957,13 +9957,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:00,532][INFO ][main][GridResourceUserExternalTest] >>> Stopping test: testExternalResources in 5331 ms <<<
 [14:21:00,536][INFO ][main][GridResourceEventFilterSelfTest] >>> Starting test: testCustomFilter1 <<<
-[14:21:00,541][INFO ][test-runner][GridResourceEventFilterSelfTest1]
+[14:21:00,541][INFO ][test-runner][GridResourceEventFilterSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -9974,8 +9974,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:00,541][INFO ][test-runner][GridResourceEventFilterSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:00,542][INFO ][test-runner][GridResourceEventFilterSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:00,542][INFO ][test-runner][GridResourceEventFilterSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:00,542][INFO ][test-runner][GridResourceEventFilterSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:00,542][INFO ][test-runner][GridResourceEventFilterSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:00,542][INFO ][test-runner][GridResourceEventFilterSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:00,542][INFO ][test-runner][GridResourceEventFilterSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:00,542][WARN ][test-runner][GridResourceEventFilterSelfTest1] SMTP is not configured - email notifications are off.
 [14:21:00,542][WARN ][test-runner][GridResourceEventFilterSelfTest1] Cache is not configured - data grid is off.
 [14:21:00,543][INFO ][test-runner][GridResourceEventFilterSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -9995,7 +9995,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:02,099][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:02,099][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:02,099][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:02,104][INFO ][test-runner][GridResourceEventFilterSelfTest1]
+[14:21:02,104][INFO ][test-runner][GridResourceEventFilterSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10008,16 +10008,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceEventFilterSelfTest1
 >>> Local node [ID=562A9784-3DCE-47D4-A330-781CE9C5AC89, order=1353320461062]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45300 UDP:50030 TCP:55300
+>>> Local ports: TCP:8080 TCP:11211 TCP:45300 UDP:50030 TCP:55300 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2]
+[14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10028,8 +10028,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:02,108][INFO ][test-runner][GridResourceEventFilterSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:02,107][INFO ][test-runner][GridResourceEventFilterSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:02,108][INFO ][test-runner][GridResourceEventFilterSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:02,108][WARN ][test-runner][GridResourceEventFilterSelfTest2] SMTP is not configured - email notifications are off.
 [14:21:02,108][WARN ][test-runner][GridResourceEventFilterSelfTest2] Cache is not configured - data grid is off.
 [14:21:02,109][INFO ][test-runner][GridResourceEventFilterSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10053,7 +10053,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:04,718][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:04,718][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:04,718][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:04,723][INFO ][test-runner][GridResourceEventFilterSelfTest2]
+[14:21:04,723][INFO ][test-runner][GridResourceEventFilterSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10066,7 +10066,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceEventFilterSelfTest2
 >>> Local node [ID=7F5A3489-FC7F-4833-91D5-C6F467D1F380, order=1353320462633]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45301 UDP:50030 TCP:55301
+>>> Local ports: TCP:45301 UDP:50030 TCP:55301 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:04,745][INFO ][gridgain-#3318%resource.GridResourceEventFilterSelfTest1%][GridResourceEventFilterSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$UserResource1@2a9a0033
@@ -10078,7 +10078,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:05,815][INFO ][disco-event-worker-#3308%resource.GridResourceEventFilterSelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x334224D6]
 [14:21:05,817][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320464717, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=c71da281b31-562a9784-3dce-47d4-a330-781ce9c5ac89, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:05,817][INFO ][test-runner][GridResourceEventFilterSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$UserResource1@2a9a0033
-[14:21:05,819][INFO ][test-runner][GridResourceEventFilterSelfTest1]
+[14:21:05,819][INFO ][test-runner][GridResourceEventFilterSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10092,7 +10092,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:05,820][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:21:05,825][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320464727, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=481da281b31-7f5a3489-fc7f-4833-91d5-c6f467d1f380, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:05,825][INFO ][test-runner][GridResourceEventFilterSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$UserResource1@64832a1e
-[14:21:05,827][INFO ][test-runner][GridResourceEventFilterSelfTest2]
+[14:21:05,827][INFO ][test-runner][GridResourceEventFilterSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10103,13 +10103,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:05,827][INFO ][main][GridResourceEventFilterSelfTest] >>> Stopping test: testCustomFilter1 in 5291 ms <<<
 [14:21:05,831][INFO ][main][GridResourceEventFilterSelfTest] >>> Starting test: testCustomFilter2 <<<
-[14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1]
+[14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10120,8 +10120,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:05,837][INFO ][test-runner][GridResourceEventFilterSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:05,836][INFO ][test-runner][GridResourceEventFilterSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:05,837][INFO ][test-runner][GridResourceEventFilterSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:05,837][WARN ][test-runner][GridResourceEventFilterSelfTest1] SMTP is not configured - email notifications are off.
 [14:21:05,837][WARN ][test-runner][GridResourceEventFilterSelfTest1] Cache is not configured - data grid is off.
 [14:21:05,837][INFO ][test-runner][GridResourceEventFilterSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10141,7 +10141,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:07,395][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:07,395][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:07,395][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:07,398][INFO ][test-runner][GridResourceEventFilterSelfTest1]
+[14:21:07,398][INFO ][test-runner][GridResourceEventFilterSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10154,16 +10154,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceEventFilterSelfTest1
 >>> Local node [ID=CDD4A51B-55AB-4048-8D03-BD61BB325A98, order=1353320466359]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45300 UDP:50030 TCP:55300
+>>> Local ports: TCP:8080 TCP:11211 TCP:45300 UDP:50030 TCP:55300 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:07,399][INFO ][test-runner][GridResourceEventFilterSelfTest2]
+[14:21:07,399][INFO ][test-runner][GridResourceEventFilterSelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10174,8 +10174,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:07,400][INFO ][test-runner][GridResourceEventFilterSelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:07,400][WARN ][test-runner][GridResourceEventFilterSelfTest2] SMTP is not configured - email notifications are off.
 [14:21:07,400][WARN ][test-runner][GridResourceEventFilterSelfTest2] Cache is not configured - data grid is off.
 [14:21:07,401][INFO ][test-runner][GridResourceEventFilterSelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10199,7 +10199,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:10,038][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:10,038][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:10,038][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:10,043][INFO ][test-runner][GridResourceEventFilterSelfTest2]
+[14:21:10,043][INFO ][test-runner][GridResourceEventFilterSelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10212,7 +10212,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceEventFilterSelfTest2
 >>> Local node [ID=1955D921-9F0B-4330-B5BC-D0FCCFA85B59, order=1353320467950]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45301 UDP:50030 TCP:55301
+>>> Local ports: TCP:45301 UDP:50030 TCP:55301 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:10,054][INFO ][gridgain-#3366%resource.GridResourceEventFilterSelfTest1%][GridResourceEventFilterSelfTest$UserResource1] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$UserResource1@17278332
@@ -10227,7 +10227,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:11,115][INFO ][disco-event-worker-#3356%resource.GridResourceEventFilterSelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0xADCF27C1]
 [14:21:11,118][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320470034, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=aa1da281b31-cdd4a51b-55ab-4048-8d03-bd61bb325a98, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:11,118][INFO ][test-runner][GridResourceEventFilterSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$UserResource1@17278332
-[14:21:11,120][INFO ][test-runner][GridResourceEventFilterSelfTest1]
+[14:21:11,120][INFO ][test-runner][GridResourceEventFilterSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10241,7 +10241,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:11,121][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:21:11,126][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320470044, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=6b1da281b31-1955d921-9f0b-4330-b5bc-d0fccfa85b59, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:11,126][INFO ][test-runner][GridResourceEventFilterSelfTest$UserResource1] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceEventFilterSelfTest$UserResource1@ec38731
-[14:21:11,128][INFO ][test-runner][GridResourceEventFilterSelfTest2]
+[14:21:11,128][INFO ][test-runner][GridResourceEventFilterSelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10251,13 +10251,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 
 [14:21:11,129][INFO ][main][GridResourceEventFilterSelfTest] >>> Stopping test: testCustomFilter2 in 5298 ms <<<
-[14:21:11,137][INFO ][main][GridLoggerInjectionSelfTest0]
+[14:21:11,137][INFO ][main][GridLoggerInjectionSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10268,8 +10268,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:11,137][INFO ][main][GridLoggerInjectionSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:11,137][INFO ][main][GridLoggerInjectionSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:11,137][INFO ][main][GridLoggerInjectionSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:11,138][INFO ][main][GridLoggerInjectionSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:11,138][INFO ][main][GridLoggerInjectionSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:11,138][INFO ][main][GridLoggerInjectionSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:11,138][INFO ][main][GridLoggerInjectionSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:11,138][WARN ][main][GridLoggerInjectionSelfTest0] SMTP is not configured - email notifications are off.
 [14:21:11,138][WARN ][main][GridLoggerInjectionSelfTest0] Cache is not configured - data grid is off.
 [14:21:11,138][INFO ][main][GridLoggerInjectionSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10289,7 +10289,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:12,723][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:12,723][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:12,723][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:12,726][INFO ][main][GridLoggerInjectionSelfTest0]
+[14:21:12,726][INFO ][main][GridLoggerInjectionSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10302,16 +10302,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridLoggerInjectionSelfTest0
 >>> Local node [ID=22961BC0-36FE-451D-9BAC-F2D89D71A69D, order=1353320471676]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45310 UDP:50031 TCP:55310
+>>> Local ports: TCP:8080 TCP:11211 TCP:45310 UDP:50031 TCP:55310 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1]
+[14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10322,8 +10322,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:12,727][INFO ][main][GridLoggerInjectionSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:12,727][WARN ][main][GridLoggerInjectionSelfTest1] SMTP is not configured - email notifications are off.
 [14:21:12,727][WARN ][main][GridLoggerInjectionSelfTest1] Cache is not configured - data grid is off.
 [14:21:12,728][INFO ][main][GridLoggerInjectionSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10347,7 +10347,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:15,340][INFO ][main][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:15,340][INFO ][main][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:15,340][INFO ][main][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:15,345][INFO ][main][GridLoggerInjectionSelfTest1]
+[14:21:15,345][INFO ][main][GridLoggerInjectionSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10360,7 +10360,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridLoggerInjectionSelfTest1
 >>> Local node [ID=80927476-E3F6-43B8-B5FA-2369DC3B1BD6, order=1353320473256]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45311 UDP:50031 TCP:55311
+>>> Local ports: TCP:45311 UDP:50031 TCP:55311 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:15,345][INFO ][main][GridLoggerInjectionSelfTest] >>> Starting test: testClosureField <<<
@@ -10375,7 +10375,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:16,437][INFO ][disco-event-worker-#3404%resource.GridLoggerInjectionSelfTest1%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=22961bc0-36fe-451d-9bac-f2d89d71a69d, state=LEFT, lastHeartbeat=1353320476428, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55310, startTime=1353320471676]
 [14:21:16,437][INFO ][disco-event-worker-#3404%resource.GridLoggerInjectionSelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x2994E7CE]
 [14:21:16,439][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320475341, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=7d1da281b31-22961bc0-36fe-451d-9bac-f2d89d71a69d, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridLoggerInjectionSelfTest$1, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridLoggerInjectionSelfTest$1, undeployed=true, pendingUndeploy=false, usage=0]
-[14:21:16,441][INFO ][main][GridLoggerInjectionSelfTest0]
+[14:21:16,441][INFO ][main][GridLoggerInjectionSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10388,7 +10388,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:16,442][INFO ][main][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:16,442][INFO ][main][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:21:16,447][INFO ][main][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320475351, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=ed1da281b31-80927476-e3f6-43b8-b5fa-2369dc3b1bd6, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridLoggerInjectionSelfTest$1, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridLoggerInjectionSelfTest$1, undeployed=true, pendingUndeploy=false, usage=0]
-[14:21:16,448][INFO ][main][GridLoggerInjectionSelfTest1]
+[14:21:16,448][INFO ][main][GridLoggerInjectionSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10398,13 +10398,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 
 [14:21:16,452][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testNodeLeftInSharedMode <<<
-[14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10415,8 +10415,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:16,457][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:16,458][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:16,458][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:16,458][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10436,7 +10436,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:18,056][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:18,056][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:18,057][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:18,059][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:18,059][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10449,16 +10449,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=15EACC95-CA7A-46AD-96CE-BEF277BDBD79, order=1353320477022]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:18,060][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:18,060][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10469,8 +10469,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:18,060][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:18,060][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:18,061][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:18,061][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:18,061][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:18,061][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:18,061][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:18,061][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:21:18,061][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:21:18,061][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10494,7 +10494,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:20,673][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:20,673][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:20,673][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:20,678][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:20,678][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10507,16 +10507,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=F3E0E674-D1AB-41DC-B2B6-831C1ED68E31, order=1353320478584]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3]
+[14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10527,8 +10527,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:20,681][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:20,681][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest3] SMTP is not configured - email notifications are off.
 [14:21:20,681][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest3] Cache is not configured - data grid is off.
 [14:21:20,682][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10555,7 +10555,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:23,296][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:23,296][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:23,296][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:23,301][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3]
+[14:21:23,301][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10568,7 +10568,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest3
 >>> Local node [ID=D6AEE9E2-0B75-4625-A952-24E2DC068B95, order=1353320481205]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45322 UDP:50032 TCP:55322
+>>> Local ports: TCP:45322 UDP:50032 TCP:55322 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:23,306][INFO ][gridgain-#3480%resource.GridResourceConcurrentUndeploySelfTest3%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@6f893d41
@@ -10583,7 +10583,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:23,319][INFO ][disco-event-worker-#3439%resource.GridResourceConcurrentUndeploySelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=2, CPUs=4, hash=0xFE2BB894]
 [14:21:23,320][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320483300, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=a42da281b31-d6aee9e2-0b75-4625-a952-24e2dc068b95, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResourceTask2, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResourceTask2, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:23,320][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@6f893d41
-[14:21:23,321][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3]
+[14:21:23,321][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest3] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10599,7 +10599,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:24,883][INFO ][disco-event-worker-#3459%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x8B276B56]
 [14:21:24,886][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320483300, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=642da281b31-15eacc95-ca7a-46ad-96ce-bef277bdbd79, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResourceTask1, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResourceTask1, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:24,886][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@1b14af9c
-[14:21:24,888][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:24,888][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10613,7 +10613,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:24,893][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320483310, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=152da281b31-f3e0e674-d1ab-41dc-b2b6-831c1ed68e31, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResourceTask1, sampleClsName=org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResourceTask1, undeployed=true, pendingUndeploy=false, usage=0]
 [14:21:24,894][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest$UserResource2] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource2@7f6538dd
 [14:21:24,894][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@4e787682
-[14:21:24,896][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:24,896][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10624,13 +10624,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:24,896][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testNodeLeftInSharedMode in 8444 ms <<<
 [14:21:24,901][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testLocalNodePrivateMode <<<
-[14:21:24,906][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:24,906][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10641,8 +10641,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:24,907][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:24,907][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:24,907][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:24,908][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10662,7 +10662,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:26,466][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:26,466][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:26,466][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:26,469][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:26,469][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10675,7 +10675,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=2B4A66B0-ED06-4EA4-B0BD-3DD5B9B4820F, order=1353320485426]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:26,471][INFO ][gridgain-#3508%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@273a28ac
@@ -10687,7 +10687,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:26,474][INFO ][gridgain-#3509%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@273a28ac
 [14:21:28,032][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:28,032][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:28,038][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:28,038][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10698,13 +10698,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:28,039][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testLocalNodePrivateMode in 3138 ms <<<
 [14:21:28,042][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testLocalNodeIsolatedMode <<<
-[14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10715,8 +10715,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:28,047][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:28,048][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:28,048][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:28,048][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10736,7 +10736,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:29,608][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:29,608][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:29,608][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:29,611][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:29,611][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10749,7 +10749,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=FB61E320-FA0C-4420-9D61-C511F6DB10F9, order=1353320488578]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:29,614][INFO ][gridgain-#3530%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@7684fe50
@@ -10761,7 +10761,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:29,616][INFO ][gridgain-#3531%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@7684fe50
 [14:21:31,171][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:31,171][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:31,177][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:31,177][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10772,13 +10772,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:31,178][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testLocalNodeIsolatedMode in 3136 ms <<<
 [14:21:31,181][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testLocalNodeContinuousMode <<<
-[14:21:31,185][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:31,185][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10789,8 +10789,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:31,186][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:31,186][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:31,186][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:31,187][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10810,7 +10810,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:32,746][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:32,746][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:32,746][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:32,748][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:32,748][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10823,7 +10823,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=64E8643F-D386-4902-8612-09F437C4F4A0, order=1353320491708]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:32,751][INFO ][gridgain-#3552%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@319f93f
@@ -10835,7 +10835,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:32,753][INFO ][gridgain-#3553%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@319f93f
 [14:21:34,310][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:34,310][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:34,317][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:34,317][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10846,13 +10846,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:34,317][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testLocalNodeContinuousMode in 3136 ms <<<
 [14:21:34,320][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testLocalNodeSharedMode <<<
-[14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10863,8 +10863,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:34,325][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:34,325][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:34,326][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:34,326][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10884,7 +10884,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:35,925][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:35,925][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:35,925][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:35,930][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:35,930][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10897,7 +10897,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=74F42AF4-0BEB-4B30-98F7-30CC6CBB73EB, order=1353320494891]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:35,932][INFO ][gridgain-#3574%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@38d86f38
@@ -10909,7 +10909,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:35,934][INFO ][gridgain-#3575%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Undeploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@38d86f38
 [14:21:37,490][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:37,490][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:37,497][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:37,497][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -10920,13 +10920,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:37,497][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testLocalNodeSharedMode in 3177 ms <<<
 [14:21:37,501][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testRemoteNodePrivateMode <<<
-[14:21:37,505][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:37,505][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10937,8 +10937,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:37,506][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:37,506][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:37,506][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:37,507][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -10958,7 +10958,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:39,073][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:39,073][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:39,073][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:39,075][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:39,075][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -10971,16 +10971,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=CBA75239-41E2-4EDA-B1FF-434F0BF99041, order=1353320498033]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:39,076][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:39,076][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -10991,8 +10991,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:39,077][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:21:39,077][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:21:39,077][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11016,7 +11016,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:41,687][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:41,687][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:41,687][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:41,692][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:41,692][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11029,7 +11029,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=1918E1A8-42F6-4076-A673-1AE6A41CDE84, order=1353320499604]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:41,695][INFO ][gridgain-#3613%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@1d0b4719
@@ -11049,7 +11049,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:44,257][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:21:44,259][INFO ][disco-event-worker-#3610%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=cba75239-41e2-4eda-b1ff-434f0bf99041, state=LEFT, lastHeartbeat=1353320504257, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320498033]
 [14:21:44,259][INFO ][disco-event-worker-#3610%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x661BBFA0]
-[14:21:44,263][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:44,263][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11060,7 +11060,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:44,264][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:44,264][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:44,269][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:44,269][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11071,13 +11071,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:44,270][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testRemoteNodePrivateMode in 6769 ms <<<
 [14:21:44,274][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testRemoteNodeIsolatedMode <<<
-[14:21:44,278][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:44,278][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11088,8 +11088,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:44,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:44,279][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:44,279][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:44,280][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11109,7 +11109,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:45,839][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:45,839][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:45,839][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:45,844][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:45,844][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11122,16 +11122,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=2F7194B6-BD1C-4CCD-805C-E40112D9E83D, order=1353320504801]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11142,8 +11142,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:45,847][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:45,847][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:21:45,847][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:21:45,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11167,7 +11167,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:48,459][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:48,459][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:48,459][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:48,464][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:48,464][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11180,7 +11180,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=5B8CD84A-047F-4752-BD3C-3BDD75FE116B, order=1353320506371]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:48,466][INFO ][gridgain-#3656%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@2c6f264b
@@ -11200,7 +11200,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:51,029][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:21:51,033][INFO ][disco-event-worker-#3653%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=2f7194b6-bd1c-4ccd-805c-e40112d9e83d, state=LEFT, lastHeartbeat=1353320511024, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320504801]
 [14:21:51,033][INFO ][disco-event-worker-#3653%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x1CACF96D]
-[14:21:51,036][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:51,036][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11211,7 +11211,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:51,037][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:51,037][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:51,042][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:51,042][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11222,13 +11222,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:51,043][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testRemoteNodeIsolatedMode in 6769 ms <<<
 [14:21:51,046][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testRemoteNodeContinuousMode <<<
-[14:21:51,051][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:51,051][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11239,8 +11239,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:51,052][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:51,052][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:51,052][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:51,053][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11260,7 +11260,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:52,609][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:52,609][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:52,609][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:52,614][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:52,614][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11273,16 +11273,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=D9C4835F-D916-4DBA-BDA6-F14B74792CB4, order=1353320511578]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:52,615][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:52,615][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11293,8 +11293,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:52,616][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:21:52,616][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:21:52,616][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11318,7 +11318,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:55,256][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:55,256][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:55,256][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:55,261][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:55,261][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11331,7 +11331,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=079D20A4-4AAF-4AF5-89CB-F317D561744F, order=1353320513170]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:21:55,264][INFO ][gridgain-#3699%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@1b787d50
@@ -11348,7 +11348,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:57,826][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:21:57,828][INFO ][disco-event-worker-#3696%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=d9c4835f-d916-4dba-bda6-f14b74792cb4, state=LEFT, lastHeartbeat=1353320517823, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320511578]
 [14:21:57,828][INFO ][disco-event-worker-#3696%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x52ECD5E6]
-[14:21:57,832][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:57,832][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11359,7 +11359,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:57,833][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:21:57,833][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:21:57,839][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:57,839][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11370,13 +11370,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:21:57,839][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testRemoteNodeContinuousMode in 6793 ms <<<
 [14:21:57,843][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testRemoteNodeSharedMode <<<
-[14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11387,8 +11387,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:57,848][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:57,848][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:21:57,848][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:21:57,849][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11408,7 +11408,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:59,409][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:21:59,409][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:21:59,409][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:21:59,411][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:21:59,411][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11421,16 +11421,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=690B0D0E-61B6-4785-BB8F-9F734EE35E7D, order=1353320518377]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11441,8 +11441,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:21:59,413][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:21:59,413][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:21:59,413][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:21:59,414][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11466,7 +11466,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:02,036][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:02,036][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:02,036][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:02,041][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:02,041][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11479,7 +11479,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=E7D55BAA-AA1F-4D82-BC8A-8EA1BD139A6E, order=1353320519948]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:02,044][INFO ][gridgain-#3742%resource.GridResourceConcurrentUndeploySelfTest1%][GridResourceConcurrentUndeploySelfTest$UserResource] Deploying resource: org.gridgain.grid.kernal.processors.resource.GridResourceConcurrentUndeploySelfTest$UserResource@12d3f4c0
@@ -11496,7 +11496,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:04,606][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:04,608][INFO ][disco-event-worker-#3739%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=690b0d0e-61b6-4785-bb8f-9f734ee35e7d, state=LEFT, lastHeartbeat=1353320524601, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320518377]
 [14:22:04,609][INFO ][disco-event-worker-#3739%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x90C1436E]
-[14:22:04,612][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:04,612][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11507,7 +11507,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:04,613][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:04,613][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:22:04,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:04,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11518,13 +11518,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:04,619][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testRemoteNodeSharedMode in 6776 ms <<<
 [14:22:04,622][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testP2PRemoteNodePrivateMode <<<
-[14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11535,8 +11535,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:04,627][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:04,627][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:22:04,627][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:22:04,628][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11556,7 +11556,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:06,193][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:06,193][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:06,193][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:06,198][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:06,198][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11569,16 +11569,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=B9E4CC11-8803-4DAC-AE65-59C831F4D01D, order=1353320525155]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11589,8 +11589,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:06,201][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:06,201][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:22:06,201][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:22:06,202][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11614,7 +11614,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:08,811][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:08,811][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:08,811][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:08,816][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:08,816][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11627,7 +11627,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=D830C11E-F834-41E6-BD12-1BC2DBF7305B, order=1353320526726]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:08,821][INFO ][gridgain-#3785%resource.GridResourceConcurrentUndeploySelfTest1%][GridP2PTestTaskExternalPath1] Mapping [task=org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1@6e3a5c6c, subgrid=[b9e4cc11-8803-4dac-ae65-59c831f4d01d, d830c11e-f834-41e6-bd12-1bc2dbf7305b], arg=[Ljava.lang.Object;@3989eefd]
@@ -11644,7 +11644,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:11,876][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:11,878][INFO ][disco-event-worker-#3782%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=b9e4cc11-8803-4dac-ae65-59c831f4d01d, state=LEFT, lastHeartbeat=1353320531872, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320525155]
 [14:22:11,878][INFO ][disco-event-worker-#3782%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x888DE2F1]
-[14:22:11,882][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:11,882][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11655,7 +11655,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:12,938][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:12,938][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:22:12,944][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:12,944][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11666,13 +11666,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:12,945][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testP2PRemoteNodePrivateMode in 8323 ms <<<
 [14:22:12,948][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testP2PRemoteNodeIsolatedMode <<<
-[14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11683,8 +11683,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:12,953][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:12,953][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:22:12,953][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:22:12,954][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11704,7 +11704,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:14,511][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:14,511][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:14,511][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:14,516][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:14,516][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11717,16 +11717,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=2C5C6FCE-C1C3-472F-8F74-EFBAC3FB70A5, order=1353320533473]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11737,8 +11737,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:14,519][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:14,519][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:22:14,519][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:22:14,521][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11762,7 +11762,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:17,146][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:17,146][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:17,146][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:17,151][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:17,151][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11775,7 +11775,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=1E6CB277-1465-4835-AC47-B832373CB77E, order=1353320535056]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:17,155][INFO ][gridgain-#3834%resource.GridResourceConcurrentUndeploySelfTest1%][GridP2PTestTaskExternalPath1] Mapping [task=org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1@6623094, subgrid=[1e6cb277-1465-4835-ac47-b832373cb77e, 2c5c6fce-c1c3-472f-8f74-efbac3fb70a5], arg=[Ljava.lang.Object;@186347d2]
@@ -11792,7 +11792,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:20,211][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:20,213][INFO ][disco-event-worker-#3831%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=2c5c6fce-c1c3-472f-8f74-efbac3fb70a5, state=LEFT, lastHeartbeat=1353320540203, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320533473]
 [14:22:20,213][INFO ][disco-event-worker-#3831%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0xBB6D8855]
-[14:22:20,218][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:20,218][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11803,7 +11803,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:21,273][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:21,273][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:22:21,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:21,279][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11814,13 +11814,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:21,280][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testP2PRemoteNodeIsolatedMode in 8332 ms <<<
 [14:22:21,283][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testP2PRemoteNodeContinuousMode <<<
-[14:22:21,288][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:21,288][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11831,8 +11831,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:21,288][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:21,288][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:21,288][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:21,289][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:21,289][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:21,289][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:21,289][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:21,289][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:22:21,289][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:22:21,289][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11852,7 +11852,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:22,847][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:22,847][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:22,847][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:22,850][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:22,850][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11865,16 +11865,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=FB201571-C866-4795-8E08-DE371283F4F6, order=1353320541815]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11885,8 +11885,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:22,851][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:22,851][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:22:22,851][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:22:22,852][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -11910,7 +11910,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:25,475][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:25,475][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:25,475][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:25,481][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:25,481][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -11923,7 +11923,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=138A27C3-72FB-42E3-A844-C14D6FA138FA, order=1353320543385]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:25,485][INFO ][gridgain-#3883%resource.GridResourceConcurrentUndeploySelfTest1%][GridP2PTestTaskExternalPath1] Mapping [task=org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1@237d2cc8, subgrid=[138a27c3-72fb-42e3-a844-c14d6fa138fa, fb201571-c866-4795-8e08-de371283f4f6], arg=[Ljava.lang.Object;@6f0710ab]
@@ -11940,7 +11940,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:28,541][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:28,543][INFO ][disco-event-worker-#3880%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=fb201571-c866-4795-8e08-de371283f4f6, state=LEFT, lastHeartbeat=1353320548533, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320541815]
 [14:22:28,543][INFO ][disco-event-worker-#3880%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0xFC5A818A]
-[14:22:28,547][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:28,547][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11951,7 +11951,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:29,603][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:29,603][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:22:29,609][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:29,609][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -11962,13 +11962,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:29,609][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Stopping test: testP2PRemoteNodeContinuousMode in 8326 ms <<<
 [14:22:29,613][INFO ][main][GridResourceConcurrentUndeploySelfTest] >>> Starting test: testP2PRemoteNodeSharedMode <<<
-[14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -11979,8 +11979,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:29,618][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:29,618][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] SMTP is not configured - email notifications are off.
 [14:22:29,618][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest1] Cache is not configured - data grid is off.
 [14:22:29,619][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12000,7 +12000,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:31,217][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:31,217][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:31,217][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:31,223][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:31,223][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12013,16 +12013,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest1
 >>> Local node [ID=1663FDFD-D1C9-4C5B-A93C-99BFE5CBC619, order=1353320550183]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320
+>>> Local ports: TCP:8080 TCP:11211 TCP:45320 UDP:50032 TCP:55320 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12033,8 +12033,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:31,224][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:31,225][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] SMTP is not configured - email notifications are off.
 [14:22:31,225][WARN ][test-runner][GridResourceConcurrentUndeploySelfTest2] Cache is not configured - data grid is off.
 [14:22:31,225][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12058,7 +12058,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:33,836][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:33,836][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:33,836][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:33,841][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:33,841][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12071,7 +12071,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: resource.GridResourceConcurrentUndeploySelfTest2
 >>> Local node [ID=AD2ABA73-84C6-46D0-B958-83817004B21C, order=1353320551745]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45321 UDP:50032 TCP:55321
+>>> Local ports: TCP:45321 UDP:50032 TCP:55321 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:33,845][INFO ][gridgain-#3934%resource.GridResourceConcurrentUndeploySelfTest1%][GridP2PTestTaskExternalPath1] Mapping [task=org.gridgain.grid.tests.p2p.GridP2PTestTaskExternalPath1@229dd4d3, subgrid=[1663fdfd-d1c9-4c5b-a93c-99bfe5cbc619, ad2aba73-84c6-46d0-b958-83817004b21c], arg=[Ljava.lang.Object;@27ff7a66]
@@ -12088,7 +12088,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:36,901][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:36,903][INFO ][disco-event-worker-#3931%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=1663fdfd-d1c9-4c5b-a93c-99bfe5cbc619, state=LEFT, lastHeartbeat=1353320556893, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55320, startTime=1353320550183]
 [14:22:36,903][INFO ][disco-event-worker-#3931%resource.GridResourceConcurrentUndeploySelfTest2%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x2C1DF8C6]
-[14:22:36,906][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1]
+[14:22:36,906][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12099,7 +12099,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 
 [14:22:37,962][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:37,962][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
-[14:22:37,968][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2]
+[14:22:37,968][INFO ][test-runner][GridResourceConcurrentUndeploySelfTest2] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12229,13 +12229,13 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:46,789][INFO ][main][GridJobMetricsProcessorLoadTest] >>> Starting test: testJobMetricsMultiThreaded <<<
 [14:22:47,175][INFO ][main][GridJobMetricsProcessorLoadTest] >>> Stopping test: testJobMetricsMultiThreaded in 386 ms <<<
 [14:22:47,177][INFO ][main][GridContinuousJobAnnotationSelfTest] >>> Starting test: testContinuousJobAnnotation <<<
-[14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0]
+[14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12246,8 +12246,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:47,183][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:47,182][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:47,183][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:47,183][WARN ][test-runner][GridContinuousJobAnnotationSelfTest0] SMTP is not configured - email notifications are off.
 [14:22:47,183][WARN ][test-runner][GridContinuousJobAnnotationSelfTest0] Cache is not configured - data grid is off.
 [14:22:47,184][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12267,7 +12267,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:48,738][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:48,738][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:48,738][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:48,744][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0]
+[14:22:48,744][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12280,16 +12280,16 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: kernal.GridContinuousJobAnnotationSelfTest0
 >>> Local node [ID=8D9D13B2-B98B-4ABF-9EEC-E9291496FA2E, order=1353320567707]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45330 UDP:50033 TCP:55330
+>>> Local ports: TCP:8080 TCP:11211 TCP:45330 UDP:50033 TCP:55330 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:22:48,746][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1]
+[14:22:48,746][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12300,8 +12300,8 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:48,746][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:48,746][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:48,746][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:48,747][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:48,747][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:48,747][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:48,747][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:48,747][WARN ][test-runner][GridContinuousJobAnnotationSelfTest1] SMTP is not configured - email notifications are off.
 [14:22:48,747][WARN ][test-runner][GridContinuousJobAnnotationSelfTest1] Cache is not configured - data grid is off.
 [14:22:48,748][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12325,7 +12325,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 [14:22:51,368][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:51,368][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:51,368][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:51,373][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1]
+[14:22:51,373][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12338,7 +12338,7 @@ class org.gridgain.grid.GridException: Resource field is not assignable from the
 >>> Grid name: kernal.GridContinuousJobAnnotationSelfTest1
 >>> Local node [ID=75A1D1A3-9D41-449F-8888-AF1890144A2E, order=1353320569277]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45331 UDP:50033 TCP:55331
+>>> Local ports: TCP:45331 UDP:50033 TCP:55331 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:51,385][ERROR][gridgain-#3994%kernal.GridContinuousJobAnnotationSelfTest1%][GridJobWorker] Failed to execute job [jobId=b8e2d281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, ses=GridJobSessionImpl [ses=GridTaskSessionImpl [taskName=o.g.g.kernal.GridContinuousJobAnnotationSelfTest$TestTask, dep=GridDeployment [ts=1353320571372, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=c8e2d281b31-75a1d1a3-9d41-449f-8888-af1890144a2e, userVer=0, loc=true, sampleCls=class o.g.g.kernal.GridContinuousJobAnnotationSelfTest$TestTask, sampleClsName=o.g.g.kernal.GridContinuousJobAnnotationSelfTest$TestTask, undeployed=false, pendingUndeploy=false, usage=1], taskClsName=o.g.g.kernal.GridContinuousJobAnnotationSelfTest$TestTask, sesId=78e2d281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320571372, endTime=9223372036854775807, taskNodeId=8d9d13b2-b98b-4abf-9eec-e9291496fa2e, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null], jobId=b8e2d281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6]]
@@ -12364,7 +12364,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:52,450][INFO ][disco-event-worker-#3989%kernal.GridContinuousJobAnnotationSelfTest1%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=8d9d13b2-b98b-4abf-9eec-e9291496fa2e, state=LEFT, lastHeartbeat=1353320572450, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55330, startTime=1353320567707]
 [14:22:52,451][INFO ][disco-event-worker-#3989%kernal.GridContinuousJobAnnotationSelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0xDAB33830]
 [14:22:52,453][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320571372, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=78e2d281b31-8d9d13b2-b98b-4abf-9eec-e9291496fa2e, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousJobAnnotationSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousJobAnnotationSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:22:52,455][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0]
+[14:22:52,455][INFO ][test-runner][GridContinuousJobAnnotationSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12377,7 +12377,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:52,456][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:52,456][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:52,460][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320571372, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=c8e2d281b31-75a1d1a3-9d41-449f-8888-af1890144a2e, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousJobAnnotationSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousJobAnnotationSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:22:52,462][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1]
+[14:22:52,462][INFO ][test-runner][GridContinuousJobAnnotationSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12388,13 +12388,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:22:52,463][INFO ][main][GridContinuousJobAnnotationSelfTest] >>> Stopping test: testContinuousJobAnnotation in 5286 ms <<<
 [14:22:52,467][INFO ][main][GridContinuousJobSiblingsSelfTest] >>> Starting test: testContinuousJobSiblings <<<
-[14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0]
+[14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12405,8 +12405,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:52,472][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:52,472][WARN ][test-runner][GridContinuousJobSiblingsSelfTest0] SMTP is not configured - email notifications are off.
 [14:22:52,472][WARN ][test-runner][GridContinuousJobSiblingsSelfTest0] Cache is not configured - data grid is off.
 [14:22:52,473][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12426,7 +12426,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:54,028][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:54,028][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:54,028][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:54,031][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0]
+[14:22:54,031][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12439,16 +12439,16 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousJobSiblingsSelfTest0
 >>> Local node [ID=C243A234-0D49-4BA1-AEE4-364D9B43C615, order=1353320572994]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45340 UDP:50034 TCP:55340
+>>> Local ports: TCP:8080 TCP:11211 TCP:45340 UDP:50034 TCP:55340 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1]
+[14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12459,8 +12459,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:54,032][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:54,033][WARN ][test-runner][GridContinuousJobSiblingsSelfTest1] SMTP is not configured - email notifications are off.
 [14:22:54,033][WARN ][test-runner][GridContinuousJobSiblingsSelfTest1] Cache is not configured - data grid is off.
 [14:22:54,033][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12484,7 +12484,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:56,639][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:56,639][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:56,639][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:56,644][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1]
+[14:22:56,644][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12497,7 +12497,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousJobSiblingsSelfTest1
 >>> Local node [ID=B76EC664-9DD6-43D9-AAAE-1504186A44A4, order=1353320574553]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45341 UDP:50034 TCP:55341
+>>> Local ports: TCP:45341 UDP:50034 TCP:55341 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:56,673][INFO ][test-runner][GridContinuousJobSiblingsSelfTest] >>> Stopping grid [name=kernal.GridContinuousJobSiblingsSelfTest0, id=c243a234-0d49-4ba1-aee4-364d9b43c615]
@@ -12506,7 +12506,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:57,731][INFO ][disco-event-worker-#4033%kernal.GridContinuousJobSiblingsSelfTest1%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=c243a234-0d49-4ba1-aee4-364d9b43c615, state=LEFT, lastHeartbeat=1353320577724, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55340, startTime=1353320572994]
 [14:22:57,731][INFO ][disco-event-worker-#4033%kernal.GridContinuousJobSiblingsSelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x6C5B7A7B]
 [14:22:57,734][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320576637, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=1be2d281b31-c243a234-0d49-4ba1-aee4-364d9b43c615, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousJobSiblingsSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousJobSiblingsSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:22:57,736][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0]
+[14:22:57,736][INFO ][test-runner][GridContinuousJobSiblingsSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12519,7 +12519,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:57,738][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:22:57,738][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:22:57,742][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320576647, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=6be2d281b31-b76ec664-9dd6-43d9-aaae-1504186a44a4, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousJobSiblingsSelfTest$TestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousJobSiblingsSelfTest$TestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:22:57,743][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1]
+[14:22:57,743][INFO ][test-runner][GridContinuousJobSiblingsSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12530,13 +12530,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:22:57,744][INFO ][main][GridContinuousJobSiblingsSelfTest] >>> Stopping test: testContinuousJobSiblings in 5277 ms <<<
 [14:22:57,748][INFO ][main][GridContinuousTaskSelfTest] >>> Starting test: testContinuousJobsChain <<<
-[14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12547,8 +12547,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:22:57,753][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:22:57,753][WARN ][test-runner][GridContinuousTaskSelfTest0] SMTP is not configured - email notifications are off.
 [14:22:57,753][WARN ][test-runner][GridContinuousTaskSelfTest0] Cache is not configured - data grid is off.
 [14:22:57,754][INFO ][test-runner][GridContinuousTaskSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12568,7 +12568,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:22:59,344][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:22:59,344][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:22:59,345][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:22:59,350][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:22:59,350][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12581,7 +12581,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousTaskSelfTest0
 >>> Local node [ID=8F234173-56C5-4EC6-ACF1-8E542C13EB9B, order=1353320578309]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350
+>>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:22:59,352][INFO ][gridgain-#4093%kernal.GridContinuousTaskSelfTest0%][GridContinuousTaskSelfTest$TestJobsChainTask] Will return job as map() result: org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJob@646e30ff
@@ -12630,7 +12630,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:00,419][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:00,419][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:00,424][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320579345, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=70f2d281b31-8f234173-56c5-4ec6-acf1-8e542c13eb9b, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJobsChainTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJobsChainTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:00,426][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:00,426][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -12641,13 +12641,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:23:00,428][INFO ][main][GridContinuousTaskSelfTest] >>> Stopping test: testContinuousJobsChain in 2680 ms <<<
 [14:23:00,431][INFO ][main][GridContinuousTaskSelfTest] >>> Starting test: testContinuousJobsChainMultiThreaded <<<
-[14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12658,8 +12658,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:00,436][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:00,436][WARN ][test-runner][GridContinuousTaskSelfTest0] SMTP is not configured - email notifications are off.
 [14:23:00,436][WARN ][test-runner][GridContinuousTaskSelfTest0] Cache is not configured - data grid is off.
 [14:23:00,437][INFO ][test-runner][GridContinuousTaskSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12679,7 +12679,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:02,004][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:02,004][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:02,004][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:02,009][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:02,009][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12692,16 +12692,16 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousTaskSelfTest0
 >>> Local node [ID=491012B7-8B88-4017-8050-E6E7951B4CD7, order=1353320580970]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350
+>>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:23:02,011][INFO ][test-runner][GridContinuousTaskSelfTest1]
+[14:23:02,011][INFO ][test-runner][GridContinuousTaskSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -12712,8 +12712,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:02,012][INFO ][test-runner][GridContinuousTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:02,012][WARN ][test-runner][GridContinuousTaskSelfTest1] SMTP is not configured - email notifications are off.
 [14:23:02,012][WARN ][test-runner][GridContinuousTaskSelfTest1] Cache is not configured - data grid is off.
 [14:23:02,013][INFO ][test-runner][GridContinuousTaskSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -12737,7 +12737,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:04,624][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:04,624][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:04,624][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:04,629][INFO ][test-runner][GridContinuousTaskSelfTest1]
+[14:23:04,629][INFO ][test-runner][GridContinuousTaskSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -12750,7 +12750,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousTaskSelfTest1
 >>> Local node [ID=A0E61EF5-08B2-4F74-B563-AB0637A4999D, order=1353320582531]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45351 UDP:50035 TCP:55351
+>>> Local ports: TCP:45351 UDP:50035 TCP:55351 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:23:04,633][INFO ][gridgain-#4175%kernal.GridContinuousTaskSelfTest0%][GridContinuousTaskSelfTest$TestJobsChainTask] Will return job as map() result: org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJob@4f7ac47d
@@ -13179,7 +13179,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:05,754][INFO ][disco-event-worker-#4168%kernal.GridContinuousTaskSelfTest1%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=491012b7-8b88-4017-8050-e6e7951b4cd7, state=LEFT, lastHeartbeat=1353320585745, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55350, startTime=1353320580970]
 [14:23:05,755][INFO ][disco-event-worker-#4168%kernal.GridContinuousTaskSelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x9FEC6DCA]
 [14:23:05,758][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320584627, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=faf2d281b31-491012b7-8b88-4017-8050-e6e7951b4cd7, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJobsChainTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJobsChainTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:05,760][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:05,760][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13192,7 +13192,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:05,763][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:05,763][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:05,768][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320584637, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=8ff2d281b31-a0e61ef5-08b2-4f74-b563-ab0637a4999d, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJobsChainTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousTaskSelfTest$TestJobsChainTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:05,770][INFO ][test-runner][GridContinuousTaskSelfTest1]
+[14:23:05,770][INFO ][test-runner][GridContinuousTaskSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13203,13 +13203,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:23:05,773][INFO ][main][GridContinuousTaskSelfTest] >>> Stopping test: testContinuousJobsChainMultiThreaded in 5342 ms <<<
 [14:23:05,776][INFO ][main][GridContinuousTaskSelfTest] >>> Starting test: testContinuousJobsSessionChain <<<
-[14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13220,8 +13220,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:05,782][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:05,781][INFO ][test-runner][GridContinuousTaskSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:05,782][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:05,782][WARN ][test-runner][GridContinuousTaskSelfTest0] SMTP is not configured - email notifications are off.
 [14:23:05,782][WARN ][test-runner][GridContinuousTaskSelfTest0] Cache is not configured - data grid is off.
 [14:23:05,782][INFO ][test-runner][GridContinuousTaskSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13241,7 +13241,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:07,358][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:07,358][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:07,358][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:07,361][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:07,361][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13254,16 +13254,16 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousTaskSelfTest0
 >>> Local node [ID=C7C4C7C6-6913-42B7-A26B-340D692A112F, order=1353320586319]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350
+>>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:23:07,364][INFO ][test-runner][GridContinuousTaskSelfTest1]
+[14:23:07,364][INFO ][test-runner][GridContinuousTaskSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13274,8 +13274,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:07,365][WARN ][test-runner][GridContinuousTaskSelfTest1] SMTP is not configured - email notifications are off.
 [14:23:07,365][WARN ][test-runner][GridContinuousTaskSelfTest1] Cache is not configured - data grid is off.
 [14:23:07,365][INFO ][test-runner][GridContinuousTaskSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13299,7 +13299,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:09,971][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:09,971][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:09,971][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:09,976][INFO ][test-runner][GridContinuousTaskSelfTest1]
+[14:23:09,976][INFO ][test-runner][GridContinuousTaskSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13312,7 +13312,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousTaskSelfTest1
 >>> Local node [ID=C4F811FB-1D8F-4137-98FF-230BFEED505D, order=1353320587890]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45351 UDP:50035 TCP:55351
+>>> Local ports: TCP:45351 UDP:50035 TCP:55351 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:23:10,040][INFO ][test-runner][GridContinuousTaskSelfTest] >>> Stopping grid [name=kernal.GridContinuousTaskSelfTest0, id=c7c4c7c6-6913-42b7-a26b-340d692a112f]
@@ -13321,7 +13321,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:11,119][INFO ][disco-event-worker-#4353%kernal.GridContinuousTaskSelfTest1%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=c7c4c7c6-6913-42b7-a26b-340d692a112f, state=LEFT, lastHeartbeat=1353320591114, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55350, startTime=1353320586319]
 [14:23:11,120][INFO ][disco-event-worker-#4353%kernal.GridContinuousTaskSelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x477B2584]
 [14:23:11,122][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320589976, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=f853d281b31-c7c4c7c6-6913-42b7-a26b-340d692a112f, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousTaskSelfTest$SessionChainTestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousTaskSelfTest$SessionChainTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:11,124][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:11,124][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13334,7 +13334,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:11,128][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:11,128][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:11,134][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320589976, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=6a53d281b31-c4f811fb-1d8f-4137-98ff-230bfeed505d, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousTaskSelfTest$SessionChainTestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousTaskSelfTest$SessionChainTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:11,135][INFO ][test-runner][GridContinuousTaskSelfTest1]
+[14:23:11,135][INFO ][test-runner][GridContinuousTaskSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13345,13 +13345,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:23:11,136][INFO ][main][GridContinuousTaskSelfTest] >>> Stopping test: testContinuousJobsSessionChain in 5360 ms <<<
 [14:23:11,138][INFO ][main][GridContinuousTaskSelfTest] >>> Starting test: testContinuousSlowMap <<<
-[14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13362,8 +13362,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:11,142][INFO ][test-runner][GridContinuousTaskSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:11,142][WARN ][test-runner][GridContinuousTaskSelfTest0] SMTP is not configured - email notifications are off.
 [14:23:11,142][WARN ][test-runner][GridContinuousTaskSelfTest0] Cache is not configured - data grid is off.
 [14:23:11,143][INFO ][test-runner][GridContinuousTaskSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13383,7 +13383,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:12,704][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:12,704][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:12,704][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:12,707][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:12,707][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13396,14 +13396,14 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridContinuousTaskSelfTest0
 >>> Local node [ID=1964B1FD-D295-4E44-A727-A8A8F4A3CE1F, order=1353320591668]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350
+>>> Local ports: TCP:8080 TCP:11211 TCP:45350 UDP:50035 TCP:55350 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:23:22,711][INFO ][test-runner][GridContinuousTaskSelfTest] >>> Stopping grid [name=kernal.GridContinuousTaskSelfTest0, id=1964b1fd-d295-4e44-a727-a8a8f4a3ce1f]
 [14:23:23,766][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:23,766][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:23,772][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320592705, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=fb83d281b31-1964b1fd-d295-4e44-a727-a8a8f4a3ce1f, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridContinuousTaskSelfTest$SlowMapTestTask, sampleClsName=org.gridgain.grid.kernal.GridContinuousTaskSelfTest$SlowMapTestTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:23,773][INFO ][test-runner][GridContinuousTaskSelfTest0]
+[14:23:23,773][INFO ][test-runner][GridContinuousTaskSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13414,13 +13414,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:23:23,774][INFO ][main][GridContinuousTaskSelfTest] >>> Stopping test: testContinuousSlowMap in 12636 ms <<<
 [14:23:23,778][INFO ][main][GridTaskContinuousMapperSelfTest] >>> Starting test: testContinuousMapperMethods <<<
-[14:23:23,782][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:23,782][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13431,8 +13431,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:23,783][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:23,783][WARN ][test-runner][GridTaskContinuousMapperSelfTest0] SMTP is not configured - email notifications are off.
 [14:23:23,783][WARN ][test-runner][GridTaskContinuousMapperSelfTest0] Cache is not configured - data grid is off.
 [14:23:23,784][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13452,7 +13452,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:25,363][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:25,363][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:25,363][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:25,366][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:25,366][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13465,16 +13465,16 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridTaskContinuousMapperSelfTest0
 >>> Local node [ID=9149098A-1AAA-47E0-A98E-4BB71B820067, order=1353320604320]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45360 UDP:50036 TCP:55360
+>>> Local ports: TCP:8080 TCP:11211 TCP:45360 UDP:50036 TCP:55360 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
-[14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1]
+[14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13485,8 +13485,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:25,368][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:25,368][WARN ][test-runner][GridTaskContinuousMapperSelfTest1] SMTP is not configured - email notifications are off.
 [14:23:25,368][WARN ][test-runner][GridTaskContinuousMapperSelfTest1] Cache is not configured - data grid is off.
 [14:23:25,369][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13510,7 +13510,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:27,977][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:27,978][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:27,978][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:27,983][INFO ][test-runner][GridTaskContinuousMapperSelfTest1]
+[14:23:27,983][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13523,7 +13523,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridTaskContinuousMapperSelfTest1
 >>> Local node [ID=EB822CAC-4F4C-45C8-B89A-78E63651803B, order=1353320605892]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:45361 UDP:50036 TCP:55361
+>>> Local ports: TCP:45361 UDP:50036 TCP:55361 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:23:27,993][INFO ][test-runner][GridTaskContinuousMapperSelfTest] >>> Stopping grid [name=kernal.GridTaskContinuousMapperSelfTest0, id=9149098a-1aaa-47e0-a98e-4bb71b820067]
@@ -13532,7 +13532,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:29,049][INFO ][disco-event-worker-#4563%kernal.GridTaskContinuousMapperSelfTest1%][GridDiscoveryManager] Node left topology: GridMulticastDiscoveryNode [id=9149098a-1aaa-47e0-a98e-4bb71b820067, state=LEFT, lastHeartbeat=1353320609044, addrs=[192.168.2.14], addr=/192.168.2.14, tcpPort=55360, startTime=1353320604320]
 [14:23:29,050][INFO ][disco-event-worker-#4563%kernal.GridTaskContinuousMapperSelfTest1%][GridDiscoveryManager] Topology snapshot [nodes=1, CPUs=4, hash=0x84285C6]
 [14:23:29,052][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320607976, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=fe83d281b31-9149098a-1aaa-47e0-a98e-4bb71b820067, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestAllMethodsTask, sampleClsName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestAllMethodsTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:29,053][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:29,053][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13545,7 +13545,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:29,054][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:29,055][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:29,058][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320607986, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=3093d281b31-eb822cac-4f4c-45c8-b89a-78e63651803b, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestAllMethodsTask, sampleClsName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestAllMethodsTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:29,060][INFO ][test-runner][GridTaskContinuousMapperSelfTest1]
+[14:23:29,060][INFO ][test-runner][GridTaskContinuousMapperSelfTest1] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13556,13 +13556,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:23:29,061][INFO ][main][GridTaskContinuousMapperSelfTest] >>> Stopping test: testContinuousMapperMethods in 5283 ms <<<
 [14:23:29,064][INFO ][main][GridTaskContinuousMapperSelfTest] >>> Starting test: testContinuousMapperLifeCycle <<<
-[14:23:29,069][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:29,069][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13573,8 +13573,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:29,070][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:29,070][WARN ][test-runner][GridTaskContinuousMapperSelfTest0] SMTP is not configured - email notifications are off.
 [14:23:29,070][WARN ][test-runner][GridTaskContinuousMapperSelfTest0] Cache is not configured - data grid is off.
 [14:23:29,071][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13594,7 +13594,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:30,629][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:30,629][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:30,629][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:30,631][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:30,631][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13607,7 +13607,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridTaskContinuousMapperSelfTest0
 >>> Local node [ID=84838308-579B-4909-9AEE-932435B1B8DF, order=1353320609598]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45360 UDP:50036 TCP:55360
+>>> Local ports: TCP:8080 TCP:11211 TCP:45360 UDP:50036 TCP:55360 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:23:30,637][INFO ][gridgain-#4607%kernal.GridTaskContinuousMapperSelfTest0%][GridTaskContinuousMapperSelfTest$TestLifeCycleTask] Expected exception: class org.gridgain.grid.GridException: Task is not in waiting state: GridTaskSessionImpl [taskName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestLifeCycleTask, dep=GridDeployment [ts=1353320610626, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=9293d281b31-84838308-579b-4909-9aee-932435b1b8df, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestLifeCycleTask, sampleClsName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestLifeCycleTask, undeployed=false, pendingUndeploy=false, usage=1], taskClsName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestLifeCycleTask, sesId=9293d281b31-4ffaf88b-4556-430b-b089-dfab3747f8a6, startTime=1353320610626, endTime=9223372036854775807, taskNodeId=84838308-579b-4909-9aee-932435b1b8df, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, closed=false, topSpi=null, cpSpi=null, failSpi=null, loadSpi=null, nodeFilter=null]
@@ -13618,7 +13618,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:31,692][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:31,693][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:31,697][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320610626, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=9293d281b31-84838308-579b-4909-9aee-932435b1b8df, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestLifeCycleTask, sampleClsName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestLifeCycleTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:31,699][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:31,699][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
@@ -13629,13 +13629,13 @@ class org.gridgain.grid.GridException: Expected test exception.
 
 [14:23:31,700][INFO ][main][GridTaskContinuousMapperSelfTest] >>> Stopping test: testContinuousMapperLifeCycle in 2635 ms <<<
 [14:23:31,703][INFO ][main][GridTaskContinuousMapperSelfTest] >>> Starting test: testContinuousMapperNegative <<<
-[14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
->>>   _____     _     _______      _
->>>  / ___/____(_)___/ / ___/___ _(_)___
->>> / (_ // __/ // _  / (_ // _ `/ // _ \
+>>>   _____     _     _______      _         
+>>>  / ___/____(_)___/ / ___/___ _(_)___     
+>>> / (_ // __/ // _  / (_ // _ `/ // _ \   
 >>> \___//_/ /_/ \_,_/\___/ \_,_/_//_//_/
->>>
+>>> 
 >>>  ---==++ IN-MEMORY BIG DATA ++==---
 >>>        ver. x.x.x-DDMMYYYY
 >>> Copyright (C) 2012 GridGain Systems
@@ -13646,8 +13646,8 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] Language runtime: Java Platform API Specification ver. 1.6
 [14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] JVM name: Java HotSpot(TM) 64-Bit Server VM
 [14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] Remote Management [restart: off, REST: on, JMX (remote: off)]
-[14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] IGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
-[14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DIGNITE_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DIGNITE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DIGNITE_NO_DISCO_ORDER=true, -DIGNITE_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
+[14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] GRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2
+[14:23:31,708][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] VM arguments: [-ea, -XX:MaxPermSize=128m, -Xms512m, -Xmx1024m, -Duser.name=bamboo, -DGRIDGAIN_UPDATE_NOTIFIER=false, -DGRIDGAIN_DISABLED=true, -DGRIDGAIN_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_STABLE_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -DGRIDGAIN_ROUTER_PREFER_REMOTE=true, -DGRIDGAIN_NO_DISCO_ORDER=true, -DGRIDGAIN_QUIET=false, -DGG_TEST_HOME=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.id=34324, -Dteamcity.buildType.id=bt5, -Dagent.ownPort=9090, -Dteamcity.build.checkoutDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dteamcity.build.workingDir=/usr/local/TeamCityAgent/work/d46fc9c3d71112c2, -Dagent.work.dir=/usr/local/TeamCityAgent/work, -Dagent.name=teamcity-4, -Dagent.home.dir=/usr/local/TeamCityAgent, -Dteamcity.runtime.props.file=/usr/local/TeamCityAgent/temp/agentTmp/ant2684847485530994862runtime]
 [14:23:31,708][WARN ][test-runner][GridTaskContinuousMapperSelfTest0] SMTP is not configured - email notifications are off.
 [14:23:31,708][WARN ][test-runner][GridTaskContinuousMapperSelfTest0] Cache is not configured - data grid is off.
 [14:23:31,709][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 3-rd party licenses can be found at: /usr/local/TeamCityAgent/work/d46fc9c3d71112c2/libs/licenses
@@ -13667,7 +13667,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:33,267][INFO ][test-runner][GridLicenseControllerImpl] Licensed to 'GridGain Systems, Internal Development Only' on Feb 3, 2011
 [14:23:33,267][INFO ][test-runner][GridLicenseControllerImpl] License [ID=7D5CB773-225C-4165-8162-3BB67337894B, type=ENT]
 [14:23:33,267][INFO ][test-runner][GridLicenseControllerImpl] License limits [expire-date: never]
-[14:23:33,270][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:33,270][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
 >>> +--------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY
@@ -13680,7 +13680,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 >>> Grid name: kernal.GridTaskContinuousMapperSelfTest0
 >>> Local node [ID=B78ABC63-8166-4D2B-8A70-E325146E10A9, order=1353320612237]
 >>> Local node addresses: [192.168.2.14]
->>> Local ports: TCP:8080 TCP:11211 TCP:45360 UDP:50036 TCP:55360
+>>> Local ports: TCP:8080 TCP:11211 TCP:45360 UDP:50036 TCP:55360 
 >>> GridGain documentation: http://www.gridgain.com/product.html
 
 [14:23:33,272][INFO ][gridgain-#4628%kernal.GridTaskContinuousMapperSelfTest0%][GridTaskContinuousMapperSelfTest$TestNegativeTask] Expected exception: java.lang.NullPointerException: Ouch! Argument cannot be null: node
@@ -13694,7 +13694,7 @@ class org.gridgain.grid.GridException: Expected test exception.
 [14:23:34,329][INFO ][test-runner][GridJettyRestProtocol] Command protocol successfully stopped: Jetty REST
 [14:23:34,329][INFO ][test-runner][GridTcpRestProtocol] Command protocol successfully stopped: TCP binary
 [14:23:34,334][INFO ][test-runner][GridDeploymentLocalStore] Removed undeployed class: GridDeployment [ts=1353320613265, depMode=SHARED, clsLdr=sun.misc.Launcher$AppClassLoader@3326b249, clsLdrId=0593d281b31-b78abc63-8166-4d2b-8a70-e325146e10a9, userVer=0, loc=true, sampleCls=class org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestNegativeTask, sampleClsName=org.gridgain.grid.kernal.GridTaskContinuousMapperSelfTest$TestNegativeTask, undeployed=true, pendingUndeploy=false, usage=0]
-[14:23:34,335][INFO ][test-runner][GridTaskContinuousMapperSelfTest0]
+[14:23:34,335][INFO ][test-runner][GridTaskContinuousMapperSelfTest0] 
 
 >>> +-------------------------------------+
 >>> GridGain ver. x.x.x-DDMMYYYY stopped OK
