@@ -24,7 +24,7 @@ import org.h2.table.*;
 /**
  * Test {@link org.apache.ignite.internal.processors.query.h2.opt.SpatialIndexInitiator}
  */
-public class SpatialIndexInitiatorTest extends TestCase {
+public class SpatialIndexInitiatorSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
