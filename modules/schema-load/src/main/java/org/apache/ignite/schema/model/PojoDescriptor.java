@@ -148,9 +148,9 @@ public class PojoDescriptor {
     }
 
     /**
-     * @return {@code true} if POJO descriptor is a table descriptor and selected in GUI.
+     * @return {@code true} if POJO descriptor is a table descriptor and checked in GUI.
      */
-    public boolean selected() {
+    public boolean checked() {
         return parent != null && use.get();
     }
 

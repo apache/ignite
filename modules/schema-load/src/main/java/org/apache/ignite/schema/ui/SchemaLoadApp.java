@@ -325,7 +325,7 @@ public class SchemaLoadApp extends Application {
      * Generate XML and POJOs.
      */
     private void generate() {
-        final Collection<PojoDescriptor> selPojos = selectedItems();
+        final Collection<PojoDescriptor> selPojos = chekedPojos();
 
         if (selPojos.isEmpty()) {
             MessageBox.warningDialog(owner, "Please select tables to generate XML and POJOs files!");
@@ -373,7 +373,7 @@ public class SchemaLoadApp extends Application {
 
                 // Generate XML and POJO.
                 for (PojoDescriptor pojo : selPojos) {
-                    if (pojo.selected()) {
+                    if (pojo.checked()) {
                         CacheQueryTypeMetadata meta = pojo.metadata(includeKeys);
 
                         checkEmpty(pojo, meta.getKeyDescriptors(), "No key fields specified for type: ");
@@ -751,8 +751,8 @@ public class SchemaLoadApp extends Application {
             "Сheck to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
-            "Check to annotate filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
-            "Note that a class can have only one field annotated with @CacheAffinityKeyMapped annotation");
+            "Check to annotate key filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
+            "Note that a class can have only one key field annotated with @CacheAffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -1010,13 +1010,13 @@ public class SchemaLoadApp extends Application {
     }
 
     /**
-     * @return Selected tree view items.
+     * @return POJOs checked in table-tree-view.
      */
-    private Collection<PojoDescriptor> selectedItems() {
+    private Collection<PojoDescriptor> chekedPojos() {
         Collection<PojoDescriptor> res = new ArrayList<>();
 
         for (PojoDescriptor pojo : pojos)
-            if (pojo.selected())
+            if (pojo.checked())
                 res.add(pojo);
 
         return res;
