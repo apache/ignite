@@ -143,7 +143,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withSkipStore() {
-        return flagsOn(CacheFlag.SKIP_STORE);
+        return flagOn(CacheFlag.SKIP_STORE);
     }
 
     /** {@inheritDoc} */
@@ -943,7 +943,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            return ((GridCacheAdapter)delegate).igniteIterator(prj);
+            return ctx.cache().igniteIterator(this);
         }
         finally {
             gate.leave(prev);
@@ -1018,21 +1018,27 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
     }
 
     /**
-     * @param flags Flags to turn on (if empty, then no-op).
+     * @param flag Flag to turn on.
      * @return Cache with given flags enabled.
      */
-    public IgniteCache<K, V> flagsOn(@Nullable CacheFlag... flags) {
+    public IgniteCache<K, V> flagOn(CacheFlag flag) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {
-            Set<CacheFlag> res = EnumSet.noneOf(CacheFlag.class);
+            Set<CacheFlag> res;
 
-            Set<CacheFlag> flags0 = prj !=null ? prj.flags() : null;
+            Set<CacheFlag> flags0 = prj != null ? prj.flags() : null;
 
-            if (flags0 != null && !flags0.isEmpty())
-                res.addAll(flags0);
+            if (flags0 != null) {
+                if (flags0.contains(flag))
+                    return this;
 
-            res.addAll(EnumSet.copyOf(F.asList(flags)));
+                res = EnumSet.copyOf(flags0);
+            }
+            else
+                res = EnumSet.noneOf(CacheFlag.class);
+
+            res.add(flag);
 
             GridCacheProjectionImpl<K, V> prj0 = new GridCacheProjectionImpl<>(
                 (prj != null ? prj : delegate),

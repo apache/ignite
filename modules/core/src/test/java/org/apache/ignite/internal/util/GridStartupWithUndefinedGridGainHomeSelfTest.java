@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
-import static org.apache.ignite.internal.util.GridUtils.*;
+import static org.apache.ignite.internal.util.IgniteUtils.*;
 
 /**
  * Checks that node can be started without operations with undefined IGNITE_HOME.
@@ -58,7 +58,7 @@ public class GridStartupWithUndefinedGridGainHomeSelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testStartStopWithUndefinedGridGainHome() throws Exception {
-        GridUtils.nullifyHomeDirectory();
+        IgniteUtils.nullifyHomeDirectory();
 
         // We can't use U.getGridGainHome() here because
         // it will initialize cached value which is forbidden to override.

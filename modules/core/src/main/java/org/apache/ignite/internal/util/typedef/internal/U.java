@@ -20,9 +20,9 @@ package org.apache.ignite.internal.util.typedef.internal;
 import org.apache.ignite.internal.util.*;
 
 /**
- * Defines internal {@code typedef} for {@link GridUtils}. Since Java doesn't provide type aliases
+ * Defines internal {@code typedef} for {@link IgniteUtils}. Since Java doesn't provide type aliases
  * (like Scala, for example) we resort to these types of measures. This is intended for internal
  * use only and meant to provide for more terse code when readability of code is not compromised.
  */
 @SuppressWarnings({"ExtendsUtilityClass"})
-public class U extends GridUtils { /* No-op. */ }
+public class U extends IgniteUtils { /* No-op. */ }
