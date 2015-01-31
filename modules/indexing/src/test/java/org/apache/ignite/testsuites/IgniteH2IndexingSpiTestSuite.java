@@ -53,6 +53,9 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
+        //Geo integration
+        suite.addTestSuite(SpatialIndexInitiatorSelfTest.class);
+
         return suite;
     }
 }
