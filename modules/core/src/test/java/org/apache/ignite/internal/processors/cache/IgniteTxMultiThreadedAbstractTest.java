@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.testframework.*;
 import org.jetbrains.annotations.*;
@@ -238,7 +239,7 @@ public abstract class IgniteTxMultiThreadedAbstractTest extends IgniteTxAbstract
 
                                 break;
                             }
-                            catch(IgniteTxOptimisticException e) {
+                            catch(IgniteTxOptimisticCheckedException e) {
                                 log.info("Got error, will retry: " + e);
                             }
                         }

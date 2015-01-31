@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -209,7 +209,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
                 checkCache.unlockAll(F.asList(KEY));
             }
         }
-        catch (IgniteTxOptimisticException e) {
+        catch (IgniteTxOptimisticCheckedException e) {
             U.warn(log, "Optimistic transaction failure (will rollback) [msg=" + e.getMessage() + ", tx=" + tx + ']');
 
             if (G.state(g.name()) == IgniteState.STARTED)

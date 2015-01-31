@@ -85,12 +85,13 @@ public class GridLoggerProxy implements IgniteLogger, LifecycleAware, Externaliz
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
-        U.startLifecycleAware(Collections.singleton(impl));
+    @Override public void start() {
+        if (impl instanceof LifecycleAware)
+            ((LifecycleAware)impl).start();
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         U.stopLifecycleAware(this, Collections.singleton(impl));
     }
 

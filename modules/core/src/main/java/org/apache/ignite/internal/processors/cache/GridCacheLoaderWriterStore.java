@@ -63,7 +63,7 @@ class GridCacheLoaderWriterStore<K, V> extends CacheStore<K, V> implements Lifec
     }
 
     /** {@inheritDoc} */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start() {
         if (ldr instanceof LifecycleAware)
             ((LifecycleAware)ldr).start();
 
@@ -72,7 +72,7 @@ class GridCacheLoaderWriterStore<K, V> extends CacheStore<K, V> implements Lifec
     }
 
     /** {@inheritDoc} */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         if (ldr instanceof LifecycleAware)
             ((LifecycleAware)ldr).stop();
 

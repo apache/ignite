@@ -359,7 +359,6 @@ public class GridDeployment extends GridMetadataAwareAdapter implements GridDepl
      */
     @SuppressWarnings("unchecked")
     public boolean internalTask(@Nullable ComputeTask task, Class<?> taskCls) {
-        assert task != null;
         assert taskCls != null;
 
         Boolean res = internalTasks.get(taskCls);

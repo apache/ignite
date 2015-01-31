@@ -60,12 +60,12 @@ public class GridCacheLifecycleAwareSelfTest extends GridAbstractLifecycleAwareS
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(CACHE_NAME);
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             lifecycleAware.stop();
         }
 

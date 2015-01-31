@@ -951,7 +951,7 @@ public class GridGgfsProcessorSelfTest extends GridGgfsCommonAbstractTest {
 
                 return false;
             }
-        }, IgniteCheckedException.class, msg);
+        }, IgniteException.class, msg);
     }
 
     /**

@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -503,7 +504,7 @@ public abstract class GridCacheAbstractNodeRestartSelfTest extends GridCommonAbs
                                 try {
                                     cache.put(key, Integer.toString(key));
                                 }
-                                catch (IgniteTxRollbackException | ClusterTopologyCheckedException ignored) {
+                                catch (IgniteTxRollbackCheckedException | ClusterTopologyCheckedException ignored) {
                                     // It is ok if primary node leaves grid.
                                 }
 

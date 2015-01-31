@@ -15,27 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.lifecycle;
+package org.apache.ignite.internal.transactions;
 
 import org.apache.ignite.*;
 
 /**
- * All components provided in GridGain configuration can implement this interface.
- * If a component implements this interface, then method {@link #start()} will be called
- * during grid startup and {@link #stop()} will be called during stop.
+ * Exception thrown whenever grid transactions time out.
  */
-public interface LifecycleAware {
-    /**
-     * Starts grid component, called on grid start.
-     *
-     * @throws IgniteException If failed.
-     */
-    public void start() throws IgniteException;
+public class IgniteTxTimeoutCheckedException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /**
-     * Stops grid component, called on grid shutdown.
+     * Creates new timeout exception with given error message.
      *
-     * @throws IgniteException If failed.
+     * @param msg Error message.
      */
-    public void stop() throws IgniteException;
+    public IgniteTxTimeoutCheckedException(String msg) {
+        super(msg);
+    }
+
+    /**
+     * Creates new timeout exception with given error message and optional nested exception.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be <tt>null</tt>).
+     */
+    public IgniteTxTimeoutCheckedException(String msg, Throwable cause) {
+        super(msg, cause);
+    }
 }

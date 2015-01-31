@@ -93,7 +93,7 @@ public class GridCacheJtaSelfTest extends GridCacheAbstractSelfTest {
     @SuppressWarnings("PublicInnerClass")
     public static class TestTmLookup implements CacheTmLookup {
         /** {@inheritDoc} */
-        @Override public TransactionManager getTm() throws IgniteCheckedException {
+        @Override public TransactionManager getTm() {
             return jotm.getTransactionManager();
         }
     }

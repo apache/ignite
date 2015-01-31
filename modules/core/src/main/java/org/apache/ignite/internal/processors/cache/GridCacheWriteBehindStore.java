@@ -262,7 +262,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
      *
      * @throws IgniteCheckedException If cache cannot be started due to some reasons.
      */
-    @Override public void start() throws IgniteCheckedException {
+    @Override public void start() {
         assert cacheFlushFreq != 0 || cacheMaxSize != 0;
 
         if (stopping.compareAndSet(true, false)) {
@@ -340,10 +340,8 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
     /**
      * Performs shutdown logic for store. No put, get and remove requests will be processed after
      * this method is called.
-     *
-     * @throws IgniteCheckedException If shutdown failed for some reason.
      */
-    @Override public void stop() throws IgniteCheckedException {
+    @Override public void stop() {
         if (stopping.compareAndSet(false, true)) {
             if (log.isDebugEnabled())
                 log.debug("Stopping write-behind store for cache '" + cacheName + '\'');

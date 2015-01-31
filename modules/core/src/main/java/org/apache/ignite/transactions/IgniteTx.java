@@ -55,7 +55,7 @@ import java.util.*;
  *  Read access with this level happens the same way as with {@link IgniteTxIsolation#REPEATABLE_READ} level.
  *  However, in {@link IgniteTxConcurrency#OPTIMISTIC} mode, if some transactions cannot be serially isolated
  *  from each other, then one winner will be picked and the other transactions in conflict will result in
- * {@link IgniteTxOptimisticException} being thrown.
+ * {@link org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException} being thrown.
  * </li>
  * </ul>
  * <p>
@@ -190,7 +190,7 @@ public interface IgniteTx extends AutoCloseable, IgniteAsyncSupport {
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
-     * out prior to it's completion, {@link IgniteTxTimeoutException} will be thrown.
+     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
      *
      * @return Transaction timeout value.
      */

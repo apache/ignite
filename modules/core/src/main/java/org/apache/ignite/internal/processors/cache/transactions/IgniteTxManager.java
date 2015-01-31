@@ -23,6 +23,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
@@ -223,7 +224,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                         "crashed or left grid: " + CU.txString(tx));
                 }
             }
-            catch (IgniteTxOptimisticException ignore) {
+            catch (IgniteTxOptimisticCheckedException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure while invalidating transaction (will rollback): " +
                         tx.xidVersion());
@@ -741,7 +742,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
     public void prepareTx(IgniteTxEx<K, V> tx) throws IgniteCheckedException {
         if (tx.state() == MARKED_ROLLBACK) {
             if (tx.timedOut())
-                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             throw new IgniteCheckedException("Transaction is marked for rollback: " + tx);
         }
@@ -749,7 +750,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         if (tx.remainingTime() == 0) {
             tx.setRollbackOnly();
 
-            throw new IgniteTxTimeoutException("Transaction timed out: " + this);
+            throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
         }
 
         boolean txSerializableEnabled = cctx.txConfig().isTxSerializableEnabled();
@@ -810,7 +811,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
                     if (GridFunc.intersects(committedTx.writeSet(), readSet)) {
                         tx.setRollbackOnly();
 
-                        throw new IgniteTxOptimisticException("Failed to prepare transaction " +
+                        throw new IgniteTxOptimisticCheckedException("Failed to prepare transaction " +
                             "(committed vs. read-set conflict): " + tx);
                     }
                 }
@@ -857,7 +858,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
 
                         tx.setRollbackOnly();
 
-                        throw new IgniteTxOptimisticException(
+                        throw new IgniteTxOptimisticCheckedException(
                             "Failed to prepare transaction (read-set/write-set conflict): " + tx);
                     }
                 }
@@ -870,7 +871,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
         if (!lockMultiple(tx, tx.optimisticLockEntries())) {
             tx.setRollbackOnly();
 
-            throw new IgniteTxOptimisticException("Failed to prepare transaction (lock conflict): " + tx);
+            throw new IgniteTxOptimisticCheckedException("Failed to prepare transaction (lock conflict): " + tx);
         }
     }
 
@@ -2209,7 +2210,7 @@ public class IgniteTxManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
             try {
                 t.get();
             }
-            catch (IgniteTxOptimisticException ignore) {
+            catch (IgniteTxOptimisticCheckedException ignore) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure while committing prepared transaction (will rollback): " +
                         tx);

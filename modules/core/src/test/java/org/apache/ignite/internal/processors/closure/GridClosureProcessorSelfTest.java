@@ -538,6 +538,6 @@ public class GridClosureProcessorSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
     }
 }

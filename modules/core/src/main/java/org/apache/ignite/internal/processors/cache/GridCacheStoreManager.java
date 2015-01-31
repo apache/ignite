@@ -167,14 +167,19 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         if (store instanceof LifecycleAware) {
-            // Avoid second start() call on store in case when near cache is enabled.
-            if (cctx.config().isWriteBehindEnabled()) {
-                if (!cctx.isNear())
-                    ((LifecycleAware)store).start();
+            try {
+                // Avoid second start() call on store in case when near cache is enabled.
+                if (cctx.config().isWriteBehindEnabled()) {
+                    if (!cctx.isNear())
+                        ((LifecycleAware)store).start();
+                }
+                else {
+                    if (cctx.isNear() || !CU.isNearEnabled(cctx))
+                        ((LifecycleAware)store).start();
+                }
             }
-            else {
-                if (cctx.isNear() || !CU.isNearEnabled(cctx))
-                    ((LifecycleAware)store).start();
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to start cache store: " + e, e);
             }
         }
 
@@ -187,7 +192,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                 this.convertPortable = convertPortable;
         }
         else if (convertPortable)
-            U.warn(log, "GridCacheConfiguration.isKeepPortableInStore() configuration property will " +
+            U.warn(log, "CacheConfiguration.isKeepPortableInStore() configuration property will " +
                 "be ignored because portable mode is not enabled for cache: " + cctx.namex());
     }
 
@@ -205,7 +210,7 @@ public class GridCacheStoreManager<K, V> extends GridCacheManagerAdapter<K, V> {
                         ((LifecycleAware)store).stop();
                 }
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log(), "Failed to stop cache store.", e);
             }
         }

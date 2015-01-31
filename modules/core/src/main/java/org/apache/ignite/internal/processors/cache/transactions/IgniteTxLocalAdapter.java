@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.plugin.security.*;
@@ -362,7 +363,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     public void userPrepare() throws IgniteCheckedException {
         if (state() != PREPARING) {
             if (timedOut())
-                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             IgniteTxState state = state();
 
@@ -630,7 +631,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
         if (state != COMMITTING) {
             if (timedOut())
-                throw new IgniteTxTimeoutException("Transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             setRollbackOnly();
 
@@ -925,7 +926,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                             throw ex;
                         }
                         else {
-                            IgniteCheckedException err = new IgniteTxHeuristicException("Failed to locally write to cache " +
+                            IgniteCheckedException err = new IgniteTxHeuristicCheckedException("Failed to locally write to cache " +
                                 "(all transaction entries will be invalidated, however there was a window when " +
                                 "entries for this transaction were visible to others): " + this, ex);
 
@@ -3055,23 +3056,23 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
     protected void checkValid() throws IgniteCheckedException {
         if (isRollbackOnly()) {
             if (timedOut())
-                throw new IgniteTxTimeoutException("Cache transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
 
             IgniteTxState state = state();
 
             if (state == ROLLING_BACK || state == ROLLED_BACK)
-                throw new IgniteTxRollbackException("Cache transaction is marked as rollback-only " +
+                throw new IgniteTxRollbackCheckedException("Cache transaction is marked as rollback-only " +
                     "(will be rolled back automatically): " + this);
 
             if (state == UNKNOWN)
-                throw new IgniteTxHeuristicException("Cache transaction is in unknown state " +
+                throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
         if (remainingTime() == 0 && setRollbackOnly())
-            throw new IgniteTxTimeoutException("Cache transaction timed out " +
+            throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
                 "(was rolled back automatically): " + this);
     }
 
@@ -3432,7 +3433,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             if (!locked) {
                 setRollbackOnly();
 
-                final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutException("Failed to " +
+                final GridClosureException ex = new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to " +
                     "acquire lock within provided timeout for transaction [timeout=" + timeout() +
                     ", tx=" + this + ']'));
 
@@ -3512,7 +3513,7 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     throw new GridClosureException(e);
 
                 if (!locked)
-                    throw new GridClosureException(new IgniteTxTimeoutException("Failed to acquire lock " +
+                    throw new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() + ", tx=" + this + ']'));
 
                 IgniteInternalFuture<T> fut = postLock();

@@ -24,8 +24,8 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -171,7 +171,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof IgniteTxRollbackException) {
+            if (e instanceof IgniteTxRollbackCheckedException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -222,7 +222,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             Throwable th = this.err.get();
 
             if (super.onDone(tx, th != null ? th : err)) {
-                if (error() instanceof IgniteTxHeuristicException) {
+                if (error() instanceof IgniteTxHeuristicCheckedException) {
                     long topVer = this.tx.topologyVersion();
 
                     for (IgniteTxEntry<K, V> e : this.tx.writeMap().values()) {

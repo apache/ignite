@@ -663,7 +663,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException {
-        return invokeAsync(key, entryProcessor, args).get();
+        EntryProcessorResult<T> res = invokeAsync(key, entryProcessor, args).get();
+
+        return res != null ? res : new CacheInvokeResult<>((T)null);
     }
 
     /** {@inheritDoc} */

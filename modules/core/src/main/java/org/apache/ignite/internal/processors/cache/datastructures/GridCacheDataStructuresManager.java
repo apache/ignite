@@ -24,10 +24,10 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.processors.task.*;
@@ -1332,7 +1332,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                 catch (ClusterGroupEmptyCheckedException e) {
                     throw new IgniteException(e);
                 }
-                catch (IgniteTxRollbackException | CachePartialUpdateCheckedException | ClusterTopologyCheckedException e) {
+                catch (IgniteTxRollbackCheckedException | CachePartialUpdateCheckedException | ClusterTopologyCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

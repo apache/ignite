@@ -20,8 +20,8 @@ package org.apache.ignite.internal.util.future;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -332,7 +332,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                     throw e;
                 }
             }
-            catch (IgniteTxOptimisticException e) {
+            catch (IgniteTxOptimisticCheckedException e) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure [fut=" + GridCompoundFuture.this + ", err=" + e + ']');
 

@@ -24,8 +24,8 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.discovery.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
@@ -190,12 +190,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         if (err.compareAndSet(null, e)) {
             boolean marked = tx.setRollbackOnly();
 
-            if (e instanceof IgniteTxOptimisticException) {
+            if (e instanceof IgniteTxOptimisticCheckedException) {
                 assert nodeId != null : "Missing node ID for optimistic failure exception: " + e;
 
                 tx.removeKeysMapping(nodeId, mappings);
             }
-            if (e instanceof IgniteTxRollbackException) {
+            if (e instanceof IgniteTxRollbackCheckedException) {
                 if (marked) {
                     try {
                         tx.rollback();
@@ -334,14 +334,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                     if (!tx.state(PREPARING)) {
                         if (tx.setRollbackOnly()) {
                             if (tx.timedOut())
-                                onError(null, null, new IgniteTxTimeoutException("Transaction timed out and " +
+                                onError(null, null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
                                     "was rolled back: " + this));
                             else
                                 onError(null, null, new IgniteCheckedException("Invalid transaction state for prepare " +
                                     "[state=" + tx.state() + ", tx=" + this + ']'));
                         }
                         else
-                            onError(null, null, new IgniteTxRollbackException("Invalid transaction state for " +
+                            onError(null, null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
                                 "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
                         return;
@@ -357,7 +357,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     prepare0();
                 }
-                catch (IgniteTxTimeoutException | IgniteTxOptimisticException e) {
+                catch (IgniteTxTimeoutCheckedException | IgniteTxOptimisticCheckedException e) {
                     onError(cctx.localNodeId(), null, e);
                 }
                 catch (IgniteCheckedException e) {
@@ -369,7 +369,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                     tx.rollbackAsync();
 
-                    onError(null, null, new IgniteTxRollbackException(msg, e));
+                    onError(null, null, new IgniteTxRollbackCheckedException(msg, e));
                 }
             }
             else {

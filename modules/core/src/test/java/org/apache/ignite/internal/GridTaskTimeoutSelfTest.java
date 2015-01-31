@@ -151,7 +151,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
 
                         assert false : "Task has not been timed out. Future: " + fut;
                     }
-                    catch (ComputeTaskTimeoutCheckedException ignored) {
+                    catch (ComputeTaskTimeoutException ignored) {
                         // Expected.
                     }
                     catch (IgniteCheckedException e) {

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.mxbean.*;
@@ -2323,13 +2324,15 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 Map<K, EntryProcessorResult<T>> resMap = fut.get().value();
 
+                EntryProcessorResult<T> res = null;
+
                 if (resMap != null) {
                     assert resMap.isEmpty() || resMap.size() == 1 : resMap.size();
 
-                    return resMap.isEmpty() ? null : resMap.values().iterator().next();
+                    res = resMap.isEmpty() ? null : resMap.values().iterator().next();
                 }
 
-                return null;
+                return res != null ? res : new CacheInvokeResult<T>((T)null);
             }
         });
     }
@@ -4182,14 +4185,14 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
                 return t;
             }
-            catch (IgniteInterruptedCheckedException | IgniteTxHeuristicException | IgniteTxRollbackException e) {
+            catch (IgniteInterruptedCheckedException | IgniteTxHeuristicCheckedException | IgniteTxRollbackCheckedException e) {
                 throw e;
             }
             catch (IgniteCheckedException e) {
                 try {
                     tx.rollback();
 
-                    e = new IgniteTxRollbackException("Transaction has been rolled back: " +
+                    e = new IgniteTxRollbackCheckedException("Transaction has been rolled back: " +
                         tx.xid(), e);
                 }
                 catch (IgniteCheckedException | AssertionError | RuntimeException e1) {

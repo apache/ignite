@@ -24,8 +24,8 @@ import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.*;
 import org.apache.ignite.internal.util.future.*;
@@ -204,7 +204,7 @@ public class IgniteTxHandler<K, V> {
                         if (tx != null)
                             tx.setRollbackOnly(); // Just in case.
 
-                        if (!(e instanceof IgniteTxOptimisticException))
+                        if (!(e instanceof IgniteTxOptimisticCheckedException))
                             U.error(log, "Failed to prepare DHT transaction: " + tx, e);
                     }
 
@@ -308,7 +308,7 @@ public class IgniteTxHandler<K, V> {
                     catch (IgniteCheckedException e) {
                         tx0.setRollbackOnly(); // Just in case.
 
-                        if (!(e instanceof IgniteTxOptimisticException))
+                        if (!(e instanceof IgniteTxOptimisticCheckedException))
                             U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
                     }
                 }
@@ -530,7 +530,7 @@ public class IgniteTxHandler<K, V> {
                             req.taskNameHash()));
 
                     if (tx == null || !ctx.tm().onStarted(tx))
-                        throw new IgniteTxRollbackException("Attempt to start a completed transaction: " + req);
+                        throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + req);
 
                     tx.topologyVersion(req.topologyVersion());
                 }
@@ -666,9 +666,9 @@ public class IgniteTxHandler<K, V> {
                 res.invalidPartitions(dhtTx.invalidPartitions());
         }
         catch (IgniteCheckedException e) {
-            if (e instanceof IgniteTxRollbackException)
+            if (e instanceof IgniteTxRollbackCheckedException)
                 U.error(log, "Transaction was rolled back before prepare completed: " + dhtTx, e);
-            else if (e instanceof IgniteTxOptimisticException) {
+            else if (e instanceof IgniteTxOptimisticCheckedException) {
                 if (log.isDebugEnabled())
                     log.debug("Optimistic failure for remote transaction (will rollback): " + dhtTx);
             }
@@ -745,7 +745,7 @@ public class IgniteTxHandler<K, V> {
                 nearTx.syncRollback(req.syncRollback());
             }
         }
-        catch (IgniteTxRollbackException e) {
+        catch (IgniteTxRollbackCheckedException e) {
             if (log.isDebugEnabled())
                 log.debug("Received finish request for completed transaction (will ignore) [req=" + req + ", err=" +
                     e.getMessage() + ']');
@@ -1066,7 +1066,7 @@ public class IgniteTxHandler<K, V> {
                     tx = ctx.tm().onCreated(tx);
 
                     if (tx == null || !ctx.tm().onStarted(tx))
-                        throw new IgniteTxRollbackException("Attempt to start a completed transaction: " + tx);
+                        throw new IgniteTxRollbackCheckedException("Attempt to start a completed transaction: " + tx);
                 }
             }
             else
@@ -1155,7 +1155,7 @@ public class IgniteTxHandler<K, V> {
                             tx = ctx.tm().onCreated(tx);
 
                             if (tx == null || !ctx.tm().onStarted(tx))
-                                throw new IgniteTxRollbackException("Failed to acquire lock " +
+                                throw new IgniteTxRollbackCheckedException("Failed to acquire lock " +
                                     "(transaction has been completed): " + req.version());
                         }
 
@@ -1302,7 +1302,7 @@ public class IgniteTxHandler<K, V> {
                                 tx = ctx.tm().onCreated(tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))
-                                    throw new IgniteTxRollbackException("Failed to acquire lock " +
+                                    throw new IgniteTxRollbackCheckedException("Failed to acquire lock " +
                                         "(transaction has been completed): " + req.version());
 
                                 if (!marked)

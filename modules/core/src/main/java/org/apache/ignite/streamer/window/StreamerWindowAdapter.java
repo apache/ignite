@@ -255,7 +255,7 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     protected abstract Collection<E> pollEvictedBatch0();
 
     /** {@inheritDoc} */
-    @Override public final void start() throws IgniteCheckedException {
+    @Override public final void start() {
         checkConfiguration();
 
         if (idxs != null) {
@@ -286,9 +286,9 @@ public abstract class StreamerWindowAdapter<E> implements LifecycleAware, Stream
     /**
      * Check window configuration.
      *
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    protected abstract void checkConfiguration() throws IgniteCheckedException;
+    protected abstract void checkConfiguration() throws IgniteException;
 
     /**
      * Reset routine.

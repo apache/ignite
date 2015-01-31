@@ -446,7 +446,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     return null;
                 }
             },
-            IgniteCheckedException.class,
+            IgniteException.class,
             null
         );
     }

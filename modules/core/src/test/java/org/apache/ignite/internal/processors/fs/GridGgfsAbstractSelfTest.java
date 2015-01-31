@@ -1137,7 +1137,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         createCtr.incrementAndGet();
                     }
-                    catch (IgniteCheckedException ignore) {
+                    catch (IgniteInterruptedCheckedException | IgniteException ignore) {
                         try {
                             U.sleep(10);
                         }
@@ -1456,7 +1456,7 @@ public abstract class GridGgfsAbstractSelfTest extends GridGgfsCommonAbstractTes
 
                         chunksCtr.incrementAndGet();
                     }
-                    catch (IgniteCheckedException ignore) {
+                    catch (IgniteInterruptedCheckedException | IgniteException ignore) {
                         try {
                             U.sleep(10);
                         }

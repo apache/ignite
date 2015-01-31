@@ -1172,7 +1172,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 fakeRes.setFakeException(new ClusterTopologyException("Failed to send job due to node failure: " +
                     node, e));
             else
-                fakeRes.setFakeException(new IgniteException(e));
+                fakeRes.setFakeException(U.convertException(e));
 
             onResponse(fakeRes);
         }

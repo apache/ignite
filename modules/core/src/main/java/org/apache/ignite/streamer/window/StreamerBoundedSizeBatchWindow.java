@@ -84,15 +84,15 @@ public class StreamerBoundedSizeBatchWindow<E> extends StreamerWindowAdapter<E> 
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws IgniteCheckedException {
+    @Override public void checkConfiguration() {
         if (batchSize <= 0)
-            throw new IgniteCheckedException("Failed to initialize window (batchSize size must be positive) " +
+            throw new IgniteException("Failed to initialize window (batchSize size must be positive) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize + ']');
 
         if (maxBatches < 0)
-            throw new IgniteCheckedException("Failed to initialize window (maximumBatches cannot be negative) " +
+            throw new IgniteException("Failed to initialize window (maximumBatches cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize + ']');

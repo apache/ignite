@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.timeout.*;
@@ -126,7 +127,7 @@ public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
 
     /**
      * Gets timeout value in milliseconds for this transaction. If transaction times
-     * out prior to it's completion, {@link IgniteTxTimeoutException} will be thrown.
+     * out prior to it's completion, {@link org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException} will be thrown.
      *
      * @return Transaction timeout value.
      */
@@ -660,9 +661,9 @@ public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
      * Gets allowed remaining time for this transaction.
      *
      * @return Remaining time.
-     * @throws IgniteTxTimeoutException If transaction timed out.
+     * @throws org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException If transaction timed out.
      */
-    public long remainingTime() throws IgniteTxTimeoutException;
+    public long remainingTime() throws IgniteTxTimeoutCheckedException;
 
     /**
      * @return Alternate transaction versions.

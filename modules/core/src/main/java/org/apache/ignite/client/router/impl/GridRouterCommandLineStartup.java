@@ -64,15 +64,13 @@ public class GridRouterCommandLineStartup {
         else {
             tcpRouter = new GridTcpRouterImpl(tcpCfg);
 
-            if (tcpRouter != null) {
-                try {
-                    tcpRouter.start();
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
+            try {
+                tcpRouter.start();
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to start TCP router on port " + tcpCfg.getPort() + ": " + e.getMessage(), e);
 
-                    tcpRouter = null;
-                }
+                tcpRouter = null;
             }
         }
     }
@@ -85,7 +83,7 @@ public class GridRouterCommandLineStartup {
             try {
                 tcpRouter.stop();
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Error while stopping the router.", e);
             }
         }

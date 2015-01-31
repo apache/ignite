@@ -22,6 +22,7 @@ import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.transactions.*;
@@ -37,7 +38,7 @@ import java.util.concurrent.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicException}.
+ * Tests that transaction is invalidated in case of {@link org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
     /** Index SPI throwing exception. */
@@ -403,7 +404,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicException.class, null);
+        }, IgniteTxHeuristicCheckedException.class, null);
 
         checkEmpty(key);
     }
@@ -444,7 +445,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
             }
         }, CacheException.class, null);
 
-        assertTrue("Unexpected cause: "  +e, e.getCause() instanceof IgniteTxHeuristicException);
+        assertTrue("Unexpected cause: "  +e, e.getCause() instanceof IgniteTxHeuristicCheckedException);
 
         checkEmpty(key);
     }
@@ -491,7 +492,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicException.class, null);
+        }, IgniteTxHeuristicCheckedException.class, null);
 
         for (Integer key : m.keySet())
             checkEmpty(key);
@@ -525,7 +526,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
                 return null;
             }
-        }, IgniteTxHeuristicException.class, null);
+        }, IgniteTxHeuristicCheckedException.class, null);
 
         checkEmpty(key);
     }

@@ -106,12 +106,12 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             lifecycleAware.stop();
         }
 
@@ -130,12 +130,12 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         private final TestLifecycleAware lifecycleAware = new TestLifecycleAware(null);
 
         /** {@inheritDoc} */
-        @Override public void start() throws IgniteCheckedException {
+        @Override public void start() {
             lifecycleAware.start();
         }
 
         /** {@inheritDoc} */
-        @Override public void stop() throws IgniteCheckedException {
+        @Override public void stop() {
             lifecycleAware.stop();
         }
 

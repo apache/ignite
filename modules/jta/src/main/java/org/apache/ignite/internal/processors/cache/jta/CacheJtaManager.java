@@ -56,8 +56,14 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
 
     /** {@inheritDoc} */
     @Override public void checkJta() throws IgniteCheckedException {
-        if (jtaTm == null)
-            jtaTm = tmLookup.getTm();
+        if (jtaTm == null) {
+            try {
+                jtaTm = tmLookup.getTm();
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to get transaction manager: " + e, e);
+            }
+        }
 
         if (jtaTm != null) {
             GridCacheXAResource rsrc = xaRsrc.get();

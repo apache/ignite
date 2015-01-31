@@ -53,8 +53,6 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
      * @param res Computed result.
      */
     public CacheInvokeResult(T res) {
-        assert res != null;
-
         this.res = res;
     }
 

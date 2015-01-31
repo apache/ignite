@@ -616,12 +616,12 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /**
      * @param sesId Task's session id.
-     * @return A {@link org.apache.ignite.compute.ComputeTaskFuture} instance or {@code null} if no such task found.
+     * @return A {@link ComputeTaskInternalFuture} instance or {@code null} if no such task found.
      */
-    @Nullable public <R> ComputeTaskFuture<R> taskFuture(IgniteUuid sesId) {
+    @Nullable public <R> ComputeTaskInternalFuture<R> taskFuture(IgniteUuid sesId) {
         GridTaskWorker<?, ?> taskWorker = tasks.get(sesId);
 
-        return taskWorker != null ? (ComputeTaskFuture<R>)taskWorker.getTaskFuture() : null;
+        return taskWorker != null ? (ComputeTaskInternalFuture<R>)taskWorker.getTaskFuture() : null;
     }
 
     /**

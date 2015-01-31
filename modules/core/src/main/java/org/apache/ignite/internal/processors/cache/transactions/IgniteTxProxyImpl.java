@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import org.apache.ignite.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.future.*;
@@ -236,7 +237,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
             IgniteInternalFuture<IgniteTxEx> commitFut = cctx.commitTxAsync(tx);
 
             if (async)
-                asyncRes = new IgniteFutureImpl(commitFut);
+                saveFuture(commitFut);
             else
                 commitFut.get();
         }
@@ -305,6 +306,19 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     @SuppressWarnings({"RedundantTypeArguments"})
     @Override public <V1> V1 removeMeta(String name) {
         return tx.<V1>removeMeta(name);
+    }
+
+    /**
+     * @param fut Internal future.
+     */
+    private void saveFuture(IgniteInternalFuture<IgniteTxEx> fut) {
+        IgniteInternalFuture<IgniteTx> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteTxEx>, IgniteTx>() {
+            @Override public IgniteTx applyx(IgniteInternalFuture<IgniteTxEx> fut) throws IgniteCheckedException {
+                return fut.get().proxy();
+            }
+        });
+
+        asyncRes = new IgniteFutureImpl(fut0);
     }
 
     /** {@inheritDoc} */

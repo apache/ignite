@@ -105,16 +105,16 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
     }
 
     /** {@inheritDoc} */
-    @Override public void checkConfiguration() throws IgniteCheckedException {
+    @Override public void checkConfiguration() {
         if (maxBatches < 0)
-            throw new IgniteCheckedException("Failed to initialize window (maximumBatches cannot be negative) " +
+            throw new IgniteException("Failed to initialize window (maximumBatches cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize +
                 ", batchTimeInterval=" + batchTimeInterval + ']');
 
         if (batchSize < 0)
-            throw new IgniteCheckedException("Failed to initialize window (batchSize cannot be negative) " +
+            throw new IgniteException("Failed to initialize window (batchSize cannot be negative) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize +
@@ -123,7 +123,7 @@ public class StreamerBoundedTimeBatchWindow<E> extends StreamerWindowAdapter<E> 
             batchSize = Integer.MAX_VALUE;
 
         if (batchTimeInterval <= 0)
-            throw new IgniteCheckedException("Failed to initialize window (batchTimeInterval must be positive) " +
+            throw new IgniteException("Failed to initialize window (batchTimeInterval must be positive) " +
                 "[windowClass=" + getClass().getSimpleName() +
                 ", maximumBatches=" + maxBatches +
                 ", batchSize=" + batchSize +

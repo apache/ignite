@@ -29,6 +29,7 @@ import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.mxbean.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.portables.*;
@@ -41,6 +42,7 @@ import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.worker.*;
+import org.apache.ignite.transactions.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
@@ -8223,9 +8225,14 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If {@link org.apache.ignite.lifecycle.LifecycleAware#start} fails.
      */
     public static void startLifecycleAware(Iterable<?> objs) throws IgniteCheckedException {
-        for (Object obj : objs) {
-            if (obj instanceof LifecycleAware)
-                ((LifecycleAware)obj).start();
+        try {
+            for (Object obj : objs) {
+                if (obj instanceof LifecycleAware)
+                    ((LifecycleAware)obj).start();
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
         }
     }
 
@@ -8242,7 +8249,7 @@ public abstract class IgniteUtils {
                 try {
                     ((LifecycleAware)obj).stop();
                 }
-                catch (IgniteCheckedException e) {
+                catch (Exception e) {
                     U.error(log, "Failed to stop component (ignoring): " + obj, e);
                 }
             }
@@ -9142,7 +9149,7 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param e Ingite checked exception.
+     * @param e Ignite checked exception.
      * @return Ignite runtime exception.
      */
     public static IgniteException convertException(IgniteCheckedException e) {
@@ -9162,9 +9169,17 @@ public abstract class IgniteUtils {
             return new ComputeTaskTimeoutException(e.getMessage(), e.getCause());
         else if (e instanceof ComputeTaskCancelledCheckedException)
             return new ComputeTaskCancelledException(e.getMessage(), e.getCause());
+        else if (e instanceof IgniteTxRollbackCheckedException)
+            return new IgniteTxRollbackException(e.getMessage(), e.getCause());
+        else if (e instanceof IgniteTxHeuristicCheckedException)
+            return new IgniteTxHeuristicException(e.getMessage(), e.getCause());
+        else if (e instanceof IgniteTxTimeoutCheckedException)
+            return new IgniteTxTimeoutException(e.getMessage(), e.getCause());
+        else if (e instanceof IgniteTxOptimisticCheckedException)
+            return new IgniteTxOptimisticException(e.getMessage(), e.getCause());
         else if (e.getCause() instanceof IgniteException)
             return (IgniteException)e.getCause();
 
-        return new IgniteException(e);
+        return new IgniteException(e.getMessage(), e.getCause() != null ? e.getCause() : e);
     }
 }
