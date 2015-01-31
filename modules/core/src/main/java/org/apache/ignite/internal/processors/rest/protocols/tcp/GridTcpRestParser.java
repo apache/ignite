@@ -65,19 +65,19 @@ public class GridTcpRestParser implements GridNioParser {
 
                     break;
 
-                case GRIDGAIN_REQ_FLAG:
+                case IGNITE_REQ_FLAG:
                     // Skip header.
                     buf.get();
 
-                    state.packetType(GridClientPacketType.GRIDGAIN);
+                    state.packetType(GridClientPacketType.IGNITE);
 
                     break;
 
-                case GRIDGAIN_HANDSHAKE_FLAG:
+                case IGNITE_HANDSHAKE_FLAG:
                     // Skip header.
                     buf.get();
 
-                    state.packetType(GridClientPacketType.GRIDGAIN_HANDSHAKE);
+                    state.packetType(GridClientPacketType.IGNITE_HANDSHAKE);
 
                     break;
 
@@ -95,12 +95,12 @@ public class GridTcpRestParser implements GridNioParser {
 
                 break;
 
-            case GRIDGAIN_HANDSHAKE:
+            case IGNITE_HANDSHAKE:
                 res = parseHandshake(buf, state);
 
                 break;
 
-            case GRIDGAIN:
+            case IGNITE:
                 res = parseCustomPacket(ses, buf, state);
 
                 break;
@@ -134,7 +134,7 @@ public class GridTcpRestParser implements GridNioParser {
 
             ByteBuffer slice = res.slice();
 
-            slice.put(GRIDGAIN_REQ_FLAG);
+            slice.put(IGNITE_REQ_FLAG);
             slice.putInt(res.remaining() - 5);
             slice.putLong(msg.requestId());
             slice.put(U.uuidToBytes(msg.clientId()));
@@ -251,7 +251,7 @@ public class GridTcpRestParser implements GridNioParser {
      * @return True if a hint was parsed, false if still need more bytes to parse.
      */
     @Nullable private GridClientMessage parseHandshake(ByteBuffer buf, ParserState state) {
-        assert state.packetType() == GridClientPacketType.GRIDGAIN_HANDSHAKE;
+        assert state.packetType() == GridClientPacketType.IGNITE_HANDSHAKE;
 
         int idx = state.index();
 
@@ -306,7 +306,7 @@ public class GridTcpRestParser implements GridNioParser {
      */
     @Nullable private GridClientMessage parseCustomPacket(GridNioSession ses, ByteBuffer buf, ParserState state)
         throws IOException, IgniteCheckedException {
-        assert state.packetType() == GridClientPacketType.GRIDGAIN;
+        assert state.packetType() == GridClientPacketType.IGNITE;
         assert state.packet() == null;
 
         ByteArrayOutputStream tmp = state.buffer();

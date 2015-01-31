@@ -149,7 +149,7 @@ public class ClientConnectionConfiguration {
     }
 
     /**
-     * Sets path, either absolute or relative to {@code GRIDGAIN_HOME}, to {@code JETTY}
+     * Sets path, either absolute or relative to {@code IGNITE_HOME}, to {@code JETTY}
      * XML configuration file. {@code JETTY} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      *
@@ -160,17 +160,17 @@ public class ClientConnectionConfiguration {
     }
 
     /**
-     * Gets path, either absolute or relative to {@code GRIDGAIN_HOME}, to {@code Jetty}
+     * Gets path, either absolute or relative to {@code IGNITE_HOME}, to {@code Jetty}
      * XML configuration file. {@code Jetty} is used to support REST over HTTP protocol for
      * accessing GridGain APIs remotely.
      * <p>
      * If not provided, Jetty instance with default configuration will be started picking
-     * {@link org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT}
+     * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST} and {@link org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT}
      * as host and port respectively.
      *
      * @return Path to {@code JETTY} XML configuration file.
-     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
      */
     public String getRestJettyPath() {
         return jettyPath;
@@ -189,8 +189,8 @@ public class ClientConnectionConfiguration {
      * Gets secret key to authenticate REST requests. If key is {@code null} or empty authentication is disabled.
      *
      * @return Secret key.
-     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_HOST
-     * @see org.apache.ignite.IgniteSystemProperties#GG_JETTY_PORT
+     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_HOST
+     * @see org.apache.ignite.IgniteSystemProperties#IGNITE_JETTY_PORT
      */
     @Nullable public String getRestSecretKey() {
         return restSecretKey;
@@ -473,7 +473,7 @@ public class ClientConnectionConfiguration {
      * a log file, file path is checked against this list. If requested file is not located in any
      * sub-folder of these folders, request is not processed.
      * <p>
-     * By default, list consists of a single {@code GRIDGAIN_HOME} folder. If {@code GRIDGAIN_HOME}
+     * By default, list consists of a single {@code IGNITE_HOME} folder. If {@code IGNITE_HOME}
      * could not be detected and property is not specified, no restrictions applied.
      *
      * @return Array of folders that are allowed be read by remote clients.

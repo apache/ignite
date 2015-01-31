@@ -30,7 +30,7 @@ import java.util.*;
  * files, create, list and delete directories).
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * GGFS: {@code 'ggstart.sh examples/config/filesystem/example-ggfs.xml'}.
+ * GGFS: {@code 'ignite.sh examples/config/filesystem/example-ggfs.xml'}.
  * <p>
  * Alternatively you can run {@link GgfsNodeStartup} in another JVM which will start
  * GridGain node with {@code examples/config/filesystem/example-ggfs.xml} configuration.

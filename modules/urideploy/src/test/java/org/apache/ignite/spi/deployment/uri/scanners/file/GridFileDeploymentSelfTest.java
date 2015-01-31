@@ -128,11 +128,11 @@ public class GridFileDeploymentSelfTest extends GridUriDeploymentAbstractSelfTes
      * File 'bad-signed-deployfile.gar' contains non-signed modifications.
      *
      * Sign JAR with command:
-     * $ jarsigner -keystore $GRIDGAIN_HOME/modules/tests/config/signeddeploy/keystore -storepass "abc123"
+     * $ jarsigner -keystore $IGNITE_HOME/modules/tests/config/signeddeploy/keystore -storepass "abc123"
      *      -keypass "abc123" -signedjar signed-deployfile.gar deployfile.gar business
      *
      * Verify signed JAR-file:
-     * $ jarsigner -verify -keystore $GRIDGAIN_HOME/modules/tests/config/signeddeploy/keystore -storepass "abc123"
+     * $ jarsigner -verify -keystore $IGNITE_HOME/modules/tests/config/signeddeploy/keystore -storepass "abc123"
      *      -keypass "abc123" signed-deployfile.gar
      *
      * @throws Exception If failed.

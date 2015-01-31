@@ -70,11 +70,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** Deferred update response buffer size. */
     private static final int DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE =
-        Integer.getInteger(GG_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, 256);
+        Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_BUFFER_SIZE, 256);
 
     /** Deferred update response timeout. */
     private static final int DEFERRED_UPDATE_RESPONSE_TIMEOUT =
-        Integer.getInteger(GG_ATOMIC_DEFERRED_ACK_TIMEOUT, 500);
+        Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT, 500);
 
     /** Unsafe instance. */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();

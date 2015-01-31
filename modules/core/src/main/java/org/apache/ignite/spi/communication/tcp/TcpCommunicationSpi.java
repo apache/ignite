@@ -680,10 +680,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     private int msgQueueLimit = DFLT_MSG_QUEUE_LIMIT;
 
     /** Min buffered message count. */
-    private int minBufferedMsgCnt = Integer.getInteger(GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
+    private int minBufferedMsgCnt = Integer.getInteger(IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT, 512);
 
     /** Buffer size ratio. */
-    private double bufSizeRatio = IgniteSystemProperties.getDouble(GG_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
+    private double bufSizeRatio = IgniteSystemProperties.getDouble(IGNITE_COMMUNICATION_BUF_RESIZE_RATIO, 0.8);
 
     /** NIO server. */
     private GridNioServer<GridTcpCommunicationMessageAdapter> nioSrvr;
@@ -1280,7 +1280,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Sets the minimum number of messages for this SPI, that are buffered
      * prior to sending.
      * <p>
-     * Defaults to either {@code 512} or {@link IgniteSystemProperties#GG_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
+     * Defaults to either {@code 512} or {@link IgniteSystemProperties#IGNITE_MIN_BUFFERED_COMMUNICATION_MSG_CNT}
      * system property (if specified).
      *
      * @param minBufferedMsgCnt Minimum buffered message count.
@@ -1299,7 +1299,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
      * Sets the buffer size ratio for this SPI. As messages are sent,
      * the buffer size is adjusted using this ratio.
      * <p>
-     * Defaults to either {@code 0.8} or {@link IgniteSystemProperties#GG_COMMUNICATION_BUF_RESIZE_RATIO}
+     * Defaults to either {@code 0.8} or {@link IgniteSystemProperties#IGNITE_COMMUNICATION_BUF_RESIZE_RATIO}
      * system property (if specified).
      *
      * @param bufSizeRatio Buffer size ratio.
@@ -2257,7 +2257,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else if (log.isDebugEnabled())
                         log.debug("Received remote node ID: " + rmtNodeId0);
 
-                    ch.write(ByteBuffer.wrap(U.GG_HEADER));
+                    ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
                     if (recovery != null) {
                         HandshakeMessage msg = new HandshakeMessage(ignite.configuration().getNodeId(),
@@ -3017,7 +3017,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             }
 
             try {
-                out.write(U.GG_HEADER);
+                out.write(U.IGNITE_HEADER);
                 out.write(NODE_ID_MSG_TYPE);
                 out.write(nodeIdMsg.nodeIdBytes);
 

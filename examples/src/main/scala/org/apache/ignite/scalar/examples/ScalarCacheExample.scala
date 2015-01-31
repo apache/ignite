@@ -30,7 +30,7 @@ import scala.collection.JavaConversions._
  * Demonstrates basic In-Memory Data Grid operations with Scalar.
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
+ * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
 object ScalarCacheExample extends App {

@@ -30,4 +30,4 @@ set MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
 ::
 :: Start router service.
 ::
-call "%~dp0\ggstart.bat" %*
+call "%~dp0\ignite.bat" %*

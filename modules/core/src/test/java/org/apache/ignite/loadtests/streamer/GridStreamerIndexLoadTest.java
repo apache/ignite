@@ -101,7 +101,7 @@ public class GridStreamerIndexLoadTest {
     public static void runBenchmark(IndexConfiguration idxCfg) throws Exception {
         int thrCnt = getIntProperty(THREADS_CNT, 1);
         int dur = getIntProperty(TEST_DUR_SEC, 60);
-        int winSize = getIntProperty("GG_WIN_SIZE", 5000);
+        int winSize = getIntProperty("IGNITE_WIN_SIZE", 5000);
 
         dumpProperties(System.out);
 

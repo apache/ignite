@@ -207,13 +207,13 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     @Override protected Ignite startGrid() throws Exception {
-        System.setProperty(GG_JETTY_PORT, Integer.toString(JETTY_PORT));
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         try {
             return super.startGrid();
         }
         finally {
-            System.clearProperty(GG_JETTY_PORT);
+            System.clearProperty(IGNITE_JETTY_PORT);
         }
     }
 

@@ -54,7 +54,7 @@ import java.util.concurrent.atomic.*;
 public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /**
      * Default path for discovering of local nodes (testing only). Note that this path is relative to
-     * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
+     * {@code IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified,
      * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()

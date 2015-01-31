@@ -29,7 +29,7 @@ import java.util.concurrent.CountDownLatch
  * two nodes. It is analogous to `GridMessagingPingPongExample` on Java side.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarPingPongExample extends App {
     scalar("examples/config/example-compute.xml") {

@@ -64,7 +64,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.GG_REST_MAX_TASK_RESULTS, String.valueOf(MAX_TASK_RESULTS));
+        System.setProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS, String.valueOf(MAX_TASK_RESULTS));
 
         startGrid(0);
     }
@@ -73,7 +73,7 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        System.clearProperty(IgniteSystemProperties.GG_REST_MAX_TASK_RESULTS);
+        System.clearProperty(IgniteSystemProperties.IGNITE_REST_MAX_TASK_RESULTS);
     }
 
     /** {@inheritDoc} */

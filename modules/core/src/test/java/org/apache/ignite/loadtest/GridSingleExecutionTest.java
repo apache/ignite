@@ -56,7 +56,7 @@ public final class GridSingleExecutionTest {
      */
     @SuppressWarnings({"CallToSystemExit"})
     public static void main(String[] args) throws Exception {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         System.out.println("Starting master node [params=" + Arrays.toString(args) + ']');
 
@@ -184,7 +184,7 @@ public final class GridSingleExecutionTest {
 
         if (path == null) {
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
-                ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
+                ". Note that this path should be either absolute path or a relative path to IGNITE_HOME.");
         }
 
         if (!path.isFile())

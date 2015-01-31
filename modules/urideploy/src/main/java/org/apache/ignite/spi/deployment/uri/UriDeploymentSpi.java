@@ -312,7 +312,7 @@ import java.util.Map.*;
 public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi, UriDeploymentSpiMBean {
     /**
      * Default deployment directory where SPI will pick up GAR files. Note that this path is relative to
-     * {@code GRIDGAIN_HOME/work} folder if {@code GRIDGAIN_HOME} system or environment variable specified,
+     * {@code IGNITE_HOME/work} folder if {@code IGNITE_HOME} system or environment variable specified,
      * otherwise it is relative to {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()
@@ -402,9 +402,9 @@ public class UriDeploymentSpi extends IgniteSpiAdapter implements DeploymentSpi,
      * scanned by SPI for the new tasks.
      * <p>
      * If not provided, default value is list with
-     * {@code file://${GRIDGAIN_HOME}/work/deployment/file} element.
-     * Note that system property {@code GRIDGAIN_HOME} must be set.
-     * For unknown {@code GRIDGAIN_HOME} list of URI must be provided explicitly.
+     * {@code file://${IGNITE_HOME}/work/deployment/file} element.
+     * Note that system property {@code IGNITE_HOME} must be set.
+     * For unknown {@code IGNITE_HOME} list of URI must be provided explicitly.
      *
      * @param uriList GAR file URIs.
      */

@@ -619,7 +619,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, cfg.getExecutorService(), log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(GG_UPDATE_NOTIFIER, true);
+        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
 
         GridUpdateNotifier verChecker0 = null;
 
@@ -852,7 +852,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             verChecker.reportOnlyNew(true);
             verChecker.licenseProcessor(ctx.license());
 
-            updateNtfTimer = new Timer("gridgain-update-notifier-timer");
+            updateNtfTimer = new Timer("ignite-update-notifier-timer");
 
             // Setup periodic version check.
             updateNtfTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -871,7 +871,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             }, PERIODIC_VER_CHECK_DELAY, PERIODIC_VER_CHECK_DELAY);
         }
 
-        String intervalStr = IgniteSystemProperties.getString(GG_STARVATION_CHECK_INTERVAL);
+        String intervalStr = IgniteSystemProperties.getString(IGNITE_STARVATION_CHECK_INTERVAL);
 
         // Start starvation checker if enabled.
         boolean starveCheck = !isDaemon() && !"0".equals(intervalStr);
@@ -879,7 +879,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (starveCheck) {
             final long interval = F.isEmpty(intervalStr) ? PERIODIC_STARVATION_CHECK_FREQ : Long.parseLong(intervalStr);
 
-            starveTimer = new Timer("gridgain-starvation-checker");
+            starveTimer = new Timer("ignite-starvation-checker");
 
             starveTimer.scheduleAtFixedRate(new GridTimerTask() {
                 /** Last completed task count. */
@@ -908,7 +908,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         }
 
         if (!isDaemon()) {
-            licTimer = new Timer("gridgain-license-checker");
+            licTimer = new Timer("ignite-license-checker");
 
             // Setup periodic license check.
             licTimer.scheduleAtFixedRate(new GridTimerTask() {
@@ -953,7 +953,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         long metricsLogFreq = cfg.getMetricsLogFrequency();
 
         if (metricsLogFreq > 0) {
-            metricsLogTimer = new Timer("gridgain-metrics-logger");
+            metricsLogTimer = new Timer("ignite-metrics-logger");
 
             metricsLogTimer.scheduleAtFixedRate(new GridTimerTask() {
                 /** */
@@ -1664,7 +1664,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         assert log != null;
 
         if (log.isInfoEnabled())
-            log.info("Config URL: " + System.getProperty(GG_CONFIG_URL, "n/a"));
+            log.info("Config URL: " + System.getProperty(IGNITE_CONFIG_URL, "n/a"));
     }
 
     /**
@@ -1679,7 +1679,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         if (ctx.isEnterprise())
             U.quietAndInfo(log, "To start GUI Management & Monitoring run ggvisorui.{sh|bat}");
         else
-            U.quietAndInfo(log, "To start Console Management & Monitoring run ggvisorcmd.{sh|bat}");
+            U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
     }
 
     /**
@@ -1698,7 +1698,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
         String fileName = log.fileName();
 
-        if (System.getProperty(GG_NO_ASCII) == null) {
+        if (System.getProperty(IGNITE_NO_ASCII) == null) {
             String ver = "ver. " + ACK_VER;
 
             // Big thanks to: http://patorjk.com/software/taag
@@ -1719,7 +1719,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                     U.quiet(false, "  ^-- Logging to file '" +  fileName + '\'');
 
                 U.quiet(false,
-                    "  ^-- To see **FULL** console log here add -DGRIDGAIN_QUIET=false or \"-v\" to ggstart.{sh|bat}",
+                    "  ^-- To see **FULL** console log here add -DIGNITE_QUIET=false or \"-v\" to ignite.{sh|bat}",
                     "");
             }
 
@@ -2209,7 +2209,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     private boolean isDaemon() {
         assert cfg != null;
 
-        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(GG_DAEMON));
+        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
     }
 
     /**
@@ -2227,14 +2227,14 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
     /**
      * Whether or not node restart is enabled. Node restart us supported when this node was started
-     * with {@code bin/ggstart.{sh|bat}} script using {@code -r} argument. Node can be
+     * with {@code bin/ignite.{sh|bat}} script using {@code -r} argument. Node can be
      * programmatically restarted using {@link org.apache.ignite.Ignition#restart(boolean)}} method.
      *
      * @return {@code True} if restart mode is enabled, {@code false} otherwise.
      * @see org.apache.ignite.Ignition#restart(boolean)
      */
     @Override public boolean isRestartEnabled() {
-        return System.getProperty(GG_SUCCESS_FILE) != null;
+        return System.getProperty(IGNITE_SUCCESS_FILE) != null;
     }
 
     /**
@@ -2385,16 +2385,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /**
-     * Prints out VM arguments and GRIDGAIN_HOME in info mode.
+     * Prints out VM arguments and IGNITE_HOME in info mode.
      *
      * @param rtBean Java runtime bean.
      */
     private void ackVmArguments(RuntimeMXBean rtBean) {
         assert log != null;
 
-        // Ack GRIDGAIN_HOME and VM arguments.
+        // Ack IGNITE_HOME and VM arguments.
         if (log.isInfoEnabled()) {
-            log.info("GRIDGAIN_HOME=" + cfg.getGridGainHome());
+            log.info("IGNITE_HOME=" + cfg.getGridGainHome());
             log.info("VM arguments: " + rtBean.getInputArguments());
         }
     }

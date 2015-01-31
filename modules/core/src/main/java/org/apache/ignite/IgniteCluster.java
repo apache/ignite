@@ -235,7 +235,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      *             <td><b>ggHome</b></td>
      *             <td>String</td>
      *             <td>
-     *                 Path to GridGain installation folder. If not defined, GRIDGAIN_HOME
+     *                 Path to GridGain installation folder. If not defined, IGNITE_HOME
      *                 environment variable must be set on remote hosts.
      *             </td>
      *         </tr>
@@ -313,7 +313,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Restarts nodes satisfying optional set of predicates.
      * <p>
      * <b>NOTE:</b> this command only works for grid nodes started with GridGain
-     * {@code ggstart.sh} or {@code ggstart.bat} scripts.
+     * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @throws IgniteCheckedException In case of error.
      */
@@ -323,7 +323,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * Restarts nodes defined by provided IDs.
      * <p>
      * <b>NOTE:</b> this command only works for grid nodes started with GridGain
-     * {@code ggstart.sh} or {@code ggstart.bat} scripts.
+     * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @param ids IDs defining nodes to restart.
      * @throws IgniteCheckedException In case of error.

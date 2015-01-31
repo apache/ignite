@@ -50,11 +50,11 @@
                 </Arg>
                 <!--
                     Note that in order to override local host and port values,
-                    system properties must have names GRIDGAIN_JETTY_HOST and
-                    GRIDGAIN_JETTY_PORT accordingly.
+                    system properties must have names IGNITE_JETTY_HOST and
+                    IGNITE_JETTY_PORT accordingly.
                 -->
-                <Set name="host"><SystemProperty name="GRIDGAIN_JETTY_HOST" default="localhost"/></Set>
-                <Set name="port"><SystemProperty name="GRIDGAIN_JETTY_PORT" default="12200"/></Set>
+                <Set name="host"><SystemProperty name="IGNITE_JETTY_HOST" default="localhost"/></Set>
+                <Set name="port"><SystemProperty name="IGNITE_JETTY_PORT" default="12200"/></Set>
                 <Set name="idleTimeout">30000</Set>
                 <Set name="reuseAddress">true</Set>
             </New>

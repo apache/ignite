@@ -120,7 +120,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
             @Nullable @Override public Object call() throws Exception {
                 ByteBuffer fake = ByteBuffer.allocate(21);
 
-                fake.put(GRIDGAIN_REQ_FLAG);
+                fake.put(IGNITE_REQ_FLAG);
                 fake.put(U.intToBytes(-5));
                 fake.put(U.longToBytes(0));
                 fake.put(U.longToBytes(0));
@@ -368,7 +368,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
 
         ByteBuffer slice = res.slice();
 
-        slice.put(GRIDGAIN_REQ_FLAG);
+        slice.put(IGNITE_REQ_FLAG);
         slice.putInt(res.remaining() - 5);
         slice.putLong(msg.requestId());
         slice.put(U.uuidToBytes(msg.clientId()));
@@ -386,7 +386,7 @@ public class TcpRestParserSelfTest extends GridCommonAbstractTest {
         ByteBuffer res = ByteBuffer.allocate(6);
 
         res.put(new byte[] {
-            GRIDGAIN_HANDSHAKE_FLAG, 5, 0, 0, 0, 0
+            IGNITE_HANDSHAKE_FLAG, 5, 0, 0, 0, 0
         });
 
         res.flip();

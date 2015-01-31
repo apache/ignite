@@ -23,4 +23,4 @@ if "%OS%" == "Windows_NT" setlocal
 
 set MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
 
-call "%~dp0\ggstart.bat" %*
+call "%~dp0\ignite.bat" %*

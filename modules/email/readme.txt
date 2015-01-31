@@ -6,7 +6,7 @@ expiration or fatal system errors (this should be also configured via 'GridConfi
 configuration properties).
 
 To enable email module when starting a standalone node, move 'optional/ignite-email' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing email Module In Maven Project
