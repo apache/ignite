@@ -21,15 +21,15 @@
 #
 # Import common functions.
 #
-if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
-    else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
+if [ "${IGNITE_HOME}" = "" ];
+    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";
+    else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
 
 #
 # Set SCRIPTS_HOME - base path to scripts.
 #
-SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/bin"
+SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
 
@@ -39,7 +39,7 @@ source "${SCRIPTS_HOME}"/include/functions.sh
 checkJava
 
 #
-# Discover GRIDGAIN_HOME environment variable.
+# Discover IGNITE_HOME environment variable.
 #
 setGridGainHome
 
@@ -53,21 +53,21 @@ fi
 . "${SCRIPTS_HOME}"/include/parseargs.sh
 
 #
-# Set GRIDGAIN_LIBS.
+# Set IGNITE_LIBS.
 #
 . "${SCRIPTS_HOME}"/include/setenv.sh
 . "${SCRIPTS_HOME}"/include/target-classpath.sh # Will be removed in release.
-CP="${GRIDGAIN_LIBS}"
+CP="${IGNITE_LIBS}"
 
 RANDOM_NUMBER=$("$JAVA" -cp "${CP}" org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
 
-RESTART_SUCCESS_FILE="${GRIDGAIN_HOME}/work/gridgain_success_${RANDOM_NUMBER}"
-RESTART_SUCCESS_OPT="-DGRIDGAIN_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
+RESTART_SUCCESS_FILE="${IGNITE_HOME}/work/ignite_success_${RANDOM_NUMBER}"
+RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
 
 #
 # Find available port for JMX
 #
-# You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
+# You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
 #
 findAvailableJmxPort
 
@@ -138,26 +138,26 @@ do
         case $osname in
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
-                -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-                -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
+                -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
-                -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-                -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
+                -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+                -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS}
             ;;
         esac
     else
         case $osname in
             Darwin*)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${DOCK_OPTS}" "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
-                 -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-                 -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
+                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
             ;;
             *)
                 "$JAVA" ${JVM_OPTS} ${QUIET} "${RESTART_SUCCESS_OPT}" ${JMX_MON} \
-                 -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-                 -DGRIDGAIN_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
+                 -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+                 -DIGNITE_PROG_NAME="$0" ${JVM_XOPTS} -cp "${CP}" ${MAIN_CLASS} "${CONFIG}"
             ;;
         esac
     fi

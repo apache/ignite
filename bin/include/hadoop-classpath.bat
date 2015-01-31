@@ -59,7 +59,7 @@ for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-common-*') d
 for /f %%f in ('dir /B %HADOOP_MAPRED_HOME%\hadoop-mapreduce-client-core-*') do call :concat %HADOOP_MAPRED_HOME%\%%f
 
 :: Export result.
-set GRIDGAIN_HADOOP_CLASSPATH=%CP%
+set IGNITE_HADOOP_CLASSPATH=%CP%
 
 :: Exit.
 goto :eof

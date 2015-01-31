@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.util;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -51,7 +50,7 @@ public class GridReflectionCache implements Externalizable {
     };
 
     /** Cache size. */
-    private static final int CACHE_SIZE = Integer.getInteger(GG_REFLECTION_CACHE_SIZE, 128);
+    private static final int CACHE_SIZE = Integer.getInteger(IGNITE_REFLECTION_CACHE_SIZE, 128);
 
     /** Fields cache. */
     private ConcurrentMap<Class, List<Field>> fields = new GridBoundedConcurrentLinkedHashMap<>(

@@ -191,10 +191,10 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
         Collection<Ignite> ignites = new LinkedList<>();
 
-        String old = System.getProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER);
+        String old = System.getProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER);
 
         try {
-            System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+            System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
             TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -230,7 +230,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
             if (old == null)
                 old = "false";
 
-            System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, old);
+            System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, old);
         }
     }
 

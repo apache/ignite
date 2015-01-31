@@ -44,7 +44,7 @@ import scala.collection.JavaConversions._
  * in various ways.
  * <p>
  * Remote nodes should always be started with configuration file which includes
- * cache: `'ggstart.sh examples/config/example-cache.xml'`.
+ * cache: `'ignite.sh examples/config/example-cache.xml'`.
  */
 object ScalarSnowflakeSchemaExample {
     /** Name of replicated cache specified in spring configuration. */

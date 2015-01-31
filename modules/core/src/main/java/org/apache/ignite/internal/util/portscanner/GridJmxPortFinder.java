@@ -28,7 +28,7 @@ import java.nio.channels.*;
  */
 public class GridJmxPortFinder {
     /** Environment variable for overriding JMX port. */
-    public static final String GG_JMX_PORT = "GRIDGAIN_JMX_PORT";
+    public static final String IGNITE_JMX_PORT = "IGNITE_JMX_PORT";
 
     /** Minimum port number. */
     private static final int MIN_PORT = 49112;
@@ -59,7 +59,7 @@ public class GridJmxPortFinder {
             return;
         }
 
-        int jmxPort = IgniteSystemProperties.getInteger(GG_JMX_PORT, -1);
+        int jmxPort = IgniteSystemProperties.getInteger(IGNITE_JMX_PORT, -1);
 
         if (jmxPort != -1) {
             System.out.println(jmxPort);

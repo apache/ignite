@@ -56,7 +56,7 @@ public class WebSessionServerStart {
             "/ggtest");
 
         ctx.setInitParameter("cfgFilePath", "/examples/config/spring-cache.xml");
-        ctx.setInitParameter("GridGainWebSessionsCacheName", "partitioned");
+        ctx.setInitParameter("IgniteWebSessionsCacheName", "partitioned");
 
         ctx.addServlet(new ServletHolder(servlet), "/*");
 
