@@ -230,7 +230,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                 log.debug("Still waiting for locks [fut=" + this + ", keys=" + lockKeys + ']');
         }
 
-        return true;
+        return locked;
     }
 
     /**
@@ -1046,8 +1046,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                         }
                     }
 
-                    if (tx.implicitSingle())
-                        tx.implicitSingleResult(res.returnValue());
+                    tx.implicitSingleResult(res.returnValue());
 
                     for (IgniteTxKey<K> key : res.filterFailedKeys()) {
                         IgniteTxEntry<K, V> txEntry = tx.entry(key);

@@ -265,7 +265,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     /**
      *
      */
-    private void checkFilters() {
+    private void onEntriesLocked() {
         ret = new GridCacheReturn<>(null, true);
 
         for (IgniteTxEntry<K, V> txEntry : tx.optimisticLockEntries()) {
@@ -769,7 +769,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
-            checkFilters();
+            onEntriesLocked();
 
             {
                 Map<UUID, GridDistributedTxMapping<K, V>> futDhtMap = new HashMap<>();

@@ -44,6 +44,9 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     /** Success flag. */
     private volatile boolean success;
 
+    /** */
+    private volatile boolean invokeRes;
+
     /**
      * Empty constructor.
      */
@@ -70,6 +73,19 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     }
 
     /**
+     *
+     * @param v Value.
+     * @param success Success flag.
+     */
+    public GridCacheReturn(V v, boolean success, boolean invokeRes) {
+        assert !invokeRes || v instanceof Map;
+
+        this.v = v;
+        this.success = success;
+        this.invokeRes = invokeRes;
+    }
+
+    /**
      * @return Value.
      */
     @Nullable public V value() {
@@ -83,6 +99,13 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
      */
     public boolean hasValue() {
         return v != null;
+    }
+
+    /**
+     * @return If return is invoke result.
+     */
+    public boolean invokeResult() {
+        return invokeRes;
     }
 
     /**
@@ -134,6 +157,8 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
         assert key != null;
         assert res != null;
 
+        invokeRes = true;
+
         HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
 
         if (resMap == null) {
@@ -145,6 +170,26 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
         resMap.put(key, res);
     }
 
+    /**
+     * @param other Other result to merge with.
+     */
+    public synchronized void mergeEntryProcessResults(GridCacheReturn<V> other) {
+        assert invokeRes || v == null : "Invalid state to merge: " + this;
+        assert other.invokeRes;
+
+        invokeRes = true;
+
+        HashMap<Object, EntryProcessorResult> resMap = (HashMap<Object, EntryProcessorResult>)v;
+
+        if (resMap == null) {
+            resMap = new HashMap<>();
+
+            v = (V)resMap;
+        }
+
+        resMap.putAll((Map<Object, EntryProcessorResult>)other.v);
+    }
+
     /** {@inheritDoc} */
     @Override public Object ggClassId() {
         return GG_CLASS_ID;
@@ -154,6 +199,7 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeBoolean(success);
         out.writeObject(v);
+        out.writeBoolean(invokeRes);
     }
 
     /** {@inheritDoc} */
@@ -161,6 +207,7 @@ public class GridCacheReturn<V> implements Externalizable, IgniteOptimizedMarsha
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         success = in.readBoolean();
         v = (V)in.readObject();
+        invokeRes = in.readBoolean();
     }
 
     /** {@inheritDoc} */

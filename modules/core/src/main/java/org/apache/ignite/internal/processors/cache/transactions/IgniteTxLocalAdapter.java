@@ -282,7 +282,10 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param ret Result.
      */
     public void implicitSingleResult(GridCacheReturn<V> ret) {
-        implicitRes = ret;
+        if (ret.invokeResult())
+            implicitRes.mergeEntryProcessResults(ret);
+        else
+            implicitRes = ret;
     }
 
     /**
@@ -730,17 +733,32 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                                     boolean evt = !isNearLocallyMapped(txEntry, false);
 
-                                    // For near local transactions we must record DHT version
-                                    // in order to keep near entries on backup nodes until
-                                    // backup remote transaction completes.
-                                    if (cacheCtx.isNear())
-                                        ((GridNearCacheEntry<K, V>)cached).recordDhtVersion(txEntry.dhtVersion());
-
                                     if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
                                         txEntry.cached().unswap(true, false);
 
                                     GridTuple3<GridCacheOperation, V, byte[]> res = applyTransformClosures(txEntry,
                                         true);
+
+                                    // For near local transactions we must record DHT version
+                                    // in order to keep near entries on backup nodes until
+                                    // backup remote transaction completes.
+                                    if (cacheCtx.isNear()) {
+                                        ((GridNearCacheEntry<K, V>)cached).recordDhtVersion(txEntry.dhtVersion());
+
+                                        if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.drExpireTime() == -1L) {
+                                            ExpiryPolicy expiry = txEntry.expiry();
+
+                                            if (expiry == null)
+                                                expiry = cacheCtx.expiry();
+
+                                            if (expiry != null) {
+                                                Duration duration = cached.hasValue() ?
+                                                    expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                                                txEntry.ttl(CU.toTtl(duration));
+                                            }
+                                        }
+                                    }
 
                                     GridCacheOperation op = res.get1();
                                     V val = res.get2();
