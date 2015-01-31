@@ -750,20 +750,6 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                                     GridCacheVersion explicitVer = txEntry.drVersion() != null ?
                                         txEntry.drVersion() : writeVersion();
 
-                                    if (op == CREATE || op == UPDATE && txEntry.drExpireTime() == -1L) {
-                                        ExpiryPolicy expiry = txEntry.expiry();
-
-                                        if (expiry == null)
-                                            expiry = cacheCtx.expiry();
-
-                                        if (expiry != null) {
-                                            Duration duration = cached.hasValue() ?
-                                                expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
-
-                                            txEntry.ttl(CU.toTtl(duration));
-                                        }
-                                    }
-
                                     boolean drNeedResolve = cacheCtx.conflictNeedResolve(cached.version(), explicitVer);
 
                                     if (drNeedResolve) {

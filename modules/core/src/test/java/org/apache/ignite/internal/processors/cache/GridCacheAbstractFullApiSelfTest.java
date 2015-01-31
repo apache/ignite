@@ -4492,7 +4492,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             CacheEntry<String, Integer> curEntry = cache(i).entry(key);
 
             if (curEntry.primary() || curEntry.backup()) {
-                assertEquals(ttl, curEntry.timeToLive());
+                assertEquals("Invalid ttl [primary=" + curEntry.primary() + ", backup=" + curEntry.backup() + ']',
+                    ttl, curEntry.timeToLive());
 
                 assert curEntry.expirationTime() > startTime;
 

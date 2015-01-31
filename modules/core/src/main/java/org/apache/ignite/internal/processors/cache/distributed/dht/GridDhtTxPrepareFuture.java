@@ -35,11 +35,13 @@ import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.expiry.*;
 import javax.cache.processor.*;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.events.IgniteEventType.*;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
@@ -272,6 +274,20 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             GridCacheEntryEx<K, V> cached = txEntry.cached();
 
             try {
+                if (txEntry.op() == CREATE || txEntry.op() == UPDATE && txEntry.drExpireTime() == -1L) {
+                    ExpiryPolicy expiry = txEntry.expiry();
+
+                    if (expiry == null)
+                        expiry = cacheCtx.expiry();
+
+                    if (expiry != null) {
+                        Duration duration = cached.hasValue() ?
+                            expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
+
+                        txEntry.ttl(CU.toTtl(duration));
+                    }
+                }
+
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
                 if (hasFilters || retVal || txEntry.op() == GridCacheOperation.DELETE) {
