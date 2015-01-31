@@ -412,7 +412,7 @@ public class IgniteFsConfiguration {
      *     <li>{@code port} - endpoint port.</li>
      *     <li>{@code size} - memory size allocated for single endpoint communication.</li>
      *     <li>
-     *         {@code tokenDirectoryPath} - path, either absolute or relative to {@code GRIDGAIN_HOME} to
+     *         {@code tokenDirectoryPath} - path, either absolute or relative to {@code IGNITE_HOME} to
      *         store shared memory tokens.
      *     </li>
      * </ul>

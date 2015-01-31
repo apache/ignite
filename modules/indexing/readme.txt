@@ -5,7 +5,7 @@ Apache Ignite indexing module provides capabilities to index cache context and r
 individual field queries against these indexes.
 
 To enable indexing module when starting a standalone node, move 'optional/ignite-indexing' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing indexing Module In Maven Project

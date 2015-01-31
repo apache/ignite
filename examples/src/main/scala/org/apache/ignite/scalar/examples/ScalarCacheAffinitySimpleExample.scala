@@ -32,7 +32,7 @@ import org.apache.ignite.scalar.scalar._
  * Note also that for affinity routing is enabled for all caches.
  *
  * Remote nodes should always be started with configuration file which includes
- * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
+ * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
 object ScalarCacheAffinitySimpleExample extends App {

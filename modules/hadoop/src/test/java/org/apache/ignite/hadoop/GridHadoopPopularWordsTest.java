@@ -46,15 +46,15 @@ import static java.util.Collections.*;
  */
 public class GridHadoopPopularWordsTest {
     /** GridGain home. */
-    private static final String GG_HOME = U.getGridGainHome();
+    private static final String IGNITE_HOME = U.getGridGainHome();
 
     /** The path to the input directory. ALl files in that directory will be processed. */
     private static final Path BOOKS_LOCAL_DIR =
-        new Path("file:" + GG_HOME, "modules/tests/java/org/apache/grid/hadoop/books");
+        new Path("file:" + IGNITE_HOME, "modules/tests/java/org/gridgain/grid/hadoop/books");
 
     /** The path to the output directory. THe result file will be written to this location. */
     private static final Path RESULT_LOCAL_DIR =
-        new Path("file:" + GG_HOME, "modules/tests/java/org/apache/grid/hadoop/output");
+        new Path("file:" + IGNITE_HOME, "modules/tests/java/org/gridgain/grid/hadoop/output");
 
     /** Popular books source dir in DFS. */
     private static final Path BOOKS_DFS_DIR = new Path("tmp/word-count-example/in");

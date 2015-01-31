@@ -111,10 +111,10 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R>, Externalizable {
     private int lastLsnrExecCnt;
 
     /** Synchronous notification flag. */
-    private volatile boolean syncNotify = IgniteSystemProperties.getBoolean(GG_FUT_SYNC_NOTIFICATION, true);
+    private volatile boolean syncNotify = IgniteSystemProperties.getBoolean(IGNITE_FUT_SYNC_NOTIFICATION, true);
 
     /** Concurrent notification flag. */
-    private volatile boolean concurNotify = IgniteSystemProperties.getBoolean(GG_FUT_CONCURRENT_NOTIFICATION, false);
+    private volatile boolean concurNotify = IgniteSystemProperties.getBoolean(IGNITE_FUT_CONCURRENT_NOTIFICATION, false);
 
     /** Mutex. */
     private final Object mux = new Object();

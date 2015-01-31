@@ -58,10 +58,10 @@ import org.apache.ignite.testframework.junits.common.*;
  * <ul>
  * <li>
  *      JVM configuration should include:
- *      {@code -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar}
+ *      {@code -javaagent:${IGNITE_HOME}/libs/aspectjweaver-1.7.2.jar}
  * </li>
  * <li>
- *      Classpath should contain the {@code ${GRIDGAIN_HOME}/modules/tests/config/aop/aspectj} folder.
+ *      Classpath should contain the {@code ${IGNITE_HOME}/modules/tests/config/aop/aspectj} folder.
  * </li>
  */
 public class GridMonteCarloExamplesSelfTest extends GridAbstractExamplesTest {

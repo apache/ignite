@@ -47,7 +47,7 @@
 -->
 
 <configuration>
-    <!-- 
+    <!--
         Framework name must be set to 'ignite'.
     -->
     <property>

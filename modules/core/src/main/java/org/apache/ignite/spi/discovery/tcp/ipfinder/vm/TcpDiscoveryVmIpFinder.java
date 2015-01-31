@@ -57,7 +57,7 @@ public class TcpDiscoveryVmIpFinder extends TcpDiscoveryIpFinderAdapter {
      * Initialize from system property.
      */
     {
-        String ips = IgniteSystemProperties.getString(GG_TCP_DISCOVERY_ADDRESSES);
+        String ips = IgniteSystemProperties.getString(IGNITE_TCP_DISCOVERY_ADDRESSES);
 
         if (!F.isEmpty(ips)) {
             Collection<InetSocketAddress> addrsList = new LinkedHashSet<>();

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.gridgain.examples;
+package org.apache.ignite.examples;
 
 import org.apache.ignite.*;
 import org.apache.ignite.lang.*;
@@ -26,7 +26,7 @@ import org.apache.ignite.lang.IgniteCallable;
  * Demonstrates broadcasting and unicasting computations within grid projection.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  */
 public class ComputeExample {
     /**
