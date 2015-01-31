@@ -301,11 +301,6 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
         return dhtVers[idx];
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean transferExpiryPolicy() {
-        return true;
-    }
-
     /**
      * @return TTL for read operation.
      */

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import org.apache.ignite.*;
+import org.apache.ignite.client.util.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
@@ -78,6 +79,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     /** Full information about transaction nodes mapping. */
     private GridDhtTxMapping<K, V> txMapping;
 
+    /** */
+    private Collection<IgniteTxKey<K>> lockKeys = new GridConcurrentHashSet<>();
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -128,6 +132,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             log.debug("Transaction future received owner changed callback: " + entry);
 
         if (entry.context().isNear() && owner != null && tx.hasWriteKey(entry.txKey())) {
+            lockKeys.remove(entry.txKey());
+
             // This will check for locks.
             onDone();
 
@@ -213,45 +219,16 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @return {@code True} if all locks are owned.
      */
     private boolean checkLocks() {
-        Collection<IgniteTxEntry<K, V>> checkEntries = tx.groupLock() ?
-            Collections.singletonList(tx.groupLockEntry()) :
-            tx.writeEntries();
+        boolean locked = lockKeys.isEmpty();
 
-        for (IgniteTxEntry<K, V> txEntry : checkEntries) {
-            // Wait for near locks only.
-            if (!txEntry.context().isNear())
-                continue;
-
-            while (true) {
-                GridCacheEntryEx<K, V> cached = txEntry.cached();
-
-                try {
-                    GridCacheVersion ver = txEntry.explicitVersion() != null ?
-                        txEntry.explicitVersion() : tx.xidVersion();
-
-                    // If locks haven't been acquired yet, keep waiting.
-                    if (!cached.lockedBy(ver)) {
-                        if (log.isDebugEnabled())
-                            log.debug("Transaction entry is not locked by transaction (will wait) [entry=" + cached +
-                                ", tx=" + tx + ']');
-
-                        return false;
-                    }
-
-                    break; // While.
-                }
-                // Possible if entry cached within transaction is obsolete.
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
-
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
-                }
-            }
+        if (locked) {
+            if (log.isDebugEnabled())
+                log.debug("All locks are acquired for near prepare future: " + this);
         }
-
-        if (log.isDebugEnabled())
-            log.debug("All locks are acquired for near prepare future: " + this);
+        else {
+            if (log.isDebugEnabled())
+                log.debug("Still waiting for locks [fut=" + this + ", keys=" + lockKeys + ']');
+        }
 
         return true;
     }
@@ -564,7 +541,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      *
      */
     private void preparePessimistic() {
-        Map<ClusterNode, GridDistributedTxMapping<K, V>> mappings = new HashMap<>();
+        Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping<K, V>> mappings = new HashMap<>();
 
         long topVer = tx.topologyVersion();
 
@@ -577,12 +554,18 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
             ClusterNode primary = F.first(nodes);
 
-            GridDistributedTxMapping<K, V> nodeMapping = mappings.get(primary);
+            boolean near = cacheCtx.isNear();
+
+            IgniteBiTuple<ClusterNode, Boolean> key = F.t(primary, near);
+
+            GridDistributedTxMapping<K, V> nodeMapping = mappings.get(key);
 
             if (nodeMapping == null) {
                 nodeMapping = new GridDistributedTxMapping<>(primary);
 
-                mappings.put(primary, nodeMapping);
+                nodeMapping.near(cacheCtx.isNear());
+
+                mappings.put(key, nodeMapping);
             }
 
             txEntry.nodeId(primary.id());
@@ -663,13 +646,6 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
                                 tx.addDhtVersion(m.node().id(), dhtTx.xidVersion());
 
                                 m.dhtVersion(dhtTx.xidVersion());
-
-                                GridCacheVersion min = dhtTx.minVersion();
-
-                                IgniteTxManager<K, V> tm = cctx.tm();
-
-                                tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
-                                    tm.committedVersions(min), tm.rolledbackVersions(min));
                             }
 
                             tx.implicitSingleResult(dhtTx.implicitSingleResult());
@@ -821,8 +797,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                             IgniteTxManager<K, V> tm = cctx.tm();
 
-                            tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
-                                tm.committedVersions(min), tm.rolledbackVersions(min));
+                            if (m.near())
+                                tx.readyNearLocks(m, Collections.<GridCacheVersion>emptyList(),
+                                    tm.committedVersions(min), tm.rolledbackVersions(min));
                         }
 
                         // Continue prepare before completing the future.
@@ -902,6 +879,9 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
         entry.nodeId(primary.id());
 
         if (cacheCtx.isNear()) {
+            if (entry.explicitVersion() == null)
+                lockKeys.add(entry.txKey());
+
             while (true) {
                 try {
                     GridNearCacheEntry<K, V> cached = (GridNearCacheEntry<K, V>)entry.cached();
@@ -1083,7 +1063,8 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
 
                         m.dhtVersion(res.dhtVersion());
 
-                        tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
+                        if (m.near())
+                            tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());
                     }
 
                     // Proceed prepare before finishing mini future.

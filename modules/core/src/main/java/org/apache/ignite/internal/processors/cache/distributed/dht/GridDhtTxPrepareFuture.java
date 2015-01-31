@@ -116,6 +116,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     /** Keys that did not pass the filter. */
     private Collection<IgniteTxKey<K>> filterFailedKeys;
 
+    /** Keys that should be locked. */
+    private GridConcurrentHashSet<IgniteTxKey<K>> lockKeys = new GridConcurrentHashSet<>();
+
+    /** Locks ready flag. */
+    private volatile boolean locksReady;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -209,9 +215,9 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        boolean ret = tx.hasWriteKey(entry.txKey());
+        boolean rmv = lockKeys.remove(entry.txKey());
 
-        return ret && mapIfLocked();
+        return rmv && mapIfLocked();
     }
 
     /** {@inheritDoc} */
@@ -235,44 +241,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * @return {@code True} if all locks are owned.
      */
     private boolean checkLocks() {
-        for (IgniteTxEntry<K, V> txEntry : tx.optimisticLockEntries()) {
-            while (true) {
-                GridCacheEntryEx<K, V> cached = txEntry.cached();
-
-                try {
-                    if (txEntry.explicitVersion() == null) {
-                        // Don't compare entry against itself.
-                        if (!cached.lockedLocally(tx.xidVersion())) {
-                            if (log.isDebugEnabled())
-                                log.debug("Transaction entry is not locked by transaction (will wait) [entry=" +
-                                    cached + ", tx=" + tx + ']');
-
-                            return false;
-                        }
-                    }
-                    else {
-                        if (!cached.lockedBy(txEntry.explicitVersion())) {
-                            if (log.isDebugEnabled())
-                                log.debug("Transaction entry is not locked by explicit version (will wait) [entry=" +
-                                    cached + ", tx=" + tx + ']');
-
-                            return false;
-                        }
-                    }
-
-                    break; // While.
-                }
-                // Possible if entry cached within transaction is obsolete.
-                catch (GridCacheEntryRemovedException ignored) {
-                    if (log.isDebugEnabled())
-                        log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
-
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
-                }
-            }
-        }
-
-        return true;
+        return locksReady && lockKeys.isEmpty();
     }
 
     /** {@inheritDoc} */
@@ -460,13 +429,26 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
             Collections.singletonList(tx.groupLockEntry()) : writes;
 
         for (IgniteTxEntry<K, V> txEntry : checkEntries) {
-            if (txEntry.cached().isLocal())
+            GridCacheContext<K, V> cacheCtx = txEntry.context();
+
+            if (cacheCtx.isLocal())
                 continue;
 
-            while (true) {
-                GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
+            GridDistributedCacheEntry<K, V> entry = (GridDistributedCacheEntry<K, V>)txEntry.cached();
 
+            if (entry == null) {
+                entry = (GridDistributedCacheEntry<K, V>)cacheCtx.cache().entryEx(txEntry.key());
+
+                txEntry.cached(entry, txEntry.keyBytes());
+            }
+
+            if (tx.optimistic() && txEntry.explicitVersion() == null)
+                lockKeys.add(txEntry.txKey());
+
+            while (true) {
                 try {
+                    assert txEntry.explicitVersion() == null || entry.lockedBy(txEntry.explicitVersion());
+
                     GridCacheMvccCandidate<K> c = entry.readyLock(tx.xidVersion());
 
                     if (log.isDebugEnabled())
@@ -479,10 +461,14 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     if (log.isDebugEnabled())
                         log.debug("Got removed entry in future onAllReplies method (will retry): " + txEntry);
 
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()), txEntry.keyBytes());
+                    entry = (GridDistributedCacheEntry<K, V>)cacheCtx.cache().entryEx(txEntry.key());
+
+                    txEntry.cached(entry, txEntry.keyBytes());
                 }
             }
         }
+
+        locksReady = true;
     }
 
     /**

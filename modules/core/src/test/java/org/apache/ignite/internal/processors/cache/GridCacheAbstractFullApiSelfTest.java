@@ -4477,10 +4477,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         try {
             grid(0).jcache(null).withExpiryPolicy(expiry).put(key, 1);
+
+            if (tx != null)
+                tx.commit();
         }
         finally {
             if (tx != null)
-                tx.commit();
+                tx.close();
         }
 
         long[] expireTimes = new long[gridCount()];

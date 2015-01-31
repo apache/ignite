@@ -1360,9 +1360,11 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
      * @param expiryPlc Expiry policy.
      * @return Expiry policy wrapper for entries accessed locally in optimistic transaction.
      */
-    protected IgniteCacheExpiryPolicy accessPolicy(GridCacheContext ctx,
-        IgniteTxKey key,
-        @Nullable ExpiryPolicy expiryPlc) {
+    protected IgniteCacheExpiryPolicy accessPolicy(
+        GridCacheContext ctx,
+        IgniteTxKey<K> key,
+        @Nullable ExpiryPolicy expiryPlc
+    ) {
         return null;
     }
 

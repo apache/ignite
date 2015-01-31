@@ -451,6 +451,7 @@ public abstract class GridDhtTxLocalAdapter<K, V> extends IgniteTxLocalAdapter<K
                 entry.valueBytes(e.valueBytes());
                 entry.ttl(e.ttl());
                 entry.filters(e.filters());
+                entry.expiry(e.expiry());
                 entry.drExpireTime(e.drExpireTime());
                 entry.drVersion(e.drVersion());
             }
