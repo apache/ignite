@@ -426,6 +426,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                     info = new GridCacheEntryInfo<>();
 
                     info.key(key);
+                    info.cacheId(cctx.cacheId());
 
                     long expireTime = expireTimeExtras();
 
@@ -1675,9 +1676,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
             if (isNew())
                 unswap(true, retval);
 
-            boolean newTtlResolved = false;
-
-            boolean drNeedResolve = false;
+            boolean drNeedResolve;
 
             Object transformClo = null;
 
@@ -1714,8 +1713,6 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                         newTtl = ttl < 0 ? ttlExtras() : ttl;
                         newExpireTime = CU.toExpireTime(newTtl);
                     }
-
-                    newTtlResolved = true;
 
                     GridCacheVersionedEntryEx<K, V> oldEntry = versionedEntry();
                     GridCacheVersionedEntryEx<K, V> newEntry =
@@ -1871,7 +1868,7 @@ public abstract class GridCacheMapEntry<K, V> implements GridCacheEntryEx<K, V> 
                             expiryPlc.ttlUpdated(key,
                                 getOrMarshalKeyBytes(),
                                 version(),
-                                hasReaders() ? ((GridDhtCacheEntry) this).readers() : null);
+                                hasReaders() ? ((GridDhtCacheEntry<K, V>) this).readers() : null);
                         }
                     }
 

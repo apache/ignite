@@ -826,6 +826,8 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                         try {
                             GridDhtCacheEntry<K, V> cached = (GridDhtCacheEntry<K, V>)entry.cached();
 
+                            GridCacheContext<K, V> cacheCtx = cached.context();
+
                             if (entry.explicitVersion() == null) {
                                 GridCacheMvccCandidate<K> added = cached.candidate(version());
 
@@ -842,8 +844,14 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                             req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
                                 cached.readerId(n.id()) != null);
 
-                            if (cached.isNewLocked())
-                                req.markKeyForPreload(idx);
+                            if (cached.isNewLocked()) {
+                                List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
+                                    tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
+
+                                // Do not preload if local node is partition owner.
+                                if (!owners.contains(cctx.localNode()))
+                                    req.markKeyForPreload(idx);
+                            }
 
                             break;
                         }

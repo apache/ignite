@@ -2249,9 +2249,12 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
 
                         IgniteTxEntry<K, V> e = entry(new IgniteTxKey<>(key, cacheCtx.cacheId()));
 
-                        assert e != null && e.op() == TRANSFORM : e;
+                        assert e != null;
 
-                        addInvokeResult(e, val, ret);
+                        if (e.op() == TRANSFORM)
+                            addInvokeResult(e, val, ret);
+                        else
+                            ret.set(val, true);
                     }
                 });
 
