@@ -85,7 +85,7 @@ class VisorConsoleSelfTestSuite extends Suites (
             if (thirdByte < 0)
                 thirdByte += 256
 
-            System.setProperty(GG_OVERRIDE_MCAST_GRP, "229." + thirdByte + ".255.255")
+            System.setProperty(IGNITE_OVERRIDE_MCAST_GRP, "229." + thirdByte + ".255.255")
         }
     }
     catch {

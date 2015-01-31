@@ -34,7 +34,7 @@ import java.util.*;
  * which will start GridGain node with {@code examples/config/example-compute.xml} configuration.
  * <p>
  * NOTE:<br/>
- * Starting {@code ggstart.sh} directly will not work, as distributed services
+ * Starting {@code ignite.sh} directly will not work, as distributed services
  * cannot be peer-deployed and classes must be on the classpath for every node.
  */
 public class ServicesExample {

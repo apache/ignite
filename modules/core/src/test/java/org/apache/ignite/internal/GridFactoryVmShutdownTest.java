@@ -63,7 +63,7 @@ public class GridFactoryVmShutdownTest {
         });
 
         // Test with shutdown hook enabled and disabled.
-        // System.setProperty(GridSystemProperties.GG_NO_SHUTDOWN_HOOK, "true");
+        // System.setProperty(GridSystemProperties.IGNITE_NO_SHUTDOWN_HOOK, "true");
 
         // Grid will start and add shutdown hook.
         G.start();

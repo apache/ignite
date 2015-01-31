@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheMode.*;
 
 /**
  * Test to check slow TX warning timeout defined by
- * {@link org.apache.ignite.IgniteSystemProperties#GG_SLOW_TX_WARN_TIMEOUT}
+ * {@link org.apache.ignite.IgniteSystemProperties#IGNITE_SLOW_TX_WARN_TIMEOUT}
  * system property.
  */
 public class GridCacheSlowTxWarnTest extends GridCommonAbstractTest {

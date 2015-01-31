@@ -102,8 +102,8 @@ import static org.apache.ignite.events.IgniteEventType.*;
 @SuppressWarnings({"PackageVisibleInnerClass", "PackageVisibleField"})
 public class FileSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi, FileSwapSpaceSpiMBean {
     /**
-     * Default base directory. Note that this path is relative to {@code GRIDGAIN_HOME/work} folder
-     * if {@code GRIDGAIN_HOME} system or environment variable specified, otherwise it is relative to
+     * Default base directory. Note that this path is relative to {@code IGNITE_HOME/work} folder
+     * if {@code IGNITE_HOME} system or environment variable specified, otherwise it is relative to
      * {@code work} folder under system {@code java.io.tmpdir} folder.
      *
      * @see org.apache.ignite.configuration.IgniteConfiguration#getWorkDirectory()

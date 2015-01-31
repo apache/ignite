@@ -53,7 +53,7 @@ import java.util.*;
  * {@code GridSpringCacheManager} can start a node itself on its startup
  * based on provided GridGain configuration. You can provide path to a
  * Spring configuration XML file, like below (path can be absolute or
- * relative to {@code GRIDGAIN_HOME}):
+ * relative to {@code IGNITE_HOME}):
  * <pre name="code" class="xml">
  * &lt;beans xmlns="http://www.springframework.org/schema/beans"
  *        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -125,7 +125,7 @@ import java.util.*;
  * <h1>Starting Remote Nodes</h1>
  * Remember that the node started inside your application is an entry point
  * to the whole topology it connects to. You can start as many remote standalone
- * nodes as you need using {@code bin/ggstart.{sh|bat}} scripts provided in
+ * nodes as you need using {@code bin/ignite.{sh|bat}} scripts provided in
  * GridGain distribution, and all these nodes will participate
  * in caching data.
  */

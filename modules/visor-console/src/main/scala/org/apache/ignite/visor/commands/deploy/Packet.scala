@@ -61,8 +61,8 @@ package org.apache.ignite.visor.commands
  *     -s=<path>
  *         Source path.
  *     -d=<path>
- *         Destination path (relative to GRIDGAIN_HOME).
- *         If not provided, files will be copied to the root of GRIDGAIN_HOME.
+ *         Destination path (relative to IGNITE_HOME).
+ *         If not provided, files will be copied to the root of IGNITE_HOME.
  * }}}
  *
  * ====Examples====

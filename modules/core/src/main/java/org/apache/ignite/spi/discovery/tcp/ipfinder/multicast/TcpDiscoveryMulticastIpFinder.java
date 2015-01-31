@@ -73,7 +73,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     public static final int DFLT_ADDR_REQ_ATTEMPTS = 2;
 
     /** Address request message data. */
-    private static final byte[] MSG_ADDR_REQ_DATA = U.GG_HEADER;
+    private static final byte[] MSG_ADDR_REQ_DATA = U.IGNITE_HEADER;
 
     /** */
     private static final IgniteMarshaller marsh = new IgniteJdkMarshaller();
@@ -228,9 +228,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
     /** {@inheritDoc} */
     @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
-        // If GRIDGAIN_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
+        // If IGNITE_OVERRIDE_MCAST_GRP system property is set, use its value to override multicast group from
         // configuration. Used for testing purposes.
-        String overrideMcastGrp = System.getProperty(GG_OVERRIDE_MCAST_GRP);
+        String overrideMcastGrp = System.getProperty(IGNITE_OVERRIDE_MCAST_GRP);
 
         if (overrideMcastGrp != null)
             mcastGrp = overrideMcastGrp;
@@ -436,7 +436,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                             byte[] data = resPckt.getData();
 
-                            if (!U.bytesEqual(U.GG_HEADER, 0, data, 0, U.GG_HEADER.length)) {
+                            if (!U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length)) {
                                 U.error(log, "Failed to verify message header.");
 
                                 continue;
@@ -542,12 +542,12 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             this.addrs = addrs;
 
             byte[] addrsData = marsh.marshal(addrs);
-            data = new byte[U.GG_HEADER.length + addrsData.length];
+            data = new byte[U.IGNITE_HEADER.length + addrsData.length];
 
             if (data.length > MAX_DATA_LENGTH)
                 throw new IgniteCheckedException("Too long data packet [size=" + data.length + ", max=" + MAX_DATA_LENGTH + "]");
 
-            System.arraycopy(U.GG_HEADER, 0, data, 0, U.GG_HEADER.length);
+            System.arraycopy(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
             System.arraycopy(addrsData, 0, data, 4, addrsData.length);
         }
 
@@ -556,11 +556,11 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
          * @throws IgniteCheckedException If unmarshalling failed.
          */
         private AddressResponse(byte[] data) throws IgniteCheckedException {
-            assert U.bytesEqual(U.GG_HEADER, 0, data, 0, U.GG_HEADER.length);
+            assert U.bytesEqual(U.IGNITE_HEADER, 0, data, 0, U.IGNITE_HEADER.length);
 
             this.data = data;
 
-            addrs = marsh.unmarshal(Arrays.copyOfRange(data, U.GG_HEADER.length, data.length), null);
+            addrs = marsh.unmarshal(Arrays.copyOfRange(data, U.IGNITE_HEADER.length, data.length), null);
         }
 
         /**
@@ -704,7 +704,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
                     sock.receive(pckt);
 
-                    if (!U.bytesEqual(U.GG_HEADER, 0, reqData, 0, U.GG_HEADER.length)) {
+                    if (!U.bytesEqual(U.IGNITE_HEADER, 0, reqData, 0, U.IGNITE_HEADER.length)) {
                         U.error(log, "Failed to verify message header.");
 
                         continue;

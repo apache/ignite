@@ -40,7 +40,7 @@ Installation requirements:
 After setup script successfully completed, you can execute the Ignite startup script.
 The following command will startup Ignite node with default configuration using multicast node discovery.
 
-    bin/ggstart.{sh|bat}
+    bin/ignite.{sh|bat}
 
 If Ignite was installed successfully, the output from above commands should produce no exceptions or errors.
 Note that you may see some other warnings during startup, but this is OK as they are meant to inform that certain
@@ -53,7 +53,7 @@ Here is an example of log printout when 2 nodes join topology:
 
 You can also start Ignite Management Console, called Visor, and observe started nodes. To startup Visor, you should execute the following script:
 
-    /bin/ggvisorcmd.{sh|bat} 
+    /bin/ignitevisorcmd.{sh|bat}
 
 ## 3. Configuration
 
@@ -112,6 +112,6 @@ Ignite comes with CLI (command) based DevOps Managements Console, called Visor, 
 
 To start Visor in console mode you should execute the following command:
 
-    `bin/ggvisorcmd.sh`
+    `bin/ignitevisorcmd.sh`
 
 On Windows, run the same commands with `.bat` extension.

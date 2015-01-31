@@ -48,7 +48,7 @@ import org.jetbrains.annotations.*;
  *    &lt;/bean>
  * </pre>
  * By default, all gridgain startup scripts ({@code gridgain.sh} or {@code gridgain.bat})
- * pick up user version from {@code GRIDGAIN_HOME/config/userversion} folder. Usually, it
+ * pick up user version from {@code IGNITE_HOME/config/userversion} folder. Usually, it
  * is just enough to update user version under that folder, however, in case of {@code GAR}
  * or {@code JAR} deployment, you should remember to provide {@code META-INF/gridgain.xml}
  * file with desired user version in it.
@@ -61,7 +61,7 @@ import org.jetbrains.annotations.*;
  * <ol>
  *  <li>
  *      Simply startup stand-alone GridGain nodes by executing
- *      {@code GRIDGAIN_HOME/ggstart.{sh|bat}} scripts.
+ *      {@code IGNITE_HOME/ignite.{sh|bat}} scripts.
  *  </li>
  *  <li>
  *      Now, all jobs executing locally or remotely can have a single instance of cache

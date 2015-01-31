@@ -28,7 +28,7 @@ import scala.util.control.Breaks._
  * Note that affinity routing is enabled for all caches.
  *
  * Remote nodes should always be started with configuration file which includes
- * cache: `'ggstart.sh examples/config/example-cache.xml'`. Local node can
+ * cache: `'ignite.sh examples/config/example-cache.xml'`. Local node can
  * be started with or without cache.
  */
 object ScalarCacheAffinityExample2 {
