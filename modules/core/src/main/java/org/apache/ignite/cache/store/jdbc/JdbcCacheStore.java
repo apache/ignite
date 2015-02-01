@@ -154,7 +154,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      * @param rs ResultSet.
      * @return Constructed object.
      */
-    protected abstract <R> R buildObject(String typeName, Collection<CacheQueryTypeDescriptor> fields, ResultSet rs)
+    protected abstract <R> R buildObject(String typeName, Collection<CacheQueryTableColumnMetadata> fields, ResultSet rs)
         throws CacheLoaderException;
 
     /**
@@ -174,11 +174,12 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
     protected abstract Object keyId(String type) throws CacheException;
 
     /**
-     * Prepare internal store specific builders for provided type metadata.
+     * Prepare internal store specific builders for provided types metadata.
      *
+     * @param types Collection of types.
      * @throws CacheException If failed to prepare.
      */
-    protected abstract void prepareBuilders(Collection<CacheQueryTypeMetadata> typeMetadata) throws CacheException;
+    protected abstract void prepareBuilders(Collection<CacheQueryTypeMetadata> types) throws CacheException;
 
     /**
      * Perform dialect resolution.
@@ -434,8 +435,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                     ResultSet rs = stmt.executeQuery();
 
                     while (rs.next()) {
-                        K key = buildObject(m.keyType(), m.keyDescriptors(), rs);
-                        V val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+                        K key = buildObject(m.keyType(), m.keyColumns(), rs);
+                        V val = buildObject(m.valueType(), m.valueColumns(), rs);
 
                         clo.apply(key, val);
                     }
@@ -597,7 +598,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next())
-                return buildObject(em.valueType(), em.valueDescriptors(), rs);
+                return buildObject(em.valueType(), em.valueColumns(), rs);
         }
         catch (SQLException e) {
             throw new CacheLoaderException("Failed to load object by key: " + key, e);
@@ -924,7 +925,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      */
     protected int fillKeyParameters(PreparedStatement stmt, int i, EntryMapping type,
         Object key) throws CacheException {
-        for (CacheQueryTypeDescriptor field : type.keyDescriptors()) {
+        for (CacheQueryTableColumnMetadata field : type.keyColumns()) {
             Object fieldVal = extractField(type.keyType(), field.getJavaName(), key);
 
             try {
@@ -960,7 +961,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
      */
     protected int fillValueParameters(PreparedStatement stmt, int i, EntryMapping m, Object val)
         throws CacheWriterException {
-        for (CacheQueryTypeDescriptor field : m.uniqValFields) {
+        for (CacheQueryTableColumnMetadata field : m.uniqValFields) {
             Object fieldVal = extractField(m.valueType(), field.getJavaName(), val);
 
             try {
@@ -1146,33 +1147,37 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         private final Collection<String> cols;
 
         /** Unique value fields. */
-        private final Collection<CacheQueryTypeDescriptor> uniqValFields;
+        private final Collection<CacheQueryTableColumnMetadata> uniqValFields;
 
         /** Type metadata. */
-        private final CacheQueryTypeMetadata typeMetadata;
+        private final CacheQueryTypeMetadata typeMeta;
+
+        /** Table metadata. */
+        private final CacheQueryTableMetadata tblMeta;
 
         /**
-         * @param typeMetadata Type metadata.
+         * @param typeMeta Type metadata.
          */
-        public EntryMapping(JdbcDialect dialect, CacheQueryTypeMetadata typeMetadata) {
+        public EntryMapping(JdbcDialect dialect, CacheQueryTypeMetadata typeMeta) {
             this.dialect = dialect;
 
-            this.typeMetadata = typeMetadata;
+            this.typeMeta = typeMeta;
 
-            final Collection<CacheQueryTypeDescriptor> keyFields = typeMetadata.getKeyDescriptors();
+            tblMeta = typeMeta.getTableMetadata();
 
-            Collection<CacheQueryTypeDescriptor> valFields = typeMetadata.getValueDescriptors();
+            final Collection<CacheQueryTableColumnMetadata> keyFields = tblMeta.getKeyColumns();
 
-            uniqValFields = F.view(typeMetadata.getValueDescriptors(),
-                new IgnitePredicate<CacheQueryTypeDescriptor>() {
-                    @Override public boolean apply(CacheQueryTypeDescriptor desc) {
-                        return !keyFields.contains(desc);
-                    }
-                });
+            Collection<CacheQueryTableColumnMetadata> valFields = tblMeta.getValueColumns();
 
-            String schema = typeMetadata.getSchema();
+            uniqValFields = F.view(valFields, new IgnitePredicate<CacheQueryTableColumnMetadata>() {
+                @Override public boolean apply(CacheQueryTableColumnMetadata col) {
+                    return !keyFields.contains(col);
+                }
+            });
 
-            String tblName = typeMetadata.getTableName();
+            String schema = tblMeta.getSchema();
+
+            String tblName = tblMeta.getTableName();
 
             keyCols = databaseColumns(keyFields);
 
@@ -1202,15 +1207,15 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
         }
 
         /**
-         * Extract database column names from {@link CacheQueryTypeDescriptor}.
+         * Extract database column names from {@link CacheQueryTableColumnMetadata}.
          *
-         * @param dsc collection of {@link CacheQueryTypeDescriptor}.
+         * @param dsc collection of {@link CacheQueryTableColumnMetadata}.
          */
-        private static Collection<String> databaseColumns(Collection<CacheQueryTypeDescriptor> dsc) {
-            return F.transform(dsc, new C1<CacheQueryTypeDescriptor, String>() {
+        private static Collection<String> databaseColumns(Collection<CacheQueryTableColumnMetadata> dsc) {
+            return F.transform(dsc, new C1<CacheQueryTableColumnMetadata, String>() {
                 /** {@inheritDoc} */
-                @Override public String apply(CacheQueryTypeDescriptor desc) {
-                    return desc.getDbName();
+                @Override public String apply(CacheQueryTableColumnMetadata col) {
+                    return col.getDbName();
                 }
             });
         }
@@ -1229,7 +1234,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             if (keyCnt == 1)
                 return loadQrySingle;
 
-            return dialect.loadQuery(typeMetadata.getSchema(), typeMetadata.getTableName(), keyCols, cols, keyCnt);
+            return dialect.loadQuery(tblMeta.getSchema(), tblMeta.getTableName(), keyCols, cols, keyCnt);
         }
         /**
          * Construct query for select values in range.
@@ -1239,36 +1244,36 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
          * @return Query with range.
          */
         protected String loadCacheRangeQuery(boolean appendLowerBound, boolean appendUpperBound) {
-            return dialect.loadCacheRangeQuery(typeMetadata.getSchema(), typeMetadata.getTableName(), keyCols, cols,
+            return dialect.loadCacheRangeQuery(tblMeta.getSchema(), tblMeta.getTableName(), keyCols, cols,
                 appendLowerBound, appendUpperBound);
         }
 
         /** Key type. */
         protected String keyType() {
-            return typeMetadata.getKeyType();
+            return typeMeta.getKeyType();
         }
 
         /** Value type. */
         protected String valueType() {
-            return typeMetadata.getType();
+            return typeMeta.getType();
         }
 
         /**
-         * Gets key fields type descriptors.
+         * Gets key columns.
          *
-         * @return Key fields type descriptors.
+         * @return Key columns.
          */
-        protected Collection<CacheQueryTypeDescriptor> keyDescriptors() {
-            return typeMetadata.getKeyDescriptors();
+        protected Collection<CacheQueryTableColumnMetadata> keyColumns() {
+            return tblMeta.getKeyColumns();
         }
 
         /**
-         * Gets value fields type descriptors.
+         * Gets value columns.
          *
-         * @return Key value type descriptors.
+         * @return Value columns.
          */
-        protected Collection<CacheQueryTypeDescriptor> valueDescriptors() {
-            return typeMetadata.getValueDescriptors();
+        protected Collection<CacheQueryTableColumnMetadata> valueColumns() {
+            return tblMeta.getValueColumns();
         }
     }
 
@@ -1313,8 +1318,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 ResultSet rs = stmt.executeQuery();
 
                 while (rs.next()) {
-                    K1 key = buildObject(m.keyType(), m.keyDescriptors(), rs);
-                    V1 val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+                    K1 key = buildObject(m.keyType(), m.keyColumns(), rs);
+                    V1 val = buildObject(m.valueType(), m.valueColumns(), rs);
 
                     clo.apply(key, val);
                 }
@@ -1369,7 +1374,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 int i = 1;
 
                 for (Object key : keys)
-                    for (CacheQueryTypeDescriptor field : m.keyDescriptors()) {
+                    for (CacheQueryTableColumnMetadata field : m.keyColumns()) {
                         Object fieldVal = extractField(m.keyType(), field.getJavaName(), key);
 
                         if (fieldVal != null)
@@ -1383,8 +1388,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
                 Map<K1, V1> entries = U.newHashMap(keys.size());
 
                 while (rs.next()) {
-                    K1 key = buildObject(m.keyType(), m.keyDescriptors(), rs);
-                    V1 val = buildObject(m.valueType(), m.valueDescriptors(), rs);
+                    K1 key = buildObject(m.keyType(), m.keyColumns(), rs);
+                    V1 val = buildObject(m.valueType(), m.valueColumns(), rs);
 
                     entries.put(key, val);
                 }

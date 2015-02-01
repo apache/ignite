@@ -29,7 +29,6 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
@@ -342,9 +341,8 @@ public class SchemaLoadApp extends Application {
         final File destFolder = new File(outFolder);
 
         Runnable task = new Task<Void>() {
-            private void checkEmpty(final PojoDescriptor pojo, Collection<CacheQueryTypeDescriptor> descs,
-                String msg) {
-                if (descs.isEmpty()) {
+            private void checkEmpty(final PojoDescriptor pojo, Collection<PojoField> fields, String msg) {
+                if (fields.isEmpty()) {
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
                             pojosTbl.getSelectionModel().select(pojo);
@@ -363,7 +361,7 @@ public class SchemaLoadApp extends Application {
                 if (!destFolder.exists() && !destFolder.mkdirs())
                     throw new IOException("Failed to create output folder: " + destFolder);
 
-                Collection<CacheQueryTypeMetadata> all = new ArrayList<>();
+                Collection<PojoDescriptor> all = new ArrayList<>();
 
                 boolean constructor = pojoConstructorCh.isSelected();
                 boolean includeKeys = pojoIncludeKeysCh.isSelected();
@@ -374,16 +372,14 @@ public class SchemaLoadApp extends Application {
                 // Generate XML and POJO.
                 for (PojoDescriptor pojo : selPojos) {
                     if (pojo.checked()) {
-                        CacheQueryTypeMetadata meta = pojo.metadata(includeKeys);
+                        checkEmpty(pojo, pojo.keyFields(), "No key fields specified for type: ");
 
-                        checkEmpty(pojo, meta.getKeyDescriptors(), "No key fields specified for type: ");
+                        checkEmpty(pojo, pojo.valueFields(includeKeys), "No value fields specified for type: ");
 
-                        checkEmpty(pojo, meta.getValueDescriptors(), "No value fields specified for type: ");
-
-                        all.add(meta);
+                        all.add(pojo);
 
                         if (!singleXml)
-                            XmlGenerator.generate(pkg, meta, new File(destFolder, meta.getType() + ".xml"),
+                            XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
                                 askOverwrite);
 
                         PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
@@ -391,7 +387,7 @@ public class SchemaLoadApp extends Application {
                 }
 
                 if (singleXml)
-                    XmlGenerator.generate(pkg, all, new File(outFolder, "Ignite.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
 
                 perceptualDelay(started);
 
@@ -867,13 +863,16 @@ public class SchemaLoadApp extends Application {
 
                         try {
                             switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                                case 0: renameKeyClassNames(selPojos, regex, replace);
+                                case 0:
+                                    renameKeyClassNames(selPojos, regex, replace);
                                     break;
 
-                                case 1: renameValueClassNames(selPojos, regex, replace);
+                                case 1:
+                                    renameValueClassNames(selPojos, regex, replace);
                                     break;
 
-                                default: renameJavaNames(selPojos, regex, replace);
+                                default:
+                                    renameJavaNames(selPojos, regex, replace);
                             }
                         }
                         catch (Exception e) {
@@ -904,13 +903,16 @@ public class SchemaLoadApp extends Application {
                         return;
 
                     switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                        case 0: revertKeyClassNames(selPojos);
+                        case 0:
+                            revertKeyClassNames(selPojos);
                             break;
 
-                        case 1: revertValueClassNames(selPojos);
+                        case 1:
+                            revertValueClassNames(selPojos);
                             break;
 
-                        default: revertJavaNames(selPojos);
+                        default:
+                            revertJavaNames(selPojos);
                     }
                 }
             })

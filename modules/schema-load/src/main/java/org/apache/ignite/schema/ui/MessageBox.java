@@ -127,22 +127,16 @@ public class MessageBox extends ModalDialog {
             btns.getChildren().addAll(
                 button("Yes", "Approve the request", new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent e) {
-                        if (rememberChoice && rememberChoiceCh.isSelected())
-                            res = Result.YES_TO_ALL;
-                        else
-                            res = Result.YES;
+                        res = rememberChoice && rememberChoiceCh.isSelected() ? Result.YES_TO_ALL : Result.YES;
 
                         close();
                     }
                 }),
                 button("No", "Reject the request", new EventHandler<ActionEvent>() {
                     @Override public void handle(ActionEvent e) {
-                        res = Result.NO;
-                        if (rememberChoice && rememberChoiceCh.isSelected())
-                            res = Result.NO_TO_ALL;
-                        else
+                        res = rememberChoice && rememberChoiceCh.isSelected() ? Result.NO_TO_ALL : Result.NO;
 
-                            close();
+                        close();
                     }
                 }));
 

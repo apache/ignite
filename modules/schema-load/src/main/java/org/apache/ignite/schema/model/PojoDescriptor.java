@@ -20,40 +20,43 @@ package org.apache.ignite.schema.model;
 import javafx.beans.property.*;
 import javafx.beans.value.*;
 import javafx.collections.*;
-import org.apache.ignite.cache.query.*;
+import org.apache.ignite.schema.parser.*;
 
+import java.math.*;
 import java.util.*;
+
+import static java.sql.Types.*;
 
 /**
  * Descriptor for java type.
  */
 public class PojoDescriptor {
-    /** Selected property. */
-    private final BooleanProperty use;
+    /** Database table. */
+    private final DbTable tbl;
 
-    /** Key class name to show on screen. */
-    private final StringProperty keyClsName;
+    /** Selected property. */
+    private final BooleanProperty useProp;
 
     /** Previous name for key class. */
     private final String keyClsNamePrev;
 
-    /** Value class name to show on screen. */
-    private final StringProperty valClsName;
+    /** Key class name to show on screen. */
+    private final StringProperty keyClsNameProp;
 
     /** Previous name for value class. */
     private final String valClsNamePrev;
 
+    /** Value class name to show on screen. */
+    private final StringProperty valClsNameProp;
+
     /** Parent item (schema name). */
     private final PojoDescriptor parent;
-
-    /** Type metadata. */
-    private final CacheQueryTypeMetadata typeMeta;
 
     /** Children items (tables names). */
     private Collection<PojoDescriptor> children = Collections.emptyList();
 
     /** Indeterminate state of parent. */
-    private final BooleanProperty indeterminate = new SimpleBooleanProperty(false);
+    private final BooleanProperty indeterminateProp = new SimpleBooleanProperty(false);
 
     /** Full database name: schema + table. */
     private final String fullDbName;
@@ -62,75 +65,68 @@ public class PojoDescriptor {
     private final ObservableList<PojoField> fields;
 
     /**
-     * Create special descriptor for database schema.
-     *
-     * @param schema Database schema name.
-     * @return New {@code PojoDescriptor} instance.
-     */
-    public static PojoDescriptor schema(String schema) {
-        CacheQueryTypeMetadata typeMeta = new CacheQueryTypeMetadata();
-
-        typeMeta.setSchema(schema);
-        typeMeta.setTableName("");
-        typeMeta.setKeyType("");
-        typeMeta.setType("");
-
-        return new PojoDescriptor(null, typeMeta, Collections.<PojoField>emptyList());
-    }
-
-    /**
      * Constructor of POJO descriptor.
      *
      * @param prn Parent descriptor.
-     * @param typeMeta Type metadata descriptor.
-     * @param fields List of POJO fields.
+     * @param tbl Database table Tab;e.
      */
-    public PojoDescriptor(PojoDescriptor prn, CacheQueryTypeMetadata typeMeta, List<PojoField> fields) {
+    public PojoDescriptor(PojoDescriptor prn, DbTable tbl) {
         parent = prn;
 
-        fullDbName = typeMeta.getSchema() + "." + typeMeta.getTableName();
+        this.tbl = tbl;
 
-        keyClsNamePrev = typeMeta.getKeyType();
-        keyClsName = new SimpleStringProperty(keyClsNamePrev);
+        fullDbName = tbl.schema() + "." + tbl.table();
 
-        valClsNamePrev = typeMeta.getType();
-        valClsName = new SimpleStringProperty(valClsNamePrev);
+        valClsNamePrev = toJavaClassName(tbl.table());
+        valClsNameProp = new SimpleStringProperty(valClsNamePrev);
 
-        use = new SimpleBooleanProperty(true);
+        keyClsNamePrev = valClsNamePrev.isEmpty() ? "" : valClsNamePrev + "Key";
+        keyClsNameProp = new SimpleStringProperty(keyClsNamePrev);
 
-        use.addListener(new ChangeListener<Boolean>() {
+        useProp = new SimpleBooleanProperty(true);
+
+        useProp.addListener(new ChangeListener<Boolean>() {
             @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
                 for (PojoDescriptor child : children)
-                    child.use.set(newVal);
+                    child.useProp.set(newVal);
 
                 if (parent != null && !parent.children.isEmpty()) {
                     Iterator<PojoDescriptor> it = parent.children.iterator();
 
                     boolean parentIndeterminate = false;
-                    boolean first = it.next().use.get();
+                    boolean first = it.next().useProp.get();
 
                     while (it.hasNext()) {
-                        if (it.next().use.get() != first) {
+                        if (it.next().useProp.get() != first) {
                             parentIndeterminate = true;
 
                             break;
                         }
                     }
 
-                    parent.indeterminate.set(parentIndeterminate);
+                    parent.indeterminateProp.set(parentIndeterminate);
 
                     if (!parentIndeterminate)
-                        parent.use.set(first);
+                        parent.useProp.set(first);
                 }
             }
         });
 
-        this.fields = FXCollections.observableList(fields);
+        Collection<DbColumn> cols = tbl.columns();
 
-        for (PojoField field : fields)
-            field.owner(this);
+        List<PojoField> flds = new ArrayList<>(cols.size());
 
-        this.typeMeta = typeMeta;
+        for (DbColumn col : cols) {
+            PojoField fld = new PojoField(col.name(), col.type(),
+                toJavaFieldName(col.name()), toJavaType(col.type(), col.nullable()).getName(),
+                col.key(), col.nullable());
+
+            fld.owner(this);
+
+            flds.add(fld);
+        }
+
+        fields = FXCollections.observableList(flds);
     }
 
     /**
@@ -151,49 +147,49 @@ public class PojoDescriptor {
      * @return {@code true} if POJO descriptor is a table descriptor and checked in GUI.
      */
     public boolean checked() {
-        return parent != null && use.get();
+        return parent != null && useProp.get();
     }
 
     /**
      * @return Boolean property support for {@code use} property.
      */
     public BooleanProperty useProperty() {
-        return use;
+        return useProp;
     }
 
     /**
      * @return Boolean property support for parent {@code indeterminate} property.
      */
     public BooleanProperty indeterminate() {
-        return indeterminate;
+        return indeterminateProp;
     }
 
     /**
      * @return Key class name.
      */
     public String keyClassName() {
-        return keyClsName.get();
+        return keyClsNameProp.get();
     }
 
     /**
      * @param name New key class name.
      */
     public void keyClassName(String name) {
-        keyClsName.set(name);
+        keyClsNameProp.set(name);
     }
 
     /**
      * @return Value class name.
      */
     public String valueClassName() {
-        return valClsName.get();
+        return valClsNameProp.get();
     }
 
     /**
      * @param name New value class name.
      */
     public void valueClassName(String name) {
-        valClsName.set(name);
+        valClsNameProp.set(name);
     }
 
     /**
@@ -230,28 +226,28 @@ public class PojoDescriptor {
      * @return Key class name property.
      */
     public StringProperty keyClassNameProperty() {
-        return keyClsName;
+        return keyClsNameProp;
     }
 
     /**
      * @return Value class name property.
      */
     public StringProperty valueClassNameProperty() {
-        return valClsName;
+        return valClsNameProp;
     }
 
     /**
      * @return Schema name.
      */
     public String schema() {
-        return typeMeta.getSchema();
+        return tbl.schema();
     }
 
     /**
      * @return Table name.
      */
     public String table() {
-        return typeMeta.getTableName();
+        return tbl.table();
     }
 
     /**
@@ -267,7 +263,7 @@ public class PojoDescriptor {
      * @return {@code true} if descriptor was changed by user via GUI.
      */
     public boolean changed() {
-        if (!keyClsName.get().equals(keyClsNamePrev) || !valClsName.get().equals(valClsNamePrev))
+        if (!keyClsNameProp.get().equals(keyClsNamePrev) || !valClsNameProp.get().equals(valClsNamePrev))
             return true;
 
         for (PojoField field : fields)
@@ -281,14 +277,14 @@ public class PojoDescriptor {
      * Revert changes to key class name made by user.
      */
     public void revertKeyClassName() {
-       keyClsName.set(keyClsNamePrev);
+        keyClsNameProp.set(keyClsNamePrev);
     }
 
     /**
      * Revert changes to value class name made by user.
      */
     public void revertValueClassName() {
-        valClsName.set(valClsNamePrev);
+        valClsNameProp.set(valClsNamePrev);
     }
 
     /**
@@ -300,6 +296,36 @@ public class PojoDescriptor {
     }
 
     /**
+     * @return Ascending fields.
+     */
+    public Collection<PojoField> ascendingFields() {
+        Collection<PojoField> res = new ArrayList<>();
+
+        Set<String> asc = tbl.ascendingColumns();
+
+        for (PojoField field : fields)
+            if (asc.contains(field.dbName()))
+                res.add(field);
+
+        return res;
+    }
+
+    /**
+     * @return Descending fields.
+     */
+    public Collection<PojoField> descendingFields() {
+        Collection<PojoField> res = new ArrayList<>();
+
+        Set<String> desc = tbl.descendingColumns();
+
+        for (PojoField field : fields)
+            if (desc.contains(field.dbName()))
+                res.add(field);
+
+        return res;
+    }
+
+    /**
      * @return Java class fields.
      */
     public ObservableList<PojoField> fields() {
@@ -307,32 +333,100 @@ public class PojoDescriptor {
     }
 
     /**
-     * @param includeKeys {@code true} if key fields should be included into value class.
-     * @return Type metadata updated with user changes.
+     * @param name Source name.
+     * @return String converted to java class name notation.
      */
-    public CacheQueryTypeMetadata metadata(boolean includeKeys) {
-        typeMeta.setKeyType(keyClsName.get());
-        typeMeta.setType(valClsName.get());
+    private static String toJavaClassName(String name) {
+        int len = name.length();
 
-        Collection<CacheQueryTypeDescriptor> keys = new ArrayList<>();
+        StringBuilder buf = new StringBuilder(len);
 
-        Collection<CacheQueryTypeDescriptor> vals = new ArrayList<>();
+        boolean capitalizeNext = true;
 
-        for (PojoField field : fields) {
-            if (field.key()) {
-                keys.add(field.descriptor());
+        for (int i = 0; i < len; i++) {
+            char ch = name.charAt(i);
 
-                if (includeKeys)
-                    vals.add(field.descriptor());
+            if (Character.isWhitespace(ch) || '_' == ch)
+                capitalizeNext = true;
+            else if (capitalizeNext) {
+                buf.append(Character.toUpperCase(ch));
+
+                capitalizeNext = false;
             }
             else
-                vals.add(field.descriptor());
+                buf.append(Character.toLowerCase(ch));
         }
 
-        typeMeta.setKeyDescriptors(keys);
+        return buf.toString();
+    }
 
-        typeMeta.setValueDescriptors(vals);
+    /**
+     * @param name Source name.
+     * @return String converted to java field name notation.
+     */
+    private static String toJavaFieldName(String name) {
+        String javaName = toJavaClassName(name);
 
-        return typeMeta;
+        return Character.toLowerCase(javaName.charAt(0)) + javaName.substring(1);
+    }
+
+    /**
+     * Convert JDBC data type to java type.
+     *
+     * @param type JDBC SQL data type.
+     * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
+     * @return Java data type.
+     */
+    private static Class<?> toJavaType(int type, boolean nullable) {
+        switch (type) {
+            case BIT:
+            case BOOLEAN:
+                return nullable ? Boolean.class : boolean.class;
+
+            case TINYINT:
+                return nullable ? Byte.class : byte.class;
+
+            case SMALLINT:
+                return nullable ? Short.class : short.class;
+
+            case INTEGER:
+                return nullable ? Integer.class : int.class;
+
+            case BIGINT:
+                return nullable ? Long.class : long.class;
+
+            case REAL:
+                return nullable ? Float.class : float.class;
+
+            case FLOAT:
+            case DOUBLE:
+                return nullable ? Double.class : double.class;
+
+            case NUMERIC:
+            case DECIMAL:
+                return BigDecimal.class;
+
+            case CHAR:
+            case VARCHAR:
+            case LONGVARCHAR:
+            case NCHAR:
+            case NVARCHAR:
+            case LONGNVARCHAR:
+                return String.class;
+
+            case DATE:
+                return java.sql.Date.class;
+
+            case TIME:
+                return java.sql.Time.class;
+
+            case TIMESTAMP:
+                return java.sql.Timestamp.class;
+
+            // BINARY, VARBINARY, LONGVARBINARY, ARRAY, BLOB, CLOB, NCLOB, NULL, DATALINK
+            // OTHER, JAVA_OBJECT, DISTINCT, STRUCT, REF, ROWID, SQLXML
+            default:
+                return Object.class;
+        }
     }
 }

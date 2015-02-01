@@ -39,7 +39,7 @@ public class PojoGeneratorSelfTest extends BaseSchemaLoaderSelfTest {
 
         Boolean containsSchema = false;
 
-        for (PojoDescriptor pojo : pojoLst) {
+        for (PojoDescriptor pojo : pojos) {
             if (pojo.valueClassName().isEmpty())
                 containsSchema = true;
             else {
