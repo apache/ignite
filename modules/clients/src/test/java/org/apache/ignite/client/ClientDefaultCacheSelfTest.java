@@ -137,9 +137,7 @@ public class ClientDefaultCacheSelfTest extends GridCommonAbstractTest {
      */
     public void testTcp() throws Exception {
         try {
-            boolean putRes = cache().putx("key", 1);
-
-            assert putRes : "Put operation failed";
+            jcache().put("key", 1);
 
             GridClient client = clientTcp();
 
