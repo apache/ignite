@@ -92,15 +92,15 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         int fullCacheSize = 0;
 
         for (int i = 0; i < gridCount(); i++)
-            fullCacheSize += cache(i).primarySize();
+            fullCacheSize += jcache(i).localSize();
 
-        assertEquals("Invalid cache size", 10, fullCacheSize);
+        assertEquals("Invalid cache size", fullCacheSize, cache.size());
     }
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
-        GridCache<String, Integer> primary = fullCache();
+        IgniteCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -135,7 +135,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     /** {@inheritDoc} */
     @Override public void testClearKeys() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
-        GridCache<String, Integer> primary = fullCache();
+        IgniteCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -162,7 +162,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         for (String key : subKeys) {
             assertNull(nearCache.localPeek(key));
-            assertNotNull(primary.peek(key));
+            assertNotNull(primary.localPeek(key));
         }
 
         assertEquals(null, nearCache.localPeek(lastKey));
@@ -186,7 +186,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         Thread.sleep(ttl + 100);
 
         // Expired entry should not be swapped.
-        cache.localEvict(Collections.<String>singleton(key));
+        cache.localEvict(Collections.singleton(key));
 
         assertNull(cache.localPeek(key));
 
@@ -198,8 +198,8 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         // Force reload on primary node.
         for (int i = 0; i < gridCount(); i++) {
-            if (cache(i).entry(key).primary())
-                cache(i).reload(key);
+            if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
+                jcache(i).loadAll(Collections.singleton(key), true, null);
         }
 
         // Will do near get request.
@@ -285,7 +285,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     @Override public void testEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        List<String> keys = primaryKeysForCache(cache(), 2);
+        List<String> keys = primaryKeysForCache(jcache(), 2);
 
         String key = keys.get(0);
         String key2 = keys.get(1);

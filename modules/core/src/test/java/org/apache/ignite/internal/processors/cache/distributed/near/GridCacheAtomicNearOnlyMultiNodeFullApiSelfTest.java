@@ -76,7 +76,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
         IgniteCache<String, Integer> nearCache = jcache();
-        GridCache<String, Integer> primary = fullCache();
+        IgniteCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
@@ -114,7 +114,7 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -130,25 +130,25 @@ public class GridCacheAtomicNearOnlyMultiNodeFullApiSelfTest extends GridCacheNe
         Thread.sleep(ttl + 100);
 
         // Expired entry should not be swapped.
-        assertTrue(cache.evict(key));
+        cache.localEvict(Collections.<String>singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key));
 
-        assertNull(cache.promote(key));
+        cache.localPromote(Collections.singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key));
 
-        assertTrue(cache.isEmpty());
+        assertTrue(cache.localSize() == 0);
 
         // Force reload on primary node.
         for (int i = 0; i < gridCount(); i++) {
-            if (cache(i).entry(key).primary())
-                cache(i).reload(key);
+            if (ignite(i).affinity(null).isPrimary(ignite(i).cluster().localNode(), key))
+                jcache(i).loadAll(Collections.singleton(key), true, null);
         }
 
         // Will do near get request.
-        cache.reload(key);
+        cache.loadAll(Collections.singleton(key), true, null);
 
-        assertEquals((Integer)1, cache.peek(key));
+        assertEquals((Integer)1, cache.localPeek(key));
     }
 }
