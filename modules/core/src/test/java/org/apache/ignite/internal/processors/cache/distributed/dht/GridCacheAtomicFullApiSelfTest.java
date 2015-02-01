@@ -78,7 +78,7 @@ public class GridCacheAtomicFullApiSelfTest extends GridCachePartitionedFullApiS
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache().getAll(null).isEmpty();
+                jcache().getAll(null).isEmpty();
 
                 return null;
             }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
@@ -169,7 +170,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testEvictExpired() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
 
@@ -185,15 +186,15 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         Thread.sleep(ttl + 100);
 
         // Expired entry should not be swapped.
-        assertTrue(cache.evict(key));
+        cache.localEvict(Collections.<String>singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key));
 
-        assertNull(cache.promote(key));
+        cache.localPromote(Collections.singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key));
 
-        assertTrue(cache.isEmpty());
+        assertTrue(cache.localSize() == 0);
 
         // Force reload on primary node.
         for (int i = 0; i < gridCount(); i++) {
@@ -202,81 +203,63 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         }
 
         // Will do near get request.
-        cache.reload(key);
+        cache.loadAll(Collections.singleton(key), true, null);
 
-        assertEquals(null, cache.peek(key));
+        assertEquals(null, cache.localPeek(key));
     }
 
     /** {@inheritDoc} */
     @Override public void testEvictAll() throws Exception {
-        List<String> keys = primaryKeysForCache(cache(), 3);
+        IgniteCache<String, Integer> cache = jcache();
+
+        List<String> keys = primaryKeysForCache(cache, 3);
 
         String key1 = keys.get(0);
         String key2 = keys.get(1);
         String key3 = keys.get(2);
 
-        cache().put(key1, 1);
-        cache().put(key2, 2);
-        cache().put(key3, 3);
+        cache.put(key1, 1);
+        cache.put(key2, 2);
+        cache.put(key3, 3);
 
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
+        assert cache.localPeek(key1) == null;
+        assert cache.localPeek(key2) == null;
+        assert cache.localPeek(key3) == null;
 
-        cache().evictAll(F.asList(key1, key2));
+        cache.localEvict(F.asList(key1, key2));
 
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
+        assert cache.localPeek(key1) == null;
+        assert cache.localPeek(key2) == null;
+        assert cache.localPeek(key3) == null;
 
-        cache().reloadAll(F.asList(key1, key2));
+        cache.loadAll(ImmutableSet.of(key1, key2), true, null);
 
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
+        assert cache.localPeek(key1) == null;
+        assert cache.localPeek(key2) == null;
+        assert cache.localPeek(key3) == null;
 
-        cache().evictAll(F.asList(key1, key2));
+        cache.localEvict(F.asList(key1, key2));
 
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
+        assert cache.localPeek(key1) == null;
+        assert cache.localPeek(key2) == null;
+        assert cache.localPeek(key3) == null;
 
-        cache().reloadAll(F.asList(key1, key2));
+        cache.loadAll(ImmutableSet.of(key1, key2), true, null);
 
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
+        assert cache.localPeek(key1) == null;
+        assert cache.localPeek(key2) == null;
+        assert cache.localPeek(key3) == null;
 
-        cache().evictAll();
+        cache.localEvict(new HashSet<>(keys));
 
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
-
-        cache().put(key1, 1);
-        cache().put(key2, 102);
-        cache().put(key3, 3);
-
-        cache().projection(gte100).evictAll();
-
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
-
-        cache().put(key1, 1);
-        cache().put(key2, 102);
-        cache().put(key3, 3);
-
-        cache().projection(gte100).evictAll(F.asList(key1, key2, key3));
-
-        assert cache().peek(key1) == null;
-        assert cache().peek(key2) == null;
-        assert cache().peek(key3) == null;
+        assert cache.localPeek(key1) == null;
+        assert cache.localPeek(key2) == null;
+        assert cache.localPeek(key3) == null;
     }
 
     /** {@inheritDoc} */
     @Override public void testPeekExpired() throws Exception {
-        GridCache<String, Integer> c = cache();
+        IgniteCache<String, Integer> c = jcache();
 
         String key = primaryKeysForCache(c, 1).get(0);
 
@@ -284,7 +267,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         c.put(key, 1);
 
-        assertEquals(null, c.peek(key));
+        assertEquals(null, c.localPeek(key));
 
         long ttl = 500;
 
@@ -293,16 +276,16 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         Thread.sleep(ttl + 100);
 
-        assert c.peek(key) == null;
+        assert c.localPeek(key) == null;
 
-        assert c.isEmpty() : "Cache is not empty: " + c.values();
+        assert c.localSize() == 0 : "Cache is not empty.";
     }
 
     /** {@inheritDoc} */
     @Override public void testEvict() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
-        List<String> keys = primaryKeysForCache(cache, 2);
+        List<String> keys = primaryKeysForCache(cache(), 2);
 
         String key = keys.get(0);
         String key2 = keys.get(1);
@@ -311,43 +294,45 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         assertEquals((Integer)1, cache.get(key));
 
-        assertTrue(cache.evict(key));
+        cache.localEvict(Collections.<String>singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key));
 
-        cache.reload(key);
+        cache.loadAll(Collections.singleton(key), true, null);
 
-        assertEquals(null, cache.peek(key));
+        assertEquals(null, cache.localPeek(key));
 
         cache.remove(key);
 
         cache.put(key, 1);
         cache.put(key2, 102);
 
-        assertTrue(cache.projection(gte100).evict(key));
+        cache.localEvict(Collections.<String>singleton(key));
 
         assertEquals((Integer)1, cache.get(key));
 
-        assertTrue(cache.projection(gte100).evict(key2));
+        cache.localEvict(Collections.<String>singleton(key2));
 
-        assertNull(cache.peek(key2));
+        assertNull(cache.localPeek(key2));
 
-        assertTrue(cache.evict(key));
+        cache.localEvict(Collections.<String>singleton(key));
 
-        assertNull(cache.peek(key));
+        assertNull(cache.localPeek(key));
     }
 
     /** {@inheritDoc} */
     @Override public void testUnswap() throws Exception {
-        List<String> keys = primaryKeysForCache(cache(), 3);
+        IgniteCache<String, Integer> cache = jcache();
+
+        List<String> keys = primaryKeysForCache(cache, 3);
 
         String k1 = keys.get(0);
         String k2 = keys.get(1);
         String k3 = keys.get(2);
 
-        cache().put(k1, 1);
-        cache().put(k2, 2);
-        cache().put(k3, 3);
+        cache.put(k1, 1);
+        cache.put(k2, 2);
+        cache.put(k3, 3);
 
         final AtomicInteger swapEvts = new AtomicInteger(0);
         final AtomicInteger unswapEvts = new AtomicInteger(0);
@@ -375,37 +360,48 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
             }, EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
         }
 
-        assert cache().evict(k2);
-        assert cache().evict(k3);
+        cache.localEvict(Collections.<String>singleton(k2));
+        cache.localEvict(Collections.<String>singleton(k3));
 
-        assert !cache().containsKey(k1);
-        assert !cache().containsKey(k2);
-        assert !cache().containsKey(k3);
+        assert !cache.containsKey(k1);
+        assert !cache.containsKey(k2);
+        assert !cache.containsKey(k3);
 
         int cnt = 0;
 
         if (locKeys.contains(k2)) {
-            assertEquals((Integer)2, cache().promote(k2));
+            cache.localPromote(Collections.singleton(k2));
+
+            assertEquals((Integer)2, cache.localPeek(k2));
 
             cnt++;
         }
-        else
-            assertNull(cache().promote(k2));
+        else {
+            cache.localPromote(Collections.singleton(k2));
+
+            assertNull(cache.localPeek(k2));
+        }
+
 
         if (locKeys.contains(k3)) {
-            assertEquals((Integer)3, cache().promote(k3));
+            cache.localPromote(Collections.singleton(k3));
+
+            assertEquals((Integer)3, cache.localPeek(k3));
 
             cnt++;
         }
-        else
-            assertNull(cache().promote(k3));
+        else {
+            cache.localPromote(Collections.singleton(k3));
+
+            assertNull(cache.localPeek(k3));
+        }
 
         assertEquals(cnt, swapEvts.get());
         assertEquals(cnt, unswapEvts.get());
 
-        assert cache().evict(k1);
+        cache.localEvict(Collections.<String>singleton(k1));
 
-        assertEquals((Integer)1, cache().get(k1));
+        assertEquals((Integer)1, cache.get(k1));
 
         if (locKeys.contains(k1))
             cnt++;
@@ -413,24 +409,24 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assertEquals(cnt, swapEvts.get());
         assertEquals(cnt, unswapEvts.get());
 
-        cache().clearAll();
+        cache.clear();
 
         // Check with multiple arguments.
-        cache().put(k1, 1);
-        cache().put(k2, 2);
-        cache().put(k3, 3);
+        cache.put(k1, 1);
+        cache.put(k2, 2);
+        cache.put(k3, 3);
 
         swapEvts.set(0);
         unswapEvts.set(0);
 
-        cache().evict(k2);
-        cache().evict(k3);
+        cache.localEvict(Collections.<String>singleton(k2));
+        cache.localEvict(Collections.<String>singleton(k3));
 
-        assert !cache().containsKey(k1);
-        assert !cache().containsKey(k2);
-        assert !cache().containsKey(k3);
+        assert !cache.containsKey(k1);
+        assert !cache.containsKey(k2);
+        assert !cache.containsKey(k3);
 
-        cache().promoteAll(F.asList(k2, k3));
+        cache.localPromote(ImmutableSet.of(k2, k3));
 
         cnt = 0;
 

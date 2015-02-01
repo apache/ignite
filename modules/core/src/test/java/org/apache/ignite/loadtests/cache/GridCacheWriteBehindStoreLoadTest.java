@@ -19,7 +19,6 @@ package org.apache.ignite.loadtests.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
@@ -80,10 +79,10 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        GridCache<?, ?> cache = cache();
+        IgniteCache<Object, Object> cache = jcache();
 
         if (cache != null)
-            cache.clearAll();
+            cache.clear();
     }
 
     /**
@@ -151,7 +150,7 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
     private void loadCache() throws Exception {
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final GridCache<Long, String> cache = cache();
+        final IgniteCache<Object, Object> cache = jcache();
 
         final AtomicLong keyCntr = new AtomicLong();
 
@@ -163,19 +162,12 @@ public class GridCacheWriteBehindStoreLoadTest extends GridCommonAbstractTest {
 
                 Random rnd = new Random();
 
-                try {
-                    while (running.get()) {
-                        long putNum = keyCntr.incrementAndGet();
+                while (running.get()) {
+                    long putNum = keyCntr.incrementAndGet();
 
-                        long key = rndKeys ? rnd.nextInt(keysCnt) : putNum;
+                    long key = rndKeys ? rnd.nextInt(keysCnt) : putNum;
 
-                        cache.put(key, "val" + key);
-                    }
-                }
-                catch (IgniteCheckedException e) {
-                    error("Unexpected exception in put thread", e);
-
-                    assert false;
+                    cache.put(key, "val" + key);
                 }
             }
         }, threadCnt, "put");

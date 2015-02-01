@@ -48,56 +48,7 @@ public class GridCacheLocalIteratorsSelfTest extends GridCacheAbstractIteratorsS
      * @throws Exception If failed.
      */
     public void testCacheIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().iterator(), entryCount());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheProjectionIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().projection(lt50).iterator(), 50);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEntrySetIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().entrySet().iterator(), entryCount());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFilteredEntrySetIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().projection(lt50).entrySet().iterator(), 50);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testKeySetIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().keySet().iterator(), entryCount());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFilteredKeySetIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().projection(lt50).keySet().iterator(), 50);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testValuesIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().values().iterator(), entryCount());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFilteredValuesIteratorSerialization() throws Exception {
-        testIteratorSerialization(cache().projection(lt50).values().iterator(), 50);
+        testIteratorSerialization(jcache().iterator(), entryCount());
     }
 
     /**
