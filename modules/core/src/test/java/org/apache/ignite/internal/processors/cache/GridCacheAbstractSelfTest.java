@@ -89,14 +89,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        assert cache().tx() == null;
-        assert cache().isEmpty() : "Cache is not empty: " + cache().entrySet();
-        assert cache().keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
+        assert grid(0).transactions().tx() == null;
+        assert jcache().localSize() == 0;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        IgniteTx tx = cache().tx();
+        IgniteTx tx = grid(0).transactions().tx();
 
         if (tx != null) {
             tx.close();
@@ -176,10 +175,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
         }
 
-        assert cache().tx() == null;
-        assert cache().isEmpty() : "Cache is not empty: " + cache().entrySet();
-        assertEquals("Cache is not empty: " + cache().entrySet(), 0, cache().size());
-        assert cache().keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
+        assert grid(0).transactions().tx() == null;
+        assertEquals("Cache is not empty", 0, jcache().size());
 
         resetStore();
     }
@@ -409,6 +406,14 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cache Cache.
+     * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
+     */
+    protected <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
+        return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
+    }
+
+    /**
      * Executes regular peek or peek from swap.
      *
      * @param prj Cache projection.
@@ -418,6 +423,18 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     @Nullable protected <K, V> V peek(CacheProjection<K, V> prj, K key) throws Exception {
         return offheapTiered(prj.cache()) ? prj.peek(key, F.asList(GridCachePeekMode.SWAP)) : prj.peek(key);
+    }
+
+    /**
+     * Executes regular peek or peek from swap.
+     *
+     * @param cache Cache projection.
+     * @param key Key.
+     * @return Value.
+     * @throws Exception If failed.
+     */
+    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) throws Exception {
+        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP) : cache.localPeek(key);
     }
 
     /**

@@ -36,6 +36,7 @@ import org.apache.ignite.testframework.*;
 import org.apache.ignite.testframework.junits.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import javax.net.ssl.*;
 import java.util.*;
 
@@ -96,6 +97,19 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected <K, V> IgniteCache<K, V> jcache() {
         return grid().jcache(null);
+    }
+
+    /**
+     * @param cache Cache.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    protected <K> Set<K> keySet(IgniteCache<K, ?> cache) {
+        Set<K> res = new HashSet<>();
+
+        for (Cache.Entry<K, ?> entry : cache)
+            res.add(entry.getKey());
+
+        return res;
     }
 
     /**

@@ -3155,7 +3155,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertNull(cache.get(key));
 
-        Map<String, Integer> vals = new HashMap<>(keys.size());
+        Map<String, Integer> vals = new HashMap<>();
 
         int i = 0;
 
@@ -3343,7 +3343,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testClear() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         Collection<String> keys = primaryKeysForCache(cache, 3);
 
@@ -3365,7 +3365,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertEquals(vals.get(key), peek(cache, key));
 
-        cache.clearAll();
+        cache.clear();
 
         for (String key : keys)
             assertNull(peek(cache, key));
@@ -3385,29 +3385,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         String first = F.first(keys);
 
         if (lockingEnabled()) {
-            assertTrue(cache.lock(first, 0));
+            Lock lock = cache.lock(first);
 
-            cache.clearAll();
+            lock.lock();
 
-            assertEquals(vals.get(first), peek(cache, first));
+            try {
+                cache.clear();
 
-            cache.unlock(first);
+                assertEquals(vals.get(first), peek(cache, first));
+            }
+            finally {
+                lock.unlock();
+            }
         }
         else {
-            cache.clearAll();
+            cache.clear();
 
             cache.put(first, vals.get(first));
         }
 
-        cache.projection(gte100).clear(first);
+        cache.clear();
 
-        assertNotNull(peek(cache, first));
-
-        cache.put(first, 101);
-
-        cache.projection(gte100).clear(first);
-
-        assert cache.isEmpty() : "Values after clear: " + cache.values();
+        assert cache.localSize() == 0 : "Values after clear.";
 
         i = 0;
 
@@ -3419,15 +3418,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             i++;
         }
 
-        for (String key : keys) {
-            if (!first.equals(key))
-                assertEquals(vals.get(key), peek(cache, key));
-        }
+        cache.put("key1", 1);
+        cache.put("key2", 2);
 
-        cache().put("key1", 1);
-        cache().put("key2", 2);
-
-        cache().evictAll();
+        cache.localEvict(ImmutableSet.of("key1", "key2"));
 
         assert cache().isEmpty();
 
@@ -3454,7 +3448,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         subKeys.remove(lastKey);
 
-        Map<String, Integer> vals = new HashMap<>(keys.size());
+        Map<String, Integer> vals = new HashMap<>();
 
         int i = 0;
 

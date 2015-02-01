@@ -1635,6 +1635,25 @@ public class GridCacheUtils {
     }
 
     /**
+     * Execute closure inside cache transaction.
+     *
+     * @param cache Cache.
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param clo Closure.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static <K, V> void inTx(Ignite ignite, IgniteCache<K, V> cache, IgniteTxConcurrency concurrency,
+        IgniteTxIsolation isolation, IgniteInClosureX<IgniteCache<K ,V>> clo) throws IgniteCheckedException {
+
+        try (IgniteTx tx = ignite.transactions().txStart(concurrency, isolation)) {
+            clo.applyx(cache);
+
+            tx.commit();
+        }
+    }
+
+    /**
      * Gets subject ID by transaction.
      *
      * @param tx Transaction.

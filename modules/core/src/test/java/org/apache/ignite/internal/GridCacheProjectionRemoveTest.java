@@ -33,9 +33,9 @@ public class GridCacheProjectionRemoveTest extends GridCacheAbstractSelfTest {
      * @throws IgniteCheckedException If failed.
      */
     public void testRemove() throws IgniteCheckedException {
-        cache().put("key", 1);
+        jcache().put("key", 1);
 
-        assert cache().remove("key", 1);
-        assert !cache().remove("key", 1);
+        assert jcache().remove("key", 1);
+        assert !jcache().remove("key", 1);
     }
 }

@@ -22,17 +22,15 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.lang.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.testframework.*;
+import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
 
+import javax.cache.*;
 import java.util.*;
 
-import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxIsolation.*;
@@ -214,9 +212,9 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         boolean tx = concurrency != null && isolation != null;
 
         if (tx)
-            put(cache(), ENTRY_CNT, concurrency, isolation);
+            put(ignite(0), jcache(), ENTRY_CNT, concurrency, isolation);
         else
-            put(cache(), ENTRY_CNT);
+            put(jcache(), ENTRY_CNT);
 
         Ignite g = startGrid(NEW_GRID_NAME);
 
@@ -225,8 +223,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         int half = ENTRY_CNT / 2;
 
         if (tx) {
-            remove(cache(g), half, concurrency, isolation);
-            put(cache(g), half, concurrency, isolation);
+            remove(g, cache(g), half, concurrency, isolation);
+            put(g, cache(g), half, concurrency, isolation);
         }
         else {
             remove(cache(g), half);
@@ -235,7 +233,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         stopGrid(NEW_GRID_NAME);
 
-        check(cache(), ENTRY_CNT);
+        check(jcache(), ENTRY_CNT);
     }
 
     /**
@@ -248,11 +246,11 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
         final boolean tx = concurrency != null && isolation != null;
 
         if (tx)
-            put(cache(), ENTRY_CNT, concurrency, isolation);
+            put(ignite(0), jcache(), ENTRY_CNT, concurrency, isolation);
         else
-            put(cache(), ENTRY_CNT);
+            put(jcache(), ENTRY_CNT);
 
-        check(cache(), ENTRY_CNT);
+        check(jcache(), ENTRY_CNT);
 
         final int half = ENTRY_CNT / 2;
 
@@ -285,12 +283,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
         while (!fut.isDone()) {
             if (tx) {
-                remove(cache(), half, concurrency, isolation);
-                put(cache(), half, concurrency, isolation);
+                remove(grid(0), jcache(), half, concurrency, isolation);
+                put(grid(0), jcache(), half, concurrency, isolation);
             }
             else {
-                remove(cache(), half);
-                put(cache(), half);
+                remove(jcache(), half);
+                put(jcache(), half);
             }
         }
 
@@ -302,12 +300,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param cnt Entry count.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(CacheProjection<String, Integer> cache, int cnt) throws Exception {
+    private void put(IgniteCache<String, Integer> cache, int cnt) throws Exception {
         try {
             for (int i = 0; i < cnt; i++)
-                assertTrue("Failed to put key: 'key" + i + "'",  cache.putx("key" + i, i));
+                cache.put("key" + i, i);
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
@@ -321,16 +319,15 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void put(CacheProjection<String, Integer> cache, final int cnt,
+    private void put(Ignite ignite, IgniteCache<String, Integer> cache, final int cnt,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         try {
             info("Putting values to cache [0," + cnt + ')');
 
-            CU.inTx(cache, concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
-                @Override public void applyx(CacheProjection<String, Integer> cache)
-                    throws IgniteCheckedException {
+            CU.inTx(ignite, cache, concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
+                @Override public void applyx(IgniteCache<String, Integer> cache) {
                     for (int i = 0; i < cnt; i++)
-                        assertTrue("Failed to put key: 'key" + i + "'", cache.putx("key" + i, i));
+                        cache.put("key" + i, i);
                 }
             });
         }
@@ -348,12 +345,12 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param cnt Entry count.
      * @throws IgniteCheckedException If failed.
      */
-    private void remove(CacheProjection<String, Integer> cache, int cnt) throws Exception {
+    private void remove(IgniteCache<String, Integer> cache, int cnt) throws Exception {
         try {
             for (int i = 0; i < cnt; i++)
-                cache.removex("key" + i);
+                cache.remove("key" + i);
         }
-        catch (IgniteCheckedException e) {
+        catch (CacheException e) {
             // It is ok to fail with topology exception.
             if (!X.hasCause(e, ClusterTopologyException.class))
                 throw e;
@@ -367,16 +364,15 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param isolation Isolation level.
      * @throws IgniteCheckedException If failed.
      */
-    private void remove(CacheProjection<String, Integer> cache, final int cnt,
+    private void remove(Ignite g, IgniteCache<String, Integer> cache, final int cnt,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) throws Exception {
         try {
             info("Removing values form cache [0," + cnt + ')');
 
-            CU.inTx(cache, concurrency, isolation, new CIX1<CacheProjection<String, Integer>>() {
-                @Override public void applyx(CacheProjection<String, Integer> cache)
-                    throws IgniteCheckedException {
+            CU.inTx(g, cache, concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
+                @Override public void applyx(IgniteCache<String, Integer> cache) {
                     for (int i = 0; i < cnt; i++)
-                        cache.removex("key" + i);
+                        cache.remove("key" + i);
                 }
             });
         }
@@ -392,28 +388,9 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     /**
      * @param cache Cache.
      * @param expSize Minimum expected cache size.
-     * @throws IgniteCheckedException If failed.
      */
-    private void check(CacheProjection<String,Integer> cache, int expSize) throws IgniteCheckedException {
-        int size;
-
-        if (cacheMode() == PARTITIONED) {
-            Collection<Integer> res = compute(cache.gridProjection()).broadcast(new IgniteCallable<Integer>() {
-                @IgniteInstanceResource
-                private Ignite g;
-
-                @Override public Integer call() {
-                    return cache(g).projection(F.<String, Integer>cachePrimary()).size();
-                }
-            });
-
-            size = 0 ;
-
-            for (Integer size0 : res)
-                size += size0;
-        }
-        else
-            size = cache.size();
+    private void check(IgniteCache<String,Integer> cache, int expSize) {
+        int size = cache.size();
 
         assertTrue("Key set size is lesser then the expected size [size=" + size + ", expSize=" + expSize + ']',
             size >= expSize);
@@ -426,7 +403,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
      * @param g Grid.
      * @return Cache.
      */
-    private CacheProjection<String,Integer> cache(Ignite g) {
-        return g.cache(null);
+    private IgniteCache<String,Integer> cache(Ignite g) {
+        return g.jcache(null);
     }
 }

@@ -678,7 +678,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     public void testFilteredPutRemovexTx1() throws Exception {
         runTest(new TestCacheRunnable() {
             @Override public void run(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                assert cache.keySet().isEmpty() : "Key set is not empty: " + cache().keySet();
+                assert cache.keySet().isEmpty() : "Key set is not empty.";
 
                 Map.Entry<String, Integer> e = F.first(pairs(1).entrySet());
 

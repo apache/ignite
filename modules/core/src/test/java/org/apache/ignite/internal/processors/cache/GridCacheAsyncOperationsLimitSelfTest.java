@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
@@ -57,7 +58,11 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
 
             cnt.incrementAndGet();
 
-            IgniteInternalFuture<Boolean> fut = cache().putxAsync("key" + i, i);
+            IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+
+            cacheAsync.put("key" + i, i);
+
+            IgniteInternalFuture<Boolean> fut = cacheAsync.future();
 
             fut.listenAsync(new CI1<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> t) {

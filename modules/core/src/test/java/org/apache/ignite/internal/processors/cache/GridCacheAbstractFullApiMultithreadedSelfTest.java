@@ -17,14 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.*;
 import org.apache.ignite.*;
-import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 
+import javax.cache.*;
 import java.util.*;
 import java.util.concurrent.atomic.*;
 
@@ -72,16 +73,16 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @param c Test closure.
      * @throws Exception In case of error.
      */
-    private void runTest(final IgniteInClosure<GridCache<String, Integer>> c) throws Exception {
+    private void runTest(final IgniteInClosure<IgniteCache<String, Integer>> c) throws Exception {
         final IgniteInternalFuture<?> fut1 = GridTestUtils.runMultiThreadedAsync(new CAX() {
-            @Override public void applyx() throws IgniteCheckedException {
+            @Override public void applyx() {
                 while (true) {
                     int i = cnt.getAndIncrement();
 
                     if (i >= PUT_CNT)
                         break;
 
-                    cache().put("key" + i, i);
+                    jcache().put("key" + i, i);
 
                     set.add(i);
 
@@ -93,7 +94,7 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
 
         IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new CA() {
             @Override public void apply() {
-                GridCache<String, Integer> cache = cache();
+                IgniteCache<String, Integer> cache = jcache();
 
                 while (!fut1.isDone())
                     if (guard.get())
@@ -111,14 +112,14 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws IgniteCheckedException If failed.
      */
     private void checkConsistency() throws IgniteCheckedException {
-        for (CacheEntry<String, Integer> e : cache())
+        for (Cache.Entry<String, Integer> e : jcache())
             for (int i = 1; i < gridCount(); i++) {
                 Integer val = cache(i).get(e.getKey());
 
                 if (val == null)
-                    assert e.get() == null;
+                    assert e.getValue() == null;
                 else
-                    assert val.equals(e.get());
+                    assert val.equals(e.getValue());
             }
     }
 
@@ -140,20 +141,20 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @param toExcl Exclusive stop of the range.
      * @return Range of keys.
      */
-    private Collection<String> rangeKeys(int fromIncl, int toExcl) {
-        return F.transform(F.range(fromIncl, toExcl), new C1<Integer, String>() {
+    private Set<String> rangeKeys(int fromIncl, int toExcl) {
+        return new HashSet<>(F.transform(F.range(fromIncl, toExcl), new C1<Integer, String>() {
             @Override public String apply(Integer i) {
                 return "key" + i;
             }
-        });
+        }));
     }
 
     /**
      * @throws Exception In case of error.
      */
     public void testContainsKey() throws Exception {
-        runTest(new CI1<GridCache<String,Integer>>() {
-            @Override public void apply(GridCache<String, Integer> cache) {
+        runTest(new CI1<IgniteCache<String,Integer>>() {
+            @Override public void apply(IgniteCache<String, Integer> cache) {
                 assert cache.containsKey("key" + random());
                 assert !cache.containsKey("wrongKey");
             }
@@ -163,62 +164,9 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
     /**
      * @throws Exception In case of error.
      */
-    public void testContainsKeyFiltered() throws Exception {
-        runTest(new CI1<GridCache<String,Integer>>() {
-            @Override public void apply(GridCache<String, Integer> cache) {
-                assert cache.projection(F.<String, Integer>cacheHasPeekValue()).containsKey("key");
-                assert !cache.projection(F.<String, Integer>cacheNoPeekValue()).containsKey("key" + random());
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testContainsValue() throws Exception {
-        runTest(new CI1<GridCache<String,Integer>>() {
-            @Override public void apply(GridCache<String, Integer> cache) {
-                assert cache.containsValue(random());
-                assert !cache.containsValue(-1);
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testContainsValueFiltered() throws Exception {
-        runTest(new CI1<GridCache<String,Integer>>() {
-            @Override public void apply(GridCache<String, Integer> cache) {
-                assert cache.projection(F.<String, Integer>cacheHasPeekValue()).containsValue(random());
-                assert !cache.projection(F.<String, Integer>cacheNoPeekValue()).containsValue(random());
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testForAll() throws Exception {
-        runTest(new CI1<GridCache<String,Integer>>() {
-            @Override public void apply(GridCache<String, Integer> cache) {
-                assert cache.forAll(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
-                        Integer val = e.peek();
-
-                        return val == null || val <= PUT_CNT;
-                    }
-                });
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testGet() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
                 assert cache.get("key" + rnd) == rnd;
@@ -231,12 +179,19 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testGetAsync() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
-                assert cache.getAsync("key" + rnd).get() == rnd;
-                assert cache.getAsync("wrongKey").get() == null;
+                IgniteCache<String, Integer> cacheAsync = cache.withAsync();
+
+                cacheAsync.get("key" + rnd);
+
+                assert cacheAsync.future().get() == rnd;
+
+                cache.get("wrongKey");
+
+                assert cacheAsync.future().get() == null;
             }
         });
     }
@@ -245,12 +200,12 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testGetAll() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd1 = random();
                 int rnd2 = random();
 
-                Map<String, Integer> map = cache.getAll(F.asList("key" + rnd1, "key" + rnd2));
+                Map<String, Integer> map = cache.getAll(ImmutableSet.of("key" + rnd1, "key" + rnd2));
 
                 assert map.size() == (rnd1 != rnd2 ? 2 : 1);
                 assert map.get("key" + rnd1) == rnd1;
@@ -263,12 +218,13 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testGetAllAsync() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
-                Map<String, Integer> map = cache.getAllAsync(F.asList("key" + rnd1, "key" + rnd2)).get();
+                cache.withAsync().getAll(ImmutableSet.of("key" + rnd1, "key" + rnd2));
+                Map<String, Integer> map = cache.withAsync().<Map<String, Integer>>future().get();
 
                 assert map.size() == (rnd1 != rnd2 ? 2 : 1);
                 assert map.get("key" + rnd1) == rnd1;
@@ -281,22 +237,22 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testRemove() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
-                assert cache.remove("wrongKey") == null;
+                assert cache.getAndRemove("wrongKey") == null;
                 assert !cache.remove("key" + rnd1, -1);
 
-                assert cache.peek("key" + rnd1) == null || cache.peek("key" + rnd1) == rnd1;
-                assert cache.peek("key" + rnd2) == null || cache.peek("key" + rnd2) == rnd2;
+                assert cache.localPeek("key" + rnd1) == null || cache.localPeek("key" + rnd1) == rnd1;
+                assert cache.localPeek("key" + rnd2) == null || cache.localPeek("key" + rnd2) == rnd2;
 
-                assert cache.peek("key" + rnd1) == null || cache.remove("key" + rnd1) == rnd1;
-                assert cache.peek("key" + rnd2) == null || cache.remove("key" + rnd2, rnd2);
+                assert cache.localPeek("key" + rnd1) == null || cache.getAndRemove("key" + rnd1) == rnd1;
+                assert cache.localPeek("key" + rnd2) == null || cache.remove("key" + rnd2, rnd2);
 
-                assert cache.peek("key" + rnd1) == null;
-                assert cache.peek("key" + rnd2) == null;
+                assert cache.localPeek("key" + rnd1) == null;
+                assert cache.localPeek("key" + rnd2) == null;
             }
         });
     }
@@ -305,22 +261,29 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testRemoveAsync() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd1 = random();
                 int rnd2 = random();
 
-                assert cache.removeAsync("wrongKey").get() == null;
-                assert !cache.removeAsync("key" + rnd1, -1).get();
+                IgniteCache<String, Integer> cacheAsync = cache.withAsync();
 
-                assert cache.peek("key" + rnd1) == null || cache.peek("key" + rnd1) == rnd1;
-                assert cache.peek("key" + rnd2) == null || cache.peek("key" + rnd2) == rnd2;
+                cacheAsync.getAndRemove("wrongKey");
 
-                assert cache.peek("key" + rnd1) == null || cache.removeAsync("key" + rnd1).get() == rnd1;
-                assert cache.peek("key" + rnd2) == null || cache.removeAsync("key" + rnd2, rnd2).get();
+                assert cacheAsync.future().get() == null;
 
-                assert cache.peek("key" + rnd1) == null;
-                assert cache.peek("key" + rnd2) == null;
+                cacheAsync.remove("key" + rnd1, -1);
+
+                assert !cacheAsync.<Boolean>future().get();
+
+                assert cache.localPeek("key" + rnd1) == null || cache.localPeek("key" + rnd1) == rnd1;
+                assert cache.localPeek("key" + rnd2) == null || cache.localPeek("key" + rnd2) == rnd2;
+
+                assert cache.localPeek("key" + rnd1) == null || removeAsync(cache, "key" + rnd1) == rnd1;
+                assert cache.localPeek("key" + rnd2) == null || removeAsync(cache, "key" + rnd2, rnd2);
+
+                assert cache.localPeek("key" + rnd1) == null;
+                assert cache.localPeek("key" + rnd2) == null;
             }
         });
     }
@@ -329,36 +292,14 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testRemoveAll() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) {
                 int rnd = random();
 
                 cache.removeAll(rangeKeys(0, rnd));
 
                 for (int i = 0; i < rnd; i++)
-                    assert cache.peek("key" + i) == null;
-            }
-        });
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
-    public void testRemoveAllFiltered() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                final int rnd = random();
-
-                cache.removeAll(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
-                        Integer val = e.peek();
-
-                        return val != null && val < rnd;
-                    }
-                });
-
-                for (int i = 0; i < rnd; i++)
-                    assert cache.peek("key" + i) == null;
+                    assert cache.localPeek("key" + i) == null;
             }
         });
     }
@@ -367,37 +308,38 @@ public abstract class GridCacheAbstractFullApiMultithreadedSelfTest extends Grid
      * @throws Exception In case of error.
      */
     public void testRemoveAllAsync() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
+        runTest(new CIX1<IgniteCache<String,Integer>>() {
+            @Override public void applyx(IgniteCache<String, Integer> cache) throws IgniteCheckedException {
                 int rnd = random();
 
-                cache.removeAllAsync(rangeKeys(0, rnd)).get();
+                cache.withAsync().removeAll(rangeKeys(0, rnd));
+
+                cache.withAsync().future().get();
 
                 for (int i = 0; i < rnd; i++)
-                    assert cache.peek("key" + i) == null;
+                    assert cache.localPeek("key" + i) == null;
             }
         });
     }
 
     /**
-     * @throws Exception In case of error.
+     * @param cache Cache.
+     * @param key Key.
      */
-    public void testRemoveAllAsyncFiltered() throws Exception {
-        runTest(new CIX1<GridCache<String,Integer>>() {
-            @Override public void applyx(GridCache<String, Integer> cache) throws IgniteCheckedException {
-                final int rnd = random();
+    private <K, V> V removeAsync(IgniteCache<K, V> cache, K key) throws IgniteCheckedException {
+        cache.withAsync().getAndRemove(key);
 
-                cache.removeAllAsync(new P1<CacheEntry<String, Integer>>() {
-                    @Override public boolean apply(CacheEntry<String, Integer> e) {
-                        Integer val = e.peek();
+        return cache.withAsync().<V>future().get();
+    }
 
-                        return val != null && val < rnd;
-                    }
-                }).get();
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     */
+    private <K, V> boolean removeAsync(IgniteCache<K, V> cache, K key, V val) throws IgniteCheckedException {
+        cache.withAsync().remove(key, val);
 
-                for (int i = 0; i < rnd; i++)
-                    assert cache.peek("key" + i) == null;
-            }
-        });
+        return cache.withAsync().<Boolean>future().get();
     }
 }

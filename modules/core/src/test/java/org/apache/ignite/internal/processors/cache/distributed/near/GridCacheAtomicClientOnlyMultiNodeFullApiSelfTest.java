@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.events.*;
 import org.apache.ignite.lang.*;
@@ -70,7 +71,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testSize() throws Exception {
-        GridCache<String, Integer> cache = cache();
+        IgniteCache<String, Integer> cache = jcache();
 
         int size = 10;
 
@@ -87,10 +88,6 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         checkSize(map.keySet());
 
-        assertEquals("Primary keys found in client-only cache [" +
-            "primaryEntries=" + cache.primaryEntrySet() + ", dht=" + cache(nearIdx).entrySet() + "]",
-            0, cache.primarySize());
-
         int fullCacheSize = 0;
 
         for (int i = 0; i < gridCount(); i++)
@@ -101,12 +98,12 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
     /** {@inheritDoc} */
     @Override public void testClear() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
+        IgniteCache<String, Integer> nearCache = jcache();
         GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
 
-        Map<String, Integer> vals = new HashMap<>(keys.size());
+        Map<String, Integer> vals = new HashMap<>();
 
         int i = 0;
 
@@ -119,62 +116,24 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         }
 
         for (String key : keys)
-            assertEquals(null, nearCache.peek(key));
+            assertEquals(null, nearCache.localPeek(key));
 
-        nearCache.clearAll();
+        nearCache.clear();
 
         for (String key : keys)
-            assertNull(nearCache.peek(key));
+            assertNull(nearCache.localPeek(key));
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
             nearCache.put(entry.getKey(), entry.getValue());
 
         for (String key : keys)
-            assertEquals(null, nearCache.peek(key));
+            assertEquals(null, nearCache.localPeek(key));
 
-        String first = F.first(keys);
-
-        nearCache.projection(gte100).clear(first);
-
-        assertEquals(null, nearCache.peek(first));
-        assertEquals(vals.get(first), primary.peek(first));
-
-        nearCache.put(first, 101);
-
-        nearCache.projection(gte100).clear(first);
-
-        assertTrue(nearCache.isEmpty());
-        assertFalse(primary.isEmpty());
-
-        i = 0;
-
-        for (String key : keys) {
-            nearCache.put(key, i);
-
-            vals.put(key, i);
-
-            i++;
-        }
-
-        nearCache.put(first, 101);
-        vals.put(first, 101);
-
-        nearCache.projection(gte100).clear(first);
-
-        for (String key : keys)
-            assertEquals(vals.get(key), primary.peek(key));
-
-        for (String key : keys) {
-            if (first.equals(key))
-                assertNull(nearCache.peek(key));
-            else
-                assertEquals(null, nearCache.peek(key));
-        }
     }
 
     /** {@inheritDoc} */
     @Override public void testClearKeys() throws Exception {
-        GridCache<String, Integer> nearCache = cache();
+        IgniteCache<String, Integer> nearCache = jcache();
         GridCache<String, Integer> primary = fullCache();
 
         Collection<String> keys = primaryKeysForCache(primary, 3);
@@ -198,28 +157,14 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         nearCache.putAll(vals);
 
         for (String subKey : subKeys)
-            nearCache.clear(subKey);
+            nearCache.clear(Collections.singleton(subKey));
 
         for (String key : subKeys) {
-            assertNull(nearCache.peek(key));
+            assertNull(nearCache.localPeek(key));
             assertNotNull(primary.peek(key));
         }
 
-        assertEquals(null, nearCache.peek(lastKey));
-
-        nearCache.clearAll();
-
-        vals.put(lastKey, 102);
-
-        nearCache.putAll(vals);
-
-        for (String key : keys)
-            nearCache.projection(gte100).clear(key);
-
-        assertNull(nearCache.peek(lastKey));
-
-        for (String key : subKeys)
-            assertEquals(null, nearCache.peek(key));
+        assertEquals(null, nearCache.localPeek(lastKey));
     }
 
     /** {@inheritDoc} */
