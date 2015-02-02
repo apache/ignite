@@ -18,7 +18,9 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.executor.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -525,7 +527,17 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
-        return forPredicate(new CachesFilter(cacheName, cacheNames));
+        return forPredicate(new CachesFilter(cacheName, cacheNames, null));
+    }
+
+    /** {@inheritDoc} */
+    @Override public final ClusterGroup forDataNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
+        return forPredicate(new CachesFilter(cacheName, cacheNames, CachesFilter.DATA_MODES));
+    }
+
+    /** {@inheritDoc} */
+    @Override public final ClusterGroup forClientNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
+        return forPredicate(new CachesFilter(cacheName, cacheNames, CachesFilter.CLIENT_MODES));
     }
 
     /** {@inheritDoc} */
@@ -652,6 +664,14 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     private static class CachesFilter implements IgnitePredicate<ClusterNode> {
         /** */
+        private static final Set<CacheDistributionMode> DATA_MODES = EnumSet.of(CacheDistributionMode.NEAR_PARTITIONED,
+            CacheDistributionMode.PARTITIONED_ONLY);
+
+        /** */
+        private static final Set<CacheDistributionMode> CLIENT_MODES = EnumSet.of(CacheDistributionMode.CLIENT_ONLY,
+            CacheDistributionMode.NEAR_ONLY);
+
+        /** */
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
@@ -660,26 +680,53 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         /** Cache names. */
         private final String[] cacheNames;
 
+        /** */
+        private final Set<CacheDistributionMode> distributionMode;
+
         /**
          * @param cacheName Cache name.
          * @param cacheNames Cache names.
+         * @param distributionMode Filter by {@link CacheConfiguration#getDistributionMode()}.
          */
-        private CachesFilter(@Nullable String cacheName, @Nullable String[] cacheNames) {
+        private CachesFilter(@Nullable String cacheName, @Nullable String[] cacheNames,
+            @Nullable Set<CacheDistributionMode> distributionMode) {
             this.cacheName = cacheName;
             this.cacheNames = cacheNames;
+            this.distributionMode = distributionMode;
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode n) {
-            if (!U.hasCache(n, cacheName))
+            GridCacheAttributes[] caches = n.attribute(ATTR_CACHE);
+
+            if (caches == null)
+                return false;
+
+            if (!hasCache(caches, cacheName, distributionMode))
                 return false;
 
             if (!F.isEmpty(cacheNames))
                 for (String cn : cacheNames)
-                    if (!U.hasCache(n, cn))
+                    if (!hasCache(caches, cn, distributionMode))
                         return false;
 
             return true;
+        }
+
+        /**
+         * @param cacheName Cache name to check.
+         * @param distributionMode Filter by {@link CacheConfiguration#getDistributionMode()}.
+         * @return {@code true} if given node has specified cache started.
+         */
+        public static boolean hasCache(GridCacheAttributes[] caches, @Nullable String cacheName,
+            @Nullable Collection<CacheDistributionMode> distributionMode) {
+            for (GridCacheAttributes attrs : caches) {
+                if (Objects.equals(cacheName, attrs.cacheName())
+                    && (distributionMode == null || distributionMode.contains(attrs.partitionedTaxonomy())))
+                    return true;
+            }
+
+            return false;
         }
     }
 

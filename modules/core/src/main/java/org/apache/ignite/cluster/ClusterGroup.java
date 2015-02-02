@@ -18,6 +18,7 @@
 package org.apache.ignite.cluster;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -146,6 +147,28 @@ public interface ClusterGroup {
      * @return Projection over nodes that have specified cache running.
      */
     public ClusterGroup forCacheNodes(String cacheName, @Nullable String... cacheNames);
+
+    /**
+     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
+     * {@link CacheDistributionMode#PARTITIONED_ONLY} or {@link CacheDistributionMode#NEAR_PARTITIONED}.
+     *
+     * @param cacheName Cache name.
+     * @param cacheNames Optional additional cache names to include into projection.
+     * @return Projection over nodes that have specified cache running.
+     * @see CacheConfiguration#getDistributionMode()
+     */
+    public ClusterGroup forDataNodes(String cacheName, @Nullable String... cacheNames);
+
+    /**
+     * Creates projection for all nodes that have cache with specified name running and cache distribution mode is
+     * {@link CacheDistributionMode#CLIENT_ONLY} or {@link CacheDistributionMode#NEAR_ONLY}.
+     *
+     * @param cacheName Cache name.
+     * @param cacheNames Optional additional cache names to include into projection.
+     * @return Projection over nodes that have specified cache running.
+     * @see CacheConfiguration#getDistributionMode()
+     */
+    public ClusterGroup forClientNodes(String cacheName, @Nullable String... cacheNames);
 
     /**
      * Creates projection for all nodes that have streamer with specified name running.
