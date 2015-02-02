@@ -230,8 +230,8 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
 
     /** {@inheritDoc} */
     @Nullable @Override public ComputeJob createJob(IgniteFsJob job, @Nullable String ggfsName, IgniteFsPath path,
-        long start, long length, IgniteFsRecordResolver recRslv) {
-        return new GridGgfsJobImpl(job, ggfsName, path, start, length, recRslv);
+        long start, long len, IgniteFsRecordResolver recRslv) {
+        return new GridGgfsJobImpl(job, ggfsName, path, start, len, recRslv);
     }
 
     /** {@inheritDoc} */

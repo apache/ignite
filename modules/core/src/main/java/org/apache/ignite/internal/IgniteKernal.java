@@ -3074,12 +3074,12 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         guard();
 
         try{
-            IgniteFs ggfs = ctx.ggfs().ggfs(name);
+            IgniteFs fs = ctx.ggfs().ggfs(name);
 
-            if (ggfs == null)
-                throw new IllegalArgumentException("GGFS is not configured: " + name);
+            if (fs == null)
+                throw new IllegalArgumentException("IgniteFs is not configured: " + name);
 
-            return ggfs;
+            return fs;
         }
         finally {
             unguard();

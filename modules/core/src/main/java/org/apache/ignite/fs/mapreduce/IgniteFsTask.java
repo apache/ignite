@@ -88,7 +88,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
         assert ignite != null;
         assert args != null;
 
-        IgniteFs ggfs = ignite.fileSystem(args.ggfsName());
+        IgniteFs fs = ignite.fileSystem(args.ggfsName());
         IgniteFsProcessorAdapter ggfsProc = ((IgniteKernal) ignite).context().ggfs();
 
         Map<ComputeJob, ClusterNode> splitMap = new HashMap<>();
@@ -96,7 +96,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
         Map<UUID, ClusterNode> nodes = mapSubgrid(subgrid);
 
         for (IgniteFsPath path : args.paths()) {
-            IgniteFsFile file = ggfs.info(path);
+            IgniteFsFile file = fs.info(path);
 
             if (file == null) {
                 if (args.skipNonExistentFiles())
@@ -105,7 +105,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
                     throw new IgniteException("Failed to process IgniteFs file because it doesn't exist: " + path);
             }
 
-            Collection<IgniteFsBlockLocation> aff = ggfs.affinity(path, 0, file.length(), args.maxRangeLength());
+            Collection<IgniteFsBlockLocation> aff = fs.affinity(path, 0, file.length(), args.maxRangeLength());
 
             long totalLen = 0;
 
@@ -126,7 +126,7 @@ public abstract class IgniteFsTask<T, R> extends ComputeTaskAdapter<IgniteFsTask
                 IgniteFsJob job = createJob(path, new IgniteFsFileRange(file.path(), loc.start(), loc.length()), args);
 
                 if (job != null) {
-                    ComputeJob jobImpl = ggfsProc.createJob(job, ggfs.name(), file.path(), loc.start(),
+                    ComputeJob jobImpl = ggfsProc.createJob(job, fs.name(), file.path(), loc.start(),
                         loc.length(), args.recordResolver());
 
                     splitMap.put(jobImpl, node);

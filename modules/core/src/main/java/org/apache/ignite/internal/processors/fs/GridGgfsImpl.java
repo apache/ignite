@@ -1171,7 +1171,6 @@ public final class GridGgfsImpl implements GridGgfsEx {
      * @param props Properties.
      * @param simpleCreate Whether new file should be created in secondary FS using create(Path, boolean) method.
      * @return Output stream.
-     * @throws IgniteCheckedException If file creation failed.
      */
     private IgniteFsOutputStream create0(
         final IgniteFsPath path,
@@ -1196,7 +1195,7 @@ public final class GridGgfsImpl implements GridGgfsEx {
                 GridGgfsFileWorkerBatch batch = null;
 
                 if (mode == PROXY)
-                    throw new IgniteCheckedException("PROXY mode cannot be used in GGFS directly: " + path);
+                    throw new IgniteException("PROXY mode cannot be used in GGFS directly: " + path);
                 else if (mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
 

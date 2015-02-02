@@ -757,7 +757,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         IgniteUuid fileId = newFileInfo.id();
 
         if (!id2InfoPrj.putxIfAbsent(fileId, newFileInfo))
-            throw new IgniteFsException("Failed to add file details into cache: " + newFileInfo);
+            throw new IgniteCheckedException("Failed to add file details into cache: " + newFileInfo);
 
         assert metaCache.get(parentId) != null;
 
@@ -974,7 +974,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert parentInfo.isDirectory();
 
         if (!rmvLocked && fileInfo.lockId() != null)
-            throw new IgniteFsException("Failed to remove file (file is opened for writing) [fileName=" +
+            throw new IgniteCheckedException("Failed to remove file (file is opened for writing) [fileName=" +
                 fileName + ", fileId=" + fileId + ", lockId=" + fileInfo.lockId() + ']');
 
         // Validate own directory listing.
@@ -1478,15 +1478,15 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo newInfo = c.apply(oldInfo);
 
                     if (newInfo == null)
-                        throw new IgniteFsException("Failed to update file info with null value" +
+                        throw new IgniteCheckedException("Failed to update file info with null value" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     if (!oldInfo.id().equals(newInfo.id()))
-                        throw new IgniteFsException("Failed to update file info (file IDs differ)" +
+                        throw new IgniteCheckedException("Failed to update file info (file IDs differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     if (oldInfo.isDirectory() != newInfo.isDirectory())
-                        throw new IgniteFsException("Failed to update file info (file types differ)" +
+                        throw new IgniteCheckedException("Failed to update file info (file types differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     boolean b = metaCache.replace(fileId, oldInfo, newInfo);
@@ -1588,10 +1588,17 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Output stream descriptor.
      * @throws IgniteCheckedException If file creation failed.
      */
-    public GridGgfsSecondaryOutputStreamDescriptor createDual(final IgniteFsFileSystem fs, final IgniteFsPath path,
-        final boolean simpleCreate, @Nullable final Map<String, String> props, final boolean overwrite, final int bufSize,
-        final short replication, final long blockSize, final IgniteUuid affKey)
-        throws IgniteCheckedException {
+    public GridGgfsSecondaryOutputStreamDescriptor createDual(final IgniteFsFileSystem fs,
+        final IgniteFsPath path,
+        final boolean simpleCreate,
+        @Nullable final Map<String, String> props,
+        final boolean overwrite,
+        final int bufSize,
+        final short replication,
+        final long blockSize,
+        final IgniteUuid affKey)
+        throws IgniteCheckedException
+    {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
@@ -1651,10 +1658,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             IgniteFsFile status = fs.info(path);
 
                             if (status == null)
-                                throw new IgniteFsException("Failed to open output stream to the file created in " +
+                                throw new IgniteCheckedException("Failed to open output stream to the file created in " +
                                     "the secondary file system because it no longer exists: " + path);
                             else if (status.isDirectory())
-                                throw new IgniteFsException("Failed to open output stream to the file created in " +
+                                throw new IgniteCheckedException("Failed to open output stream to the file created in " +
                                     "the secondary file system because the path points to a directory: " + path);
 
                             GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.blockSize(), status.length(), affKey,
@@ -1715,11 +1722,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 simpleCreate + ", props=" + props + ", overwrite=" + overwrite + ", bufferSize=" +
                                 bufSize + ", replication=" + replication + ", blockSize=" + blockSize + ']', err);
 
-                            if (err instanceof IgniteFsException)
-                                throw (IgniteFsException)err;
-                            else
-                                throw new IgniteFsException("Failed to create the file due to secondary file system " +
-                                    "exception: " + path, err);
+                            throw new IgniteCheckedException("Failed to create the file due to secondary file system " +
+                                "exception: " + path, err);
                         }
                     };
 
@@ -1765,7 +1769,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo info = infos.get(path);
 
                             if (info.isDirectory())
-                                throw new IgniteFsException("Failed to open output stream to the file in the " +
+                                throw new IgniteCheckedException("Failed to open output stream to the file in the " +
                                     "secondary file system because the path points to a directory: " + path);
 
                             out = fs.append(path, bufSize, false, null);
@@ -1804,11 +1808,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             U.error(log, "File append in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
 
-                            if (err instanceof IgniteFsException)
-                                throw (IgniteFsException)err;
-                            else
-                                throw new IgniteCheckedException("Failed to append to the file due to secondary file system " +
-                                    "exception: " + path, err);
+                            throw new IgniteCheckedException("Failed to append to the file due to secondary file system " +
+                                "exception: " + path, err);
                         }
                     };
 
@@ -1869,11 +1870,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             U.error(log, "File open in DUAL mode failed [path=" + path + ", bufferSize=" + bufSize +
                                 ']', err);
 
-                            if (err instanceof IgniteFsException)
-                                throw (IgniteCheckedException)err;
-                            else
-                                throw new IgniteCheckedException("Failed to open the path due to secondary file system " +
-                                    "exception: " + path, err);
+                            throw new IgniteCheckedException("Failed to open the path due to secondary file system " +
+                                "exception: " + path, err);
                         }
                     };
 
@@ -1917,11 +1915,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         }
 
                         @Override public GridGgfsFileInfo onFailure(@Nullable Exception err) throws IgniteCheckedException {
-                            if (err instanceof IgniteFsException)
-                                throw (IgniteCheckedException)err;
-                            else
-                                throw new IgniteCheckedException("Failed to synchronize path due to secondary file system " +
-                                    "exception: " + path, err);
+                            throw new IgniteCheckedException("Failed to synchronize path due to secondary file system " +
+                                "exception: " + path, err);
                         }
                     };
 
@@ -2072,7 +2067,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         else {
                             // Move.
                             if (destInfo.isFile())
-                                throw new IgniteFsException("Failed to rename the path in the local file system " +
+                                throw new IgniteCheckedException("Failed to rename the path in the local file system " +
                                     "because destination path already exists and it is a file: " + dest);
                             else
                                 moveNonTx(srcInfo.id(), src.name(), srcParentInfo.id(), src.name(), destInfo.id());
@@ -2097,11 +2092,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                         U.error(log, "Path rename in DUAL mode failed [source=" + src + ", destination=" + dest + ']',
                             err);
 
-                        if (err instanceof IgniteFsException)
-                            throw (IgniteCheckedException)err;
-                        else
-                            throw new IgniteCheckedException("Failed to rename the path due to secondary file system " +
-                                "exception: " + src, err);
+                        throw new IgniteCheckedException("Failed to rename the path due to secondary file system " +
+                            "exception: " + src, err);
                     }
                 };
 
@@ -2250,9 +2242,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return File info of the end path.
      * @throws IgniteCheckedException If failed.
      */
-    private GridGgfsFileInfo synchronize(IgniteFsFileSystem fs, IgniteFsPath startPath, GridGgfsFileInfo startPathInfo,
-        IgniteFsPath endPath, boolean strict, @Nullable Map<IgniteFsPath, GridGgfsFileInfo> created)
-        throws IgniteCheckedException {
+    private GridGgfsFileInfo synchronize(IgniteFsFileSystem fs,
+        IgniteFsPath startPath,
+        GridGgfsFileInfo startPathInfo,
+        IgniteFsPath endPath,
+        boolean strict,
+        @Nullable Map<IgniteFsPath, GridGgfsFileInfo> created)
+        throws IgniteCheckedException
+    {
         assert fs != null;
         assert startPath != null && startPathInfo != null && endPath != null;
 
@@ -2272,7 +2269,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 parentInfo = created.get(curPath);
             else {
                 // Get file status from the secondary file system.
-                IgniteFsFile status = fs.info(curPath);
+                IgniteFsFile status;
+
+                try {
+                    status = fs.info(curPath);
+                }
+                catch (IgniteException e) {
+                    throw new IgniteCheckedException("Failed to get path information: " + e, e);
+                }
 
                 if (status != null) {
                     if (!status.isDirectory() && !curPath.equals(endPath))
@@ -2322,9 +2326,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Result of task execution.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgniteFsFileSystem fs, boolean strict,
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task,
+        IgniteFsFileSystem fs,
+        boolean strict,
         IgniteFsPath... paths)
-        throws IgniteCheckedException {
+        throws IgniteCheckedException
+    {
         return synchronizeAndExecute(task, fs, strict, null, paths);
     }
 
@@ -2340,8 +2347,13 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      * @return Result of task execution.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> T synchronizeAndExecute(SynchronizationTask<T> task, IgniteFsFileSystem fs, boolean strict,
-        @Nullable Collection<IgniteUuid> extraLockIds, IgniteFsPath... paths) throws IgniteCheckedException {
+    private <T> T synchronizeAndExecute(SynchronizationTask<T> task,
+        IgniteFsFileSystem fs,
+        boolean strict,
+        @Nullable Collection<IgniteUuid> extraLockIds,
+        IgniteFsPath... paths)
+        throws IgniteCheckedException
+    {
         assert task != null;
         assert fs != null;
         assert paths != null && paths.length > 0;
@@ -2477,8 +2489,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                                 assert firstParentPath != null;
                                 assert pathToId.get(firstParentPath) != null;
 
-                                GridGgfsFileInfo info = synchronize(fs, firstParentPath,
-                                    idToInfo.get(pathToId.get(firstParentPath)), path, strict, created);
+                                GridGgfsFileInfo info = synchronize(fs,
+                                    firstParentPath,
+                                    idToInfo.get(pathToId.get(firstParentPath)),
+                                    path,
+                                    strict,
+                                    created);
 
                                 assert strict && info != null || !strict;
 
