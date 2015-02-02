@@ -37,11 +37,11 @@ To verify Ignite installation, you can execute the Ignite startup script.
 
 The following command will startup Ignite with default configuration using Multicast node discovery.
 
-    bin/ggstart.{sh|bat}
+    bin/ignite.{sh|bat}
 
 The following command will startup Ignite with example configuration.
 
-    bin/ggstart.{sh|bat} examples/config/example-compute.xml
+    bin/ignite.{sh|bat} examples/config/example-compute.xml
 
 If Ignite was installed successfully, the output from above commands should produce no exceptions or errors.
 Note that you may see some warnings during startup, but this is OK as they are meant to inform that certain functionality is turned on or off by default.
@@ -53,7 +53,7 @@ Here is an example of log printout when 2 nodes join topology:
 
 You can also start Ignite Management Console, called Visor, and observe started nodes. To startup Visor, you should execute the following script:
 
-    /bin/ggvisorcmd.{sh|bat} 
+    /bin/ignitevisorcmd.{sh|bat}
 
 ### 2.2 Running Ignite Examples
 
@@ -78,18 +78,18 @@ You can use maven to add Ignite artifacts to your project. Ignite has one main a
 
 
 ## 4. Starting Ignite Nodes
-Ignite nodes can be started by executing `bin/ggstart.{sh|bat}` script and passing a relative path to Ignite configuration file. If no file is passed, then grid nodes are started with default configuration using Multicast discovery protocol.
+Ignite nodes can be started by executing `bin/ignite.{sh|bat}` script and passing a relative path to Ignite configuration file. If no file is passed, then grid nodes are started with default configuration using Multicast discovery protocol.
 
 Here is an example of how to start Ignite node with non-default configuration:
 
-    `bin/ggstart.sh examples/config/example-cache.xml`
+    `bin/ignite.sh examples/config/example-cache.xml`
 
 ## 5. Management & Monitoring with Visor
 Ignite comes with CLI (command) based DevOps Managements Console, called Visor, delivering advance set of management and monitoring capabilities. 
 
 To start Visor in console mode you should execute the following command:
 
-    `bin/ggvisorcmd.sh`
+    `bin/ignitevisorcmd.sh`
 
 On Windows, run the same commands with `.bat` extension.
 

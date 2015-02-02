@@ -32,7 +32,7 @@ import scala.collection.JavaConversions._
  * As a trade off in such cases the more code needs to be written vs. simple closure execution.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarTaskExample extends App {
     scalar("examples/config/example-compute.xml") {

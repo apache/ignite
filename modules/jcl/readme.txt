@@ -5,7 +5,7 @@ Apache Ignite JCL module provides GridLogger implementation that can delegate to
 on Jakarta Commons Logging (JCL).
 
 To enable JCL module when starting a standalone node, move 'optional/ignite-jcl' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing JCL Module In Maven Project

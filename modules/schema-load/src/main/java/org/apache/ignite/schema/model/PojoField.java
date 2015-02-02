@@ -20,7 +20,6 @@ package org.apache.ignite.schema.model;
 import javafx.beans.property.*;
 import javafx.beans.value.*;
 import javafx.collections.*;
-import org.apache.ignite.cache.query.*;
 
 import java.math.*;
 import java.util.*;
@@ -32,46 +31,43 @@ import static java.sql.Types.*;
  */
 public class PojoField {
     /** If this field should be used for code generation. */
-    private final BooleanProperty use;
+    private final BooleanProperty useProp;
 
     /** If this field belongs to primary key. */
-    private final BooleanProperty key;
+    private final BooleanProperty keyProp;
 
     /** If this field is an affinity key. */
-    private final BooleanProperty ak;
+    private final BooleanProperty akProp;
 
     /** If this field initially belongs to primary key. */
     private final boolean keyPrev;
 
-    /** Field name for POJO. */
-    private final StringProperty javaName;
-
-    /** Initial field name for POJO. */
-    private final String javaNamePrev;
-
-    /** Field type for POJO. */
-    private final StringProperty javaTypeName;
-
-    /** Initial field type for POJO. */
-    private final String javaTypeNamePrev;
-
     /** Field name in database. */
-    private final StringProperty dbName;
+    private final StringProperty dbNameProp;
 
     /** JDBC field type in database. */
     private final int dbType;
 
     /** Field type in database. */
-    private final StringProperty dbTypeName;
+    private final StringProperty dbTypeNameProp;
 
-    /** Is NULL allowed for field in database. */
+    /** Field name in POJO. */
+    private final StringProperty javaNameProp;
+
+    /** Initial field name in POJO. */
+    private final String javaNamePrev;
+
+    /** Field type in POJO. */
+    private final StringProperty javaTypeNameProp;
+
+    /** Initial field type in POJO. */
+    private final String javaTypeNamePrev;
+
+    /** Is {@code NULL} allowed for field in database. */
     private final boolean nullable;
 
     /** List of possible java type conversions. */
     private final ObservableList<String> conversions;
-
-    /** Field type descriptor. */
-    private final CacheQueryTypeDescriptor desc;
 
     /** Field owner. */
     private PojoDescriptor owner;
@@ -99,34 +95,15 @@ public class PojoField {
     private static final List<String> PRIMITIVES = classNames(boolean.class, byte.class, short.class,
         int.class, long.class, float.class, double.class);
 
-    /** Java types. */
-    private static final Class<?>[] JAVA_TYPES = new Class<?>[] {
-        boolean.class, Boolean.class,
-        byte.class, Byte.class,
-        short.class, Short.class,
-        int.class, Integer.class,
-        long.class, Long.class,
-        float.class, Float.class,
-        double.class, Double.class,
-        BigDecimal.class,
-        String.class,
-        java.sql.Date.class, java.sql.Time.class, java.sql.Timestamp.class,
-        Object.class};
-
-    /** */
-    private static final Map<String, Class<?>> classesMap = new HashMap<>();
+    /** Object types. */
+    private static final List<String> OBJECTS = classNames(Boolean.class, Byte.class, Short.class, Integer.class,
+        Long.class, Float.class, Double.class, BigDecimal.class);
 
     static {
-        List<String> objects = classNames(Boolean.class, Byte.class, Short.class, Integer.class,
-            Long.class, Float.class, Double.class, BigDecimal.class);
-
         NOT_NULL_NUM_CONVERSIONS.addAll(PRIMITIVES);
-        NOT_NULL_NUM_CONVERSIONS.addAll(objects);
+        NOT_NULL_NUM_CONVERSIONS.addAll(OBJECTS);
 
-        NULL_NUM_CONVERSIONS.addAll(objects);
-
-        for (Class<?> cls : JAVA_TYPES)
-            classesMap.put(cls.getName(), cls);
+        NULL_NUM_CONVERSIONS.addAll(OBJECTS);
     }
 
     /**
@@ -152,47 +129,55 @@ public class PojoField {
     }
 
     /**
+     * @param dbName Field name in database.
+     * @param dbType Field JDBC type in database.
+     * @param javaName Field name in POJO.
+     * @param javaTypeName Field type in POJO.
      * @param key {@code true} if this field belongs to primary key.
-     * @param desc Field type descriptor.
-     * @param nullable {@code true} if {@code NULL} is allowed for this field in database.
+     * @param nullable {@code true} if  {@code NULL} allowed for field in database.
      */
-    public PojoField(boolean key, CacheQueryTypeDescriptor desc, boolean nullable) {
+    public PojoField(String dbName, int dbType, String javaName, String javaTypeName, boolean key, boolean nullable) {
+        dbNameProp = new SimpleStringProperty(dbName);
+
+        this.dbType = dbType;
+
+        dbTypeNameProp = new SimpleStringProperty(jdbcTypeName(dbType));
+
+        javaNamePrev = javaName;
+
+        javaNameProp = new SimpleStringProperty(javaNamePrev);
+
+        javaTypeNamePrev = javaTypeName;
+
+        javaTypeNameProp = new SimpleStringProperty(javaTypeNamePrev);
+
         keyPrev = key;
 
-        use = new SimpleBooleanProperty(true);
-
-        this.key = new SimpleBooleanProperty(key);
-
-        ak = new SimpleBooleanProperty(false);
-
-        javaNamePrev = desc.getJavaName();
-
-        javaName = new SimpleStringProperty(javaNamePrev);
-
-        javaTypeNamePrev = desc.getJavaType().getName();
-
-        javaTypeName = new SimpleStringProperty(javaTypeNamePrev);
-
-        dbName = new SimpleStringProperty(desc.getDbName());
-
-        dbType = desc.getDbType();
-
-        dbTypeName = new SimpleStringProperty(jdbcTypeName(dbType));
+        keyProp = new SimpleBooleanProperty(keyPrev);
 
         this.nullable = nullable;
 
+        useProp = new SimpleBooleanProperty(true);
+
+        akProp = new SimpleBooleanProperty(false);
+
         conversions = conversions(dbType, nullable, javaNamePrev);
 
-        this.desc = desc;
+        keyProp.addListener(new ChangeListener<Boolean>() {
+            @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
+                if (!newVal)
+                    akProp.set(false);
+            }
+        });
 
-        ak.addListener(new ChangeListener<Boolean>() {
+        akProp.addListener(new ChangeListener<Boolean>() {
             @Override public void changed(ObservableValue<? extends Boolean> val, Boolean oldVal, Boolean newVal) {
                 if (newVal && owner != null) {
                     keyProperty().set(true);
 
                     for (PojoField field : owner.fields())
                         if (field != PojoField.this && field.affinityKey())
-                            field.ak.set(false);
+                            field.akProp.set(false);
                 }
             }
         });
@@ -284,7 +269,7 @@ public class PojoField {
      * Revert changes to java names made by user.
      */
     public void resetJavaName() {
-        javaName.setValue(javaNamePrev);
+        javaNameProp.set(javaNamePrev);
     }
 
     /**
@@ -298,49 +283,49 @@ public class PojoField {
      * @return {@code true} if this field belongs to primary key.
      */
     public boolean key() {
-        return key.get();
-    }
-
-    /**
-     * @return {@code true} if this field is an affinity key.
-     */
-    public boolean affinityKey() {
-        return ak.get();
+        return keyProp.get();
     }
 
     /**
      * @param pk {@code true} if this field belongs to primary key.
      */
     public void key(boolean pk) {
-        key.set(pk);
+        keyProp.set(pk);
+    }
+
+    /**
+     * @return {@code true} if this field is an affinity key.
+     */
+    public boolean affinityKey() {
+        return akProp.get();
     }
 
     /**
      * @return POJO field java name.
      */
     public String javaName() {
-        return javaName.get();
+        return javaNameProp.get();
     }
 
     /**
      * @param name New POJO field java name.
      */
     public void javaName(String name) {
-        javaName.set(name);
+        javaNameProp.set(name);
     }
 
     /**
      * @return POJO field java type name.
      */
     public String javaTypeName() {
-        return javaTypeName.get();
+        return javaTypeNameProp.get();
     }
 
     /**
      * @return Field name in database.
      */
     public String dbName() {
-        return dbName.get();
+        return dbNameProp.get();
     }
 
     /**
@@ -365,16 +350,6 @@ public class PojoField {
     }
 
     /**
-     * @return Field type descriptor.
-     */
-    public CacheQueryTypeDescriptor descriptor() {
-        desc.setJavaName(javaName());
-        desc.setJavaType(classesMap.get(javaTypeName()));
-
-        return desc;
-    }
-
-    /**
      * @return {@code true} if type of field is primitive type.
      */
     public boolean primitive() {
@@ -392,48 +367,48 @@ public class PojoField {
      * @return Boolean property support for {@code use} property.
      */
     public BooleanProperty useProperty() {
-        return use;
+        return useProp;
     }
 
     /**
      * @return Boolean property support for {@code key} property.
      */
     public BooleanProperty keyProperty() {
-        return key;
+        return keyProp;
     }
 
     /**
      * @return Boolean property support for {@code affinityKey} property.
      */
     public BooleanProperty affinityKeyProperty() {
-        return ak;
+        return akProp;
     }
 
     /**
      * @return String property support for {@code javaName} property.
      */
     public StringProperty javaNameProperty() {
-        return javaName;
+        return javaNameProp;
     }
 
     /**
      * @return String property support for {@code javaTypeName} property.
      */
     public StringProperty javaTypeNameProperty() {
-        return javaTypeName;
+        return javaTypeNameProp;
     }
 
     /**
      * @return String property support for {@code dbName} property.
      */
     public StringProperty dbNameProperty() {
-        return dbName;
+        return dbNameProp;
     }
 
     /**
      * @return String property support for {@code dbName} property.
      */
     public StringProperty dbTypeNameProperty() {
-        return dbTypeName;
+        return dbTypeNameProp;
     }
 }

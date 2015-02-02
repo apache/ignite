@@ -33,12 +33,11 @@ import static org.apache.ignite.schema.ui.MessageBox.Result.*;
  * Base functional for ignite-schema-loader tests.
  */
 public class BaseSchemaLoaderSelfTest extends TestCase {
-    /** Default connection URL (value is <tt>jdbc:h2:mem:jdbcCacheStore;DB_CLOSE_DELAY=-1</tt>). */
-    private static final String DFLT_CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
+    /** DB connection URL. */
+    private static final String CONN_URL = "jdbc:h2:mem:autoCacheStore;DB_CLOSE_DELAY=-1";
 
     /** Path to temp folder where generated POJOs will be saved. */
-    protected static final String OUT_DIR_PATH =
-        String.format("%s/ignite-schema-loader/out", System.getProperty("java.io.tmpdir"));
+    protected static final String OUT_DIR_PATH = System.getProperty("java.io.tmpdir") + "/ignite-schema-loader/out";
 
     /** Auto confirmation of file conflicts. */
     protected ConfirmCallable askOverwrite = new ConfirmCallable(null, "") {
@@ -48,13 +47,13 @@ public class BaseSchemaLoaderSelfTest extends TestCase {
     };
 
     /** List of generated for test database POJO objects. */
-    protected List<PojoDescriptor> pojoLst;
+    protected List<PojoDescriptor> pojos;
 
     /** {@inheritDoc} */
     @Override public void setUp() throws Exception {
         Class.forName("org.h2.Driver");
 
-        Connection conn = DriverManager.getConnection(DFLT_CONN_URL, "sa", "");
+        Connection conn = DriverManager.getConnection(CONN_URL, "sa", "");
 
         Statement stmt = conn.createStatement();
 
@@ -94,7 +93,7 @@ public class BaseSchemaLoaderSelfTest extends TestCase {
 
         U.closeQuiet(stmt);
 
-        pojoLst = DatabaseMetadataParser.parse(conn, false);
+        pojos = DatabaseMetadataParser.parse(conn, false);
 
         U.closeQuiet(conn);
     }

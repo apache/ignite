@@ -102,9 +102,9 @@ public class DbMetadataParserSelfTest extends BaseSchemaLoaderSelfTest {
      * Test that metadata generated correctly.
      */
     public void testCheckMetadata() {
-        assertEquals("Metadata should contain 3 element", 3, pojoLst.size());
+        assertEquals("Metadata should contain 3 element", 3, pojos.size());
 
-        Iterator<PojoDescriptor> it = pojoLst.iterator();
+        Iterator<PojoDescriptor> it = pojos.iterator();
 
         PojoDescriptor schema = it.next();
 

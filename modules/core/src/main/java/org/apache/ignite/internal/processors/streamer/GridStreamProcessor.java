@@ -65,7 +65,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
 
         super.onKernalStart();
 
-        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkStreamer(n);
         }
@@ -165,7 +165,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                 if (rmtAttr.atLeastOnce() != locAttr.atLeastOnce())
                     throw new IgniteCheckedException("Streamer atLeastOnce configuration flag mismatch (fix atLeastOnce flag " +
                         "in streamer configuration or set " +
-                        "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                        "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                         "property) [streamer=" + locAttr.name() +
                         ", locAtLeastOnce=" + locAttr.atLeastOnce() +
                         ", rmtAtLeastOnce=" + rmtAttr.atLeastOnce() +
@@ -174,7 +174,7 @@ public class GridStreamProcessor extends GridProcessorAdapter {
                 if (!rmtAttr.stages().equals(locAttr.stages()))
                     throw new IgniteCheckedException("Streamer stages configuration mismatch (fix streamer stages " +
                         "configuration or set " +
-                        "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                        "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                         "property) [streamer=" + locAttr.name() +
                         ", locStages=" + locAttr.stages() +
                         ", rmtStages=" + rmtAttr.stages() +

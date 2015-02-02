@@ -21,7 +21,7 @@
     GridGain Spring configuration file.
 
     When starting a standalone GridGain node, you need to execute the following command:
-    {GRIDGAIN_HOME}/bin/ggstart.{bat|sh} path-to-this-file/default-config.xml
+    {IGNITE_HOME}/bin/ignite.{bat|sh} path-to-this-file/default-config.xml
 
     When starting GridGain from Java IDE, pass path to this file into GridGain:
     GridGain.start("path-to-this-file/default-config.xml");

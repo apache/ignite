@@ -41,7 +41,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
 
     /** Default log path. */
-    private static final String DFLT_PATH = "work/log/gridgain.log";
+    private static final String DFLT_PATH = "work/log/ignite.log";
 
     /** Approximate line length. */
     private static final int LINE_LENGTH = 120;
@@ -71,7 +71,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 accessibleFolders.add(new File(accessiblePath));
         }
         else if (log.isDebugEnabled())
-            log.debug("Neither restAccessibleFolders nor GRIDGAIN_HOME properties are not set, will not restrict " +
+            log.debug("Neither restAccessibleFolders nor IGNITE_HOME properties are not set, will not restrict " +
                 "log files access");
     }
 

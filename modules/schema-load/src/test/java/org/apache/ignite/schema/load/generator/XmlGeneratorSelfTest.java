@@ -17,7 +17,6 @@
 
 package org.apache.ignite.schema.load.generator;
 
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.load.*;
 import org.apache.ignite.schema.model.*;
@@ -33,16 +32,15 @@ public class XmlGeneratorSelfTest extends BaseSchemaLoaderSelfTest {
      * Test that XML generated correctly.
      */
     public void testXmlGeneration() throws Exception {
-        Collection<CacheQueryTypeMetadata> all = new ArrayList<>();
+        Collection<PojoDescriptor> all = new ArrayList<>();
 
-        // Generate XML.
-        for (PojoDescriptor pojo : pojoLst)
-            if (!pojo.valueClassName().isEmpty())
-                all.add(pojo.metadata(true));
+        for (PojoDescriptor pojo : pojos)
+            if (pojo.parent() != null)
+                all.add(pojo);
 
         String fileName = "Ignite.xml";
 
-        XmlGenerator.generate("org.apache.ignite.schema.load.model", all, new File(OUT_DIR_PATH, fileName),
+        XmlGenerator.generate("org.apache.ignite.schema.load.model", all, true, new File(OUT_DIR_PATH, fileName),
             askOverwrite);
 
         assertTrue("Generated XML file content is differ from expected one",

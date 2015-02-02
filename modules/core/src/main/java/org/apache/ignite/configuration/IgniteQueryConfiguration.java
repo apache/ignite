@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 /**
  * Configuration for embedded indexing facilities.
  */
-public class GridQueryConfiguration {
+public class IgniteQueryConfiguration {
     /** Default query execution time interpreted as long query (3 seconds). */
     public static final long DFLT_LONG_QRY_EXEC_TIMEOUT = 3000;
 

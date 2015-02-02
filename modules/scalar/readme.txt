@@ -4,7 +4,7 @@ Apache Ignite Scalar Module
 Apache Ignite Scalar module provides Scala-based DSL with extensions and shortcuts for Apache Ignite API.
 
 To enable Scalar module when starting a standalone node, move 'optional/ignite-scalar' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Scalar Module In Maven Project

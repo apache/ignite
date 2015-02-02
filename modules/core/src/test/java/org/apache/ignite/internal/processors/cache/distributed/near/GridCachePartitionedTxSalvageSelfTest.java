@@ -87,15 +87,15 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
     @Override protected void beforeTestsStarted() throws Exception {
         // Set salvage timeout system property.
-        salvageTimeoutOld = System.setProperty(GG_TX_SALVAGE_TIMEOUT, SALVAGE_TIMEOUT.toString());
+        salvageTimeoutOld = System.setProperty(IGNITE_TX_SALVAGE_TIMEOUT, SALVAGE_TIMEOUT.toString());
     }
 
     @Override protected void afterTestsStopped() throws Exception {
         // Restore salvage timeout system property to its initial state.
         if (salvageTimeoutOld != null)
-            System.setProperty(GG_TX_SALVAGE_TIMEOUT, salvageTimeoutOld);
+            System.setProperty(IGNITE_TX_SALVAGE_TIMEOUT, salvageTimeoutOld);
         else
-            System.clearProperty(GG_TX_SALVAGE_TIMEOUT);
+            System.clearProperty(IGNITE_TX_SALVAGE_TIMEOUT);
     }
 
     @Override protected void beforeTest() throws Exception {

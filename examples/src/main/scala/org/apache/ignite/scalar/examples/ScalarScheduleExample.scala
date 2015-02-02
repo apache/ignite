@@ -26,7 +26,7 @@ import org.apache.ignite.scalar.scalar._
  * three times with initial scheduling delay equal to five seconds.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarScheduleExample extends App {
     scalar("examples/config/example-compute.xml") {

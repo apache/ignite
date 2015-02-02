@@ -950,7 +950,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
         params.put(PASSWD, passwd);
         params.put(KEY, key);
         params.put(NODES, nodes);
-        params.put(GG_HOME, ggHome);
+        params.put(IGNITE_HOME, ggHome);
         params.put(CFG, cfg);
         params.put(SCRIPT, script);
 
@@ -989,7 +989,7 @@ public class GridProjectionStartStopRestartSelfTest extends GridCommonAbstractTe
             params.put(PASSWD, passwd);
             params.put(KEY, key);
             params.put(NODES, nodes);
-            params.put(GG_HOME, ggHome);
+            params.put(IGNITE_HOME, ggHome);
             params.put(CFG, cfg);
             params.put(SCRIPT, script);
 

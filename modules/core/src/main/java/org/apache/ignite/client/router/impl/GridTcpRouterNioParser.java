@@ -59,7 +59,7 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
 
             ByteBuffer res = ByteBuffer.allocate(resp.body().length + 45);
 
-            res.put(GRIDGAIN_REQ_FLAG);
+            res.put(IGNITE_REQ_FLAG);
             res.putInt(resp.body().length + 40);
             res.putLong(resp.requestId());
             res.put(U.uuidToBytes(resp.clientId()));
@@ -79,7 +79,7 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
 
             ByteBuffer slice = res.slice();
 
-            slice.put(GRIDGAIN_REQ_FLAG);
+            slice.put(IGNITE_REQ_FLAG);
             slice.putInt(res.remaining() - 5);
             slice.putLong(clientMsg.requestId());
             slice.put(U.uuidToBytes(clientMsg.clientId()));

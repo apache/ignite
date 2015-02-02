@@ -29,7 +29,7 @@
         <property name="tableName" value="ORGANIZATION"/>
         <property name="keyDescriptors">
             <list>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                     <property name="dbName" value="ID"/>
@@ -39,19 +39,19 @@
         </property>
         <property name="valueDescriptors">
             <list>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                     <property name="dbName" value="ID"/>
                     <property name="dbType" value="4"/>
                 </bean>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="name"/>
                     <property name="javaType" value="java.lang.String"/>
                     <property name="dbName" value="NAME"/>
                     <property name="dbType" value="12"/>
                 </bean>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="city"/>
                     <property name="javaType" value="java.lang.String"/>
                     <property name="dbName" value="CITY"/>
@@ -121,7 +121,7 @@
         <property name="tableName" value="PERSON"/>
         <property name="keyDescriptors">
             <list>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                     <property name="dbName" value="ID"/>
@@ -131,19 +131,19 @@
         </property>
         <property name="valueDescriptors">
             <list>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="id"/>
                     <property name="javaType" value="java.lang.Integer"/>
                     <property name="dbName" value="ID"/>
                     <property name="dbType" value="4"/>
                 </bean>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="orgId"/>
                     <property name="javaType" value="java.lang.Integer"/>
                     <property name="dbName" value="ORG_ID"/>
                     <property name="dbType" value="4"/>
                 </bean>
-                <bean class="org.apache.ignite.cache.query.CacheQueryTypeDescriptor">
+                <bean class="org.apache.ignite.cache.query.CacheQueryTableColumnMetadata">
                     <property name="javaName" value="name"/>
                     <property name="javaType" value="java.lang.String"/>
                     <property name="dbName" value="NAME"/>

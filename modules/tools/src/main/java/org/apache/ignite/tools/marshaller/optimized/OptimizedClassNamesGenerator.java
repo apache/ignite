@@ -36,10 +36,10 @@ import java.util.jar.*;
  */
 public class OptimizedClassNamesGenerator {
     /** Defines GridGain installation folder. */
-    public static final String GG_HOME_SYS_PROP = "GRIDGAIN_HOME";
+    public static final String IGNITE_HOME_SYS_PROP = "IGNITE_HOME";
 
     /** Defines GridGain installation folder.  */
-    public static final String GG_HOME_ENV_VAR = "GRIDGAIN_HOME";
+    public static final String IGNITE_HOME_ENV_VAR = "IGNITE_HOME";
 
     /** File name to generate. */
     public static final String FILE_NAME = "optimized-classnames.properties";
@@ -210,7 +210,7 @@ public class OptimizedClassNamesGenerator {
     private void checkSerialVersionUid(Class cls) {
         // Check only GridGain classes.
         if (cls.isEnum() || cls.getSimpleName().isEmpty() || (!cls.getName().startsWith("org.gridgain.grid") &&
-            !cls.getName().startsWith("org.gridgain.client")))
+            !cls.getName().startsWith("org.gridgain.client") && !cls.getName().startsWith("org.apache.ignite")))
             return;
 
         try {
@@ -285,14 +285,14 @@ public class OptimizedClassNamesGenerator {
         File dir;
 
         if (args.length > 0 && args[0] != null && !args[0].isEmpty())
-            dir = new File(args[0], "/org/gridgain/grid/marshaller/optimized");
+            dir = new File(args[0], "/org/apache/ignite/marshaller/optimized");
         else {
             String home = home();
 
             if (home == null)
                 throw new Exception("Failed to find GridGain home.");
 
-            dir = new File(home, "/os/modules/core/src/main/java/org/gridgain/grid/marshaller/optimized");
+            dir = new File(home, "/os/modules/core/src/main/java/org/apache/ignite/marshaller/optimized");
         }
 
         if (!dir.exists())
@@ -305,16 +305,16 @@ public class OptimizedClassNamesGenerator {
     }
 
     /**
-     * Retrieves {@code GRIDGAIN_HOME} property. The property is retrieved from system
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
      * properties or from environment in that order.
      *
-     * @return {@code GRIDGAIN_HOME} property.
+     * @return {@code IGNITE_HOME} property.
      */
     private static String home() {
-        String home = System.getProperty(GG_HOME_SYS_PROP);
+        String home = System.getProperty(IGNITE_HOME_SYS_PROP);
 
         if (home == null || home.isEmpty()) {
-            home = System.getenv(GG_HOME_ENV_VAR);
+            home = System.getenv(IGNITE_HOME_ENV_VAR);
 
             if (home == null || home.isEmpty())
                 return null;

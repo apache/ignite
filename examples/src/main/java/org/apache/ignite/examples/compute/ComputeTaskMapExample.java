@@ -34,7 +34,7 @@ import java.util.*;
  * calculated on reduce stage.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.

@@ -29,7 +29,6 @@ import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.stage.*;
 import javafx.util.*;
-import org.apache.ignite.cache.query.*;
 import org.apache.ignite.schema.generator.*;
 import org.apache.ignite.schema.model.*;
 import org.apache.ignite.schema.parser.*;
@@ -325,7 +324,7 @@ public class SchemaLoadApp extends Application {
      * Generate XML and POJOs.
      */
     private void generate() {
-        final Collection<PojoDescriptor> selPojos = selectedItems();
+        final Collection<PojoDescriptor> selPojos = chekedPojos();
 
         if (selPojos.isEmpty()) {
             MessageBox.warningDialog(owner, "Please select tables to generate XML and POJOs files!");
@@ -342,9 +341,8 @@ public class SchemaLoadApp extends Application {
         final File destFolder = new File(outFolder);
 
         Runnable task = new Task<Void>() {
-            private void checkEmpty(final PojoDescriptor pojo, Collection<CacheQueryTypeDescriptor> descs,
-                String msg) {
-                if (descs.isEmpty()) {
+            private void checkEmpty(final PojoDescriptor pojo, Collection<PojoField> fields, String msg) {
+                if (fields.isEmpty()) {
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
                             pojosTbl.getSelectionModel().select(pojo);
@@ -363,7 +361,7 @@ public class SchemaLoadApp extends Application {
                 if (!destFolder.exists() && !destFolder.mkdirs())
                     throw new IOException("Failed to create output folder: " + destFolder);
 
-                Collection<CacheQueryTypeMetadata> all = new ArrayList<>();
+                Collection<PojoDescriptor> all = new ArrayList<>();
 
                 boolean constructor = pojoConstructorCh.isSelected();
                 boolean includeKeys = pojoIncludeKeysCh.isSelected();
@@ -373,17 +371,15 @@ public class SchemaLoadApp extends Application {
 
                 // Generate XML and POJO.
                 for (PojoDescriptor pojo : selPojos) {
-                    if (pojo.selected()) {
-                        CacheQueryTypeMetadata meta = pojo.metadata(includeKeys);
+                    if (pojo.checked()) {
+                        checkEmpty(pojo, pojo.keyFields(), "No key fields specified for type: ");
 
-                        checkEmpty(pojo, meta.getKeyDescriptors(), "No key fields specified for type: ");
+                        checkEmpty(pojo, pojo.valueFields(includeKeys), "No value fields specified for type: ");
 
-                        checkEmpty(pojo, meta.getValueDescriptors(), "No value fields specified for type: ");
-
-                        all.add(meta);
+                        all.add(pojo);
 
                         if (!singleXml)
-                            XmlGenerator.generate(pkg, meta, new File(destFolder, meta.getType() + ".xml"),
+                            XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
                                 askOverwrite);
 
                         PojoGenerator.generate(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
@@ -391,7 +387,7 @@ public class SchemaLoadApp extends Application {
                 }
 
                 if (singleXml)
-                    XmlGenerator.generate(pkg, all, new File(outFolder, "Ignite.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "Ignite.xml"), askOverwrite);
 
                 perceptualDelay(started);
 
@@ -751,8 +747,8 @@ public class SchemaLoadApp extends Application {
             "Сheck to include this field into key object");
 
         TableColumn<PojoField, Boolean> akCol = booleanColumn("AK", "affinityKey",
-            "Check to annotate filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
-            "Note that a class can have only one field annotated with @CacheAffinityKeyMapped annotation");
+            "Check to annotate key filed with @CacheAffinityKeyMapped annotation in generated POJO class\n" +
+            "Note that a class can have only one key field annotated with @CacheAffinityKeyMapped annotation");
 
         TableColumn<PojoField, String> dbNameCol = tableColumn("DB Name", "dbName", "Field name in database");
 
@@ -849,9 +845,9 @@ public class SchemaLoadApp extends Application {
 
                         String target = "\"" + sel + "\"";
 
-                        Collection<PojoDescriptor> selItems = selectedItems();
+                        Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
 
-                        if (selItems.isEmpty()) {
+                        if (selPojos.isEmpty()) {
                             MessageBox.warningDialog(owner, "Please select " + src + " to rename " + target + "!");
 
                             return;
@@ -867,13 +863,16 @@ public class SchemaLoadApp extends Application {
 
                         try {
                             switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                                case 0: renameKeyClassNames(regex, replace);
+                                case 0:
+                                    renameKeyClassNames(selPojos, regex, replace);
                                     break;
 
-                                case 1: renameValueClassNames(regex, replace);
+                                case 1:
+                                    renameValueClassNames(selPojos, regex, replace);
                                     break;
 
-                                default: renameJavaNames(regex, replace);
+                                default:
+                                    renameJavaNames(selPojos, regex, replace);
                             }
                         }
                         catch (Exception e) {
@@ -883,8 +882,6 @@ public class SchemaLoadApp extends Application {
                 }),
             button("Reset Selected", "Revert changes for selected items to initial values", new EventHandler<ActionEvent>() {
                 @Override public void handle(ActionEvent evt) {
-                    Collection<PojoDescriptor> selItems = selectedItems();
-
                     String sel = replaceCb.getSelectionModel().getSelectedItem();
 
                     boolean renFields = "Java names".equals(sel);
@@ -893,7 +890,9 @@ public class SchemaLoadApp extends Application {
 
                     String target = "\"" + sel + "\"";
 
-                    if (selItems.isEmpty()) {
+                    Collection<PojoDescriptor> selPojos = pojosTbl.getSelectionModel().getSelectedItems();
+
+                    if (selPojos.isEmpty()) {
                         MessageBox.warningDialog(owner, "Please select " + src + "to revert " + target + "!");
 
                         return;
@@ -904,13 +903,16 @@ public class SchemaLoadApp extends Application {
                         return;
 
                     switch (replaceCb.getSelectionModel().getSelectedIndex()) {
-                        case 0: revertKeyClassNames();
+                        case 0:
+                            revertKeyClassNames(selPojos);
                             break;
 
-                        case 1: revertValueClassNames();
+                        case 1:
+                            revertValueClassNames(selPojos);
                             break;
 
-                        default: revertJavaNames();
+                        default:
+                            revertJavaNames(selPojos);
                     }
                 }
             })
@@ -945,69 +947,78 @@ public class SchemaLoadApp extends Application {
     /**
      * Rename key class name for selected tables.
      *
+     * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameKeyClassNames(String regex, String replace) {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void renameKeyClassNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.keyClassName(pojo.keyClassName().replaceAll(regex, replace));
     }
 
     /**
      * Rename value class name for selected tables.
      *
+     * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameValueClassNames(String regex, String replace) {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void renameValueClassNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.valueClassName(pojo.valueClassName().replaceAll(regex, replace));
     }
 
     /**
      * Rename fields java name for current or selected tables.
      *
+     * @param selPojos Selected POJOs to rename.
      * @param regex Regex to search.
      * @param replace Text for replacement.
      */
-    private void renameJavaNames(String regex, String replace) {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void renameJavaNames(Collection<PojoDescriptor> selPojos, String regex, String replace) {
+        for (PojoDescriptor pojo : selPojos)
             for (PojoField field : pojo.fields())
                 field.javaName(field.javaName().replaceAll(regex, replace));
     }
 
     /**
      * Revert key class name for selected tables to initial value.
+     *
+     * @param selPojos Selected POJOs to revert.
      */
-    private void revertKeyClassNames() {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void revertKeyClassNames(Collection<PojoDescriptor> selPojos) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.revertKeyClassName();
     }
 
     /**
      * Revert value class name for selected tables to initial value.
+     *
+     * @param selPojos Selected POJOs to revert.
      */
-    private void revertValueClassNames() {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void revertValueClassNames(Collection<PojoDescriptor> selPojos) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.revertValueClassName();
     }
 
     /**
      * Revert fields java name for selected or current table to initial value.
+     *
+     * @param selPojos Selected POJOs to revert.
      */
-    private void revertJavaNames() {
-        for (PojoDescriptor pojo : pojosTbl.getSelectionModel().getSelectedItems())
+    private void revertJavaNames(Collection<PojoDescriptor> selPojos) {
+        for (PojoDescriptor pojo : selPojos)
             pojo.revertJavaNames();
     }
 
     /**
-     * @return Selected tree view items.
+     * @return POJOs checked in table-tree-view.
      */
-    private Collection<PojoDescriptor> selectedItems() {
+    private Collection<PojoDescriptor> chekedPojos() {
         Collection<PojoDescriptor> res = new ArrayList<>();
 
         for (PojoDescriptor pojo : pojos)
-            if (pojo.selected())
+            if (pojo.checked())
                 res.add(pojo);
 
         return res;
