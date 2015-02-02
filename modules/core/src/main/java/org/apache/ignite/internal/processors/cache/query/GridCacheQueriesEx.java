@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.cache.query.*;
 
 import java.util.*;
 
@@ -53,15 +53,15 @@ public interface GridCacheQueriesEx<K, V> extends CacheQueries<K, V> {
     /**
      * @param space Space name.
      * @param qry Query.
-     * @return Future.
+     * @return Cursor.
      */
-    public IgniteInternalFuture<GridCacheSqlResult> execute(String space, GridCacheTwoStepQuery qry);
+    public QueryCursor<List<?>> execute(String space, GridCacheTwoStepQuery qry);
 
     /**
      * @param space Space.
      * @param sqlQry Query.
      * @param params Parameters.
-     * @return Result.
+     * @return Cursor.
      */
-    public IgniteInternalFuture<GridCacheSqlResult> executeTwoStepQuery(String space, String sqlQry, Object... params);
+    public QueryCursor<List<?>> executeTwoStepQuery(String space, String sqlQry, Object... params);
 }

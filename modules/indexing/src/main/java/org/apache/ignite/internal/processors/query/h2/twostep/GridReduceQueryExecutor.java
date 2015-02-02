@@ -10,12 +10,12 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
@@ -78,6 +78,10 @@ public class GridReduceQueryExecutor {
         U.error(log, "Failed to execute query.", msg.error());
     }
 
+    /**
+     * @param node Node.
+     * @param msg Message.
+     */
     private void onNextPage(final ClusterNode node, GridNextPageResponse msg) {
         final long qryReqId = msg.queryRequestId();
         final int qry = msg.query();
@@ -108,21 +112,16 @@ public class GridReduceQueryExecutor {
     /**
      * @param space Space name.
      * @param qry Query.
-     * @return Future.
+     * @return Cursor.
      */
-    public IgniteInternalFuture<GridCacheSqlResult> query(String space, GridCacheTwoStepQuery qry) {
+    public QueryCursor<List<?>> query(String space, GridCacheTwoStepQuery qry) {
         long qryReqId = reqIdGen.incrementAndGet();
 
         QueryRun r = new QueryRun();
 
         r.tbls = new ArrayList<>(qry.mapQueries().size());
 
-        try {
-            r.conn = h2.connectionForSpace(space);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
-        }
+        r.conn = h2.connectionForSpace(space);
 
         Collection<ClusterNode> nodes = ctx.grid().cluster().nodes(); // TODO filter nodes somehow?
 
@@ -133,7 +132,7 @@ public class GridReduceQueryExecutor {
                 tbl = createTable(r.conn, mapQry);
             }
             catch (IgniteCheckedException e) {
-                return new GridFinishedFutureEx<>(e);
+                throw new IgniteException(e);
             }
 
             tbl.getScanIndex(null).setNumberOfSources(nodes.size());
@@ -158,12 +157,12 @@ public class GridReduceQueryExecutor {
             for (GridMergeTable tbl : r.tbls)
                 dropTable(r.conn, tbl.getName());
 
-            return new GridFinishedFuture(ctx, new Iter(res));
+            return new QueryCursorImpl<>(new Iter(res));
         }
         catch (IgniteCheckedException | InterruptedException | SQLException e) {
             U.closeQuiet(r.conn);
 
-            return new GridFinishedFuture<>(ctx, e);
+            throw new IgniteException(e);
         }
     }
 
@@ -221,7 +220,7 @@ public class GridReduceQueryExecutor {
     /**
      *
      */
-    private static class Iter extends GridH2ResultSetIterator<List<?>> implements GridCacheSqlResult {
+    private static class Iter extends GridH2ResultSetIterator<List<?>> {
         /**
          * @param data Data array.
          * @throws IgniteCheckedException If failed.

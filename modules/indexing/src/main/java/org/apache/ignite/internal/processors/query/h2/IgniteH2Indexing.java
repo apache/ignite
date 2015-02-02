@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.query.h2.opt.*;
 import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.twostep.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.internal.util.future.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.offheap.unsafe.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -234,10 +233,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @param space Space.
      * @return Connection.
-     * @throws IgniteCheckedException If failed.
      */
-    public Connection connectionForSpace(@Nullable String space) throws IgniteCheckedException {
-        return connectionForThread(schema(space));
+    public Connection connectionForSpace(@Nullable String space) {
+        try {
+            return connectionForThread(schema(space));
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**
@@ -753,20 +756,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+    @Override public QueryCursor<List<?>> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         return rdcQryExec.query(space, qry);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
-        Connection c;
-
-        try {
-            c = connectionForSpace(space);
-        }
-        catch (IgniteCheckedException e) {
-            return new GridFinishedFutureEx<>(e);
-        }
+    @Override public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params) {
+        Connection c = connectionForSpace(space);
 
         GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(c, sqlQry, params);
 

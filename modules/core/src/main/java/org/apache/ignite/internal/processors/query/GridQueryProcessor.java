@@ -439,9 +439,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param space Space name.
      * @param qry Query.
-     * @return Future.
+     * @return Cursor.
      */
-    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+    public QueryCursor<List<?>> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -457,9 +457,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param space Space.
      * @param sqlQry Query.
      * @param params Parameters.
-     * @return Result.
+     * @return Cursor.
      */
-    public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+    public QueryCursor<List<?>> queryTwoStep(String space, String sqlQry, Object[] params) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 

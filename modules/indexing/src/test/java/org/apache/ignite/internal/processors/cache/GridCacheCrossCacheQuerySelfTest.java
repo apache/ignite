@@ -116,7 +116,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
 
-        Object cnt = qx.execute(cache, q).get().iterator().next().get(0);
+        Object cnt = qx.execute(cache, q).getAll().iterator().next().get(0);
 
         assertEquals(10L, cnt);
     }
@@ -135,7 +135,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         X.println("___ simple");
 
         for (List<?> o : qx.executeTwoStepQuery("partitioned", "select f.productId, p.name, f.price " +
-            "from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId ").get()) {
+            "from FactPurchase f, \"replicated\".DimProduct p where p.id = f.productId ").getAll()) {
             X.println("___ -> " + o);
 
             set1.add((Integer)o.get(0));
@@ -146,7 +146,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         X.println("___ GROUP BY");
 
         for (List<?> o : qx.executeTwoStepQuery("partitioned", "select productId from FactPurchase group by productId")
-            .get()) {
+            .getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(set0.add((Integer) o.get(0)));
@@ -164,7 +164,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
                 "count(nullif(f.price, 5)) " +
                 "from FactPurchase f, \"replicated\".DimProduct p " +
                 "where p.id = f.productId " +
-                "group by f.productId, p.name").get()) {
+                "group by f.productId, p.name").getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(names.add((String)o.get(0)));
@@ -178,7 +178,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
                 "from FactPurchase f, \"replicated\".DimProduct p " +
                 "where p.id = f.productId " +
                 "group by f.productId, p.name " +
-                "having s >= 15").get()) {
+                "having s >= 15").getAll()) {
             X.println("___ -> " + o);
 
             assertTrue(i(o, 1) >= 15);
@@ -191,7 +191,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         for (List<?> o : qx.executeTwoStepQuery("partitioned",
             "select top 3 distinct productId " +
                 "from FactPurchase f " +
-                "order by productId desc ").get()) {
+                "order by productId desc ").getAll()) {
             X.println("___ -> " + o);
 
             assertEquals(top--, o.get(0));
@@ -205,7 +205,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
             "select distinct productId " +
                 "from FactPurchase f " +
                 "order by productId desc " +
-                "limit 2 offset 1").get()) {
+                "limit 2 offset 1").getAll()) {
             X.println("___ -> " + o);
 
             assertEquals(top--, o.get(0));
