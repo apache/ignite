@@ -2613,9 +2613,16 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file, boolean restart,
-        int timeout, int maxConn) throws IgniteCheckedException {
-        return startNodesAsync(file, restart, timeout, maxConn).get();
+    @Override public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
+        boolean restart,
+        int timeout,
+        int maxConn) {
+        try {
+            return startNodesAsync(file, restart, timeout, maxConn).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -2624,17 +2631,25 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param timeout Connection timeout.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @throws IgniteCheckedException In case of error.
      * @see {@link IgniteCluster#startNodes(java.io.File, boolean, int, int)}.
      */
-    IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file, boolean restart,                                                                                            int timeout, int maxConn) throws IgniteCheckedException {
+    IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(File file,
+        boolean restart,
+        int timeout,
+        int maxConn)
+    {
         A.notNull(file, "file");
         A.ensure(file.exists(), "file doesn't exist.");
         A.ensure(file.isFile(), "file is a directory.");
 
-        IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
+        try {
+            IgniteBiTuple<Collection<Map<String, Object>>, Map<String, Object>> t = parseFile(file);
 
-        return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
+            return startNodesAsync(t.get1(), t.get2(), restart, timeout, maxConn);
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(ctx, e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -2659,9 +2674,13 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteCheckedException
     {
-        return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
+        try {
+            return startNodesAsync(hosts, dflts, restart, timeout, maxConn).get();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**
@@ -2671,7 +2690,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      * @param timeout Connection timeout in milliseconds.
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Future with results.
-     * @throws IgniteCheckedException In case of error.
      * @see {@link IgniteCluster#startNodes(java.util.Collection, java.util.Map, boolean, int, int)}.
      */
     IgniteInternalFuture<Collection<GridTuple3<String, Boolean, String>>> startNodesAsync(
@@ -2680,7 +2698,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteCheckedException
     {
         A.notNull(hosts, "hosts");
 
@@ -2775,6 +2792,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
 
             return fut;
         }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture<>(ctx, e);
+        }
         finally {
             unguard();
         }
@@ -2837,7 +2857,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes() throws IgniteCheckedException {
+    @Override public void stopNodes() {
         guard();
 
         try {
@@ -2849,7 +2869,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException {
+    @Override public void stopNodes(Collection<UUID> ids) {
         guard();
 
         try {
@@ -2861,7 +2881,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes() throws IgniteCheckedException {
+    @Override public void restartNodes() {
         guard();
 
         try {
@@ -2873,7 +2893,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     }
 
     /** {@inheritDoc} */
-    @Override public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException {
+    @Override public void restartNodes(Collection<UUID> ids) {
         guard();
 
         try {

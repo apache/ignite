@@ -304,6 +304,10 @@ public abstract class IgniteUtils {
     /** Mutex. */
     private static final Object mux = new Object();
 
+    /** Exception converters. */
+    private static final Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
+        exceptionConverters;
+
     /**
      * Initializes enterprise check.
      */
@@ -542,6 +546,108 @@ public abstract class IgniteUtils {
         PORTABLE_CLS.add(UUID[].class);
         PORTABLE_CLS.add(Date[].class);
         PORTABLE_CLS.add(Timestamp[].class);
+
+        exceptionConverters = Collections.unmodifiableMap(exceptionConverters());
+    }
+
+
+    /**
+     * Gets map with converters to convert internal checked exceptions to public API unchecked exceptions.
+     *
+     * @return Exception converters.
+     */
+    private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> exceptionConverters() {
+        Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
+
+        m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
+            }
+        });
+
+        m.put(IgniteFutureCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteFutureTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteFutureTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ClusterGroupEmptyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ClusterGroupEmptyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ClusterTopologyCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ClusterTopologyException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteDeploymentCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteDeploymentException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ComputeTaskTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ComputeTaskTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(ComputeTaskCancelledCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new ComputeTaskCancelledException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxRollbackCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxRollbackException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxHeuristicCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxHeuristicException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxTimeoutException(e.getMessage(), e);
+            }
+        });
+
+        m.put(IgniteTxOptimisticCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
+            @Override public IgniteException apply(IgniteCheckedException e) {
+                return new IgniteTxOptimisticException(e.getMessage(), e);
+            }
+        });
+
+        return m;
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    public static IgniteException convertException(IgniteCheckedException e) {
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        if (converter != null)
+            return converter.apply(e);
+
+        if (e.getCause() instanceof IgniteException)
+            return (IgniteException)e.getCause();
+
+        return new IgniteException(e.getMessage(), e);
     }
 
     /**
@@ -9146,40 +9252,5 @@ public abstract class IgniteUtils {
             sb.append(Integer.toString((md5Byte & 0xff) + 0x100, 16).substring(1));
 
         return sb.toString();
-    }
-
-    /**
-     * @param e Ignite checked exception.
-     * @return Ignite runtime exception.
-     */
-    public static IgniteException convertException(IgniteCheckedException e) {
-        if (e instanceof IgniteInterruptedCheckedException)
-            return new IgniteInterruptedException(e.getMessage(), (InterruptedException)e.getCause());
-        else if (e instanceof IgniteFutureCancelledCheckedException)
-            return new IgniteFutureCancelledException(e.getMessage(), e.getCause());
-        else if (e instanceof IgniteFutureTimeoutCheckedException)
-            return new IgniteFutureTimeoutException(e.getMessage(), e.getCause());
-        else if (e instanceof ClusterGroupEmptyCheckedException)
-            return new ClusterGroupEmptyException(e.getMessage(), e.getCause());
-        else if (e instanceof ClusterTopologyCheckedException)
-            return new ClusterTopologyException(e.getMessage(), e.getCause());
-        else if (e instanceof IgniteDeploymentCheckedException)
-            return new IgniteDeploymentException(e.getMessage(), e.getCause());
-        else if (e instanceof ComputeTaskTimeoutCheckedException)
-            return new ComputeTaskTimeoutException(e.getMessage(), e.getCause());
-        else if (e instanceof ComputeTaskCancelledCheckedException)
-            return new ComputeTaskCancelledException(e.getMessage(), e.getCause());
-        else if (e instanceof IgniteTxRollbackCheckedException)
-            return new IgniteTxRollbackException(e.getMessage(), e.getCause());
-        else if (e instanceof IgniteTxHeuristicCheckedException)
-            return new IgniteTxHeuristicException(e.getMessage(), e.getCause());
-        else if (e instanceof IgniteTxTimeoutCheckedException)
-            return new IgniteTxTimeoutException(e.getMessage(), e.getCause());
-        else if (e instanceof IgniteTxOptimisticCheckedException)
-            return new IgniteTxOptimisticException(e.getMessage(), e.getCause());
-        else if (e.getCause() instanceof IgniteException)
-            return (IgniteException)e.getCause();
-
-        return new IgniteException(e.getMessage(), e);
     }
 }

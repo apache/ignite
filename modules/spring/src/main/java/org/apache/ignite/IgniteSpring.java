@@ -26,7 +26,7 @@ import org.springframework.context.*;
 import java.net.*;
 
 /**
- * Factory methods to start GridGain with optional Spring application context, this context can be injected into
+ * Factory methods to start Ignite with optional Spring application context, this context can be injected into
  * grid tasks and grid jobs using {@link org.apache.ignite.resources.IgniteSpringApplicationContextResource @IgniteSpringApplicationContextResource}
  * annotation.
  * <p>

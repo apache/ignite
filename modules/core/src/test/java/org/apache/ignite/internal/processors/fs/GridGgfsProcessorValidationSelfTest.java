@@ -469,7 +469,8 @@ public class GridGgfsProcessorValidationSelfTest extends GridGgfsCommonAbstractT
         catch (IgniteException e) {
             if (testLoc) {
                 if ("Failed to start processor: GridProcessorAdapter []".equals(e.getMessage()) &&
-                    e.getCause().getMessage().contains(excMsgSnippet))
+                    (e.getCause().getMessage().contains(excMsgSnippet) ||
+                     e.getCause().getCause().getMessage().contains(excMsgSnippet)))
                     return; // Expected exception.
             }
             else if (e.getMessage().contains(excMsgSnippet))

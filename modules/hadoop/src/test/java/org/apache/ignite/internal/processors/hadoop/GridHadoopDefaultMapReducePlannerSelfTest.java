@@ -1064,22 +1064,22 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public void stopNodes() throws IgniteCheckedException {
+        @Override public void stopNodes() {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException {
+        @Override public void stopNodes(Collection<UUID> ids) {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restartNodes() throws IgniteCheckedException {
+        @Override public void restartNodes() {
             // No-op.
         }
 
         /** {@inheritDoc} */
-        @Override public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException {
+        @Override public void restartNodes(Collection<UUID> ids) {
             // No-op.
         }
 

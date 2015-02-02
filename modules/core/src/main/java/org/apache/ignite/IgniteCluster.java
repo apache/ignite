@@ -171,14 +171,14 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(File file,
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Starts one or more nodes on remote host(s).
@@ -276,7 +276,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param maxConn Number of parallel SSH connections to one host.
      * @return Collection of tuples, each containing host name, result (success of failure)
      *      and error message (if any).
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
     @IgniteAsyncSupported
     public Collection<GridTuple3<String, Boolean, String>> startNodes(Collection<Map<String, Object>> hosts,
@@ -284,7 +284,7 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
         boolean restart,
         int timeout,
         int maxConn)
-        throws IgniteCheckedException;
+        throws IgniteException;
 
     /**
      * Stops nodes satisfying optional set of predicates.
@@ -293,9 +293,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * stopping node. If you have other applications running in the same JVM along with GridGain,
      * those applications will be stopped as well.
      *
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void stopNodes() throws IgniteCheckedException;
+    public void stopNodes() throws IgniteException;
 
     /**
      * Stops nodes defined by provided IDs.
@@ -305,9 +305,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * those applications will be stopped as well.
      *
      * @param ids IDs defining nodes to stop.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void stopNodes(Collection<UUID> ids) throws IgniteCheckedException;
+    public void stopNodes(Collection<UUID> ids) throws IgniteException;
 
     /**
      * Restarts nodes satisfying optional set of predicates.
@@ -315,9 +315,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * <b>NOTE:</b> this command only works for grid nodes started with GridGain
      * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void restartNodes() throws IgniteCheckedException;
+    public void restartNodes() throws IgniteException;
 
     /**
      * Restarts nodes defined by provided IDs.
@@ -326,9 +326,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * {@code ignite.sh} or {@code ignite.bat} scripts.
      *
      * @param ids IDs defining nodes to restart.
-     * @throws IgniteCheckedException In case of error.
+     * @throws IgniteException In case of error.
      */
-    public void restartNodes(Collection<UUID> ids) throws IgniteCheckedException;
+    public void restartNodes(Collection<UUID> ids) throws IgniteException;
 
     /**
      * Resets local I/O, job, and task execution metrics.
