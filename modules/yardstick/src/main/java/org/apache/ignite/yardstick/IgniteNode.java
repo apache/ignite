@@ -134,7 +134,7 @@ public class IgniteNode implements BenchmarkServer {
             url = new URL(springCfgPath);
         }
         catch (MalformedURLException e) {
-            url = GridUtils.resolveGridGainUrl(springCfgPath);
+            url = IgniteUtils.resolveGridGainUrl(springCfgPath);
 
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
