@@ -345,6 +345,8 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
         assertEquals(v3, store.load(k3));
 
+        store.deleteAll(Arrays.asList(new OrganizationKey(-100)));
+
         // Remove all.
         store.deleteAll(Arrays.asList(k3));
 
