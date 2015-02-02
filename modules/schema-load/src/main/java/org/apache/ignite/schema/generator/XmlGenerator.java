@@ -17,8 +17,9 @@
 
 package org.apache.ignite.schema.generator;
 
+import org.apache.ignite.cache.query.*;
+import org.apache.ignite.lang.*;
 import org.apache.ignite.schema.model.*;
-import org.apache.ignite.schema.parser.*;
 import org.apache.ignite.schema.ui.*;
 import org.w3c.dom.*;
 
@@ -68,10 +69,10 @@ public class XmlGenerator {
      * @param parent Parent XML node.
      * @param clazz Bean class.
      */
-    private static Element addBean(Document doc, Node parent, String clazz) {
+    private static Element addBean(Document doc, Node parent, Class<?> clazz) {
         Element elem = doc.createElement("bean");
 
-        elem.setAttribute("class", clazz);
+        elem.setAttribute("class", clazz.getName());
 
         parent.appendChild(elem);
 
@@ -174,7 +175,7 @@ public class XmlGenerator {
             Element list = addElement(doc, prop, "list");
 
             for (PojoField field : fields) {
-                Element item = addBean(doc, list, "org.apache.ignite.cache.query.CacheQueryTableColumnMetadata");
+                Element item = addBean(doc, list, CacheQueryTableColumnMetadata.class);
 
                 addProperty(doc, item, "dbName", field.dbName());
                 addProperty(doc, item, "dbType", String.valueOf(field.dbType()));
@@ -192,7 +193,9 @@ public class XmlGenerator {
      * @param pojo POJO descriptor.
      */
     private static void addTableMetadata(Document doc, Node parent, PojoDescriptor pojo, boolean includeKeys) {
-        Element bean = addBean(doc, parent, "org.apache.ignite.cache.query.CacheQueryTableMetadata");
+        Element tblMeta = addProperty(doc, parent, "tableMetadata", null);
+
+        Element bean = addBean(doc, tblMeta, CacheQueryTableMetadata.class);
 
         addProperty(doc, bean, "schema", pojo.schema());
 
@@ -210,28 +213,29 @@ public class XmlGenerator {
      * @param parent Parent XML node.
      * @param groups Map with indexes.
      */
-    private static void addGroups(Document doc, Node parent, Map<String, LinkedHashMap<String, DbIndex>> groups) {
+    private static void addGroups(Document doc, Node parent,
+        Map<String, Map<String, IgniteBiTuple<String, Boolean>>> groups) {
         if (!groups.isEmpty()) {
             Element prop = addProperty(doc, parent, "groups", null);
 
             Element map = addElement(doc, prop, "map");
 
-            for (Map.Entry<String, LinkedHashMap<String, DbIndex>> group : groups.entrySet()) {
+            for (Map.Entry<String, Map<String, IgniteBiTuple<String, Boolean>>> group : groups.entrySet()) {
                 Element entry1 = addElement(doc, map, "entry", "key", group.getKey());
 
                 Element val1 = addElement(doc, entry1, "map");
 
-                LinkedHashMap<String, DbIndex> fields = group.getValue();
+                Map<String, IgniteBiTuple<String, Boolean>> fields = group.getValue();
 
-                for (Map.Entry<String, DbIndex> field : fields.entrySet()) {
+                for (Map.Entry<String, IgniteBiTuple<String, Boolean>> field : fields.entrySet()) {
                     Element entry2 = addElement(doc, val1, "entry", "key", field.getKey());
 
-                    Element val2 = addBean(doc, entry2, "org.apache.ignite.lang.IgniteBiTuple");
+                    Element val2 = addBean(doc, entry2, IgniteBiTuple.class);
 
-                    DbIndex idx = field.getValue();
+                    IgniteBiTuple<String, Boolean> idx = field.getValue();
 
-                    addElement(doc, val2, "constructor-arg", null, null, "value", idx.name());
-                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idx.descending()));
+                    addElement(doc, val2, "constructor-arg", null, null, "value", idx.get1());
+                    addElement(doc, val2, "constructor-arg", null, null, "value", String.valueOf(idx.get2()));
                 }
             }
         }
@@ -245,8 +249,9 @@ public class XmlGenerator {
      * @param pkg Package fo types.
      * @param pojo POJO descriptor.
      */
-    private static void addTypeMetadata(Document doc, Node parent, String pkg, PojoDescriptor pojo, boolean includeKeys) {
-        Element bean = addBean(doc, parent, "org.apache.ignite.cache.query.CacheQueryTypeMetadata");
+    private static void addTypeMetadata(Document doc, Node parent, String pkg, PojoDescriptor pojo,
+        boolean includeKeys) {
+        Element bean = addBean(doc, parent, CacheQueryTypeMetadata.class);
 
         addProperty(doc, bean, "type", pkg + "." + pojo.valueClassName());
 
@@ -260,7 +265,7 @@ public class XmlGenerator {
 
         addFields(doc, bean, "descendingFields", pojo.descendingFields());
 
-//        addGroups(doc, bean, typeMeta.getGroups());
+        addGroups(doc, bean, pojo.groups());
     }
 
     /**
@@ -271,7 +276,8 @@ public class XmlGenerator {
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, PojoDescriptor pojo, boolean includeKeys, File out, ConfirmCallable askOverwrite) {
+    public static void generate(String pkg, PojoDescriptor pojo, boolean includeKeys, File out,
+        ConfirmCallable askOverwrite) {
         generate(pkg, Collections.singleton(pojo), includeKeys, out, askOverwrite);
     }
 

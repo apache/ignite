@@ -131,29 +131,30 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     }
 
     /** Methods cache. */
-    protected Map<String, PojoMethodsCache> mtdsCache;
+    protected volatile Map<String, Map<String, PojoMethodsCache>> mtdsCache = Collections.emptyMap();
 
     /** {@inheritDoc} */
-    @Override protected void prepareBuilders(Collection<CacheQueryTypeMetadata> types) throws CacheException {
-        mtdsCache = U.newHashMap(types.size() * 2);
+    @Override protected void prepareBuilders(@Nullable String cacheName, Collection<CacheQueryTypeMetadata> types)
+        throws CacheException {
+        Map<String, PojoMethodsCache> typeMethods = U.newHashMap(types.size() * 2);
 
         for (CacheQueryTypeMetadata type : types) {
             CacheQueryTableMetadata tblMeta = type.getTableMetadata();
 
-            PojoMethodsCache keyCache = new PojoMethodsCache(type.getKeyType(), tblMeta.getKeyColumns());
+            typeMethods.put(type.getKeyType(), new PojoMethodsCache(type.getKeyType(), tblMeta.getKeyColumns()));
 
-            mtdsCache.put(type.getKeyType(), keyCache);
-
-            mtdsCache.put(type.getType(), new PojoMethodsCache(type.getType(), tblMeta.getValueColumns()));
+            typeMethods.put(type.getType(), new PojoMethodsCache(type.getType(), tblMeta.getValueColumns()));
         }
 
-        mtdsCache = Collections.unmodifiableMap(mtdsCache);
+        mtdsCache = new HashMap<>(mtdsCache);
+
+        mtdsCache.put(cacheName, typeMethods);
     }
 
     /** {@inheritDoc} */
     @Override protected <R> R buildObject(String typeName, Collection<CacheQueryTableColumnMetadata> fields,
         ResultSet rs) throws CacheLoaderException {
-        PojoMethodsCache t = mtdsCache.get(typeName);
+        PojoMethodsCache t = mtdsCache.get(session().cacheName()).get(typeName);
 
         Object obj = t.newInstance();
 
@@ -172,7 +173,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     @Nullable @Override protected Object extractField(String typeName, String fieldName, Object obj)
         throws CacheException {
         try {
-            PojoMethodsCache mc = mtdsCache.get(typeName);
+            PojoMethodsCache mc = mtdsCache.get(session().cacheName()).get(typeName);
 
             return mc.getters.get(fieldName).invoke(obj);
         }
@@ -187,7 +188,7 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object keyId(String type) throws CacheException {
+    @Override protected Object keyTypeId(String type) throws CacheException {
         try {
             return Class.forName(type);
         }

@@ -15,25 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.schema.parser;
+package org.apache.ignite.yardstick.compute;
+
+import org.apache.ignite.yardstick.*;
+import org.apache.ignite.yardstick.compute.model.*;
+
+import java.util.*;
 
 /**
- * TODO: Add class description.
+ * Ignite benchmark that performs broadcast operations.
  */
-public class DbIndex {
-    private final String name;
-    private final boolean desc;
+public class IgniteBroadcastBenchmark extends IgniteAbstractBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        ignite().compute().broadcast(new NoopCallable());
 
-    public DbIndex(String name, boolean desc) {
-        this.name = name;
-        this.desc = desc;
-    }
-
-    public String name() {
-        return name;
-    }
-
-    public boolean descending() {
-        return desc;
+        return true;
     }
 }
