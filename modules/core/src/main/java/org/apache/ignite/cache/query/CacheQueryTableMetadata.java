@@ -128,7 +128,7 @@ public class CacheQueryTableMetadata {
      *
      * @param valCols New value columns.
      */
-    public void setValueColumnbs(Collection<CacheQueryTableColumnMetadata> valCols) {
+    public void setValueColumns(Collection<CacheQueryTableColumnMetadata> valCols) {
         this.valCols = valCols;
     }
 }
