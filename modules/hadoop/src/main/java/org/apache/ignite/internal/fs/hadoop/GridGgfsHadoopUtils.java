@@ -110,13 +110,13 @@ public class GridGgfsHadoopUtils {
         // First check for any nested IOException; if exists - re-throw it.
         if (e.hasCause(IOException.class))
             return e.getCause(IOException.class);
-        else if (e.getCause() instanceof IgniteFsFileNotFoundException)
+        else if (e.hasCause(IgniteFsFileNotFoundException.class))
             return new FileNotFoundException(path); // TODO: Or PathNotFoundException?
-        else if (e.getCause() instanceof IgniteFsParentNotDirectoryException)
+        else if (e.hasCause(IgniteFsParentNotDirectoryException.class))
             return new ParentNotDirectoryException(path);
-        else if (path != null && e.getCause() instanceof GridGgfsDirectoryNotEmptyException)
+        else if (path != null && e.hasCause(GridGgfsDirectoryNotEmptyException.class))
             return new PathIsNotEmptyDirectoryException(path);
-        else if (path != null && e.getCause() instanceof IgniteFsPathAlreadyExistsException)
+        else if (path != null && e.hasCause(IgniteFsPathAlreadyExistsException.class))
             return new PathExistsException(path);
         else
             return new IOException(e);
