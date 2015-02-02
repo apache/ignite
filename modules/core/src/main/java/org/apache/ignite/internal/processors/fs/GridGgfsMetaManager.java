@@ -27,7 +27,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.task.*;
 import org.apache.ignite.internal.util.typedef.*;
@@ -757,7 +756,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         IgniteUuid fileId = newFileInfo.id();
 
         if (!id2InfoPrj.putxIfAbsent(fileId, newFileInfo))
-            throw new IgniteCheckedException("Failed to add file details into cache: " + newFileInfo);
+            throw fsException("Failed to add file details into cache: " + newFileInfo);
 
         assert metaCache.get(parentId) != null;
 
@@ -974,7 +973,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert parentInfo.isDirectory();
 
         if (!rmvLocked && fileInfo.lockId() != null)
-            throw new IgniteCheckedException("Failed to remove file (file is opened for writing) [fileName=" +
+            throw fsException("Failed to remove file (file is opened for writing) [fileName=" +
                 fileName + ", fileId=" + fileId + ", lockId=" + fileInfo.lockId() + ']');
 
         // Validate own directory listing.
@@ -1478,15 +1477,15 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo newInfo = c.apply(oldInfo);
 
                     if (newInfo == null)
-                        throw new IgniteCheckedException("Failed to update file info with null value" +
+                        throw fsException("Failed to update file info with null value" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     if (!oldInfo.id().equals(newInfo.id()))
-                        throw new IgniteCheckedException("Failed to update file info (file IDs differ)" +
+                        throw fsException("Failed to update file info (file IDs differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     if (oldInfo.isDirectory() != newInfo.isDirectory())
-                        throw new IgniteCheckedException("Failed to update file info (file types differ)" +
+                        throw fsException("Failed to update file info (file types differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
                     boolean b = metaCache.replace(fileId, oldInfo, newInfo);
@@ -1658,10 +1657,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             IgniteFsFile status = fs.info(path);
 
                             if (status == null)
-                                throw new IgniteCheckedException("Failed to open output stream to the file created in " +
+                                throw fsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because it no longer exists: " + path);
                             else if (status.isDirectory())
-                                throw new IgniteCheckedException("Failed to open output stream to the file created in " +
+                                throw fsException("Failed to open output stream to the file created in " +
                                     "the secondary file system because the path points to a directory: " + path);
 
                             GridGgfsFileInfo newInfo = new GridGgfsFileInfo(status.blockSize(), status.length(), affKey,
@@ -2648,6 +2647,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         else
             throw new IllegalStateException("Failed to update times because Grid is stopping [parentId=" + parentId +
                 ", fileId=" + fileId + ", fileName=" + fileName + ']');
+    }
+
+    /**
+     * @param msg Error message.
+     * @return Checked exception.
+     */
+    private static IgniteCheckedException fsException(String msg) {
+        return new IgniteCheckedException(new IgniteFsException(msg));
     }
 
     /**
