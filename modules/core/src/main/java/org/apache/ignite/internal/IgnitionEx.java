@@ -22,7 +22,11 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.affinity.rendezvous.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.processors.resource.*;
+import org.apache.ignite.internal.processors.spring.*;
 import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.logger.*;
@@ -31,15 +35,10 @@ import org.apache.ignite.marshaller.*;
 import org.apache.ignite.marshaller.jdk.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.mxbean.*;
+import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
-import org.apache.ignite.spi.indexing.*;
-import org.apache.ignite.streamer.*;
-import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.processors.resource.*;
-import org.apache.ignite.internal.processors.spring.*;
-import org.apache.ignite.plugin.segmentation.*;
 import org.apache.ignite.spi.checkpoint.*;
 import org.apache.ignite.spi.checkpoint.noop.*;
 import org.apache.ignite.spi.collision.*;
@@ -55,6 +54,7 @@ import org.apache.ignite.spi.eventstorage.*;
 import org.apache.ignite.spi.eventstorage.memory.*;
 import org.apache.ignite.spi.failover.*;
 import org.apache.ignite.spi.failover.always.*;
+import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.loadbalancing.roundrobin.*;
 import org.apache.ignite.spi.securesession.*;
@@ -62,8 +62,8 @@ import org.apache.ignite.spi.securesession.noop.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.spi.swapspace.file.*;
 import org.apache.ignite.spi.swapspace.noop.*;
-import org.apache.ignite.internal.util.typedef.*;
-import org.apache.ignite.internal.util.typedef.internal.*;
+import org.apache.ignite.streamer.*;
+import org.apache.ignite.thread.*;
 import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 
@@ -78,7 +78,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 import java.util.logging.*;
 
-import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.IgniteState.*;
 import static org.apache.ignite.IgniteSystemProperties.*;
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
@@ -86,6 +85,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.configuration.IgniteConfiguration.*;
 import static org.apache.ignite.internal.IgniteComponentType.*;
 import static org.apache.ignite.plugin.segmentation.GridSegmentationPolicy.*;
 
@@ -713,7 +713,7 @@ public class IgnitionEx {
      * @return Started grid.
      * @throws IgniteCheckedException If failed.
      */
-    private static Ignite start(URL springCfgUrl, @Nullable String gridName,
+    private static Ignite start(final URL springCfgUrl, @Nullable String gridName,
         @Nullable GridSpringResourceContext springCtx,
         @Nullable IgniteClosure<IgniteConfiguration, IgniteConfiguration> cfgClo)
         throws IgniteCheckedException {
@@ -725,9 +725,17 @@ public class IgnitionEx {
 
         Collection<Handler> savedHnds = null;
 
-        if (isLog4jUsed)
-            t = U.addLog4jNoOpLogger();
-        else
+        boolean log4jAdditionFailed = false;
+
+        if (isLog4jUsed) {
+            try {
+                t = U.addLog4jNoOpLogger();
+            } catch (IgniteCheckedException e) {
+                System.out.println("[WARNING] Could not initialize log4j. Fallback to standard java logging.");
+                log4jAdditionFailed = true;
+            }
+        }
+        if (!isLog4jUsed || log4jAdditionFailed)
             savedHnds = U.addJavaNoOpLogger();
 
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap;
@@ -1998,51 +2006,59 @@ public class IgnitionEx {
          */
         private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
             try {
+                boolean log4jInitFailed = false;
+
                 if (cfgLog == null) {
-                    Class<?> log4jCls;
+                    Class<?> log4jCls = null;
 
                     try {
-                        log4jCls = Class.forName("org.gridgain.grid.logger.log4j.GridLog4jLogger");
-                    }
-                    catch (ClassNotFoundException | NoClassDefFoundError ignored) {
-                        log4jCls = null;
-                    }
+                        try {
+                            log4jCls = Class.forName("org.apache.ignite.logger.log4j.IgniteLog4jLogger");
+                        }
+                        catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+                            log4jCls = null;
+                        }
 
-                    if (log4jCls != null) {
-                        URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
+                        if (log4jCls != null) {
+                            URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
 
-                        if (url == null) {
-                            File cfgFile = new File("config/ignite-log4j.xml");
+                            if (url == null) {
+                                File cfgFile = new File("config/ignite-log4j.xml");
 
-                            if (!cfgFile.exists())
-                                cfgFile = new File("../config/ignite-log4j.xml");
+                                if (!cfgFile.exists())
+                                    cfgFile = new File("../config/ignite-log4j.xml");
 
-                            if (cfgFile.exists()) {
-                                try {
-                                    url = cfgFile.toURI().toURL();
-                                }
-                                catch (MalformedURLException ignore) {
-                                    // No-op.
+                                if (cfgFile.exists()) {
+                                    try {
+                                        url = cfgFile.toURI().toURL();
+                                    }
+                                    catch (MalformedURLException ignore) {
+                                        // No-op.
+                                    }
                                 }
                             }
+
+                            if (url != null) {
+                                boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
+
+                                if (configured)
+                                    url = null;
+                            }
+
+                            if (url != null) {
+                                Constructor<?> ctor = log4jCls.getConstructor(URL.class);
+
+                                cfgLog = (IgniteLogger)ctor.newInstance(url);
+                            }
+                            else
+                                cfgLog = (IgniteLogger)log4jCls.newInstance();
                         }
-
-                        if (url != null) {
-                            boolean configured = (Boolean)log4jCls.getMethod("isConfigured").invoke(null);
-
-                            if (configured)
-                                url = null;
-                        }
-
-                        if (url != null) {
-                            Constructor<?> ctor = log4jCls.getConstructor(URL.class);
-
-                            cfgLog = (IgniteLogger)ctor.newInstance(url);
-                        }
-                        else
-                            cfgLog = (IgniteLogger)log4jCls.newInstance();
+                    } catch (Exception e) {
+                        System.out.println("[WARNING] Could not initialize log4j. Fallback to standard java logging.");
+                        log4jInitFailed = true;
                     }
-                    else
+
+                    if (log4jCls == null || log4jInitFailed)
                         cfgLog = new IgniteJavaLogger();
                 }
 
