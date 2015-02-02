@@ -28,7 +28,7 @@ import scala.math._
  * or any explicit deployment.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: `'ggstart.{sh|bat} examples/config/example-compute.xml'`.
+ * enables P2P class loading: `'ignite.{sh|bat} examples/config/example-compute.xml'`.
  */
 object ScalarPiCalculationExample {
     /** Number of iterations per node. */

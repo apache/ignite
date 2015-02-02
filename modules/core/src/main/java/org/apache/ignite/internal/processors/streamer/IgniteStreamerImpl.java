@@ -688,10 +688,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onUndeploy(UUID leftNodeId, ClassLoader undeployedLdr) {
+    @Override public void onUndeploy(ClassLoader undeployedLdr) {
         if (log.isDebugEnabled())
-            log.debug("Processing undeployment event [leftNodeId=" + leftNodeId +
-                ", undeployedLdr=" + undeployedLdr + ']');
+            log.debug("Processing undeployment event undeployedLdr=" + undeployedLdr + ']');
 
         unwindUndeploys(undeployedLdr, true);
     }
@@ -751,8 +750,8 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
 
             execSvc.submit(worker);
 
-            batchFut.listenAsync(new CI1<IgniteFuture<Object>>() {
-                @Override public void apply(IgniteFuture<Object> t) {
+            batchFut.listenAsync(new CI1<IgniteInternalFuture<Object>>() {
+                @Override public void apply(IgniteInternalFuture<Object> t) {
                     BatchExecutionFuture fut = (BatchExecutionFuture)t;
 
                     if (log.isDebugEnabled())

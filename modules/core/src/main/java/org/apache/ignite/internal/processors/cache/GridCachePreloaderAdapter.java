@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.*;
 import org.apache.ignite.internal.util.future.*;
@@ -40,7 +41,7 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     protected final CacheAffinityFunction aff;
 
     /** Start future (always completed by default). */
-    private final IgniteFuture finFut;
+    private final IgniteInternalFuture finFut;
 
     /** Preload predicate. */
     protected IgnitePredicate<GridCacheEntryInfo<K, V>> preloadPred;
@@ -95,22 +96,22 @@ public class GridCachePreloaderAdapter<K, V> implements GridCachePreloader<K, V>
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Object> startFuture() {
+    @Override public IgniteInternalFuture<Object> startFuture() {
         return finFut;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> syncFuture() {
+    @Override public IgniteInternalFuture<?> syncFuture() {
         return finFut;
     }
 
     /** {@inheritDoc} */
     @Override public void unwindUndeploys() {
-        cctx.deploy().unwind();
+        cctx.deploy().unwind(cctx);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<Object> request(Collection<? extends K> keys, long topVer) {
+    @Override public IgniteInternalFuture<Object> request(Collection<? extends K> keys, long topVer) {
         return new GridFinishedFuture<>(cctx.kernalContext());
     }
 

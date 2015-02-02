@@ -18,7 +18,6 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.cluster.*;
-import org.apache.ignite.configuration.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 
@@ -52,7 +51,7 @@ import org.jetbrains.annotations.*;
  * <h2 class="header">Custom functions in SQL queries.</h2>
  * It is possible to write custom Java methods and call then form SQL queries. These methods must be public static
  * and annotated with {@link CacheQuerySqlFunction}. Classes containing these methods must be registered in
- * {@link GridQueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
+ * {@link org.apache.ignite.configuration.IgniteQueryConfiguration#setIndexCustomFunctionClasses(Class[])}.
  * <h1 class="header">Full Text Queries</h1>
  * GridGain supports full text queries based on Apache Lucene engine. This queries are created by
  * {@link CacheQueries#createFullTextQuery(Class, String)} method. Note that all fields that

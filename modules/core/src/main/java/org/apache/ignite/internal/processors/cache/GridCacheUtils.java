@@ -22,6 +22,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.distributed.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
@@ -1060,10 +1061,10 @@ public class GridCacheUtils {
      * @param excl Excludes.
      * @return Future listener that logs errors.
      */
-    public static IgniteInClosure<IgniteFuture<?>> errorLogger(final IgniteLogger log,
+    public static IgniteInClosure<IgniteInternalFuture<?>> errorLogger(final IgniteLogger log,
         final Class<? extends Exception>... excl) {
-        return new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> f) {
+        return new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> f) {
                 try {
                     f.get();
                 }
@@ -1424,7 +1425,7 @@ public class GridCacheUtils {
         if (!F.eq(locVal, rmtVal)) {
             if (fail) {
                 throw new IgniteCheckedException(attrMsg + " mismatch (fix " + attrMsg.toLowerCase() + " in cache " +
-                    "configuration or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "configuration or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [cacheName=" + cfgName +
                     ", local" + capitalize(attrName) + "=" + locVal +
                     ", remote" + capitalize(attrName) + "=" + rmtVal +

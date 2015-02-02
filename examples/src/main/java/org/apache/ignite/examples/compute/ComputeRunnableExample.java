@@ -19,6 +19,7 @@ package org.apache.ignite.examples.compute;
 
 import org.apache.ignite.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 
 import java.util.*;
@@ -27,7 +28,7 @@ import java.util.*;
  * Demonstrates a simple use of {@link org.apache.ignite.lang.IgniteRunnable}.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
@@ -44,7 +45,7 @@ public class ComputeRunnableExample {
             System.out.println();
             System.out.println("Compute runnable example started.");
 
-            Collection<IgniteFuture> futs = new ArrayList<>();
+            Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
             // Enable asynchronous mode.
             IgniteCompute compute = g.compute().withAsync();
@@ -63,7 +64,7 @@ public class ComputeRunnableExample {
             }
 
             // Wait for all futures to complete.
-            for (IgniteFuture<?> f : futs)
+            for (IgniteInternalFuture<?> f : futs)
                 f.get();
 
             System.out.println();

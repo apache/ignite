@@ -58,7 +58,7 @@ public class StreamerCacheAffinityEventRouter extends StreamerEventRouterAdapter
         if (evt instanceof CacheAffinityEvent) {
             CacheAffinityEvent e = (CacheAffinityEvent)evt;
 
-            GridCache<Object, Object> c = ((GridEx) ignite).cachex(e.cacheName());
+            GridCache<Object, Object> c = ((IgniteEx) ignite).cachex(e.cacheName());
 
             assert c != null;
 

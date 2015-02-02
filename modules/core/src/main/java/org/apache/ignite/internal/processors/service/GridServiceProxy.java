@@ -341,7 +341,7 @@ class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ManagedServiceContextImpl svcCtx = ((GridKernal) ignite).context().service().serviceContext(svcName);
+            ManagedServiceContextImpl svcCtx = ((IgniteKernal) ignite).context().service().serviceContext(svcName);
 
             if (svcCtx == null)
                 throw new GridServiceNotFoundException(svcName);

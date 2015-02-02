@@ -47,7 +47,7 @@ public class VisorLifecycleConfiguration implements Serializable {
         VisorLifecycleConfiguration cfg = new VisorLifecycleConfiguration();
 
         cfg.beans(compactArray(c.getLifecycleBeans()));
-        cfg.emailNotification(boolValue(GG_LIFECYCLE_EMAIL_NOTIFY, c.isLifeCycleEmailNotification()));
+        cfg.emailNotification(boolValue(IGNITE_LIFECYCLE_EMAIL_NOTIFY, c.isLifeCycleEmailNotification()));
 
         return cfg;
     }

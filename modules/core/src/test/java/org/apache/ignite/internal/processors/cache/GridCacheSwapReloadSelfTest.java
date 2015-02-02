@@ -207,7 +207,7 @@ public class GridCacheSwapReloadSelfTest extends GridCommonAbstractTest {
      * @return Swap space name.
      */
     private String spaceName() {
-        return CU.swapSpaceName(((GridKernal)grid()).internalCache().context());
+        return CU.swapSpaceName(((IgniteKernal)grid()).internalCache().context());
     }
 
     /**

@@ -143,7 +143,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
                 info("Running iteration: " + i);
 
             try {
-                GridKernal grid = (GridKernal)grid(idx);
+                IgniteKernal grid = (IgniteKernal)grid(idx);
 
                 GridCache<Integer, Integer> cache = grid.cache(null);
 
@@ -181,7 +181,7 @@ public abstract class IgniteTxConsistencyRestartAbstractSelfTest extends GridCom
             Integer val = null;
 
             for (int i = 0; i < GRID_CNT; i++) {
-                GridEx grid = grid(i);
+                IgniteEx grid = grid(i);
 
                 GridCache<Integer, Integer> cache = grid.cache(null);
 

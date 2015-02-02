@@ -109,12 +109,12 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
     protected void testTxOriginatingNodeFails(Collection<Integer> keys, final boolean partial) throws Exception {
         assertFalse(keys.isEmpty());
 
-        final Collection<GridKernal> grids = new ArrayList<>();
+        final Collection<IgniteKernal> grids = new ArrayList<>();
 
         ClusterNode txNode = grid(originatingNode()).localNode();
 
         for (int i = 1; i < gridCount(); i++)
-            grids.add((GridKernal)grid(i));
+            grids.add((IgniteKernal)grid(i));
 
         final Map<Integer, String> map = new HashMap<>();
 
@@ -128,7 +128,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         Map<Integer, Collection<ClusterNode>> nodeMap = new HashMap<>();
 
-        GridCacheAdapter<Integer, String> cache = ((GridKernal)grid(1)).internalCache();
+        GridCacheAdapter<Integer, String> cache = ((IgniteKernal)grid(1)).internalCache();
 
         info("Node being checked: " + grid(1).localNode().id());
 
@@ -143,7 +143,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
         }
 
         info("Starting tx [values=" + map + ", topVer=" +
-            ((GridKernal)grid(1)).context().discovery().topologyVersion() + ']');
+            ((IgniteKernal)grid(1)).context().discovery().topologyVersion() + ']');
 
         if (partial)
             ignoreMessages(grid(1).localNode().id(), ignoreMessageClass());
@@ -181,7 +181,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
         boolean txFinished = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                for (GridKernal g : grids) {
+                for (IgniteKernal g : grids) {
                     GridCacheSharedContext<Object, Object> ctx = g.context().cache().context();
 
                     int txNum = ctx.tm().idMapSize();

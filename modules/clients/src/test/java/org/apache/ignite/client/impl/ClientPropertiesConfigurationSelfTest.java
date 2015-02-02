@@ -158,7 +158,7 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
         while (it.hasNext())
             lines.add(it.nextLine().replace("#gg.client.", "gg.client."));
 
-        GridUtils.closeQuiet(in);
+        IgniteUtils.closeQuiet(in);
 
         File tmp = File.createTempFile(UUID.randomUUID().toString(), "properties");
 
@@ -188,7 +188,7 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
 
         assertEquals(expLoaded, props.size());
 
-        GridUtils.closeQuiet(in);
+        IgniteUtils.closeQuiet(in);
 
         return props;
     }

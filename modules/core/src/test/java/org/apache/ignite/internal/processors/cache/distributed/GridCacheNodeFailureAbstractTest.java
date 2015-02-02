@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
@@ -174,7 +174,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             info("Check grid index: " + checkIdx);
 
-            IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
+            IgniteInternalFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
                 @Override public boolean apply(IgniteEvent e) {
                     info("Received grid event: " + e);
 
@@ -186,7 +186,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
             f.get();
 
-            U.sleep(getInteger(GG_TX_SALVAGE_TIMEOUT, 3000));
+            U.sleep(getInteger(IGNITE_TX_SALVAGE_TIMEOUT, 3000));
 
             GridCache<Integer, String> checkCache = cache(checkIdx);
 
@@ -259,7 +259,7 @@ public abstract class GridCacheNodeFailureAbstractTest extends GridCommonAbstrac
 
         assert e.isLocked() : "Entry is not locked for grid [idx=" + checkIdx + ", entry=" + e + ']';
 
-        IgniteFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
+        IgniteInternalFuture<?> f = waitForLocalEvent(grid(checkIdx).events(), new P1<IgniteEvent>() {
             @Override public boolean apply(IgniteEvent e) {
                 info("Received grid event: " + e);
 

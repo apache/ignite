@@ -20,7 +20,7 @@ package org.apache.ignite.messaging;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.marshaller.optimized.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.discovery.tcp.*;
@@ -67,7 +67,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
     private static final Integer I_TOPIC_2 = 2;
 
     /** */
-    public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.GridP2PAwareTestUserResource";
+    public static final String EXT_RESOURCE_CLS_NAME = "org.apache.ignite.tests.p2p.TestUserResource";
 
     /** Shared IP finder. */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -1037,7 +1037,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         Assert.assertNull(id);
 
-        IgniteFuture<UUID> fut = msg.future();
+        IgniteInternalFuture<UUID> fut = msg.future();
 
         Assert.assertNotNull(fut);
 
@@ -1065,7 +1065,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest {
 
         msg.stopRemoteListen(id);
 
-        IgniteFuture<?> stopFut = msg.future();
+        IgniteInternalFuture<?> stopFut = msg.future();
 
         Assert.assertNotNull(stopFut);
 

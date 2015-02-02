@@ -31,7 +31,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.version.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.processors.cache.datastructures.*;
@@ -89,7 +88,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final Map<String, GridCache<?, ?>> publicProxies;
 
     /** Map of preload finish futures grouped by preload order. */
-    private final NavigableMap<Integer, IgniteFuture<?>> preloadFuts;
+    private final NavigableMap<Integer, IgniteInternalFuture<?>> preloadFuts;
 
     /** Maximum detected preload order. */
     private int maxPreloadOrder;
@@ -1247,7 +1246,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (locTxCfg.isTxSerializableEnabled() != txCfg.isTxSerializableEnabled())
                 throw new IgniteCheckedException("Serializable transactions enabled mismatch " +
-                    "(fix txSerializableEnabled property or set -D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
+                    "(fix txSerializableEnabled property or set -D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true " +
                     "system property) [rmtNodeId=" + rmt.id() +
                     ", locTxSerializableEnabled=" + locTxCfg.isTxSerializableEnabled() +
                     ", rmtTxSerializableEnabled=" + txCfg.isTxSerializableEnabled() + ']');
@@ -1308,7 +1307,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkCache(n);
         }
@@ -1336,7 +1335,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        for (IgniteFuture<?> fut : preloadFuts.values())
+        for (IgniteInternalFuture<?> fut : preloadFuts.values())
             ((GridCompoundFuture<Object, Object>)fut).markInitialized();
 
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
@@ -1475,8 +1474,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param order Cache order.
      * @return Compound preload future or {@code null} if order is minimal order found.
      */
-    @Nullable public IgniteFuture<?> orderedPreloadFuture(int order) {
-        Map.Entry<Integer, IgniteFuture<?>> entry = preloadFuts.lowerEntry(order);
+    @Nullable public IgniteInternalFuture<?> orderedPreloadFuture(int order) {
+        Map.Entry<Integer, IgniteInternalFuture<?>> entry = preloadFuts.lowerEntry(order);
 
         return entry == null ? null : entry.getValue();
     }
@@ -1728,13 +1727,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Callback invoked by deployment manager for whenever a class loader
      * gets undeployed.
      *
-     * @param leftNodeId Left node ID.
      * @param ldr Class loader.
      */
-    public void onUndeployed(@Nullable UUID leftNodeId, ClassLoader ldr) {
+    public void onUndeployed(ClassLoader ldr) {
         if (!ctx.isStopping())
             for (GridCacheAdapter<?, ?> cache : caches.values())
-                cache.onUndeploy(leftNodeId, ldr);
+                cache.onUndeploy(ldr);
     }
 
     /**

@@ -1,12 +1,12 @@
-GridGain Web Module
--------------------
+Apache Ignite Web Module
+------------------------
 
-GridGain Web module provides GridGain node startups based on servlet and servlet context listener
-which allow to start GridGain inside any web container. Additionally this module provides
-capabilities to cache web sessions in GridGain cache.
+Apache Ignite Web module provides Apache Ignite node startups based on servlet and servlet context listener
+which allow to start Apache Ignite inside any web container. Additionally this module provides
+capabilities to cache web sessions in Apache Ignite cache.
 
-To enable Web module when starting a standalone node, move 'optional/gridgain-web' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable Web module when starting a standalone node, move 'optional/ignite-web' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Web Module In Maven Project
@@ -24,8 +24,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-web</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-web</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

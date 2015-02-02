@@ -17,7 +17,7 @@
 
 package org.apache.ignite.util;
 
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.jdk8.backport.*;
 import org.jdk8.backport.ConcurrentLinkedDeque8.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -44,7 +44,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
         final ConcurrentLinkedDeque8<Byte> queue = new ConcurrentLinkedDeque8<>();
 
         // Poll thread.
-        IgniteFuture<?> pollFut = multithreadedAsync(
+        IgniteInternalFuture<?> pollFut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Thread started.");
@@ -69,7 +69,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
         );
 
         // Producer thread.
-        IgniteFuture<?> prodFut = multithreadedAsync(
+        IgniteInternalFuture<?> prodFut = multithreadedAsync(
             new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     info("Thread started.");

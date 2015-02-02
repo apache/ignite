@@ -21,7 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -144,7 +144,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final AtomicLong luceneCnt = new AtomicLong();
 
         // Start lucene query threads.
-        IgniteFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        IgniteInternalFuture<?> futLucene = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     CacheQuery<Map.Entry<UUID, Person>> masters = cache0.queries().createFullTextQuery(
@@ -165,7 +165,7 @@ public class GridCachePartitionedQueryMultiThreadedSelfTest extends GridCommonAb
         final AtomicLong sqlCnt = new AtomicLong();
 
         // Start sql query threads.
-        IgniteFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
+        IgniteInternalFuture<?> futSql = GridTestUtils.runMultiThreadedAsync(new CAX() {
             @Override public void applyx() throws IgniteCheckedException {
                 while (!done.get()) {
                     CacheQuery<Map.Entry<UUID, Person>> bachelors =

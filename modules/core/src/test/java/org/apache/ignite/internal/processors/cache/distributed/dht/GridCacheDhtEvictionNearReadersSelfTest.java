@@ -151,7 +151,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"unchecked"})
     private GridNearCacheAdapter<Integer, String> near(Ignite g) {
-        return (GridNearCacheAdapter)((GridKernal)g).internalCache();
+        return (GridNearCacheAdapter)((IgniteKernal)g).internalCache();
     }
 
     /**
@@ -160,7 +160,7 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
      */
     @SuppressWarnings({"unchecked", "TypeMayBeWeakened"})
     private GridDhtCacheAdapter<Integer, String> dht(Ignite g) {
-        return ((GridNearCacheAdapter)((GridKernal)g).internalCache()).dht();
+        return ((GridNearCacheAdapter)((IgniteKernal)g).internalCache()).dht();
     }
 
     /**
@@ -255,13 +255,13 @@ public class GridCacheDhtEvictionNearReadersSelfTest extends GridCommonAbstractT
         assert nearOther.peekExx(key) == null;
         assert dhtOther.peekExx(key) == null;
 
-        IgniteFuture<IgniteEvent> futOther =
+        IgniteInternalFuture<IgniteEvent> futOther =
             waitForLocalEvent(grid(other).events(), nodeEvent(other.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<IgniteEvent> futBackup =
+        IgniteInternalFuture<IgniteEvent> futBackup =
             waitForLocalEvent(grid(backup).events(), nodeEvent(backup.id()), EVT_CACHE_ENTRY_EVICTED);
 
-        IgniteFuture<IgniteEvent> futPrimary =
+        IgniteInternalFuture<IgniteEvent> futPrimary =
             waitForLocalEvent(grid(primary).events(), nodeEvent(primary.id()), EVT_CACHE_ENTRY_EVICTED);
 
         // Get value on other node, it should be loaded to near cache.

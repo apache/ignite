@@ -27,7 +27,7 @@ import org.apache.ignite.examples.*;
  * together and properly manages load on remote nodes.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-cache.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-cache.xml'}.
  * <p>
  * Alternatively you can run {@link CacheNodeStartup} in another JVM which will
  * start GridGain node with {@code examples/config/example-cache.xml} configuration.
@@ -58,11 +58,16 @@ public class CacheDataLoaderExample {
             // Clean up caches on all nodes before run.
             g.cache(CACHE_NAME).globalClearAll(0);
 
+            System.out.println();
+            System.out.println(">>> Cache clear finished.");
+
+            long start = System.currentTimeMillis();
+
             try (IgniteDataLoader<Integer, String> ldr = g.dataLoader(CACHE_NAME)) {
                 // Configure loader.
                 ldr.perNodeBufferSize(1024);
-
-                long start = System.currentTimeMillis();
+                ldr.perNodeParallelLoadOperations(8);
+                ldr.isolated(true);
 
                 for (int i = 0; i < ENTRY_COUNT; i++) {
                     ldr.addData(i, Integer.toString(i));
@@ -71,11 +76,11 @@ public class CacheDataLoaderExample {
                     if (i > 0 && i % 10000 == 0)
                         System.out.println("Loaded " + i + " keys.");
                 }
-
-                long end = System.currentTimeMillis();
-
-                System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
             }
+
+            long end = System.currentTimeMillis();
+
+            System.out.println(">>> Loaded " + ENTRY_COUNT + " keys in " + (end - start) + "ms.");
         }
     }
 }

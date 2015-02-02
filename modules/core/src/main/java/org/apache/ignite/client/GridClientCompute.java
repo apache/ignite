@@ -413,7 +413,7 @@ public interface GridClientCompute {
     public GridClientFuture<List<GridClientNode>> refreshTopologyAsync(boolean includeAttrs, boolean includeMetrics);
 
     /**
-     * Gets contents of default log file ({@code GRIDGAIN_HOME/work/log/gridgain.log}).
+     * Gets contents of default log file ({@code IGNITE_HOME/work/log/gridgain.log}).
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
@@ -429,7 +429,7 @@ public interface GridClientCompute {
 
     /**
      * Asynchronously gets contents of default log file
-     * ({@code GRIDGAIN_HOME/work/log/gridgain.log}).
+     * ({@code IGNITE_HOME/work/log/gridgain.log}).
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
@@ -444,7 +444,7 @@ public interface GridClientCompute {
      * Gets contents of custom log file, i.e. log file in a non-default location.
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
-     * @param path Log file path. Can be absolute or relative to GRIDGAIN_HOME.
+     * @param path Log file path. Can be absolute or relative to IGNITE_HOME.
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
      *      from the end of the file.
      * @param lineTo Index of line to which log is get, inclusive. Negative values mean line numbers
@@ -460,7 +460,7 @@ public interface GridClientCompute {
      * Asynchronously gets contents of custom log file.
      * Note that backward reading (with negative line indexes) supported for only 8-bit character encodings.
      *
-     * @param path Log file path. Can be absolute or relative to GRIDGAIN_HOME.
+     * @param path Log file path. Can be absolute or relative to IGNITE_HOME.
      * @param lineFrom Index of line from which log is get, inclusive. Negative values mean line numbers
      *      from the end of the file.
      * @param lineTo Index of line to which log is get, inclusive. Negative values mean line numbers

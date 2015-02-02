@@ -102,7 +102,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Cache.
      */
     protected <K, V> GridLocalCache<K, V> local() {
-        return (GridLocalCache<K, V>)((GridKernal)grid()).<K, V>internalCache();
+        return (GridLocalCache<K, V>)((IgniteKernal)grid()).<K, V>internalCache();
     }
 
     /**
@@ -111,7 +111,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     protected static <K, V> GridDhtCacheAdapter<K, V> dht(CacheProjection<K,V> cache) {
         return nearEnabled(cache) ? near(cache).dht() :
-            ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().dht();
+            ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().dht();
     }
 
     /**
@@ -144,7 +144,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Colocated cache.
      */
     protected <K, V> GridDhtColocatedCache<K, V> colocated(int idx, String cache) {
-        return (GridDhtColocatedCache<K, V>)((GridKernal)grid(idx)).internalCache(cache);
+        return (GridDhtColocatedCache<K, V>)((IgniteKernal)grid(idx)).internalCache(cache);
     }
 
     /**
@@ -152,7 +152,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return {@code True} if near cache is enabled.
      */
     protected static <K, V> boolean nearEnabled(CacheProjection<K,V> cache) {
-        CacheConfiguration cfg = ((GridKernal)cache.gridProjection().ignite()).
+        CacheConfiguration cfg = ((IgniteKernal)cache.gridProjection().ignite()).
             <K, V>internalCache(cache.name()).context().config();
 
         return isNearEnabled(cfg);
@@ -163,7 +163,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected static <K, V> GridNearCacheAdapter<K, V> near(CacheProjection<K,V> cache) {
-        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().near();
+        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().near();
     }
 
     /**
@@ -171,14 +171,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Colocated cache.
      */
     protected static <K, V> GridDhtColocatedCache<K, V> colocated(CacheProjection<K,V> cache) {
-        return ((GridKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().colocated();
+        return ((IgniteKernal)cache.gridProjection().ignite()).<K, V>internalCache(cache.name()).context().colocated();
     }
 
     /**
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near() {
-        return ((GridKernal)grid()).<K, V>internalCache().context().near();
+        return ((IgniteKernal)grid()).<K, V>internalCache().context().near();
     }
 
     /**
@@ -186,7 +186,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near(int idx) {
-        return ((GridKernal)grid(idx)).<K, V>internalCache().context().near();
+        return ((IgniteKernal)grid(idx)).<K, V>internalCache().context().near();
     }
 
     /**
@@ -194,7 +194,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Colocated cache.
      */
     protected <K, V> GridDhtColocatedCache<K, V> colocated(int idx) {
-        return (GridDhtColocatedCache<K, V>)((GridKernal)grid(idx)).<K, V>internalCache();
+        return (GridDhtColocatedCache<K, V>)((IgniteKernal)grid(idx)).<K, V>internalCache();
     }
 
     /**
@@ -203,7 +203,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Near cache.
      */
     protected <K, V> GridNearCacheAdapter<K, V> near(int idx, String cache) {
-        return ((GridKernal)grid(idx)).<K, V>internalCache(cache).context().near();
+        return ((IgniteKernal)grid(idx)).<K, V>internalCache(cache).context().near();
     }
 
     /** {@inheritDoc} */
@@ -247,7 +247,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
         for (Ignite g : G.allGrids()) {
-            for (GridCache<?, ?> c : ((GridEx)g).cachesx()) {
+            for (GridCache<?, ?> c : ((IgniteEx)g).cachesx()) {
                 CacheConfiguration cfg = c.configuration();
 
                 if (cfg.getCacheMode() == PARTITIONED && cfg.getPreloadMode() != NONE && g.cluster().nodes().size() > 1) {
@@ -611,7 +611,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Future.
      * @throws IgniteCheckedException If failed.
      */
-    protected <T extends IgniteEvent> IgniteFuture<T> waitForLocalEvent(IgniteEvents evts,
+    protected <T extends IgniteEvent> IgniteInternalFuture<T> waitForLocalEvent(IgniteEvents evts,
         @Nullable IgnitePredicate<T> filter, @Nullable int... types) throws IgniteCheckedException {
         evts = evts.withAsync();
 
@@ -619,7 +619,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         assertNull(evts.waitForLocal(filter, types));
 
-        IgniteFuture<T> fut = evts.future();
+        IgniteInternalFuture<T> fut = evts.future();
 
         assertNotNull(fut);
 

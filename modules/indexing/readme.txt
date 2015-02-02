@@ -1,11 +1,11 @@
-GridGain Indexing Module
-------------------------
+Apache Ignite Indexing Module
+-----------------------------
 
-GridGain indexing module provides capabilities to index cache context and run SQL, full text or
+Apache Ignite indexing module provides capabilities to index cache context and run SQL, full text or
 individual field queries against these indexes.
 
-To enable indexing module when starting a standalone node, move 'optional/gridgain-indexing' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable indexing module when starting a standalone node, move 'optional/ignite-indexing' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing indexing Module In Maven Project
@@ -23,8 +23,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-indexing</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-indexing</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

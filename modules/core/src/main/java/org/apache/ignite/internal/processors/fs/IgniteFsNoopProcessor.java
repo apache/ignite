@@ -59,7 +59,7 @@ public class IgniteFsNoopProcessor extends IgniteFsProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<GridIpcServerEndpoint> endpoints(@Nullable String name) {
+    @Override public Collection<IpcServerEndpoint> endpoints(@Nullable String name) {
         return Collections.emptyList();
     }
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -161,7 +162,7 @@ public class GridDhtPartitionDemandPool<K, V> {
     /**
      * @return Future for {@link org.apache.ignite.cache.CachePreloadMode#SYNC} mode.
      */
-    IgniteFuture<?> syncFuture() {
+    IgniteInternalFuture<?> syncFuture() {
         return syncFut;
     }
 
@@ -206,8 +207,8 @@ public class GridDhtPartitionDemandPool<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Forcing preload event for future: " + exchFut);
 
-            exchFut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                @Override public void apply(IgniteFuture<Long> t) {
+            exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                @Override public void apply(IgniteInternalFuture<Long> t) {
                     cctx.shared().exchange().forcePreloadExchange(exchFut);
                 }
             });
@@ -355,8 +356,8 @@ public class GridDhtPartitionDemandPool<K, V> {
 
             obj = new GridTimeoutObjectAdapter(delay) {
                 @Override public void onTimeout() {
-                    exchFut.listenAsync(new CI1<IgniteFuture<Long>>() {
-                        @Override public void apply(IgniteFuture<Long> f) {
+                    exchFut.listenAsync(new CI1<IgniteInternalFuture<Long>>() {
+                        @Override public void apply(IgniteInternalFuture<Long> f) {
                             cctx.shared().exchange().forcePreloadExchange(exchFut);
                         }
                     });
@@ -376,7 +377,7 @@ public class GridDhtPartitionDemandPool<K, V> {
         demandLock.writeLock().lock();
 
         try {
-            cctx.deploy().unwind();
+            cctx.deploy().unwind(cctx);
         }
         finally {
             demandLock.writeLock().unlock();
@@ -810,7 +811,7 @@ public class GridDhtPartitionDemandPool<K, V> {
                 int preloadOrder = cctx.config().getPreloadOrder();
 
                 if (preloadOrder > 0) {
-                    IgniteFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(preloadOrder);
+                    IgniteInternalFuture<?> fut = cctx.kernalContext().cache().orderedPreloadFuture(preloadOrder);
 
                     try {
                         if (fut != null) {

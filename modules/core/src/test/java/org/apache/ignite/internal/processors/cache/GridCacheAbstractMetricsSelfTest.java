@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.util.GridUtils;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.testframework.*;
 import org.apache.ignite.transactions.*;
 
@@ -116,7 +116,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
 
-        IgniteFuture<Object> fut = cache.removeAsync(1);
+        IgniteInternalFuture<Object> fut = cache.removeAsync(1);
 
         assertEquals(1, (int)fut.get());
 
@@ -149,7 +149,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         cache.put(key, key);
 
-        IgniteFuture<Boolean> fut = cache.removeAsync(key, key);
+        IgniteInternalFuture<Boolean> fut = cache.removeAsync(key, key);
 
         assertTrue(fut.get());
 
@@ -225,7 +225,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(cache.metrics().getAverageRemoveTime(), 0.0, 0.0);
 
-        IgniteFuture<?> fut = cache.removeAllAsync(keys);
+        IgniteInternalFuture<?> fut = cache.removeAllAsync(keys);
 
         fut.get();
 
@@ -299,7 +299,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         keys.add(2);
         keys.add(3);
 
-        IgniteFuture<Map<Object, Object>> fut = cache.getAllAsync(keys);
+        IgniteInternalFuture<Map<Object, Object>> fut = cache.getAllAsync(keys);
 
         fut.get();
 
@@ -340,7 +340,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
         assertEquals(0, cache.metrics().getCachePuts());
 
-        IgniteFuture<Boolean> fut = cache.putxAsync(1, 1);
+        IgniteInternalFuture<Boolean> fut = cache.putxAsync(1, 1);
 
         fut.get();
 
@@ -368,7 +368,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0.0, cache.metrics().getAveragePutTime(), 0.0);
         assertEquals(0.0, cache.metrics().getAverageGetTime(), 0.0);
 
-        IgniteFuture<?> fut = cache.putAsync(key, key);
+        IgniteInternalFuture<?> fut = cache.putAsync(key, key);
 
         fut.get();
 
@@ -396,7 +396,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.metrics().getAveragePutTime());
 
-        IgniteFuture<Boolean> fut = cache.putxIfAbsentAsync(key, key);
+        IgniteInternalFuture<Boolean> fut = cache.putxIfAbsentAsync(key, key);
 
         fut.get();
 
@@ -423,7 +423,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
 
         assertEquals(0.0f, cache.metrics().getAveragePutTime());
 
-        IgniteFuture<?> fut = cache.putIfAbsentAsync(key, key);
+        IgniteInternalFuture<?> fut = cache.putIfAbsentAsync(key, key);
 
         fut.get();
 
@@ -739,7 +739,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // One more update from the same cache entry to ensure that expire time is shifted forward.
-        GridUtils.sleep(100);
+        IgniteUtils.sleep(100);
 
         tx = inTx ? c.txStart() : null;
 
@@ -764,7 +764,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // And one more direct update to ensure that expire time is shifted forward.
-        GridUtils.sleep(100);
+        IgniteUtils.sleep(100);
 
         assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
 
@@ -791,7 +791,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         }
 
         // And one more update to ensure that ttl is not changed and expire time is not shifted forward.
-        GridUtils.sleep(100);
+        IgniteUtils.sleep(100);
 
         assertEquals(0, grid(0).cache(null).metrics().getCacheEvictions());
 
@@ -864,7 +864,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
                 tx.commit();
         }
 
-        GridUtils.sleep(2000);
+        IgniteUtils.sleep(2000);
 
         entry = c.entry(key);
 

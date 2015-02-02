@@ -50,7 +50,7 @@ public class GridNodeStartUtils {
     public static final String NODES = "nodes";
 
     /** Key for GridGain home folder. */
-    public static final String GG_HOME = "ggHome";
+    public static final String IGNITE_HOME = "ggHome";
 
     /** Key for configuration path. */
     public static final String CFG = "cfg";
@@ -142,7 +142,7 @@ public class GridNodeStartUtils {
                         case HOST:
                         case UNAME:
                         case PASSWD:
-                        case GG_HOME:
+                        case IGNITE_HOME:
                         case CFG:
                         case SCRIPT:
                             props.put(key, val);
@@ -269,8 +269,8 @@ public class GridNodeStartUtils {
             if (dflts.get(NODES) != null)
                 nodes = (Integer)dflts.get(NODES);
 
-            if (dflts.get(GG_HOME) != null)
-                ggHome = (String)dflts.get(GG_HOME);
+            if (dflts.get(IGNITE_HOME) != null)
+                ggHome = (String)dflts.get(IGNITE_HOME);
 
             if (dflts.get(CFG) != null)
                 cfg = (String)dflts.get(CFG);
@@ -314,7 +314,7 @@ public class GridNodeStartUtils {
         String passwd = props.get(PASSWD) != null ? (String)props.get(PASSWD) : dfltSpec.password();
         File key = props.get(KEY) != null ? (File)props.get(KEY) : dfltSpec.key();
         int nodes = props.get(NODES) != null ? (Integer)props.get(NODES) : dfltSpec.nodes();
-        String ggHome = props.get(GG_HOME) != null ? (String)props.get(GG_HOME) : dfltSpec.ggHome();
+        String ggHome = props.get(IGNITE_HOME) != null ? (String)props.get(IGNITE_HOME) : dfltSpec.ggHome();
         String cfg = props.get(CFG) != null ? (String)props.get(CFG) : dfltSpec.configuration();
         String script = props.get(SCRIPT) != null ? (String)props.get(SCRIPT) : dfltSpec.script();
 

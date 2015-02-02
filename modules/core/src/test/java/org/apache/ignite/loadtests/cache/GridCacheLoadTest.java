@@ -135,7 +135,7 @@ public final class GridCacheLoadTest extends GridCacheAbstractLoadTest {
      * @throws Exception If fails.
      */
     public static void main(String[] args) throws Exception {
-        System.setProperty(IgniteSystemProperties.GG_UPDATE_NOTIFIER, "false");
+        System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, "false");
 
         System.out.println("Starting master node [params=" + Arrays.toString(args) + ']');
 

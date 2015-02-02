@@ -20,7 +20,7 @@ package org.apache.ignite.loadtests.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.transactions.*;
 import org.apache.log4j.*;
 import org.apache.log4j.varia.*;
@@ -136,7 +136,7 @@ abstract class GridCacheAbstractLoadTest {
         assert cache != null;
 
         try {
-            IgniteFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> f1 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
@@ -158,7 +158,7 @@ abstract class GridCacheAbstractLoadTest {
                 }
             }, writeThreads(), "cache-load-test-worker");
 
-            IgniteFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> f2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
                     long start = System.currentTimeMillis();
 
@@ -323,7 +323,7 @@ abstract class GridCacheAbstractLoadTest {
 
         if (path == null)
             throw new IgniteCheckedException("Spring XML configuration file path is invalid: " + new File(springCfgPath) +
-                ". Note that this path should be either absolute path or a relative path to GRIDGAIN_HOME.");
+                ". Note that this path should be either absolute path or a relative path to IGNITE_HOME.");
 
         if (!path.isFile())
             throw new IgniteCheckedException("Provided file path is not a file: " + path);

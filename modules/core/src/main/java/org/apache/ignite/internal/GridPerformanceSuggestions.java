@@ -31,7 +31,7 @@ import static org.apache.ignite.IgniteSystemProperties.*;
  */
 public class GridPerformanceSuggestions {
     /** */
-    private static final boolean disabled = Boolean.getBoolean(GG_PERFORMANCE_SUGGESTIONS_DISABLED);
+    private static final boolean disabled = Boolean.getBoolean(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED);
 
     /** */
     private final Collection<String> perfs = !disabled ? new LinkedHashSet<String>() : null;
@@ -71,7 +71,7 @@ public class GridPerformanceSuggestions {
         if (!F.isEmpty(perfs) && !suppressed.containsAll(perfs)) {
             U.quietAndInfo(log, "Performance suggestions for grid " +
                 (gridName == null ? "" : '\'' + gridName + '\'') + " (fix if possible)");
-            U.quietAndInfo(log, "To disable, set -D" + GG_PERFORMANCE_SUGGESTIONS_DISABLED + "=true");
+            U.quietAndInfo(log, "To disable, set -D" + IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED + "=true");
 
             for (String s : perfs)
                 if (!suppressed.contains(s))

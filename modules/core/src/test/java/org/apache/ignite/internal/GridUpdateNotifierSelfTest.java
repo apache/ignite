@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import org.apache.ignite.internal.*;
 import org.apache.ignite.testframework.junits.common.*;
 import org.jetbrains.annotations.*;
 
@@ -38,7 +37,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
      */
     public void testNotifier() throws Exception {
         GridUpdateNotifier ntf = new GridUpdateNotifier(null, GridProperties.get("ignite.version"),
-            GridKernal.SITE, TEST_GATEWAY, false);
+            IgniteKernal.SITE, TEST_GATEWAY, false);
 
         ntf.checkForNewVersion(new SelfExecutor(), log);
 

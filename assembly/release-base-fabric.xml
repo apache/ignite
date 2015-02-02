@@ -29,7 +29,7 @@
         </file>
 
         <file>
-            <source>docs/gridgain_readme.pdf</source>
+            <source>docs/ignite_readme.pdf</source>
             <outputDirectory>/docs</outputDirectory>
         </file>
     </files>
@@ -39,7 +39,7 @@
             <directory>bin</directory>
             <outputDirectory>/bin</outputDirectory>
             <includes>
-                <include>ggrouter.bat</include>
+                <include>igniterouter.bat</include>
             </includes>
         </fileSet>
 
@@ -48,7 +48,7 @@
             <outputDirectory>/bin</outputDirectory>
             <fileMode>0755</fileMode>
             <includes>
-                <include>ggrouter.sh</include>
+                <include>igniterouter.sh</include>
             </includes>
         </fileSet>
 

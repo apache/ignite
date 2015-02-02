@@ -60,7 +60,7 @@ public interface IgniteSpiManagementMBean {
     public long getUpTime();
 
     /**
-     * Gets Gridgain installation home folder (i.e. ${GRIDGAIN_HOME});
+     * Gets Gridgain installation home folder (i.e. ${IGNITE_HOME});
      *
      * @return Gridgain installation home folder.
      */

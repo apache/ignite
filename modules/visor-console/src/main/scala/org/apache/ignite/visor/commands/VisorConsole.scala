@@ -18,7 +18,7 @@
 package org.apache.ignite.visor.commands
 
 import org.apache.ignite.internal.GridProductImpl
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.internal.util.scala.impl
 
@@ -94,7 +94,7 @@ object VisorConsole extends App {
     customizeUI()
 
     // Wrap line symbol for user input.
-    private val wrapLine = if (GridUtils.isWindows) "^" else "\\"
+    private val wrapLine = if (IgniteUtils.isWindows) "^" else "\\"
 
     private val emptyArg = "^([a-zA-z!?]+)$".r
     private val varArg = "^([a-zA-z!?]+)\\s+(.+)$".r
@@ -270,7 +270,7 @@ private[commands] class VisorFileNameCompleter extends Completer {
             case emptyStr if emptyStr.trim == "" => ""
             case str =>
                 // replace wrong '/' on windows.
-                val translated = if (GridUtils.isWindows) str.replace('/', '\\') else str
+                val translated = if (IgniteUtils.isWindows) str.replace('/', '\\') else str
 
                 // line before cursor.
                 val left = translated.substring(0, cursor)

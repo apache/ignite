@@ -243,7 +243,7 @@ public class GridGgfsFragmentizerSelfTest extends GridGgfsFragmentizerAbstractSe
         GridTestUtils.retryAssert(log, 50, 100, new CA() {
             @Override public void apply() {
                 for (int i = 0; i < NODE_CNT; i++) {
-                    GridEx g = grid(i);
+                    IgniteEx g = grid(i);
 
                     GridCache<Object, Object> cache = g.cachex(DATA_CACHE_NAME);
 

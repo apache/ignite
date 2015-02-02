@@ -1,10 +1,10 @@
-GridGain Log4J Module
----------------------
+Apache Ignite Log4J Module
+--------------------------
 
-GridGain Log4J module provides GridLogger implementation based on Apache Log4J.
+Apache Ignite Log4J module provides GridLogger implementation based on Apache Log4J.
 
-To enable Log4J module when starting a standalone node, move 'optional/gridgain-log4j' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+To enable Log4J module when starting a standalone node, move 'optional/ignite-log4j' folder to
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Log4J Module In Maven Project
@@ -22,8 +22,8 @@ interested in):
     <dependencies>
         ...
         <dependency>
-            <groupId>org.gridgain</groupId>
-            <artifactId>gridgain-log4j</artifactId>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
             <version>${ignite.version}</version>
         </dependency>
         ...

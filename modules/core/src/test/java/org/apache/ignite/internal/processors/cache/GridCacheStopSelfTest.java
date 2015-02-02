@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
 import org.apache.ignite.transactions.*;
@@ -138,7 +138,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
             assertEquals(atomic ? ATOMIC : TRANSACTIONAL, cache.configuration().getAtomicityMode());
             assertEquals(replicated ? REPLICATED : PARTITIONED, cache.configuration().getCacheMode());
 
-            Collection<IgniteFuture<?>> putFuts = new ArrayList<>();
+            Collection<IgniteInternalFuture<?>> putFuts = new ArrayList<>();
 
             for (int j = 0; j < PUT_THREADS; j++) {
                 final int key = j;
@@ -175,7 +175,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
             stopGrid(0);
 
-            for (IgniteFuture<?> fut : putFuts) {
+            for (IgniteInternalFuture<?> fut : putFuts) {
                 try {
                     fut.get();
                 }
