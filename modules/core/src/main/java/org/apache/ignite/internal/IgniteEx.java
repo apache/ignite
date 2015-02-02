@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -133,11 +132,4 @@ public interface IgniteEx extends Ignite, ClusterGroupEx, IgniteCluster {
      * @return GGFS.
      */
     @Nullable public IgniteFs ggfsx(@Nullable String name);
-
-    /**
-     * Gets interop processor.
-     *
-     * @return Interop processor.
-     */
-    public GridInteropProcessor interop();
 }
