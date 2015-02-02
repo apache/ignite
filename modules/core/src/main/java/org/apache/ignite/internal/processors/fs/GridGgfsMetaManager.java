@@ -498,7 +498,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo oldInfo = info(fileId);
 
                     if (oldInfo == null)
-                        throw new IgniteFsFileNotFoundException("Failed to unlock file (file not found): " + fileId);
+                        throw fsException(new IgniteFsFileNotFoundException("Failed to unlock file (file not found): " + fileId));
 
                     if (!info.lockId().equals(oldInfo.lockId()))
                         throw new IgniteCheckedException("Failed to unlock file (inconsistent file lock ID) [fileId=" + fileId +
@@ -737,10 +737,10 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         assert validTxState(true);
 
         if (parentInfo == null)
-            throw new IgniteFsFileNotFoundException("Failed to lock parent directory (not found): " + parentId);
+            throw fsException(new IgniteFsFileNotFoundException("Failed to lock parent directory (not found): " + parentId));
 
         if (!parentInfo.isDirectory())
-            throw new IgniteFsInvalidPathException("Parent file is not a directory: " + parentInfo);
+            throw fsException(new IgniteFsInvalidPathException("Parent file is not a directory: " + parentInfo));
 
         Map<String, GridGgfsListingEntry> parentListing = parentInfo.listing();
 
@@ -837,41 +837,41 @@ public class GridGgfsMetaManager extends GridGgfsManager {
         GridGgfsFileInfo srcInfo = infoMap.get(srcParentId);
 
         if (srcInfo == null)
-            throw new IgniteFsFileNotFoundException("Failed to lock source directory (not found?)" +
-                " [srcParentId=" + srcParentId + ']');
+            throw fsException(new IgniteFsFileNotFoundException("Failed to lock source directory (not found?)" +
+                " [srcParentId=" + srcParentId + ']'));
 
         if (!srcInfo.isDirectory())
-            throw new IgniteFsInvalidPathException("Source is not a directory: " + srcInfo);
+            throw fsException(new IgniteFsInvalidPathException("Source is not a directory: " + srcInfo));
 
         GridGgfsFileInfo destInfo = infoMap.get(destParentId);
 
         if (destInfo == null)
-            throw new IgniteFsFileNotFoundException("Failed to lock destination directory (not found?)" +
-                " [destParentId=" + destParentId + ']');
+            throw fsException(new IgniteFsFileNotFoundException("Failed to lock destination directory (not found?)" +
+                " [destParentId=" + destParentId + ']'));
 
         if (!destInfo.isDirectory())
-            throw new IgniteFsInvalidPathException("Destination is not a directory: " + destInfo);
+            throw fsException(new IgniteFsInvalidPathException("Destination is not a directory: " + destInfo));
 
         GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
         if (fileInfo == null)
-            throw new IgniteFsFileNotFoundException("Failed to lock target file (not found?) [fileId=" +
-                fileId + ']');
+            throw fsException(new IgniteFsFileNotFoundException("Failed to lock target file (not found?) [fileId=" +
+                fileId + ']'));
 
         GridGgfsListingEntry srcEntry = srcInfo.listing().get(srcFileName);
         GridGgfsListingEntry destEntry = destInfo.listing().get(destFileName);
 
         // If source file does not exist or was re-created.
         if (srcEntry == null || !srcEntry.fileId().equals(fileId))
-            throw new IgniteFsFileNotFoundException("Failed to remove file name from the source directory" +
+            throw fsException(new IgniteFsFileNotFoundException("Failed to remove file name from the source directory" +
                 " (file not found) [fileId=" + fileId + ", srcFileName=" + srcFileName +
-                ", srcParentId=" + srcParentId + ", srcEntry=" + srcEntry + ']');
+                ", srcParentId=" + srcParentId + ", srcEntry=" + srcEntry + ']'));
 
         // If stored file already exist.
         if (destEntry != null)
-            throw new IgniteFsInvalidPathException("Failed to add file name into the destination directory " +
+            throw fsException(new IgniteFsInvalidPathException("Failed to add file name into the destination directory " +
                 "(file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
-                ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']');
+                ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
 
         assert metaCache.get(srcParentId) != null;
         assert metaCache.get(destParentId) != null;
@@ -981,8 +981,8 @@ public class GridGgfsMetaManager extends GridGgfsManager {
             Map<String, GridGgfsListingEntry> listing = fileInfo.listing();
 
             if (!F.isEmpty(listing))
-                throw new GridGgfsDirectoryNotEmptyException("Failed to remove file (directory is not empty)" +
-                    " [fileId=" + fileId + ", listing=" + listing + ']');
+                throw fsException(new GridGgfsDirectoryNotEmptyException("Failed to remove file (directory is not empty)" +
+                    " [fileId=" + fileId + ", listing=" + listing + ']'));
         }
 
         // Validate file in the parent listing.
@@ -1844,7 +1844,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                 if (info != null) {
                     if (!info.isFile())
-                        throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
+                        throw fsException(new IgniteFsInvalidPathException("Failed to open file (not a file): " + path));
 
                     return new GridGgfsSecondaryInputStreamDescriptor(info, fs.open(path, bufSize));
                 }
@@ -1857,9 +1857,9 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                             GridGgfsFileInfo info = infos.get(path);
 
                             if (info == null)
-                                throw new IgniteFsFileNotFoundException("File not found: " + path);
+                                throw fsException(new IgniteFsFileNotFoundException("File not found: " + path));
                             if (!info.isFile())
-                                throw new IgniteFsInvalidPathException("Failed to open file (not a file): " + path);
+                                throw fsException(new IgniteFsInvalidPathException("Failed to open file (not a file): " + path));
 
                             return new GridGgfsSecondaryInputStreamDescriptor(infos.get(path), fs.open(path, bufSize));
                         }
@@ -2047,11 +2047,12 @@ public class GridGgfsMetaManager extends GridGgfsManager {
 
                         // Source path and destination (or destination parent) must exist.
                         if (srcInfo == null)
-                            throw new IgniteFsFileNotFoundException("Failed to rename (source path not found): " + src);
+                            throw fsException(new IgniteFsFileNotFoundException("Failed to rename " +
+                                    "(source path not found): " + src));
 
                         if (destInfo == null && destParentInfo == null)
-                            throw new IgniteFsFileNotFoundException("Failed to rename (destination path not found): " +
-                                dest);
+                            throw fsException(new IgniteFsFileNotFoundException("Failed to rename " +
+                                "(destination path not found): " + dest));
 
                         // Delegate to the secondary file system.
                         fs.rename(src, dest);
@@ -2449,7 +2450,7 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                 if (changed != null) {
                     finished = true;
 
-                    throw new IgniteFsConcurrentModificationException(changed);
+                    throw fsException(new IgniteFsConcurrentModificationException(changed));
                 }
                 else {
                     boolean newParents = false;
@@ -2607,21 +2608,21 @@ public class GridGgfsMetaManager extends GridGgfsManager {
                     GridGgfsFileInfo fileInfo = infoMap.get(fileId);
 
                     if (fileInfo == null)
-                        throw new IgniteFsFileNotFoundException("Failed to update times (path was not found): " +
-                            fileName);
+                        throw fsException(new IgniteFsFileNotFoundException("Failed to update times " +
+                                "(path was not found): " + fileName));
 
                     GridGgfsFileInfo parentInfo = infoMap.get(parentId);
 
                     if (parentInfo == null)
-                        throw new IgniteFsInvalidPathException("Failed to update times (parent was not found): " +
-                            fileName);
+                        throw fsException(new IgniteFsInvalidPathException("Failed to update times " +
+                                "(parent was not found): " + fileName));
 
                     GridGgfsListingEntry entry = parentInfo.listing().get(fileName);
 
                     // Validate listing.
                     if (entry == null || !entry.fileId().equals(fileId))
-                        throw new IgniteFsInvalidPathException("Failed to update times (file concurrently modified): " +
-                            fileName);
+                        throw fsException(new IgniteFsInvalidPathException("Failed to update times " +
+                                "(file concurrently modified): " + fileName));
 
                     assert parentInfo.isDirectory();
 
@@ -2655,6 +2656,14 @@ public class GridGgfsMetaManager extends GridGgfsManager {
      */
     private static IgniteCheckedException fsException(String msg) {
         return new IgniteCheckedException(new IgniteFsException(msg));
+    }
+
+    /**
+     * @param msg Error message.
+     * @return Checked exception.
+     */
+    private static IgniteCheckedException fsException(IgniteFsException err) {
+        return new IgniteCheckedException(err);
     }
 
     /**

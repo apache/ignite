@@ -374,7 +374,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
             startUp();
         }
         catch (IgniteException e) {
-            errMsg = e.getCause().getMessage();
+            errMsg = e.getCause().getCause().getMessage();
         }
 
         assertTrue(errMsg.startsWith(
@@ -440,7 +440,7 @@ public class GridGgfsModesSelfTest extends GridGgfsCommonAbstractTest {
             startUp();
         }
         catch (IgniteException e) {
-            errMsg = e.getCause().getMessage();
+            errMsg = e.getCause().getCause().getMessage();
         }
 
         assertTrue(errMsg.startsWith(
