@@ -96,7 +96,7 @@ public class StreamingPopularNumbersExample {
     public static void main(String[] args) throws Exception {
         Timer popularNumbersQryTimer = new Timer("numbers-query-worker");
 
-        // Start grid.
+        // Start ignite.
         final Ignite ignite = Ignition.start("examples/config/example-streamer.xml");
 
         System.out.println();

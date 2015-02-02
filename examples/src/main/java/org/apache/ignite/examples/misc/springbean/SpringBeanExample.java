@@ -57,10 +57,10 @@ public final class SpringBeanExample {
             new ClassPathXmlApplicationContext("org/apache/ignite/examples/misc/springbean/spring-bean.xml");
 
         try {
-            // Get grid from Spring (note that local cluster node is already started).
+            // Get ignite from Spring (note that local cluster node is already started).
             Ignite ignite = (Ignite)ctx.getBean("mySpringBean");
 
-            // Execute any method on the retrieved grid instance.
+            // Execute any method on the retrieved ignite instance.
             ExecutorService exec = ignite.executorService();
 
             Future<String> res = exec.submit(new Callable<String>() {

@@ -27,7 +27,7 @@ import java.util.*;
 
 /**
  * Example that demonstrates how to deploy distributed services in Ignite.
- * Distributed services are especially useful when deploying singletons on the grid,
+ * Distributed services are especially useful when deploying singletons on the ignite,
  * be that cluster-singleton, or per-node-singleton, etc...
  * <p>
  * To start remote nodes, you must run {@link ComputeNodeStartup} in another JVM

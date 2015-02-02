@@ -43,7 +43,7 @@ object ScalarTaskExample extends App {
      * This task encapsulates the logic of MapReduce.
      */
     class GridHelloWorld extends ComputeTaskSplitAdapter[String, Void] {
-        def split(gridSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
+        def split(clusterSize: Int, arg: String): java.util.Collection[_ <: ComputeJob] = {
             (for (w <- arg.split(" ")) yield toJob(() => println(w))).toSeq
         }
 

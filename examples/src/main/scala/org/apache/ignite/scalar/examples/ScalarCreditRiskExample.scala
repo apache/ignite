@@ -76,22 +76,22 @@ object ScalarCreditRiskExample {
     /**
      * Creates closures for calculating credit risks.
      *
-     * @param gridSize Size of the grid.
+     * @param clusterSize Size of the grid.
      * @param portfolio Portfolio.
      * @param horizon Forecast horizon in days.
      * @param iter Number of Monte-Carlo iterations.
      * @param percentile Percentile.
      * @return Collection of closures.
      */
-    private def closures(gridSize: Int, portfolio: Seq[Credit], horizon: Int, iter: Int,
+    private def closures(clusterSize: Int, portfolio: Seq[Credit], horizon: Int, iter: Int,
         percentile: Double): Seq[() => Double] = {
-        val iterPerNode: Int = math.round(iter / gridSize.asInstanceOf[Float])
-        val lastNodeIter: Int = iter - (gridSize - 1) * iterPerNode
+        val iterPerNode: Int = math.round(iter / clusterSize.asInstanceOf[Float])
+        val lastNodeIter: Int = iter - (clusterSize - 1) * iterPerNode
 
         var cls = Seq.empty[() => Double]
 
-        (0 until gridSize).foreach(i => {
-            val nodeIter = if (i == gridSize - 1) lastNodeIter else iterPerNode
+        (0 until clusterSize).foreach(i => {
+            val nodeIter = if (i == clusterSize - 1) lastNodeIter else iterPerNode
 
             cls +:= (() => new CreditRiskManager().calculateCreditRiskMonteCarlo(
                 portfolio, horizon, nodeIter, percentile))

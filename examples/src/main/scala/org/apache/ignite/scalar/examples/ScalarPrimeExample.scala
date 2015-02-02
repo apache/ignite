@@ -85,15 +85,15 @@ object ScalarPrimeExample {
      * Closures checks if the value passed in is divisible by any of
      * the divisors in the range.
      *
-     * @param gridSize Size of the grid.
+     * @param clusterSize Size of the cluster.
      * @param checkVal Value to check.
      * @return Collection of closures.
      */
-    private def closures(gridSize: Int, checkVal: Long): Seq[() => Option[Long]] = {
+    private def closures(clusterSize: Int, checkVal: Long): Seq[() => Option[Long]] = {
         var cls = Seq.empty[() => Option[Long]]
 
         val taskMinRange = 2L
-        val numbersPerTask = if (checkVal / gridSize < 10) 10L else checkVal / gridSize
+        val numbersPerTask = if (checkVal / clusterSize < 10) 10L else checkVal / clusterSize
 
         var minRange = 0L
         var maxRange = 0L

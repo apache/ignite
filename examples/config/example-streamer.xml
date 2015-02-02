@@ -39,7 +39,7 @@
         Optional description.
     -->
     <description>
-        Spring file for grid configuration with benchmark.
+        Spring file for ignite configuration with benchmark.
     </description>
 
     <!--

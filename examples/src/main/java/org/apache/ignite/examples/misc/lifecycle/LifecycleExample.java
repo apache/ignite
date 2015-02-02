@@ -51,11 +51,11 @@ public final class LifecycleExample {
         cfg.setLifecycleBeans(bean);
 
         try (Ignite ignite  = Ignition.start(cfg)) {
-            // Make sure that lifecycle bean was notified about grid startup.
+            // Make sure that lifecycle bean was notified about ignite startup.
             assert bean.isStarted();
         }
 
-        // Make sure that lifecycle bean was notified about grid stop.
+        // Make sure that lifecycle bean was notified about ignite stop.
         assert !bean.isStarted();
     }
 

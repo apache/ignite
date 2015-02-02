@@ -106,7 +106,7 @@ public class StreamingCheckInExample {
     public static void main(String[] args) throws Exception {
         Timer timer = new Timer("check-in-query-worker");
 
-        // Start grid.
+        // Start ignite.
         final Ignite ignite = Ignition.start("examples/config/example-streamer.xml");
 
         System.out.println();

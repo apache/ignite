@@ -38,7 +38,7 @@
         Optional description.
     -->
     <description>
-        Spring file for grid configuration with client available endpoints.
+        Spring file for ignite configuration with client available endpoints.
     </description>
 
     <!--
