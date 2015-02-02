@@ -142,13 +142,13 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
-        GridContinuousMessage clone = (GridContinuousMessage)_msg;
+        GridContinuousMessage _clone = (GridContinuousMessage)_msg;
 
-        clone.type = type;
-        clone.routineId = routineId;
-        clone.futId = futId;
-        clone.data = data;
-        clone.dataBytes = dataBytes;
+        _clone.type = type;
+        _clone.routineId = routineId;
+        _clone.data = data;
+        _clone.dataBytes = dataBytes;
+        _clone.futId = futId;
     }
 
     /** {@inheritDoc} */
@@ -171,19 +171,19 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                if (!commState.putGridUuid(null, futId))
+                if (!commState.putGridUuid("futId", futId))
                     return false;
 
                 commState.idx++;
 
             case 2:
-                if (!commState.putUuid(null, routineId))
+                if (!commState.putUuid("routineId", routineId))
                     return false;
 
                 commState.idx++;
 
             case 3:
-                if (!commState.putEnum(null, type))
+                if (!commState.putEnum("type", type))
                     return false;
 
                 commState.idx++;
@@ -208,17 +208,15 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 1:
-                IgniteUuid futId0 = commState.getGridUuid(null);
+                futId = commState.getGridUuid("futId");
 
-                if (futId0 == GRID_UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                futId = futId0;
 
                 commState.idx++;
 
             case 2:
-                UUID routineId0 = commState.getUuid(null);
+                routineId = commState.getUuid("routineId");
 
                 if (!commState.lastRead())
                     return false;
@@ -226,12 +224,12 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 3:
-                if (buf.remaining() < 1)
-                    return false;
+                byte type0 = commState.getByte("type");
 
                 if (!commState.lastRead())
                     return false;
 
+                type = GridContinuousMessageType.fromOrdinal(type0);
 
                 commState.idx++;
 
@@ -242,7 +240,7 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 60;
+        return 61;
     }
 
     /** {@inheritDoc} */

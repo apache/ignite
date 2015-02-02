@@ -214,7 +214,7 @@ public class GridClockDeltaSnapshotMessage extends GridTcpCommunicationMessageAd
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 59;
+        return 60;
     }
 
     /** {@inheritDoc} */

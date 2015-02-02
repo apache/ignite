@@ -790,7 +790,7 @@ public class GridCacheQueryRequest<K, V> extends GridCacheMessage<K, V> implemen
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 57;
+        return 58;
     }
 
     /** {@inheritDoc} */

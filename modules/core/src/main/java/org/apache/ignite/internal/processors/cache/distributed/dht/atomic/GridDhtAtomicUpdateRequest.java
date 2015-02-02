@@ -866,13 +866,13 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 12:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 13:
-                if (!commState.putLongList(null, ttls))
+                if (!commState.putLongList("ttls", ttls))
                     return false;
 
                 commState.idx++;
@@ -1097,10 +1097,10 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
             case 6:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1110,7 +1110,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         invokeArgsBytes[i] = (byte[])_val;
@@ -1154,27 +1154,23 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 8:
-                GridLongList nearExpireTimes0 = commState.getLongList(null);
+                nearExpireTimes = commState.getLongList("nearExpireTimes");
 
-                if (nearExpireTimes0 == LONG_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nearExpireTimes = nearExpireTimes0;
 
                 commState.idx++;
 
             case 9:
-                GridLongList nearTtls0 = commState.getLongList(null);
+                nearTtls = commState.getLongList("nearTtls");
 
-                if (nearTtls0 == LONG_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nearTtls = nearTtls0;
 
                 commState.idx++;
 
             case 10:
-                UUID nodeId0 = commState.getUuid("nodeId");
+                nodeId = commState.getUuid("nodeId");
 
                 if (!commState.lastRead())
                     return false;
@@ -1237,7 +1233,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
                 commState.idx++;
 
             case 15:
-                GridCacheVersion writeVer0 = commState.getCacheVersion("writeVer");
+                writeVer = commState.getCacheVersion("writeVer");
 
                 if (!commState.lastRead())
                     return false;
@@ -1391,7 +1387,7 @@ public class GridDhtAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> imp
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 37;
+        return 38;
     }
 
     /** {@inheritDoc} */

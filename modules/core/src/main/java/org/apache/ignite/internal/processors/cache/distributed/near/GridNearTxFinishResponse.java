@@ -214,7 +214,7 @@ public class GridNearTxFinishResponse<K, V> extends GridDistributedTxFinishRespo
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 53;
+        return 54;
     }
 
     /** {@inheritDoc} */

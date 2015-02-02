@@ -327,19 +327,19 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 10:
-                if (!commState.putBoolean(null, skipStore))
+                if (!commState.putBoolean("skipStore", skipStore))
                     return false;
 
                 commState.idx++;
 
             case 11:
-                if (!commState.putByteArray(null, updaterBytes))
+                if (!commState.putByteArray("updaterBytes", updaterBytes))
                     return false;
 
                 commState.idx++;
 
             case 12:
-                if (!commState.putString(null, userVer))
+                if (!commState.putString("userVer", userVer))
                     return false;
 
                 commState.idx++;
@@ -471,15 +471,15 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 10:
-                if (buf.remaining() < 1)
-                    return false;
+                skipStore = commState.getBoolean("skipStore");
 
-                skipStore = commState.getBoolean(null);
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 11:
-                byte[] updaterBytes0 = commState.getByteArray(null);
+                updaterBytes = commState.getByteArray("updaterBytes");
 
                 if (!commState.lastRead())
                     return false;
@@ -487,7 +487,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
                 commState.idx++;
 
             case 12:
-                String userVer0 = commState.getString(null);
+                userVer = commState.getString("userVer");
 
                 if (!commState.lastRead())
                     return false;
@@ -501,7 +501,7 @@ public class GridDataLoadRequest extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 61;
+        return 62;
     }
 
     /** {@inheritDoc} */

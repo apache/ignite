@@ -249,6 +249,6 @@ public class GridGgfsBlocksMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 67;
+        return 66;
     }
 }

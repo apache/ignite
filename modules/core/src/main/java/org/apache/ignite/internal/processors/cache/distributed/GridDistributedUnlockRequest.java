@@ -228,7 +228,7 @@ public class GridDistributedUnlockRequest<K, V> extends GridDistributedBaseMessa
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 28;
+        return 27;
     }
 
     /** {@inheritDoc} */

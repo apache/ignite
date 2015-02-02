@@ -236,7 +236,7 @@ public class GridDistributedTxPrepareResponse<K, V> extends GridDistributedBaseM
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 27;
+        return 26;
     }
 
     /** {@inheritDoc} */

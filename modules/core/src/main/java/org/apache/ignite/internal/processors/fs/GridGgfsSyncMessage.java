@@ -156,6 +156,6 @@ public class GridGgfsSyncMessage extends GridGgfsCommunicationMessage {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 72;
+        return 71;
     }
 }

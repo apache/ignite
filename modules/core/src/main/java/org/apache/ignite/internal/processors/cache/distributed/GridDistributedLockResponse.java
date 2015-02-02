@@ -421,7 +421,7 @@ public class GridDistributedLockResponse<K, V> extends GridDistributedBaseMessag
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 23;
+        return 22;
     }
 
     /** {@inheritDoc} */

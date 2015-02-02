@@ -811,7 +811,7 @@ public class GridDistributedLockRequest<K, V> extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 22;
+        return 21;
     }
 
     /** {@inheritDoc} */

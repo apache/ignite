@@ -32,7 +32,9 @@ import org.apache.ignite.internal.processors.cache.query.*;
 import org.apache.ignite.internal.processors.clock.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
+import org.apache.ignite.internal.processors.rest.client.message.*;
 import org.apache.ignite.internal.processors.rest.handlers.task.*;
+import org.apache.ignite.internal.processors.rest.protocols.tcp.*;
 import org.apache.ignite.internal.processors.streamer.*;
 import org.apache.ignite.spi.collision.jobstealing.*;
 import org.apache.ignite.spi.communication.tcp.*;
@@ -61,6 +63,9 @@ public class GridTcpCommunicationMessageFactory {
                 switch (type) {
                     case 0:
                         return new GridJobCancelRequest();
+
+                    case 1:
+                        return new GridJobExecuteRequest();
 
                     case 2:
                         return new GridJobExecuteResponse();
@@ -98,179 +103,190 @@ public class GridTcpCommunicationMessageFactory {
                     case 13:
                         return new GridEventStorageMessage();
 
-                    case 16:
+                    case 14:
                         return new GridCacheEvictionRequest();
 
-                    case 17:
+                    case 15:
                         return new GridCacheEvictionResponse();
 
-                    case 18:
+                    case 16:
                         return new GridCacheOptimisticCheckPreparedTxRequest();
 
-                    case 19:
+                    case 17:
                         return new GridCacheOptimisticCheckPreparedTxResponse();
 
-                    case 20:
+                    case 18:
                         return new GridCachePessimisticCheckCommittedTxRequest();
 
-                    case 21:
+                    case 19:
                         return new GridCachePessimisticCheckCommittedTxResponse();
 
-                    case 22:
+                    case 20:
+                        return new GridCacheTtlUpdateRequest();
+
+                    case 21:
                         return new GridDistributedLockRequest();
 
-                    case 23:
+                    case 22:
                         return new GridDistributedLockResponse();
 
-                    case 24:
+                    case 23:
                         return new GridDistributedTxFinishRequest();
 
-                    case 25:
+                    case 24:
                         return new GridDistributedTxFinishResponse();
 
-                    case 26:
+                    case 25:
                         return new GridDistributedTxPrepareRequest();
 
-                    case 27:
+                    case 26:
                         return new GridDistributedTxPrepareResponse();
 
-                    case 28:
+                    case 27:
                         return new GridDistributedUnlockRequest();
 
-                    case 29:
-                        return new GridDhtLockRequest();
-
-                    case 30:
-                        return new GridDhtLockResponse();
-
-                    case 31:
-                        return new GridDhtTxFinishRequest();
-
-                    case 32:
-                        return new GridDhtTxFinishResponse();
-
-                    case 33:
-                        return new GridDhtTxPrepareRequest();
-
-                    case 34:
-                        return new GridDhtTxPrepareResponse();
-
-                    case 35:
-                        return new GridDhtUnlockRequest();
-
-                    case 36:
-                        return new GridDhtAtomicDeferredUpdateResponse();
-
-                    case 37:
-                        return new GridDhtAtomicUpdateRequest();
-
-                    case 38:
-                        return new GridDhtAtomicUpdateResponse();
-
-                    case 39:
-                        return new GridNearAtomicUpdateRequest();
-
-                    case 40:
-                        return new GridNearAtomicUpdateResponse();
-
-                    case 41:
-                        return new GridDhtForceKeysRequest();
-
-                    case 42:
-                        return new GridDhtForceKeysResponse();
-
-                    case 43:
-                        return new GridDhtPartitionDemandMessage();
-
-                    case 44:
-                        return new GridDhtPartitionSupplyMessage();
-
-                    case 45:
-                        return new GridDhtPartitionsFullMessage();
-
-                    case 46:
-                        return new GridDhtPartitionsSingleMessage();
-
-                    case 47:
-                        return new GridDhtPartitionsSingleRequest();
-
-                    case 48:
-                        return new GridNearGetRequest();
-
-                    case 49:
-                        return new GridNearGetResponse();
-
-                    case 50:
-                        return new GridNearLockRequest();
-
-                    case 51:
-                        return new GridNearLockResponse();
-
-                    case 52:
-                        return new GridNearTxFinishRequest();
-
-                    case 53:
-                        return new GridNearTxFinishResponse();
-
-                    case 54:
-                        return new GridNearTxPrepareRequest();
-
-                    case 55:
-                        return new GridNearTxPrepareResponse();
-
-                    case 56:
-                        return new GridNearUnlockRequest();
-
-                    case 57:
-                        return new GridCacheQueryRequest();
-
-                    case 58:
-                        return new GridCacheQueryResponse();
-
-                    case 59:
-                        return new GridClockDeltaSnapshotMessage();
-
-                    case 60:
-                        return new GridContinuousMessage();
-
-                    case 61:
-                        return new GridDataLoadRequest();
-
-                    case 62:
-                        return new GridDataLoadResponse();
-
-                    // 65-72 are GGFS messages (see GridGgfsOpProcessor).
-
-                    case 73:
-                        return new GridTaskResultRequest();
-
-                    case 74:
-                        return new GridTaskResultResponse();
-
-                    // TODO: Register from streamer processor.
-                    case 75:
-                        return new GridStreamerCancelRequest();
-
-                    case 76:
-                        return new GridStreamerExecutionRequest();
-
-                    case 77:
-                        return new GridStreamerResponse();
-
-                    case 78:
-                        return new JobStealingRequest();
-
-                    case 79:
+                    case 28:
                         return new GridDhtAffinityAssignmentRequest();
 
-                    case 80:
+                    case 29:
                         return new GridDhtAffinityAssignmentResponse();
 
+                    case 30:
+                        return new GridDhtLockRequest();
+
+                    case 31:
+                        return new GridDhtLockResponse();
+
+                    case 32:
+                        return new GridDhtTxFinishRequest();
+
+                    case 33:
+                        return new GridDhtTxFinishResponse();
+
+                    case 34:
+                        return new GridDhtTxPrepareRequest();
+
+                    case 35:
+                        return new GridDhtTxPrepareResponse();
+
+                    case 36:
+                        return new GridDhtUnlockRequest();
+
+                    case 37:
+                        return new GridDhtAtomicDeferredUpdateResponse();
+
+                    case 38:
+                        return new GridDhtAtomicUpdateRequest();
+
+                    case 39:
+                        return new GridDhtAtomicUpdateResponse();
+
+                    case 40:
+                        return new GridNearAtomicUpdateRequest();
+
+                    case 41:
+                        return new GridNearAtomicUpdateResponse();
+
+                    case 42:
+                        return new GridDhtForceKeysRequest();
+
+                    case 43:
+                        return new GridDhtForceKeysResponse();
+
+                    case 44:
+                        return new GridDhtPartitionDemandMessage();
+
+                    case 45:
+                        return new GridDhtPartitionSupplyMessage();
+
+                    case 46:
+                        return new GridDhtPartitionsFullMessage();
+
+                    case 47:
+                        return new GridDhtPartitionsSingleMessage();
+
+                    case 48:
+                        return new GridDhtPartitionsSingleRequest();
+
+                    case 49:
+                        return new GridNearGetRequest();
+
+                    case 50:
+                        return new GridNearGetResponse();
+
+                    case 51:
+                        return new GridNearLockRequest();
+
+                    case 52:
+                        return new GridNearLockResponse();
+
+                    case 53:
+                        return new GridNearTxFinishRequest();
+
+                    case 54:
+                        return new GridNearTxFinishResponse();
+
+                    case 55:
+                        return new GridNearTxPrepareRequest();
+
+                    case 56:
+                        return new GridNearTxPrepareResponse();
+
+                    case 57:
+                        return new GridNearUnlockRequest();
+
+                    case 58:
+                        return new GridCacheQueryRequest();
+
+                    case 59:
+                        return new GridCacheQueryResponse();
+
+                    case 60:
+                        return new GridClockDeltaSnapshotMessage();
+
+                    case 61:
+                        return new GridContinuousMessage();
+
+                    case 62:
+                        return new GridDataLoadRequest();
+
+                    case 63:
+                        return new GridDataLoadResponse();
+
+                    // 64-71: IgniteFS messages.
+
+                    case 72:
+                        return new GridClientHandshakeRequestWrapper();
+
+                    case 73:
+                        return new GridClientHandshakeResponseWrapper();
+
+                    case 74:
+                        return new GridClientMessageWrapper();
+
+                    case 75:
+                        return new GridClientPingPacketWrapper();
+
+                    case 76:
+                        return new GridTaskResultRequest();
+
+                    case 77:
+                        return new GridTaskResultResponse();
+
+                    case 78:
+                        return new GridMemcachedMessageWrapper();
+
+                    case 79:
+                        return new GridStreamerCancelRequest();
+
+                    case 80:
+                        return new GridStreamerExecutionRequest();
+
                     case 81:
-                        return new GridJobExecuteRequest();
+                        return new GridStreamerResponse();
 
                     case 82:
-                        return new GridCacheTtlUpdateRequest();
+                        return new JobStealingRequest();
 
                     default:
                         assert false : "Invalid message type.";
@@ -281,7 +297,7 @@ public class GridTcpCommunicationMessageFactory {
         },  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
            20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
            40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-           60, 61, 62, 63, 64, /* 65-72 - GGFS messages. */    73, 74, 75, 76, 77, 78, 79,
+           60, 61, 62, 63, /* 64-71: IgniteFS messages. */ 72, 73, 74, 75, 76, 77, 78, 79,
            80, 81, 82);
     }
 

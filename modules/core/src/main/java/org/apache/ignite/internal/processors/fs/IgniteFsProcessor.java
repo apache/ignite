@@ -85,28 +85,28 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
             @Override
             public GridTcpCommunicationMessageAdapter create(byte type) {
                 switch (type) {
-                    case 65:
+                    case 64:
                         return new GridGgfsAckMessage();
 
-                    case 66:
+                    case 65:
                         return new GridGgfsBlockKey();
 
-                    case 67:
+                    case 66:
                         return new GridGgfsBlocksMessage();
 
-                    case 68:
+                    case 67:
                         return new GridGgfsDeleteMessage();
 
-                    case 69:
+                    case 68:
                         return new GridGgfsFileAffinityRange();
 
-                    case 70:
+                    case 69:
                         return new GridGgfsFragmentizerRequest();
 
-                    case 71:
+                    case 70:
                         return new GridGgfsFragmentizerResponse();
 
-                    case 72:
+                    case 71:
                         return new GridGgfsSyncMessage();
 
                     default:
@@ -115,7 +115,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
                         return null;
                 }
             }
-        }, 65, 66, 67, 68, 69,70, 71, 72);
+        }, 64, 65, 66, 67, 68, 69, 70, 71);
 
         // Register HDFS edition usage with license manager.
         GridLicenseUseRegistry.onUsage(HADOOP, getClass());

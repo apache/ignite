@@ -180,7 +180,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 82;
+        return 20;
     }
 
     /** {@inheritDoc} */
@@ -290,13 +290,13 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 commState.idx++;
 
             case 6:
-                if (!commState.putLong(null, topVer))
+                if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putLong(null, ttl))
+                if (!commState.putLong("ttl", ttl))
                     return false;
 
                 commState.idx++;
@@ -343,10 +343,10 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
         switch (commState.idx) {
             case 3:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -356,7 +356,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         keysBytes.add((byte[])_val);
@@ -372,10 +372,10 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
             case 4:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -385,7 +385,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearKeysBytes.add((byte[])_val);
@@ -401,10 +401,10 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
 
             case 5:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -414,7 +414,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         nearVers.add((GridCacheVersion)_val);
@@ -429,27 +429,27 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                 commState.idx++;
 
             case 6:
-                if (buf.remaining() < 8)
-                    return false;
+                topVer = commState.getLong("topVer");
 
-                topVer = commState.getLong(null);
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 7:
-                if (buf.remaining() < 8)
-                    return false;
+                ttl = commState.getLong("ttl");
 
-                ttl = commState.getLong(null);
+                if (!commState.lastRead())
+                    return false;
 
                 commState.idx++;
 
             case 8:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -459,7 +459,7 @@ public class GridCacheTtlUpdateRequest<K, V> extends GridCacheMessage<K, V> {
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         GridCacheVersion _val = commState.getCacheVersion(null);
 
-                        if (_val == CACHE_VER_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         vers.add((GridCacheVersion)_val);

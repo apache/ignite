@@ -174,6 +174,6 @@ public class GridDataLoadResponse extends GridTcpCommunicationMessageAdapter {
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 62;
+        return 63;
     }
 }

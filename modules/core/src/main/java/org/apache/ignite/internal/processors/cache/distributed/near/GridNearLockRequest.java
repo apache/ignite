@@ -381,6 +381,12 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
         switch (commState.idx) {
             case 24:
+                if (!commState.putLong("accessTtl", accessTtl))
+                    return false;
+
+                commState.idx++;
+
+            case 25:
                 if (dhtVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, dhtVers.length))
@@ -407,7 +413,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (filterBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, filterBytes.length))
@@ -434,62 +440,56 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 if (!commState.putBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
                 commState.idx++;
 
-            case 27:
+            case 28:
                 if (!commState.putBoolean("implicitTx", implicitTx))
                     return false;
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 if (!commState.putGridUuid("miniId", miniId))
                     return false;
 
                 commState.idx++;
 
-            case 29:
+            case 30:
                 if (!commState.putBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 commState.idx++;
 
-            case 30:
+            case 31:
                 if (!commState.putBoolean("syncCommit", syncCommit))
                     return false;
 
                 commState.idx++;
 
-            case 31:
+            case 32:
                 if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
-            case 32:
+            case 33:
                 if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
-            case 33:
+            case 34:
                 if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
 
-            case 34:
-                if (!commState.putBoolean("hasTransforms", hasTransforms))
-                    return false;
-
-                commState.idx++;
-
             case 35:
-                if (!commState.putLong("accessTtl", accessTtl))
+                if (!commState.putBoolean("hasTransforms", hasTransforms))
                     return false;
 
                 commState.idx++;
@@ -509,6 +509,14 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
         switch (commState.idx) {
             case 24:
+                accessTtl = commState.getLong("accessTtl");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 25:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -537,7 +545,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -566,7 +574,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 implicitSingleTx = commState.getBoolean("implicitSingleTx");
 
                 if (!commState.lastRead())
@@ -574,7 +582,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 27:
+            case 28:
                 implicitTx = commState.getBoolean("implicitTx");
 
                 if (!commState.lastRead())
@@ -582,7 +590,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 miniId = commState.getGridUuid("miniId");
 
                 if (!commState.lastRead())
@@ -590,7 +598,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 29:
+            case 30:
                 onePhaseCommit = commState.getBoolean("onePhaseCommit");
 
                 if (!commState.lastRead())
@@ -598,7 +606,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 30:
+            case 31:
                 syncCommit = commState.getBoolean("syncCommit");
 
                 if (!commState.lastRead())
@@ -606,7 +614,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 31:
+            case 32:
                 topVer = commState.getLong("topVer");
 
                 if (!commState.lastRead())
@@ -614,7 +622,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 32:
+            case 33:
                 subjId = commState.getUuid("subjId");
 
                 if (!commState.lastRead())
@@ -622,7 +630,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 33:
+            case 34:
                 taskNameHash = commState.getInt("taskNameHash");
 
                 if (!commState.lastRead())
@@ -630,21 +638,11 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
                 commState.idx++;
 
-            case 34:
+            case 35:
                 hasTransforms = commState.getBoolean("hasTransforms");
 
                 if (!commState.lastRead())
                     return false;
-
-                syncCommit = commState.getBoolean(null);
-
-                commState.idx++;
-
-            case 35:
-                if (buf.remaining() < 8)
-                    return false;
-
-                accessTtl = commState.getLong(null);
 
                 commState.idx++;
 
@@ -655,7 +653,7 @@ public class GridNearLockRequest<K, V> extends GridDistributedLockRequest<K, V> 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 50;
+        return 51;
     }
 
     /** {@inheritDoc} */

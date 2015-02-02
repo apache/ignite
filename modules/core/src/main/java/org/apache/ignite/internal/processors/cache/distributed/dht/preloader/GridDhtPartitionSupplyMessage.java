@@ -504,7 +504,7 @@ public class GridDhtPartitionSupplyMessage<K, V> extends GridCacheMessage<K, V> 
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 44;
+        return 45;
     }
 
     /** {@inheritDoc} */

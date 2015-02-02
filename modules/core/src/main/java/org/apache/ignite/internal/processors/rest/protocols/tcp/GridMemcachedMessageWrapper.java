@@ -104,7 +104,7 @@ public class GridMemcachedMessageWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return MEMCACHE_RES_FLAG;
+        return 78;
     }
 
     /** {@inheritDoc} */

@@ -227,7 +227,7 @@ public class GridClientMessageWrapper extends GridTcpCommunicationMessageAdapter
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return REQ_HEADER;
+        return 74;
     }
 
     /** {@inheritDoc} */

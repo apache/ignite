@@ -60,10 +60,6 @@ public class CommunicationMessageCodeGenerator {
     };
 
     /** */
-    private static final String CLASSES_ORDER_FILE = U.getGridGainHome() +
-        "/modules/tools/src/main/java/org/apache/ignite/codegen/generated-classes-order.txt";
-
-    /** */
     private static final String SRC_DIR = U.getGridGainHome() + "/modules/core/src/main/java";
 
     /** */
@@ -121,9 +117,6 @@ public class CommunicationMessageCodeGenerator {
     private final Map<Class<?>, Integer> fieldCnt = new HashMap<>();
 
     /** */
-    private byte type = -1;
-
-    /** */
     private List<Field> fields;
 
     /** */
@@ -136,27 +129,6 @@ public class CommunicationMessageCodeGenerator {
         CommunicationMessageCodeGenerator gen = new CommunicationMessageCodeGenerator();
 
         try {
-//            gen.generateAndWrite(GridDistributedLockRequest.class);
-//            gen.generateAndWrite(GridNearLockRequest.class);
-//            gen.generateAndWrite(GridDhtLockRequest.class);
-//            gen.generateAndWrite(GridDistributedLockResponse.class);
-//            gen.generateAndWrite(GridNearLockResponse.class);
-//            gen.generateAndWrite(GridDhtLockResponse.class);
-//
-//            gen.generateAndWrite(GridDistributedTxPrepareRequest.class);
-//            gen.generateAndWrite(GridNearTxPrepareRequest.class);
-//            gen.generateAndWrite(GridDhtTxPrepareRequest.class);
-//            gen.generateAndWrite(GridDistributedTxPrepareResponse.class);
-//            gen.generateAndWrite(GridNearTxPrepareResponse.class);
-//            gen.generateAndWrite(GridDhtTxPrepareResponse.class);
-//
-//            gen.generateAndWrite(GridDistributedTxFinishRequest.class);
-//            gen.generateAndWrite(GridNearTxFinishRequest.class);
-//            gen.generateAndWrite(GridDhtTxFinishRequest.class);
-//            gen.generateAndWrite(GridDistributedTxFinishResponse.class);
-//            gen.generateAndWrite(GridNearTxFinishResponse.class);
-//            gen.generateAndWrite(GridDhtTxFinishResponse.class);
-
             gen.generateAll(true);
         }
         catch (Exception e) {
@@ -171,25 +143,31 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     public void generateAll(boolean write) throws Exception {
-        type = 0;
+        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes = classes();
 
-        Map<String, Integer> classesOrder = classesOrder();
-
-        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes = classes(classesOrder);
+        byte type = 0;
 
         for (Class<? extends GridTcpCommunicationMessageAdapter> cls : classes) {
-            Integer t = classesOrder.get(cls.getName());
+            boolean isAbstract = Modifier.isAbstract(cls.getModifiers());
 
-            type = t != null ? t.byteValue() : 0;
-
-            System.out.println("Processing class: " + cls.getName() +
-                (Modifier.isAbstract(cls.getModifiers()) ? " (abstract)" : ""));
+            System.out.println("Processing class: " + cls.getName() + (isAbstract ? " (abstract)" : ""));
 
             if (write)
-                generateAndWrite(cls);
+                generateAndWrite(cls, isAbstract ? -1 : type++);
             else
                 generate(cls);
         }
+
+//        type = 0;
+//
+//        for (Class<? extends GridTcpCommunicationMessageAdapter> cls : classes) {
+//            if (Modifier.isAbstract(cls.getModifiers()))
+//                continue;
+//
+//            System.out.println("case " + type++ + ":");
+//            System.out.println("    return new " + cls.getSimpleName() + "();");
+//            System.out.println();
+//        }
     }
 
     /**
@@ -201,7 +179,7 @@ public class CommunicationMessageCodeGenerator {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("ConstantConditions")
-    private void generateAndWrite(Class<? extends GridTcpCommunicationMessageAdapter> cls) throws Exception {
+    private void generateAndWrite(Class<? extends GridTcpCommunicationMessageAdapter> cls, byte type) throws Exception {
         assert cls != null;
 
         generate(cls);
@@ -226,7 +204,6 @@ public class CommunicationMessageCodeGenerator {
 
             boolean writeFound = false;
             boolean readFound = false;
-            boolean typeFound = false;
             boolean cloneFound = false;
             boolean clone0Found = false;
 
@@ -252,8 +229,6 @@ public class CommunicationMessageCodeGenerator {
 //                        src.add(TAB + TAB + "return " + type + ';');
 //
 //                        skip = true;
-//
-//                        typeFound = true;
 //                    }
                     else if (line.contains("public GridTcpCommunicationMessageAdapter clone()")) {
                         src.addAll(clone);
@@ -282,9 +257,6 @@ public class CommunicationMessageCodeGenerator {
 
             if (!readFound)
                 System.out.println("    readFrom method doesn't exist.");
-
-            if (!typeFound)
-                System.out.println("    directType method doesn't exist.");
 
             if (!cloneFound)
                 System.out.println("    clone method doesn't exist.");
@@ -1088,23 +1060,17 @@ public class CommunicationMessageCodeGenerator {
      * (with package prefix).
      * That orders need for saving {@code directType} value.
      *
-     * @param classesOrder Map {class name => order number}.
      * @return Classes.
      * @throws Exception In case of error.
      */
-    private Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes(final Map<String, Integer> classesOrder) throws Exception {
-        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> col = new TreeSet<>(new Comparator<Class<? extends GridTcpCommunicationMessageAdapter>>() {
-            @Override public int compare(Class<? extends GridTcpCommunicationMessageAdapter> o1, Class<? extends GridTcpCommunicationMessageAdapter> o2) {
-                Integer c1 = classesOrder.get(o1.getName());
-
-                Integer c2 = classesOrder.get(o2.getName());
-
-                if (c1 == null)
-                    return c2 == null ? o1.getName().compareTo(o2.getName()) : 1;
-                else
-                    return c2 == null ? -1 : c1.compareTo(c2);
-            }
-        });
+    private Collection<Class<? extends GridTcpCommunicationMessageAdapter>> classes() throws Exception {
+        Collection<Class<? extends GridTcpCommunicationMessageAdapter>> col = new TreeSet<>(
+            new Comparator<Class<? extends GridTcpCommunicationMessageAdapter>>() {
+                @Override public int compare(Class<? extends GridTcpCommunicationMessageAdapter> c1,
+                    Class<? extends GridTcpCommunicationMessageAdapter> c2) {
+                    return c1.getName().compareTo(c2.getName());
+                }
+            });
 
         URLClassLoader ldr = (URLClassLoader)getClass().getClassLoader();
 
@@ -1117,56 +1083,6 @@ public class CommunicationMessageCodeGenerator {
         }
 
         return col;
-    }
-
-    /**
-     * Reads class names from {@code CLASSES_ORDER_FILE}.
-     *
-     * @return Map {class name => order number}
-     * @throws IOException In case of io error.
-     */
-    private Map<String, Integer> classesOrder() throws IOException {
-        BufferedReader reader = null;
-
-        try {
-            reader = new BufferedReader(new FileReader(CLASSES_ORDER_FILE));
-
-            Map<String, Integer> res = new HashMap<>();
-
-            while (true) {
-                String line = reader.readLine();
-
-                if (line == null)
-                    break;
-
-                line = line.trim();
-
-                if (!line.isEmpty())
-                    res.put(line, res.size());
-            }
-
-            return res;
-        }
-        finally {
-            if (reader != null)
-                reader.close();
-        }
-    }
-
-    /**
-     * Writes class names in {@code CLASSES_ORDER_FILE}.
-     *
-     * @param classes Classes for saving.
-     * @throws IOException In case of io error.
-     */
-    private void classesOrder(Iterable<Class<? extends GridTcpCommunicationMessageAdapter>> classes)
-            throws IOException {
-        Collection<String> src = new ArrayList<>();
-
-        for (Class<? extends GridTcpCommunicationMessageAdapter> cls : classes)
-            src.add(cls.getName());
-
-        writeLines(new File(CLASSES_ORDER_FILE), src);
     }
 
     /**
@@ -1206,28 +1122,6 @@ public class CommunicationMessageCodeGenerator {
                     !BASE_CLS.equals(cls) && BASE_CLS.isAssignableFrom(cls))
                     col.add((Class<? extends GridTcpCommunicationMessageAdapter>)cls);
             }
-        }
-    }
-
-    /**
-     * Writes lines in file.
-     *
-     * @param file File.
-     * @param lines Lines.
-     * @throws IOException In case of io error.
-     */
-    private void writeLines(File file, Iterable<String> lines) throws IOException {
-        BufferedWriter writer = null;
-
-        try {
-            writer = new BufferedWriter(new FileWriter(file));
-
-            for (String line : lines)
-                writer.write(line + '\n');
-        }
-        finally {
-            if (writer != null)
-                writer.close();
         }
     }
 }

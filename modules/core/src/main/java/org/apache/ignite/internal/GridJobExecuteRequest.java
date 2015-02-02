@@ -832,17 +832,15 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 16:
-                UUID subjId0 = commState.getUuid(null);
+                subjId = commState.getUuid("subjId");
 
-                if (subjId0 == UUID_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                subjId = subjId0;
 
                 commState.idx++;
 
             case 17:
-                String taskClsName0 = commState.getString("taskClsName");
+                taskClsName = commState.getString("taskClsName");
 
                 if (!commState.lastRead())
                     return false;
@@ -850,7 +848,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 18:
-                String taskName0 = commState.getString("taskName");
+                taskName = commState.getString("taskName");
 
                 if (!commState.lastRead())
                     return false;
@@ -895,7 +893,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
                 commState.idx++;
 
             case 21:
-                String userVer0 = commState.getString("userVer");
+                userVer = commState.getString("userVer");
 
                 if (!commState.lastRead())
                     return false;
@@ -909,7 +907,7 @@ public class GridJobExecuteRequest extends GridTcpCommunicationMessageAdapter im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 81;
+        return 1;
     }
 
     /** {@inheritDoc} */

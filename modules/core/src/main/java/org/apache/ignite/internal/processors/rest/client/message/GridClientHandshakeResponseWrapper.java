@@ -89,7 +89,7 @@ public class GridClientHandshakeResponseWrapper extends GridTcpCommunicationMess
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return code;
+        return 73;
     }
 
     /** {@inheritDoc} */

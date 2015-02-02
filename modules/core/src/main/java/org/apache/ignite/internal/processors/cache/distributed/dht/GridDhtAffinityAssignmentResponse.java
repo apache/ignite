@@ -85,7 +85,7 @@ public class GridDhtAffinityAssignmentResponse<K, V> extends GridCacheMessage<K,
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 80;
+        return 29;
     }
 
     /** {@inheritDoc} */

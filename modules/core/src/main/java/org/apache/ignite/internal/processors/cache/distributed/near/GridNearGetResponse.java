@@ -403,7 +403,7 @@ public class GridNearGetResponse<K, V> extends GridCacheMessage<K, V> implements
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 49;
+        return 50;
     }
 
     /** {@inheritDoc} */

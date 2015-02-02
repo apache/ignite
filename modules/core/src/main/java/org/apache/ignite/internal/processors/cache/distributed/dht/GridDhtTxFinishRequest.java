@@ -416,6 +416,12 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 commState.idx++;
 
             case 24:
+                if (!commState.putLongList("nearTtls", nearTtls))
+                    return false;
+
+                commState.idx++;
+
+            case 25:
                 if (nearWritesBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, nearWritesBytes.size()))
@@ -442,13 +448,13 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 if (!commState.putBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 if (pendingVers != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, pendingVers.size()))
@@ -475,44 +481,38 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 27:
+            case 28:
                 if (!commState.putBoolean("sysInvalidate", sysInvalidate))
                     return false;
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 if (!commState.putLong("topVer", topVer))
                     return false;
 
                 commState.idx++;
 
-            case 29:
-                if (!commState.putCacheVersion("writeVer", writeVer))
-                    return false;
-
-                commState.idx++;
-
             case 30:
-                if (!commState.putUuid("subjId", subjId))
+                if (!commState.putLongList("ttls", ttls))
                     return false;
 
                 commState.idx++;
 
             case 31:
-                if (!commState.putInt("taskNameHash", taskNameHash))
+                if (!commState.putCacheVersion("writeVer", writeVer))
                     return false;
 
                 commState.idx++;
 
             case 32:
-                if (!commState.putLongList(null, ttls))
+                if (!commState.putUuid("subjId", subjId))
                     return false;
 
                 commState.idx++;
 
             case 33:
-                if (!commState.putLongList(null, nearTtls))
+                if (!commState.putInt("taskNameHash", taskNameHash))
                     return false;
 
                 commState.idx++;
@@ -558,6 +558,14 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 commState.idx++;
 
             case 24:
+                nearTtls = commState.getLongList("nearTtls");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 25:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -586,7 +594,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 25:
+            case 26:
                 onePhaseCommit = commState.getBoolean("onePhaseCommit");
 
                 if (!commState.lastRead())
@@ -594,7 +602,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 26:
+            case 27:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -623,7 +631,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 27:
+            case 28:
                 sysInvalidate = commState.getBoolean("sysInvalidate");
 
                 if (!commState.lastRead())
@@ -631,7 +639,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 28:
+            case 29:
                 topVer = commState.getLong("topVer");
 
                 if (!commState.lastRead())
@@ -639,16 +647,8 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
                 commState.idx++;
 
-            case 29:
-                writeVer = commState.getCacheVersion("writeVer");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
             case 30:
-                subjId = commState.getUuid("subjId");
+                ttls = commState.getLongList("ttls");
 
                 if (!commState.lastRead())
                     return false;
@@ -656,7 +656,7 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 commState.idx++;
 
             case 31:
-                taskNameHash = commState.getInt("taskNameHash");
+                writeVer = commState.getCacheVersion("writeVer");
 
                 if (!commState.lastRead())
                     return false;
@@ -664,22 +664,18 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
                 commState.idx++;
 
             case 32:
-                GridLongList ttls0 = commState.getLongList(null);
+                subjId = commState.getUuid("subjId");
 
-                if (ttls0 == LONG_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                ttls = ttls0;
 
                 commState.idx++;
 
             case 33:
-                GridLongList nearTtls0 = commState.getLongList(null);
+                taskNameHash = commState.getInt("taskNameHash");
 
-                if (nearTtls0 == LONG_LIST_NOT_READ)
+                if (!commState.lastRead())
                     return false;
-
-                nearTtls = nearTtls0;
 
                 commState.idx++;
 
@@ -690,6 +686,6 @@ public class GridDhtTxFinishRequest<K, V> extends GridDistributedTxFinishRequest
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 31;
+        return 32;
     }
 }

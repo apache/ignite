@@ -75,7 +75,7 @@ public class GridClientPingPacketWrapper extends GridTcpCommunicationMessageAdap
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return GridClientMessageWrapper.REQ_HEADER;
+        return 75;
     }
 
     /** {@inheritDoc} */

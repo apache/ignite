@@ -159,7 +159,7 @@ public class GridDistributedTxFinishResponse<K, V> extends GridCacheMessage<K, V
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 25;
+        return 24;
     }
 
     /** {@inheritDoc} */

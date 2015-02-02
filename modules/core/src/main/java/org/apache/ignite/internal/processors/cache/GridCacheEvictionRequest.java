@@ -240,7 +240,7 @@ public class GridCacheEvictionRequest<K, V> extends GridCacheMessage<K, V> imple
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 16;
+        return 14;
     }
 
     /** {@inheritDoc} */

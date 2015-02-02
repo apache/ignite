@@ -491,18 +491,30 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 6:
-                if (!commState.putByteArray("remapKeysBytes", remapKeysBytes))
+                if (!commState.putLongList("nearExpireTimes", nearExpireTimes))
                     return false;
 
                 commState.idx++;
 
             case 7:
-                if (!commState.putByteArray("retValBytes", retValBytes))
+                if (!commState.putLongList("nearTtls", nearTtls))
                     return false;
 
                 commState.idx++;
 
             case 8:
+                if (!commState.putByteArray("remapKeysBytes", remapKeysBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 9:
+                if (!commState.putByteArray("retValBytes", retValBytes))
+                    return false;
+
+                commState.idx++;
+
+            case 10:
                 if (nearSkipIdxs != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, nearSkipIdxs.size()))
@@ -529,7 +541,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 9:
+            case 11:
                 if (nearValBytes != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, nearValBytes.size()))
@@ -556,7 +568,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 10:
+            case 12:
                 if (nearValsIdxs != null) {
                     if (commState.it == null) {
                         if (!commState.putInt(null, nearValsIdxs.size()))
@@ -583,23 +595,12 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 11:
+            case 13:
                 if (!commState.putCacheVersion("nearVer", nearVer))
                     return false;
 
                 commState.idx++;
 
-            case 12:
-                if (!commState.putLongList("nearExpireTimes", nearExpireTimes))
-                    return false;
-
-                commState.idx++;
-
-            case 13:
-                if (!commState.putLongList("nearTtls", nearTtls))
-                    return false;
-
-                commState.idx++;
         }
 
         return true;
@@ -639,7 +640,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 6:
-                remapKeysBytes = commState.getByteArray("remapKeysBytes");
+                nearExpireTimes = commState.getLongList("nearExpireTimes");
 
                 if (!commState.lastRead())
                     return false;
@@ -647,7 +648,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 7:
-                retValBytes = commState.getByteArray("retValBytes");
+                nearTtls = commState.getLongList("nearTtls");
 
                 if (!commState.lastRead())
                     return false;
@@ -655,6 +656,22 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
                 commState.idx++;
 
             case 8:
+                remapKeysBytes = commState.getByteArray("remapKeysBytes");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 9:
+                retValBytes = commState.getByteArray("retValBytes");
+
+                if (!commState.lastRead())
+                    return false;
+
+                commState.idx++;
+
+            case 10:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -683,7 +700,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 9:
+            case 11:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -712,7 +729,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 10:
+            case 12:
                 if (commState.readSize == -1) {
                     commState.readSize = commState.getInt(null);
 
@@ -741,24 +758,8 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
                 commState.idx++;
 
-            case 11:
-                nearVer = commState.getCacheVersion("nearVer");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
-            case 12:
-                nearExpireTimes = commState.getLongList("nearExpireTimes");
-
-                if (!commState.lastRead())
-                    return false;
-
-                commState.idx++;
-
             case 13:
-                nearTtls = commState.getLongList("nearTtls");
+                nearVer = commState.getCacheVersion("nearVer");
 
                 if (!commState.lastRead())
                     return false;
@@ -772,7 +773,7 @@ public class GridNearAtomicUpdateResponse<K, V> extends GridCacheMessage<K, V> i
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 40;
+        return 41;
     }
 
     /** {@inheritDoc} */

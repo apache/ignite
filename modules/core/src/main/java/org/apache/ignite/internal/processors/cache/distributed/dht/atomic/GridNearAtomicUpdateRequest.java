@@ -882,7 +882,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                 commState.idx++;
 
             case 6:
-                byte[] expiryPlcBytes = commState.getByteArray("expiryPlcBytes");
+                expiryPlcBytes = commState.getByteArray("expiryPlcBytes");
 
                 if (!commState.lastRead())
                     return false;
@@ -957,7 +957,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
                     for (int i = commState.readItems; i < commState.readSize; i++) {
                         byte[] _val = commState.getByteArray(null);
 
-                        if (_val == BYTE_ARR_NOT_READ)
+                        if (!commState.lastRead())
                             return false;
 
                         invokeArgsBytes[i] = (byte[])_val;
@@ -973,10 +973,10 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
             case 12:
                 if (commState.readSize == -1) {
-                    if (buf.remaining() < 4)
-                        return false;
-
                     commState.readSize = commState.getInt(null);
+
+                    if (!commState.lastRead())
+                        return false;
                 }
 
                 if (commState.readSize >= 0) {
@@ -1104,7 +1104,7 @@ public class GridNearAtomicUpdateRequest<K, V> extends GridCacheMessage<K, V> im
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 39;
+        return 40;
     }
 
     /** {@inheritDoc} */

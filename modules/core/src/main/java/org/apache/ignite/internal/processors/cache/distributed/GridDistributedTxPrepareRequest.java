@@ -760,7 +760,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 26;
+        return 25;
     }
 
     /** {@inheritDoc} */
