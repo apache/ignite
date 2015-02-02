@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.spi.discovery.*;
@@ -104,26 +104,24 @@ public class GridPartitionedBackupLoadSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBackupLoad() throws Exception {
-        assert grid(0).cache(null).putx(1, 1);
+        grid(0).jcache(null).put(1, 1);
 
         assert store.get(1) == 1;
 
         for (int i = 0; i < GRID_CNT; i++) {
-            GridCache<Integer, Integer> cache = cache(i);
+            IgniteCache<Integer, Integer> cache = jcache(i);
 
-            CacheEntry<Integer, Integer> entry = cache.entry(1);
+            if (grid(i).affinity(null).isBackup(grid(i).localNode(), 1)) {
+                assert cache.localPeek(1) == 1;
 
-            if (entry.backup()) {
-                assert entry.peek() == 1;
+                assert cache.clear(Collections.singleton(1));
 
-                assert entry.clear();
-
-                assert entry.peek() == null;
+                assert cache.localPeek(1) == null;
 
                 // Store is called in putx method, so we reset counter here.
                 cnt.set(0);
 
-                assert entry.get() == 1;
+                assert cache.get(1) == 1;
 
                 assert cnt.get() == 0;
             }

@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
-import org.apache.ignite.lang.*;
-
-import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheMode.*;
 
@@ -39,74 +34,5 @@ public class GridCachePartitionedEntryLockSelfTest extends GridCacheAbstractSelf
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    @SuppressWarnings("BusyWait")
-    public void testLockAsyncWithTimeout() throws Exception {
-        cache().put("key", 1);
-
-        for (int i = 0; i < gridCount(); i++) {
-            final CacheEntry<String, Integer> e = cache(i).entry("key");
-
-            if (e.backup()) {
-                assert !e.isLocked();
-
-                e.lockAsync(2000).get();
-
-                assert e.isLocked();
-
-                IgniteCompute comp = compute(grid(i).forLocal()).withAsync();
-
-                comp.call(new Callable<Boolean>() {
-                    @Override public Boolean call() throws Exception {
-                        IgniteInternalFuture<Boolean> f = e.lockAsync(1000);
-
-                        try {
-                            f.get(100);
-
-                            fail();
-                        }
-                        catch (IgniteFutureTimeoutException ex) {
-                            info("Caught expected exception: " + ex);
-                        }
-
-                        try {
-                            assert f.get();
-                        }
-                        finally {
-                            e.unlock();
-                        }
-
-                        return true;
-                    }
-                });
-
-                IgniteInternalFuture<Boolean> f = comp.future();
-
-                // Let another thread start.
-                Thread.sleep(300);
-
-                assert e.isLocked();
-                assert e.isLockedByThread();
-
-                cache().unlock("key");
-
-                assert f.get();
-
-                for (int j = 0; j < 100; j++)
-                    if (cache().isLocked("key") || cache().isLockedByThread("key"))
-                        Thread.sleep(10);
-                    else
-                        break;
-
-                assert !cache().isLocked("key");
-                assert !cache().isLockedByThread("key");
-
-                break;
-            }
-        }
     }
 }

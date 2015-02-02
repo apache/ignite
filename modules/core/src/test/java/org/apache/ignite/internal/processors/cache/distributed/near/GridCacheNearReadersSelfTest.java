@@ -432,9 +432,9 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         assertEquals(grid(1).localNode(), F.first(aff.nodes(aff.partition(key2), grid(1).nodes())));
 
-        GridCache<Integer, String> cache = cache(0);
+        IgniteCache<Integer, String> cache = jcache(0);
 
-        assertNull(cache.put(key1, val1));
+        assertNull(cache.getAndPut(key1, val1));
 
         assertEquals(val1, dht(0).peek(key1));
         assertEquals(val1, dht(1).peek(key1));
@@ -444,7 +444,7 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(near(1).peekNearOnly(key1));
         assertNull(near(2).peekNearOnly(key1));
 
-        assertTrue(cache.putx(key2, val2));
+        cache.put(key2, val2);
 
         assertNull(dht(0).peek(key2));
         assertEquals(val2, dht(1).peek(key2));
@@ -487,12 +487,10 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
         assertNull(near(2).peekNearOnly(key1));
 
         for (int i = 0; i < grids; i++) {
-            assert !cache(i).isLocked(key1);
-            assert !cache(i).isLocked(key2);
+            assert !jcache(i).isLocalLocked(key1, false);
+            assert !jcache(i).isLocalLocked(key2, false);
 
-            assert cache(i).size() == 0;
-            assert cache(i).isEmpty();
-            assert cache(i).size() == 0;
+            assert jcache(i).localSize() == 0;
         }
     }
 
