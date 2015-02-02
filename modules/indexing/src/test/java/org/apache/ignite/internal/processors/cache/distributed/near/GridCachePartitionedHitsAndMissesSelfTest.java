@@ -170,8 +170,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
         };
 
         /** {@inheritDoc} */
-        @Override public void update(IgniteCache<Integer, Long> cache,
-            Collection<Map.Entry<Integer, Long>> entries) throws IgniteCheckedException {
+        @Override public void update(IgniteCache<Integer, Long> cache, Collection<Map.Entry<Integer, Long>> entries) {
             for (Map.Entry<Integer, Long> entry : entries)
                 cache.invoke(entry.getKey(), INC);
         }

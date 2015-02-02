@@ -30,21 +30,43 @@ import java.util.concurrent.*;
  */
 public interface IgniteFuture<V> extends Future<V> {
     /**
-     * @throws IgniteException
-     * @throws IgniteInterruptedException
+     * Synchronously waits for completion of the computation and
+     * returns computation result.
+     *
+     * @return Computation result.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws IgniteException If computation failed.
      */
-    @Override public V get() throws IgniteException, IgniteInterruptedException;
-
-    public V get(long timeout);
+    @Override public V get() throws IgniteException;
 
     /**
-     * @param timeout
-     * @param unit
-     * @return
-     * @throws IgniteException
-     * @throws IgniteInterruptedException
+     * Synchronously waits for completion of the computation for
+     * up to the timeout specified and returns computation result.
+     * This method is equivalent to calling {@link #get(long, TimeUnit) get(long, TimeUnit.MILLISECONDS)}.
+     *
+     * @param timeout The maximum time to wait in milliseconds.
+     * @return Computation result.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteException If computation failed.
      */
-    @Override public V get(long timeout, TimeUnit unit) throws IgniteException, IgniteInterruptedException, IgniteFutureTimeoutException;
+    public V get(long timeout)throws IgniteException;
+
+    /**
+     * Synchronously waits for completion of the computation for
+     * up to the timeout specified and returns computation result.
+     *
+     * @param timeout The maximum time to wait.
+     * @param unit The time unit of the {@code timeout} argument.
+     * @return Computation result.
+     * @throws IgniteInterruptedException Subclass of {@link IgniteException} thrown if the wait was interrupted.
+     * @throws IgniteFutureCancelledException Subclass of {@link IgniteException} throws if computation was cancelled.
+     * @throws org.apache.ignite.lang.IgniteFutureTimeoutException Subclass of {@link IgniteException} thrown if the wait was timed out.
+     * @throws IgniteException If computation failed.
+     */
+    @Override public V get(long timeout, TimeUnit unit) throws IgniteException;
 
     /**
      * Cancels this future.
@@ -77,7 +99,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @param syncNotify Flag to turn on or off synchronous listener notification.
      */
@@ -91,7 +113,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * immediately notified within the same thread.
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_SYNC_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_SYNC_NOTIFICATION} system property to {@code true}.
      *
      * @return Synchronous listener notification flag.
      */
@@ -106,7 +128,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @param concurNotify Flag to turn on or off concurrent listener notification.
      */
@@ -121,7 +143,7 @@ public interface IgniteFuture<V> extends Future<V> {
      * started the future, or in a different thread).
      * <p>
      * Default value is {@code false}. To change the default, set
-     * {@link IgniteSystemProperties#GG_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
+     * {@link IgniteSystemProperties#IGNITE_FUT_CONCURRENT_NOTIFICATION} system property to {@code true}.
      *
      * @return Concurrent listener notification flag
      */

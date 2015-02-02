@@ -94,7 +94,7 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
         }
 
         /** {@inheritDoc} */
-        @Override public void onLifecycleEvent(LifecycleEventType evt) throws IgniteCheckedException {
+        @Override public void onLifecycleEvent(LifecycleEventType evt) {
             // No-op.
         }
     }

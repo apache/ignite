@@ -73,7 +73,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
 
             assert false;
         }
-        catch (ClusterGroupEmptyCheckedException e) {
+        catch (ClusterGroupEmptyException e) {
             info("Caught expected exception: " + e);
         }
     }

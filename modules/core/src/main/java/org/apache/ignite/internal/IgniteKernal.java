@@ -519,10 +519,17 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
      */
     @SuppressWarnings({"CatchGenericClass"})
     private void notifyLifecycleBeans(LifecycleEventType evt) throws IgniteCheckedException {
-        if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null)
+        if (!cfg.isDaemon() && cfg.getLifecycleBeans() != null) {
             for (LifecycleBean bean : cfg.getLifecycleBeans())
-                if (bean != null)
-                    bean.onLifecycleEvent(evt);
+                if (bean != null) {
+                    try {
+                        bean.onLifecycleEvent(evt);
+                    }
+                    catch (Exception e) {
+                        throw new IgniteCheckedException(e);
+                    }
+                }
+        }
     }
 
     /**
@@ -986,7 +993,7 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
                             nodes = nodes0.size();
                             cpus = metrics.getTotalCpus();
                         }
-                        catch (IgniteCheckedException ignore) {
+                        catch (IgniteException ignore) {
                             // No-op.
                         }
 

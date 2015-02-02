@@ -1066,7 +1066,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
      * @return Cache exception.
      */
     private CacheException cacheException(IgniteCheckedException e) {
-        return U.convertCacheException(e);
+        return U.convertToCacheException(e);
     }
 
     /**

@@ -655,7 +655,7 @@ public abstract class IgniteUtils {
      * @param e Ignite checked exception.
      * @return Ignite runtime exception.
      */
-    @Nullable public static CacheException convertCacheException(IgniteCheckedException e) {
+    @Nullable public static CacheException convertToCacheException(IgniteCheckedException e) {
         if (e instanceof CachePartialUpdateCheckedException)
             return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
 

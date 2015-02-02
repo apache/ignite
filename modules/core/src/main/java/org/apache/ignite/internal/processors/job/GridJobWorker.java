@@ -815,7 +815,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                         log.debug("Successfully executed GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
                             "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']');
                 }
-                catch (IgniteException e) {
+                catch (Exception e) {
                     U.error(log, "Failed to execute GridComputeJobMasterLeaveAware.onMasterNodeLeft() callback " +
                         "[nodeId=" + taskNode.id() + ", jobId=" + ses.getJobId() + ", job=" + job + ']', e);
                 }
