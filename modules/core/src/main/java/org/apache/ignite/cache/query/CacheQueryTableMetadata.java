@@ -54,7 +54,7 @@ public class CacheQueryTableMetadata {
      */
     public CacheQueryTableMetadata(CacheQueryTableMetadata src) {
         schema = src.getSchema();
-        tbl = src.getTableName();
+        tbl = src.getTable();
 
         keyCols = new ArrayList<>(src.getKeyColumns());
         valCols = new ArrayList<>(src.getValueColumns());
@@ -83,7 +83,7 @@ public class CacheQueryTableMetadata {
      *
      * @return Table name in database.
      */
-    public String getTableName() {
+    public String getTable() {
         return tbl;
     }
 
@@ -92,7 +92,7 @@ public class CacheQueryTableMetadata {
      *
      * @param tbl Table name in database.
      */
-    public void setTableName(String tbl) {
+    public void setTable(String tbl) {
         this.tbl = tbl;
     }
 
