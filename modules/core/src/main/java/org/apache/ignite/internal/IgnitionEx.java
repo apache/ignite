@@ -2004,7 +2004,7 @@ public class IgnitionEx {
          */
         private IgniteLogger initLogger(@Nullable IgniteLogger cfgLog, UUID nodeId) throws IgniteCheckedException {
             try {
-                Exception log4jInitException = null;
+                Exception log4jInitErr = null;
 
                 if (cfgLog == null) {
                     Class<?> log4jCls;
@@ -2052,11 +2052,11 @@ public class IgnitionEx {
                                 cfgLog = (IgniteLogger)log4jCls.newInstance();
                         }
                         catch (Exception e) {
-                            log4jInitException = e;
+                            log4jInitErr = e;
                         }
                     }
 
-                    if (log4jCls == null || log4jInitException != null)
+                    if (log4jCls == null || log4jInitErr != null)
                         cfgLog = new IgniteJavaLogger();
                 }
 
@@ -2064,9 +2064,9 @@ public class IgnitionEx {
                 if (cfgLog instanceof IgniteLoggerNodeIdAware)
                     ((IgniteLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
-                if (log4jInitException != null)
+                if (log4jInitErr != null)
                     U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): "
-                            + log4jInitException.getCause());
+                        + log4jInitErr.getCause());
 
                 return cfgLog;
             }
