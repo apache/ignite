@@ -30,7 +30,7 @@ public class GridTestLifecycleBean implements LifecycleBean {
     private Ignite g;
 
     @Override public void onLifecycleEvent(LifecycleEventType type) throws IgniteCheckedException {
-        if (type == LifecycleEventType.AFTER_IGNITE_START) {
+        if (type == LifecycleEventType.AFTER_GRID_START) {
             GridCache<GridTestKey, Long> cache = g.cache("partitioned");
 
             assert cache != null;

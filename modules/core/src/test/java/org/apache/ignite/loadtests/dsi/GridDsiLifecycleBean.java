@@ -45,14 +45,14 @@ public class GridDsiLifecycleBean implements LifecycleBean {
             case BEFORE_GRID_START:
                 break;
 
-            case AFTER_IGNITE_START:
+            case AFTER_GRID_START:
                 ignite.cache("PARTITIONED_CACHE").dataStructures().atomicSequence("ID", 0, true);
                 break;
 
             case BEFORE_GRID_STOP:
                 break;
 
-            case AFTER_IGNITE_STOP:
+            case AFTER_GRID_STOP:
                 break;
         }
     }

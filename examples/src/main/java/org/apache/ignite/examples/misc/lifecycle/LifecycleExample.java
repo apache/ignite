@@ -76,9 +76,9 @@ public final class LifecycleExample {
             System.out.println(">>> Grid lifecycle event occurred: " + evt);
             System.out.println(">>> Grid name: " + ignite.name());
 
-            if (evt == AFTER_IGNITE_START)
+            if (evt == AFTER_GRID_START)
                 isStarted = true;
-            else if (evt == AFTER_IGNITE_STOP)
+            else if (evt == AFTER_GRID_STOP)
                 isStarted = false;
         }
 

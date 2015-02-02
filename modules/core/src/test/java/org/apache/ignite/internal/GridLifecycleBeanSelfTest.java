@@ -58,9 +58,9 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
             assertEquals(IgniteState.STARTED, G.state(getTestGridName()));
 
             assertEquals(1, bean.count(BEFORE_GRID_START));
-            assertEquals(1, bean.count(AFTER_IGNITE_START));
+            assertEquals(1, bean.count(AFTER_GRID_START));
             assertEquals(0, bean.count(BEFORE_GRID_STOP));
-            assertEquals(0, bean.count(AFTER_IGNITE_STOP));
+            assertEquals(0, bean.count(AFTER_GRID_STOP));
         }
         finally {
             stopAllGrids();
@@ -70,9 +70,9 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
-        assertEquals(1, bean.count(AFTER_IGNITE_START));
+        assertEquals(1, bean.count(AFTER_GRID_START));
         assertEquals(1, bean.count(BEFORE_GRID_STOP));
-        assertEquals(1, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(1, bean.count(AFTER_GRID_STOP));
     }
 
     /**
@@ -125,9 +125,9 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(0, bean.count(BEFORE_GRID_START));
-        assertEquals(0, bean.count(AFTER_IGNITE_START));
+        assertEquals(0, bean.count(AFTER_GRID_START));
         assertEquals(0, bean.count(BEFORE_GRID_STOP));
-        assertEquals(1, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(1, bean.count(AFTER_GRID_STOP));
     }
 
     /**
@@ -135,7 +135,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void checkAfterStart(boolean gridErr) throws Exception {
-        bean = new LifeCycleExceptionBean(AFTER_IGNITE_START, gridErr);
+        bean = new LifeCycleExceptionBean(AFTER_GRID_START, gridErr);
 
         try {
             startGrid();
@@ -152,9 +152,9 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
-        assertEquals(0, bean.count(AFTER_IGNITE_START));
+        assertEquals(0, bean.count(AFTER_GRID_START));
         assertEquals(1, bean.count(BEFORE_GRID_STOP));
-        assertEquals(1, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(1, bean.count(AFTER_GRID_STOP));
     }
 
     /**
@@ -164,9 +164,9 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         checkOnStop(BEFORE_GRID_STOP, true);
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
-        assertEquals(1, bean.count(AFTER_IGNITE_START));
+        assertEquals(1, bean.count(AFTER_GRID_START));
         assertEquals(0, bean.count(BEFORE_GRID_STOP));
-        assertEquals(1, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(1, bean.count(AFTER_GRID_STOP));
     }
 
     /**
@@ -176,33 +176,33 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         checkOnStop(BEFORE_GRID_STOP, false);
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
-        assertEquals(1, bean.count(AFTER_IGNITE_START));
+        assertEquals(1, bean.count(AFTER_GRID_START));
         assertEquals(0, bean.count(BEFORE_GRID_STOP));
-        assertEquals(1, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(1, bean.count(AFTER_GRID_STOP));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGridErrorAfterStop() throws Exception {
-        checkOnStop(AFTER_IGNITE_STOP, true);
+        checkOnStop(AFTER_GRID_STOP, true);
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
-        assertEquals(1, bean.count(AFTER_IGNITE_START));
+        assertEquals(1, bean.count(AFTER_GRID_START));
         assertEquals(1, bean.count(BEFORE_GRID_STOP));
-        assertEquals(0, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(0, bean.count(AFTER_GRID_STOP));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOtherErrorAfterStop() throws Exception {
-        checkOnStop(AFTER_IGNITE_STOP, false);
+        checkOnStop(AFTER_GRID_STOP, false);
 
         assertEquals(1, bean.count(BEFORE_GRID_START));
-        assertEquals(1, bean.count(AFTER_IGNITE_START));
+        assertEquals(1, bean.count(AFTER_GRID_START));
         assertEquals(1, bean.count(BEFORE_GRID_STOP));
-        assertEquals(0, bean.count(AFTER_IGNITE_STOP));
+        assertEquals(0, bean.count(AFTER_GRID_STOP));
     }
 
     /**
