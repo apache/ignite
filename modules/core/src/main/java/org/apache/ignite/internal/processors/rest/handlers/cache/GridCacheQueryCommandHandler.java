@@ -144,7 +144,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @return Execution future.
      */
     private IgniteInternalFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
-        IgniteCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().withAsync();
+        IgniteCompute comp = ctx.grid().compute(ctx.grid().forCacheNodes(cacheName)).withNoFailover().withAsync();
 
         try {
             comp.broadcast(c);

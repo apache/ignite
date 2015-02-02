@@ -192,7 +192,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
     /** {@inheritDoc} */
     @Override public ClusterGroup gridProjection() {
-        return ctx.grid().forCache(name());
+        return ctx.grid().forCacheNodes(name());
     }
 
     /**
@@ -1293,7 +1293,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     @Override public void globalClearAll(long timeout) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
-            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).forRemotes().nodes();
 
             IgniteInternalFuture<Object> fut = null;
 
@@ -3717,7 +3717,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
 
         if (replaceExisting) {
             if (ctx.store().isLocalStore()) {
-                Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
+                Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
                 if (nodes.isEmpty())
                     return new GridFinishedFuture<>(ctx.kernalContext());
@@ -3738,7 +3738,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             }
         }
         else {
-            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).nodes();
 
             if (nodes.isEmpty())
                 return new GridFinishedFuture<>(ctx.kernalContext());
@@ -3819,7 +3819,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     void globalLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws IgniteCheckedException {
-        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
+        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCacheNodes(ctx.name());
 
         IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
 
@@ -3833,7 +3833,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
-        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
+        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCacheNodes(ctx.name());
 
         IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
 
@@ -4133,7 +4133,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     private int globalSize(boolean primaryOnly) throws IgniteCheckedException {
         try {
             // Send job to remote nodes only.
-            Collection<ClusterNode> nodes = ctx.grid().forCache(name()).forRemotes().nodes();
+            Collection<ClusterNode> nodes = ctx.grid().forCacheNodes(name()).forRemotes().nodes();
 
             IgniteInternalFuture<Collection<Integer>> fut = null;
 

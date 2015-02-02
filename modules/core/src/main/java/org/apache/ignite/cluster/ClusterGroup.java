@@ -43,7 +43,7 @@ import java.util.*;
  * GridProjection randomNode = remoteNodes.forRandom();
  *
  * // Projection over all nodes with cache named "myCache" enabled.
- * GridProjection cacheNodes = g.forCache("myCache");
+ * GridProjection cacheNodes = g.forCacheNodes("myCache");
  *
  * // Projection over all nodes that have user attribute "group" set to value "worker".
  * GridProjection workerNodes = g.forAttribute("group", "worker");
@@ -145,7 +145,7 @@ public interface ClusterGroup {
      * @param cacheNames Optional additional cache names to include into projection.
      * @return Projection over nodes that have specified cache running.
      */
-    public ClusterGroup forCache(String cacheName, @Nullable String... cacheNames);
+    public ClusterGroup forCacheNodes(String cacheName, @Nullable String... cacheNames);
 
     /**
      * Creates projection for all nodes that have streamer with specified name running.

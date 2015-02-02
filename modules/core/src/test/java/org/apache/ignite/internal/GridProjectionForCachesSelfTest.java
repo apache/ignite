@@ -34,7 +34,7 @@ import java.util.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCache(String, String...)} method.
+ * Tests for {@link org.apache.ignite.cluster.ClusterGroup#forCacheNodes(String, String...)} method.
  */
 public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -109,7 +109,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForDefaultCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache(null);
+        ClusterGroup prj = ignite.cluster().forCacheNodes(null);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -124,7 +124,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForNamedCache() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache(CACHE_NAME);
+        ClusterGroup prj = ignite.cluster().forCacheNodes(CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 3;
@@ -139,7 +139,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForBothCaches() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache(null, CACHE_NAME);
+        ClusterGroup prj = ignite.cluster().forCacheNodes(null, CACHE_NAME);
 
         assert prj != null;
         assert prj.nodes().size() == 2;
@@ -154,7 +154,7 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testProjectionForWrongCacheName() throws Exception {
-        ClusterGroup prj = ignite.cluster().forCache("wrong");
+        ClusterGroup prj = ignite.cluster().forCacheNodes("wrong");
 
         assert prj != null;
         assert prj.nodes().isEmpty();

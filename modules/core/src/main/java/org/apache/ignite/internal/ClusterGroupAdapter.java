@@ -524,7 +524,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterGroup forCache(@Nullable String cacheName, @Nullable String... cacheNames) {
+    @Override public final ClusterGroup forCacheNodes(@Nullable String cacheName, @Nullable String... cacheNames) {
         return forPredicate(new CachesFilter(cacheName, cacheNames));
     }
 

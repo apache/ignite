@@ -167,8 +167,8 @@ public class IgniteClusterAsyncImpl extends IgniteAsyncSupportAdapter<IgniteClus
     }
 
     /** {@inheritDoc} */
-    @Override public ClusterGroup forCache(String cacheName, @Nullable String... cacheNames) {
-        return grid.forCache(cacheName, cacheNames);
+    @Override public ClusterGroup forCacheNodes(String cacheName, @Nullable String... cacheNames) {
+        return grid.forCacheNodes(cacheName, cacheNames);
     }
 
     /** {@inheritDoc} */

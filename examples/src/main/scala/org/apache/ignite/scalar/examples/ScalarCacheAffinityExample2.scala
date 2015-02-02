@@ -94,7 +94,7 @@ object ScalarCacheAffinityExample2 {
      * @param keys Keys to populate.
      */
     private def populateCache(g: Ignite, keys: Seq[String]) {
-        var prj = g.cluster().forCache(NAME)
+        var prj = g.cluster().forCacheNodes(NAME)
 
         // Give preference to local node.
         if (prj.nodes().contains(g.cluster().localNode))
