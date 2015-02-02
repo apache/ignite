@@ -78,9 +78,13 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
                 assert false : "Exception should be thrown";
             }
             catch (IgniteException e) {
-                assert e.getCause() instanceof GridTestSpiException : "Wrong cause exception type. " + e;
+                assertTrue(e.getCause() instanceof  IgniteCheckedException);
 
-                assert e.getCause().getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
+                Throwable err = e.getCause().getCause();
+
+                assert err instanceof GridTestSpiException : "Wrong cause exception type. " + e;
+
+                assert err.getMessage().startsWith(TEST_MSG) : "Wrong exception message." + e.getMessage();
             }
         }
         finally {

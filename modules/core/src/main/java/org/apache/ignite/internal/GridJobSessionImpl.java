@@ -291,8 +291,8 @@ public class GridJobSessionImpl implements GridTaskSessionInternal {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> mapFuture() {
-        return new GridFinishedFuture<>(ctx);
+    @Override public IgniteFuture<?> mapFuture() {
+        return new IgniteFinishedFutureImpl<>(ctx, null);
     }
 
     /** {@inheritDoc} */

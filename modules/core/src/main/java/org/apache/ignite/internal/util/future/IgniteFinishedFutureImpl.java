@@ -30,4 +30,11 @@ public class IgniteFinishedFutureImpl<V> extends IgniteFutureImpl<V> {
     public IgniteFinishedFutureImpl(GridKernalContext ctx, Throwable err) {
         super(new GridFinishedFuture<V>(ctx, err));
     }
+
+    /**
+     * @param ctx Context.
+     */
+    public IgniteFinishedFutureImpl(GridKernalContext ctx) {
+        super(new GridFinishedFuture<>(ctx, (V)null));
+    }
 }

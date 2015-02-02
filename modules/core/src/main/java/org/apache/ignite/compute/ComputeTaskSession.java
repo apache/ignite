@@ -440,5 +440,5 @@ public interface ComputeTaskSession {
      *
      * @return Future that will be completed when task "<tt>map</tt>" step has completed.
      */
-    public IgniteInternalFuture<?> mapFuture();
+    public IgniteFuture<?> mapFuture();
 }

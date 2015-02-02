@@ -124,7 +124,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Task execution future.
      */
-    public IgniteInternalFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
+    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
         @Nullable Collection<ClusterNode> nodes) {
         return runAsync(mode, jobs, nodes, false);
     }
@@ -136,18 +136,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param sys If {@code true}, then system pool will be used.
      * @return Task execution future.
      */
-    public IgniteInternalFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
-        @Nullable Collection<ClusterNode> nodes, boolean sys) {
+    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode,
+        Collection<? extends Runnable> jobs,
+        @Nullable Collection<ClusterNode> nodes,
+        boolean sys)
+    {
         assert mode != null;
+        assert !F.isEmpty(jobs) : jobs;
 
         enterBusy();
 
         try {
-            if (F.isEmpty(jobs))
-                return new GridFinishedFuture(ctx);
-
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T1.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -164,7 +165,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Task execution future.
      */
-    public IgniteInternalFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
+    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode, Runnable job,
         @Nullable Collection<ClusterNode> nodes) {
         return runAsync(mode, job, nodes, false);
     }
@@ -176,18 +177,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param sys If {@code true}, then system pool will be used.
      * @return Task execution future.
      */
-    public IgniteInternalFuture<?> runAsync(GridClosureCallMode mode, @Nullable Runnable job,
-        @Nullable Collection<ClusterNode> nodes, boolean sys) {
+    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode,
+        Runnable job,
+        @Nullable Collection<ClusterNode> nodes,
+        boolean sys)
+    {
         assert mode != null;
+        assert job != null;
 
         enterBusy();
 
         try {
-            if (job == null)
-                return new GridFinishedFuture(ctx);
-
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T2.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -314,19 +316,20 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param <R2> Type.
      * @return Reduced result.
      */
-    public <R1, R2> IgniteInternalFuture<R2> forkjoinAsync(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R1>> jobs,
-        @Nullable IgniteReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
+    public <R1, R2> ComputeTaskInternalFuture<R2> forkjoinAsync(GridClosureCallMode mode,
+        Collection<? extends Callable<R1>> jobs,
+        IgniteReducer<R1, R2> rdc,
+        @Nullable Collection<ClusterNode> nodes)
+    {
         assert mode != null;
+        assert rdc != null;
+        assert !F.isEmpty(jobs);
 
         enterBusy();
 
         try {
-            if (F.isEmpty(jobs) || rdc == null)
-                return new GridFinishedFuture<>(ctx);
-
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T3.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -344,7 +347,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
-    public <R> IgniteInternalFuture<Collection<R>> callAsync(
+    public <R> ComputeTaskInternalFuture<Collection<R>> callAsync(
         GridClosureCallMode mode,
         @Nullable Collection<? extends Callable<R>> jobs,
         @Nullable Collection<ClusterNode> nodes) {
@@ -359,19 +362,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
-    public <R> IgniteInternalFuture<Collection<R>> callAsync(GridClosureCallMode mode,
-        @Nullable Collection<? extends Callable<R>> jobs, @Nullable Collection<ClusterNode> nodes,
-        boolean sys) {
+    public <R> ComputeTaskInternalFuture<Collection<R>> callAsync(GridClosureCallMode mode,
+        Collection<? extends Callable<R>> jobs,
+        @Nullable Collection<ClusterNode> nodes,
+        boolean sys)
+    {
         assert mode != null;
+        assert !F.isEmpty(jobs);
 
         enterBusy();
 
         try {
-            if (F.isEmpty(jobs))
-                return new GridFinishedFuture<>(ctx);
-
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T6.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -390,7 +393,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
-    public <R> IgniteInternalFuture<R> callAsync(GridClosureCallMode mode,
+    public <R> ComputeTaskInternalFuture<R> callAsync(GridClosureCallMode mode,
         @Nullable Callable<R> job, @Nullable Collection<ClusterNode> nodes) {
         return callAsync(mode, job, nodes, false);
     }
@@ -402,13 +405,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Job future.
      */
-    public <R> IgniteInternalFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job,
+    public <R> ComputeTaskInternalFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, U.emptyTopologyException());
 
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
@@ -418,7 +421,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return ctx.task().execute(new T5<>(cacheName, affKey0, job), null, false);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
         }
         finally {
             leaveBusy();
@@ -432,13 +435,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Job future.
      */
-    public IgniteInternalFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job,
+    public ComputeTaskInternalFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
 
             // In case cache key is passed instead of affinity key.
             final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
@@ -448,7 +451,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return ctx.task().execute(new T4(cacheName, affKey0, job), null, false);
         }
         catch (IgniteCheckedException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
         }
         finally {
             leaveBusy();
@@ -526,18 +529,19 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param <R> Type.
      * @return Grid future for collection of closure results.
      */
-    public <R> IgniteInternalFuture<R> callAsync(GridClosureCallMode mode,
-        @Nullable Callable<R> job, @Nullable Collection<ClusterNode> nodes, boolean sys) {
+    public <R> ComputeTaskInternalFuture<R> callAsync(GridClosureCallMode mode,
+        Callable<R> job,
+        @Nullable Collection<ClusterNode> nodes,
+        boolean sys)
+    {
         assert mode != null;
+        assert job != null;
 
         enterBusy();
 
         try {
-            if (job == null)
-                return new GridFinishedFuture<>(ctx);
-
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T7.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -554,13 +558,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R> IgniteInternalFuture<R> callAsync(IgniteClosure<T, R> job, @Nullable T arg,
+    public <T, R> ComputeTaskInternalFuture<R> callAsync(IgniteClosure<T, R> job, @Nullable T arg,
         @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T8.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -624,13 +628,15 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R> IgniteInternalFuture<Collection<R>> callAsync(IgniteClosure<T, R> job, @Nullable Collection<? extends T> args,
-        @Nullable Collection<ClusterNode> nodes) {
+    public <T, R> ComputeTaskInternalFuture<Collection<R>> callAsync(IgniteClosure<T, R> job,
+        @Nullable Collection<? extends T> args,
+        @Nullable Collection<ClusterNode> nodes)
+    {
         enterBusy();
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T9.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
@@ -648,13 +654,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Grid future for execution result.
      */
-    public <T, R1, R2> IgniteInternalFuture<R2> callAsync(IgniteClosure<T, R1> job,
+    public <T, R1, R2> ComputeTaskInternalFuture<R2> callAsync(IgniteClosure<T, R1> job,
         Collection<? extends T> args, IgniteReducer<R1, R2> rdc, @Nullable Collection<ClusterNode> nodes) {
         enterBusy();
 
         try {
             if (F.isEmpty(nodes))
-                return new GridFinishedFuture<>(ctx, U.emptyTopologyException());
+                return ComputeTaskInternalFuture.finishedFuture(ctx, T10.class, U.emptyTopologyException());
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 

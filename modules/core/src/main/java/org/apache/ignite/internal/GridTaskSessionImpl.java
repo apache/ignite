@@ -97,7 +97,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
     private final UUID subjId;
 
     /** */
-    private final GridFutureAdapter mapFut;
+    private final IgniteFutureImpl mapFut;
 
     /**
      * @param taskNodeId Task node ID.
@@ -156,7 +156,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.fullSup = fullSup;
         this.subjId = subjId;
 
-        mapFut = new GridFutureAdapter(ctx);
+        mapFut = new IgniteFutureImpl(new GridFutureAdapter(ctx));
     }
 
     /** {@inheritDoc} */
@@ -832,18 +832,18 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      * Task map callback.
      */
     public void onMapped() {
-        mapFut.onDone();
+        ((GridFutureAdapter)mapFut.internalFuture()).onDone();
     }
 
     /**
      * Finish task callback.
      */
     public void onDone() {
-        mapFut.onDone();
+        ((GridFutureAdapter)mapFut.internalFuture()).onDone();
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> mapFuture() {
+    @Override public IgniteFuture<?> mapFuture() {
         return mapFut;
     }
 
