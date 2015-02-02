@@ -28,19 +28,28 @@ import static java.sql.Types.*;
  * Oracle specific metadata dialect.
  */
 public class OracleMetadataDialect extends DatabaseMetadataDialect {
-    /** SQL to get indexes metadata. */
-    private static final String SQL_INDEXES = "select a.index_owner, a.table_name, a.index_name, a.column_name," +
-        " b.uniqueness" +
-        " FROM all_ind_columns a" +
-        " LEFT JOIN all_indexes b on" +
-        "  (a.table_name = b.table_name AND a.table_owner = b.table_owner AND a.index_name  = b.index_name)";
-
     /** SQL to get columns metadata. */
     private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable, a.data_type" +
         " FROM all_tab_columns a" +
         " %s" +
         " WHERE a.owner = '%s'" +
         " ORDER BY a.owner, a.table_name, a.column_id";
+
+    private static final int SQL_COLS_OWNER = 1;
+
+    private static final int SQL_COLS_TAB_NAME = 2;
+
+    private static final int SQL_COLS_COL_NAME = 3;
+
+    private static final int SQL_COLS_NULLABLE = 4;
+
+    private static final int SQL_COLS_DATA_TYPE = 5;
+
+    /** SQL to get indexes metadata. */
+    private static final String SQL_INDEXES = "select index_name, column_name, descend" +
+        " FROM all_ind_columns" +
+        " WHERE index_owner = ? and table_name = ?" +
+        "  ORDER BY index_name, column_position";
 
     /**
      * @param type Column type from Oracle database.
@@ -95,9 +104,35 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         return "Y".equals(nullable);
     }
 
+    /**
+     * @param descend Index column sort direction from Oracle database.
+     * @return {@code true} if column sorted in descent direction.
+     */
+    private static Boolean decodeDescend(String descend) {
+        return descend != null ? "DESC".equals(descend) : null;
+    }
+
+    private static Map<String, Map<String, Boolean>> indexes(PreparedStatement stmt, String owner, String tbl)
+        throws SQLException {
+        Map<String, Map<String, Boolean>> idxs = new LinkedHashMap<>();
+
+        stmt.setString(1, owner);
+        stmt.setString(2, tbl);
+
+        try (ResultSet idxsRs = stmt.executeQuery()) {
+            while (idxsRs.next()) {
+                String idxName = idxsRs.getString("INDEX_NAME");
+            }
+        }
+
+        return idxs;
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
         Collection<DbTable> tbls = new ArrayList<>();
+
+        PreparedStatement stmtIdxs = conn.prepareStatement(SQL_INDEXES);
 
         try (Statement stmt = conn.createStatement()) {
             Collection<DbColumn> cols = new ArrayList<>();
