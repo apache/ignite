@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.hadoop.taskexecutor.external.communication;
 
 import org.apache.ignite.*;
-import org.apache.ignite.marshaller.*;
 import org.apache.ignite.internal.processors.hadoop.message.*;
 import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.marshaller.*;
 
 /**
  * Serialization filter.

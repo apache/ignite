@@ -24,6 +24,7 @@ import org.apache.ignite.cluster.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.internal.processors.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.processors.portable.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -36,7 +37,6 @@ import org.apache.ignite.internal.product.*;
 import org.apache.ignite.spi.*;
 import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.authentication.noop.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.managers.*;
 import org.apache.ignite.internal.managers.checkpoint.*;
 import org.apache.ignite.internal.managers.collision.*;
@@ -468,8 +468,9 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
     @Override public Collection<String> getUserAttributesFormatted() {
         assert cfg != null;
 
-        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String, ?>, String>() {
-            @Override public String apply(Map.Entry<String, ?> e) {
+        return F.transform(cfg.getUserAttributes().entrySet(), new C1<Map.Entry<String,?>,String>() {
+            @Override
+            public String apply(Map.Entry<String,?> e) {
                 return e.getKey() + ", " + e.getValue().toString();
             }
         });

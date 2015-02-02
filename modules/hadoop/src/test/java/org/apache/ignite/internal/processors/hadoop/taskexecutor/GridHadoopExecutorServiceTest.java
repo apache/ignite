@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.taskexecutor;
 
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jdk8.backport.LongAdder;
+import org.apache.ignite.internal.*;
+import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.testframework.junits.common.*;
+import org.jdk8.backport.*;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /**
  *

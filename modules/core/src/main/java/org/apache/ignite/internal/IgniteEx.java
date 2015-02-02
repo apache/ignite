@@ -19,8 +19,8 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.cache.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.lang.*;
 import org.jetbrains.annotations.*;
 

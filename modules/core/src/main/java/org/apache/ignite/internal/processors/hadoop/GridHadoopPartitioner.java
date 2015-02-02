@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 /**
- * External test for sorting.
+ * Partitioner.
  */
-public class GridHadoopSortingExternalTest extends GridHadoopSortingTest {
-    /** {@inheritDoc} */
-    @Override public GridHadoopConfiguration hadoopConfiguration(String gridName) {
-        GridHadoopConfiguration cfg = super.hadoopConfiguration(gridName);
-
-        cfg.setExternalExecution(true);
-
-        return cfg;
-    }
+public interface GridHadoopPartitioner {
+    /**
+     * Gets partition which is actually a reducer index for the given key and value pair.
+     *
+     * @param key Key.
+     * @param val Value.
+     * @param parts Number of partitions.
+     * @return Partition.
+     */
+    public int partition(Object key, Object val, int parts);
 }

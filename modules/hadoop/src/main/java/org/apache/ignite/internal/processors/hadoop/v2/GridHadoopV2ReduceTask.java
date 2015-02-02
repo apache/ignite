@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.hadoop.v2;
 
-import org.apache.hadoop.mapred.JobContextImpl;
-import org.apache.hadoop.mapreduce.*;
+import org.apache.hadoop.mapred.*;
+import org.apache.hadoop.mapreduce.OutputFormat;
+import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.reduce.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 
 /**
  * Hadoop reduce task implementation for v2 API.

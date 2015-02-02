@@ -15,24 +15,38 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
+import org.jetbrains.annotations.*;
+
+import java.io.*;
 
 /**
- * Task output.
+ * Hadoop serialization. Not thread safe object, must be created for each thread or correctly synchronized.
  */
-public interface GridHadoopTaskOutput extends AutoCloseable {
+public interface GridHadoopSerialization extends AutoCloseable {
     /**
-     * Writes key and value to the output.
+     * Writes the given object to output.
      *
-     * @param key Key.
-     * @param val Value.
+     * @param out Output.
+     * @param obj Object to serialize.
+     * @throws IgniteCheckedException If failed.
      */
-    public void write(Object key, Object val) throws IgniteCheckedException;
+    public void write(DataOutput out, Object obj) throws IgniteCheckedException;
 
     /**
-     * Closes output.
+     * Reads object from the given input optionally reusing given instance.
+     *
+     * @param in Input.
+     * @param obj Object.
+     * @return New object or reused instance.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Object read(DataInput in, @Nullable Object obj) throws IgniteCheckedException;
+
+    /**
+     * Finalise the internal objects.
      *
      * @throws IgniteCheckedException If failed.
      */

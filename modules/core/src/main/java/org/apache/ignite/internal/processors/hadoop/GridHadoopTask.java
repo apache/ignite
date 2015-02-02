@@ -15,40 +15,58 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.*;
-import org.jetbrains.annotations.*;
 
 import java.io.*;
 
 /**
- * Hadoop serialization. Not thread safe object, must be created for each thread or correctly synchronized.
+ * Hadoop task.
  */
-public interface GridHadoopSerialization extends AutoCloseable {
-    /**
-     * Writes the given object to output.
-     *
-     * @param out Output.
-     * @param obj Object to serialize.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void write(DataOutput out, Object obj) throws IgniteCheckedException;
+public abstract class GridHadoopTask {
+    /** */
+    private GridHadoopTaskInfo taskInfo;
 
     /**
-     * Reads object from the given input optionally reusing given instance.
+     * Creates task.
      *
-     * @param in Input.
-     * @param obj Object.
-     * @return New object or reused instance.
-     * @throws IgniteCheckedException If failed.
+     * @param taskInfo Task info.
      */
-    public Object read(DataInput in, @Nullable Object obj) throws IgniteCheckedException;
+    protected GridHadoopTask(GridHadoopTaskInfo taskInfo) {
+        assert taskInfo != null;
+
+        this.taskInfo = taskInfo;
+    }
 
     /**
-     * Finalise the internal objects.
+     * For {@link Externalizable}.
+     */
+    @SuppressWarnings("ConstructorNotProtectedInAbstractClass")
+    public GridHadoopTask() {
+        // No-op.
+    }
+
+    /**
+     * Gets task info.
      *
+     * @return Task info.
+     */
+    public GridHadoopTaskInfo info() {
+        return taskInfo;
+    }
+
+    /**
+     * Runs task.
+     *
+     * @param taskCtx Context.
+     * @throws org.apache.ignite.IgniteInterruptedException If interrupted.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void close() throws IgniteCheckedException;
+    public abstract void run(GridHadoopTaskContext taskCtx) throws IgniteCheckedException;
+
+    /**
+     * Interrupts task execution.
+     */
+    public abstract void cancel();
 }

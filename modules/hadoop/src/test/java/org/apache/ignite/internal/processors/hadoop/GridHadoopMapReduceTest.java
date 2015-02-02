@@ -26,7 +26,6 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.*;
 import org.apache.ignite.fs.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.counter.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 import org.apache.ignite.internal.util.lang.*;

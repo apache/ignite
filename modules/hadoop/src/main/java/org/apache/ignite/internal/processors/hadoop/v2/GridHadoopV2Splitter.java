@@ -21,7 +21,6 @@ import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.util.*;
 import org.apache.ignite.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.*;
 import org.jetbrains.annotations.*;
 

@@ -21,9 +21,9 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.internal.*;
-import org.apache.ignite.resources.*;
-import org.apache.ignite.hadoop.*;
+import org.apache.ignite.internal.processors.hadoop.*;
 import org.apache.ignite.internal.util.typedef.*;
+import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;

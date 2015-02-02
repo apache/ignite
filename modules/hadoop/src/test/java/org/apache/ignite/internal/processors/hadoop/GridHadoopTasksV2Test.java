@@ -23,7 +23,6 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.input.*;
 import org.apache.hadoop.mapreduce.lib.output.*;
-import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.examples.*;
 import org.apache.ignite.internal.processors.hadoop.v2.*;
 

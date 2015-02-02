@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.hadoop;
+package org.apache.ignite.internal.processors.hadoop;
 
 import com.google.common.collect.*;
 import org.apache.hadoop.conf.*;
