@@ -51,10 +51,10 @@ public class CacheEventsExample {
             System.out.println();
             System.out.println(">>> Cache events example started.");
 
-            final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
             // This optional local callback is called for each event notification
             // that passed remote predicate listener.
@@ -75,7 +75,7 @@ public class CacheEventsExample {
 
                     int key = evt.key();
 
-                    return key >= 10 && cache.affinity().isPrimary(g.cluster().localNode(), key);
+                    return key >= 10 && g.affinity(CACHE_NAME).isPrimary(g.cluster().localNode(), key);
                 }
             };
 
@@ -86,7 +86,7 @@ public class CacheEventsExample {
 
             // Generate cache events.
             for (int i = 0; i < 20; i++)
-                cache.putx(i, Integer.toString(i));
+                cache.put(i, Integer.toString(i));
 
             // Wait for a while while callback is notified about remaining puts.
             Thread.sleep(2000);

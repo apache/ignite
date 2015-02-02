@@ -51,10 +51,10 @@ public class CacheStoreLoadDataExample {
             System.out.println();
             System.out.println(">>> Cache store load data example started.");
 
-            final GridCache<String, Integer> cache = g.cache(null);
+            final IgniteCache<String, Integer> cache = g.jcache(null);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
             long start = System.currentTimeMillis();
 

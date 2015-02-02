@@ -49,13 +49,10 @@ public class CacheApiExample {
             System.out.println(">>> Cache API example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.jcache(CACHE_NAME).clear();
 
             // Demonstrate atomic map operations.
             atomicMapOperations();
-
-            // Demonstrate various ways to iterate over locally cached values.
-            localIterators();
         }
     }
 
@@ -118,53 +115,5 @@ public class CacheApiExample {
         b1 = cache.replace(7, "7", "77");
         b2 = cache.replace(7, "7", "777");
         assert b1 & !b2;
-    }
-
-    /**
-     * Demonstrates various iteration methods over locally cached values.
-     */
-    private static void localIterators() {
-        System.out.println();
-        System.out.println(">>> Local iterator examples.");
-
-        GridCache<Integer, String> cache = Ignition.ignite().cache(CACHE_NAME);
-
-        // Iterate over whole cache.
-        for (CacheEntry<Integer, String> e : cache)
-            System.out.println("Basic cache iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-
-        // Iterate over cache projection for all keys below 5.
-        CacheProjection<Integer, String> keysBelow5 = cache.projection(
-            new IgnitePredicate<CacheEntry<Integer, String>>() {
-                @Override public boolean apply(CacheEntry<Integer, String> e) {
-                    return e.getKey() < 5;
-                }
-            }
-        );
-
-        for (CacheEntry<Integer, String> e : keysBelow5)
-            System.out.println("Cache projection iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-
-        // Iterate over each element using 'forEach' construct.
-        cache.forEach(new IgniteInClosure<CacheEntry<Integer, String>>() {
-            @Override public void apply(CacheEntry<Integer, String> e) {
-                System.out.println("forEach iteration [key=" + e.getKey() + ", val=" + e.getValue() + ']');
-            }
-        });
-
-        // Search cache for element with value "1" using 'forAll' construct.
-        cache.forAll(new IgnitePredicate<CacheEntry<Integer, String>>() {
-            @Override public boolean apply(CacheEntry<Integer, String> e) {
-                String v = e.peek();
-
-                if ("1".equals(v)) {
-                    System.out.println("Found cache value '1' using forEach iteration.");
-
-                    return false; // Stop iteration.
-                }
-
-                return true; // Continue iteration.
-            }
-        });
     }
 }

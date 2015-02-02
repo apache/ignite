@@ -53,13 +53,13 @@ public final class CacheAffinityExample {
             System.out.println();
             System.out.println(">>> Cache affinity example started.");
 
-            GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+            IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
             for (int i = 0; i < KEY_CNT; i++)
-                cache.putx(i, Integer.toString(i));
+                cache.put(i, Integer.toString(i));
 
             // Co-locates jobs with data using GridCompute.affinityRun(...) method.
             visitUsingAffinityRun();
@@ -78,7 +78,7 @@ public final class CacheAffinityExample {
     private static void visitUsingAffinityRun() throws IgniteCheckedException {
         Ignite g = Ignition.ignite();
 
-        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
 
         for (int i = 0; i < KEY_CNT; i++) {
             final int key = i;
@@ -90,7 +90,7 @@ public final class CacheAffinityExample {
                 @Override public void run() {
                     // Peek is a local memory lookup, however, value should never be 'null'
                     // as we are co-located with node that has a given key.
-                    System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.peek(key) + ']');
+                    System.out.println("Co-located using affinityRun [key= " + key + ", value=" + cache.localPeek(key) + ']');
                 }
             });
         }
@@ -123,13 +123,13 @@ public final class CacheAffinityExample {
                 // Bring computations to the nodes where the data resides (i.e. collocation).
                 g.compute(g.cluster().forNode(node)).run(new IgniteRunnable() {
                     @Override public void run() {
-                        GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+                        IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
 
                         // Peek is a local memory lookup, however, value should never be 'null'
                         // as we are co-located with node that has a given key.
                         for (Integer key : mappedKeys)
                             System.out.println("Co-located using mapKeysToNodes [key= " + key +
-                                ", value=" + cache.peek(key) + ']');
+                                ", value=" + cache.localPeek(key) + ']');
                     }
                 });
             }

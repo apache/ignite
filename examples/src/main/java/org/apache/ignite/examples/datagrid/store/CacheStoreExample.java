@@ -49,19 +49,17 @@ public class CacheStoreExample {
             System.out.println();
             System.out.println(">>> Cache store example started.");
 
-            GridCache<Long, Person> cache = g.cache(null);
+            IgniteCache<Long, Person> cache = g.jcache(null);
 
             // Clean up caches on all nodes before run.
-            cache.globalClearAll(0);
+            cache.clear();
 
-            try (IgniteTx tx = cache.txStart()) {
+            try (IgniteTx tx = g.transactions().txStart()) {
                 Person val = cache.get(id);
 
                 System.out.println("Read value: " + val);
 
-                val = cache.put(id, person(id, "Isaac", "Newton"));
-
-                System.out.println("Overwrote old value: " + val);
+                cache.put(id, person(id, "Isaac", "Newton"));
 
                 val = cache.get(id);
 

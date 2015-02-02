@@ -18,7 +18,6 @@
 package org.apache.ignite.examples.datagrid.store.dummy;
 
 import org.apache.ignite.*;
-import org.apache.ignite.cache.GridCache;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.examples.datagrid.store.*;
 import org.apache.ignite.lang.*;
@@ -80,8 +79,6 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
 
         System.out.println(">>> Store loadCache for entry count: " + cnt);
 
-        GridCache<Long, Person> cache = ignite.cache(cacheName);
-
         for (int i = 0; i < cnt; i++) {
             // Generate dummy person on the fly.
             Person p = new Person(i, "first-" + i, "last-" + 1);
@@ -90,7 +87,7 @@ public class CacheDummyPersonStore extends CacheStoreAdapter<Long, Person> {
             // but we check if local node is primary or backup anyway just to demonstrate that we can.
             // Ideally, partition ID of a key would be stored  in the database and only keys
             // for partitions that belong on this node would be loaded from database.
-            if (cache.affinity().isPrimaryOrBackup(ignite.cluster().localNode(), p.getId())) {
+            if (ignite.affinity(cacheName).isPrimaryOrBackup(ignite.cluster().localNode(), p.getId())) {
                 // Update dummy database.
                 // In real life data would be loaded from database.
                 dummyDB.put(p.getId(), p);

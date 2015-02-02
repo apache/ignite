@@ -52,13 +52,13 @@ public class CacheTransactionExample {
             System.out.println(">>> Cache transaction example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.jcache(CACHE_NAME).clear();
 
-            GridCache<Integer, Account> cache = g.cache(CACHE_NAME);
+            IgniteCache<Integer, Account> cache = g.jcache(CACHE_NAME);
 
             // Initialize.
-            cache.putx(1, new Account(1, 100));
-            cache.putx(2, new Account(1, 200));
+            cache.put(1, new Account(1, 100));
+            cache.put(2, new Account(1, 200));
 
             System.out.println();
             System.out.println(">>> Accounts before deposit: ");
@@ -87,18 +87,18 @@ public class CacheTransactionExample {
      */
     private static void deposit(int acctId, double amount) throws IgniteCheckedException {
         // Clone every object we get from cache, so we can freely update it.
-        CacheProjection<Integer, Account> cache = Ignition.ignite().<Integer, Account>cache(CACHE_NAME).flagsOn(CLONE);
+        IgniteCache<Integer, Account> cache = Ignition.ignite().jcache(CACHE_NAME);
 
-        try (IgniteTx tx = cache.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            Account acct = cache.get(acctId);
+        try (IgniteTx tx = Ignition.ignite().transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            assert cache.get(acctId) != null;
 
-            assert acct != null;
+            Account acct = new Account(cache.get(acctId).id, cache.get(acctId).balance);
 
             // Deposit into account.
             acct.update(amount);
 
             // Store updated account in cache.
-            cache.putx(acctId, acct);
+            cache.put(acctId, acct);
 
             tx.commit();
         }

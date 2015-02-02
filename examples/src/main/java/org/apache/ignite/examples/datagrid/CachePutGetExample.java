@@ -44,7 +44,7 @@ public class CachePutGetExample {
     public static void main(String[] args) throws Exception {
         try (Ignite g = Ignition.start("examples/config/example-cache.xml")) {
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.jcache(CACHE_NAME).clear();
 
             // Individual puts and gets.
             putGet();
@@ -65,13 +65,13 @@ public class CachePutGetExample {
 
         Ignite g = Ignition.ignite();
 
-        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
 
         final int keyCnt = 20;
 
         // Store keys in cache.
         for (int i = 0; i < keyCnt; i++)
-            cache.putx(i, Integer.toString(i));
+            cache.put(i, Integer.toString(i));
 
         System.out.println(">>> Stored values in cache.");
 
@@ -90,7 +90,7 @@ public class CachePutGetExample {
 
         Ignite g = Ignition.ignite();
 
-        final GridCache<Integer, String> cache = g.cache(CACHE_NAME);
+        final IgniteCache<Integer, String> cache = g.jcache(CACHE_NAME);
 
         final int keyCnt = 20;
 

@@ -56,7 +56,7 @@ public class CacheDataLoaderExample {
             System.out.println(">>> Cache data loader example started.");
 
             // Clean up caches on all nodes before run.
-            g.cache(CACHE_NAME).globalClearAll(0);
+            g.jcache(CACHE_NAME).clear();
 
             System.out.println();
             System.out.println(">>> Cache clear finished.");

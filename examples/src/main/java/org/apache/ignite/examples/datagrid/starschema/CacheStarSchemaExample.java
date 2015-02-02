@@ -70,8 +70,8 @@ public class CacheStarSchemaExample {
         System.out.println(">>> Cache star schema example started.");
 
         // Clean up caches on all nodes before run.
-        g.cache(PARTITIONED_CACHE_NAME).globalClearAll(0);
-        g.cache(REPLICATED_CACHE_NAME).globalClearAll(0);
+        g.jcache(PARTITIONED_CACHE_NAME).clear();
+        g.jcache(REPLICATED_CACHE_NAME).clear();
 
         try {
             populateDimensions();
@@ -92,7 +92,7 @@ public class CacheStarSchemaExample {
      * @throws IgniteCheckedException If failed.
      */
     private static void populateDimensions() throws IgniteCheckedException {
-        GridCache<Integer, Object> cache = Ignition.ignite().cache(REPLICATED_CACHE_NAME);
+        IgniteCache<Integer, Object> cache = Ignition.ignite().jcache(REPLICATED_CACHE_NAME);
 
         DimStore store1 = new DimStore(idGen++, "Store1", "12345", "321 Chilly Dr, NY");
         DimStore store2 = new DimStore(idGen++, "Store2", "54321", "123 Windy Dr, San Francisco");
