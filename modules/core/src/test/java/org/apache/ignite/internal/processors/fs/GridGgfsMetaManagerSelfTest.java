@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.fs;
 
+import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.configuration.*;
 import org.apache.ignite.fs.*;
@@ -418,12 +419,13 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      */
     private void expectsPutIfAbsentFail(final IgniteUuid parentId, final String fileName, final GridGgfsFileInfo fileInfo,
         @Nullable String msg) {
-        assertThrows(log, new Callable() {
-            @Override
-            public Object call() throws Exception {
+        Throwable err = assertThrows(log, new Callable() {
+            @Override public Object call() throws Exception {
                 return mgr.putIfAbsent(parentId, fileName, fileInfo);
             }
-        }, IgniteFsException.class, msg);
+        }, IgniteCheckedException.class, msg);
+
+        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgniteFsException);
     }
 
     /**
@@ -438,14 +440,16 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      */
     private void expectsRenameFail(final IgniteUuid fileId, final String srcFileName, final IgniteUuid srcParentId,
         final String destFileName, final IgniteUuid destParentId, @Nullable String msg) {
-        assertThrowsInherited(log, new Callable() {
+        Throwable err = assertThrowsInherited(log, new Callable() {
             @Override
             public Object call() throws Exception {
                 mgr.move(fileId, srcFileName, srcParentId, destFileName, destParentId);
 
                 return null;
             }
-        }, IgniteFsException.class, msg);
+        }, IgniteCheckedException.class, msg);
+
+        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof IgniteFsException);
     }
 
     /**
@@ -459,12 +463,14 @@ public class GridGgfsMetaManagerSelfTest extends GridGgfsCommonAbstractTest {
      */
     private void expectsRemoveFail(final IgniteUuid parentId, final String fileName, final IgniteUuid fileId,
         final IgniteFsPath path, @Nullable String msg) {
-        assertThrows(log, new Callable() {
+        Throwable err = assertThrows(log, new Callable() {
             @Nullable @Override public Object call() throws Exception {
                 mgr.removeIfEmpty(parentId, fileName, fileId, path, true);
 
                 return null;
             }
-        }, GridGgfsDirectoryNotEmptyException.class, msg);
+        }, IgniteCheckedException.class, msg);
+
+        assertTrue("Unexpected cause: " + err.getCause(), err.getCause() instanceof GridGgfsDirectoryNotEmptyException);
     }
 }
