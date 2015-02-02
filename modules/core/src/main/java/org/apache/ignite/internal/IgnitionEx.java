@@ -1426,7 +1426,6 @@ public class IgnitionEx {
             myCfg.setSecurityCredentialsProvider(cfg.getSecurityCredentialsProvider());
             myCfg.setServiceConfiguration(cfg.getServiceConfiguration());
             myCfg.setWarmupClosure(cfg.getWarmupClosure());
-            myCfg.setInteropConfiguration(cfg.getInteropConfiguration());
             myCfg.setPluginConfigurations(cfg.getPluginConfigurations());
             myCfg.setTransactionsConfiguration(new TransactionsConfiguration(cfg.getTransactionsConfiguration()));
             myCfg.setQueryConfiguration(cfg.getQueryConfiguration());

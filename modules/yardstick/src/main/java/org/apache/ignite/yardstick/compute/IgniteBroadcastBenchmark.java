@@ -15,35 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.interop;
+package org.apache.ignite.yardstick.compute;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.*;
+import org.apache.ignite.yardstick.*;
+import org.apache.ignite.yardstick.compute.model.*;
+
+import java.util.*;
 
 /**
- * Interface for interop-aware components.
+ * Ignite benchmark that performs broadcast operations.
  */
-public interface GridInteropAware {
-    /**
-     * Sets configuration parameters.
-     *
-     * @param params Configuration parameters.
-     */
-    public void configure(Object... params);
+public class IgniteBroadcastBenchmark extends IgniteAbstractBenchmark {
+    /** {@inheritDoc} */
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        ignite().compute().broadcast(new NoopCallable());
 
-    /**
-     * Initializes interop-aware component.
-     *
-     * @param ctx Context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void initialize(GridKernalContext ctx) throws IgniteCheckedException;
-
-    /**
-     * Destroys interop-aware component.
-     *
-     * @param ctx Context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void destroy(GridKernalContext ctx) throws IgniteCheckedException;
+        return true;
+    }
 }
