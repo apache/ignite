@@ -117,23 +117,23 @@ public class PojoJdbcCacheStoreTest extends GridCommonAbstractTest {
 
             springCtx.refresh();
 
-            Collection<CacheQueryTypeMetadata> typeMetadata =
+            Collection<CacheQueryTypeMetadata> typeMeta =
                 springCtx.getBeansOfType(CacheQueryTypeMetadata.class).values();
 
-            Map<Integer, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings = new ConcurrentHashMap<>();
+            Map<Integer, Map<Object, JdbcCacheStore.EntryMapping>> cacheMappings = new HashMap<>();
 
             JdbcDialect dialect = store.resolveDialect();
 
             GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "dialect", dialect);
 
-            Map<Object, JdbcCacheStore.EntryMapping> entryMappings = U.newHashMap(typeMetadata.size());
+            Map<Object, JdbcCacheStore.EntryMapping> entryMappings = U.newHashMap(typeMeta.size());
 
-            for (CacheQueryTypeMetadata type : typeMetadata)
-                entryMappings.put(store.keyId(type.getKeyType()), new JdbcCacheStore.EntryMapping(dialect, type));
+            for (CacheQueryTypeMetadata type : typeMeta)
+                entryMappings.put(store.keyTypeId(type.getKeyType()), new JdbcCacheStore.EntryMapping(dialect, type));
 
-            store.prepareBuilders(typeMetadata);
+            store.prepareBuilders(null, typeMeta);
 
-            cacheMappings.put(0, Collections.unmodifiableMap(entryMappings));
+            cacheMappings.put(null, Collections.unmodifiableMap(entryMappings));
 
             GridTestUtils.setFieldValue(store, JdbcCacheStore.class, "cacheMappings", cacheMappings);
         }
