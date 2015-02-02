@@ -823,7 +823,7 @@
                                         <link>http://hadoop.apache.org/docs/current/api/</link>
                                     </links>
                                     <stylesheetfile>assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables</excludePackageNames>
+                                    <excludePackageNames>com.*:org.jetbrains.*:org.pcollections:*.jdk8:*.tests:*.tools:*.typedef:*.examples:*.client:*.kernal:*.internal:*.util:*.dr:*.compute.gridify.aop:*.spi.authentication:*.spi.securesession:*.spi.discovery.tcp.messages:*.spi.discovery.tcp.internal:*.spi.deployment.uri.scanners:*.spi.deployment.uri.tasks:*.spi.indexing.h2.opt:org.apache.ignite.portables:org.apache.ignite.yardstick</excludePackageNames>
                                     <groups>
                                         <group>
                                             <title>Common Grid APIs</title>
@@ -941,10 +941,6 @@
                                             <title>Interop</title>
                                             <packages>org.apache.ignite.interop</packages>
                                         </group>
-                                        <group>
-                                            <title>Yardstick</title>
-                                            <packages>org.apache.ignite.yardstick</packages>
-                                        </group>
                                     </groups>
                                     <header>
                                         <![CDATA[
@@ -1035,8 +1031,8 @@
                                     </taglets>
                                     <reportOutputDirectory>target/javadoc</reportOutputDirectory>
                                     <destDir>client</destDir>
-                                    <doctitle>GridGain ${ignite.version} - Java Client</doctitle>
-                                    <windowtitle>GridGain ${ignite.version} - Java Client</windowtitle>
+                                    <doctitle>Ignite ${ignite.version} - Java Client</doctitle>
+                                    <windowtitle>Ignite ${ignite.version} - Java Client</windowtitle>
                                     <breakiterator>true</breakiterator>
                                     <verbose>true</verbose>
                                     <show>protected</show>
