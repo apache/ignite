@@ -297,7 +297,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
 
         switch (commState.idx) {
             case 3:
-                if (!commState.putLong(accessTtl))
+                if (!commState.putLong(null, accessTtl))
                     return false;
 
                 commState.idx++;
@@ -433,7 +433,7 @@ public class GridNearGetRequest<K, V> extends GridCacheMessage<K, V> implements 
                 if (buf.remaining() < 8)
                     return false;
 
-                accessTtl = commState.getLong();
+                accessTtl = commState.getLong(null);
 
                 commState.idx++;
 

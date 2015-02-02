@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.util.nio;
 
 import org.apache.ignite.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.spi.*;
 import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.spi.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -37,7 +36,7 @@ public class GridDirectParser implements GridNioParser {
     private IgniteSpiAdapter spi;
 
     /** */
-    private MessageFactory msgFactory;
+    private GridTcpMessageFactory msgFactory;
 
     /**
      * @param spi Spi.

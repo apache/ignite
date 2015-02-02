@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.direct;
 
+import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 

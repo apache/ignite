@@ -516,7 +516,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                         return e != null ? (V)e.value() : null;
                     }
 
-                    @Override public MessageFactory messageFactory() {
+                    @Override public GridTcpMessageFactory messageFactory() {
                         return ctx.io().messageFactory();
                     }
 

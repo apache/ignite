@@ -9,8 +9,8 @@
 
 package org.gridgain.grid.util.direct;
 
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.gridgain.grid.util.*;
+import org.apache.ignite.internal.util.*;
+import org.apache.ignite.internal.util.direct.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 import sun.nio.ch.*;
@@ -193,7 +193,7 @@ public class GridTcpCommunicationByteBufferStream {
     };
 
     /** */
-    private final MessageFactory msgFactory;
+    private final GridTcpMessageFactory msgFactory;
 
     /** */
     private ByteBuffer buf;
@@ -228,7 +228,7 @@ public class GridTcpCommunicationByteBufferStream {
     /**
      * @param msgFactory Message factory.
      */
-    public GridTcpCommunicationByteBufferStream(@Nullable MessageFactory msgFactory) {
+    public GridTcpCommunicationByteBufferStream(@Nullable GridTcpMessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 

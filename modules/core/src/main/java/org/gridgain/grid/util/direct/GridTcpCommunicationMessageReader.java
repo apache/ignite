@@ -9,6 +9,7 @@
 
 package org.gridgain.grid.util.direct;
 
+import org.apache.ignite.internal.util.direct.*;
 import org.apache.ignite.plugin.extensions.communication.*;
 import org.jetbrains.annotations.*;
 
@@ -27,7 +28,7 @@ public class GridTcpCommunicationMessageReader implements MessageReader {
     /**
      * @param msgFactory Message factory.
      */
-    public GridTcpCommunicationMessageReader(MessageFactory msgFactory) {
+    public GridTcpCommunicationMessageReader(GridTcpMessageFactory msgFactory) {
         this.stream = new GridTcpCommunicationByteBufferStream(msgFactory);
     }
 

@@ -458,7 +458,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 commState.idx++;
 
             case 32:
-                if (!commState.putLong(accessTtl))
+                if (!commState.putLong(null, accessTtl))
                     return false;
 
                 commState.idx++;
@@ -566,7 +566,7 @@ public class GridDhtLockRequest<K, V> extends GridDistributedLockRequest<K, V> {
                 if (buf.remaining() < 8)
                     return false;
 
-                accessTtl = commState.getLong();
+                accessTtl = commState.getLong(null);
 
                 commState.idx++;
         }

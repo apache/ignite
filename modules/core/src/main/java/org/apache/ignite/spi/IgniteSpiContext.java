@@ -20,11 +20,11 @@ package org.apache.ignite.spi;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
-import org.apache.ignite.plugin.extensions.communication.*;
-import org.apache.ignite.plugin.security.*;
-import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
+import org.apache.ignite.internal.util.direct.*;
+import org.apache.ignite.plugin.security.*;
+import org.apache.ignite.spi.swapspace.*;
 import org.jetbrains.annotations.*;
 
 import java.io.*;
@@ -399,5 +399,5 @@ public interface IgniteSpiContext {
     /**
      * @return Message factory.
      */
-    public MessageFactory messageFactory();
+    public GridTcpMessageFactory messageFactory();
 }
