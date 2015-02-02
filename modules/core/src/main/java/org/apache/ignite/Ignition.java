@@ -31,10 +31,10 @@ import java.util.*;
  * <h1 class="header">Grid Loaders</h1>
  * Although user can apply grid factory directly to start and stop grid, grid is
  * often started and stopped by grid loaders. Grid loaders can be found in
- * {@link org.gridgain.grid.startup} package, for example:
+ * {@link org.apache.ignite.startup} package, for example:
  * <ul>
  * <li>{@link org.apache.ignite.startup.cmdline.CommandLineStartup}</li>
- * <li>{@gglink org.gridgain.grid.startup.servlet.GridServletStartup}</li>
+ * <li>{@ignitelink org.apache.ignite.startup.servlet.IgniteServletStartup}</li>
  * </ul>
  * <h1 class="header">Examples</h1>
  * Use {@link #start()} method to start grid with default configuration. You can also use
@@ -68,15 +68,15 @@ import java.util.*;
  * </pre>
  * A grid instance with Spring configuration above can be started as following. Note that
  * you do not need to pass path to Spring XML file if you are using
- * {@code GRIDGAIN_HOME/config/default-config.xml}. Also note, that the path can be
- * absolute or relative to GRIDGAIN_HOME.
+ * {@code IGNITE_HOME/config/default-config.xml}. Also note, that the path can be
+ * absolute or relative to IGNITE_HOME.
  * <pre name="code" class="java">
  * ...
  * GridGain.start("/path/to/spring/xml/file.xml");
  * ...
  * </pre>
  * You can also instantiate grid directly from Spring without using {@code GridGain}.
- * For more information refer to {@gglink org.gridgain.grid.GridSpringBean} documentation.
+ * For more information refer to {@ignitelink org.apache.ignite.IgniteSpringBean} documentation.
  */
 public class Ignition {
     /**
@@ -85,7 +85,7 @@ public class Ignition {
      * for a JVM to restart itself from Java application and therefore we rely on
      * external tools to provide that capability.
      * <p>
-     * Note that standard <tt>ggstart.{sh|bat}</tt> scripts support restarting when
+     * Note that standard <tt>ignite.{sh|bat}</tt> scripts support restarting when
      * JVM process exits with this code.
      */
     public static final int RESTART_EXIT_CODE = 250;
@@ -226,7 +226,7 @@ public class Ignition {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ggstart.{sh|bat}</tt>
+     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
@@ -264,7 +264,7 @@ public class Ignition {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.

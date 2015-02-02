@@ -57,7 +57,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
     /** Partition resend timeout after eviction. */
-    private final long partResendTimeout = getLong(GG_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
+    private final long partResendTimeout = getLong(IGNITE_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
 
     /** Latch which completes after local exchange future is created. */
     private GridFutureAdapter<?> locExchFut;

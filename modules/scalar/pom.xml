@@ -150,9 +150,9 @@
                                         <table style="padding: 0px 10px 10px 10px; width: 100%" border="0">
                                         <tr>
                                             <td>
-                                                <nobr>GridGain&#153; - Scalar DSL, ver. <strong>${ignite.version}</strong></nobr>
+                                                <nobr>Ignite&#153; - Scalar DSL, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
                                         </tr>
                                         </table>
@@ -181,7 +181,7 @@
                                     <fileset dir="target/site/scaladocs"/>
                                 </replaceregexp>
 
-                                <zip destfile="target/gridgain-scalar-${ignite.version}-javadoc.jar"
+                                <zip destfile="target/ignite-scalar-${ignite.version}-javadoc.jar"
                                      basedir="target/site/scaladocs"
                                      encoding="UTF-8"/>
                             </target>

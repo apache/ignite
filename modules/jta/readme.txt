@@ -4,7 +4,7 @@ Apache Ignite JTA Module
 Apache Ignite JTA module provides capabilities to integrate Apache Ignite cache transactions with JTA.
 
 To enable JTA module when starting a standalone node, move 'optional/ignite-jta' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing JTA Module In Maven Project

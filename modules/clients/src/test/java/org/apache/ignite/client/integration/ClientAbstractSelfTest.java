@@ -79,7 +79,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
     private static final Map<String, HashMapStore> cacheStores = new HashMap<>();
 
     /** Path to test log. */
-    private static final String TEST_LOG_PATH = "modules/core/src/test/resources/log/gridgain.log.tst";
+    private static final String TEST_LOG_PATH = "modules/core/src/test/resources/log/ignite.log.tst";
 
     /** */
     public static final String ROUTER_LOG_CFG = "modules/core/src/test/config/log4j-test.xml";
@@ -101,11 +101,11 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(GG_JETTY_PORT, Integer.toString(JETTY_PORT));
+        System.setProperty(IGNITE_JETTY_PORT, Integer.toString(JETTY_PORT));
 
         startGrid();
 
-        System.clearProperty(GG_JETTY_PORT);
+        System.clearProperty(IGNITE_JETTY_PORT);
     }
 
     /** {@inheritDoc} */

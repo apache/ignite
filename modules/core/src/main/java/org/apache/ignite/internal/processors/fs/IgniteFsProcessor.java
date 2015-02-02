@@ -148,7 +148,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        if (!getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
             for (ClusterNode n : ctx.discovery().remoteNodes())
                 checkGgfsOnRemoteNode(n);
         }
@@ -405,7 +405,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
                     if (F.eq(rmtAttr.metaCacheName(), locAttr.metaCacheName()))
                         throw new IgniteCheckedException("Meta cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
-                            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property) [metaCacheName=" + rmtAttr.metaCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
@@ -415,7 +415,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
                     if (F.eq(rmtAttr.dataCacheName(), locAttr.dataCacheName()))
                         throw new IgniteCheckedException("Data cache names should be different for different GGFS instances " +
                             "configuration (fix configuration or set " +
-                            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                             "property)[dataCacheName=" + rmtAttr.dataCacheName() +
                             ", locNodeId=" + ctx.localNodeId() +
                             ", rmtNodeId=" + rmtNode.id() +
@@ -454,7 +454,7 @@ public class IgniteFsProcessor extends IgniteFsProcessorAdapter {
         if (!F.eq(rmtVal, locVal))
             throw new IgniteCheckedException(name + " should be the same on all nodes in grid for GGFS configuration " +
                 "(fix configuration or set " +
-                "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
+                "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system " +
                 "property ) [rmtNodeId=" + rmtNodeId +
                 ", rmt" + propName + "=" + rmtVal +
                 ", loc" + propName + "=" + locVal +

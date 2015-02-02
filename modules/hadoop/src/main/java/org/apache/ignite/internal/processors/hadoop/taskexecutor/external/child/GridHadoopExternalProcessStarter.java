@@ -35,7 +35,7 @@ import java.util.concurrent.*;
  */
 public class GridHadoopExternalProcessStarter {
     /** Path to Log4j configuration file. */
-    public static final String DFLT_LOG4J_CONFIG = "config/gridgain-log4j.xml";
+    public static final String DFLT_LOG4J_CONFIG = "config/ignite-log4j.xml";
 
     /** Arguments. */
     private Args args;

@@ -238,7 +238,7 @@ public abstract class IgniteUtils {
         indexOf('.', IgniteUtils.class.getName().indexOf('.') + 1));
 
     /** Network packet header. */
-    public static final byte[] GG_HEADER = U.intToBytes(0x00004747);
+    public static final byte[] IGNITE_HEADER = U.intToBytes(0x00004747);
 
     /** Default buffer size = 4K. */
     private static final int BUF_SIZE = 4096;
@@ -287,10 +287,10 @@ public abstract class IgniteUtils {
     private static final Collection<Class<?>> PORTABLE_CLS = new HashSet<>();
 
     /** GridGain Logging Directory. */
-    public static final String GRIDGAIN_LOG_DIR = System.getenv(GG_LOG_DIR);
+    public static final String IGNITE_LOG_DIR = System.getenv(IgniteSystemProperties.IGNITE_LOG_DIR);
 
     /** GridGain Work Directory. */
-    public static final String GRIDGAIN_WORK_DIR = System.getenv(GG_WORK_DIR);
+    public static final String IGNITE_WORK_DIR = System.getenv(IgniteSystemProperties.IGNITE_WORK_DIR);
 
     /** Clock timer. */
     private static Thread timer;
@@ -443,7 +443,7 @@ public abstract class IgniteUtils {
         SUN_REFLECT_FACTORY = refFac;
 
         // Disable hostname SSL verification for development and testing with self-signed certificates.
-        if (Boolean.parseBoolean(System.getProperty(GG_DISABLE_HOSTNAME_VERIFIER))) {
+        if (Boolean.parseBoolean(System.getProperty(IGNITE_DISABLE_HOSTNAME_VERIFIER))) {
             HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
                 @Override public boolean verify(String hostname, SSLSession sslSes) {
                     return true;
@@ -652,7 +652,7 @@ public abstract class IgniteUtils {
      * @return Checks if disco ordering should be enforced.
      */
     public static boolean relaxDiscoveryOrdered() {
-        return "true".equalsIgnoreCase(System.getProperty(GG_NO_DISCO_ORDER));
+        return "true".equalsIgnoreCase(System.getProperty(IGNITE_NO_DISCO_ORDER));
     }
 
     /**
@@ -1498,7 +1498,7 @@ public abstract class IgniteUtils {
     private static synchronized InetAddress resetLocalHost() throws IOException {
         locHost = null;
 
-        String sysLocHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
+        String sysLocHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
         if (sysLocHost != null)
             sysLocHost = sysLocHost.trim();
@@ -2270,7 +2270,7 @@ public abstract class IgniteUtils {
         assert Thread.holdsLock(IgniteUtils.class);
 
         // Resolve GridGain home via environment variables.
-        String ggHome0 = IgniteSystemProperties.getString(GG_HOME);
+        String ggHome0 = IgniteSystemProperties.getString(IGNITE_HOME);
 
         if (!F.isEmpty(ggHome0))
             return ggHome0;
@@ -2339,15 +2339,15 @@ public abstract class IgniteUtils {
      * @param e Exception.
      */
     private static void logResolveFailed(Class cls, Exception e) {
-        warn(null, "Failed to resolve GRIDGAIN_HOME automatically for class codebase " +
+        warn(null, "Failed to resolve IGNITE_HOME automatically for class codebase " +
             "[class=" + cls + (e == null ? "" : ", e=" + e.getMessage()) + ']');
     }
 
     /**
-     * Retrieves {@code GRIDGAIN_HOME} property. The property is retrieved from system
+     * Retrieves {@code IGNITE_HOME} property. The property is retrieved from system
      * properties or from environment in that order.
      *
-     * @return {@code GRIDGAIN_HOME} property.
+     * @return {@code IGNITE_HOME} property.
      */
     @Nullable public static String getGridGainHome() {
         GridTuple<String> ggHomeTup = ggHome;
@@ -2364,7 +2364,7 @@ public abstract class IgniteUtils {
                     ggHome = F.t(ggHome0 = resolveProjectHome());
 
                     if (ggHome0 != null)
-                        System.setProperty(GG_HOME, ggHome0);
+                        System.setProperty(IGNITE_HOME, ggHome0);
                 }
                 else
                     ggHome0 = ggHomeTup.get();
@@ -2391,9 +2391,9 @@ public abstract class IgniteUtils {
 
                 if (ggHomeTup == null) {
                     if (F.isEmpty(path))
-                        System.clearProperty(GG_HOME);
+                        System.clearProperty(IGNITE_HOME);
                     else
-                        System.setProperty(GG_HOME, path);
+                        System.setProperty(IGNITE_HOME, path);
 
                     ggHome = F.t(path);
 
@@ -2407,18 +2407,18 @@ public abstract class IgniteUtils {
             ggHome0 = ggHomeTup.get();
 
         if (ggHome0 != null && !ggHome0.equals(path))
-            throw new IgniteException("Failed to set GRIDGAIN_HOME after it has been already resolved " +
+            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
                 "[ggHome=" + ggHome0 + ", newGgHome=" + path + ']');
     }
 
     /**
      * Gets file associated with path.
      * <p>
-     * First check if path is relative to {@code GRIDGAIN_HOME}.
+     * First check if path is relative to {@code IGNITE_HOME}.
      * If not, check if path is absolute.
      * If all checks fail, then {@code null} is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as file, or {@code null} if path cannot be resolved.
@@ -2427,7 +2427,7 @@ public abstract class IgniteUtils {
         assert path != null;
 
         /*
-         * 1. Check relative to GRIDGAIN_HOME specified in configuration, if any.
+         * 1. Check relative to IGNITE_HOME specified in configuration, if any.
          */
 
         String home = getGridGainHome();
@@ -2461,11 +2461,11 @@ public abstract class IgniteUtils {
     /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @return Resolved path as URL, or {@code null} if path cannot be resolved.
@@ -2478,11 +2478,11 @@ public abstract class IgniteUtils {
     /**
      * Gets URL representing the path passed in. First the check is made if path is absolute.
      * If not, then the check is made if path is relative to {@code META-INF} folder in classpath.
-     * If not, then the check is made if path is relative to ${GRIDGAIN_HOME}.
+     * If not, then the check is made if path is relative to ${IGNITE_HOME}.
      * If all checks fail,
      * then {@code null} is returned, otherwise URL representing path is returned.
      * <p>
-     * See {@link #getGridGainHome()} for information on how {@code GRIDGAIN_HOME} is retrieved.
+     * See {@link #getGridGainHome()} for information on how {@code IGNITE_HOME} is retrieved.
      *
      * @param path Path to resolve.
      * @param metaInf Flag to indicate whether META-INF folder should be checked or class path root.
@@ -3874,7 +3874,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendJvmId(SB sb) {
-        if (getBoolean(GG_MBEAN_APPEND_JVM_ID)) {
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String gridId = Integer.toHexString(Ignite.class.getClassLoader().hashCode()) + "_"
                 + ManagementFactory.getRuntimeMXBean().getName();
 
@@ -7756,7 +7756,7 @@ public abstract class IgniteUtils {
      * @return {@code True} if property is Visor node startup property, {@code false} otherwise.
      */
     public static boolean isVisorNodeStartProperty(String name) {
-        return GG_SSH_HOST.equals(name) || GG_SSH_USER_NAME.equals(name);
+        return IGNITE_SSH_HOST.equals(name) || IGNITE_SSH_USER_NAME.equals(name);
     }
 
     /**
@@ -8488,8 +8488,8 @@ public abstract class IgniteUtils {
 
                 if (!F.isEmpty(userWorkDir))
                     workDir = new File(userWorkDir);
-                else if (!F.isEmpty(GRIDGAIN_WORK_DIR))
-                    workDir = new File(GRIDGAIN_WORK_DIR);
+                else if (!F.isEmpty(IGNITE_WORK_DIR))
+                    workDir = new File(IGNITE_WORK_DIR);
                 else if (!F.isEmpty(userGgHome))
                     workDir = new File(userGgHome, "work");
                 else {

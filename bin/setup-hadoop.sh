@@ -32,20 +32,20 @@ fi
 #
 # Import common functions.
 #
-if [ "${GRIDGAIN_HOME}" = "" ];
-    then GRIDGAIN_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";GRIDGAIN_HOME_TMP="$(dirname "${GRIDGAIN_HOME_TMP}")" # Will be removed in release.
-    else GRIDGAIN_HOME_TMP=${GRIDGAIN_HOME};
+if [ "${IGNITE_HOME}" = "" ];
+    then IGNITE_HOME_TMP="$(dirname "$(cd "$(dirname "$0")"; "pwd")")";IGNITE_HOME_TMP="$(dirname "${IGNITE_HOME_TMP}")" # Will be removed in release.
+    else IGNITE_HOME_TMP=${IGNITE_HOME};
 fi
 
 #
 # Set SCRIPTS_HOME - base path to scripts.
 #
-SCRIPTS_HOME="${GRIDGAIN_HOME_TMP}/bin"
+SCRIPTS_HOME="${IGNITE_HOME_TMP}/bin"
 
 source "${SCRIPTS_HOME}"/include/functions.sh
 
 #
-# Discover GRIDGAIN_HOME environment variable.
+# Discover IGNITE_HOME environment variable.
 #
 setGridGainHome
 
@@ -57,4 +57,4 @@ export MAIN_CLASS=org.gridgain.grid.hadoop.GridHadoopSetup
 #
 # Start utility.
 #
-. "${SCRIPTS_HOME}/ggstart.sh" $@
+. "${SCRIPTS_HOME}/ignite.sh" $@

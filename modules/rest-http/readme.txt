@@ -5,7 +5,7 @@ Apache Ignite REST-HTTP module provides Jetty-based server which can be used to 
 in grid using REST approach via HTTP protocol.
 
 To enable REST-HTTP module when starting a standalone node, move 'optional/ignite-rest-http' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing REST-HTTP Module In Maven Project

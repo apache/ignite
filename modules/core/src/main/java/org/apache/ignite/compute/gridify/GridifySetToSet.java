@@ -125,7 +125,7 @@ import java.lang.annotation.*;
  * <ul>
  * <li>
  *      JVM configuration should include:
- *      {@code -javaagent:${GRIDGAIN_HOME}/libs/aspectjweaver-1.7.2.jar}
+ *      {@code -javaagent:${IGNITE_HOME}/libs/aspectjweaver-1.7.2.jar}
  * </li>
  * <li>
  *      META-INF/aop.xml file should be created and specified on the classpath.
@@ -137,7 +137,7 @@ import java.lang.annotation.*;
  * Spring AOP framework is based on dynamic proxy implementation and doesn't require
  * any specific runtime parameters for online weaving. All weaving is on-demand and should
  * be performed by calling method
- * {@gglink org.gridgain.grid.compute.gridify.aop.spring.GridifySpringEnhancer#enhance(java.lang.Object)} for the object
+ * {@ignitelink org.apache.ignite.compute.gridify.aop.spring.GridifySpringEnhancer#enhance(java.lang.Object)} for the object
  * that has method with {@link GridifySetToSet} annotation.
  * <p>
  * Note that this method of weaving is rather inconvenient and AspectJ or JBoss AOP is

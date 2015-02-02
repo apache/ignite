@@ -17,7 +17,7 @@
 # Target class path resolver.
 #
 # Can be used like:
-#       . "${GRIDGAIN_HOME}"/os/bin/include/target-classpath.sh
+#       . "${IGNITE_HOME}"/os/bin/include/target-classpath.sh
 # in other scripts to set classpath using libs from target folder.
 #
 # Will be excluded in release.
@@ -31,11 +31,11 @@ SEP=":";
 case "`uname`" in
     MINGW*)
         SEP=";";
-        export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+        export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
         ;;
     CYGWIN*)
         SEP=";";
-        export GRIDGAIN_HOME=`echo $GRIDGAIN_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
+        export IGNITE_HOME=`echo $IGNITE_HOME | sed -e 's/^\/\([a-zA-Z]\)/\1:/'`
         ;;
 esac
 
@@ -44,11 +44,11 @@ includeToClassPath() {
     do
         if [ -d ${file} ] && [ -d "${file}/target" ]; then
             if [ -d "${file}/target/classes" ]; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/target/classes
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/classes
             fi
 
             if [ -d "${file}/target/libs" ]; then
-                GRIDGAIN_LIBS=${GRIDGAIN_LIBS}${SEP}${file}/target/libs/*
+                IGNITE_LIBS=${IGNITE_LIBS}${SEP}${file}/target/libs/*
             fi
         fi
     done
@@ -57,9 +57,9 @@ includeToClassPath() {
 #
 # Include target libraries for opensourse modules to classpath.
 #
-includeToClassPath ${GRIDGAIN_HOME}/os/modules
+includeToClassPath ${IGNITE_HOME}/os/modules
 
 #
 # Include target libraries for enterprise modules to classpath.
 #
-includeToClassPath ${GRIDGAIN_HOME}/modules
+includeToClassPath ${IGNITE_HOME}/modules

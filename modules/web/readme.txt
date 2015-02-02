@@ -6,7 +6,7 @@ which allow to start Apache Ignite inside any web container. Additionally this m
 capabilities to cache web sessions in Apache Ignite cache.
 
 To enable Web module when starting a standalone node, move 'optional/ignite-web' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Web Module In Maven Project

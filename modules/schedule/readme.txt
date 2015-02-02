@@ -4,7 +4,7 @@ Apache Ignite Schedule Module
 Apache Ignite Schedule module provides functionality for scheduling jobs locally using UNIX cron-based syntax.
 
 To enable Schedule module when starting a standalone node, move 'optional/ignite-schedule' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Schedule Module In Maven Project

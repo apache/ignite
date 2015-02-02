@@ -34,7 +34,7 @@ public class GridUnsafeDataInput extends InputStream implements GridDataInput {
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    private static final Long CHECK_FREQ = Long.getLong(GG_MARSHAL_BUFFERS_RECHECK, 10000);
+    private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
 
     /** */
     private static final long byteArrOff = UNSAFE.arrayBaseOffset(byte[].class);

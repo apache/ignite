@@ -34,7 +34,7 @@ import java.nio.*;
  *     +--+--+--+--+--+--+...+--+--+--+--+--+--+--+...+--+
  * </pre>
  * <p>
- * It expects that first 4 bytes in stream are {@link U#GG_HEADER}. If beginning of a stream,
+ * It expects that first 4 bytes in stream are {@link U#IGNITE_HEADER}. If beginning of a stream,
  * isn't equal to these bytes than exception will be thrown.
  */
 public class GridBufferedParser implements GridNioParser {

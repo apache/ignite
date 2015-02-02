@@ -140,7 +140,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         final boolean secSpi = AuthenticationSpi.class.isAssignableFrom(getClass()) ||
             SecureSessionSpi.class.isAssignableFrom(getClass());
 
-        final boolean check = secSpi || !Boolean.getBoolean(GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
+        final boolean check = secSpi || !Boolean.getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK);
 
         if (check) {
             spiCtx.addLocalEventListener(paramsLsnr = new GridLocalEventListener() {
@@ -444,7 +444,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         boolean isSpiConsistent = false;
 
         String tipStr = tip ? " (fix configuration or set " +
-            "-D" + GG_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)" : "";
+            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property)" : "";
 
         if (rmtCls == null) {
             if (!optional && starting)

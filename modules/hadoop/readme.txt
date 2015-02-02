@@ -5,7 +5,7 @@ Apache Ignite Hadoop module provides In-Memory MapReduce engine and driver to us
 which are 100% compatible with HDFS and YARN.
 
 To enable Hadoop module when starting a standalone node, move 'optional/ignite-hadoop' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Hadoop Module In Maven Project

@@ -47,30 +47,30 @@ if %ERRORLEVEL% equ 0 goto checkGridGainHome1
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
-:: Check GRIDGAIN_HOME.
+:: Check IGNITE_HOME.
 :checkGridGainHome1
-if defined GRIDGAIN_HOME goto checkGridGainHome2
+if defined IGNITE_HOME goto checkGridGainHome2
     pushd "%~dp0"/..
-    set GRIDGAIN_HOME=%CD%
+    set IGNITE_HOME=%CD%
     popd
 
 :checkGridGainHome2
-:: Strip double quotes from GRIDGAIN_HOME
-set GRIDGAIN_HOME=%GRIDGAIN_HOME:"=%
+:: Strip double quotes from IGNITE_HOME
+set IGNITE_HOME=%IGNITE_HOME:"=%
 
-:: remove all trailing slashes from GRIDGAIN_HOME.
-if %GRIDGAIN_HOME:~-1,1% == \ goto removeTrailingSlash
-if %GRIDGAIN_HOME:~-1,1% == / goto removeTrailingSlash
+:: remove all trailing slashes from IGNITE_HOME.
+if %IGNITE_HOME:~-1,1% == \ goto removeTrailingSlash
+if %IGNITE_HOME:~-1,1% == / goto removeTrailingSlash
 goto checkGridGainHome3
 
 :removeTrailingSlash
-set GRIDGAIN_HOME=%GRIDGAIN_HOME:~0,-1%
+set IGNITE_HOME=%IGNITE_HOME:~0,-1%
 goto checkGridGainHome2
 
 :checkGridGainHome3
-if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
-    echo %0, ERROR: GridGain installation folder is not found or GRIDGAIN_HOME environment variable is not valid.
-    echo Please create GRIDGAIN_HOME environment variable pointing to location of
+if exist "%IGNITE_HOME%\config" goto checkGridGainHome4
+    echo %0, ERROR: GridGain installation folder is not found or IGNITE_HOME environment variable is not valid.
+    echo Please create IGNITE_HOME environment variable pointing to location of
     echo GridGain installation folder.
     goto error_finish
 
@@ -79,29 +79,29 @@ if exist "%GRIDGAIN_HOME%\config" goto checkGridGainHome4
 ::
 :: Set SCRIPTS_HOME - base path to scripts.
 ::
-set SCRIPTS_HOME=%GRIDGAIN_HOME%\bin
+set SCRIPTS_HOME=%IGNITE_HOME%\bin
 
 :: Remove trailing spaces
 for /l %%a in (1,1,31) do if /i "%SCRIPTS_HOME:~-1%" == " " set SCRIPTS_HOME=%SCRIPTS_HOME:~0,-1%
 
 if /i "%SCRIPTS_HOME%\" == "%~dp0" goto setProgName
-    echo %0, WARN: GRIDGAIN_HOME environment variable may be pointing to wrong folder: %GRIDGAIN_HOME%
+    echo %0, WARN: IGNITE_HOME environment variable may be pointing to wrong folder: %IGNITE_HOME%
 
 :setProgName
 ::
 :: Set program name.
 ::
-set PROG_NAME=ggstart.bat
+set PROG_NAME=ignite.bat
 if "%OS%" == "Windows_NT" set PROG_NAME=%~nx0%
 
 :run
 
 ::
-:: Set GRIDGAIN_LIBS
+:: Set IGNITE_LIBS
 ::
 call "%SCRIPTS_HOME%\include\setenv.bat"
 call "%SCRIPTS_HOME%\include\target-classpath.bat" &:: Will be removed in release.
-set CP=%GRIDGAIN_LIBS%
+set CP=%IGNITE_LIBS%
 
 ::
 :: Parse command line parameters.
@@ -119,13 +119,13 @@ if %ERRORLEVEL% neq 0 (
 set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator
 for /f "usebackq tokens=*" %%i in (`"%RANDOM_NUMBER_COMMAND%"`) do set RANDOM_NUMBER=%%i
 
-set RESTART_SUCCESS_FILE="%GRIDGAIN_HOME%\work\gridgain_success_%RANDOM_NUMBER%"
-set RESTART_SUCCESS_OPT=-DGRIDGAIN_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
+set RESTART_SUCCESS_FILE="%IGNITE_HOME%\work\ignite_success_%RANDOM_NUMBER%"
+set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 
 ::
 :: Find available port for JMX
 ::
-:: You can specify GRIDGAIN_JMX_PORT environment variable for overriding automatically found JMX port
+:: You can specify IGNITE_JMX_PORT environment variable for overriding automatically found JMX port
 ::
 for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.gridgain.grid.util.portscanner.GridJmxPortFinder"') do (
     set JMX_PORT=%%A
@@ -198,11 +198,11 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.Command
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
-    -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="%GRIDGAIN_HOME%" -DGRIDGAIN_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
+    -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS%
 ) else (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^
-    -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="%GRIDGAIN_HOME%" -DGRIDGAIN_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
+    -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="%IGNITE_HOME%" -DIGNITE_PROG_NAME="%PROG_NAME%" %JVM_XOPTS% ^
     -cp "%CP%" %MAIN_CLASS% "%CONFIG%"
 )
 
