@@ -9180,6 +9180,6 @@ public abstract class IgniteUtils {
         else if (e.getCause() instanceof IgniteException)
             return (IgniteException)e.getCause();
 
-        return new IgniteException(e.getMessage(), e.getCause() != null ? e.getCause() : e);
+        return new IgniteException(e.getMessage(), e);
     }
 }

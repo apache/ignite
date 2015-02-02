@@ -236,7 +236,7 @@ abstract class IgniteTxAbstractTest extends GridCommonAbstractTest {
                 if (isTestDebug())
                     debug("Committed transaction [i=" + i + ", tx=" + tx + ']');
             }
-            catch (IgniteTxOptimisticCheckedException e) {
+            catch (IgniteTxOptimisticException e) {
                 if (concurrency != OPTIMISTIC || isolation != SERIALIZABLE) {
                     error("Received invalid optimistic failure.", e);
 

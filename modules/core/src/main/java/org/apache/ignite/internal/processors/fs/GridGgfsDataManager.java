@@ -655,7 +655,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                 }
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (IgniteException e) {
             log.error("Failed to clean up file range [fileInfo=" + fileInfo + ", range=" + range + ']', e);
         }
     }
@@ -1726,10 +1726,10 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                     block));
                         }
                     }
-                    catch (IgniteInterruptedCheckedException ignored) {
+                    catch (IgniteInterruptedException ignored) {
                         // Ignore interruption during shutdown.
                     }
-                    catch (IgniteCheckedException e) {
+                    catch (IgniteException e) {
                         log.error("Failed to remove file contents: " + fileInfo, e);
                     }
                     finally {
@@ -1740,14 +1740,14 @@ public class GridGgfsDataManager extends GridGgfsManager {
                                 ldr.removeData(new GridGgfsBlockKey(fileId, fileInfo.affinityKey(),
                                     fileInfo.evictExclude(), block));
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (IgniteException e) {
                             log.error("Failed to remove file contents: " + fileInfo, e);
                         }
                         finally {
                             try {
                                 ldr.close(isCancelled());
                             }
-                            catch (IgniteCheckedException e) {
+                            catch (IgniteException e) {
                                 log.error("Failed to stop data loader while shutting down ggfs async delete thread.", e);
                             }
                             finally {

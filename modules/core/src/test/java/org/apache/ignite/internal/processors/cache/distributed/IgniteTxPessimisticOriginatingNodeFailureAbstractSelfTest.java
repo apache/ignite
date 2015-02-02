@@ -196,7 +196,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
 
                     fut.get(3, TimeUnit.SECONDS);
                 }
-                catch (IgniteFutureTimeoutCheckedException ignored) {
+                catch (IgniteFutureTimeoutException ignored) {
                     info("Failed to wait for commit future completion [fullFailure=" + fullFailure + ']');
                 }
 

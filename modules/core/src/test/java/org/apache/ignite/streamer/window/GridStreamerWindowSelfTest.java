@@ -50,7 +50,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
     }
 
     /**
@@ -65,7 +65,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setTimeInterval(1);
 
@@ -79,7 +79,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
     }
 
     /**
@@ -94,7 +94,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setBatchSize(1);
 
@@ -108,7 +108,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
     }
 
     /**
@@ -123,7 +123,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setBatchSize(1);
 
@@ -133,7 +133,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setBatchTimeInterval(1);
         win.setBatchSize(-1);
@@ -144,7 +144,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setBatchSize(1);
 
@@ -158,7 +158,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
     }
 
     /**
@@ -286,7 +286,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setMaximumSize(60);
         win.setUnique(true);
@@ -335,7 +335,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setBatchSize(10);
         win.setMaximumBatches(2);
@@ -410,7 +410,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setMaximumSize(60);
         win.setTimeInterval(40);
@@ -462,7 +462,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgniteCheckedException.class, null);
+        }, IgniteException.class, null);
 
         win.setBatchSize(50);
         win.setBatchTimeInterval(500);

@@ -154,7 +154,7 @@ public class IgniteCacheProxy<K, V> extends IgniteAsyncSupportAdapter<IgniteCach
 
             try {
                 if (isAsync())
-                    curFut.set(ctx.cache().globalLoadCacheAsync(p, args));
+                    setFuture(ctx.cache().globalLoadCacheAsync(p, args));
                 else
                     ctx.cache().globalLoadCache(p, args);
             }

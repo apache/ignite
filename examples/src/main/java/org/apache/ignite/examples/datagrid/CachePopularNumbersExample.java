@@ -90,9 +90,9 @@ public class CachePopularNumbersExample {
      * Populates cache in real time with numbers and keeps count for every number.
      *
      * @param g Grid.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteException If failed.
      */
-    private static void streamData(final Ignite g) throws IgniteCheckedException {
+    private static void streamData(final Ignite g) throws IgniteException {
         try (IgniteDataLoader<Integer, Long> ldr = g.dataLoader(CACHE_NAME)) {
             // Set larger per-node buffer size since our state is relatively small.
             ldr.perNodeBufferSize(2048);

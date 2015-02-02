@@ -211,7 +211,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> f1 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(cnt);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
                         int idx = idxGen.getAndIncrement();
@@ -221,7 +221,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                     l1.countDown();
 
-                    for (IgniteInternalFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
 
                     return null;
@@ -250,7 +250,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> f2 = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    Collection<IgniteInternalFuture<?>> futs = new ArrayList<>(cnt);
+                    Collection<IgniteFuture<?>> futs = new ArrayList<>(cnt);
 
                     for (int i = 0; i < cnt; i++) {
                         final int key = idxGen.decrementAndGet();
@@ -260,7 +260,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                     l2.countDown();
 
-                    for (IgniteInternalFuture<?> fut : futs)
+                    for (IgniteFuture<?> fut : futs)
                         fut.get();
 
                     return null;
@@ -394,7 +394,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                 IgniteInternalFuture<?> fut1 = multithreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
-                        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
+                        Collection<IgniteFuture<?>> futs = new ArrayList<>();
 
                         while (!done.get()) {
                             int idx = idxGen.getAndIncrement();
@@ -410,7 +410,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                         ldr.flush();
 
-                        for (IgniteInternalFuture<?> fut : futs)
+                        for (IgniteFuture<?> fut : futs)
                             fut.get();
 
                         return null;
@@ -538,7 +538,7 @@ public class GridDataLoaderProcessorSelfTest extends GridCommonAbstractTest {
 
                 assert false;
             }
-            catch (IgniteFutureCancelledCheckedException e) {
+            catch (IgniteFutureCancelledException e) {
                 info("Caught expected exception: " + e);
             }
 

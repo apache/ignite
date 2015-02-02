@@ -63,7 +63,7 @@ public class GridAtomicCacheQueueImpl<T> extends GridCacheQueueAdapter<T> {
 
                     break;
                 }
-                catch (CachePartialUpdateException e) {
+                catch (CachePartialUpdateCheckedException e) {
                     if (cnt++ == MAX_UPDATE_RETRIES)
                         throw e;
                     else {

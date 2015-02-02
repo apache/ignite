@@ -136,6 +136,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     /** Future to track loading finish. */
     private final GridFutureAdapter<?> fut;
 
+    /** Public API future to track loading finish. */
+    private final IgniteFuture<?> publicFut;
+
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
@@ -240,6 +243,8 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
             log.debug("Added response listener within topic: " + topic);
 
         fut = new GridDataLoaderFuture(ctx, this);
+
+        publicFut = new IgniteFutureImpl<>(fut);
     }
 
     /**
@@ -258,7 +263,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> future() {
+    @Override public IgniteFuture<?> future() {
+        return publicFut;
+    }
+
+    /**
+     * @return Internal future.
+     */
+    public IgniteInternalFuture<?> internalFuture() {
         return fut;
     }
 
@@ -280,14 +292,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void isolated(boolean isolated) throws IgniteCheckedException {
+    @Override public void isolated(boolean isolated) {
         if (isolated())
             return;
 
         ClusterNode node = F.first(ctx.grid().forCache(cacheName).nodes());
 
         if (node == null)
-            throw new IgniteCheckedException("Failed to get node for cache: " + cacheName);
+            throw new IgniteException("Failed to get node for cache: " + cacheName);
 
         GridCacheAttributes a = U.cacheAttributes(node, cacheName);
 
@@ -357,14 +369,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map<K, V> entries) throws IllegalStateException {
         A.notNull(entries, "entries");
 
         return addData(entries.entrySet());
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
+    @Override public IgniteFuture<?> addData(Collection<? extends Map.Entry<K, V>> entries) {
         A.notEmpty(entries, "entries");
 
         enterBusy();
@@ -387,10 +399,10 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             load0(entries, resFut, keys, 0);
 
-            return resFut;
+            return new IgniteFutureImpl<>(resFut);
         }
         catch (IgniteException e) {
-            return new GridFinishedFuture<>(ctx, e);
+            return new IgniteFinishedFutureImpl<>(ctx, e);
         }
         finally {
             leaveBusy();
@@ -398,21 +410,21 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(Map.Entry<K, V> entry) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(Map.Entry<K, V> entry) {
         A.notNull(entry, "entry");
 
         return addData(F.asList(entry));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> addData(K key, V val) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteFuture<?> addData(K key, V val) {
         A.notNull(key, "key");
 
         return addData(new Entry0<>(key, val));
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> removeData(K key) throws IgniteCheckedException, IllegalStateException {
+    @Override public IgniteFuture<?> removeData(K key) {
         return addData(key, null);
     }
 
@@ -638,11 +650,14 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    @Override public void flush() throws IgniteCheckedException {
+    @Override public void flush() throws IgniteException {
         enterBusy();
 
         try {
             doFlush();
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
         }
         finally {
             leaveBusy();
@@ -656,7 +671,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
      * Does not wait for result and does not fail on errors assuming that this method
      * should be called periodically.
      */
-    @Override public void tryFlush() throws IgniteInterruptedCheckedException {
+    @Override public void tryFlush() throws IgniteInterruptedException {
         if (!busyLock.enterBusy())
             return;
 
@@ -666,6 +681,9 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
             lastFlushTime = U.currentTimeMillis();
         }
+        catch (IgniteInterruptedCheckedException e) {
+            throw U.convertException(e);
+        }
         finally {
             leaveBusy();
         }
@@ -673,9 +691,22 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
 
     /**
      * @param cancel {@code True} to close with cancellation.
+     * @throws IgniteException If failed.
+     */
+    @Override public void close(boolean cancel) throws IgniteException {
+        try {
+            closeEx(cancel);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @param cancel {@code True} to close with cancellation.
      * @throws IgniteCheckedException If failed.
      */
-    @Override public void close(boolean cancel) throws IgniteCheckedException {
+    public void closeEx(boolean cancel) throws IgniteCheckedException {
         if (!closed.compareAndSet(false, true))
             return;
 
@@ -719,7 +750,7 @@ public class IgniteDataLoaderImpl<K, V> implements IgniteDataLoader<K, V>, Delay
     }
 
     /** {@inheritDoc} */
-    @Override public void close() throws IgniteCheckedException {
+    @Override public void close() throws IgniteException {
         close(false);
     }
 

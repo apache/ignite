@@ -195,7 +195,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, ClusterTopologyCheckedException.class, null);
+            }, ClusterTopologyException.class, null);
 
             // Test pessimistic transaction.
             GridTestUtils.assertThrows(log, new Callable<Object>() {

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.cluster.*;
 import org.apache.ignite.internal.compute.*;
 import org.apache.ignite.internal.processors.cache.version.*;
+import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
@@ -3632,7 +3633,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
-            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+
+            try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(p, ldr, ttl);
@@ -3640,6 +3643,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.store().loadCache(c, args);
 
                 c.onDone();
+            }
+            finally {
+                ldr.closeEx(false);
             }
         }
         else {
@@ -3802,7 +3808,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final long topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.store().isLocalStore()) {
-            try (final IgniteDataLoader<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false)) {
+            IgniteDataLoaderImpl<K, V> ldr = ctx.kernalContext().<K, V>dataLoad().dataLoader(ctx.namex(), false);
+
+            try {
                 ldr.updater(new GridDrDataLoadCacheUpdater<K, V>());
 
                 LocalStoreLoadClosure c = new LocalStoreLoadClosure(null, ldr, 0);
@@ -3810,6 +3818,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 ctx.store().localStoreLoadAll(null, keys, c);
 
                 c.onDone();
+            }
+            finally {
+                ldr.closeEx(false);
             }
         }
         else {
@@ -3830,29 +3841,24 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     void globalLoadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) throws IgniteCheckedException {
-        ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
-
-        IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
-
-        comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
+        globalLoadCacheAsync(p, args).get();
     }
 
     /**
      * @param p Predicate.
      * @param args Arguments.
      * @throws IgniteCheckedException If failed.
+     * @return Load cache future.
      */
-    IgniteFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
+    IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
         ClusterGroup nodes = ctx.kernalContext().grid().cluster().forCache(ctx.name());
 
-        IgniteCompute comp = ctx.kernalContext().grid().compute(nodes).withNoFailover();
+        ctx.kernalContext().task().setThreadContext(TC_NO_FAILOVER, true);
 
-        comp = comp.withAsync();
-
-        comp.broadcast(new LoadCacheClosure<>(ctx.name(), p, args));
-
-        return comp.future();
+        return ctx.kernalContext().closure().callAsync(BROADCAST,
+            Arrays.asList(new LoadCacheClosure<>(ctx.name(), p, args)),
+            nodes.nodes());
     }
 
     /** {@inheritDoc} */
@@ -5547,7 +5553,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
         final Collection<Map.Entry<K, V>> col;
 
         /** */
-        final IgniteDataLoader<K, V> ldr;
+        final IgniteDataLoaderImpl<K, V> ldr;
 
         /** */
         final long ttl;
@@ -5557,7 +5563,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
          * @param ldr Loader.
          * @param ttl TTL.
          */
-        private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p, IgniteDataLoader<K, V> ldr, long ttl) {
+        private LocalStoreLoadClosure(@Nullable IgniteBiPredicate<K, V> p, IgniteDataLoaderImpl<K, V> ldr, long ttl) {
             this.p = p;
             this.ldr = ldr;
             this.ttl = ttl;

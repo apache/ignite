@@ -119,12 +119,12 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
         U.interrupt(flusher);
         U.join(flusher, log);
 
-        for (IgniteDataLoader<?, ?> ldr : ldrs) {
+        for (IgniteDataLoaderImpl<?, ?> ldr : ldrs) {
             if (log.isDebugEnabled())
                 log.debug("Closing active data loader on grid stop [ldr=" + ldr + ", cancel=" + cancel + ']');
 
             try {
-                ldr.close(cancel);
+                ldr.closeEx(cancel);
             }
             catch (IgniteInterruptedCheckedException e) {
                 U.warn(log, "Interrupted while waiting for completion of the data loader: " + ldr, e);
@@ -143,7 +143,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
      * @param compact {@code true} if data loader should transfer data in compact format.
      * @return Data loader.
      */
-    public IgniteDataLoader<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
+    public IgniteDataLoaderImpl<K, V> dataLoader(@Nullable String cacheName, boolean compact) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to create data loader (grid is stopping).");
 
@@ -152,7 +152,7 @@ public class GridDataLoaderProcessor<K, V> extends GridProcessorAdapter {
 
             ldrs.add(ldr);
 
-            ldr.future().listenAsync(new CI1<IgniteInternalFuture<?>>() {
+            ldr.internalFuture().listenAsync(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> f) {
                     boolean b = ldrs.remove(ldr);
 
