@@ -42,7 +42,7 @@ setGridGainHome
 # Set router service environment.
 #
 export DEFAULT_CONFIG=config/router/default-router.xml
-export MAIN_CLASS=org.gridgain.client.router.impl.GridRouterCommandLineStartup
+export MAIN_CLASS=org.apache.ignite.client.router.impl.GridRouterCommandLineStartup
 
 #
 # Start router service.

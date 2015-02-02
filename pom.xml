@@ -941,6 +941,10 @@
                                             <title>Interop</title>
                                             <packages>org.apache.ignite.interop</packages>
                                         </group>
+                                        <group>
+                                            <title>Yardstick</title>
+                                            <packages>org.apache.ignite.yardstick</packages>
+                                        </group>
                                     </groups>
                                     <header>
                                         <![CDATA[
