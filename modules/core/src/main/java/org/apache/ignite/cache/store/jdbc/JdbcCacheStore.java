@@ -1177,7 +1177,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
 
             String schema = tblMeta.getSchema();
 
-            String tblName = tblMeta.getTableName();
+            String tblName = tblMeta.getTable();
 
             keyCols = databaseColumns(keyFields);
 
@@ -1234,7 +1234,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
             if (keyCnt == 1)
                 return loadQrySingle;
 
-            return dialect.loadQuery(tblMeta.getSchema(), tblMeta.getTableName(), keyCols, cols, keyCnt);
+            return dialect.loadQuery(tblMeta.getSchema(), tblMeta.getTable(), keyCols, cols, keyCnt);
         }
         /**
          * Construct query for select values in range.
@@ -1244,7 +1244,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> {
          * @return Query with range.
          */
         protected String loadCacheRangeQuery(boolean appendLowerBound, boolean appendUpperBound) {
-            return dialect.loadCacheRangeQuery(tblMeta.getSchema(), tblMeta.getTableName(), keyCols, cols,
+            return dialect.loadCacheRangeQuery(tblMeta.getSchema(), tblMeta.getTable(), keyCols, cols,
                 appendLowerBound, appendUpperBound);
         }
 
