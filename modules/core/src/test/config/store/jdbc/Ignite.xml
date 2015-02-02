@@ -23,8 +23,8 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans 
                            http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
-        <property name="type" value="org.apache.ignite.Organization"/>
-        <property name="keyType" value="org.apache.ignite.OrganizationKey"/>
+        <property name="type" value="org.apache.ignite.cache.store.jdbc.model.Organization"/>
+        <property name="keyType" value="org.apache.ignite.cache.store.jdbc.model.OrganizationKey"/>
         <property name="tableMetadata">
             <bean class="org.apache.ignite.cache.query.CacheQueryTableMetadata">
                 <property name="schema" value="PUBLIC"/>
@@ -119,8 +119,8 @@
         </property>
     </bean>
     <bean class="org.apache.ignite.cache.query.CacheQueryTypeMetadata">
-        <property name="type" value="org.apache.ignite.Person"/>
-        <property name="keyType" value="org.apache.ignite.PersonKey"/>
+        <property name="type" value="org.apache.ignite.cache.store.jdbc.model.Person"/>
+        <property name="keyType" value="org.apache.ignite.cache.store.jdbc.model.PersonKey"/>
         <property name="tableMetadata">
             <bean class="org.apache.ignite.cache.query.CacheQueryTableMetadata">
                 <property name="schema" value="PUBLIC"/>
