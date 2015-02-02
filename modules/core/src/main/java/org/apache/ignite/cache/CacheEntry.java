@@ -540,7 +540,7 @@ public interface CacheEntry<K, V> extends Map.Entry<K, V>, javax.cache.Cache.Ent
     public boolean isCached();
 
     /**
-     * Gets size of serialized key and value in addition to any overhead added by {@code GridGain} itself.
+     * Gets size of serialized key and value in addition to any overhead added by {@code Ignite} itself.
      *
      * @return size in bytes.
      * @throws IgniteCheckedException If failed to evaluate entry size.
