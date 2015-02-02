@@ -47,8 +47,8 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
     public void testGridTaskListener() throws Exception {
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        IgniteInClosure<IgniteFuture<?>> lsnr = new CI1<IgniteFuture<?>>() {
-            @Override public void apply(IgniteFuture<?> fut) {
+        IgniteInClosure<IgniteInternalFuture<?>> lsnr = new CI1<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> fut) {
                 assert fut != null;
 
                 cnt.incrementAndGet();

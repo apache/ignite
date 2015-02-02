@@ -18,7 +18,7 @@
 package org.apache.ignite.hadoop;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.jetbrains.annotations.*;
 
 /**
@@ -46,7 +46,7 @@ public interface GridHadoop {
      * @param jobInfo Job info to submit.
      * @return Execution future.
      */
-    public IgniteFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
+    public IgniteInternalFuture<?> submit(GridHadoopJobId jobId, GridHadoopJobInfo jobInfo);
 
     /**
      * Gets Hadoop job execution status.
@@ -73,7 +73,7 @@ public interface GridHadoop {
      * @return Job finish future or {@code null} in case job with the given ID is not found.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException;
+    @Nullable public IgniteInternalFuture<?> finishFuture(GridHadoopJobId jobId) throws IgniteCheckedException;
 
     /**
      * Kills job.

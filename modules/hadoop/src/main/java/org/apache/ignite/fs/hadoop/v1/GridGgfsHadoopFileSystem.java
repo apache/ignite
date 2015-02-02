@@ -63,10 +63,10 @@ import static org.apache.ignite.internal.fs.hadoop.GridGgfsHadoopUtils.*;
  * do this, add following lines to {@code conf/hadoop-env.sh} script in Hadoop
  * distribution:
  * <pre name="code" class="bash">
- * export GRIDGAIN_HOME=/path/to/GridGain/distribution
- * export HADOOP_CLASSPATH=$GRIDGAIN_HOME/gridgain*.jar
+ * export IGNITE_HOME=/path/to/GridGain/distribution
+ * export HADOOP_CLASSPATH=$IGNITE_HOME/gridgain*.jar
  *
- * for f in $GRIDGAIN_HOME/libs/*.jar; do
+ * for f in $IGNITE_HOME/libs/*.jar; do
  *  export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:$f;
  * done
  * </pre>

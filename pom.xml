@@ -592,7 +592,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -722,7 +722,7 @@
                                     </groups>
                                     <header>
                                         <![CDATA[
-                                    GridGain - In-Memory Data Fabric
+                                    Ignite - In-Memory Data Fabric
                                 ]]>
                                     </header>
                                     <bottom>
@@ -734,7 +734,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -766,7 +766,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <b>GridGain Fabric</b>
+                                                            <b>Ignite Fabric</b>
                                                         </td>
                                                         <td>:&nbsp;&nbsp;
                                                             ver. <strong>${ignite.version}</strong>
@@ -799,7 +799,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -956,7 +956,7 @@
                                                 <tbody style="padding: 0; margin: 0">
                                                     <tr style="padding: 0; margin: 0">
                                                         <td>
-                                                            <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                            <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                                         </td>
                                                     </tr>
                                                 </tbody>
@@ -1021,7 +1021,7 @@
                                 <configuration>
                                     <taglets>
                                         <taglet>
-                                            <tagletClass>org.apache.ignite.tools.javadoc.GridLinkTaglet</tagletClass>
+                                            <tagletClass>org.apache.ignite.tools.javadoc.IgniteLinkTaglet</tagletClass>
                                             <tagletArtifact>
                                                 <groupId>org.apache.ignite</groupId>
                                                 <artifactId>ignite-tools</artifactId>
@@ -1075,7 +1075,7 @@
                                             <td>
                                                 <nobr>GridGain&#153; - Java Client, ver. <strong>${ignite.version}</strong></nobr>
                                                 <br>
-                                                <a target=_blank href="http://www.gridgain.com/"><nobr>2014 Copyright &#169; GridGain Systems</nobr></a>
+                                                <a target=_blank href="https://incubator.apache.org/projects/ignite.html"><nobr>2015 Copyright &#169; Apache Software Foundation</nobr></a>
                                             </td>
                                             <td width="100%" align="right" valign="center">
                                                 <table border=0>
@@ -1177,7 +1177,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='GRIDGAIN_HOME_TMP="\$\(dirname "\$\{GRIDGAIN_HOME_TMP\}"\)"(\s*#.*)?'/>
+                                            <regexp pattern='IGNITE_HOME_TMP="\$\(dirname "\$\{IGNITE_HOME_TMP\}"\)"(\s*#.*)?'/>
                                             <substitution expression=""/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
@@ -1185,16 +1185,16 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\os\\bin(\s*&amp;::.*)?'/>
-                                            <substitution expression='set SCRIPTS_HOME=%GRIDGAIN_HOME%\\\\bin'/>
+                                            <regexp pattern='set SCRIPTS_HOME=%IGNITE_HOME%\\os\\bin(\s*&amp;::.*)?'/>
+                                            <substitution expression='set SCRIPTS_HOME=%IGNITE_HOME%\\\\bin'/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.bat"/>
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true">
-                                            <regexp pattern='SCRIPTS_HOME="\$\{GRIDGAIN_HOME_TMP\}/os/bin"(\s*#.*)?'/>
-                                            <substitution expression='SCRIPTS_HOME="$${GRIDGAIN_HOME_TMP}/bin"'/>
+                                            <regexp pattern='SCRIPTS_HOME="\$\{IGNITE_HOME_TMP\}/os/bin"(\s*#.*)?'/>
+                                            <substitution expression='SCRIPTS_HOME="$${IGNITE_HOME_TMP}/bin"'/>
                                             <fileset dir="target/release-package/bin">
                                                 <include name="**/*.sh"/>
                                             </fileset>

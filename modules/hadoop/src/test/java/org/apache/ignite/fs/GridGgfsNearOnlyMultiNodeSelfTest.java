@@ -83,7 +83,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         ggfsCfg.setIpcEndpointConfiguration(new HashMap<String, String>() {{
             put("type", "shmem");
-            put("port", String.valueOf(GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
+            put("port", String.valueOf(IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + cnt));
         }});
 
         ggfsCfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.
@@ -146,7 +146,7 @@ public class GridGgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
      */
     protected URI getFileSystemURI(int grid) {
         try {
-            return new URI("ggfs://127.0.0.1:" + (GridIpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
+            return new URI("ggfs://127.0.0.1:" + (IpcSharedMemoryServerEndpoint.DFLT_IPC_PORT + grid));
         }
         catch (URISyntaxException e) {
             throw new RuntimeException(e);

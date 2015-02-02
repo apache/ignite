@@ -25,7 +25,7 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Finds configuration files located in {@code GRIDGAIN_HOME} folder
+ * Finds configuration files located in {@code IGNITE_HOME} folder
  * and its subfolders.
  */
 public final class GridConfigurationFinder {
@@ -46,7 +46,7 @@ public final class GridConfigurationFinder {
     }
 
     /**
-     * Lists paths to all GridGain configuration files located in GRIDGAIN_HOME with their
+     * Lists paths to all GridGain configuration files located in IGNITE_HOME with their
      * last modification timestamps.
      *
      * @return Collection of configuration files and their last modification timestamps.

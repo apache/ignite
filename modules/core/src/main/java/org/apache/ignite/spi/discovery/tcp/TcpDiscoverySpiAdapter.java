@@ -374,7 +374,7 @@ abstract class TcpDiscoverySpiAdapter extends IgniteSpiAdapter implements Discov
 
         sock.connect(resolved, (int)sockTimeout);
 
-        writeToSocket(sock, U.GG_HEADER);
+        writeToSocket(sock, U.IGNITE_HEADER);
 
         return sock;
     }

@@ -69,7 +69,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req instanceof GridRestCacheQueryRequest;
         assert SUPPORTED_COMMANDS.contains(req.command());
 
@@ -114,7 +114,7 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param c Closure to execute.
      * @return Execution future.
      */
-    private IgniteFuture<GridRestResponse> execute(UUID destId, String cacheName, Callable<GridRestResponse> c) {
+    private IgniteInternalFuture<GridRestResponse> execute(UUID destId, String cacheName, Callable<GridRestResponse> c) {
         boolean locExec = destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec)
@@ -143,16 +143,16 @@ public class GridCacheQueryCommandHandler extends GridRestCommandHandlerAdapter 
      * @param c Closure to execute.
      * @return Execution future.
      */
-    private IgniteFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
+    private IgniteInternalFuture<GridRestResponse> broadcast(String cacheName, Callable<Object> c) {
         IgniteCompute comp = ctx.grid().compute(ctx.grid().forCache(cacheName)).withNoFailover().withAsync();
 
         try {
             comp.broadcast(c);
 
-            IgniteFuture<Collection<Object>> fut = comp.future();
+            IgniteInternalFuture<Collection<Object>> fut = comp.future();
 
-            return fut.chain(new C1<IgniteFuture<Collection<Object>>, GridRestResponse>() {
-                @Override public GridRestResponse apply(IgniteFuture<Collection<Object>> fut) {
+            return fut.chain(new C1<IgniteInternalFuture<Collection<Object>>, GridRestResponse>() {
+                @Override public GridRestResponse apply(IgniteInternalFuture<Collection<Object>> fut) {
                     try {
                         fut.get();
 

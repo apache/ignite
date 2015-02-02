@@ -226,7 +226,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     };
 
     /** */
-    private volatile GridQueryConfiguration cfg = new GridQueryConfiguration();
+    private volatile IgniteQueryConfiguration cfg = new IgniteQueryConfiguration();
 
     /** */
     private volatile GridKernalContext ctx;
@@ -587,7 +587,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * @return Configuration.
      */
-    public GridQueryConfiguration configuration() {
+    public IgniteQueryConfiguration configuration() {
         return cfg;
     }
 
@@ -753,12 +753,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, GridCacheTwoStepQuery qry) {
         return rdcQryExec.query(space, qry);
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
+    @Override public IgniteInternalFuture<GridCacheSqlResult> queryTwoStep(String space, String sqlQry, Object[] params) {
         Connection c;
 
         try {
@@ -1119,7 +1119,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             nodeId = ctx.localNodeId();
             marshaller = ctx.config().getMarshaller();
 
-            GridQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
+            IgniteQueryConfiguration cfg0 = ctx.config().getQueryConfiguration();
 
             if (cfg0 != null)
                 cfg = cfg0;
@@ -1175,7 +1175,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             createSqlFunctions();
             runInitScript();
 
-            if (getString(GG_H2_DEBUG_CONSOLE) != null) {
+            if (getString(IGNITE_H2_DEBUG_CONSOLE) != null) {
                 Connection c = DriverManager.getConnection(dbUrl);
 
                 WebServer webSrv = new WebServer();

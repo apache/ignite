@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.managers.discovery.*;
 
 /**
@@ -29,7 +29,7 @@ import org.apache.ignite.internal.managers.discovery.*;
  * When new new transaction is started, it will wait for this future before acquiring new locks on particular
  * topology version.
  */
-public interface GridDhtTopologyFuture extends IgniteFuture<Long> {
+public interface GridDhtTopologyFuture extends IgniteInternalFuture<Long> {
     /**
      * Gets a topology snapshot for the topology version represented by the future. Note that by the time
      * partition exchange completes some nodes from the snapshot may leave the grid. One should use discovery

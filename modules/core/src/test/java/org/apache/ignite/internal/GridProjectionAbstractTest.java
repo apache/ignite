@@ -327,7 +327,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(runJob);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -349,7 +349,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.run(jobs);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -369,7 +369,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(calJob);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -391,7 +391,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.call(jobs);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -411,7 +411,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, (String) null);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -433,7 +433,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, args);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -453,7 +453,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.broadcast(new TestClosure(), "arg");
 
-        IgniteFuture<Collection<String>> fut = comp.future();
+        IgniteInternalFuture<Collection<String>> fut = comp.future();
 
         waitForExecution(fut);
 
@@ -480,7 +480,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.apply(clrJob, args, rdc);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -502,7 +502,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
 
         comp.call(jobs, rdc);
 
-        IgniteFuture fut = comp.future();
+        IgniteInternalFuture fut = comp.future();
 
         waitForExecution(fut);
 
@@ -602,7 +602,7 @@ public abstract class GridProjectionAbstractTest extends GridCommonAbstractTest 
      * @throws InterruptedException Thrown if wait was interrupted.
      */
     @SuppressWarnings({"UnconditionalWait"})
-    private void waitForExecution(IgniteFuture fut) throws InterruptedException {
+    private void waitForExecution(IgniteInternalFuture fut) throws InterruptedException {
         long sleep = 250;
 
         long threshold = System.currentTimeMillis() + WAIT_TIMEOUT;

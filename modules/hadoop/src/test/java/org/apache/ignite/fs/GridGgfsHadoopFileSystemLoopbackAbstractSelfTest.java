@@ -19,7 +19,7 @@ package org.apache.ignite.fs;
 
 import java.util.*;
 
-import static org.apache.ignite.internal.util.ipc.shmem.GridIpcSharedMemoryServerEndpoint.*;
+import static org.apache.ignite.internal.util.ipc.shmem.IpcSharedMemoryServerEndpoint.*;
 
 /**
  * GGFS Hadoop file system IPC loopback self test.

@@ -30,7 +30,7 @@ import scala.util.control.Breaks._
  * ==Starting Remote Nodes==
  * To try this example you should (but don't have to) start remote grid instances.
  * You can start as many as you like by executing the following script:
- * `{GRIDGAIN_HOME}/bin/ggstart.{bat|sh} examples/config/example-compute.xml`
+ * `{IGNITE_HOME}/bin/ignite.{bat|sh} examples/config/example-compute.xml`
  *
  * Once remote instances are started, you can execute this example from
  * Eclipse, IntelliJ IDEA, or NetBeans (and any other Java IDE) by simply hitting run

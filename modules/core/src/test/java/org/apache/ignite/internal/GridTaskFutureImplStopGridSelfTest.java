@@ -19,7 +19,6 @@ package org.apache.ignite.internal;
 
 import org.apache.ignite.*;
 import org.apache.ignite.compute.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.junits.common.*;
@@ -67,9 +66,9 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
         try {
             final ComputeTaskFuture<?> fut = executeAsync(ignite.compute(), GridStopTestTask.class.getName(), null);
 
-            fut.listenAsync(new CI1<IgniteFuture>() {
+            fut.listenAsync(new CI1<IgniteInternalFuture>() {
                 @SuppressWarnings({"NakedNotify"})
-                @Override public void apply(IgniteFuture gridFut) {
+                @Override public void apply(IgniteInternalFuture gridFut) {
                     synchronized (mux) {
                         mux.notifyAll();
                     }

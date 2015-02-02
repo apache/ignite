@@ -215,8 +215,8 @@ public class GridCacheNearReadersSelfTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        ((GridKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
-        ((GridKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
+        ((IgniteKernal)g1).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
+        ((IgniteKernal)g2).internalCache(null).preloader().request(F.asList(1, 2), 2).get();
 
         GridCache<Integer, String> cache1 = g1.cache(null);
         GridCache<Integer, String> cache2 = g2.cache(null);

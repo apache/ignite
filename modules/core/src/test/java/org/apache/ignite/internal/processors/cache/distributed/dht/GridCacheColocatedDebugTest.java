@@ -26,7 +26,6 @@ import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -282,7 +281,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             final int keysCnt = 10;
 
-            IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     // Make thread-local copy to shuffle keys.
                     List<Integer> threadKeys = new ArrayList<>(keys);
@@ -321,7 +320,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
             Thread.sleep(1000);
             // Check that all transactions are committed.
             for (int i = 0; i < 3; i++) {
-                GridCacheAdapter<Object, Object> cache = ((GridKernal)grid(i)).internalCache();
+                GridCacheAdapter<Object, Object> cache = ((IgniteKernal)grid(i)).internalCache();
 
                 for (Integer key : keys) {
                     GridCacheEntryEx<Object, Object> entry = cache.peekEx(key);
@@ -378,7 +377,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
 
             final Lock lock = g0.jcache(null).lock(key);
 
-            IgniteFuture<?> unlockFut = multithreadedAsync(new Runnable() {
+            IgniteInternalFuture<?> unlockFut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
                         lock.lock();
@@ -771,7 +770,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
     private void checkStore(Ignite ignite, Map<Integer, String> map) throws Exception {
         String cacheName = ignite.configuration().getCacheConfiguration()[0].getName();
 
-        GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+        GridCacheContext ctx = ((IgniteKernal)grid()).context().cache().internalCache(cacheName).context();
 
         CacheStore store = ctx.store().configuredStore();
 
@@ -787,7 +786,7 @@ public class GridCacheColocatedDebugTest extends GridCommonAbstractTest {
         for (int i = 0; i < cnt; i++) {
             String cacheName = grid(i).configuration().getCacheConfiguration()[0].getName();
 
-            GridCacheContext ctx = ((GridKernal)grid()).context().cache().internalCache(cacheName).context();
+            GridCacheContext ctx = ((IgniteKernal)grid()).context().cache().internalCache(cacheName).context();
 
             CacheStore store = ctx.store().configuredStore();
 

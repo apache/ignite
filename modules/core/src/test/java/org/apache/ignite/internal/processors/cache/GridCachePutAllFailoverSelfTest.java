@@ -23,6 +23,7 @@ import org.apache.ignite.cache.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.spi.*;
@@ -50,7 +51,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** Size of the test map. */
-    private static final int TEST_MAP_SIZE = 100000;
+    private static final int TEST_MAP_SIZE = 30000;
 
     /** Cache name. */
     private static final String CACHE_NAME = "partitioned";
@@ -258,8 +259,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-                        @Override public void apply(IgniteFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+                        @Override public void apply(IgniteInternalFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
@@ -326,7 +327,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
             if (!failedWait && !absentKeys.isEmpty()) {
                 // Give some time to preloader.
-                U.sleep(15000);
+                U.sleep(20000);
 
                 absentKeys = findAbsentKeys(runningWorkers.get(0), testKeys);
             }
@@ -430,8 +431,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                     resQueue.put(fut); // Blocks if queue is full.
 
-                    fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-                        @Override public void apply(IgniteFuture<Void> f) {
+                    fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+                        @Override public void apply(IgniteInternalFuture<Void> f) {
                             ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                             try {
@@ -481,8 +482,8 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
                 resQueue.put(fut); // Blocks if queue is full.
 
-                fut.listenAsync(new CI1<IgniteFuture<Void>>() {
-                    @Override public void apply(IgniteFuture<Void> f) {
+                fut.listenAsync(new CI1<IgniteInternalFuture<Void>>() {
+                    @Override public void apply(IgniteInternalFuture<Void> f) {
                         ComputeTaskFuture<?> taskFut = (ComputeTaskFuture<?>)f;
 
                         try {

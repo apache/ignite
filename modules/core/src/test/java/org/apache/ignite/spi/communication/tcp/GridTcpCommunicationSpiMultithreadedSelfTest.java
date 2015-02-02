@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
 import org.apache.ignite.internal.util.direct.*;
@@ -172,7 +173,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             /** Randomizer. */
             private Random rnd = new Random();
 
@@ -269,7 +270,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final int interval = 50;
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             /** {@inheritDoc} */
             @Override public void run() {
                 try {
@@ -308,7 +309,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         final AtomicBoolean run = new AtomicBoolean(true);
 
-        IgniteFuture<?> fut2 = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     while (run.get() && !Thread.currentThread().isInterrupted()) {
@@ -368,7 +369,7 @@ public abstract class GridTcpCommunicationSpiMultithreadedSelfTest extends GridS
 
         long start = System.currentTimeMillis();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Runnable() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
                     ClusterNode from = nodes.get(0);

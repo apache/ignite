@@ -21,6 +21,7 @@ import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.compute.*;
 import org.apache.ignite.examples.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
 import org.jetbrains.annotations.*;
@@ -36,7 +37,7 @@ import java.util.*;
  * {@link org.apache.ignite.compute.ComputeJobContext#callcc()} method calls in {@link FibonacciClosure} class.
  * <p>
  * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ggstart.{sh|bat} examples/config/example-compute.xml'}.
+ * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-compute.xml'}.
  * <p>
  * Alternatively you can run {@link ComputeNodeStartup} in another JVM which will start GridGain node
  * with {@code examples/config/example-compute.xml} configuration.
@@ -86,10 +87,10 @@ public final class ComputeFibonacciContinuationExample {
      */
     private static class FibonacciClosure implements IgniteClosure<Long, BigInteger> {
         /** Future for spawned task. */
-        private IgniteFuture<BigInteger> fut1;
+        private IgniteInternalFuture<BigInteger> fut1;
 
         /** Future for spawned task. */
-        private IgniteFuture<BigInteger> fut2;
+        private IgniteInternalFuture<BigInteger> fut2;
 
         /** Auto-inject job context. */
         @IgniteJobContextResource
@@ -123,7 +124,7 @@ public final class ComputeFibonacciContinuationExample {
                         return n == 0 ? BigInteger.ZERO : BigInteger.ONE;
 
                     // Node-local storage.
-                    ClusterNodeLocalMap<Long, IgniteFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
+                    ClusterNodeLocalMap<Long, IgniteInternalFuture<BigInteger>> locMap = g.cluster().nodeLocalMap();
 
                     // Check if value is cached in node-local-map first.
                     fut1 = locMap.get(n - 1);
@@ -149,8 +150,8 @@ public final class ComputeFibonacciContinuationExample {
 
                     // If futures are not done, then wait asynchronously for the result
                     if (!fut1.isDone() || !fut2.isDone()) {
-                        IgniteInClosure<IgniteFuture<BigInteger>> lsnr = new IgniteInClosure<IgniteFuture<BigInteger>>() {
-                            @Override public void apply(IgniteFuture<BigInteger> f) {
+                        IgniteInClosure<IgniteInternalFuture<BigInteger>> lsnr = new IgniteInClosure<IgniteInternalFuture<BigInteger>>() {
+                            @Override public void apply(IgniteInternalFuture<BigInteger> f) {
                                 // If both futures are done, resume the continuation.
                                 if (fut1.isDone() && fut2.isDone())
                                     // CONTINUATION:

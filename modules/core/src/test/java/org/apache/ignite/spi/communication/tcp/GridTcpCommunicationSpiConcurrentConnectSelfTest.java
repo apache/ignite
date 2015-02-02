@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.spi.communication.*;
 import org.eclipse.jetty.util.*;
@@ -174,7 +175,7 @@ public class GridTcpCommunicationSpiConcurrentConnectSelfTest<T extends Communic
 
         final AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteFuture<?> loadFut = null;
+        IgniteInternalFuture<?> loadFut = null;
 
         if (load) {
             loadFut = GridTestUtils.runMultiThreadedAsync(new Callable<Long>() {

@@ -20,13 +20,12 @@ package org.apache.ignite.testsuites;
 import junit.framework.*;
 import org.apache.ignite.internal.*;
 import org.apache.ignite.p2p.*;
-import org.apache.ignite.testsuites.*;
 import org.apache.ignite.spi.deployment.uri.*;
 import org.apache.ignite.spi.deployment.uri.scanners.file.*;
 import org.apache.ignite.spi.deployment.uri.scanners.http.*;
 
 /**
- * Tests against {@link GridUriDeploymentSpi}.
+ * Tests against {@link org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}.
  */
 public class IgniteUriDeploymentTestSuite {
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cluster.*;
 import org.apache.ignite.events.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
@@ -56,7 +57,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private AtomicReference<ResendTimeoutObject> pendingResend = new AtomicReference<>();
 
     /** Partition resend timeout after eviction. */
-    private final long partResendTimeout = getLong(GG_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
+    private final long partResendTimeout = getLong(IGNITE_PRELOAD_RESEND_TIMEOUT, DFLT_PRELOAD_RESEND_TIMEOUT);
 
     /** Latch which completes after local exchange future is created. */
     private GridFutureAdapter<?> locExchFut;
@@ -130,8 +131,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (log.isDebugEnabled())
                     log.debug("Discovery event (will start exchange): " + exchId);
 
-                locExchFut.listenAsync(new CI1<IgniteFuture<?>>() {
-                    @Override public void apply(IgniteFuture<?> t) {
+                locExchFut.listenAsync(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> t) {
                         if (!enterBusy())
                             return;
 
@@ -338,8 +339,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange futures.
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    public List<IgniteFuture<?>> exchangeFutures() {
-        return (List<IgniteFuture<?>>)(List)exchFuts.values();
+    public List<IgniteInternalFuture<?>> exchangeFutures() {
+        return (List<IgniteInternalFuture<?>>)(List)exchFuts.values();
     }
 
     /**

@@ -18,8 +18,8 @@
 package org.apache.ignite.streamer.window;
 
 import org.apache.ignite.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.internal.util.*;
-import org.apache.ignite.lang.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
@@ -792,7 +792,7 @@ public class GridStreamerWindowSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger added = new GridAtomicInteger();
 
-        IgniteFuture<?> fut = multithreadedAsync(new Callable<Object>() {
+        IgniteInternalFuture<?> fut = multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
                 Random rnd = new Random();
 

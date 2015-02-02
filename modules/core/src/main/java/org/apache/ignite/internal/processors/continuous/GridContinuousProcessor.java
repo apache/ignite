@@ -373,7 +373,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @return Future.
      */
     @SuppressWarnings("TooBroadScope")
-    public IgniteFuture<UUID> startRoutine(GridContinuousHandler hnd,
+    public IgniteInternalFuture<UUID> startRoutine(GridContinuousHandler hnd,
         int bufSize,
         long interval,
         boolean autoUnsubscribe,
@@ -562,7 +562,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      * @param routineId Consume ID.
      * @return Future.
      */
-    public IgniteFuture<?> stopRoutine(UUID routineId) {
+    public IgniteInternalFuture<?> stopRoutine(UUID routineId) {
         assert routineId != null;
 
         boolean doStop = false;

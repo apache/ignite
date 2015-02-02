@@ -129,7 +129,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
      * @return Near cache.
      */
     private static GridNearCacheAdapter<String, Integer> near(Ignite g) {
-        return (GridNearCacheAdapter<String, Integer>)((GridKernal)g).<String, Integer>internalCache();
+        return (GridNearCacheAdapter<String, Integer>)((IgniteKernal)g).<String, Integer>internalCache();
     }
 
     /**

@@ -41,7 +41,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration c = super.getConfiguration(gridName);
 
-        GridUriDeploymentSpi deploymentSpi = new GridUriDeploymentSpi();
+        UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
 
         deploymentSpi.setUriList(
             Arrays.asList(U.resolveGridGainUrl("modules/core/src/test/resources/").toURI().toString()));
@@ -79,7 +79,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
                 }
             }, EVT_NODE_JOINED);
 
-            IgniteFuture<?> f = multithreadedAsync(new Callable<Object>() {
+            IgniteInternalFuture<?> f = multithreadedAsync(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     startGrid(2);
 

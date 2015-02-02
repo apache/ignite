@@ -44,7 +44,7 @@ import org.jetbrains.annotations.*;
  *          &lt;bean class="org.gridgain.grid.logger.jcl.GridJclLogger"&gt;
  *              &lt;constructor-arg type="org.apache.commons.logging.Log"&gt;
  *                  &lt;bean class="org.apache.commons.logging.impl.Log4JLogger"&gt;
- *                      &lt;constructor-arg type="java.lang.String" value="config/gridgain-log4j.xml"/&gt;
+ *                      &lt;constructor-arg type="java.lang.String" value="config/ignite-log4j.xml"/&gt;
  *                  &lt;/bean&gt;
  *              &lt;/constructor-arg&gt;
  *          &lt;/bean&gt;
@@ -56,11 +56,11 @@ import org.jetbrains.annotations.*;
  * injection.
  * <h1 class="header">Quiet Mode</h1>
  * By default GridGain 3.0 and later starts in "quiet" mode suppressing {@code INFO} and {@code DEBUG}
- * log output. If system property {@code GRIDGAIN_QUIET} is set to {@code false} than GridGain
+ * log output. If system property {@code IGNITE_QUIET} is set to {@code false} than GridGain
  * will operate in normal un-suppressed logging mode. Note that all output in "quiet" mode is
  * done through standard output (STDOUT).
  * <p>
- * Note that GridGain's standard startup scripts <tt>$GRIDGAIN_HOME/bin/ggstart.{sh|bat}</tt> start
+ * Note that GridGain's standard startup scripts <tt>$IGNITE_HOME/bin/ignite.{sh|bat}</tt> start
  * by default in "quiet" mode. Both scripts accept {@code -v} arguments to turn off "quiet" mode.
  */
 @GridToStringExclude

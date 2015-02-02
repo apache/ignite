@@ -23,7 +23,7 @@ import org.apache.ignite.cache.eviction.*;
 import org.apache.ignite.cache.eviction.fifo.*;
 import org.apache.ignite.cache.eviction.lru.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.spi.discovery.tcp.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.*;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.*;
@@ -152,7 +152,7 @@ public class GridCacheConcurrentEvictionsSelfTest extends GridCommonAbstractTest
 
             long start = System.currentTimeMillis();
 
-            IgniteFuture<?> fut = multithreadedAsync(
+            IgniteInternalFuture<?> fut = multithreadedAsync(
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         for (int i = 0; i < iterCnt; i++) {

@@ -32,7 +32,7 @@ import static org.apache.ignite.cache.CacheDistributionMode.*;
 import static org.apache.ignite.cache.CacheMode.*;
 
 /**
- * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link org.apache.ignite.cache.jta.GridCacheTmLookup}.
+ * Test for {@link org.apache.ignite.lifecycle.LifecycleAware} support for {@link org.apache.ignite.cache.jta.CacheTmLookup}.
  */
 public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTest {
     /** */
@@ -45,7 +45,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
      */
     @SuppressWarnings("PublicInnerClass")
     public static class TestTxLookup extends GridAbstractLifecycleAwareSelfTest.TestLifecycleAware
-        implements GridCacheTmLookup {
+        implements CacheTmLookup {
         /**
          */
         public TestTxLookup() {
@@ -84,7 +84,7 @@ public class GridTmLookupLifecycleAwareSelfTest extends GridAbstractLifecycleAwa
     /** {@inheritDoc} */
     @Override protected void afterGridStart(Ignite ignite) {
         TestTxLookup tmLookup =
-            (TestTxLookup)((GridKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
+            (TestTxLookup)((IgniteKernal) ignite).context().cache().internalCache(CACHE_NAME).context().jta().tmLookup();
 
         assertNotNull(tmLookup);
 

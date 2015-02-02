@@ -19,4 +19,4 @@ if %SCRIPT_DIR:~-1,1% == \ set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
 
 :: -np option is mandatory, if it is not provided then we will wait for a user input,
 :: as a result ggservice windows service hangs forever
-call "%SCRIPT_DIR%\..\..\..\..\..\bin\ggstart.bat" -v -np modules\core\src\test\config\spring-start-nodes-attr.xml
+call "%SCRIPT_DIR%\..\..\..\..\..\bin\ignite.bat" -v -np modules\core\src\test\config\spring-start-nodes-attr.xml

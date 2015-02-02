@@ -18,7 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import org.apache.ignite.*;
-import org.apache.ignite.lang.*;
+import org.apache.ignite.internal.*;
 import org.jetbrains.annotations.*;
 
 import java.util.*;
@@ -27,7 +27,7 @@ import java.util.*;
  * Cache query future returned by query execution.
  * Refer to {@link CacheQuery} documentation for more information.
  */
-public interface CacheQueryFuture<T> extends IgniteFuture<Collection<T>> {
+public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>> {
     /**
      * Returns number of elements that are already fetched and can
      * be returned from {@link #next()} method without blocking.
