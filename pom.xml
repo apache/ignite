@@ -34,7 +34,7 @@
 
     <properties>
         <ignite.version>1.0.0-SNAPSHOT</ignite.version>
-        <gridgain.edition>fabric</gridgain.edition>
+        <ignite.edition>fabric</ignite.edition>
         <hadoop.version>2.4.1</hadoop.version>
         <spring.version>4.1.0.RELEASE</spring.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -326,7 +326,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-${gridgain.edition}.xml</descriptor>
+                                <descriptor>assembly/dependencies-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}</outputDirectory>
                             <finalName>libs</finalName>
@@ -343,7 +343,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/dependencies-optional-${gridgain.edition}.xml</descriptor>
+                                <descriptor>assembly/dependencies-optional-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <outputDirectory>${basedir}/libs</outputDirectory>
                             <finalName>optional</finalName>
@@ -377,7 +377,7 @@
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/release-${gridgain.edition}.xml</descriptor>
+                                <descriptor>assembly/release-${ignite.edition}.xml</descriptor>
                             </descriptors>
                             <finalName>release-package</finalName>
                             <appendAssemblyId>false</appendAssemblyId>
@@ -1250,10 +1250,10 @@
                                             </fileset>
                                         </replace>
 
-                                        <zip destfile="target/ignite-${gridgain.edition}-${ignite.version}.zip"
+                                        <zip destfile="target/ignite-${ignite.edition}-${ignite.version}.zip"
                                              encoding="UTF-8">
                                             <zipfileset dir="target/release-package"
-                                                        prefix="ignite-${gridgain.edition}-${ignite.version}"
+                                                        prefix="ignite-${ignite.edition}-${ignite.version}"
                                                         filemode="755">
                                                 <include name="**/*.sh"/>
                                                 <include name="**/configure"/>
@@ -1262,7 +1262,7 @@
                                                 <include name="**/missing"/>
                                             </zipfileset>
                                             <zipfileset dir="target/release-package"
-                                                        prefix="ignite-${gridgain.edition}-${ignite.version}">
+                                                        prefix="ignite-${ignite.edition}-${ignite.version}">
                                                 <exclude name="**/*.sh"/>
                                                 <exclude name="**/configure"/>
                                                 <exclude name="**/install-sh"/>
