@@ -30,7 +30,7 @@ set -e
 SERVICE=$2
 
 # Name of PID file.
-PIDFILE=${GRIDGAIN_PID_DIR}/${SERVICE}.pid
+PIDFILE=${IGNITE_PID_DIR}/${SERVICE}.pid
 
 case "$1" in
     start)
@@ -41,7 +41,7 @@ case "$1" in
         DEFAULT_CONFIG="default-config.xml"
 
         # Is needed for setenv
-        SCRIPTS_HOME=${GRIDGAIN_HOME}/bin
+        SCRIPTS_HOME=${IGNITE_HOME}/bin
 
         # Load GridGain functions.
         source "${SCRIPTS_HOME}/include/functions.sh"
@@ -56,17 +56,17 @@ case "$1" in
         fi
 
         # Resolve config directory.
-        GRIDGAIN_CONF_DIR=${GRIDGAIN_CONF_DIR-"${GRIDGAIN_HOME}/config"}
+        IGNITE_CONF_DIR=${IGNITE_CONF_DIR-"${IGNITE_HOME}/config"}
 
         # Resolve full config path.
-        [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$GRIDGAIN_CONF_DIR/$DEFAULT_CONFIG"
+        [[ "$DEFAULT_CONFIG" != /* ]] && DEFAULT_CONFIG="$IGNITE_CONF_DIR/$DEFAULT_CONFIG"
 
         # Discover path to Java executable and check it's version.
         checkJava
 
         # And run.
-        $JAVA $JVM_OPTS -DGRIDGAIN_UPDATE_NOTIFIER=false -DGRIDGAIN_HOME="${GRIDGAIN_HOME}" \
-        -DGRIDGAIN_PROG_NAME="$0" -cp "$GRIDGAIN_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
+        $JAVA $JVM_OPTS -DIGNITE_UPDATE_NOTIFIER=false -DIGNITE_HOME="${IGNITE_HOME}" \
+        -DIGNITE_PROG_NAME="$0" -cp "$IGNITE_LIBS" "$MAIN_CLASS" "$DEFAULT_CONFIG" &>/dev/null &
 
         # Write process id.
         echo $! >$PIDFILE

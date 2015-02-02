@@ -5,7 +5,7 @@ Apache Ignite Spring module provides resources injection capabilities and parser
 configuration XML files.
 
 To enable Spring module when starting a standalone node, move 'optional/ignite-spring' folder to
-'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
+'libs' folder before running 'ignite.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
 
 Importing Spring Module In Maven Project

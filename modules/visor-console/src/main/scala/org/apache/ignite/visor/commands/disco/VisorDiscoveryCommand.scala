@@ -17,7 +17,7 @@
 
 package org.apache.ignite.visor.commands.disco
 
-import org.apache.ignite.internal.util.GridUtils
+import org.apache.ignite.internal.util.IgniteUtils
 import org.apache.ignite.internal.util.typedef.internal.U
 import org.apache.ignite.internal.visor.event.VisorGridDiscoveryEvent
 import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask
@@ -226,7 +226,7 @@ class VisorDiscoveryCommand {
         val nodeStartTime = node.metrics().getStartTime
 
         if (nodeStartTime > System.currentTimeMillis() - tmFrame) {
-            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, GridUtils.gridEventName(EVT_NODE_JOINED),
+            val root = new VisorGridDiscoveryEvent(EVT_NODE_JOINED, null, IgniteUtils.gridEventName(EVT_NODE_JOINED),
                 node.id(), nodeStartTime, "", "", node.id, node.addresses().head, node.isDaemon)
 
             evts = Seq(root) ++ evts

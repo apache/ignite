@@ -336,7 +336,7 @@ public class IgnitionEx {
      * should be responsible for stopping it.
      * <p>
      * Note also that restarting functionality only works with the tools that specifically
-     * support GridGain's protocol for restarting. Currently only standard <tt>ggstart.{sh|bat}</tt>
+     * support GridGain's protocol for restarting. Currently only standard <tt>ignite.{sh|bat}</tt>
      * scripts support restarting of JVM GridGain's process.
      *
      * @param cancel If {@code true} then all jobs currently executing on
@@ -346,7 +346,7 @@ public class IgnitionEx {
      * @see org.apache.ignite.Ignition#RESTART_EXIT_CODE
      */
     public static void restart(boolean cancel) {
-        String file = System.getProperty(GG_SUCCESS_FILE);
+        String file = System.getProperty(IGNITE_SUCCESS_FILE);
 
         if (file == null)
             U.warn(null, "Cannot restart node when restart not enabled.");
@@ -364,7 +364,7 @@ public class IgnitionEx {
 
             // Set the exit code so that shell process can recognize it and loop
             // the start up sequence again.
-            System.setProperty(GG_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
+            System.setProperty(IGNITE_RESTART_CODE, Integer.toString(Ignition.RESTART_EXIT_CODE));
 
             stopAll(cancel);
 
@@ -401,7 +401,7 @@ public class IgnitionEx {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @return Started grid.
@@ -414,7 +414,7 @@ public class IgnitionEx {
 
     /**
      * Starts grid with default configuration. By default this method will
-     * use grid configuration defined in {@code GRIDGAIN_HOME/config/default-config.xml}
+     * use grid configuration defined in {@code IGNITE_HOME/config/default-config.xml}
      * configuration file. If such file is not found, then all system defaults will be used.
      *
      * @param springCtx Optional Spring application context, possibly {@code null}.
@@ -431,7 +431,7 @@ public class IgnitionEx {
         if (url != null)
             return start(DFLT_CFG, null, springCtx);
 
-        U.warn(null, "Default Spring XML file not found (is GRIDGAIN_HOME set?): " + DFLT_CFG);
+        U.warn(null, "Default Spring XML file not found (is IGNITE_HOME set?): " + DFLT_CFG);
 
         return start0(new GridStartContext(new IgniteConfiguration(), null, springCtx)).grid();
     }
@@ -582,7 +582,7 @@ public class IgnitionEx {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return loadConfigurations(url);
@@ -808,7 +808,7 @@ public class IgnitionEx {
             if (url == null)
                 throw new IgniteCheckedException("Spring XML configuration path is invalid: " + springCfgPath +
                     ". Note that this path should be either absolute or a relative local file system path, " +
-                    "relative to META-INF in classpath or valid URL to GRIDGAIN_HOME.", e);
+                    "relative to META-INF in classpath or valid URL to IGNITE_HOME.", e);
         }
 
         return url;
@@ -1350,7 +1350,7 @@ public class IgnitionEx {
             if (ggHome == null)
                 ggHome = U.getGridGainHome();
             else
-                // If user provided GRIDGAIN_HOME - set it as a system property.
+                // If user provided IGNITE_HOME - set it as a system property.
                 U.setGridGainHome(ggHome);
 
             U.setWorkDirectory(cfg.getWorkDirectory(), ggHome);
@@ -1366,7 +1366,7 @@ public class IgnitionEx {
 
             // Set configuration URL, if any, into system property.
             if (startCtx.configUrl() != null)
-                System.setProperty(GG_CONFIG_URL, startCtx.configUrl().toString());
+                System.setProperty(IGNITE_CONFIG_URL, startCtx.configUrl().toString());
 
             myCfg.setGridName(cfg.getGridName());
 
@@ -1454,13 +1454,13 @@ public class IgnitionEx {
                 clientCfg = new ClientConnectionConfiguration(clientCfg);
 
 
-            String ntfStr = IgniteSystemProperties.getString(GG_LIFECYCLE_EMAIL_NOTIFY);
+            String ntfStr = IgniteSystemProperties.getString(IGNITE_LIFECYCLE_EMAIL_NOTIFY);
 
             if (ntfStr != null)
                 myCfg.setLifeCycleEmailNotification(Boolean.parseBoolean(ntfStr));
 
             // Local host.
-            String locHost = IgniteSystemProperties.getString(GG_LOCAL_HOST);
+            String locHost = IgniteSystemProperties.getString(IGNITE_LOCAL_HOST);
 
             myCfg.setLocalHost(F.isEmpty(locHost) ? cfg.getLocalHost() : locHost);
 
@@ -1469,7 +1469,7 @@ public class IgnitionEx {
                 myCfg.setDaemon(true);
 
             // Check for deployment mode override.
-            String depModeName = IgniteSystemProperties.getString(GG_DEP_MODE_OVERRIDE);
+            String depModeName = IgniteSystemProperties.getString(IGNITE_DEP_MODE_OVERRIDE);
 
             if (!F.isEmpty(depModeName)) {
                 if (!F.isEmpty(cfg.getCacheConfiguration())) {
@@ -1486,7 +1486,7 @@ public class IgnitionEx {
                     catch (IllegalArgumentException e) {
                         throw new IgniteCheckedException("Failed to override deployment mode using system property " +
                             "(are there any misspellings?)" +
-                            "[name=" + GG_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
+                            "[name=" + IGNITE_DEP_MODE_OVERRIDE + ", value=" + depModeName + ']', e);
                     }
                 }
             }
@@ -1814,34 +1814,34 @@ public class IgnitionEx {
 
             // Override SMTP configuration from system properties
             // and environment variables, if specified.
-            String fromEmail = IgniteSystemProperties.getString(GG_SMTP_FROM);
+            String fromEmail = IgniteSystemProperties.getString(IGNITE_SMTP_FROM);
 
             if (fromEmail != null)
                 myCfg.setSmtpFromEmail(fromEmail);
 
-            String smtpHost = IgniteSystemProperties.getString(GG_SMTP_HOST);
+            String smtpHost = IgniteSystemProperties.getString(IGNITE_SMTP_HOST);
 
             if (smtpHost != null)
                 myCfg.setSmtpHost(smtpHost);
 
-            String smtpUsername = IgniteSystemProperties.getString(GG_SMTP_USERNAME);
+            String smtpUsername = IgniteSystemProperties.getString(IGNITE_SMTP_USERNAME);
 
             if (smtpUsername != null)
                 myCfg.setSmtpUsername(smtpUsername);
 
-            String smtpPwd = IgniteSystemProperties.getString(GG_SMTP_PWD);
+            String smtpPwd = IgniteSystemProperties.getString(IGNITE_SMTP_PWD);
 
             if (smtpPwd != null)
                 myCfg.setSmtpPassword(smtpPwd);
 
-            int smtpPort = IgniteSystemProperties.getInteger(GG_SMTP_PORT, -1);
+            int smtpPort = IgniteSystemProperties.getInteger(IGNITE_SMTP_PORT, -1);
 
             if(smtpPort != -1)
                 myCfg.setSmtpPort(smtpPort);
 
-            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(GG_SMTP_SSL));
+            myCfg.setSmtpSsl(IgniteSystemProperties.getBoolean(IGNITE_SMTP_SSL));
 
-            String adminEmails = IgniteSystemProperties.getString(GG_ADMIN_EMAILS);
+            String adminEmails = IgniteSystemProperties.getString(IGNITE_ADMIN_EMAILS);
 
             if (adminEmails != null)
                 myCfg.setAdminEmails(adminEmails.split(","));
@@ -1961,8 +1961,8 @@ public class IgnitionEx {
                     grid = null;
             }
 
-            // Do NOT set it up only if GRIDGAIN_NO_SHUTDOWN_HOOK=TRUE is provided.
-            if (!IgniteSystemProperties.getBoolean(GG_NO_SHUTDOWN_HOOK, false)) {
+            // Do NOT set it up only if IGNITE_NO_SHUTDOWN_HOOK=TRUE is provided.
+            if (!IgniteSystemProperties.getBoolean(IGNITE_NO_SHUTDOWN_HOOK, false)) {
                 try {
                     Runtime.getRuntime().addShutdownHook(shutdownHook = new Thread() {
                         @Override public void run() {
@@ -1985,7 +1985,7 @@ public class IgnitionEx {
             else {
                 if (log.isDebugEnabled())
                     log.debug("Shutdown hook has not been installed because environment " +
-                        "or system property " + GG_NO_SHUTDOWN_HOOK + " is set.");
+                        "or system property " + IGNITE_NO_SHUTDOWN_HOOK + " is set.");
             }
         }
 
@@ -2008,13 +2008,13 @@ public class IgnitionEx {
                     }
 
                     if (log4jCls != null) {
-                        URL url = U.resolveGridGainUrl("config/gridgain-log4j.xml");
+                        URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
 
                         if (url == null) {
-                            File cfgFile = new File("config/gridgain-log4j.xml");
+                            File cfgFile = new File("config/ignite-log4j.xml");
 
                             if (!cfgFile.exists())
-                                cfgFile = new File("../config/gridgain-log4j.xml");
+                                cfgFile = new File("../config/ignite-log4j.xml");
 
                             if (cfgFile.exists()) {
                                 try {
