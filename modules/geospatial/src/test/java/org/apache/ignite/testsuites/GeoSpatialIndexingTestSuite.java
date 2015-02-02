@@ -21,7 +21,7 @@ import junit.framework.*;
 import org.apache.ignite.internal.processors.query.h2.*;
 
 /**
- * Geo spatial indexing tests.
+ * Geospatial indexing tests.
  */
 public class GeoSpatialIndexingTestSuite extends TestSuite {
     /**
@@ -29,7 +29,7 @@ public class GeoSpatialIndexingTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("H2 Indexing SPI Test Suite");
+        TestSuite suite = new TestSuite("H2 Geospatial Indexing Test Suite");
 
         // Geo.
         suite.addTestSuite(GridH2IndexingGeoSelfTest.class);

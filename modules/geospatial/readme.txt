@@ -6,6 +6,7 @@ Apache Ignite geospatial module provides capabilities to geospatial index cache 
 To enable geospatial module when starting a standalone node, move 'optional/ignite-geospatial' folder to
 'libs' folder before running 'ggstart.{sh|bat}' script. The content of the module folder will
 be added to classpath in this case.
+Note! This module can be used only when Ignite indexing module is enabled.
 
 Importing geospatial Module In Maven Project
 ------------------------------------------
