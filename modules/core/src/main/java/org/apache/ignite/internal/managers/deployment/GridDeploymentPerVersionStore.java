@@ -1259,8 +1259,8 @@ public class GridDeploymentPerVersionStore extends GridDeploymentStoreAdapter {
 
                 ClassLoader ldr = classLoader();
 
-                ctx.cache().onUndeployed(leftNodeId, ldr);
-                ctx.stream().onUndeployed(leftNodeId, ldr);
+                ctx.cache().onUndeployed(ldr);
+                ctx.stream().onUndeployed(ldr);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
                 IgniteOptimizedMarshaller.onUndeploy(ldr);

@@ -80,10 +80,9 @@ public interface IgniteStreamerEx extends IgniteStreamer {
     /**
      * Callback for undeployed class loaders. All deployed events will be removed from window and local storage.
      *
-     * @param leftNodeId Left node ID which caused undeployment.
      * @param undeployedLdr Undeployed class loader.
      */
-    public void onUndeploy(UUID leftNodeId, ClassLoader undeployedLdr);
+    public void onUndeploy(ClassLoader undeployedLdr);
 
     /**
      * Callback executed when streamer query completes.
