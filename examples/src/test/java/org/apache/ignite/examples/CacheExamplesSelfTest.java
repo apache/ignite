@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Cache examples self test.
  */
-public class CacheExamplesSelfTest extends AbstractExamplesTest {
+public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

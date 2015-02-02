@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  *
  */
-public class CacheStoreLoadDataExampleMultiNodeSelfTest extends AbstractExamplesTest {
+public class CacheStoreLoadDataExampleMultiNodeSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         for (int i = 0; i < RMT_NODES_CNT; i++)

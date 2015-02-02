@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * GridMemcacheRestExample self test.
  */
-public class MemcacheRestExamplesSelfTest extends AbstractExamplesTest {
+public class MemcacheRestExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Checkpoint examples self test.
  */
-public class CheckpointExamplesSelfTest extends AbstractExamplesTest {
+public class CheckpointExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * Starts remote nodes before each test.
      *

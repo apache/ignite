@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Events examples self test.
  */
-public class EventsExamplesSelfTest extends AbstractExamplesTest {
+public class EventsExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

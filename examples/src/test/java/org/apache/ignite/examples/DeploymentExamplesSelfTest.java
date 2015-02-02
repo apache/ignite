@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Deployment examples self test.
  */
-public class DeploymentExamplesSelfTest extends AbstractExamplesTest {
+public class DeploymentExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Continuation example self test.
  */
-public class ContinuationExamplesSelfTest extends AbstractExamplesTest {
+public class ContinuationExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

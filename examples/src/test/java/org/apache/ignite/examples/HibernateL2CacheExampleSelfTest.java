@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Tests the {@link HibernateL2CacheExample}.
  */
-public class HibernateL2CacheExampleSelfTest extends AbstractExamplesTest {
+public class HibernateL2CacheExampleSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

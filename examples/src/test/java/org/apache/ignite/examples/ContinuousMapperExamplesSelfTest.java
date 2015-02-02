@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * GridContinuousMapperExample self test.
  */
-public class ContinuousMapperExamplesSelfTest extends AbstractExamplesTest {
+public class ContinuousMapperExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Messaging examples self test.
  */
-public class MessagingExamplesSelfTest extends AbstractExamplesTest {
+public class MessagingExamplesSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid("companion", DFLT_CFG);

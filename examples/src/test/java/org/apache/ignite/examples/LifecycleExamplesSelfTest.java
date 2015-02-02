@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * GridLifecycleExample self test.
  */
-public class LifecycleExamplesSelfTest extends AbstractExamplesTest {
+public class LifecycleExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

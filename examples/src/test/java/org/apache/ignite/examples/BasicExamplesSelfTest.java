@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Closure examples self test.
  */
-public class BasicExamplesSelfTest extends AbstractExamplesTest {
+public class BasicExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

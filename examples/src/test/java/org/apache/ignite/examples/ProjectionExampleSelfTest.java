@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  *
  */
-public class ProjectionExampleSelfTest extends AbstractExamplesTest {
+public class ProjectionExampleSelfTest extends GridAbstractExamplesTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         // Start up a cluster node.

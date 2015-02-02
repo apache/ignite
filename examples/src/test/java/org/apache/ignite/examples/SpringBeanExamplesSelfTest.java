@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Spring bean examples self test.
  */
-public class SpringBeanExamplesSelfTest extends AbstractExamplesTest {
+public class SpringBeanExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */

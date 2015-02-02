@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.junits.common.*;
 /**
  * Hello world examples self test.
  */
-public class TaskExamplesSelfTest extends AbstractExamplesTest {
+public class TaskExamplesSelfTest extends GridAbstractExamplesTest {
     /**
      * @throws Exception If failed.
      */
