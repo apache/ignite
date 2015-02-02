@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
+import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
@@ -487,7 +488,7 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
      * @param key Key for which update is performed.
      * @param val New value, may be null for remove operation.
      * @param operation Updated value status
-     * @throws org.apache.ignite.internal.IgniteInterruptedCheckedException If interrupted while waiting for value to be flushed.
+     * @throws IgniteInterruptedCheckedException If interrupted while waiting for value to be flushed.
      */
     private void updateCache(K key,
         @Nullable Entry<? extends K, ? extends V> val,

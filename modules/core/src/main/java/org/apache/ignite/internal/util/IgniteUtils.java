@@ -47,6 +47,7 @@ import org.jdk8.backport.*;
 import org.jetbrains.annotations.*;
 import sun.misc.*;
 
+import javax.cache.*;
 import javax.management.*;
 import javax.naming.*;
 import javax.net.ssl.*;
@@ -648,6 +649,22 @@ public abstract class IgniteUtils {
             return (IgniteException)e.getCause();
 
         return new IgniteException(e.getMessage(), e);
+    }
+
+    /**
+     * @param e Ignite checked exception.
+     * @return Ignite runtime exception.
+     */
+    @Nullable public static CacheException convertCacheException(IgniteCheckedException e) {
+        if (e instanceof CachePartialUpdateCheckedException)
+            return new CachePartialUpdateException((CachePartialUpdateCheckedException)e);
+
+        if (e.getCause() instanceof CacheException)
+            return (CacheException)e.getCause();
+
+        C1<IgniteCheckedException, IgniteException> converter = exceptionConverters.get(e.getClass());
+
+        return converter != null ? new CacheException(converter.apply(e)) : new CacheException(e);
     }
 
     /**
