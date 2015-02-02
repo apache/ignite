@@ -43,8 +43,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  *
  */
-public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteTxEx>
-    implements GridCacheFuture<IgniteTxEx> {
+public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx>
+    implements GridCacheFuture<IgniteInternalTx> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -93,7 +93,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param commit Commit flag.
      */
     public GridDhtTxFinishFuture(GridCacheSharedContext<K, V> cctx, GridDhtTxLocalAdapter<K, V> tx, boolean commit) {
-        super(cctx.kernalContext(), F.<IgniteTxEx>identityReducer(tx));
+        super(cctx.kernalContext(), F.<IgniteInternalTx>identityReducer(tx));
 
         assert cctx != null;
 
@@ -201,7 +201,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     public void onResult(UUID nodeId, GridDhtTxFinishResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteTxEx> fut : futures()) {
+            for (IgniteInternalFuture<IgniteInternalTx> fut : futures()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -216,7 +216,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTxEx tx, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if (initialized() || err != null) {
             if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
                 this.tx.tmCommit();
@@ -446,7 +446,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTxEx> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
         private static final long serialVersionUID = 0L;
 

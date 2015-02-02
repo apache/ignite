@@ -869,8 +869,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                             assert t.implicit();
 
                                             return t.commitAsync().chain(
-                                                new C1<IgniteInternalFuture<IgniteTxEx>, GridNearLockResponse<K, V>>() {
-                                                    @Override public GridNearLockResponse<K, V> apply(IgniteInternalFuture<IgniteTxEx> f) {
+                                                new C1<IgniteInternalFuture<IgniteInternalTx>, GridNearLockResponse<K, V>>() {
+                                                    @Override public GridNearLockResponse<K, V> apply(IgniteInternalFuture<IgniteInternalTx> f) {
                                                         try {
                                                             // Check for error.
                                                             f.get();
@@ -1096,7 +1096,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      */
     private void sendLockReply(
         ClusterNode nearNode,
-        @Nullable IgniteTxEx<K,V> tx,
+        @Nullable IgniteInternalTx<K,V> tx,
         GridNearLockRequest<K, V> req,
         GridNearLockResponse<K, V> res
     ) {

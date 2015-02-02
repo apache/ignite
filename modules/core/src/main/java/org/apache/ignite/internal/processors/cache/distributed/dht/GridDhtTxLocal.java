@@ -278,7 +278,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
         if (optimistic()) {
             assert isSystemInvalidate();
 
@@ -350,7 +350,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
      * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
-    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync(@Nullable Iterable<IgniteTxEntry<K, V>> reads,
+    public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync(@Nullable Iterable<IgniteTxEntry<K, V>> reads,
         @Nullable Iterable<IgniteTxEntry<K, V>> writes,
         Map<IgniteTxKey<K>, GridCacheVersion> verMap,
         long msgId,
@@ -451,7 +451,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
 
     /** {@inheritDoc} */
     @SuppressWarnings({"ThrowableInstanceNeverThrown"})
-    @Override public IgniteInternalFuture<IgniteTxEx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         if (log.isDebugEnabled())
             log.debug("Committing dht local tx: " + this);
 
@@ -488,8 +488,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 }
             }
             else
-                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteTxEx<K, V>>>() {
-                    @Override public void apply(IgniteInternalFuture<IgniteTxEx<K, V>> f) {
+                prep.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                         try {
                             f.get(); // Check for errors of a parent future.
 
@@ -546,7 +546,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTxEx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         GridDhtTxPrepareFuture<K, V> prepFut = this.prepFut.get();
 
         final GridDhtTxFinishFuture<K, V> fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
@@ -576,8 +576,8 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
         else {
             prepFut.complete();
 
-            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteTxEx<K, V>>>() {
-                @Override public void apply(IgniteInternalFuture<IgniteTxEx<K, V>> f) {
+            prepFut.listenAsync(new CI1<IgniteInternalFuture<IgniteInternalTx<K, V>>>() {
+                @Override public void apply(IgniteInternalFuture<IgniteInternalTx<K, V>> f) {
                     try {
                         f.get(); // Check for errors of a parent future.
                     }

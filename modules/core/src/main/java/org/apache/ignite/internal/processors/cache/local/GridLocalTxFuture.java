@@ -37,8 +37,8 @@ import static org.apache.ignite.transactions.IgniteTxState.*;
 /**
  * Replicated cache transaction future.
  */
-final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
+final class GridLocalTxFuture<K, V> extends GridFutureAdapter<IgniteInternalTx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 

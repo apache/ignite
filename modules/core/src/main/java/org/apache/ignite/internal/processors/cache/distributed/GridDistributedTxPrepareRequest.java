@@ -132,7 +132,7 @@ public class GridDistributedTxPrepareRequest<K, V> extends GridDistributedBaseMe
      * @param txNodes Transaction nodes mapping.
      */
     public GridDistributedTxPrepareRequest(
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         @Nullable Collection<IgniteTxEntry<K, V>> reads,
         Collection<IgniteTxEntry<K, V>> writes,
         IgniteTxKey grpLockKey,

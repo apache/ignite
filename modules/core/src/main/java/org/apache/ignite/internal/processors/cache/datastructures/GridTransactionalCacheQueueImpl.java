@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
 
-import javax.cache.*;
 import java.util.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
@@ -55,7 +54,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
 
             while (true) {
                 try {
-                    try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                         Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, 1)).get();
 
                         if (idx != null) {
@@ -103,7 +102,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             T retVal;
 
             while (true) {
-                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id)).get();
 
                     if (idx != null) {
@@ -152,7 +151,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.invoke(queueKey, new AddProcessor(id, items.size())).get();
 
                     if (idx != null) {
@@ -205,7 +204,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
             int cnt = 0;
 
             while (true) {
-                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     Long idx = (Long)cache.invoke(queueKey, new RemoveProcessor(id, rmvIdx)).get();
 
                     if (idx != null) {

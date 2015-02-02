@@ -48,8 +48,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 /**
  *
  */
-public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
+public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -91,12 +91,12 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * @param tx Transaction.
      */
     public GridNearTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridNearTxLocal<K, V> tx) {
-        super(cctx.kernalContext(), new IgniteReducer<IgniteTxEx<K, V>, IgniteTxEx<K, V>>() {
-            @Override public boolean collect(IgniteTxEx<K, V> e) {
+        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx<K, V>, IgniteInternalTx<K, V>>() {
+            @Override public boolean collect(IgniteInternalTx<K, V> e) {
                 return true;
             }
 
-            @Override public IgniteTxEx<K, V> reduce() {
+            @Override public IgniteInternalTx<K, V> reduce() {
                 // Nothing to aggregate.
                 return tx;
             }
@@ -263,7 +263,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      */
     public void onResult(UUID nodeId, GridNearTxPrepareResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteTxEx<K, V>> fut : pending()) {
+            for (IgniteInternalFuture<IgniteInternalTx<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -278,7 +278,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTxEx<K, V> t, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx<K, V> t, Throwable err) {
         // If locks were not acquired yet, delay completion.
         if (isDone() || (err == null && !checkLocks()))
             return false;
@@ -601,14 +601,14 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
             // At this point, if any new node joined, then it is
             // waiting for this transaction to complete, so
             // partition reassignments are not possible here.
-            IgniteInternalFuture<IgniteTxEx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
+            IgniteInternalFuture<IgniteInternalTx<K, V>> fut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
 
             // Add new future.
             add(new GridEmbeddedFuture<>(
                 cctx.kernalContext(),
                 fut,
-                new C2<IgniteTxEx<K, V>, Exception, IgniteTxEx<K, V>>() {
-                    @Override public IgniteTxEx<K, V> apply(IgniteTxEx<K, V> t, Exception ex) {
+                new C2<IgniteInternalTx<K, V>, Exception, IgniteInternalTx<K, V>>() {
+                    @Override public IgniteInternalTx<K, V> apply(IgniteInternalTx<K, V> t, Exception ex) {
                         if (ex != null) {
                             onError(n.id(), mappings, ex);
 
@@ -737,7 +737,7 @@ public final class GridNearTxPrepareFuture<K, V> extends GridCompoundIdentityFut
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTxEx<K, V>> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 

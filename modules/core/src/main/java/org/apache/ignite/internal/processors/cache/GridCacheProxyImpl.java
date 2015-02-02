@@ -1129,7 +1129,7 @@ public class GridCacheProxyImpl<K, V> implements GridCacheProxy<K, V>, Externali
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         GridCacheProjectionImpl<K, V> prev = gate.enter(prj);
 
         try {

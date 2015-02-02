@@ -23,7 +23,6 @@ import org.apache.ignite.cache.datastructures.*;
 import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.lang.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.jetbrains.annotations.*;
@@ -194,7 +193,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     private Callable<Boolean> internalSet(final T val) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                IgniteTxEx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);
@@ -233,7 +232,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         final IgniteClosure<T, T> newValClos) {
         return new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
-                IgniteTxEx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ);
 
                 try {
                     GridCacheAtomicReferenceValue<T> ref = atomicView.get(key);

@@ -167,8 +167,8 @@ public class GridCacheUtils {
     };
 
     /** Converts transaction to XID version. */
-    private static final IgniteClosure tx2xidVer = new C1<IgniteTxEx, GridCacheVersion>() {
-        @Override public GridCacheVersion apply(IgniteTxEx tx) {
+    private static final IgniteClosure tx2xidVer = new C1<IgniteInternalTx, GridCacheVersion>() {
+        @Override public GridCacheVersion apply(IgniteInternalTx tx) {
             return tx.xidVersion();
         }
 
@@ -790,8 +790,8 @@ public class GridCacheUtils {
      * @return Closure which converts transaction entry xid to XID version.
      */
     @SuppressWarnings( {"unchecked"})
-    public static <K, V> IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion> tx2xidVersion() {
-        return (IgniteClosure<IgniteTxEx<K, V>, GridCacheVersion>)tx2xidVer;
+    public static <K, V> IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion> tx2xidVersion() {
+        return (IgniteClosure<IgniteInternalTx<K, V>, GridCacheVersion>)tx2xidVer;
     }
 
     /**
@@ -1192,7 +1192,7 @@ public class GridCacheUtils {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public static IgniteTxEx txStartInternal(GridCacheContext ctx, CacheProjection prj,
+    public static IgniteInternalTx txStartInternal(GridCacheContext ctx, CacheProjection prj,
         IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         assert ctx != null;
         assert prj != null;
@@ -1206,7 +1206,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return String view of all safe-to-print transaction properties.
      */
-    public static String txString(@Nullable IgniteTxEx tx) {
+    public static String txString(@Nullable IgniteInternalTx tx) {
         if (tx == null)
             return "null";
 
@@ -1609,7 +1609,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(CacheProjection<K, V> cache, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, IgniteInClosureX<CacheProjection<K ,V>> clo) throws IgniteCheckedException {
 
-        try (IgniteTxEx tx = cache.txStartEx(concurrency, isolation);) {
+        try (IgniteInternalTx tx = cache.txStartEx(concurrency, isolation);) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1622,7 +1622,7 @@ public class GridCacheUtils {
      * @param tx Transaction.
      * @return Subject ID.
      */
-    public static <K, V> UUID subjectId(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
+    public static <K, V> UUID subjectId(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> ctx) {
         if (tx == null)
             return ctx.localNodeId();
 

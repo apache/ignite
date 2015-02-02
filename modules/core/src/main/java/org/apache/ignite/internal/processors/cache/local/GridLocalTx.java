@@ -107,11 +107,11 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync() {
         try {
             prepare();
 
-            return new GridFinishedFuture<IgniteTxEx<K, V>>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx<K, V>>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);
@@ -146,7 +146,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
     /** {@inheritDoc} */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
-    @Override public IgniteInternalFuture<IgniteTxEx> commitAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
         try {
             prepare();
         }
@@ -177,7 +177,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<IgniteTxEx> rollbackAsync() {
+    @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
         try {
             state(ROLLING_BACK);
 
@@ -185,7 +185,7 @@ class GridLocalTx<K, V> extends IgniteTxLocalAdapter<K, V> {
 
             state(ROLLED_BACK);
 
-            return new GridFinishedFuture<IgniteTxEx>(cctx.kernalContext(), this);
+            return new GridFinishedFuture<IgniteInternalTx>(cctx.kernalContext(), this);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(cctx.kernalContext(), e);

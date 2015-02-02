@@ -315,7 +315,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V readThrough(IgniteTxEx<K, V> tx, K key, boolean reload,
+    @Override protected V readThrough(IgniteInternalTx<K, V> tx, K key, boolean reload,
         IgnitePredicate<CacheEntry<K, V>>[] filter, UUID subjId, String taskName) throws IgniteCheckedException {
         return cctx.near().loadAsync(tx,
             F.asList(key),
@@ -346,7 +346,7 @@ public class GridNearCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    public boolean loadedValue(@Nullable IgniteTxEx tx, UUID primaryNodeId, V val, byte[] valBytes,
+    public boolean loadedValue(@Nullable IgniteInternalTx tx, UUID primaryNodeId, V val, byte[] valBytes,
         GridCacheVersion ver, GridCacheVersion dhtVer, @Nullable GridCacheVersion expVer, long ttl, long expireTime,
         boolean evt, long topVer, UUID subjId)
         throws IgniteCheckedException, GridCacheEntryRemovedException {

@@ -53,7 +53,7 @@ public class GridCacheCommittedTxInfo<K, V> implements Externalizable {
     /**
      * @param tx Committed cache transaction.
      */
-    public GridCacheCommittedTxInfo(IgniteTxEx<K, V> tx) {
+    public GridCacheCommittedTxInfo(IgniteInternalTx<K, V> tx) {
         assert !tx.local() || !tx.replicated();
 
         originatingTxId = tx.nearXidVersion();

@@ -141,7 +141,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageAfterTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -160,7 +160,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void checkSalvageBeforeTimeout(IgniteTxConcurrency mode, boolean prepare) throws Exception {
@@ -187,7 +187,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
      *
      * @param mode Transaction mode (PESSIMISTIC, OPTIMISTIC).
      * @param prepare Whether to preapre transaction state
-     *                (i.e. call {@link IgniteTxEx#prepare()}).
+     *                (i.e. call {@link org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx#prepare()}).
      * @throws Exception If failed.
      */
     private void startTxAndPutKeys(final IgniteTxConcurrency mode, final boolean prepare) throws Exception {
@@ -207,7 +207,7 @@ public class GridCachePartitionedTxSalvageSelfTest extends GridCommonAbstractTes
 
                     // Unproxy.
                     if (prepare)
-                        U.<IgniteTxEx>field(tx, "tx").prepare();
+                        U.<IgniteInternalTx>field(tx, "tx").prepare();
                 }
                 catch (IgniteCheckedException e) {
                     info("Failed to put keys to cache: " + e.getMessage());

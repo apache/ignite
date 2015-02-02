@@ -1171,7 +1171,7 @@ public interface CacheProjection<K, V> extends Iterable<CacheEntry<K, V>> {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public IgniteTxEx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
+    public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
     /**
      * Starts transaction with specified isolation, concurrency, timeout, invalidation flag,

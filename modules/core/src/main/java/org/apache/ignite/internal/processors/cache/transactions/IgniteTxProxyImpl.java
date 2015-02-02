@@ -39,7 +39,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** Wrapped transaction. */
     @GridToStringInclude
-    private IgniteTxEx<K, V> tx;
+    private IgniteInternalTx<K, V> tx;
 
     /** Gateway. */
     @GridToStringExclude
@@ -63,7 +63,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
      * @param cctx Shared context.
      * @param async Async flag.
      */
-    public IgniteTxProxyImpl(IgniteTxEx<K, V> tx, GridCacheSharedContext<K, V> cctx, boolean async) {
+    public IgniteTxProxyImpl(IgniteInternalTx<K, V> tx, GridCacheSharedContext<K, V> cctx, boolean async) {
         assert tx != null;
         assert cctx != null;
 
@@ -234,7 +234,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
         enter();
 
         try {
-            IgniteInternalFuture<IgniteTxEx> commitFut = cctx.commitTxAsync(tx);
+            IgniteInternalFuture<IgniteInternalTx> commitFut = cctx.commitTxAsync(tx);
 
             if (async)
                 saveFuture(commitFut);
@@ -311,9 +311,9 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
     /**
      * @param fut Internal future.
      */
-    private void saveFuture(IgniteInternalFuture<IgniteTxEx> fut) {
-        IgniteInternalFuture<IgniteTx> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteTxEx>, IgniteTx>() {
-            @Override public IgniteTx applyx(IgniteInternalFuture<IgniteTxEx> fut) throws IgniteCheckedException {
+    private void saveFuture(IgniteInternalFuture<IgniteInternalTx> fut) {
+        IgniteInternalFuture<IgniteTx> fut0 = fut.chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, IgniteTx>() {
+            @Override public IgniteTx applyx(IgniteInternalFuture<IgniteInternalTx> fut) throws IgniteCheckedException {
                 return fut.get().proxy();
             }
         });
@@ -328,7 +328,7 @@ public class IgniteTxProxyImpl<K, V> implements IgniteTxProxy, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        tx = (IgniteTxEx<K, V>)in.readObject();
+        tx = (IgniteInternalTx<K, V>)in.readObject();
     }
 
     /** {@inheritDoc} */

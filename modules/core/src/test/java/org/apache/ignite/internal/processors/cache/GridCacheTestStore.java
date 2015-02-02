@@ -329,7 +329,7 @@ public final class GridCacheTestStore extends CacheStore<Integer, String> {
 
         assertTrue("Unexpected tx class: " + tx.getClass(), tx instanceof IgniteTxProxy);
 
-        IgniteTxEx tx0 = GridTestUtils.getFieldValue(tx, "tx");
+        IgniteInternalTx tx0 = GridTestUtils.getFieldValue(tx, "tx");
 
         if (!tx0.local())
             throw new IgniteException("Tx is not local: " + tx);

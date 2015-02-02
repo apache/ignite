@@ -1166,11 +1166,11 @@ public class GridCacheMvccManager<K, V> extends GridCacheSharedManagerAdapter<K,
         /** {@inheritDoc} */
         @Override public String toString() {
             if (!pendingLocks.isEmpty()) {
-                Map<GridCacheVersion, IgniteTxEx> txs = new HashMap<>(1, 1.0f);
+                Map<GridCacheVersion, IgniteInternalTx> txs = new HashMap<>(1, 1.0f);
 
                 for (Collection<GridCacheMvccCandidate<K>> cands : pendingLocks.values())
                     for (GridCacheMvccCandidate<K> c : cands)
-                        txs.put(c.version(), cctx.tm().<IgniteTxEx>tx(c.version()));
+                        txs.put(c.version(), cctx.tm().<IgniteInternalTx>tx(c.version()));
 
                 return S.toString(FinishLockFuture.class, this, "txs=" + txs + ", super=" + super.toString());
             }

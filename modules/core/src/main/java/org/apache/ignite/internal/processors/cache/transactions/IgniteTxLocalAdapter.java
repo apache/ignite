@@ -3421,8 +3421,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 setRollbackOnly();
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTxEx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteTxEx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             throw new GridClosureException(e);
                         }
                     });
@@ -3438,8 +3438,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                     ", tx=" + this + ']'));
 
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTxEx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteTxEx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             throw ex;
                         }
                     });
@@ -3456,8 +3456,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
                 if (commit && commitAfterLock()) {
                     rollback = false;
 
-                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteTxEx>, T>() {
-                        @Override public T applyx(IgniteInternalFuture<IgniteTxEx> f) throws IgniteCheckedException {
+                    return commitAsync().chain(new CX1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T applyx(IgniteInternalFuture<IgniteInternalTx> f) throws IgniteCheckedException {
                             f.get();
 
                             return r;
@@ -3471,8 +3471,8 @@ public abstract class IgniteTxLocalAdapter<K, V> extends IgniteTxAdapter<K, V>
             }
             catch (final IgniteCheckedException ex) {
                 if (commit && commitAfterLock())
-                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteTxEx>, T>() {
-                        @Override public T apply(IgniteInternalFuture<IgniteTxEx> f) {
+                    return rollbackAsync().chain(new C1<IgniteInternalFuture<IgniteInternalTx>, T>() {
+                        @Override public T apply(IgniteInternalFuture<IgniteInternalTx> f) {
                             throw new GridClosureException(ex);
                         }
                     });

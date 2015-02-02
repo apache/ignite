@@ -92,7 +92,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartEx(
+    @Override public IgniteInternalTx txStartEx(
         GridCacheContext ctx,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation,
@@ -112,7 +112,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartEx(
+    @Override public IgniteInternalTx txStartEx(
         GridCacheContext ctx,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation)
@@ -130,7 +130,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartAffinity(GridCacheContext ctx,
+    @Override public IgniteInternalTx txStartAffinity(GridCacheContext ctx,
         Object affinityKey,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation,
@@ -149,7 +149,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartPartitionEx(GridCacheContext ctx,
+    @Override public IgniteInternalTx txStartPartitionEx(GridCacheContext ctx,
         int partId,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation,
@@ -194,7 +194,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @param sys System flag.
      * @return Transaction.
      */
-    private IgniteTxEx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
+    private IgniteInternalTx txStart0(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation,
         long timeout, int txSize, boolean sys) {
         TransactionsConfiguration cfg = cctx.gridConfig().getTransactionsConfiguration();
 
@@ -202,7 +202,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             throw new IllegalArgumentException("SERIALIZABLE isolation level is disabled (to enable change " +
                 "'txSerializableEnabled' configuration property)");
 
-        IgniteTxEx<K, V> tx = (IgniteTxEx<K, V>)cctx.tm().userTx();
+        IgniteInternalTx<K, V> tx = (IgniteInternalTx<K, V>)cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -294,10 +294,10 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    private IgniteTxEx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
+    private IgniteInternalTx txStartGroupLock(GridCacheContext ctx, Object grpLockKey, IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation, boolean partLock, long timeout, int txSize, boolean sys)
         throws IllegalStateException, IgniteCheckedException {
-        IgniteTxEx tx = cctx.tm().userTx();
+        IgniteInternalTx tx = cctx.tm().userTx();
 
         if (tx != null)
             throw new IllegalStateException("Failed to start new transaction " +
@@ -338,7 +338,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteTx tx() {
-        IgniteTxEx tx = cctx.tm().userTx();
+        IgniteInternalTx tx = cctx.tm().userTx();
 
         return tx != null ? tx.proxy() : null;
     }

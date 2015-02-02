@@ -51,7 +51,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
  * Managed transaction adapter.
  */
 public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
-    implements IgniteTxEx<K, V>, Externalizable {
+    implements IgniteInternalTx<K, V>, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -181,7 +181,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** */
     @GridToStringExclude
-    private AtomicReference<GridFutureAdapter<IgniteTxEx>> finFut = new AtomicReference<>();
+    private AtomicReference<GridFutureAdapter<IgniteInternalTx>> finFut = new AtomicReference<>();
 
     /** Topology version. */
     private AtomicLong topVer = new AtomicLong(-1);
@@ -940,11 +940,11 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
     /** {@inheritDoc} */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    @Override public IgniteInternalFuture<IgniteTxEx> finishFuture() {
-        GridFutureAdapter<IgniteTxEx> fut = finFut.get();
+    @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
+        GridFutureAdapter<IgniteInternalTx> fut = finFut.get();
 
         if (fut == null) {
-            fut = new GridFutureAdapter<IgniteTxEx>(cctx.kernalContext()) {
+            fut = new GridFutureAdapter<IgniteInternalTx>(cctx.kernalContext()) {
                 @Override public String toString() {
                     return S.toString(GridFutureAdapter.class, this, "tx", IgniteTxAdapter.this);
                 }
@@ -1066,7 +1066,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         if (notify) {
-            GridFutureAdapter<IgniteTxEx> fut = finFut.get();
+            GridFutureAdapter<IgniteInternalTx> fut = finFut.get();
 
             if (fut != null)
                 fut.onDone(this);
@@ -1436,7 +1436,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
     /**
      * Transaction shadow class to be used for deserialization.
      */
-    private static class TxShadow implements IgniteTxEx {
+    private static class TxShadow implements IgniteInternalTx {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1869,7 +1869,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteTxEx> prepareAsync() {
+        @Override public IgniteInternalFuture<IgniteInternalTx> prepareAsync() {
             return null;
         }
 
@@ -1889,7 +1889,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteTxEx> finishFuture() {
+        @Override public IgniteInternalFuture<IgniteInternalTx> finishFuture() {
             return null;
         }
 
@@ -1914,12 +1914,12 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteTxEx> rollbackAsync() {
+        @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<IgniteTxEx> commitAsync() {
+        @Override public IgniteInternalFuture<IgniteInternalTx> commitAsync() {
             return null;
         }
 
@@ -2025,7 +2025,7 @@ public abstract class IgniteTxAdapter<K, V> extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
-            return this == o || o instanceof IgniteTxEx && xid.equals(((IgniteTxEx)o).xid());
+            return this == o || o instanceof IgniteInternalTx && xid.equals(((IgniteInternalTx)o).xid());
         }
 
         /** {@inheritDoc} */

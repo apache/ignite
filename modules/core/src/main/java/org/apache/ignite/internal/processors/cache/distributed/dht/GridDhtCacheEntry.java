@@ -234,7 +234,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean tmLock(IgniteTxEx<K, V> tx, long timeout)
+    @Override public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout)
         throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         if (tx.local()) {
             GridDhtTxLocalAdapter<K, V> dhtTx = (GridDhtTxLocalAdapter<K, V>)tx;
@@ -436,7 +436,7 @@ public class GridDhtCacheEntry<K, V> extends GridDistributedCacheEntry<K, V> {
 
             if (!F.isEmpty(cands)) {
                 for (GridCacheMvccCandidate<K> c : cands) {
-                    IgniteTxEx<K, V> tx = cctx.tm().tx(c.version());
+                    IgniteInternalTx<K, V> tx = cctx.tm().tx(c.version());
 
                     if (tx != null) {
                         assert tx.local();

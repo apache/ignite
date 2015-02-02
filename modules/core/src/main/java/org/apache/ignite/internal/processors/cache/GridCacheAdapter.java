@@ -720,7 +720,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 }
             }
 
-            IgniteTxEx<K, V> tx = ctx.tm().localTx();
+            IgniteInternalTx<K, V> tx = ctx.tm().localTx();
 
             if (tx != null) {
                 GridTuple<V> peek = tx.peek(ctx, failFast, key, filter);
@@ -799,7 +799,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Peeked value.
      * @throws IgniteCheckedException In case of error.
      */
-    @Nullable protected V peek0(K key, @Nullable Collection<GridCachePeekMode> modes, IgniteTxEx<K, V> tx)
+    @Nullable protected V peek0(K key, @Nullable Collection<GridCachePeekMode> modes, IgniteInternalTx<K, V> tx)
         throws IgniteCheckedException {
         try {
             GridTuple<V> peek = peek0(false, key, modes, tx);
@@ -825,7 +825,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws GridCacheFilterFailedException If filer validation failed.
      */
     @Nullable protected GridTuple<V> peek0(boolean failFast, K key, @Nullable Collection<GridCachePeekMode> modes,
-        IgniteTxEx<K, V> tx) throws IgniteCheckedException, GridCacheFilterFailedException {
+        IgniteInternalTx<K, V> tx) throws IgniteCheckedException, GridCacheFilterFailedException {
         if (F.isEmpty(modes))
             return F.t(peek(key, (IgnitePredicate<CacheEntry<K, V>>)null));
 
@@ -896,7 +896,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @throws IgniteCheckedException If failed.
      */
     protected Map<K, V> peekAll0(@Nullable Collection<? extends K> keys, @Nullable Collection<GridCachePeekMode> modes,
-        IgniteTxEx<K, V> tx, @Nullable Collection<K> skipped) throws IgniteCheckedException {
+        IgniteInternalTx<K, V> tx, @Nullable Collection<K> skipped) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return emptyMap();
 
@@ -1467,7 +1467,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      */
     public IgniteInternalFuture<Object> readThroughAllAsync(final Collection<? extends K> keys,
         boolean reload,
-        @Nullable final IgniteTxEx<K, V> tx,
+        @Nullable final IgniteInternalTx<K, V> tx,
         IgnitePredicate<CacheEntry<K, V>>[] filter,
         @Nullable UUID subjId,
         String taskName,
@@ -3561,7 +3561,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         IgniteTransactionsEx txs = ctx.kernalContext().cache().transactions();
 
         return txs.txStartEx(ctx, concurrency, isolation);
@@ -4049,7 +4049,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
      * @return Transaction commit future.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<IgniteTxEx> commitTxAsync(final IgniteTxEx tx) {
+    public IgniteInternalFuture<IgniteInternalTx> commitTxAsync(final IgniteInternalTx tx) {
         FutureHolder holder = lastFut.get();
 
         holder.lock();
@@ -4058,9 +4058,9 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
             IgniteInternalFuture fut = holder.future();
 
             if (fut != null && !fut.isDone()) {
-                IgniteInternalFuture<IgniteTxEx> f = new GridEmbeddedFuture<>(fut,
-                    new C2<Object, Exception, IgniteInternalFuture<IgniteTxEx>>() {
-                        @Override public IgniteInternalFuture<IgniteTxEx> apply(Object o, Exception e) {
+                IgniteInternalFuture<IgniteInternalTx> f = new GridEmbeddedFuture<>(fut,
+                    new C2<Object, Exception, IgniteInternalFuture<IgniteInternalTx>>() {
+                        @Override public IgniteInternalFuture<IgniteInternalTx> apply(Object o, Exception e) {
                             return tx.commitAsync();
                         }
                     }, ctx.kernalContext());
@@ -4070,7 +4070,7 @@ public abstract class GridCacheAdapter<K, V> implements GridCache<K, V>,
                 return f;
             }
 
-            IgniteInternalFuture<IgniteTxEx> f = tx.commitAsync();
+            IgniteInternalFuture<IgniteInternalTx> f = tx.commitAsync();
 
             saveFuture(holder, f);
 

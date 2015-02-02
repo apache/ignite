@@ -152,7 +152,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
      */
     @SuppressWarnings({"unchecked"})
     @Nullable private V peek0(@Nullable GridCachePeekMode mode,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws IgniteCheckedException {
         assert tx == null || tx.local();
 
@@ -184,7 +184,7 @@ public class GridCacheEvictionEntry<K, V> implements CacheEntry<K, V>, Externali
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private V peek0(@Nullable Collection<GridCachePeekMode> modes,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteTxEx<K, V> tx) throws IgniteCheckedException {
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, IgniteInternalTx<K, V> tx) throws IgniteCheckedException {
         if (F.isEmpty(modes))
             return peek0(SMART, filter, tx);
 

@@ -67,7 +67,7 @@ public class GridCachePessimisticCheckCommittedTxRequest<K, V> extends GridDistr
      * @param originatingThreadId Originating thread ID.
      * @param futId Future ID.
      */
-    public GridCachePessimisticCheckCommittedTxRequest(IgniteTxEx<K, V> tx, long originatingThreadId, IgniteUuid futId,
+    public GridCachePessimisticCheckCommittedTxRequest(IgniteInternalTx<K, V> tx, long originatingThreadId, IgniteUuid futId,
         boolean nearOnlyCheck) {
         super(tx.xidVersion(), 0);
 

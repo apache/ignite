@@ -791,7 +791,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
             GridCacheVersion v = ((GridCacheVersionable)o).version();
 
-            IgniteTxEx t = tm.tx(v);
+            IgniteInternalTx t = tm.tx(v);
 
             if (t.hasWriteKey(cacheCtx.txKey("x1")))
                 assertFalse("Invalid tx flags: " + t, t.syncCommit());

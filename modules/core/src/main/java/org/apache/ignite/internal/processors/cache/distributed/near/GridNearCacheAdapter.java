@@ -174,7 +174,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public IgniteInternalFuture<Object> readThroughAllAsync(Collection<? extends K> keys, boolean reload,
-        IgniteTxEx<K, V> tx, IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
+        IgniteInternalTx<K, V> tx, IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable UUID subjId, String taskName,
         IgniteBiInClosure<K, V> vis) {
         return (IgniteInternalFuture)loadAsync(tx,
             keys,
@@ -272,7 +272,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param expiryPlc Expiry policy.
      * @return Loaded values.
      */
-    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteTxEx tx,
+    public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
         @Nullable Collection<? extends K> keys,
         boolean reload,
         boolean forcePrimary,

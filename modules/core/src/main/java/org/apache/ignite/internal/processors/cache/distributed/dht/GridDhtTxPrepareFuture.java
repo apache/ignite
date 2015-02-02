@@ -46,8 +46,8 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 /**
  *
  */
-public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteTxEx<K, V>>
-    implements GridCacheMvccFuture<K, V, IgniteTxEx<K, V>> {
+public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFuture<IgniteInternalTx<K, V>>
+    implements GridCacheMvccFuture<K, V, IgniteInternalTx<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -123,12 +123,12 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     public GridDhtTxPrepareFuture(GridCacheSharedContext<K, V> cctx, final GridDhtTxLocalAdapter<K, V> tx,
         IgniteUuid nearMiniId, Map<IgniteTxKey<K>, GridCacheVersion> dhtVerMap, boolean last, Collection<UUID> lastBackups) {
-        super(cctx.kernalContext(), new IgniteReducer<IgniteTxEx<K, V>, IgniteTxEx<K, V>>() {
-            @Override public boolean collect(IgniteTxEx<K, V> e) {
+        super(cctx.kernalContext(), new IgniteReducer<IgniteInternalTx<K, V>, IgniteInternalTx<K, V>>() {
+            @Override public boolean collect(IgniteInternalTx<K, V> e) {
                 return true;
             }
 
-            @Override public IgniteTxEx<K, V> reduce() {
+            @Override public IgniteInternalTx<K, V> reduce() {
                 // Nothing to aggregate.
                 return tx;
             }
@@ -307,7 +307,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse<K, V> res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<IgniteTxEx<K, V>> fut : pending()) {
+            for (IgniteInternalFuture<IgniteInternalTx<K, V>> fut : pending()) {
                 if (isMini(fut)) {
                     MiniFuture f = (MiniFuture)fut;
 
@@ -376,7 +376,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteTxEx<K, V> tx0, Throwable err) {
+    @Override public boolean onDone(IgniteInternalTx<K, V> tx0, Throwable err) {
         assert err != null || (initialized() && !hasPending()) : "On done called for prepare future that has " +
             "pending mini futures: " + this;
 
@@ -891,7 +891,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
      * Mini-future for get operations. Mini-futures are only waiting on a single
      * node as opposed to multiple nodes.
      */
-    private class MiniFuture extends GridFutureAdapter<IgniteTxEx<K, V>> {
+    private class MiniFuture extends GridFutureAdapter<IgniteInternalTx<K, V>> {
         /** */
         private static final long serialVersionUID = 0L;
 

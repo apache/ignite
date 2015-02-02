@@ -58,7 +58,7 @@ public class GridCachePerThreadTxCommitBuffer<K, V> implements GridCacheTxCommit
     }
 
     /** {@inheritDoc} */
-    @Override public void addCommittedTx(IgniteTxEx<K, V> tx) {
+    @Override public void addCommittedTx(IgniteInternalTx<K, V> tx) {
         long threadId = tx.threadId();
 
         StoreKey key = new StoreKey(tx.eventNodeId(), threadId);

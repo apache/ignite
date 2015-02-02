@@ -54,7 +54,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
     private final IgniteUuid futId = IgniteUuid.randomUuid();
 
     /** Transaction. */
-    private final IgniteTxEx<K, V> tx;
+    private final IgniteInternalTx<K, V> tx;
 
     /** All involved nodes. */
     private final Map<UUID, ClusterNode> nodes;
@@ -71,7 +71,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
      * @param failedNodeId ID of failed node started transaction.
      */
     @SuppressWarnings("ConstantConditions")
-    public GridCachePessimisticCheckCommittedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteTxEx<K, V> tx,
+    public GridCachePessimisticCheckCommittedTxFuture(GridCacheSharedContext<K, V> cctx, IgniteInternalTx<K, V> tx,
         UUID failedNodeId) {
         super(cctx.kernalContext(), new SingleReducer<K, V>());
 

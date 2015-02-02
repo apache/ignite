@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.resources.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.license.*;
 import org.apache.ignite.internal.processors.rest.*;
 import org.apache.ignite.internal.processors.rest.handlers.*;
@@ -469,7 +468,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                     Object curVal = cache.get(key);
 
                     if (curVal == null)

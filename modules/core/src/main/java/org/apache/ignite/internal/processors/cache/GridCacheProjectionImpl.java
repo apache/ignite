@@ -1240,7 +1240,7 @@ public class GridCacheProjectionImpl<K, V> implements GridCacheProjectionEx<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteTxEx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
+    @Override public IgniteInternalTx txStartEx(IgniteTxConcurrency concurrency, IgniteTxIsolation isolation) {
         return cache.txStartEx(concurrency, isolation);
     }
 

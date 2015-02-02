@@ -264,12 +264,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public final ClusterMetrics metrics() throws IgniteCheckedException {
+    @Override public final ClusterMetrics metrics() {
         guard();
 
         try {
             if (nodes().isEmpty())
-                throw U.emptyTopologyException();
+                throw U.convertException(U.emptyTopologyException());
 
             return new ClusterMetricsSnapshot(this);
         }

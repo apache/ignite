@@ -157,7 +157,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                 IgniteTxProxyImpl tx = (IgniteTxProxyImpl)cache.txStart();
 
-                IgniteTxEx txEx = GridTestUtils.getFieldValue(tx, "tx");
+                IgniteInternalTx txEx = GridTestUtils.getFieldValue(tx, "tx");
 
                 cache.putAll(map);
 

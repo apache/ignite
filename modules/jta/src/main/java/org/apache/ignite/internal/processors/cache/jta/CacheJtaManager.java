@@ -21,7 +21,6 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.jta.*;
 import org.apache.ignite.configuration.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.jetbrains.annotations.*;
 
@@ -73,7 +72,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
                     Transaction jtaTx = jtaTm.getTransaction();
 
                     if (jtaTx != null) {
-                        IgniteTxEx tx = cctx.tm().userTx();
+                        IgniteInternalTx tx = cctx.tm().userTx();
 
                         if (tx == null) {
                             TransactionsConfiguration tCfg = cctx.kernalContext().config()
@@ -94,7 +93,7 @@ public class CacheJtaManager<K, V> extends CacheJtaManagerAdapter<K, V> {
                             );
                         }
 
-                        rsrc = new GridCacheXAResource((IgniteTxEx)tx, cctx);
+                        rsrc = new GridCacheXAResource((IgniteInternalTx)tx, cctx);
 
                         if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");

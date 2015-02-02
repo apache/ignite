@@ -806,7 +806,7 @@ public final class GridCacheMvcc<K> {
                 // Only Near and DHT remote candidates should be released.
                 assert !rmt.nearLocal();
 
-                IgniteTxEx tx = cctx.tm().tx(rmt.version());
+                IgniteInternalTx tx = cctx.tm().tx(rmt.version());
 
                 if (tx != null) {
                     tx.systemInvalidate(true);

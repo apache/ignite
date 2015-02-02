@@ -32,7 +32,6 @@ import org.apache.ignite.lang.*;
 import org.apache.ignite.managed.*;
 import org.apache.ignite.marshaller.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.cache.query.CacheContinuousQueryEntry;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.cache.query.continuous.*;
@@ -629,7 +628,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Object affKey = cfg.getAffinityKey();
 
         while (true) {
-            try (IgniteTxEx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+            try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);

@@ -191,7 +191,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -279,7 +279,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }
@@ -359,7 +359,7 @@ public class GridGgfsDataManagerSelfTest extends GridGgfsCommonAbstractTest {
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
                     "ctx");
-                Collection<IgniteTxEx<Object, Object>> txs = ctx.tm().txs();
+                Collection<IgniteInternalTx<Object, Object>> txs = ctx.tm().txs();
 
                 assert txs.isEmpty() : "Incomplete transactions: " + txs;
             }

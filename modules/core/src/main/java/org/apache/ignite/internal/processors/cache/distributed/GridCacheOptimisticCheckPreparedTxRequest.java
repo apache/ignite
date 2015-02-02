@@ -59,7 +59,7 @@ public class GridCacheOptimisticCheckPreparedTxRequest<K, V> extends GridDistrib
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridCacheOptimisticCheckPreparedTxRequest(IgniteTxEx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
+    public GridCacheOptimisticCheckPreparedTxRequest(IgniteInternalTx<K, V> tx, int txNum, IgniteUuid futId, IgniteUuid miniId) {
         super(tx.xidVersion(), 0);
 
         nearXidVer = tx.nearXidVersion();

@@ -1188,7 +1188,7 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
         }
 
         /** {@inheritDoc} */
-        @Override public ClusterMetrics metrics() throws IgniteCheckedException {
+        @Override public ClusterMetrics metrics() {
             return null;
         }
 

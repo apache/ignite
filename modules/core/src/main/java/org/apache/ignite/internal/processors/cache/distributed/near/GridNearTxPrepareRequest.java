@@ -90,7 +90,7 @@ public class GridNearTxPrepareRequest<K, V> extends GridDistributedTxPrepareRequ
     public GridNearTxPrepareRequest(
         IgniteUuid futId,
         long topVer,
-        IgniteTxEx<K, V> tx,
+        IgniteInternalTx<K, V> tx,
         Collection<IgniteTxEntry<K, V>> reads,
         Collection<IgniteTxEntry<K, V>> writes,
         IgniteTxKey grpLockKey,

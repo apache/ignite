@@ -30,7 +30,6 @@ import org.apache.ignite.internal.processors.cache.transactions.*;
 import org.apache.ignite.internal.util.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.transactions.*;
 import org.apache.ignite.internal.managers.communication.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.internal.processors.dataload.*;
@@ -687,7 +686,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
                         // Need to check if block is partially written.
                         // If so, must update it in pessimistic transaction.
                         if (block.length != fileInfo.blockSize()) {
-                            try (IgniteTxEx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                            try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                                 Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 
                                 byte[] val = vals.get(colocatedKey);
@@ -1130,7 +1129,7 @@ public class GridGgfsDataManager extends GridGgfsManager {
         GridGgfsBlockKey key = new GridGgfsBlockKey(colocatedKey.getFileId(), null,
             colocatedKey.evictExclude(), colocatedKey.getBlockId());
 
-        try (IgniteTxEx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+        try (IgniteInternalTx tx = dataCachePrj.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
             // Lock keys.
             Map<GridGgfsBlockKey, byte[]> vals = dataCachePrj.getAll(F.asList(colocatedKey, key));
 

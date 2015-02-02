@@ -199,7 +199,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             return CU.outTx(new Callable<CacheAtomicSequence>() {
                 @Override public CacheAtomicSequence call() throws Exception {
-                    try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicSequenceValue seqVal = cast(dsView.get(key),
                             GridCacheAtomicSequenceValue.class);
 
@@ -317,7 +317,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<CacheAtomicLong>() {
                 @Override
                 public CacheAtomicLong call() throws Exception {
-                    try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicLongValue val = cast(dsView.get(key),
                             GridCacheAtomicLongValue.class);
 
@@ -413,7 +413,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<CacheAtomicReference<T>>() {
                 @Override
                 public CacheAtomicReference<T> call() throws Exception {
-                    try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicReferenceValue val = cast(dsView.get(key),
                             GridCacheAtomicReferenceValue.class);
 
@@ -512,7 +512,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
             return CU.outTx(new Callable<CacheAtomicStamped<T, S>>() {
                 @Override
                 public CacheAtomicStamped<T, S> call() throws Exception {
-                    try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         GridCacheAtomicStampedValue val = cast(dsView.get(key),
                             GridCacheAtomicStampedValue.class);
 
@@ -792,7 +792,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
 
             return CU.outTx(new Callable<CacheCountDownLatch>() {
                     @Override public CacheCountDownLatch call() throws Exception {
-                        try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             GridCacheCountDownLatchValue val = cast(dsView.get(key),
                                 GridCacheCountDownLatchValue.class);
 
@@ -856,7 +856,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
                     @Override public Boolean call() throws Exception {
                         GridCacheInternal key = new GridCacheInternalKeyImpl(name);
 
-                        try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                        try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                             // Check correctness type of removable object.
                             GridCacheCountDownLatchValue val =
                                 cast(dsView.get(key), GridCacheCountDownLatchValue.class);
@@ -903,7 +903,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
         return CU.outTx(
             new Callable<Boolean>() {
                 @Override public Boolean call() throws Exception {
-                    try (IgniteTxEx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
+                    try (IgniteInternalTx tx = CU.txStartInternal(cctx, dsView, PESSIMISTIC, REPEATABLE_READ)) {
                         // Check correctness type of removable object.
                         R val = cast(dsView.get(key), cls);
 
@@ -933,7 +933,7 @@ public final class GridCacheDataStructuresManager<K, V> extends GridCacheManager
      *
      * @param tx Committed transaction.
      */
-    public void onTxCommitted(IgniteTxEx<K, V> tx) {
+    public void onTxCommitted(IgniteInternalTx<K, V> tx) {
         if (!cctx.isDht() && tx.internal() && (!cctx.isColocated() || cctx.isReplicated())) {
             try {
                 waitInitialization();

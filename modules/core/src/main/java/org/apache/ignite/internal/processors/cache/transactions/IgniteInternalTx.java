@@ -34,7 +34,7 @@ import java.util.*;
 /**
  * Transaction managed by cache ({@code 'Ex'} stands for external).
  */
-public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
+public interface IgniteInternalTx<K, V> extends AutoCloseable, GridTimeoutObject {
     /**
      *
      */
@@ -543,7 +543,7 @@ public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
      *
      * @return Future for prepare step.
      */
-    public IgniteInternalFuture<IgniteTxEx<K, V>> prepareAsync();
+    public IgniteInternalFuture<IgniteInternalTx<K, V>> prepareAsync();
 
     /**
      * @param endVer End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -567,7 +567,7 @@ public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
     /**
      * @return Future for transaction completion.
      */
-    public IgniteInternalFuture<IgniteTxEx> finishFuture();
+    public IgniteInternalFuture<IgniteInternalTx> finishFuture();
 
     /**
      * @param state Transaction state.
@@ -595,14 +595,14 @@ public interface IgniteTxEx<K, V> extends AutoCloseable, GridTimeoutObject {
      *
      * @return Rollback future.
      */
-    public IgniteInternalFuture<IgniteTxEx> rollbackAsync();
+    public IgniteInternalFuture<IgniteInternalTx> rollbackAsync();
 
     /**
      * Asynchronously commits this transaction by initiating {@code two-phase-commit} process.
      *
      * @return Future for commit operation.
      */
-    public IgniteInternalFuture<IgniteTxEx> commitAsync();
+    public IgniteInternalFuture<IgniteInternalTx> commitAsync();
 
     /**
      * Callback invoked whenever there is a lock that has been acquired

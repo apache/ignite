@@ -291,7 +291,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry was removed.
      * @throws GridCacheFilterFailedException If filter failed.
      */
-    @Nullable public V innerGet(@Nullable IgniteTxEx<K, V> tx,
+    @Nullable public V innerGet(@Nullable IgniteInternalTx<K, V> tx,
         boolean readSwap,
         boolean readThrough,
         boolean failFast,
@@ -341,7 +341,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult<V> innerSet(
-        @Nullable IgniteTxEx<K, V> tx,
+        @Nullable IgniteInternalTx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         @Nullable V val,
@@ -380,7 +380,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     public GridCacheUpdateTxResult<V> innerRemove(
-        @Nullable IgniteTxEx<K, V> tx,
+        @Nullable IgniteInternalTx<K, V> tx,
         UUID evtNodeId,
         UUID affNodeId,
         boolean writeThrough,
@@ -514,7 +514,7 @@ public interface GridCacheEntryEx<K, V> {
      * @throws GridCacheEntryRemovedException If this entry is obsolete.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    public boolean tmLock(IgniteTxEx<K, V> tx, long timeout) throws GridCacheEntryRemovedException,
+    public boolean tmLock(IgniteInternalTx<K, V> tx, long timeout) throws GridCacheEntryRemovedException,
         GridDistributedLockCancelledException;
 
     /**
@@ -523,7 +523,7 @@ public interface GridCacheEntryEx<K, V> {
      * @param tx Cache transaction.
      * @throws GridCacheEntryRemovedException If this entry has been removed from cache.
      */
-    public abstract void txUnlock(IgniteTxEx<K, V> tx) throws GridCacheEntryRemovedException;
+    public abstract void txUnlock(IgniteInternalTx<K, V> tx) throws GridCacheEntryRemovedException;
 
     /**
      * @param ver Removes lock.
@@ -623,7 +623,7 @@ public interface GridCacheEntryEx<K, V> {
      */
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable public GridTuple<V> peek0(boolean failFast, GridCachePeekMode mode,
-        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteTxEx<K, V> tx)
+        @Nullable IgnitePredicate<CacheEntry<K, V>>[] filter, @Nullable IgniteInternalTx<K, V> tx)
         throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException;
 
     /**

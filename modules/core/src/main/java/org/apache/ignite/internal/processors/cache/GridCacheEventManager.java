@@ -75,7 +75,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, IgniteTxEx tx, @Nullable GridCacheMvccCandidate<K> owner,
+    public void addEvent(int part, K key, IgniteInternalTx tx, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, @Nullable V oldVal, boolean hasOldVal, UUID subjId,
         String cloClsName, String taskName) {
         addEvent(part, key, locNodeId, tx, owner, type, newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName,
@@ -97,7 +97,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
      * @param cloClsName Closure class name.
      * @param taskName Task name.
      */
-    public void addEvent(int part, K key, UUID nodeId, IgniteTxEx tx, GridCacheMvccCandidate<K> owner,
+    public void addEvent(int part, K key, UUID nodeId, IgniteInternalTx tx, GridCacheMvccCandidate<K> owner,
         int type, V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
         String taskName) {
         addEvent(part, key, nodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
@@ -121,7 +121,7 @@ public class GridCacheEventManager<K, V> extends GridCacheManagerAdapter<K, V> {
     public void addEvent(int part, K key, UUID evtNodeId, @Nullable GridCacheMvccCandidate<K> owner,
         int type, @Nullable V newVal, boolean hasNewVal, V oldVal, boolean hasOldVal, UUID subjId, String cloClsName,
         String taskName) {
-        IgniteTxEx tx = owner == null ? null : cctx.tm().tx(owner.version());
+        IgniteInternalTx tx = owner == null ? null : cctx.tm().tx(owner.version());
 
         addEvent(part, key, evtNodeId, tx == null ? null : tx.xid(), owner == null ? null : owner.version(), type,
             newVal, hasNewVal, oldVal, hasOldVal, subjId, cloClsName, taskName);

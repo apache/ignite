@@ -49,7 +49,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param txSize Number of entries participating in transaction (may be approximate).
      * @return New transaction.
      */
-    public IgniteTxEx txStartEx(GridCacheContext ctx,
+    public IgniteInternalTx txStartEx(GridCacheContext ctx,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation,
         long timeout,
@@ -61,7 +61,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @param isolation Isolation.
      * @return New transaction.
      */
-    public IgniteTxEx txStartEx(GridCacheContext ctx, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
+    public IgniteInternalTx txStartEx(GridCacheContext ctx, IgniteTxConcurrency concurrency, IgniteTxIsolation isolation);
 
     /**
      * @param ctx Cache context.
@@ -73,7 +73,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @return New transaction.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteTxEx txStartPartitionEx(GridCacheContext ctx,
+    public IgniteInternalTx txStartPartitionEx(GridCacheContext ctx,
         int partId,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation,
@@ -90,7 +90,7 @@ public interface IgniteTransactionsEx extends IgniteTransactions {
      * @return New transaction.
      * @throws IgniteCheckedException If failed.
      */
-    public IgniteTxEx txStartAffinity(GridCacheContext ctx,
+    public IgniteInternalTx txStartAffinity(GridCacheContext ctx,
         Object affinityKey,
         IgniteTxConcurrency concurrency,
         IgniteTxIsolation isolation,

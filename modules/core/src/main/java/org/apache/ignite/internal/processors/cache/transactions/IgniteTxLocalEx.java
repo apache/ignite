@@ -32,7 +32,7 @@ import java.util.*;
 /**
  * Local transaction API.
  */
-public interface IgniteTxLocalEx<K, V> extends IgniteTxEx<K, V> {
+public interface IgniteTxLocalEx<K, V> extends IgniteInternalTx<K, V> {
     /**
      * @return Minimum version involved in transaction.
      */
