@@ -2007,7 +2007,7 @@ public class IgnitionEx {
                 Exception log4jInitException = null;
 
                 if (cfgLog == null) {
-                    Class<?> log4jCls = null;
+                    Class<?> log4jCls;
 
                     try {
                         log4jCls = Class.forName("org.apache.ignite.logger.log4j.IgniteLog4jLogger");
@@ -2065,8 +2065,8 @@ public class IgnitionEx {
                     ((IgniteLoggerNodeIdAware)cfgLog).setNodeId(nodeId);
 
                 if (log4jInitException != null)
-                    U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): " +
-                            log4jInitException.getCause());
+                    U.warn(cfgLog, "Failed to initialize IgniteLog4jLogger (falling back to standard java logging): "
+                            + log4jInitException.getCause());
 
                 return cfgLog;
             }
