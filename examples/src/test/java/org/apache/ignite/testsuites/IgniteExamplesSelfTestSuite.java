@@ -40,7 +40,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Examples Test Suite");
 
         suite.addTest(new TestSuite(GridCacheExamplesSelfTest.class));
-        /*suite.addTest(new TestSuite(GridBasicExamplesSelfTest.class));
+        suite.addTest(new TestSuite(GridBasicExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridContinuationExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridContinuousMapperExamplesSelfTest.class));
         suite.addTest(new TestSuite(GridDeploymentExamplesSelfTest.class));
@@ -67,7 +67,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridTaskExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridMemcacheRestExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(GridMonteCarloExamplesMultiNodeSelfTest.class));
-        suite.addTest(new TestSuite(GridHibernateL2CacheExampleMultiNodeSelfTest.class));*/
+        suite.addTest(new TestSuite(GridHibernateL2CacheExampleMultiNodeSelfTest.class));
 
         return suite;
     }

@@ -36,13 +36,13 @@ public class GridCacheExamplesMultiNodeSelfTest extends GridCacheExamplesSelfTes
         return 10 * 60 * 1000;
     }
 
-   /* *//** {@inheritDoc} *//*
+    /** {@inheritDoc} */
     @Override public void testGridCacheStoreExample() throws Exception {
         // No-op.
     }
 
-    *//** {@inheritDoc} *//*
+    /** {@inheritDoc} */
     @Override public void testGridCacheStoreLoaderExample() throws Exception {
         // No-op.
-    }*/
+    }
 }
