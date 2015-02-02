@@ -642,7 +642,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 res.invalidPartitions(fut.invalidPartitions(), ctx.discovery().topologyVersion());
 
                 try {
-                    ctx.io().send(nodeId, res);
+                    ctx.io().send(nodeId, res, ctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
@@ -717,7 +717,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     for (Map.Entry<ClusterNode, GridCacheTtlUpdateRequest<K, V>> req : reqMap.entrySet()) {
                         try {
-                            ctx.io().send(req.getKey(), req.getValue());
+                            ctx.io().send(req.getKey(), req.getValue(), ctx.ioPolicy());
                         }
                         catch (IgniteCheckedException e) {
                             log.error("Failed to send TTL update request.", e);

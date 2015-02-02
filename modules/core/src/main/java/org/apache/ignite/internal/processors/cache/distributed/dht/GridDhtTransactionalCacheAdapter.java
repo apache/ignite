@@ -41,7 +41,6 @@ import java.util.*;
 
 import static org.apache.ignite.transactions.IgniteTxConcurrency.*;
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
@@ -438,7 +437,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (res != null) {
             try {
                 // Reply back to sender.
-                ctx.io().send(nodeId, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, ctx.ioPolicy());
             }
             catch (ClusterTopologyException ignored) {
                 U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
@@ -1107,7 +1106,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         try {
             // Don't send reply message to this node or if lock was cancelled.
             if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class))
-                ctx.io().send(nearNode, res, ctx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nearNode, res, ctx.ioPolicy());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to send lock reply to originating node (will rollback transaction) [node=" +
@@ -1428,7 +1427,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                 req.completedVersions(committed, rolledback);
 
-                ctx.io().send(n, req);
+                ctx.io().send(n, req, ctx.ioPolicy());
             }
             catch (ClusterTopologyException ignore) {
                 if (log.isDebugEnabled())
@@ -1456,7 +1455,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                     req.completedVersions(committed, rolledback);
 
-                    ctx.io().send(n, req);
+                    ctx.io().send(n, req, ctx.ioPolicy());
                 }
                 catch (ClusterTopologyException ignore) {
                     if (log.isDebugEnabled())

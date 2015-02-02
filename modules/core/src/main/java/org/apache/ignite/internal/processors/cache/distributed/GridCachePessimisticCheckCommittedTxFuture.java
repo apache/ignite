@@ -148,7 +148,7 @@ public class GridCachePessimisticCheckCommittedTxFuture<K, V> extends GridCompou
                 add(fut);
 
                 try {
-                    cctx.io().send(rmtNode.id(), req);
+                    cctx.io().send(rmtNode.id(), req, tx.ioPolicy());
                 }
                 catch (ClusterTopologyException ignored) {
                     fut.onNodeLeft();

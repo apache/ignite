@@ -62,10 +62,11 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.*;
-import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 import static org.apache.ignite.cache.CacheMemoryMode.*;
 import static org.apache.ignite.cache.CachePreloadMode.*;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
+import static org.apache.ignite.internal.processors.cache.CacheFlag.*;
 
 /**
  * Cache context.
@@ -184,6 +185,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** System cache flag. */
     private boolean sys;
 
+    /** IO policy. */
+    private GridIoPolicy plc;
+
     /** Default expiry policy. */
     private ExpiryPolicy expiryPlc;
 
@@ -301,6 +305,8 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         sys = CU.UTILITY_CACHE_NAME.equals(cacheName);
 
+        plc = sys ? UTILITY_CACHE_POOL : SYSTEM_POOL;
+
         Factory<ExpiryPolicy> factory = cacheCfg.getExpiryPolicyFactory();
 
         expiryPlc = factory != null ? factory.create() : null;
@@ -363,6 +369,13 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean system() {
         return sys;
+    }
+
+    /**
+     * @return IO policy for the given cache.
+     */
+    public GridIoPolicy ioPolicy() {
+        return plc;
     }
 
     /**

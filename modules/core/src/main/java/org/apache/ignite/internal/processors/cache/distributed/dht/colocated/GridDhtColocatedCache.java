@@ -503,7 +503,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
                 if (!F.isEmpty(req.keyBytes()) || !F.isEmpty(req.keys()))
                     // We don't wait for reply to this message.
-                    ctx.io().send(n, req);
+                    ctx.io().send(n, req, ctx.ioPolicy());
             }
         }
         catch (IgniteCheckedException ex) {
@@ -585,7 +585,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                     req.completedVersions(committed, rolledback);
 
                     // We don't wait for reply to this message.
-                    ctx.io().send(n, req);
+                    ctx.io().send(n, req, ctx.ioPolicy());
                 }
             }
         }

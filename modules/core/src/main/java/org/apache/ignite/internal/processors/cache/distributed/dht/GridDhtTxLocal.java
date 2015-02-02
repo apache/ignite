@@ -37,7 +37,6 @@ import java.util.*;
 import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.transactions.IgniteTxState.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.*;
 
 /**
@@ -633,7 +632,7 @@ public class GridDhtTxLocal<K, V> extends GridDhtTxLocalAdapter<K, V> implements
                 nearFinMiniId, err);
 
             try {
-                cctx.io().send(nearNodeId, res, system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                cctx.io().send(nearNodeId, res, ioPolicy());
             }
             catch (ClusterTopologyException ignored) {
                 if (log.isDebugEnabled())

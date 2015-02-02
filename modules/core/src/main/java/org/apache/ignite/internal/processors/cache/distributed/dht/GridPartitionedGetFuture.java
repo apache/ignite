@@ -393,7 +393,7 @@ public class GridPartitionedGetFuture<K, V> extends GridCompoundIdentityFuture<M
                 add(fut); // Append new future.
 
                 try {
-                    cctx.io().send(n, req);
+                    cctx.io().send(n, req, cctx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     // Fail the whole thing.

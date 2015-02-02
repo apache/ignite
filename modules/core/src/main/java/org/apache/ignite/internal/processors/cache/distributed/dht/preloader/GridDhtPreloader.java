@@ -379,7 +379,7 @@ public class GridDhtPreloader<K, V> extends GridCachePreloaderAdapter<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Sending force key response [node=" + node.id() + ", res=" + res + ']');
 
-            cctx.io().send(node, res);
+            cctx.io().send(node, res, cctx.ioPolicy());
         }
         catch (ClusterTopologyException ignore) {
             if (log.isDebugEnabled())

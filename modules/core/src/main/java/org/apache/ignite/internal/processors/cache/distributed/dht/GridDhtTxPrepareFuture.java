@@ -40,7 +40,6 @@ import java.util.concurrent.atomic.*;
 
 import static org.apache.ignite.transactions.IgniteTxState.*;
 import static org.apache.ignite.events.IgniteEventType.*;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 
 /**
  *
@@ -287,7 +286,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
                     nearMiniId, tx.xidVersion(), Collections.<Integer>emptySet(), t);
 
                 try {
-                    cctx.io().send(tx.nearNodeId(), res, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                    cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send reply to originating near node (will rollback): " + tx.nearNodeId(), e);
@@ -400,7 +399,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                     res.pending(localDhtPendingVersions(tx.writeEntries(), min));
 
-                    cctx.io().send(tx.nearNodeId(), res, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                    cctx.io().send(tx.nearNodeId(), res, tx.ioPolicy());
                 }
 
                 return true;
@@ -690,7 +689,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                 //noinspection TryWithIdenticalCatches
                 try {
-                    cctx.io().send(n, req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                    cctx.io().send(n, req, tx.ioPolicy());
                 }
                 catch (ClusterTopologyException e) {
                     fut.onResult(e);
@@ -744,7 +743,7 @@ public final class GridDhtTxPrepareFuture<K, V> extends GridCompoundIdentityFutu
 
                     //noinspection TryWithIdenticalCatches
                     try {
-                        cctx.io().send(nearMapping.node(), req, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                        cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
                     }
                     catch (ClusterTopologyException e) {
                         fut.onResult(e);

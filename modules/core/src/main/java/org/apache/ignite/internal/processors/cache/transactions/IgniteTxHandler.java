@@ -484,7 +484,7 @@ public class IgniteTxHandler<K, V> {
                 req.miniId(), new IgniteCheckedException("Transaction has been already completed."));
 
             try {
-                ctx.io().send(nodeId, res, tx.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, tx.ioPolicy());
             }
             catch (Throwable e) {
                 // Double-check.
@@ -1406,7 +1406,7 @@ public class IgniteTxHandler<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Sending check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            ctx.io().send(nodeId, res);
+            ctx.io().send(nodeId, res, SYSTEM_POOL);
         }
         catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
@@ -1506,7 +1506,7 @@ public class IgniteTxHandler<K, V> {
             if (log.isDebugEnabled())
                 log.debug("Sending check committed transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-            ctx.io().send(nodeId, res);
+            ctx.io().send(nodeId, res, SYSTEM_POOL);
         }
         catch (ClusterTopologyException ignored) {
             if (log.isDebugEnabled())
