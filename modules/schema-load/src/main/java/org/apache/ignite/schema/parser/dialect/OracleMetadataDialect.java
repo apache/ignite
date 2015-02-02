@@ -101,7 +101,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         try (Statement stmt = conn.createStatement()) {
             Collection<DbColumn> cols = new ArrayList<>();
 
-            try(ResultSet colsRs = stmt.executeQuery(String.format(SQL_COLUMNS, "TEST"))) {
+            try (ResultSet colsRs = stmt.executeQuery(String.format(SQL_COLUMNS, "TEST"))) {
                 String prevSchema = "";
                 String prevTbl = "";
 
@@ -133,8 +133,9 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 }
 
                 if (!cols.isEmpty())
-                    tbls.add(new DbTable(prevSchema, prevTbl, cols, Collections.<String>emptySet(),
-                        Collections.<String>emptySet(), null));
+                    tbls.add(new DbTable(prevSchema, prevTbl, cols,
+                        Collections.<String>emptySet(), Collections.<String>emptySet(),
+                        Collections.<String, Map<String, Boolean>>emptyMap()));
             }
         }
 

@@ -95,4 +95,11 @@ public class DbTable {
     public Set<String> descendingColumns() {
         return descCols;
     }
+
+    /**
+     * @return Indexes.
+     */
+    public Map<String, Map<String, Boolean>> indexes() {
+        return idxs;
+    }
 }
