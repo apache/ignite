@@ -88,7 +88,7 @@ public abstract class GridHadoopProtocolTaskAdapter<R> implements ComputeTask<Gr
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() throws IgniteCheckedException {
-            return run(jobCtx, ((GridEx)ignite).hadoop(), args);
+            return run(jobCtx, ((IgniteEx)ignite).hadoop(), args);
         }
     }
 
