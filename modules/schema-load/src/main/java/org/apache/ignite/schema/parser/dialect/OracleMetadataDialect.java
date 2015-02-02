@@ -36,10 +36,11 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         "  (a.table_name = b.table_name AND a.table_owner = b.table_owner AND a.index_name  = b.index_name)";
 
     /** SQL to get columns metadata. */
-    private static final String SQL_COLUMNS = "SELECT owner, table_name, column_name, nullable, data_type" +
-        " FROM all_tab_columns" +
-        " WHERE owner = '%s'" +
-        " ORDER BY owner, table_name, column_id";
+    private static final String SQL_COLUMNS = "SELECT a.owner, a.table_name, a.column_name, a.nullable, a.data_type" +
+        " FROM all_tab_columns a" +
+        " %s" +
+        " WHERE a.owner = '%s'" +
+        " ORDER BY a.owner, a.table_name, a.column_id";
 
     /**
      * @param type Column type from Oracle database.
@@ -101,7 +102,10 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
         try (Statement stmt = conn.createStatement()) {
             Collection<DbColumn> cols = new ArrayList<>();
 
-            try (ResultSet colsRs = stmt.executeQuery(String.format(SQL_COLUMNS, "TEST"))) {
+            String sql = String.format(SQL_COLUMNS,
+                tblsOnly ? "INNER JOIN all_tables b on a.table_name = b.table_name" : "", "TEST");
+
+            try (ResultSet colsRs = stmt.executeQuery(sql)) {
                 String prevSchema = "";
                 String prevTbl = "";
 
@@ -114,22 +118,20 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                         prevTbl = tbl;
                     }
 
-                    if (schema.equals(prevSchema) && tbl.equals(prevTbl)) {
-                        cols.add(new DbColumn(colsRs.getString("COLUMN_NAME"),
-                            decodeType(colsRs.getString("DATA_TYPE")),
-                            false,
-                            decodeNullable(colsRs.getString("NULLABLE"))
-                        ));
-                    }
-                    else {
+                    if (!schema.equals(prevSchema) || !tbl.equals(prevTbl)) {
                         tbls.add(new DbTable(prevSchema, prevTbl, cols, Collections.<String>emptySet(),
                             Collections.<String>emptySet(), null));
 
-                        cols = new ArrayList<>();
-
                         prevSchema = schema;
                         prevTbl = tbl;
+
+                        cols = new ArrayList<>();
                     }
+                    cols.add(new DbColumn(colsRs.getString("COLUMN_NAME"),
+                        decodeType(colsRs.getString("DATA_TYPE")),
+                        false,
+                        decodeNullable(colsRs.getString("NULLABLE"))
+                    ));
                 }
 
                 if (!cols.isEmpty())
