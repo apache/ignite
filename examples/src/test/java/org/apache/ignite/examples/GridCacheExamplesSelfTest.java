@@ -34,122 +34,122 @@ public class GridCacheExamplesSelfTest extends GridAbstractExamplesTest {
         CacheAffinityExample.main(EMPTY_ARGS);
     }
 
-    /**
+  /*  *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheAtomicLongExample() throws Exception {
         CacheAtomicLongExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheAtomicReferenceExample() throws Exception {
         CacheAtomicReferenceExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheAtomicSequenceExample() throws Exception {
         CacheAtomicSequenceExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheAtomicStampedExample() throws Exception {
         CacheAtomicStampedExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheCountDownLatchExample() throws Exception {
         CacheCountDownLatchExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheQueueExample() throws Exception {
         CacheQueueExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheSetExample() throws Exception {
         CacheSetExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheStoreExample() throws Exception {
         CacheStoreExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheQueryExample() throws Exception {
         CacheQueryExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheApiExample() throws Exception {
         CacheApiExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheTransactionExample() throws Exception {
         CacheTransactionExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheDataLoaderExample() throws Exception {
         CacheDataLoaderExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridPopularNumbersRealTimeExample() throws Exception {
         CachePopularNumbersExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheStoreLoaderExample() throws Exception {
         CacheStoreLoadDataExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCachePutGetExample() throws Exception {
         CachePutGetExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridSnowflakeSchemaExample() throws Exception {
         CacheStarSchemaExample.main(EMPTY_ARGS);
     }
 
-    /**
+    *//**
      * @throws Exception If failed.
-     */
+     *//*
     public void testGridCacheContinuousQueryExample() throws Exception {
         CacheContinuousQueryExample.main(EMPTY_ARGS);
-    }
+    }*/
 }
