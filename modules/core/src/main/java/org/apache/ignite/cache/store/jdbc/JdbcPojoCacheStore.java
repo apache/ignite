@@ -146,9 +146,11 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
             typeMethods.put(type.getType(), new PojoMethodsCache(type.getType(), tblMeta.getValueColumns()));
         }
 
-        mtdsCache = new HashMap<>(mtdsCache);
+        HashMap<String, Map<String, PojoMethodsCache>> newMtdsCache = new HashMap<>(mtdsCache);
 
-        mtdsCache.put(cacheName, typeMethods);
+        newMtdsCache.put(cacheName, typeMethods);
+
+        mtdsCache = newMtdsCache;
     }
 
     /** {@inheritDoc} */

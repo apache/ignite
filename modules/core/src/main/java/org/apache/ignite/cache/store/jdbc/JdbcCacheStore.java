@@ -170,6 +170,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
     protected JdbcDialect resolveDialect() throws CacheException {
         Connection conn = null;
 
+        // TODO check conn.getMetaData().getURL() will work ???
+
         String dbProductName = null;
 
         try {
@@ -202,16 +204,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         U.warn(log, "Failed to resolve dialect (BasicJdbcDialect will be used): " + dbProductName);
 
         return new BasicJdbcDialect();
-    }
-
-    /**
-     *
-     * @return Cache key id.
-     */
-    protected Integer cacheKeyId() {
-        String cacheName = session().cacheName();
-
-        return cacheName != null ? cacheName.hashCode() : 0;
     }
 
     /** {@inheritDoc} */
@@ -395,7 +387,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
      * @param clo Closure for loaded values.
      * @return Callable for pool submit.
      */
-    private Callable<Void> loadCacheFull(final EntryMapping m, final IgniteBiInClosure<K, V> clo) {
+    private Callable<Void> loadCacheFull(EntryMapping m, IgniteBiInClosure<K, V> clo) {
         return loadCacheRange(m, clo, null, null);
     }
 
