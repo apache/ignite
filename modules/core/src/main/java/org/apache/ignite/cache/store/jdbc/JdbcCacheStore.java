@@ -445,8 +445,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
         if (em == null)
-            throw new CacheException("Failed to find mapping description for key: " + key +
-                " in cache: " + (cacheName != null ? cacheName : "<default>"));
+            throw new CacheException("Failed to find mapping description for key: " + key + " in cache: "
+                + (cacheName != null ? cacheName : "<default>"));
 
         return em;
     }
@@ -757,7 +757,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         }
         else
             for (Cache.Entry<? extends K, ? extends V> e : entries)
-                write(e);
+                write(e); // TODO rework to optimal usage. Method write will get all params each time (conn, stmt).
+                          // split into 2 methods writeMerge + writeUpsert.
     }
 
     /** {@inheritDoc} */
@@ -807,9 +808,10 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
 
         for (int rowCount : rowCounts)
             if (rowCount != 1) {
+                // TODO stmtType used 2 times?
+                // TODO print warning for all keys.
+                // TODO while failed - convert collection to array and print warnins to each failed key.
                 log.warning("Batch " + stmtType + " returned unexpected row count from " + stmtType + " statement");
-
-                break;
             }
     }
 

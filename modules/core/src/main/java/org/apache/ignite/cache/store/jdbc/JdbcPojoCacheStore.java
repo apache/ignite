@@ -57,7 +57,6 @@ public class JdbcPojoCacheStore extends JdbcCacheStore<Object, Object> {
          * @param fields Fields.
          */
         public PojoMethodsCache(String clsName, Collection<CacheQueryTableColumnMetadata> fields) throws CacheException {
-
             try {
                 cls = Class.forName(clsName);
 
