@@ -31,7 +31,6 @@ import org.apache.ignite.spi.authentication.*;
 import org.apache.ignite.spi.indexing.*;
 import org.apache.ignite.streamer.*;
 import org.apache.ignite.client.ssl.*;
-import org.apache.ignite.interop.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.managers.eventstorage.*;
 import org.apache.ignite.plugin.security.*;
@@ -47,7 +46,6 @@ import org.apache.ignite.spi.loadbalancing.*;
 import org.apache.ignite.spi.securesession.*;
 import org.apache.ignite.spi.swapspace.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
-import org.jetbrains.annotations.*;
 
 import javax.management.*;
 import java.lang.management.*;
@@ -378,7 +376,7 @@ public class IgniteConfiguration {
     private SwapSpaceSpi swapSpaceSpi;
 
     /** Indexing SPI. */
-    private GridIndexingSpi indexingSpi;
+    private IndexingSpi indexingSpi;
 
     /** Address resolver. */
     private IgniteAddressResolver addrRslvr;
@@ -2154,12 +2152,12 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Sets fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
+     * Sets fully configured instances of {@link IndexingSpi}.
      *
-     * @param indexingSpi Fully configured instances of {@link org.apache.ignite.spi.indexing.GridIndexingSpi}.
+     * @param indexingSpi Fully configured instance of {@link IndexingSpi}.
      * @see IgniteConfiguration#getIndexingSpi()
      */
-    public void setIndexingSpi(GridIndexingSpi indexingSpi) {
+    public void setIndexingSpi(IndexingSpi indexingSpi) {
         this.indexingSpi = indexingSpi;
     }
 
@@ -2168,7 +2166,7 @@ public class IgniteConfiguration {
      *
      * @return Indexing SPI implementation.
      */
-    public GridIndexingSpi getIndexingSpi() {
+    public IndexingSpi getIndexingSpi() {
         return indexingSpi;
     }
 

@@ -1752,7 +1752,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Filter.
      */
     @SuppressWarnings("unchecked")
-    @Nullable private GridIndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
+    @Nullable private IndexingQueryFilter projectionFilter(GridCacheQueryAdapter<?> qry) {
         assert qry != null;
 
         final IgnitePredicate<CacheEntry<Object, Object>> prjFilter = qry.projectionFilter();
@@ -1760,7 +1760,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (prjFilter == null || F.isAlwaysTrue(prjFilter))
             return null;
 
-        return new GridIndexingQueryFilter() {
+        return new IndexingQueryFilter() {
             @Nullable @Override public IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 if (!F.eq(space, spaceName))
                     return null;
@@ -1788,11 +1788,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param includeBackups Include backups.
      */
     @SuppressWarnings("unchecked")
-    @Nullable public <K, V> GridIndexingQueryFilter backupsFilter(boolean includeBackups) {
+    @Nullable public <K, V> IndexingQueryFilter backupsFilter(boolean includeBackups) {
         if (includeBackups)
             return null;
 
-        return new GridIndexingQueryFilter() {
+        return new IndexingQueryFilter() {
             @Nullable @Override public IgniteBiPredicate<K, V> forSpace(final String spaceName) {
                 final GridKernalContext ctx = cctx.kernalContext();
 
@@ -1814,7 +1814,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @return Filter.
      */
-    private GridIndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
+    private IndexingQueryFilter filter(GridCacheQueryAdapter<?> qry) {
         return and(backupsFilter(qry.includeBackups()), projectionFilter(qry));
     }
 
@@ -1823,15 +1823,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param f2 Second filter.
      * @return And filter of the given two.
      */
-    @Nullable private static GridIndexingQueryFilter and(@Nullable final GridIndexingQueryFilter f1,
-        @Nullable final GridIndexingQueryFilter f2) {
+    @Nullable private static IndexingQueryFilter and(@Nullable final IndexingQueryFilter f1,
+        @Nullable final IndexingQueryFilter f2) {
         if (f1 == null)
             return f2;
 
         if (f2 == null)
             return f1;
 
-        return new GridIndexingQueryFilter() {
+        return new IndexingQueryFilter() {
             @Nullable @Override public <K, V> IgniteBiPredicate<K, V> forSpace(String spaceName) {
                 final IgniteBiPredicate<K, V> fltr1 = f1.forSpace(spaceName);
                 final IgniteBiPredicate<K, V> fltr2 = f2.forSpace(spaceName);

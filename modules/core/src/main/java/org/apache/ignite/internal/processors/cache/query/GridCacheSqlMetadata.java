@@ -43,7 +43,7 @@ public interface GridCacheSqlMetadata extends Externalizable {
      * <p>
      * By default, type name is equal to simple class name
      * of stored object, but it can depend on implementation
-     * of {@link GridIndexingSpi}.
+     * of {@link IndexingSpi}.
      *
      * @return Collection of available types.
      */

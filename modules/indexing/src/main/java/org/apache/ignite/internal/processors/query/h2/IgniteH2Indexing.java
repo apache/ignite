@@ -89,7 +89,7 @@ import static org.h2.result.SortOrder.*;
  *         different key types
  *     </li>
  * </ul>
- * @see GridIndexingSpi
+ * @see IndexingSpi
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
@@ -512,7 +512,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(
         @Nullable String spaceName, String qry, GridQueryTypeDescriptor type,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl != null && tbl.luceneIdx != null)
@@ -533,7 +533,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridQueryFieldsResult queryFields(@Nullable final String spaceName, final String qry,
-        @Nullable final Collection<Object> params, final GridIndexingQueryFilter filters)
+        @Nullable final Collection<Object> params, final IndexingQueryFilter filters)
         throws IgniteCheckedException {
         setFilters(filters);
 
@@ -734,7 +734,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("unchecked")
     @Override public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(@Nullable String spaceName,
         final String qry, @Nullable final Collection<Object> params, GridQueryTypeDescriptor type,
-        final GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        final IndexingQueryFilter filters) throws IgniteCheckedException {
         final TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)
@@ -778,7 +778,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param filters Filters.
      */
-    public void setFilters(@Nullable GridIndexingQueryFilter filters) {
+    public void setFilters(@Nullable IndexingQueryFilter filters) {
         GridH2IndexBase.setFiltersForThread(filters);
     }
 
@@ -1093,7 +1093,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public long size(@Nullable String spaceName, GridQueryTypeDescriptor type,
-        GridIndexingQueryFilter filters) throws IgniteCheckedException {
+        IndexingQueryFilter filters) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
         if (tbl == null)

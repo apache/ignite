@@ -75,7 +75,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridQueryFieldsResult queryFields(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridIndexingQueryFilter filters) throws IgniteCheckedException;
+        Collection<Object> params, IndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**
      * Executes regular query.
@@ -89,7 +89,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> query(@Nullable String spaceName, String qry,
-        Collection<Object> params, GridQueryTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteCheckedException;
+        Collection<Object> params, GridQueryTypeDescriptor type, IndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**
      * Executes text query.
@@ -102,7 +102,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> GridCloseableIterator<IgniteBiTuple<K, V>> queryText(@Nullable String spaceName, String qry,
-        GridQueryTypeDescriptor type, GridIndexingQueryFilter filters) throws IgniteCheckedException;
+        GridQueryTypeDescriptor type, IndexingQueryFilter filters) throws IgniteCheckedException;
 
     /**
      * Gets size of index for given type or -1 if it is a unknown type.
@@ -113,7 +113,7 @@ public interface GridQueryIndexing {
      * @return Objects number.
      * @throws IgniteCheckedException If failed.
      */
-    public long size(@Nullable String spaceName, GridQueryTypeDescriptor desc, GridIndexingQueryFilter filters)
+    public long size(@Nullable String spaceName, GridQueryTypeDescriptor desc, IndexingQueryFilter filters)
         throws IgniteCheckedException;
 
     /**
