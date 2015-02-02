@@ -691,10 +691,9 @@ public class IgniteStreamerImpl implements IgniteStreamerEx, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void onUndeploy(UUID leftNodeId, ClassLoader undeployedLdr) {
+    @Override public void onUndeploy(ClassLoader undeployedLdr) {
         if (log.isDebugEnabled())
-            log.debug("Processing undeployment event [leftNodeId=" + leftNodeId +
-                ", undeployedLdr=" + undeployedLdr + ']');
+            log.debug("Processing undeployment event undeployedLdr=" + undeployedLdr + ']');
 
         unwindUndeploys(undeployedLdr, true);
     }

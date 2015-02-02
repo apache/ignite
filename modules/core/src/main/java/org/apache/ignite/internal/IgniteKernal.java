@@ -57,7 +57,6 @@ import org.apache.ignite.internal.processors.closure.*;
 import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.email.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.license.*;
@@ -743,7 +742,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
             startProcessor(ctx, new GridTaskProcessor(ctx), attrs);
             startProcessor(ctx, (GridProcessor)SCHEDULE.createOptional(ctx), attrs);
             startProcessor(ctx, createComponent(GridPortableProcessor.class, ctx), attrs);
-            startProcessor(ctx, createComponent(GridInteropProcessor.class, ctx), attrs);
             startProcessor(ctx, new GridRestProcessor(ctx), attrs);
             startProcessor(ctx, new GridDataLoaderProcessor(ctx), attrs);
             startProcessor(ctx, new GridStreamProcessor(ctx), attrs);
@@ -3132,11 +3130,6 @@ public class IgniteKernal extends ClusterGroupAdapter implements IgniteEx, Ignit
         finally {
             unguard();
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridInteropProcessor interop() {
-        return ctx.interop();
     }
 
     /** {@inheritDoc} */

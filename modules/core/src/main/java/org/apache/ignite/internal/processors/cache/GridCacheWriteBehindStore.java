@@ -20,11 +20,9 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.*;
 import org.apache.ignite.cache.*;
 import org.apache.ignite.cache.store.*;
-import org.apache.ignite.internal.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.thread.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.internal.util.tostring.*;
@@ -56,7 +54,7 @@ import static javax.cache.Cache.Entry;
  * Since write operations to the cache store are deferred, transaction support is lost; no
  * transaction objects are passed to the underlying store.
  */
-public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements LifecycleAware, GridInteropAware {
+public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
     /** Default write cache initial capacity. */
     public static final int DFLT_INITIAL_CAPACITY = 1024;
 
@@ -287,23 +285,6 @@ public class GridCacheWriteBehindStore<K, V> extends CacheStore<K, V> implements
                 new IgniteThread(flushThreads[i]).start();
             }
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void configure(Object... params) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void initialize(GridKernalContext ctx) throws IgniteCheckedException {
-        if (store instanceof GridInteropAware)
-            ((GridInteropAware)store).initialize(ctx);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void destroy(GridKernalContext ctx) throws IgniteCheckedException {
-        if (store instanceof GridInteropAware)
-            ((GridInteropAware)store).destroy(ctx);
     }
 
     /**
