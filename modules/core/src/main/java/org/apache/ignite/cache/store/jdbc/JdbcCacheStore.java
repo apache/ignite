@@ -21,12 +21,11 @@ import org.apache.ignite.*;
 import org.apache.ignite.cache.query.*;
 import org.apache.ignite.cache.store.*;
 import org.apache.ignite.cache.store.jdbc.dialect.*;
-import org.apache.ignite.internal.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.util.tostring.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.internal.util.typedef.internal.*;
 import org.apache.ignite.lang.*;
+import org.apache.ignite.lifecycle.*;
 import org.apache.ignite.resources.*;
 import org.apache.ignite.transactions.*;
 import org.jetbrains.annotations.*;
@@ -74,7 +73,7 @@ import java.util.concurrent.locks.*;
  * <p>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements GridInteropAware {
+public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements LifecycleAware {
     /** Max attempt write count. */
     protected static final int MAX_ATTEMPT_WRITE_COUNT = 2;
 
@@ -207,12 +206,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void configure(Object... params) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void initialize(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void start() throws IgniteCheckedException {
         if (dataSrc == null)
             throw new IgniteCheckedException("Failed to initialize cache store (data source is not provided).");
 
@@ -221,7 +215,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
     }
 
     /** {@inheritDoc} */
-    @Override public void destroy(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void stop() throws IgniteCheckedException {
         // No-op.
     }
 
