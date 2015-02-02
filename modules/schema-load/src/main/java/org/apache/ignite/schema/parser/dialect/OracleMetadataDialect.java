@@ -22,12 +22,122 @@ import org.apache.ignite.schema.parser.*;
 import java.sql.*;
 import java.util.*;
 
+import static java.sql.Types.*;
+
 /**
  * Oracle specific metadata dialect.
  */
 public class OracleMetadataDialect extends DatabaseMetadataDialect {
+    /** SQL to get indexes metadata. */
+    private static final String SQL_INDEXES = "select a.index_owner, a.table_name, a.index_name, a.column_name," +
+        " b.uniqueness" +
+        " FROM all_ind_columns a" +
+        " LEFT JOIN all_indexes b on" +
+        "  (a.table_name = b.table_name AND a.table_owner = b.table_owner AND a.index_name  = b.index_name)";
+
+    /** SQL to get columns metadata. */
+    private static final String SQL_COLUMNS = "SELECT owner, table_name, column_name, nullable, data_type" +
+        " FROM all_tab_columns" +
+        " WHERE owner = '%s'" +
+        " ORDER BY owner, table_name, column_id";
+
+    /**
+     * @param type Column type from Oracle database.
+     * @return JDBC type.
+     */
+    private static int decodeType(String type) {
+        switch (type) {
+            case "CHAR":
+            case "NCHAR":
+                return CHAR;
+
+            case "VARCHAR2":
+            case "NVARCHAR2":
+                return VARCHAR;
+
+            case "LONG":
+                return LONGVARCHAR;
+
+            case "LONG RAW":
+                return LONGVARBINARY;
+
+            case "FLOAT":
+                return FLOAT;
+
+            case "NUMBER":
+                return NUMERIC;
+
+            case "DATE":
+                return DATE;
+
+            case "TIMESTAMP":
+                return TIMESTAMP;
+
+            case "BFILE":
+            case "BLOB":
+                return BLOB;
+
+            case "CLOB":
+            case "NCLOB":
+            case "XMLTYPE":
+                return CLOB;
+        }
+
+        return OTHER;
+    }
+
+    /**
+     * @param nullable Column nullable attribute from Oracle database.
+     * @return {@code true}
+     */
+    private static boolean decodeNullable(String nullable) {
+        return "Y".equals(nullable);
+    }
+
     /** {@inheritDoc} */
     @Override public Collection<DbTable> tables(Connection conn, boolean tblsOnly) throws SQLException {
-        return null; // TODO: CODE: implement.
+        Collection<DbTable> tbls = new ArrayList<>();
+
+        try (Statement stmt = conn.createStatement()) {
+            Collection<DbColumn> cols = new ArrayList<>();
+
+            try(ResultSet colsRs = stmt.executeQuery(String.format(SQL_COLUMNS, "TEST"))) {
+                String prevSchema = "";
+                String prevTbl = "";
+
+                while (colsRs.next()) {
+                    String schema = colsRs.getString("OWNER");
+                    String tbl = colsRs.getString("TABLE_NAME");
+
+                    if (prevSchema.isEmpty()) {
+                        prevSchema = schema;
+                        prevTbl = tbl;
+                    }
+
+                    if (schema.equals(prevSchema) && tbl.equals(prevTbl)) {
+                        cols.add(new DbColumn(colsRs.getString("COLUMN_NAME"),
+                            decodeType(colsRs.getString("DATA_TYPE")),
+                            false,
+                            decodeNullable(colsRs.getString("NULLABLE"))
+                        ));
+                    }
+                    else {
+                        tbls.add(new DbTable(prevSchema, prevTbl, cols, Collections.<String>emptySet(),
+                            Collections.<String>emptySet(), null));
+
+                        cols = new ArrayList<>();
+
+                        prevSchema = schema;
+                        prevTbl = tbl;
+                    }
+                }
+
+                if (!cols.isEmpty())
+                    tbls.add(new DbTable(prevSchema, prevTbl, cols, Collections.<String>emptySet(),
+                        Collections.<String>emptySet(), null));
+            }
+        }
+
+        return tbls;
     }
 }
