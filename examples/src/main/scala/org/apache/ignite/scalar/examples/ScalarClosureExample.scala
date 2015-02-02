@@ -38,7 +38,7 @@ object ScalarClosureExample extends App {
     }
 
     /**
-     * Prints grid topology.
+     * Prints ignite topology.
      */
     def topology() {
         ignite foreach (n => println("Node: " + nid8$(n)))
@@ -62,7 +62,7 @@ object ScalarClosureExample extends App {
     }
 
     /**
-     * One way to execute closures on the grid.
+     * One way to execute closures on the ignite cluster.
      */
     def broadcast() {
         ignite.bcastRun(() => println("Broadcasting!!!"), null)

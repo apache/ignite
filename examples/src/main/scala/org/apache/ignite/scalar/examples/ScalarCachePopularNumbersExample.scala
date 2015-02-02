@@ -42,7 +42,7 @@ object ScalarCachePopularNumbersExample extends App {
     /** Cache name. */
     private final val CACHE_NAME = "partitioned"
 
-    /** Count of most popular numbers to retrieve from grid. */
+    /** Count of most popular numbers to retrieve from cluster. */
     private final val POPULAR_NUMBERS_CNT = 10
 
     /** Range within which to generate numbers. */

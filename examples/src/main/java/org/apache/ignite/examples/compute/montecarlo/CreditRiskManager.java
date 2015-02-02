@@ -28,7 +28,7 @@ public class CreditRiskManager {
      * Default randomizer with normal distribution.
      * Note that since every JVM on the cluster will have its own random
      * generator (independently initialized) the Monte-Carlo simulation
-     * will be slightly skewed when performed on the grid due to skewed
+     * will be slightly skewed when performed on the ignite cluster due to skewed
      * normal distribution of the sub-jobs comparing to execution on the
      * local node only with single random generator. Real-life applications
      * may want to provide its own implementation of distributed random
