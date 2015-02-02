@@ -141,8 +141,8 @@ public class GridContinuousMessage extends GridTcpCommunicationMessageAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clone0(GridTcpCommunicationMessageAdapter msg) {
-        GridContinuousMessage clone = (GridContinuousMessage)msg;
+    @Override protected void clone0(GridTcpCommunicationMessageAdapter _msg) {
+        GridContinuousMessage clone = (GridContinuousMessage)_msg;
 
         clone.type = type;
         clone.routineId = routineId;
