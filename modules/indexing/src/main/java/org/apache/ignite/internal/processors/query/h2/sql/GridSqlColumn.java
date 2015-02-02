@@ -35,6 +35,12 @@ public class GridSqlColumn extends GridSqlElement implements GridSqlValue {
         this.sqlText = sqlText;
     }
 
+    /**
+     * @return Simple unqualified column with only name.
+     */
+    public GridSqlColumn simplify() {
+        return new GridSqlColumn(null, colName, colName);
+    }
 
     /**
      * @return Column name.

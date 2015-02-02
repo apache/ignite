@@ -262,7 +262,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 stmt.executeUpdate("SET SCHEMA \"" + schema + '"');
 
                 if (log.isDebugEnabled())
-                    log.debug("Initialized H2 schema for queries on space: " + schema);
+                    log.debug("Set schema: " + schema);
 
                 c.schema(schema);
             }
@@ -768,7 +768,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return new GridFinishedFutureEx<>(e);
         }
 
-        return queryTwoStep(space, GridSqlQuerySplitter.split(c, sqlQry, params));
+        GridCacheTwoStepQuery twoStepQry = GridSqlQuerySplitter.split(c, sqlQry, params);
+
+        if (log.isDebugEnabled())
+            log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
+
+        return queryTwoStep(space, twoStepQry);
     }
 
     /**

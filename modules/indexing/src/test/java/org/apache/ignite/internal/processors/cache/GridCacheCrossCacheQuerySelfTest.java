@@ -114,7 +114,7 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
 
         GridCacheTwoStepQuery q = new GridCacheTwoStepQuery("select cast(sum(x) as long) from _cnts_ where ? = ?", 1, 1);
 
-        q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2 ,2);
+        q.addMapQuery("_cnts_", "select count(*) x from \"partitioned\".FactPurchase where ? = ?", 2, 2);
 
         Object cnt = qx.execute(cache, q).get().iterator().next().get(0);
 
@@ -155,7 +155,9 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         assertFalse(set1.isEmpty());
         assertEquals(set0, set1);
 
-        X.println("___ AVG MIN MAX SUM COUNT(*) COUNT(x)");
+        X.println("___ GROUP BY AVG MIN MAX SUM COUNT(*) COUNT(x)");
+
+        Set<String> names = new HashSet<>();
 
         for (List<?> o : qx.executeTwoStepQuery("partitioned",
             "select p.name, avg(f.price), min(f.price), max(f.price), sum(f.price), count(*), " +
@@ -164,7 +166,61 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
                 "where p.id = f.productId " +
                 "group by f.productId, p.name").get()) {
             X.println("___ -> " + o);
+
+            assertTrue(names.add((String)o.get(0)));
+            assertEquals(i(o, 4), i(o, 2) + i(o, 3));
         }
+
+        X.println("___ SUM HAVING");
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned",
+            "select p.name, sum(f.price) s " +
+                "from FactPurchase f, \"replicated\".DimProduct p " +
+                "where p.id = f.productId " +
+                "group by f.productId, p.name " +
+                "having s >= 15").get()) {
+            X.println("___ -> " + o);
+
+            assertTrue(i(o, 1) >= 15);
+        }
+
+        X.println("___ DISTINCT ORDER BY TOP");
+
+        int top = 6;
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned",
+            "select top 3 distinct productId " +
+                "from FactPurchase f " +
+                "order by productId desc ").get()) {
+            X.println("___ -> " + o);
+
+            assertEquals(top--, o.get(0));
+        }
+
+        X.println("___ DISTINCT ORDER BY OFFSET LIMIT");
+
+        top = 5;
+
+        for (List<?> o : qx.executeTwoStepQuery("partitioned",
+            "select distinct productId " +
+                "from FactPurchase f " +
+                "order by productId desc " +
+                "limit 2 offset 1").get()) {
+            X.println("___ -> " + o);
+
+            assertEquals(top--, o.get(0));
+        }
+
+        assertEquals(3, top);
+    }
+
+    /**
+     * @param l List.
+     * @param idx Index.
+     * @return Int.
+     */
+    private static int i(List<?> l, int idx){
+        return ((Number)l.get(idx)).intValue();
     }
 
     /** @throws Exception If failed. */

@@ -193,7 +193,7 @@ public class GridSqlQueryParser {
         Expression where = CONDITION.get(select);
         res.where(parseExpression(where));
 
-        Set<TableFilter> allFilers = new HashSet<>(select.getTopFilters());
+        Set<TableFilter> allFilters = new HashSet<>(select.getTopFilters());
 
         GridSqlElement from = null;
 
@@ -209,7 +209,7 @@ public class GridSqlQueryParser {
 
             from = from == null ? gridFilter : new GridSqlJoin(from, gridFilter);
 
-            allFilers.remove(filter);
+            allFilters.remove(filter);
 
             filter = filter.getJoin();
         }
@@ -217,7 +217,7 @@ public class GridSqlQueryParser {
 
         res.from(from);
 
-        assert allFilers.isEmpty();
+        assert allFilters.isEmpty();
 
         ArrayList<Expression> expressions = select.getExpressions();
 
@@ -233,12 +233,13 @@ public class GridSqlQueryParser {
                 res.addGroupExpression(parseExpression(expressions.get(idx)));
         }
 
-        assert0(select.getHaving() == null, select);
-
         int havingIdx = HAVING_INDEX.get(select);
 
-        if (havingIdx >= 0)
+        if (havingIdx >= 0) {
+            res.havingColumn(havingIdx);
+
             res.having(parseExpression(expressions.get(havingIdx)));
+        }
 
         for (int i = 0; i < select.getColumnCount(); i++)
             res.addSelectExpression(parseExpression(expressions.get(i)));
@@ -249,9 +250,19 @@ public class GridSqlQueryParser {
             int[] indexes = sortOrder.getQueryColumnIndexes();
             int[] sortTypes = sortOrder.getSortTypes();
 
-            for (int i = 0; i < indexes.length; i++)
-                res.addSort(parseExpression(expressions.get(indexes[i])), sortTypes[i]);
+            for (int i = 0; i < indexes.length; i++) {
+                int colIdx = indexes[i];
+                int type = sortTypes[i];
+
+                res.addSort(parseExpression(expressions.get(colIdx)), new GridSqlSortColumn(colIdx,
+                    (type & SortOrder.DESCENDING) == 0,
+                    (type & SortOrder.NULLS_FIRST) != 0,
+                    (type & SortOrder.NULLS_LAST) != 0));
+            }
         }
+
+        res.limit(parseExpression(select.getLimit()));
+        res.offset(parseExpression(select.getOffset()));
 
         return res;
     }

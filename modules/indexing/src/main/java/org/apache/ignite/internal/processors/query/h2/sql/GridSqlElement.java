@@ -29,6 +29,14 @@ public abstract class GridSqlElement implements Cloneable {
     }
 
     /**
+     * Clears all children.
+     */
+    public void clearChildren() {
+        if (size() != 0)
+            children = new ArrayList<>();
+    }
+
+    /**
      * @param expr Expr.
      * @return {@code this}.
      */
@@ -58,7 +66,7 @@ public abstract class GridSqlElement implements Cloneable {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CloneCallsConstructors", "CloneDoesntDeclareCloneNotSupportedException"})
-    @Override protected GridSqlElement clone() {
+    @Override public GridSqlElement clone() {
         try {
             GridSqlElement res = (GridSqlElement)super.clone();
 
@@ -69,5 +77,20 @@ public abstract class GridSqlElement implements Cloneable {
         catch (CloneNotSupportedException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    /**
+     * @param idx Index.
+     * @param child New child.
+     */
+    public void child(int idx, GridSqlElement child) {
+        children.set(idx, child);
+    }
+
+    /**
+     * @return Number of children.
+     */
+    public int size() {
+        return children.size();
     }
 }

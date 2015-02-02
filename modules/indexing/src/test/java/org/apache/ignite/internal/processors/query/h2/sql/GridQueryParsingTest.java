@@ -113,6 +113,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select p.*, street from Person p, Address a");
         checkQuery("select p.name, a.street from Person p, Address a");
         checkQuery("select distinct p.name, a.street from Person p, Address a");
+        checkQuery("select distinct name, street from Person, Address group by old");
         checkQuery("select distinct name, street from Person, Address");
         checkQuery("select p1.name, a2.street from Person p1, Address a1, Person p2, Address a2");
 
