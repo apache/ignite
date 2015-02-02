@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.license.*;
@@ -327,13 +326,6 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return Portable processor.
      */
     public GridPortableProcessor portable();
-
-    /**
-     * Gets interop processor.
-     *
-     * @return Interop processor.
-     */
-    public GridInteropProcessor interop();
 
     /**
      * Gets query processor.

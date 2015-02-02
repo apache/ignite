@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.continuous.*;
 import org.apache.ignite.internal.processors.dataload.*;
 import org.apache.ignite.internal.processors.email.*;
 import org.apache.ignite.internal.processors.hadoop.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.processors.job.*;
 import org.apache.ignite.internal.processors.jobmetrics.*;
 import org.apache.ignite.internal.processors.license.*;
@@ -254,10 +253,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridInteropProcessor interopProc;
-
-    /** */
-    @GridToStringExclude
     private IgniteSpringProcessor spring;
 
     /** */
@@ -434,8 +429,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             hadoopProc = (IgniteHadoopProcessorAdapter)comp;
         else if (comp instanceof GridPortableProcessor)
             portableProc = (GridPortableProcessor)comp;
-        else if (comp instanceof GridInteropProcessor)
-            interopProc = (GridInteropProcessor)comp;
         else if (comp instanceof IgnitePluginProcessor)
             pluginProc = (IgnitePluginProcessor)comp;
         else if (comp instanceof GridQueryProcessor)
@@ -684,11 +677,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridPortableProcessor portable() {
         return portableProc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridInteropProcessor interop() {
-        return interopProc;
     }
 
     /** {@inheritDoc} */

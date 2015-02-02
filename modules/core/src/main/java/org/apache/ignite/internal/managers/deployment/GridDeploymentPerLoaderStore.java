@@ -91,7 +91,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     }
 
                     for (IsolatedDeployment dep : rmv)
-                        dep.recordUndeployed(nodeId);
+                        dep.recordUndeployed();
                 }
             }
         };
@@ -122,7 +122,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         for (IsolatedDeployment dep : cp)
-            dep.recordUndeployed(null);
+            dep.recordUndeployed();
 
         if (log.isDebugEnabled())
             log.debug(stopInfo());
@@ -150,7 +150,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         for (IsolatedDeployment dep : rmv)
-            dep.recordUndeployed(null);
+            dep.recordUndeployed();
 
         if (log.isDebugEnabled())
             log.debug("Registered deployment discovery listener: " + discoLsnr);
@@ -351,7 +351,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
                     }
 
                     if (rmv)
-                        dep.recordUndeployed(null);
+                        dep.recordUndeployed();
                 }
             });
         }
@@ -384,7 +384,7 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         for (IsolatedDeployment dep : undeployed)
-            dep.recordUndeployed(null);
+            dep.recordUndeployed();
     }
 
     /** {@inheritDoc} */
@@ -461,11 +461,9 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
         }
 
         /**
-         * Called to record all undeployed classes..
-         *
-         * @param leftNodeId Left node ID.
+         * Called to record all undeployed classes.
          */
-        void recordUndeployed(@Nullable UUID leftNodeId) {
+        void recordUndeployed() {
             assert !Thread.holdsLock(mux);
 
             GridEventStorageManager evts = ctx.event();
@@ -499,8 +497,8 @@ public class GridDeploymentPerLoaderStore extends GridDeploymentStoreAdapter {
 
                 ClassLoader ldr = classLoader();
 
-                ctx.cache().onUndeployed(leftNodeId, ldr);
-                ctx.stream().onUndeployed(leftNodeId, ldr);
+                ctx.cache().onUndeployed(ldr);
+                ctx.stream().onUndeployed(ldr);
 
                 // Clear optimized marshaller's cache. If another marshaller is used, this is no-op.
                 IgniteOptimizedMarshaller.onUndeploy(ldr);

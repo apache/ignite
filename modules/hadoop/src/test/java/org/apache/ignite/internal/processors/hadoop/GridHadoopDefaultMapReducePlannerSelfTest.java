@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.fs.*;
 import org.apache.ignite.lang.*;
 import org.apache.ignite.hadoop.*;
 import org.apache.ignite.internal.processors.hadoop.planner.*;
-import org.apache.ignite.internal.processors.interop.*;
 import org.apache.ignite.internal.util.lang.*;
 import org.apache.ignite.internal.util.typedef.*;
 import org.apache.ignite.testframework.*;
@@ -1007,11 +1006,6 @@ public class GridHadoopDefaultMapReducePlannerSelfTest extends GridHadoopAbstrac
 
         /** {@inheritDoc} */
         @Override public ClusterGroupEx forSubjectId(UUID subjId) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridInteropProcessor interop() {
             return null;
         }
 
