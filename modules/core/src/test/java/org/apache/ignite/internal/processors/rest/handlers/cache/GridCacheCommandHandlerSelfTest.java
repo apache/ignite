@@ -75,7 +75,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsSyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             true);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -100,7 +100,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCacheGetFailsAsyncNotify() throws Exception {
-        GridRestCommandHandler hnd = new TestableGridCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
+        GridRestCommandHandler hnd = new TestableCacheCommandHandler(((IgniteKernal)grid()).context(), "getAsync",
             false);
 
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -207,7 +207,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * Test command handler.
      */
-    private static class TestableGridCacheCommandHandler extends GridCacheCommandHandler {
+    private static class TestableCacheCommandHandler extends GridCacheCommandHandler {
         /** */
         private final String failMtd;
 
@@ -221,7 +221,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
          * @param failMtd Method to fail.
          * @param sync Sync notification flag.
          */
-        TestableGridCacheCommandHandler(final GridKernalContext ctx, final String failMtd, final boolean sync) {
+        TestableCacheCommandHandler(final GridKernalContext ctx, final String failMtd, final boolean sync) {
             super(ctx);
 
             this.failMtd = failMtd;
@@ -249,7 +249,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
                             return fut;
                         }
                         // Rewriting flagOn result to keep intercepting invocations after it.
-                        else if ("flagOn".equals(mtd.getName()))
+                        else if ("flagsOn".equals(mtd.getName()))
                             return proxy;
                         else if ("forSubjectId".equals(mtd.getName()))
                             return proxy;
