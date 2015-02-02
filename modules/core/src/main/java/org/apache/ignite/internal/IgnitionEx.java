@@ -725,13 +725,14 @@ public class IgnitionEx {
 
         Collection<Handler> savedHnds = null;
 
-        if (isLog4jUsed)
+        if (isLog4jUsed) {
             try {
                 t = U.addLog4jNoOpLogger();
             }
             catch (IgniteCheckedException e) {
                 isLog4jUsed = false;
             }
+        }
 
         if (!isLog4jUsed)
             savedHnds = U.addJavaNoOpLogger();
@@ -2015,8 +2016,8 @@ public class IgnitionEx {
                         log4jCls = null;
                     }
 
-                    try {
-                        if (log4jCls != null) {
+                    if (log4jCls != null) {
+                        try {
                             URL url = U.resolveGridGainUrl("config/ignite-log4j.xml");
 
                             if (url == null) {
@@ -2050,9 +2051,9 @@ public class IgnitionEx {
                             else
                                 cfgLog = (IgniteLogger)log4jCls.newInstance();
                         }
-                    }
-                    catch (Exception e) {
-                        log4jInitException = e;
+                        catch (Exception e) {
+                            log4jInitException = e;
+                        }
                     }
 
                     if (log4jCls == null || log4jInitException != null)

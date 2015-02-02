@@ -133,13 +133,14 @@ public class GridRouterCommandLineStartup {
         IgniteBiTuple<Object, Object> t = null;
         Collection<Handler> savedHnds = null;
 
-        if (isLog4jUsed)
+        if (isLog4jUsed) {
             try {
                 t = U.addLog4jNoOpLogger();
             }
             catch (Exception e) {
                 isLog4jUsed = false;
             }
+        }
 
         if (!isLog4jUsed)
             savedHnds = U.addJavaNoOpLogger();
