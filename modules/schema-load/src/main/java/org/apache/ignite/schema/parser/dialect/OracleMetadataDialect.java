@@ -145,8 +145,8 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
                 String prevTbl = "";
 
                 while (colsRs.next()) {
-                    String schema = colsRs.getString("OWNER");
-                    String tbl = colsRs.getString("TABLE_NAME");
+                    String schema = colsRs.getString(SQL_COLS_OWNER);
+                    String tbl = colsRs.getString(SQL_COLS_TAB_NAME);
 
                     if (prevSchema.isEmpty()) {
                         prevSchema = schema;
@@ -162,10 +162,10 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
                         cols = new ArrayList<>();
                     }
-                    cols.add(new DbColumn(colsRs.getString("COLUMN_NAME"),
-                        decodeType(colsRs.getString("DATA_TYPE")),
+                    cols.add(new DbColumn(colsRs.getString(SQL_COLS_COL_NAME),
+                        decodeType(colsRs.getString(SQL_COLS_DATA_TYPE)),
                         false,
-                        decodeNullable(colsRs.getString("NULLABLE"))
+                        decodeNullable(colsRs.getString(SQL_COLS_NULLABLE))
                     ));
                 }
 

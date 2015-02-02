@@ -33,6 +33,7 @@ public class CacheQueryTypeMetadata {
     /** Type name, e.g. class name. */
     private String valType;
 
+    // TODO MOVE to cache or store config ?
     /** Database table metadata.*/
     private CacheQueryTableMetadata tblMeta;
 

@@ -170,6 +170,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
     protected JdbcDialect resolveDialect() throws CacheException {
         Connection conn = null;
 
+        // TODO check conn.getMetaData().getURL() will work ???
+
         String dbProductName = null;
 
         try {
@@ -202,16 +204,6 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         U.warn(log, "Failed to resolve dialect (BasicJdbcDialect will be used): " + dbProductName);
 
         return new BasicJdbcDialect();
-    }
-
-    /**
-     *
-     * @return Cache key id.
-     */
-    protected Integer cacheKeyId() {
-        String cacheName = session().cacheName();
-
-        return cacheName != null ? cacheName.hashCode() : 0;
     }
 
     /** {@inheritDoc} */
@@ -395,7 +387,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
      * @param clo Closure for loaded values.
      * @return Callable for pool submit.
      */
-    private Callable<Void> loadCacheFull(final EntryMapping m, final IgniteBiInClosure<K, V> clo) {
+    private Callable<Void> loadCacheFull(EntryMapping m, IgniteBiInClosure<K, V> clo) {
         return loadCacheRange(m, clo, null, null);
     }
 
@@ -453,8 +445,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         EntryMapping em = cacheMappings(cacheName).get(keyTypeId);
 
         if (em == null)
-            throw new CacheException("Failed to find mapping description for key: " + key +
-                " in cache: " + (cacheName != null ? cacheName : "<default>"));
+            throw new CacheException("Failed to find mapping description for key: " + key + " in cache: "
+                + (cacheName != null ? cacheName : "<default>"));
 
         return em;
     }
@@ -731,7 +723,7 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
                     }
 
                     if (!currKeyTypeId.equals(keyTypeId)) {
-                        mergeStmt.executeBatch();
+                        executeBatch(mergeStmt, "writeAll", cnt);
 
                         currKeyTypeId = keyTypeId;
 
@@ -744,12 +736,15 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
 
                     mergeStmt.addBatch();
 
-                    if (cnt++ % batchSz == 0)
-                        mergeStmt.executeBatch();
+                    if (++cnt % batchSz == 0) {
+                        executeBatch(mergeStmt, "writeAll", cnt);
+
+                        cnt = 0;
+                    }
                 }
 
                 if (mergeStmt != null && cnt % batchSz != 0)
-                    mergeStmt.executeBatch();
+                    executeBatch(mergeStmt, "writeAll", cnt);
             }
             catch (SQLException e) {
                 throw new CacheWriterException("Failed to write entries in database", e);
@@ -762,7 +757,8 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         }
         else
             for (Cache.Entry<? extends K, ? extends V> e : entries)
-                write(e);
+                write(e); // TODO rework to optimal usage. Method write will get all params each time (conn, stmt).
+                          // split into 2 methods writeMerge + writeUpsert.
     }
 
     /** {@inheritDoc} */
@@ -796,6 +792,29 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
         }
     }
 
+    /**
+     * @param stmt Statement.
+     * @param stmtType Statement type for error message.
+     * @param batchSz Expected batch size.
+     */
+    private void executeBatch(Statement stmt, String stmtType, int batchSz) throws SQLException {
+        int[] rowCounts = stmt.executeBatch();
+
+        int numOfRowCnt = rowCounts.length;
+
+        if (numOfRowCnt != batchSz)
+            log.warning("JDBC driver did not return the expected number of row counts," +
+                " actual row count: " + numOfRowCnt + " expected: " + batchSz);
+
+        for (int rowCount : rowCounts)
+            if (rowCount != 1) {
+                // TODO stmtType used 2 times?
+                // TODO print warning for all keys.
+                // TODO while failed - convert collection to array and print warnins to each failed key.
+                log.warning("Batch " + stmtType + " returned unexpected row count from " + stmtType + " statement");
+            }
+    }
+
     /** {@inheritDoc} */
     @Override public void deleteAll(Collection<?> keys) throws CacheWriterException {
         assert keys != null;
@@ -823,25 +842,26 @@ public abstract class JdbcCacheStore<K, V> extends CacheStore<K, V> implements G
                 }
 
                 if (!currKeyTypeId.equals(keyTypeId)) {
-                    delStmt.executeBatch();
-
-                    currKeyTypeId = keyTypeId;
+                    executeBatch(delStmt, "deleteAll", cnt);
 
                     cnt = 0;
+
+                    currKeyTypeId = keyTypeId;
                 }
 
                 fillKeyParameters(delStmt, em, key);
 
                 delStmt.addBatch();
 
-                if (cnt++ % batchSz == 0)
-                    delStmt.executeBatch();
+                if (++cnt % batchSz == 0) {
+                    executeBatch(delStmt, "deleteAll", cnt);
+
+                    cnt = 0;
+                }
             }
 
             if (delStmt != null && cnt % batchSz != 0)
-                delStmt.executeBatch();
-
-            // TODO check delete result?
+                executeBatch(delStmt, "deleteAll", cnt);
         }
         catch (SQLException e) {
             throw new CacheWriterException("Failed to remove values from database", e);
